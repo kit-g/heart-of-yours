@@ -1,0 +1,47 @@
+name: heart
+description: "Another fitness tracker"
+publish_to: none
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  firebase_core: ^3.9.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  go_router: ^14.6.2
+  heart_language:
+    path: 'packages/heart_language'
+  heart_models:
+    path: 'packages/heart_models'
+  heart_state:
+    path: 'packages/heart_state'
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+  fonts:
+    - family: "Lato"
+      fonts:
+        - asset: assets/fonts/Lato/Lato-Regular.ttf
+          weight: 400
+          style: normal
+        - asset: assets/fonts/Lato/Lato-Bold.ttf
+          weight: 700
+          style: normal
+        - asset: assets/fonts/Lato/Lato-Light.ttf
+          weight: 200
+
+
