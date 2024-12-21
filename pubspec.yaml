@@ -15,11 +15,11 @@ dependencies:
     sdk: flutter
   go_router: ^14.6.2
   heart_language:
-    path: 'packages/heart_language'
+    path: 'shared/heart_language'
   heart_models:
-    path: 'packages/heart_models'
+    path: 'shared/heart_models'
   heart_state:
-    path: 'packages/heart_state'
+    path: 'shared/heart_state'
 
 
 dev_dependencies:
