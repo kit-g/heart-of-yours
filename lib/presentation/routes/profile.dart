@@ -42,11 +42,16 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           IconButton.outlined(
             tooltip: logOut,
-            onPressed: auth.onSignOut,
+            onPressed: () => _logout(context),
             icon: const Icon(Icons.logout),
           ),
         ],
       ),
     );
+  }
+
+  void _logout(BuildContext context) {
+    Auth.of(context).onSignOut();
+    Exercises.of(context).onSignOut();
   }
 }

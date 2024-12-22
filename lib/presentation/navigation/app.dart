@@ -16,11 +16,12 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
         ),
+        ChangeNotifierProvider<Exercises>(
+          create: (_) => Exercises(),
+        ),
         ChangeNotifierProvider<Auth>(
           create: (_) => Auth(
-            onUserChange: (_) {
-              HeartRouter.refresh();
-            },
+            onUserChange: (_) => HeartRouter.refresh(),
           ),
         ),
       ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/core/utils/misc.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_state/heart_state.dart';
 
 class AppFrame extends StatelessWidget {
   final StatefulNavigationShell shell;
@@ -19,7 +21,7 @@ class AppFrame extends StatelessWidget {
         type: BottomNavigationBarType.shifting,
         currentIndex: shell.currentIndex,
         enableFeedback: true,
-        onTap: shell.goBranch,
+        onTap: (index) => _onTap(context, index),
         items: [
           BottomNavigationBarItem(
             icon: const Icon(Icons.person),
@@ -40,5 +42,19 @@ class AppFrame extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _onTap(BuildContext context, int index) {
+    if (shell.currentIndex != index) {
+      // switch to that navigation stack if applicable
+      shell.goBranch(index);
+    } else {
+      // custom callbacks based on the exact location
+      switch (index) {
+        // exercises stack
+        case 3:
+          scrollToTop(Exercises.of(context).scrollController);
+      }
+    }
   }
 }

@@ -126,6 +126,15 @@ class MaterialTheme {
       ),
       scaffoldBackgroundColor: colorScheme.surface,
       canvasColor: colorScheme.surface,
+      inputDecorationTheme: InputDecorationTheme(
+        isDense: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        suffixStyle: textTheme.labelSmall,
+      ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         elevation: 1,
         selectedIconTheme: IconThemeData(
@@ -140,7 +149,7 @@ class MaterialTheme {
           size: 24,
         ),
         unselectedLabelStyle: textTheme.bodySmall,
-        unselectedItemColor: colorScheme.outline
+        unselectedItemColor: colorScheme.outline,
       ),
     );
   }

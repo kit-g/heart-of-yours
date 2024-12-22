@@ -126,6 +126,14 @@ class L {
       desc: 'Generic label, e.g. bottom nav bar',
     );
   }
+
+  String get search {
+    return Intl.message(
+      'Search',
+      name: 'search',
+      desc: 'Generic label, e.g. bin the search bar',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

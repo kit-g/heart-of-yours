@@ -20,3 +20,13 @@ mixin AfterLayoutMixin<T extends StatefulWidget> on State<T> {
 void copyToClipboard(String content) {
   Clipboard.setData(ClipboardData(text: content));
 }
+
+void scrollToTop(ScrollController controller) {
+  if (controller.hasClients) {
+    controller.animateTo(
+      controller.position.minScrollExtent,
+      duration: const Duration(milliseconds: 1000),
+      curve: Curves.easeIn,
+    );
+  }
+}

@@ -77,11 +77,7 @@ RouteBase _loginRoute() {
   );
 }
 
-class HeartRouter {
-  static HeartRouter of(BuildContext context) {
-    return Provider.of<HeartRouter>(context, listen: false);
-  }
-
+abstract final class HeartRouter {
   static final config = GoRouter(
     debugLogDiagnostics: false,
     initialLocation: _profilePath,
