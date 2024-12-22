@@ -1,7 +1,23 @@
 import 'misc.dart';
 
+enum ExerciseDirection {
+  push,
+  pull,
+  static,
+  other;
+
+  factory ExerciseDirection.fromString(String? s) {
+    return switch (s) {
+      'Push' => push,
+      'Pull' => pull,
+      'Static' => static,
+      _ => other,
+    };
+  }
+}
+
 abstract interface class Exercise implements Searchable {
-  String get direction;
+  ExerciseDirection get direction;
 
   String get name;
 
@@ -22,7 +38,7 @@ abstract interface class Exercise implements Searchable {
 
 class _Exercise implements Exercise {
   @override
-  final String direction;
+  final ExerciseDirection direction;
   @override
   final String name;
   @override
@@ -48,7 +64,7 @@ class _Exercise implements Exercise {
 
   factory _Exercise.fromJson(Map json) {
     return _Exercise(
-      direction: json['direction'],
+      direction: ExerciseDirection.fromString(json['direction']),
       name: json['exercise'],
       joint: json['joint'],
       level: json['level'],

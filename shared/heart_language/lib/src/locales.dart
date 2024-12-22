@@ -134,6 +134,30 @@ class L {
       desc: 'Generic label, e.g. bin the search bar',
     );
   }
+
+  String get pushExercise {
+    return Intl.message(
+      'Push exercise',
+      name: 'pushExercise',
+      desc: 'Indicates that the exercise is a push exercise',
+    );
+  }
+
+  String get pullExercise {
+    return Intl.message(
+      'Pull exercise',
+      name: 'pullExercise',
+      desc: 'Indicates that the exercise is a pull exercise',
+    );
+  }
+
+  String get staticExercise {
+    return Intl.message(
+      'Static exercise',
+      name: 'staticExercise',
+      desc: 'Indicates that the exercise is a static exercise',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

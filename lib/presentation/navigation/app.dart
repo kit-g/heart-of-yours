@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:heart/core/theme/theme.dart';
+import 'package:heart/core/utils/misc.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -36,18 +37,23 @@ class HeartApp extends StatelessWidget {
   }
 }
 
-class _App extends StatelessWidget {
+class _App extends StatefulWidget {
   final ThemeMode? themeMode;
 
   const _App({this.themeMode});
 
+  @override
+  State<_App> createState() => _AppState();
+}
+
+class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   @override
   Widget build(BuildContext context) {
     const theme = MaterialTheme();
     return MaterialApp.router(
       theme: theme.light(),
       darkTheme: theme.dark(),
-      themeMode: themeMode,
+      themeMode: widget.themeMode,
       debugShowCheckedModeBanner: false,
       routerConfig: HeartRouter.config,
       supportedLocales: const [
@@ -61,5 +67,13 @@ class _App extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
     );
+  }
+
+  @override
+  void afterFirstLayout(BuildContext context) {
+    var Exercises(:isInitialized, :init) = Exercises.of(context);
+    if (!isInitialized) {
+      init();
+    }
   }
 }

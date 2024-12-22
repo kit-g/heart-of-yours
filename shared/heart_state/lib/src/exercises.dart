@@ -38,7 +38,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
           fromFirestore: _fromFirestore,
           toFirestore: (exercise, _) => exercise.toMap(),
         )
-        .get(const GetOptions(source: Source.cache));
+        .get(const GetOptions(source: Source.serverAndCache));
 
     _exercises.addAll(all.docs.map(_snapshot));
     isInitialized = true;
