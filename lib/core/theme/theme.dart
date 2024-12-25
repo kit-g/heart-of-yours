@@ -148,6 +148,15 @@ class MaterialTheme {
         unselectedLabelStyle: textTheme.bodySmall,
         unselectedItemColor: colorScheme.outline,
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+          ),
+        ),
+        backgroundColor: colorScheme.surfaceContainerLow,
+      ),
     );
   }
 }
@@ -159,13 +168,13 @@ TextTheme _textTheme({Color? primaryColor, Color? secondaryColor}) {
     displaySmall: TextStyle(fontSize: 48.0, fontWeight: FontWeight.w400, letterSpacing: 0.0, color: primaryColor),
     headlineMedium: TextStyle(fontSize: 34.0, fontWeight: FontWeight.w400, letterSpacing: 0.25, color: primaryColor),
     headlineSmall: TextStyle(fontSize: 24.0, fontWeight: FontWeight.w400, letterSpacing: 0.0, color: primaryColor),
-    titleLarge: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w500, letterSpacing: 0.15, color: primaryColor),
-    titleMedium: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w400, letterSpacing: 0.15, color: primaryColor),
-    titleSmall: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w500, letterSpacing: 0.1, color: primaryColor),
+    titleLarge: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w700, letterSpacing: 0.15, color: primaryColor),
+    titleMedium: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w700, letterSpacing: 0.15, color: primaryColor),
+    titleSmall: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w700, letterSpacing: 0.1, color: primaryColor),
     bodyLarge: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w400, letterSpacing: 0.5, color: primaryColor),
     bodyMedium: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w400, letterSpacing: 0.25, color: primaryColor),
     bodySmall: TextStyle(fontSize: 12.0, fontWeight: FontWeight.w400, letterSpacing: 0.4, color: secondaryColor),
-    labelLarge: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w500, letterSpacing: 1.25, color: secondaryColor),
+    labelLarge: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w700, letterSpacing: 1.25, color: secondaryColor),
     labelSmall: TextStyle(fontSize: 10.0, fontWeight: FontWeight.w400, letterSpacing: 1.5, color: secondaryColor),
   );
 }

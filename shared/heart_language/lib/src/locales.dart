@@ -158,6 +158,86 @@ class L {
       desc: 'Indicates that the exercise is a static exercise',
     );
   }
+
+  String get startNewWorkout {
+    return Intl.message(
+      'Start a new workout',
+      name: 'startNewWorkout',
+      desc: 'Button label',
+    );
+  }
+
+  String get startWorkout {
+    return Intl.message(
+      'Start workout',
+      name: 'startWorkout',
+      desc: 'App bar title',
+    );
+  }
+
+  String get cancelWorkout {
+    return Intl.message(
+      'Cancel workout',
+      name: 'cancelWorkout',
+      desc: 'Button text',
+    );
+  }
+
+  String get addExercises {
+    return Intl.message(
+      'Add exercises',
+      name: 'addExercises',
+      desc: 'Button text',
+    );
+  }
+
+  String get addSet {
+    return Intl.message(
+      'Add set',
+      name: 'addSet',
+      desc: 'Button text',
+    );
+  }
+
+  String get set {
+    return Intl.message(
+      'Set',
+      name: 'set',
+      desc: 'Workout table, column header',
+    );
+  }
+
+  String get previous {
+    return Intl.message(
+      'Previous',
+      name: 'previous',
+      desc: 'Workout table, column header, as in "previous exercise"',
+    );
+  }
+
+  String get reps {
+    return Intl.message(
+      'Reps',
+      name: 'reps',
+      desc: 'Workout table, column header',
+    );
+  }
+
+  String get kg {
+    return Intl.message(
+      'kg',
+      name: 'kg',
+      desc: 'Generic label, kilograms',
+    );
+  }
+
+  String get lbs {
+    return Intl.message(
+      'lbs',
+      name: 'lbs',
+      desc: 'Generic label, pounds',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

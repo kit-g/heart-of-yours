@@ -25,6 +25,9 @@ class HeartApp extends StatelessWidget {
             onUserChange: (_) => HeartRouter.refresh(),
           ),
         ),
+        ChangeNotifierProvider<Workouts>(
+          create: (context) => Workouts(userId: Auth.of(context).user?.id),
+        ),
       ],
       builder: (__, _) {
         return Consumer<AppTheme>(

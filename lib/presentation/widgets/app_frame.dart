@@ -44,16 +44,21 @@ class AppFrame extends StatelessWidget {
     );
   }
 
-  void _onTap(BuildContext context, int index) {
+  Future<void> _onTap(BuildContext context, int index) async {
     if (shell.currentIndex != index) {
-      // switch to that navigation stack if applicable
-      shell.goBranch(index);
+      // switch to that navigation stack unless already there
+      return shell.goBranch(index);
     } else {
       // custom callbacks based on the exact location
       switch (index) {
+        // profile stack
+        case 0:
+          while (context.canPop()) {
+            context.pop();
+          }
         // exercises stack
         case 3:
-          scrollToTop(Exercises.of(context).scrollController);
+          return scrollToTop(Exercises.of(context).scrollController);
       }
     }
   }

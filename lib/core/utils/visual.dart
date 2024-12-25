@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 void snack(
-    BuildContext context,
-    String content, {
-      SnackBarAction? action,
-      Duration? duration,
-    }) {
+  BuildContext context,
+  String content, {
+  SnackBarAction? action,
+  Duration? duration,
+}) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(content),
@@ -51,5 +51,39 @@ mixin LoadingState<T extends StatefulWidget> on State<T> {
   void dispose() {
     loader.dispose();
     super.dispose();
+  }
+}
+
+class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+  final Color? backgroundColor;
+
+  const FixedHeightHeaderDelegate({
+    required this.child,
+    required this.height,
+    this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: backgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+        child: SizedBox.expand(child: child),
+      ),
+    );
+  }
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  bool shouldRebuild(covariant FixedHeightHeaderDelegate oldDelegate) {
+    return backgroundColor != oldDelegate.backgroundColor || child != oldDelegate.child;
   }
 }
