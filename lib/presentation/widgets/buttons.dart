@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Flat coloured (or transparent by default) button with an ink well
 class InkButton extends StatelessWidget {
@@ -50,6 +51,7 @@ class PrimaryButton extends StatelessWidget {
   final bool wide;
   final EdgeInsets margin;
   final Color? backgroundColor;
+  final bool enableFeedback;
 
   const PrimaryButton.shrunk({
     super.key,
@@ -57,6 +59,7 @@ class PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.backgroundColor,
     this.margin = _defaultMargin,
+    this.enableFeedback = true,
   }) : wide = false;
 
   const PrimaryButton.wide({
@@ -65,6 +68,7 @@ class PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.backgroundColor,
     this.margin = _defaultMargin,
+    this.enableFeedback = true,
   }) : wide = true;
 
   @override
@@ -72,7 +76,7 @@ class PrimaryButton extends StatelessWidget {
     return SizedBox(
       width: wide ? double.infinity : null,
       child: InkButton.rounded(
-        onPressed: onPressed,
+        onPressed: _onPressed,
         backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.tertiaryContainer,
         child: Padding(
           padding: margin,
@@ -80,5 +84,12 @@ class PrimaryButton extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _onPressed() {
+    if (enableFeedback) {
+      HapticFeedback.mediumImpact();
+    }
+    onPressed();
   }
 }
