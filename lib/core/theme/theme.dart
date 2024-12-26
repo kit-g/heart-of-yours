@@ -1,5 +1,9 @@
 import "package:flutter/material.dart";
 
+const _widerRadius = Radius.circular(12);
+const _widerBorderRadius = BorderRadius.all(_widerRadius);
+const _widerRoundedBorder = RoundedRectangleBorder(borderRadius: _widerBorderRadius);
+
 class MaterialTheme {
   const MaterialTheme();
 
@@ -151,11 +155,17 @@ class MaterialTheme {
       bottomSheetTheme: BottomSheetThemeData(
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
+            topLeft: _widerRadius,
+            topRight: _widerRadius,
           ),
         ),
         backgroundColor: colorScheme.surfaceContainerLow,
+      ),
+      popupMenuTheme: const PopupMenuThemeData(
+        iconSize: 24,
+        enableFeedback: true,
+        menuPadding: EdgeInsets.zero,
+        shape: _widerRoundedBorder,
       ),
     );
   }

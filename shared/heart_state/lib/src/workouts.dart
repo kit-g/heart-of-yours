@@ -74,6 +74,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  void removeExercise(WorkoutExercise exercise) {
+    activeWorkout?.removeExercise(exercise);
+    notifyListeners();
+  }
+
   void _markSet(WorkoutExercise exercise, ExerciseSet set, {required bool complete}) {
     _forExercise(
       exercise,

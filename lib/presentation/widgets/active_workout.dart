@@ -11,6 +11,14 @@ const _fixedColumnWidth = 32.0;
 const _fixedButtonHeight = 24.0;
 const _emptyValue = '-';
 
+enum _ExerciseOption {
+  addNote,
+  replace,
+  weightUnit,
+  autoRestTimer,
+  remove;
+}
+
 class ActiveWorkout extends StatefulWidget {
   final Workouts workouts;
   final Widget? appBar;
@@ -192,10 +200,34 @@ class _WorkoutExerciseItem extends StatelessWidget {
         spacing: 8,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              exercise.exercise.name,
-              style: textTheme.titleMedium,
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  exercise.exercise.name,
+                  style: textTheme.titleMedium,
+                ),
+                PopupMenuButton<_ExerciseOption>(
+                  style: const ButtonStyle(visualDensity: VisualDensity(vertical: -2, horizontal: -2)),
+                  icon: const Icon(Icons.more_horiz),
+                  onSelected: (option) => _onTapExerciseOption(context, option),
+                  itemBuilder: (context) {
+                    return _ExerciseOption.values.map(
+                      (option) {
+                        return PopupMenuItem<_ExerciseOption>(
+                          height: 40,
+                          value: option,
+                          child: Text(
+                            _exerciseOptionCopy(context, option),
+                            style: _exerciseOptionStyle(textTheme, colorScheme, option),
+                          ),
+                        );
+                      },
+                    ).toList();
+                  },
+                ),
+              ],
             ),
           ),
           Padding(
@@ -263,6 +295,42 @@ class _WorkoutExerciseItem extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _exerciseOptionCopy(BuildContext context, _ExerciseOption option) {
+    return switch (option) {
+      _ExerciseOption.addNote => L.of(context).addNote,
+      _ExerciseOption.replace => L.of(context).replaceExercise,
+      _ExerciseOption.weightUnit => L.of(context).weightUnit,
+      _ExerciseOption.autoRestTimer => L.of(context).restTimer,
+      _ExerciseOption.remove => L.of(context).removeExercise,
+    };
+  }
+
+  TextStyle? _exerciseOptionStyle(TextTheme theme, ColorScheme scheme, _ExerciseOption option) {
+    return switch (option) {
+      _ExerciseOption.remove => theme.titleSmall?.copyWith(color: scheme.error),
+      _ => theme.titleSmall,
+    };
+  }
+
+  Future<void> _onTapExerciseOption(BuildContext context, _ExerciseOption option) async {
+    switch (option) {
+      case _ExerciseOption.remove:
+        Workouts.of(context).removeExercise(exercise);
+      case _ExerciseOption.addNote:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case _ExerciseOption.replace:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case _ExerciseOption.weightUnit:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case _ExerciseOption.autoRestTimer:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+    }
   }
 }
 

@@ -238,6 +238,46 @@ class L {
       desc: 'Generic label, pounds',
     );
   }
+
+  String get addNote {
+    return Intl.message(
+      'Add a note',
+      name: 'addNote',
+      desc: 'Exercise set option, "add a note to this set"',
+    );
+  }
+
+  String get replaceExercise {
+    return Intl.message(
+      'Replace exercise',
+      name: 'replaceExercise',
+      desc: 'Exercise set option',
+    );
+  }
+
+  String get weightUnit {
+    return Intl.message(
+      'Weight unit',
+      name: 'weightUnit',
+      desc: 'Exercise set option, "choose weight unit for this set"',
+    );
+  }
+
+  String get restTimer {
+    return Intl.message(
+      'Rest timer',
+      name: 'restTimer',
+      desc: 'Exercise set option, "Set the rest timer for this exercise"',
+    );
+  }
+
+  String get removeExercise {
+    return Intl.message(
+      'Remove exercise',
+      name: 'removeExercise',
+      desc: 'Exercise set option, "Remove this exercise from workout"',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

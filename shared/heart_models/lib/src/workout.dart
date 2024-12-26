@@ -98,7 +98,6 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet> {
   factory WorkoutExercise({required ExerciseSet starter}) = _WorkoutExercise;
 }
 
-
 /// A full workout
 abstract interface class Workout with Iterable<WorkoutExercise> {
   abstract String? name;
@@ -113,7 +112,9 @@ abstract interface class Workout with Iterable<WorkoutExercise> {
 
   void finish(DateTime end);
 
-  void add(WorkoutExercise set);
+  void addExercise(WorkoutExercise set);
+
+  void removeExercise(WorkoutExercise exercise);
 
   Map<String, dynamic> toMap();
 
@@ -185,8 +186,13 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   Iterable<WorkoutExercise> get sets => _sets;
 
   @override
-  void add(WorkoutExercise set) {
+  void addExercise(WorkoutExercise set) {
     _sets.add(set);
+  }
+
+  @override
+  void removeExercise(WorkoutExercise exercise) {
+    _sets.remove(exercise);
   }
 
   @override
