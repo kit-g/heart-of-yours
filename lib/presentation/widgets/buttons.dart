@@ -7,6 +7,7 @@ class InkButton extends StatelessWidget {
   final VoidCallback onPressed;
   final ShapeBorder? inkShape;
   final Color? backgroundColor;
+  final BoxBorder? border;
 
   const InkButton({
     super.key,
@@ -14,6 +15,7 @@ class InkButton extends StatelessWidget {
     required this.onPressed,
     this.backgroundColor,
     this.inkShape,
+    this.border,
   });
 
   const InkButton.rounded({
@@ -21,23 +23,31 @@ class InkButton extends StatelessWidget {
     required this.child,
     required this.onPressed,
     this.backgroundColor,
+    this.border,
   }) : inkShape = const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
         );
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = switch (inkShape) {
+      RoundedRectangleBorder border => border.borderRadius,
+      _ => null,
+    };
     return Material(
-      borderRadius: switch (inkShape) {
-        RoundedRectangleBorder border => border.borderRadius,
-        _ => null,
-      },
+      borderRadius: borderRadius,
       color: backgroundColor,
-      child: InkWell(
-        splashColor: backgroundColor?.withValues(alpha: .5),
-        customBorder: inkShape,
-        onTap: onPressed,
-        child: child,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: borderRadius,
+          border: border,
+        ),
+        child: InkWell(
+          splashColor: backgroundColor?.withValues(alpha: .5),
+          customBorder: inkShape,
+          onTap: onPressed,
+          child: child,
+        ),
       ),
     );
   }
@@ -52,6 +62,7 @@ class PrimaryButton extends StatelessWidget {
   final EdgeInsets margin;
   final Color? backgroundColor;
   final bool enableFeedback;
+  final BoxBorder? border;
 
   const PrimaryButton.shrunk({
     super.key,
@@ -60,6 +71,7 @@ class PrimaryButton extends StatelessWidget {
     this.backgroundColor,
     this.margin = _defaultMargin,
     this.enableFeedback = true,
+    this.border,
   }) : wide = false;
 
   const PrimaryButton.wide({
@@ -69,6 +81,7 @@ class PrimaryButton extends StatelessWidget {
     this.backgroundColor,
     this.margin = _defaultMargin,
     this.enableFeedback = true,
+    this.border,
   }) : wide = true;
 
   @override
@@ -76,6 +89,7 @@ class PrimaryButton extends StatelessWidget {
     return SizedBox(
       width: wide ? double.infinity : null,
       child: InkButton.rounded(
+        border: border,
         onPressed: _onPressed,
         backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.tertiaryContainer,
         child: Padding(

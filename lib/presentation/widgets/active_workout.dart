@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -128,6 +130,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -319,22 +322,15 @@ class _WorkoutExerciseItem extends StatelessWidget {
       case _ExerciseOption.remove:
         Workouts.of(context).removeExercise(exercise);
       case _ExerciseOption.addNote:
-        // TODO: Handle this case.
-        throw UnimplementedError();
       case _ExerciseOption.replace:
-        // TODO: Handle this case.
-        throw UnimplementedError();
       case _ExerciseOption.weightUnit:
-        // TODO: Handle this case.
-        throw UnimplementedError();
       case _ExerciseOption.autoRestTimer:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+      // TODO: Handle this case.
     }
   }
 }
 
-class _ExerciseSetItem extends StatelessWidget {
+class _ExerciseSetItem extends StatefulWidget {
   final int index;
   final ExerciseSet set;
   final WorkoutExercise exercise;
@@ -346,15 +342,41 @@ class _ExerciseSetItem extends StatelessWidget {
   });
 
   @override
+  State<_ExerciseSetItem> createState() => _ExerciseSetItemState();
+}
+
+class _ExerciseSetItemState extends State<_ExerciseSetItem> {
+  ExerciseSet get set => widget.set;
+
+  WorkoutExercise get exercise => widget.exercise;
+
+  final _weightFocus = FocusNode();
+  final _weightController = TextEditingController();
+  final _repsFocus = FocusNode();
+  final _repsController = TextEditingController();
+  final _hasWeighError = ValueNotifier<bool>(false);
+  final _hasRepsError = ValueNotifier<bool>(false);
+
+  @override
+  void dispose() {
+    _weightFocus.dispose();
+    _weightController.dispose();
+    _repsFocus.dispose();
+    _repsController.dispose();
+    _hasRepsError.dispose();
+    _hasWeighError.dispose();
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     final color = set.completed ? colorScheme.tertiaryContainer : colorScheme.outlineVariant.withValues(alpha: .5);
 
     return Dismissible(
-      background: Container(
-        color: colorScheme.error,
-      ),
+      background: Container(color: colorScheme.error),
       onDismissed: (_) {
         Workouts.of(context).removeSet(exercise, set);
       },
@@ -370,60 +392,34 @@ class _ExerciseSetItem extends StatelessWidget {
                 width: _fixedColumnWidth,
                 height: _fixedButtonHeight,
                 child: Center(
-                  child: Text('$index'),
+                  child: Text('${widget.index}'),
                 ),
               ),
               onPressed: () {},
             ),
             const Expanded(
               flex: 3,
-              child: Center(child: Text(_emptyValue)),
-            ),
-            Expanded(
-              child: SizedBox(
-                height: _fixedButtonHeight,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                  child: PrimaryButton.shrunk(
-                    margin: EdgeInsets.zero,
-                    backgroundColor: color,
-                    child: Center(
-                      child: Text(
-                        switch (set) {
-                          // TODO: Handle this case.
-                          AssistedSet() => _emptyValue,
-                          // TODO: Handle this case.
-                          CardioSet() => _emptyValue,
-                          WeightedSet s => s.weight?.toString() ?? _emptyValue,
-                        },
-                      ),
-                    ),
-                    onPressed: () {},
-                  ),
-                ),
+              child: Center(
+                child: Text(_emptyValue),
               ),
             ),
             Expanded(
-              child: SizedBox(
-                height: _fixedButtonHeight,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                  child: PrimaryButton.shrunk(
-                    backgroundColor: color,
-                    margin: EdgeInsets.zero,
-                    child: Center(
-                      child: Text(
-                        switch (set) {
-                          // TODO: Handle this case.
-                          CardioSet() => throw UnimplementedError(),
-                          WeightedSet s => s.reps?.toString() ?? _emptyValue,
-                          AssistedSet s => s.reps?.toString() ?? _emptyValue,
-                        },
-                      ),
-                    ),
-                    onPressed: () {},
-                  ),
-                ),
+              child: _TextFieldButton(
+                focusNode: _weightFocus,
+                set: set,
+                controller: _weightController,
+                color: color,
+                errorState: _hasWeighError,
+              ),
+            ),
+            Expanded(
+              child: _TextFieldButton(
+                set: set,
+                focusNode: _repsFocus,
+                controller: _repsController,
+                color: color,
+                keyboardType: TextInputType.number,
+                errorState: _hasRepsError,
               ),
             ),
             SizedBox(
@@ -434,13 +430,7 @@ class _ExerciseSetItem extends StatelessWidget {
                 child: PrimaryButton.shrunk(
                   backgroundColor: color,
                   margin: EdgeInsets.zero,
-                  onPressed: () {
-                    if (set.completed) {
-                      Workouts.of(context).markSetAsIncomplete(exercise, set);
-                    } else {
-                      Workouts.of(context).markSetAsComplete(exercise, set);
-                    }
-                  },
+                  onPressed: () => _onDone(context),
                   child: const Center(
                     child: Icon(
                       Icons.done,
@@ -455,4 +445,159 @@ class _ExerciseSetItem extends StatelessWidget {
       ),
     );
   }
+
+  void _onDone(BuildContext context) {
+    final workouts = Workouts.of(context);
+    if (set.completed) {
+      return workouts.markSetAsIncomplete(exercise, set);
+    }
+
+    try {
+      final weight = double.parse(_weightController.text);
+      final reps = int.parse(_repsController.text);
+
+      workouts.setWeight(exercise, set, weight);
+      _hasWeighError.value = false;
+
+      workouts.setReps(exercise, set, reps);
+      _hasRepsError.value = false;
+
+      if (set.canBeCompleted) {
+        workouts.markSetAsComplete(exercise, set);
+      }
+
+      _repsFocus.unfocus();
+      _weightFocus.unfocus();
+    } on FormatException {
+      final repsCorrect = int.tryParse(_repsController.text) != null;
+      final weightCorrect = double.tryParse(_weightController.text) != null;
+
+      _hasRepsError.value = !repsCorrect;
+      _hasWeighError.value = !weightCorrect;
+    }
+  }
+}
+
+final _inputFormatters = [
+  FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d*)?')),
+  LengthLimitingTextInputFormatter(5),
+  FilteringTextInputFormatter.singleLineFormatter,
+];
+
+class _TextFieldButton extends StatelessWidget {
+  final FocusNode focusNode;
+  final Color? color;
+  final ExerciseSet set;
+  final TextEditingController controller;
+  final TextInputType keyboardType;
+  final ValueNotifier<bool> errorState;
+
+  const _TextFieldButton({
+    required this.focusNode,
+    required this.errorState,
+    this.color,
+    required this.set,
+    required this.controller,
+    this.keyboardType = const TextInputType.numberWithOptions(decimal: true),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+
+    return Focus(
+      focusNode: focusNode,
+      child: SizedBox(
+        height: _fixedButtonHeight,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+          child: ListenableBuilder(
+            listenable: focusNode,
+            builder: (__, _) {
+              return ValueListenableBuilder<bool>(
+                valueListenable: errorState,
+                builder: (__, hasError, _) {
+                  return PrimaryButton.shrunk(
+                    margin: EdgeInsets.zero,
+                    backgroundColor: hasError ? colorScheme.error : color,
+                    border: switch ((hasError, focusNode.hasFocus, set.completed)) {
+                      (true, true, _) => Border.all(
+                          color: colorScheme.onErrorContainer,
+                          width: .5,
+                        ),
+                      (_, true, true) => Border.all(
+                          color: colorScheme.onTertiaryFixed,
+                          width: .5,
+                        ),
+                      (_, true, false) => Border.all(
+                          color: colorScheme.onSurfaceVariant,
+                          width: .5,
+                        ),
+                      _ => null,
+                    },
+                    child: Center(
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          textSelectionTheme: TextSelectionThemeData(
+                            selectionColor: switch (hasError) {
+                              true => colorScheme.onError.withValues(alpha: .3),
+                              false => null,
+                            },
+                            selectionHandleColor: switch (hasError) {
+                              true => colorScheme.onError.withValues(alpha: .5),
+                              false => null,
+                            },
+                          ),
+                          cupertinoOverrideTheme: NoDefaultCupertinoThemeData(
+                            primaryColor: switch (hasError) {
+                              true => colorScheme.onError.withValues(alpha: .5),
+                              false => null,
+                            }
+                          )
+                        ),
+                        child: TextField(
+                          textInputAction: TextInputAction.done,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          controller: controller,
+                          inputFormatters: _inputFormatters,
+                          decoration: const InputDecoration.collapsed(hintText: _emptyValue),
+                          style: switch (hasError) {
+                            true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
+                            false => textTheme.bodyMedium,
+                          },
+                          textAlign: TextAlign.center,
+                          cursorHeight: 16,
+                          textAlignVertical: TextAlignVertical.center,
+                          maxLines: 1,
+                          minLines: 1,
+                          cursorColor: switch ((hasError, set.completed)) {
+                            (true, _) => colorScheme.onError,
+                            (false, true) => colorScheme.onTertiaryFixed,
+                            (false, false) => colorScheme.onSurfaceVariant,
+                          },
+                          onSubmitted: (value) {
+                            FocusScope.of(context).unfocus(); // Dismiss keyboard on done
+                          },
+                          onEditingComplete: () {},
+                          onTap: () => _selectAllText(controller),
+                        ),
+                      ),
+                    ),
+                    onPressed: () {},
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _selectAllText(TextEditingController controller) {
+  controller.selection = TextSelection(
+    baseOffset: 0,
+    extentOffset: controller.value.text.length,
+  );
 }

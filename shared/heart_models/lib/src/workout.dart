@@ -18,6 +18,8 @@ sealed class ExerciseSet with UsesTimestampForId {
         ),
     };
   }
+
+  bool get canBeCompleted;
 }
 
 /// A set meant to be executed in a number of repetitions
@@ -36,7 +38,7 @@ abstract class WeightedSet extends SetForReps {
 
 /// A set for exercise executed with help, e.g. assisted pull-ups
 abstract class AssistedSet extends SetForReps {
-  abstract double weight;
+  abstract double? weight;
 
   AssistedSet({required super.exercise});
 }
@@ -80,9 +82,12 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
     super.reps,
     this.weight,
   });
+
+  @override
+  bool get canBeCompleted => reps != null && weight != null;
 }
 
-/// A collection of sets of the same performed during a single workout
+/// A collection of sets of the same exercise performed during a single workout
 /// E.g., squats 4x10
 abstract interface class WorkoutExercise with Iterable<ExerciseSet> {
   Iterable<ExerciseSet> get sets;

@@ -55,9 +55,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  void _forExercise(WorkoutExercise exercise, void Function(WorkoutExercise) action) {
+  void _forExercise(WorkoutExercise exercise, void Function(WorkoutExercise) action, {bool notifies = true}) {
     activeWorkout?.where((each) => each == exercise).forEach(action);
-    notifyListeners();
+    if (notifies) {
+      notifyListeners();
+    }
   }
 
   void addEmptySet(WorkoutExercise exercise) {
@@ -96,5 +98,35 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   void markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
     _markSet(exercise, set, complete: false);
+  }
+
+  void setWeight(WorkoutExercise exercise, ExerciseSet set, double? weight) {
+    _forExercise(
+      exercise,
+      (each) {
+        switch (set) {
+          case WeightedSet s:
+            s.weight = weight;
+          case AssistedSet s:
+            s.weight = weight;
+          default:
+        }
+      },
+      notifies: false,
+    );
+  }
+
+  void setReps(WorkoutExercise exercise, ExerciseSet set, int? reps) {
+    _forExercise(
+      exercise,
+      (each) {
+        switch (set) {
+          case SetForReps s:
+            s.reps = reps;
+          default:
+        }
+      },
+      notifies: false,
+    );
   }
 }
