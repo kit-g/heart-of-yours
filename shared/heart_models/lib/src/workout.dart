@@ -20,6 +20,8 @@ sealed class ExerciseSet with UsesTimestampForId {
   }
 
   bool get canBeCompleted;
+
+  double? get total;
 }
 
 /// A set meant to be executed in a number of repetitions
@@ -85,6 +87,14 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
 
   @override
   bool get canBeCompleted => reps != null && weight != null;
+
+  @override
+  double? get total {
+    return switch ((weight, reps)) {
+      (double w, int r) => w * r,
+      _ => null,
+    };
+  }
 }
 
 /// A collection of sets of the same exercise performed during a single workout
@@ -95,6 +105,8 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet> {
   DateTime get start;
 
   Exercise get exercise;
+
+  double? get total;
 
   void add(ExerciseSet set);
 
@@ -131,6 +143,8 @@ abstract interface class Workout with Iterable<WorkoutExercise> {
   }
 
   void startExercise(Exercise exercise);
+
+  double? get total;
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -163,6 +177,9 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
 
   @override
   Exercise get exercise => _sets.firstOrNull?.exercise ?? _exercise;
+
+  @override
+  double? get total => map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
 }
 
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
@@ -231,4 +248,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   void startExercise(Exercise exercise) {
     _sets.add(WorkoutExercise(starter: ExerciseSet(exercise)));
   }
+
+  @override
+  double? get total => map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
 }

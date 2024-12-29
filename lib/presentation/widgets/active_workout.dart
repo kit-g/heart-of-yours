@@ -480,7 +480,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> {
 
 final _inputFormatters = [
   FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d*)?')),
-  LengthLimitingTextInputFormatter(5),
+  LengthLimitingTextInputFormatter(5), // todo change to five digits, e.g. 123.45
   FilteringTextInputFormatter.singleLineFormatter,
 ];
 
@@ -536,6 +536,7 @@ class _TextFieldButton extends StatelessWidget {
                       _ => null,
                     },
                     child: Center(
+                      // refactor avoid creating a new theme for each item
                       child: Theme(
                         data: Theme.of(context).copyWith(
                           textSelectionTheme: TextSelectionThemeData(
@@ -552,8 +553,8 @@ class _TextFieldButton extends StatelessWidget {
                             primaryColor: switch (hasError) {
                               true => colorScheme.onError.withValues(alpha: .5),
                               false => null,
-                            }
-                          )
+                            },
+                          ),
                         ),
                         child: TextField(
                           textInputAction: TextInputAction.done,
