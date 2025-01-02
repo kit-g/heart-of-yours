@@ -40,8 +40,18 @@ class ActiveWorkout extends StatefulWidget {
 class _ActiveWorkoutState extends State<ActiveWorkout> {
   final _focusNode = FocusNode();
   final _searchController = TextEditingController();
+  final _isExerciseBeingDragged = ValueNotifier<bool>(false);
 
   Workouts get workouts => widget.workouts;
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _searchController.dispose();
+    _isExerciseBeingDragged.dispose();
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +110,13 @@ class _ActiveWorkoutState extends State<ActiveWorkout> {
                 secondColumnCopy: previous,
                 thirdColumnCopy: lbs,
                 fourthColumnCopy: reps,
+                dragState: _isExerciseBeingDragged,
+                onDragStarted: () {
+                  _isExerciseBeingDragged.value = true;
+                },
+                onDragEnded: () {
+                  _isExerciseBeingDragged.value = false;
+                },
               );
             },
           ),
@@ -148,10 +165,10 @@ class _ActiveWorkoutState extends State<ActiveWorkout> {
   }
 
   Future<void> _cancelWorkout(BuildContext context) async {
-    Workouts.of(context).cancelActiveWorkout();
+    return Workouts.of(context).cancelActiveWorkout();
   }
 
-  Future<Object?> _showExerciseDialog(BuildContext context) async {
+  Future<Object?> _showExerciseDialog(BuildContext context) {
     return showDialog(
       context: context,
       builder: (context) {
@@ -182,6 +199,9 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final String secondColumnCopy;
   final String thirdColumnCopy;
   final String fourthColumnCopy;
+  final VoidCallback onDragStarted;
+  final VoidCallback onDragEnded;
+  final ValueNotifier<bool> dragState;
 
   const _WorkoutExerciseItem({
     required this.exercise,
@@ -190,113 +210,156 @@ class _WorkoutExerciseItem extends StatelessWidget {
     required this.secondColumnCopy,
     required this.thirdColumnCopy,
     required this.fourthColumnCopy,
+    required this.onDragStarted,
+    required this.onDragEnded,
+    required this.dragState,
   });
 
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 8,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  exercise.exercise.name,
-                  style: textTheme.titleMedium,
-                ),
-                PopupMenuButton<_ExerciseOption>(
-                  style: const ButtonStyle(visualDensity: VisualDensity(vertical: -2, horizontal: -2)),
-                  icon: const Icon(Icons.more_horiz),
-                  onSelected: (option) => _onTapExerciseOption(context, option),
-                  itemBuilder: (context) {
-                    return _ExerciseOption.values.map(
-                      (option) {
-                        return PopupMenuItem<_ExerciseOption>(
-                          height: 40,
-                          value: option,
-                          child: Text(
-                            _exerciseOptionCopy(context, option),
-                            style: _exerciseOptionStyle(textTheme, colorScheme, option),
-                          ),
-                        );
-                      },
-                    ).toList();
-                  },
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: _fixedColumnWidth,
-                  child: Center(child: Text(firstColumnCopy)),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Center(child: Text(secondColumnCopy)),
-                ),
-                Expanded(
-                  child: Center(child: Text(thirdColumnCopy)),
-                ),
-                Flexible(
-                  child: Center(child: Text(fourthColumnCopy)),
-                ),
-                const SizedBox(
-                  width: _fixedColumnWidth,
-                  child: Center(
-                    child: Icon(
-                      Icons.done,
-                      size: 18,
+    return DragTarget<WorkoutExercise>(
+      onWillAcceptWithDetails: (details) {
+        // only fire when the drag is dropped on any other exercise
+        return exercise != details.data;
+      },
+      onAcceptWithDetails: (details) {
+        Workouts.of(context).swap(details.data, exercise);
+      },
+      builder: (_, candidates, rejects) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: dragState,
+          builder: (_, isDragged, __) {
+            final header = Padding(
+              padding: const EdgeInsets.only(left: 8.0, right: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    exercise.exercise.name,
+                    style: textTheme.titleMedium,
+                  ),
+                  PopupMenuButton<_ExerciseOption>(
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity(vertical: 0, horizontal: -2),
                     ),
+                    icon: const Icon(Icons.more_horiz),
+                    onSelected: (option) => _onTapExerciseOption(context, option),
+                    itemBuilder: (context) {
+                      return _ExerciseOption.values.map(
+                        (option) {
+                          return PopupMenuItem<_ExerciseOption>(
+                            height: 40,
+                            value: option,
+                            child: Text(
+                              _exerciseOptionCopy(context, option),
+                              style: _exerciseOptionStyle(textTheme, colorScheme, option),
+                            ),
+                          );
+                        },
+                      ).toList();
+                    },
+                  ),
+                ],
+              ),
+            );
+
+            return AnimatedSize(
+              curve: Curves.easeInOut,
+              duration: const Duration(milliseconds: 400),
+              child: switch (isDragged) {
+                true => header,
+                false => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 8,
+                    children: [
+                      LongPressDraggable<WorkoutExercise>(
+                        delay: const Duration(milliseconds: 200),
+                        data: exercise,
+                        onDragStarted: onDragStarted,
+                        onDragEnd: (_) => onDragEnded(),
+                        onDragCompleted: onDragEnded,
+                        onDraggableCanceled: (_, __) => onDragEnded(),
+                        feedback: _Feedback(
+                          exercise: exercise.exercise.name,
+                          textTheme: textTheme,
+                        ),
+                        maxSimultaneousDrags: 1,
+                        child: header,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: _fixedColumnWidth,
+                              child: Center(child: Text(firstColumnCopy)),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Center(child: Text(secondColumnCopy)),
+                            ),
+                            Expanded(
+                              child: Center(child: Text(thirdColumnCopy)),
+                            ),
+                            Flexible(
+                              child: Center(child: Text(fourthColumnCopy)),
+                            ),
+                            const SizedBox(
+                              width: _fixedColumnWidth,
+                              child: Center(
+                                child: Icon(
+                                  Icons.done,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ...exercise.indexed.map(
+                            (set) {
+                          return _ExerciseSetItem(
+                            index: set.$1 + 1,
+                            set: set.$2,
+                            exercise: exercise,
+                          );
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: PrimaryButton.wide(
+                          backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              spacing: 8,
+                              children: [
+                                const Icon(
+                                  Icons.add,
+                                  size: 18,
+                                ),
+                                Text(copy),
+                              ],
+                            ),
+                          ),
+                          onPressed: () {
+                            Workouts.of(context).addEmptySet(exercise);
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          ...exercise.indexed.map(
-            (set) {
-              return _ExerciseSetItem(
-                index: set.$1 + 1,
-                set: set.$2,
-                exercise: exercise,
-              );
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
-              margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  spacing: 8,
-                  children: [
-                    const Icon(
-                      Icons.add,
-                      size: 18,
-                    ),
-                    Text(copy),
-                  ],
-                ),
-              ),
-              onPressed: () {
-                Workouts.of(context).addEmptySet(exercise);
               },
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -601,4 +664,44 @@ void _selectAllText(TextEditingController controller) {
     baseOffset: 0,
     extentOffset: controller.value.text.length,
   );
+}
+
+class _Feedback extends StatelessWidget {
+  const _Feedback({
+    required this.exercise,
+    required this.textTheme,
+  });
+
+  final String exercise;
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width - 16,
+        ),
+        child: Material(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          elevation: 3,
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    exercise,
+                    style: textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

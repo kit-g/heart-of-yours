@@ -21,7 +21,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
   Widget build(BuildContext context) {
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     return Consumer<Exercises>(
-      builder: (context, exercises, _) {
+      builder: (__, exercises, _) {
         return Scaffold(
           body: SafeArea(
             child: ExercisePicker(
@@ -39,7 +39,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
               focusNode: _focusNode,
               backgroundColor: backgroundColor,
               onExerciseSelected: (e) {
-                print(e);
+                //
               },
             ),
           ),

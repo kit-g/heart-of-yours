@@ -199,6 +199,14 @@ class L {
     );
   }
 
+  String get deleteSet {
+    return Intl.message(
+      'Delete set',
+      name: 'deleteSet',
+      desc: 'Button text',
+    );
+  }
+
   String get set {
     return Intl.message(
       'Set',

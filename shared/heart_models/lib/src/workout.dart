@@ -145,6 +145,8 @@ abstract interface class Workout with Iterable<WorkoutExercise> {
   void startExercise(Exercise exercise);
 
   double? get total;
+
+  void swap(WorkoutExercise toInsert, WorkoutExercise after);
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -180,6 +182,11 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
 
   @override
   double? get total => map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
+
+  @override
+  String toString() {
+    return '$runtimeType $_exercise';
+  }
 }
 
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
@@ -251,4 +258,12 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   @override
   double? get total => map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
+
+  @override
+  void swap(WorkoutExercise toInsert, WorkoutExercise after) {
+    final where = _sets.indexOf(after);
+    _sets
+      ..remove(toInsert)
+      ..insert(where, toInsert);
+  }
 }
