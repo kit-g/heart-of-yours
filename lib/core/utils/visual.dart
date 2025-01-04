@@ -58,17 +58,22 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   final double height;
   final Color? backgroundColor;
+  final BorderRadius borderRadius;
 
   const FixedHeightHeaderDelegate({
     required this.child,
     required this.height,
     this.backgroundColor,
+    this.borderRadius = BorderRadius.zero,
   });
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: backgroundColor,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: borderRadius,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
         child: SizedBox.expand(child: child),

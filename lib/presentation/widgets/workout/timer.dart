@@ -7,11 +7,13 @@ import 'package:heart_state/heart_state.dart';
 
 class WorkoutTimer extends StatefulWidget {
   final DateTime start;
+  final Duration? initValue;
   final TextStyle? style;
 
   const WorkoutTimer({
     super.key,
     required this.start,
+    this.initValue,
     this.style,
   });
 
@@ -26,6 +28,11 @@ class _WorkoutTimerState extends State<WorkoutTimer> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.initValue case Duration startValue) {
+      _elapsedTime.value = startValue;
+    }
+
     _startTimer();
   }
 

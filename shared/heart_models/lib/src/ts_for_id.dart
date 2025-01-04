@@ -10,4 +10,6 @@ abstract mixin class UsesTimestampForId {
 
   @override
   int get hashCode => id.hashCode;
+
+  Duration elapsed() => DateTime.now().difference(start);
 }
