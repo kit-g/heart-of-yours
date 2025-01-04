@@ -19,33 +19,30 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
   @override
   Widget build(BuildContext context) {
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-    return Consumer<Exercises>(
-      builder: (__, exercises, _) {
-        return Scaffold(
-          body: SafeArea(
-            child: ExercisePicker(
-              appBar: SliverAppBar(
-                scrolledUnderElevation: 0,
-                backgroundColor: backgroundColor,
-                pinned: true,
-                expandedHeight: 80.0,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(L.of(context).exercises),
-                ),
-              ),
-              exercises: exercises,
-              searchController: _searchController,
-              focusNode: _focusNode,
-              backgroundColor: backgroundColor,
-              onExerciseSelected: (e) {
-                //
-              },
+    final exercises = Exercises.watch(context);
+    return Scaffold(
+      body: SafeArea(
+        child: ExercisePicker(
+          appBar: SliverAppBar(
+            scrolledUnderElevation: 0,
+            backgroundColor: backgroundColor,
+            pinned: true,
+            expandedHeight: 80.0,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(L.of(context).exercises),
             ),
           ),
-          floatingActionButton: const WorkoutTimerFloatingButton(),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        );
-      },
+          exercises: exercises,
+          searchController: _searchController,
+          focusNode: _focusNode,
+          backgroundColor: backgroundColor,
+          onExerciseSelected: (e) {
+            //
+          },
+        ),
+      ),
+      floatingActionButton: const WorkoutTimerFloatingButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

@@ -237,20 +237,17 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
     return showDialog(
       context: context,
       builder: (context) {
-        return Consumer<Exercises>(
-          builder: (__, exercises, _) {
-            return Card(
-              child: ExercisePicker(
-                exercises: exercises,
-                searchController: _searchController,
-                focusNode: _focusNode,
-                onExerciseSelected: (exercise) {
-                  Navigator.pop(context);
-                  Workouts.of(context).startExercise(exercise);
-                },
-              ),
-            );
-          },
+        final exercises = Exercises.watch(context);
+        return Card(
+          child: ExercisePicker(
+            exercises: exercises,
+            searchController: _searchController,
+            focusNode: _focusNode,
+            onExerciseSelected: (exercise) {
+              Navigator.pop(context);
+              Workouts.of(context).startExercise(exercise);
+            },
+          ),
         );
       },
     );
