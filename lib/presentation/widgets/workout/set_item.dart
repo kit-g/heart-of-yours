@@ -28,6 +28,19 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> {
   final _hasRepsError = ValueNotifier<bool>(false);
 
   @override
+  void initState() {
+    super.initState();
+
+    switch (set) {
+      case WeightedSet(:int reps, :double weight):
+      case AssistedSet(:int reps, :double weight):
+        _weightController.text = weight.toString();
+        _repsController.text = reps.toString();
+      default:
+    }
+  }
+
+  @override
   void dispose() {
     _weightFocus.dispose();
     _weightController.dispose();
