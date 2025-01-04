@@ -3,7 +3,9 @@ library active_workout;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -37,7 +39,7 @@ class ActiveWorkout extends StatefulWidget {
   State<ActiveWorkout> createState() => _ActiveWorkoutState();
 }
 
-class _ActiveWorkoutState extends State<ActiveWorkout> {
+class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWorkout> {
   final _focusNode = FocusNode();
   final _searchController = TextEditingController();
   final _beingDragged = ValueNotifier<WorkoutExercise?>(null);
@@ -158,6 +160,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> {
                           _beingDragged.value = set;
                         },
                         onDragEnded: () {
+                          buzz();
                           _beingDragged.value = null;
                           _currentlyHoveredExercise.value = null;
                         },

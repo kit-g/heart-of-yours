@@ -30,3 +30,9 @@ void scrollToTop(ScrollController controller) {
     );
   }
 }
+
+mixin HasHaptic<T extends StatefulWidget> on State<T> {
+  void buzz() {
+    HapticFeedback.mediumImpact();
+  }
+}

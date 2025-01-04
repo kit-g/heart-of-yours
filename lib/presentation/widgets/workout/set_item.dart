@@ -1,5 +1,7 @@
 part of 'active_workout.dart';
 
+const _dismissThreshold = .5;
+
 class _ExerciseSetItem extends StatefulWidget {
   final int index;
   final ExerciseSet set;
@@ -15,7 +17,7 @@ class _ExerciseSetItem extends StatefulWidget {
   State<_ExerciseSetItem> createState() => _ExerciseSetItemState();
 }
 
-class _ExerciseSetItemState extends State<_ExerciseSetItem> {
+class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_ExerciseSetItem> {
   ExerciseSet get set => widget.set;
 
   WorkoutExercise get exercise => widget.exercise;
@@ -26,6 +28,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> {
   final _repsController = TextEditingController();
   final _hasWeighError = ValueNotifier<bool>(false);
   final _hasRepsError = ValueNotifier<bool>(false);
+  final _hasCrossedDismissThreshold = ValueNotifier<bool>(false);
+  bool _hasBuzzedOnDismiss = false;
 
   @override
   void initState() {
@@ -48,22 +52,69 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> {
     _repsController.dispose();
     _hasRepsError.dispose();
     _hasWeighError.dispose();
+    _hasCrossedDismissThreshold.dispose();
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final ThemeData(
+      :textTheme,
+      colorScheme: ColorScheme(
+        :tertiaryContainer,
+        :outlineVariant,
+        :error,
+        :onError,
+      ),
+    ) = Theme.of(context);
+    final L(:deleteSet) = L.of(context);
+    final color = set.completed ? tertiaryContainer : outlineVariant.withValues(alpha: .5);
 
-    final color = set.completed ? colorScheme.tertiaryContainer : colorScheme.outlineVariant.withValues(alpha: .5);
+    // builds the background for the dismissed set
+    // based on the direction of the swipe
+    Widget dismissBackground({Alignment? alignment}) {
+      return ValueListenableBuilder<bool>(
+        valueListenable: _hasCrossedDismissThreshold,
+        builder: (_, hasCrossed, __) {
+          return Container(
+            color: error,
+            child: AnimatedAlign(
+              curve: Curves.easeOutCubic,
+              duration: const Duration(milliseconds: 200),
+              alignment: switch ((hasCrossed, alignment)) {
+                // we're swiping right to left
+                (true, Alignment(:double x)) when x > _dismissThreshold => Alignment.center,
+                (false, Alignment(:double x)) when x > _dismissThreshold => Alignment.centerRight,
+                // we're swiping left to right
+                (true, Alignment(:double x)) when x < _dismissThreshold => Alignment.center,
+                (false, Alignment(:double x)) when x < _dismissThreshold => Alignment.centerLeft,
+                _ => Alignment.centerLeft,
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: PoppingText(
+                  text: deleteSet,
+                  style: textTheme.titleSmall?.copyWith(color: onError),
+                  trigger: _hasCrossedDismissThreshold,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
 
     return Dismissible(
-      background: Container(color: colorScheme.error),
+      background: dismissBackground(alignment: Alignment.centerLeft),
+      secondaryBackground: dismissBackground(alignment: Alignment.centerRight),
+      dismissThresholds: const {DismissDirection.horizontal: _dismissThreshold},
       onDismissed: (_) {
+        _hasBuzzedOnDismiss = false;
         Workouts.of(context).removeSet(exercise, set);
       },
-      key: ValueKey(set.id),
+      onUpdate: _onSwipe,
+      key: ValueKey<String>(set.id),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
         child: Row(
@@ -157,6 +208,23 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> {
 
       _hasRepsError.value = !repsCorrect;
       _hasWeighError.value = !weightCorrect;
+    }
+  }
+
+  void _onSwipe(DismissUpdateDetails details) {
+    switch (details.progress) {
+      case > _dismissThreshold:
+        if (!_hasBuzzedOnDismiss) {
+          buzz();
+          _hasBuzzedOnDismiss = true;
+        }
+
+        _hasCrossedDismissThreshold.value = true;
+      default:
+        if (_hasBuzzedOnDismiss) {
+          _hasBuzzedOnDismiss = false;
+        }
+        _hasCrossedDismissThreshold.value = false;
     }
   }
 }
