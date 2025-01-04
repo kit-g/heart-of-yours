@@ -170,34 +170,48 @@ class _ActiveWorkoutState extends State<ActiveWorkout> {
           ),
         if (workouts.hasActiveWorkout)
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                children: [
-                  PrimaryButton.wide(
-                    onPressed: () {
-                      _showExerciseDialog(context);
-                    },
-                    child: Center(
-                      child: Text(addExercises),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  PrimaryButton.wide(
-                    onPressed: () {
-                      _cancelWorkout(context);
-                    },
-                    backgroundColor: colorScheme.errorContainer,
-                    child: Center(
-                      child: Text(
-                        cancelWorkout,
-                        style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+            child: DragTarget<WorkoutExercise>(
+              onWillAcceptWithDetails: (_) {
+                _currentlyHoveredExercise.value = null;
+                return true;
+              },
+              onLeave: (_) {
+                _currentlyHoveredExercise.value = null;
+              },
+              onAcceptWithDetails: (details) {
+                workouts.append(details.data);
+              },
+              builder: (_, __, ___) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    children: [
+                      PrimaryButton.wide(
+                        onPressed: () {
+                          _showExerciseDialog(context);
+                        },
+                        child: Center(
+                          child: Text(addExercises),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      PrimaryButton.wide(
+                        onPressed: () {
+                          _cancelWorkout(context);
+                        },
+                        backgroundColor: colorScheme.errorContainer,
+                        child: Center(
+                          child: Text(
+                            cancelWorkout,
+                            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                );
+              },
             ),
           )
       ],
