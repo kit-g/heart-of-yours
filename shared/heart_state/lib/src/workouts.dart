@@ -134,4 +134,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     activeWorkout?.swap(toInsert, after);
     notifyListeners();
   }
+
+  void append(WorkoutExercise exercise) {
+    activeWorkout?.append(exercise);
+    notifyListeners();
+  }
 }

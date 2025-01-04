@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:heart/presentation/widgets/active_workout.dart';
+import 'package:heart/presentation/widgets/workout/active_workout.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 

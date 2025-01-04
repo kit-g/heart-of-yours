@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'exercise.dart';
 import 'ts_for_id.dart';
 
@@ -146,7 +148,9 @@ abstract interface class Workout with Iterable<WorkoutExercise> {
 
   double? get total;
 
-  void swap(WorkoutExercise toInsert, WorkoutExercise after);
+  void swap(WorkoutExercise toInsert, WorkoutExercise before);
+
+  void append(WorkoutExercise exercise);
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -260,10 +264,21 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   double? get total => map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
 
   @override
-  void swap(WorkoutExercise toInsert, WorkoutExercise after) {
-    final where = _sets.indexOf(after);
+  void swap(WorkoutExercise toInsert, WorkoutExercise before) {
+    final toInsertIndex = _sets.indexOf(toInsert);
+    final beforeIndex = _sets.indexOf(before);
+    final descending = beforeIndex > toInsertIndex;
+    final newIndex = descending ? max(beforeIndex - 1, 0) : beforeIndex;
+
     _sets
       ..remove(toInsert)
-      ..insert(where, toInsert);
+      ..insert(newIndex, toInsert);
+  }
+
+  @override
+  void append(WorkoutExercise exercise) {
+    _sets
+      ..remove(exercise)
+      ..add(exercise);
   }
 }
