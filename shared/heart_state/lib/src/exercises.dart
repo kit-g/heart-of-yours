@@ -4,8 +4,11 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
+  final bool isCached;
   final _db = FirebaseFirestore.instance;
   final _scrollController = ScrollController();
+
+  Exercises({this.isCached = true});
 
   bool isInitialized = false;
 
@@ -32,13 +35,14 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   }
 
   Future<void> init() async {
+    final options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
     final all = await _db //
         .collection('exercises')
         .withConverter<Exercise>(
           fromFirestore: _fromFirestore,
           toFirestore: (exercise, _) => exercise.toMap(),
         )
-        .get(const GetOptions(source: Source.serverAndCache));
+        .get(options);
 
     _exercises.addAll(all.docs.map(_snapshot));
     isInitialized = true;

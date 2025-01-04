@@ -101,10 +101,8 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
 
 /// A collection of sets of the same exercise performed during a single workout
 /// E.g., squats 4x10
-abstract interface class WorkoutExercise with Iterable<ExerciseSet> {
+abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId {
   Iterable<ExerciseSet> get sets;
-
-  DateTime get start;
 
   Exercise get exercise;
 
@@ -118,12 +116,8 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet> {
 }
 
 /// A full workout
-abstract interface class Workout with Iterable<WorkoutExercise> {
+abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampForId {
   abstract String? name;
-
-  DateTime get start;
-
-  String get id;
 
   DateTime? get end;
 

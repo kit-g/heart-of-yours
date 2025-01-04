@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/presentation/widgets/exercise_picker.dart';
-import 'package:heart/presentation/widgets/workout_sheet.dart';
+import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_language/heart_language.dart';
-import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
 class ExercisesPage extends StatefulWidget {
@@ -43,18 +42,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
               },
             ),
           ),
-          floatingActionButton: Selector<Workouts, Workout?>(
-            builder: (context, active, child) {
-              if (active == null) return const SizedBox.shrink();
-              return FloatingActionButton.extended(
-                onPressed: () {
-                  showWorkoutSheet(context);
-                },
-                label: const Text('12:34:56'),
-              );
-            },
-            selector: (_, workouts) => workouts.activeWorkout,
-          ),
+          floatingActionButton: const WorkoutTimerFloatingButton(),
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         );
       },
