@@ -30,6 +30,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
             expandedHeight: 80.0,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(L.of(context).exercises),
+              centerTitle: true,
             ),
           ),
           exercises: exercises,

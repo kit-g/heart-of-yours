@@ -41,6 +41,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             pinned: true,
             expandedHeight: 80.0,
             flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
               title: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: switch (workouts.activeWorkout) {
