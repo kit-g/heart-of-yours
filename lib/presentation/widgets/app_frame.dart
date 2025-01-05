@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart_language/heart_language.dart';
-import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
 class AppFrame extends StatelessWidget {
@@ -29,12 +28,12 @@ class AppFrame extends StatelessWidget {
             label: profile,
           ),
           BottomNavigationBarItem(
-            icon: Selector<Workouts, Workout?>(
-              selector: (_, provider) => provider.activeWorkout,
-              builder: (_, active, __) {
-                return switch (active) {
-                  Workout() => const Icon(Icons.fitness_center_rounded),
-                  null => const Icon(Icons.add_circle_outline_rounded),
+            icon: Selector<Workouts, bool>(
+              selector: (_, provider) => provider.hasActiveWorkout,
+              builder: (_, hasActiveWorkout, __) {
+                return switch (hasActiveWorkout) {
+                  false => const Icon(Icons.fitness_center_rounded),
+                  true => const Icon(Icons.add_circle_outline_rounded),
                 };
               },
             ),

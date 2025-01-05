@@ -96,7 +96,10 @@ class WorkoutTimerFloatingButton extends StatelessWidget {
                 size: 18,
                 Icons.fitness_center_rounded,
               ),
-              WorkoutTimer(start: active.start),
+              WorkoutTimer(
+                start: active.start,
+                initValue: active.elapsed(),
+              ),
             ],
           ),
         );

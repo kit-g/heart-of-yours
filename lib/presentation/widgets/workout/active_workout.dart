@@ -225,7 +225,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
     final Workouts(:startWorkout, :hasActiveWorkout) = Workouts.of(context);
 
     if (!hasActiveWorkout) {
-      startWorkout(name: 'Afternoon workout');
+      startWorkout(name: L.of(context).defaultWorkoutName());
     }
   }
 

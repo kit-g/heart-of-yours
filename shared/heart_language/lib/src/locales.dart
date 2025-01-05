@@ -286,6 +286,47 @@ class L {
       desc: 'Exercise set option, "Remove this exercise from workout"',
     );
   }
+
+  String get morningWorkout {
+    return Intl.message(
+      'Morning Workout',
+      name: 'morningWorkout',
+      desc: 'Default workout name',
+    );
+  }
+
+  String get eveningWorkout {
+    return Intl.message(
+      'Evening Workout',
+      name: 'eveningWorkout',
+      desc: 'Default workout name',
+    );
+  }
+
+  String get nightWorkout {
+    return Intl.message(
+      'Night Workout',
+      name: 'nightWorkout',
+      desc: 'Default workout name',
+    );
+  }
+
+  String get afternoonWorkout {
+    return Intl.message(
+      'Afternoon Workout',
+      name: 'afternoonWorkout',
+      desc: 'Default workout name',
+    );
+  }
+
+  String defaultWorkoutName() {
+    return switch (DateTime.now().hour) {
+      >= 5 && < 12 => morningWorkout,
+      >= 12 && < 17 => afternoonWorkout,
+      >= 17 && < 21 => eveningWorkout,
+      _ => nightWorkout,
+    };
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

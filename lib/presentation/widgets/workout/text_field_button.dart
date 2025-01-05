@@ -52,7 +52,6 @@ class _TextFieldButton extends StatelessWidget {
                       _ => null,
                     },
                     child: Center(
-                      // refactor avoid creating a new theme for each item
                       child: Theme(
                         data: Theme.of(context).copyWith(
                           textSelectionTheme: TextSelectionThemeData(
@@ -97,6 +96,7 @@ class _TextFieldButton extends StatelessWidget {
                           },
                           onEditingComplete: () {},
                           onTap: () => _selectAllText(controller),
+                          onTapOutside: (_) => focusNode.unfocus(),
                         ),
                       ),
                     ),
