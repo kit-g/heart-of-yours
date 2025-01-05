@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 
 const _widerRadius = Radius.circular(12);
 const _widerBorderRadius = BorderRadius.all(_widerRadius);
@@ -166,6 +167,15 @@ class MaterialTheme {
         enableFeedback: true,
         menuPadding: EdgeInsets.zero,
         shape: _widerRoundedBorder,
+      ),
+      appBarTheme: AppBarTheme(
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarIconBrightness: switch (colorScheme.brightness) {
+            Brightness.dark => Brightness.light,
+            Brightness.light => Brightness.dark,
+          },
+          statusBarBrightness: colorScheme.brightness,
+        ),
       ),
     );
   }
