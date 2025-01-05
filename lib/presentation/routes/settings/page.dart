@@ -11,6 +11,7 @@ class SettingsPage extends StatelessWidget {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
+          centerTitle: true,
           title: Stack(
             children: [
               Row(
