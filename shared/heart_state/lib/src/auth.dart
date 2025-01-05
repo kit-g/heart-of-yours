@@ -13,6 +13,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
 
   final void Function(User?)? onUserChange;
+  final void Function(Object)? onError;
 
   User? _user;
 
@@ -29,13 +30,14 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  Auth({this.onUserChange}) {
+  Auth({this.onUserChange, this.onError}) {
     _firebase.userChanges().listen(
       (user) {
         _user = _cast(user);
         onUserChange?.call(_user);
         _registerUser(_user);
       },
+      onError: onError,
     );
   }
 

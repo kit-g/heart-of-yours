@@ -1,10 +1,11 @@
 import 'dart:math';
 
 import 'exercise.dart';
+import 'misc.dart';
 import 'ts_for_id.dart';
 
 /// A single set of an exercise
-sealed class ExerciseSet with UsesTimestampForId {
+sealed class ExerciseSet with UsesTimestampForId implements Model {
   final Exercise exercise;
 
   bool completed = false;
@@ -97,11 +98,17 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
       _ => null,
     };
   }
+
+  @override
+  Map<String, dynamic> toMap() {
+    // TODO: implement toMap
+    throw UnimplementedError();
+  }
 }
 
 /// A collection of sets of the same exercise performed during a single workout
 /// E.g., squats 4x10
-abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId {
+abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements Model {
   Iterable<ExerciseSet> get sets;
 
   Exercise get exercise;
@@ -116,7 +123,7 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
 }
 
 /// A full workout
-abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampForId {
+abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Model {
   abstract String? name;
 
   DateTime? get end;
@@ -129,14 +136,14 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   void removeExercise(WorkoutExercise exercise);
 
-  Map<String, dynamic> toMap();
-
   factory Workout({String? name}) {
     return _Workout(
       start: DateTime.now(),
       name: name,
     );
   }
+
+  factory Workout.fromJson(Map json) = _Workout.fromJson;
 
   void startExercise(Exercise exercise);
 
@@ -185,12 +192,22 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   String toString() {
     return '$runtimeType $_exercise';
   }
+
+  @override
+  Map<String, dynamic> toMap() {
+    // TODO: implement toMap
+    return {
+      'id': id,
+    };
+  }
 }
 
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
   final List<WorkoutExercise> _sets;
   @override
   final DateTime start;
+
+  final String? _id;
   DateTime? _end;
 
   @override
@@ -199,10 +216,23 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   _Workout({
     required this.start,
     this.name,
-  }) : _sets = [];
+    String? id,
+  })  : _sets = [],
+        _id = id;
+
+  factory _Workout.fromJson(Map json) {
+    return _Workout(
+      start: json['start'],
+      name: json['name'],
+      id: json['id'],
+    ).._end = json['end'];
+  }
 
   @override
   DateTime? get end => _end;
+
+  @override
+  String get id => _id ?? super.id;
 
   @override
   void finish(DateTime end) {
@@ -227,9 +257,12 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   @override
   Map<String, dynamic> toMap() {
-    // TODO: implement toMap
     return {
       'id': id,
+      'name': name,
+      'start': start,
+      'end': end,
+      'sets': _sets.map((each) => each.toMap()).toList(),
     };
   }
 

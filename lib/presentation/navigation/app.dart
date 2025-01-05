@@ -21,16 +21,19 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Exercises>(
           create: (_) => Exercises(),
         ),
+        ChangeNotifierProvider<Workouts>(
+          create: (context) => Workouts(),
+        ),
         ChangeNotifierProvider<Auth>(
-          create: (_) => Auth(
-            onUserChange: (_) => HeartRouter.refresh(),
+          create: (context) => Auth(
+            onUserChange: (user) {
+              HeartRouter.refresh();
+              Workouts.of(context).userId = user?.id;
+            },
           ),
         ),
         ChangeNotifierProvider<Preferences>(
           create: (_) => Preferences(),
-        ),
-        ChangeNotifierProvider<Workouts>(
-          create: (context) => Workouts(userId: Auth.of(context).user?.id),
         ),
       ],
       builder: (__, _) {
@@ -53,7 +56,7 @@ class _App extends StatefulWidget {
   State<_App> createState() => _AppState();
 }
 
-class _AppState extends State<_App> with AfterLayoutMixin<_App> {
+class _AppState extends State<_App> with AfterLayoutMixin<_App>, HasHaptic<_App> {
   @override
   Widget build(BuildContext context) {
     const theme = MaterialTheme();
@@ -99,6 +102,7 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
 
   Future<void> _initApp(BuildContext context) async {
     var Exercises(:isInitialized, :init) = Exercises.of(context);
+    final workouts = Workouts.of(context);
     if (!isInitialized) {
       init();
     }
@@ -106,8 +110,11 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
     final prefs = Preferences.of(context);
     final theme = AppTheme.of(context);
     await prefs.init();
+
     theme
       ..color = AppTheme.colorFromHex(prefs.getBaseColor())
       ..toMode(prefs.getThemeMode());
+
+    workouts.init().then((_) => HeartRouter.refresh());
   }
 }

@@ -7,3 +7,7 @@ abstract interface class SignOutStateSentry {
 abstract interface class Searchable {
   bool contains(String query);
 }
+
+abstract interface class Model {
+  Map<String, dynamic> toMap();
+}

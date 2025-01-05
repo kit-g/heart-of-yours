@@ -16,7 +16,7 @@ enum ExerciseDirection {
   }
 }
 
-abstract interface class Exercise implements Searchable {
+abstract interface class Exercise implements Searchable, Model {
   ExerciseDirection get direction;
 
   String get name;
@@ -32,8 +32,6 @@ abstract interface class Exercise implements Searchable {
   String get ulc;
 
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
-
-  Map<String, dynamic> toMap();
 }
 
 class _Exercise implements Exercise {

@@ -109,6 +109,7 @@ abstract final class HeartRouter {
     redirect: (context, state) {
       final isLoggedIn = Auth.of(context).isLoggedIn;
       if (!isLoggedIn) return _loginPath;
+      if (Workouts.of(context).hasActiveWorkout) return _workoutPath;
       return null;
     },
   );
