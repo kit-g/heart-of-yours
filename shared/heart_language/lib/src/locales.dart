@@ -239,6 +239,30 @@ class L {
     );
   }
 
+  String get ok {
+    return Intl.message(
+      'OK',
+      name: 'ok',
+      desc: 'Generic label',
+    );
+  }
+
+  String get cancel {
+    return Intl.message(
+      'Cancel',
+      name: 'cancel',
+      desc: 'Generic label, "cancel" button',
+    );
+  }
+
+  String get reset {
+    return Intl.message(
+      'Reset',
+      name: 'reset',
+      desc: 'Generic label, "Reset" button',
+    );
+  }
+
   String get lbs {
     return Intl.message(
       'lbs',
@@ -316,6 +340,22 @@ class L {
       'Afternoon Workout',
       name: 'afternoonWorkout',
       desc: 'Default workout name',
+    );
+  }
+
+  String get customThemeColorSetting {
+    return Intl.message(
+      'Custom theme color',
+      name: 'customThemeColorSetting',
+      desc: 'Setting item name',
+    );
+  }
+
+  String get customThemeColorSettingSubtitle {
+    return Intl.message(
+      'Used to generate a new theme',
+      name: 'customThemeColorSettingSubtitle',
+      desc: 'Setting item subtitle',
     );
   }
 

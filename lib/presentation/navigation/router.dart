@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history.dart';
-import 'package:heart/presentation/routes/settings.dart';
+import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout.dart';
 import 'package:heart_state/heart_state.dart';
 

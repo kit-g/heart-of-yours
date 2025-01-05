@@ -1,47 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:heart/core/theme/theme.dart';
-import 'package:heart_language/heart_language.dart';
-import 'package:heart_state/heart_state.dart';
-
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final L(:settings, :appearance) = L.of(context);
-    final ThemeData(:textTheme) = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Stack(
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(settings),
-                const SizedBox(width: 8),
-                const Icon(Icons.settings),
-              ],
-            ),
-          ],
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: ListView(
-          children: [
-            Text(
-              appearance,
-              style: textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            const _ThemeModePicker(),
-          ],
-        ),
-      ),
-    );
-  }
-}
+part of 'settings.dart';
 
 class _ThemeModePicker extends StatelessWidget {
   const _ThemeModePicker();
@@ -63,13 +20,13 @@ class _ThemeModePicker extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(radius),
                 isSelected: isSelected,
-                onPressed: (index) => _onPressed(index, appTheme),
+                onPressed: (index) => _onPressed(context, index, appTheme),
                 children: <Widget>[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Row(
                       children: [
-                        const Icon(Icons.settings_suggest),
+                        const Icon(Icons.settings_suggest_rounded),
                         const SizedBox(width: 4),
                         Text(toSystemMode),
                       ],
@@ -79,7 +36,7 @@ class _ThemeModePicker extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Row(
                       children: [
-                        const Icon(Icons.wb_sunny),
+                        const Icon(Icons.wb_sunny_rounded),
                         const SizedBox(width: 4),
                         Text(toLightMode),
                       ],
@@ -89,7 +46,7 @@ class _ThemeModePicker extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Row(
                       children: [
-                        const Icon(Icons.nights_stay),
+                        const Icon(Icons.nights_stay_rounded),
                         const SizedBox(width: 4),
                         Text(toDarkMode),
                       ],
@@ -104,7 +61,15 @@ class _ThemeModePicker extends StatelessWidget {
     );
   }
 
-  void _onPressed(int index, AppTheme appTheme) {
+  void _onPressed(BuildContext context, int index, AppTheme appTheme) {
+    switch (index) {
+      case 0:
+        Preferences.of(context).setThemeMode(ThemeMode.system);
+      case 1:
+        Preferences.of(context).setThemeMode(ThemeMode.light);
+      case 2:
+        Preferences.of(context).setThemeMode(ThemeMode.dark);
+    }
     return switch (index) {
       0 => appTheme.toSystem(),
       1 => appTheme.toLight(),

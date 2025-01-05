@@ -12,6 +12,7 @@ dependencies:
   firebase_core: ^3.9.0
   flutter:
     sdk: flutter
+  flutter_colorpicker: ^1.1.0
   flutter_localizations:
     sdk: flutter
   go_router: ^14.6.2
@@ -21,7 +22,6 @@ dependencies:
     path: 'shared/heart_models'
   heart_state:
     path: 'shared/heart_state'
-
 
 dev_dependencies:
   flutter_test:

@@ -188,26 +188,3 @@ TextTheme _textTheme({Color? primaryColor, Color? secondaryColor}) {
     labelSmall: TextStyle(fontSize: 10.0, fontWeight: FontWeight.w400, letterSpacing: 1.5, color: secondaryColor),
   );
 }
-
-class AppTheme with ChangeNotifier {
-  ThemeMode _mode;
-
-  AppTheme({ThemeMode? mode}) : _mode = mode ?? ThemeMode.system;
-
-  ThemeMode get mode => _mode;
-
-  void toLight() {
-    _mode = ThemeMode.light;
-    notifyListeners();
-  }
-
-  void toDark() {
-    _mode = ThemeMode.dark;
-    notifyListeners();
-  }
-
-  void toSystem() {
-    _mode = ThemeMode.system;
-    notifyListeners();
-  }
-}

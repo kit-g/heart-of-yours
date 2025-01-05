@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart_language/heart_language.dart';
@@ -25,6 +26,9 @@ class HeartApp extends StatelessWidget {
             onUserChange: (_) => HeartRouter.refresh(),
           ),
         ),
+        ChangeNotifierProvider<Preferences>(
+          create: (_) => Preferences(),
+        ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(userId: Auth.of(context).user?.id),
         ),
@@ -32,7 +36,7 @@ class HeartApp extends StatelessWidget {
       builder: (__, _) {
         return Consumer<AppTheme>(
           builder: (__, theme, _) {
-            return _App(themeMode: theme.mode);
+            return _App(theme: theme);
           },
         );
       },
@@ -41,9 +45,9 @@ class HeartApp extends StatelessWidget {
 }
 
 class _App extends StatefulWidget {
-  final ThemeMode? themeMode;
+  final AppTheme theme;
 
-  const _App({this.themeMode});
+  const _App({required this.theme});
 
   @override
   State<_App> createState() => _AppState();
@@ -54,9 +58,25 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   Widget build(BuildContext context) {
     const theme = MaterialTheme();
     return MaterialApp.router(
-      theme: theme.light(),
-      darkTheme: theme.dark(),
-      themeMode: widget.themeMode,
+      theme: switch (widget.theme.color) {
+        Color color => theme.theme(
+            ColorScheme.fromSeed(
+              seedColor: color,
+              brightness: Brightness.light,
+            ),
+          ),
+        null => theme.light(),
+      },
+      darkTheme: switch (widget.theme.color) {
+        Color color => theme.theme(
+            ColorScheme.fromSeed(
+              seedColor: color,
+              brightness: Brightness.dark,
+            ),
+          ),
+        null => theme.dark(),
+      },
+      themeMode: widget.theme.mode,
       debugShowCheckedModeBanner: false,
       routerConfig: HeartRouter.config,
       supportedLocales: const [
@@ -74,9 +94,20 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
 
   @override
   void afterFirstLayout(BuildContext context) {
+    _initApp(context);
+  }
+
+  Future<void> _initApp(BuildContext context) async {
     var Exercises(:isInitialized, :init) = Exercises.of(context);
     if (!isInitialized) {
       init();
     }
+
+    final prefs = Preferences.of(context);
+    final theme = AppTheme.of(context);
+    await prefs.init();
+    theme
+      ..color = AppTheme.colorFromHex(prefs.getBaseColor())
+      ..toMode(prefs.getThemeMode());
   }
 }
