@@ -14,7 +14,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   ScrollController get scrollController => _scrollController;
 
-  final _exercises = <Exercise>[];
+  final _exercises = <ExerciseId, Exercise>{};
 
   @override
   void onSignOut() {
@@ -22,9 +22,9 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   }
 
   @override
-  Iterator<Exercise> get iterator => _exercises.iterator;
+  Iterator<Exercise> get iterator => _exercises.values.iterator;
 
-  Exercise operator [](int index) => _exercises[index];
+  Exercise operator [](int index) => _exercises.values.toList()[index];
 
   static Exercises of(BuildContext context) {
     return Provider.of<Exercises>(context, listen: false);
@@ -44,17 +44,24 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
         )
         .get(options);
 
-    _exercises.addAll(all.docs.map(_snapshot));
+    _exercises.addAll(Map.fromEntries(all.docs.map(_snapshot)));
     isInitialized = true;
     notifyListeners();
   }
 
   Iterable<Exercise> search(String query) {
-    return _exercises.where((one) => one.contains(query));
+    return _exercises.values.where((one) => one.contains(query));
+  }
+
+  Exercise? lookup(ExerciseId id) {
+    return _exercises[id];
   }
 }
 
-Exercise _snapshot(QueryDocumentSnapshot<Exercise> snapshot) => snapshot.data();
+MapEntry<ExerciseId, Exercise> _snapshot(QueryDocumentSnapshot<Exercise> snapshot) {
+  final exercise = snapshot.data();
+  return MapEntry(exercise.name, exercise);
+}
 
 Exercise _fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? _) {
   return Exercise.fromJson(snapshot.data()!);

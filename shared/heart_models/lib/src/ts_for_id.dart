@@ -20,3 +20,5 @@ abstract mixin class UsesTimestampForId implements Comparable<UsesTimestampForId
     return start.compareTo(other.start);
   }
 }
+
+String deSanitizeId(String id) => id.replaceAll('_', '.');

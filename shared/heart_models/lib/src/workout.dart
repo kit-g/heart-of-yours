@@ -7,19 +7,34 @@ import 'ts_for_id.dart';
 /// A single set of an exercise
 sealed class ExerciseSet with UsesTimestampForId implements Model {
   final Exercise exercise;
+  @override
+  final DateTime start;
 
   bool completed = false;
 
-  ExerciseSet._({required this.exercise});
+  ExerciseSet._({
+    required this.exercise,
+    required this.start,
+  });
 
-  factory ExerciseSet(Exercise exercise, {int? reps, double? weight}) {
+  factory ExerciseSet(Exercise exercise, {DateTime? start, int? reps, double? weight}) {
     return switch (exercise) {
       Exercise e => _WeightedSet(
           exercise: e,
           reps: reps,
           weight: weight,
+          start: start ?? DateTime.now(),
         ),
     };
+  }
+
+  factory ExerciseSet.fromJson(Exercise exercise, Map json) {
+    return ExerciseSet(
+      exercise,
+      reps: json['reps'],
+      weight: json['weight'],
+      start: DateTime.parse(deSanitizeId(json['id'])),
+    )..completed = json['completed'] ?? false;
   }
 
   bool get canBeCompleted;
@@ -37,7 +52,10 @@ sealed class ExerciseSet with UsesTimestampForId implements Model {
 
 /// A set meant to be executed in a number of repetitions
 sealed class SetForReps extends ExerciseSet {
-  SetForReps({required super.exercise}) : super._();
+  SetForReps({
+    required super.exercise,
+    required super.start,
+  }) : super._();
 
   abstract int? reps;
 
@@ -54,7 +72,10 @@ sealed class SetForReps extends ExerciseSet {
 abstract class WeightedSet extends SetForReps {
   abstract double? weight;
 
-  WeightedSet({required super.exercise});
+  WeightedSet({
+    required super.exercise,
+    required super.start,
+  });
 
   @override
   Map<String, dynamic> toMap() {
@@ -69,7 +90,10 @@ abstract class WeightedSet extends SetForReps {
 abstract class AssistedSet extends SetForReps {
   abstract double? weight;
 
-  AssistedSet({required super.exercise});
+  AssistedSet({
+    required super.exercise,
+    required super.start,
+  });
 }
 
 /// A cardio exercise
@@ -81,6 +105,7 @@ abstract class CardioSet extends ExerciseSet {
     required this.duration,
     required this.distance,
     required super.exercise,
+    required super.start,
   }) : super._();
 
   @override
@@ -93,13 +118,11 @@ sealed class _SetForReps extends SetForReps {
   @override
   int? reps;
 
-  @override
-  DateTime start;
-
   _SetForReps({
     required super.exercise,
     this.reps,
-  }) : start = DateTime.now();
+    required super.start,
+  });
 }
 
 class _WeightedSet extends _SetForReps implements WeightedSet {
@@ -110,6 +133,7 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
     required super.exercise,
     super.reps,
     this.weight,
+    required super.start,
   });
 
   @override
@@ -145,7 +169,12 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
 
   bool remove(ExerciseSet set);
 
-  factory WorkoutExercise({required ExerciseSet starter}) = _WorkoutExercise;
+  factory WorkoutExercise({required ExerciseSet starter}) {
+    return _WorkoutExercise._(
+      starter: starter,
+      exercise: starter.exercise,
+    );
+  }
 }
 
 /// A full workout
@@ -169,7 +198,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
     );
   }
 
-  factory Workout.fromJson(Map json) = _Workout.fromJson;
+  factory Workout.fromJson(Map json, ExerciseLookup lookForExercise) = _Workout.fromJson;
 
   void startExercise(Exercise exercise);
 
@@ -181,15 +210,22 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
-  final _sets = <ExerciseSet>[];
+  final List<ExerciseSet> _sets;
   final Exercise _exercise;
   @override
   final DateTime start;
 
-  _WorkoutExercise({required ExerciseSet starter})
-      : start = DateTime.now(),
-        _exercise = starter.exercise {
-    _sets.add(starter);
+  _WorkoutExercise._({
+    ExerciseSet? starter,
+    DateTime? start,
+    required Exercise exercise,
+    List<ExerciseSet>? sets,
+  })  : _exercise = exercise,
+        start = start ?? DateTime.now(),
+        _sets = sets ?? [] {
+    if (starter != null) {
+      _sets.add(starter);
+    }
   }
 
   @override
@@ -223,7 +259,7 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.toMap(),
+      if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
       'sets': {
         for (var each in this) each.id: each.toMap(),
       }
@@ -249,12 +285,36 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   })  : _sets = [],
         _id = id;
 
-  factory _Workout.fromJson(Map json) {
+  factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
+    final exercises = switch (json['exercises']) {
+      Map m => m.values
+          .map(
+            (each) {
+              final exercise = lookForExercise(each['exercise']);
+              if (exercise == null) return null;
+              return _WorkoutExercise._(
+                exercise: exercise,
+                start: DateTime.parse(deSanitizeId(each['id'])),
+                sets: switch (each['sets']) {
+                  Map sets => sets.values.map((set) => ExerciseSet.fromJson(exercise, set)).toList(),
+                  _ => null,
+                },
+              );
+            },
+          )
+          .nonNulls
+          .toList()
+        ..sort(),
+      _ => <WorkoutExercise>[],
+    };
+
     return _Workout(
       start: json['start'],
       name: json['name'],
       id: json['id'],
-    ).._end = json['end'];
+    )
+      .._end = json['end']
+      .._sets.addAll(exercises);
   }
 
   @override

@@ -16,6 +16,13 @@ final _logger = Logger('Workouts');
 class Workouts with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
   final _workouts = <WorkoutId, Workout>{};
+  final ExerciseLookup lookForExercise;
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
+
+  Workouts({
+    required this.lookForExercise,
+    this.onError,
+  });
 
   CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
 
@@ -80,7 +87,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         .doc(workout.id)
         .set(doc)
         .catchError(
-          (e, _) => _onError(e),
+          (e, s) => _onError(e, stacktrace: s),
         );
     notifyListeners();
   }
@@ -104,7 +111,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _activeWorkoutDoc?. //
         update({'exercises': activeWorkout?.toMap()['exercises']}) //
         .catchError(
-      (error) => _onError(error),
+      (error, s) => _onError(error, stacktrace: s),
     );
   }
 
@@ -231,8 +238,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           .limit(1)
           .get();
       return querySnapshot.docs.firstOrNull?.data();
-    } catch (error) {
-      _onError(error);
+    } catch (error, s) {
+      _onError(error, stacktrace: s);
       return null;
     }
   }
@@ -240,12 +247,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   void notifyOfActiveWorkout() {
     _notifiedOfActiveWorkout = true;
   }
-}
 
-Workout _fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? _) {
-  return Workout.fromJson(fromFirestoreMap(snapshot.data()!));
-}
+  Workout _fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? _) {
+    return Workout.fromJson(fromFirestoreMap(snapshot.data()!), lookForExercise);
+  }
 
-void _onError(Object error) {
-  _logger.shout('${error.runtimeType}: $error');
+  void _onError(Object error, {stacktrace}) {
+    _logger
+      ..shout('${error.runtimeType}: $error')
+      ..shout(stacktrace);
+
+    onError?.call(error, stacktrace: stacktrace);
+  }
 }

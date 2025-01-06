@@ -96,3 +96,6 @@ class _Exercise implements Exercise {
     return name.toLowerCase().contains(query.toLowerCase());
   }
 }
+
+typedef ExerciseId = String;
+typedef ExerciseLookup = Exercise? Function(ExerciseId);

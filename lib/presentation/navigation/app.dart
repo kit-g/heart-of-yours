@@ -22,7 +22,9 @@ class HeartApp extends StatelessWidget {
           create: (_) => Exercises(),
         ),
         ChangeNotifierProvider<Workouts>(
-          create: (context) => Workouts(),
+          create: (context) => Workouts(
+            lookForExercise: Exercises.of(context).lookup,
+          ),
         ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
