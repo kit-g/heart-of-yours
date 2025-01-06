@@ -46,7 +46,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Workout? get activeWorkout => _workouts[_activeWorkoutId];
 
+  bool _notifiedOfActiveWorkout = false;
+
   bool get hasActiveWorkout => _activeWorkoutId != null;
+
+  bool get hasUnNotifiedActiveWorkout => hasActiveWorkout && !_notifiedOfActiveWorkout;
 
   set _activeWorkout(Workout? value) {
     if (value case Workout workout) {
@@ -90,9 +94,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  void startExercise(Exercise exercise) {
+  Future<void>? startExercise(Exercise exercise) {
     activeWorkout?.startExercise(exercise);
     notifyListeners();
+    return _syncSets();
+  }
+
+  Future<void>? _syncSets() {
+    return _activeWorkoutDoc?. //
+        update({'exercises': activeWorkout?.toMap()['exercises']}) //
+        .catchError(
+      (error) => _onError(error),
+    );
   }
 
   void _forExercise(WorkoutExercise exercise, void Function(WorkoutExercise) action, {bool notifies = true}) {
@@ -103,25 +116,41 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   void addEmptySet(WorkoutExercise exercise) {
+    final empty = ExerciseSet(exercise.exercise);
     _forExercise(
       exercise,
-      (each) => each.add(ExerciseSet(exercise.exercise)),
+      (each) => each.add(empty),
     );
+
+    final doc = {
+      'exercises.${exercise.id}.sets.${empty.id}': empty.toMap(),
+    };
+    _activeWorkoutDoc?.update(doc);
   }
 
-  void removeSet(WorkoutExercise exercise, ExerciseSet set) {
+  Future<void>? removeSet(WorkoutExercise exercise, ExerciseSet set) {
     _forExercise(
       exercise,
       (each) => each.remove(set),
     );
+
+    final doc = {
+      'exercises.${exercise.id}.sets.${set.id}': FieldValue.delete(),
+    };
+    return _activeWorkoutDoc?.update(doc);
   }
 
-  void removeExercise(WorkoutExercise exercise) {
+  Future<void>? removeExercise(WorkoutExercise exercise) {
     activeWorkout?.removeExercise(exercise);
     notifyListeners();
+
+    final doc = {
+      'exercises.${exercise.id}': FieldValue.delete(),
+    };
+    return _activeWorkoutDoc?.update(doc);
   }
 
-  void _markSet(WorkoutExercise exercise, ExerciseSet set, {required bool complete}) {
+  Future<void>? _markSet(WorkoutExercise exercise, ExerciseSet set, {required bool complete}) {
     _forExercise(
       exercise,
       (each) {
@@ -130,14 +159,19 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         }
       },
     );
+
+    final updated = {
+      'exercises.${exercise.id}.sets.${set.id}': set.toMap(),
+    };
+    return _activeWorkoutDoc?.update(updated);
   }
 
-  void markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
-    _markSet(exercise, set, complete: true);
+  Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
+    return _markSet(exercise, set, complete: true);
   }
 
-  void markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
-    _markSet(exercise, set, complete: false);
+  Future<void>? markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
+    return _markSet(exercise, set, complete: false);
   }
 
   void setWeight(WorkoutExercise exercise, ExerciseSet set, double? weight) {
@@ -201,6 +235,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       _onError(error);
       return null;
     }
+  }
+
+  void notifyOfActiveWorkout() {
+    _notifiedOfActiveWorkout = true;
   }
 }
 

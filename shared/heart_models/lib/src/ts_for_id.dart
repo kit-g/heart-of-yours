@@ -1,7 +1,9 @@
-abstract mixin class UsesTimestampForId {
+abstract mixin class UsesTimestampForId implements Comparable<UsesTimestampForId> {
   DateTime get start;
 
-  String get id => start.toIso8601String();
+  /// Firebase uses "." as the separator for nested structures
+  /// so we need to escape it.
+  String get id => start.toIso8601String().replaceAll('.', '_');
 
   @override
   bool operator ==(Object other) {
@@ -12,4 +14,9 @@ abstract mixin class UsesTimestampForId {
   int get hashCode => id.hashCode;
 
   Duration elapsed() => DateTime.now().difference(start);
+
+  @override
+  int compareTo(UsesTimestampForId other) {
+    return start.compareTo(other.start);
+  }
 }

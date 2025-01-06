@@ -180,7 +180,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     );
   }
 
-  void _onDone(BuildContext context) {
+  Future<void> _onDone(BuildContext context) async {
     final workouts = Workouts.of(context);
     if (set.completed) {
       return workouts.markSetAsIncomplete(exercise, set);

@@ -25,6 +25,14 @@ sealed class ExerciseSet with UsesTimestampForId implements Model {
   bool get canBeCompleted;
 
   double? get total;
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'completed': completed,
+    };
+  }
 }
 
 /// A set meant to be executed in a number of repetitions
@@ -32,6 +40,14 @@ sealed class SetForReps extends ExerciseSet {
   SetForReps({required super.exercise}) : super._();
 
   abstract int? reps;
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'reps': reps,
+      ...super.toMap(),
+    };
+  }
 }
 
 /// A set for exercise executed with a weight, e.g. a dumbbell
@@ -39,6 +55,14 @@ abstract class WeightedSet extends SetForReps {
   abstract double? weight;
 
   WeightedSet({required super.exercise});
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'weight': weight,
+      ...super.toMap(),
+    };
+  }
 }
 
 /// A set for exercise executed with help, e.g. assisted pull-ups
@@ -58,6 +82,11 @@ abstract class CardioSet extends ExerciseSet {
     required this.distance,
     required super.exercise,
   }) : super._();
+
+  @override
+  Map<String, dynamic> toMap() {
+    throw UnimplementedError();
+  }
 }
 
 sealed class _SetForReps extends SetForReps {
@@ -71,11 +100,6 @@ sealed class _SetForReps extends SetForReps {
     required super.exercise,
     this.reps,
   }) : start = DateTime.now();
-
-  @override
-  String toString() {
-    return '$exercise for $reps reps';
-  }
 }
 
 class _WeightedSet extends _SetForReps implements WeightedSet {
@@ -101,8 +125,10 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
 
   @override
   Map<String, dynamic> toMap() {
-    // TODO: implement toMap
-    throw UnimplementedError();
+    return {
+      'weight': weight,
+      ...super.toMap(),
+    };
   }
 }
 
@@ -195,9 +221,12 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
 
   @override
   Map<String, dynamic> toMap() {
-    // TODO: implement toMap
     return {
       'id': id,
+      if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.toMap(),
+      'sets': {
+        for (var each in this) each.id: each.toMap(),
+      }
     };
   }
 }
@@ -262,7 +291,9 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       'name': name,
       'start': start,
       'end': end,
-      'sets': _sets.map((each) => each.toMap()).toList(),
+      'exercises': {
+        for (var each in this) each.id: each.toMap(),
+      },
     };
   }
 

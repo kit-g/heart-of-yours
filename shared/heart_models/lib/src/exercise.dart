@@ -75,7 +75,7 @@ class _Exercise implements Exercise {
   @override
   Map<String, dynamic> toMap() {
     return {
-      'direction': direction,
+      'direction': direction.name,
       'name': name,
       'joint': joint,
       'level': level,
