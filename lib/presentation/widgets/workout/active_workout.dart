@@ -27,12 +27,14 @@ class ActiveWorkout extends StatefulWidget {
   final Workouts workouts;
   final Widget? appBar;
   final ScrollController? controller;
+  final List<Widget>? slivers;
 
   const ActiveWorkout({
     super.key,
     required this.workouts,
     this.appBar,
     this.controller,
+    this.slivers,
   });
 
   @override
@@ -87,6 +89,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
           const SliverToBoxAdapter(
             child: SizedBox(height: 16),
           ),
+        ...?widget.slivers,
         if (!workouts.hasActiveWorkout)
           SliverPersistentHeader(
             pinned: true,

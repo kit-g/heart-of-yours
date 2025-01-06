@@ -63,8 +63,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (value case Workout workout) {
       _activeWorkoutId = workout.id;
       _workouts[workout.id] = workout;
-      notifyListeners();
+    } else {
+      _workouts.remove(_activeWorkoutId);
+      _activeWorkoutId = null;
     }
+    notifyListeners();
   }
 
   Future<void> init() async {
@@ -90,6 +93,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           (e, s) => _onError(e, stacktrace: s),
         );
     notifyListeners();
+  }
+
+  Future<void> finishWorkout() async {
+    activeWorkout?.finish(DateTime.now());
+
+    if (activeWorkout?.toMap() case Map<String, dynamic> doc) {
+      _activeWorkoutDoc?.update(doc);
+    }
+    _activeWorkout = null;
   }
 
   Future<void> cancelActiveWorkout() async {

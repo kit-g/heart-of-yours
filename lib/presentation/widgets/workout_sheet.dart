@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/workout/active_workout.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
+import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
 Future<void> showWorkoutSheet(
@@ -27,25 +29,43 @@ Future<void> showWorkoutSheet(
               appBar: SliverPersistentHeader(
                 pinned: true,
                 delegate: FixedHeightHeaderDelegate(
-                  height: 32,
+                  height: 40,
                   backgroundColor: theme.colorScheme.surfaceContainerLow,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(12),
                     topLeft: Radius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Stack(
                     children: [
-                      if (workouts.activeWorkout?.start case DateTime start)
-                        WorkoutTimer(
-                          start: start,
-                          style: theme.textTheme.titleSmall,
-                          initValue: workouts.activeWorkout?.elapsed(),
+                      SizedBox(
+                        height: 40,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (workouts.activeWorkout?.start case DateTime start)
+                              WorkoutTimer(
+                                start: start,
+                                style: theme.textTheme.titleSmall,
+                                initValue: workouts.activeWorkout?.elapsed(),
+                              ),
+                            if (workouts.hasActiveWorkout)
+                              PrimaryButton.shrunk(
+                                onPressed: workouts.finishWorkout,
+                                child: Text(L.of(context).finish),
+                              )
+                          ],
                         ),
+                      ),
                       if (workouts.activeWorkout?.name case String name)
-                        Text(
-                          name,
-                          style: theme.textTheme.titleSmall,
+                        SizedBox(
+                          height: 40,
+                          child: Center(
+                            child: Text(
+                              name,
+                              style: theme.textTheme.titleSmall,
+                            ),
+                          ),
                         ),
                     ],
                   ),

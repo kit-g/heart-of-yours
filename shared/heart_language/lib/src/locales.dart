@@ -255,6 +255,14 @@ class L {
     );
   }
 
+  String get finish {
+    return Intl.message(
+      'Finish',
+      name: 'finish',
+      desc: 'Generic label, "finish workout" button',
+    );
+  }
+
   String get reset {
     return Intl.message(
       'Reset',
