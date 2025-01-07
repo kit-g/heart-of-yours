@@ -271,9 +271,35 @@ class L {
     );
   }
 
+  String get h {
+    return Intl.message(
+      'h',
+      name: 'h',
+      desc: 'Abbreviation for "hours"',
+    );
+  }
+
+  String get min {
+    return Intl.message(
+      'min',
+      name: 'min',
+      desc: 'Abbreviation for "minutes"',
+    );
+  }
+
   String get lbs {
     return Intl.message(
       'lbs',
+      name: 'lbs',
+      desc: 'Generic label, pounds',
+    );
+  }
+
+  String lb(int howMany) {
+    return Intl.plural(
+      howMany,
+      one: '$howMany lb',
+      other: '$howMany lbs',
       name: 'lbs',
       desc: 'Generic label, pounds',
     );

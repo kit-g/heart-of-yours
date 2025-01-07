@@ -48,6 +48,22 @@ sealed class ExerciseSet with UsesTimestampForId implements Model {
       'completed': completed,
     };
   }
+
+  bool operator >(covariant ExerciseSet other) {
+    return (total ?? 0) > (other.total ?? 0);
+  }
+
+  bool operator >=(covariant ExerciseSet other) {
+    return (total ?? 0) >= (other.total ?? 0);
+  }
+
+  bool operator <(covariant ExerciseSet other) {
+    return (total ?? 0) < (other.total ?? 0);
+  }
+
+  bool operator <=(covariant ExerciseSet other) {
+    return (total ?? 0) <= (other.total ?? 0);
+  }
 }
 
 /// A set meant to be executed in a number of repetitions
@@ -175,6 +191,8 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
       exercise: starter.exercise,
     );
   }
+
+  ExerciseSet? get best;
 }
 
 /// A full workout
@@ -186,8 +204,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   Iterable<WorkoutExercise> get sets;
 
   void finish(DateTime end);
-
-  void addExercise(WorkoutExercise set);
 
   void removeExercise(WorkoutExercise exercise);
 
@@ -207,6 +223,10 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   void swap(WorkoutExercise toInsert, WorkoutExercise before);
 
   void append(WorkoutExercise exercise);
+
+  bool get isCompleted;
+
+  Duration? get duration;
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -264,6 +284,15 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
         for (var each in this) each.id: each.toMap(),
       }
     };
+  }
+
+  @override
+  ExerciseSet? get best {
+    try {
+      return reduce((one, two) => one >= two ? one : two);
+    } on StateError {
+      return null;
+    }
   }
 }
 
@@ -332,11 +361,6 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   Iterable<WorkoutExercise> get sets => _sets;
 
   @override
-  void addExercise(WorkoutExercise set) {
-    _sets.add(set);
-  }
-
-  @override
   void removeExercise(WorkoutExercise exercise) {
     _sets.remove(exercise);
   }
@@ -379,7 +403,13 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   }
 
   @override
-  double? get total => map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
+  double? get total {
+    try {
+      return map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
+    } on StateError {
+      return null;
+    }
+  }
 
   @override
   void swap(WorkoutExercise toInsert, WorkoutExercise before) {
@@ -398,5 +428,16 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     _sets
       ..remove(exercise)
       ..add(exercise);
+  }
+
+  @override
+  bool get isCompleted => end != null;
+
+  @override
+  Duration? get duration {
+    return switch (end) {
+      DateTime end => end.difference(start),
+      null => null,
+    };
   }
 }

@@ -18,11 +18,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final _workouts = <WorkoutId, Workout>{};
   final ExerciseLookup lookForExercise;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final bool isCached;
+  final GetOptions _options;
 
   Workouts({
     required this.lookForExercise,
     this.onError,
-  });
+    this.isCached = true,
+  }) : _options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
 
   CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
 
@@ -51,6 +54,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   WorkoutId? _activeWorkoutId;
 
+  bool historyInitialized = false;
+
   Workout? get activeWorkout => _workouts[_activeWorkoutId];
 
   bool _notifiedOfActiveWorkout = false;
@@ -58,6 +63,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   bool get hasActiveWorkout => _activeWorkoutId != null;
 
   bool get hasUnNotifiedActiveWorkout => hasActiveWorkout && !_notifiedOfActiveWorkout;
+
+  Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
 
   set _activeWorkout(Workout? value) {
     if (value case Workout workout) {
@@ -255,6 +262,37 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       return null;
     }
   }
+
+  Future<Iterable<Workout>?> _getHistory(String userId, {int pageSize = 5}) async {
+    try {
+      final querySnapshot = await _collection //
+          .where('userId', isEqualTo: userId)
+          .where('end', isNull: false)
+          .withConverter(
+            fromFirestore: _fromFirestore,
+            toFirestore: (workout, _) => workout.toMap(),
+          )
+          .limit(pageSize)
+          .get(_options);
+      return querySnapshot.docs.map((doc) => doc.data());
+    } catch (error, s) {
+      _onError(error, stacktrace: s);
+      return null;
+    }
+  }
+
+  Future<void> initHistory() async {
+    if (userId case String id) {
+      final workouts = await _getHistory(id);
+      if (workouts != null) {
+        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+      }
+      historyInitialized = true;
+      notifyListeners();
+    }
+  }
+
+  static MapEntry<WorkoutId, Workout> _entry(Workout w) => MapEntry(w.id, w);
 
   void notifyOfActiveWorkout() {
     _notifiedOfActiveWorkout = true;
