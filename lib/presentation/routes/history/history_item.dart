@@ -10,7 +10,7 @@ class HistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme) = Theme.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final l = L.of(context);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -23,9 +23,43 @@ class HistoryItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                workout.name ?? '?',
-                style: textTheme.titleMedium,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    workout.name ?? '?',
+                    style: textTheme.titleMedium,
+                  ),
+                  PopupMenuButton<_WorkoutOption>(
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity(vertical: -3, horizontal: -3),
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.more_horiz),
+                    onSelected: (option) => _onTapOption(context, option, workout),
+                    itemBuilder: (context) {
+                      return _WorkoutOption.values.map(
+                        (option) {
+                          final (:copy, :style, :icon) = _item(context, option);
+                          return PopupMenuItem<_WorkoutOption>(
+                            height: 40,
+                            value: option,
+                            child: Row(
+                              spacing: 4,
+                              children: [
+                                icon,
+                                Text(
+                                  copy,
+                                  style: style,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ).toList();
+                    },
+                  ),
+                ],
               ),
               Text(
                 _formatDate(workout.start),
@@ -107,8 +141,60 @@ class HistoryItem extends StatelessWidget {
       null => ' ',
     };
   }
+
+  Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
+    switch (option) {
+      case _WorkoutOption.edit:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case _WorkoutOption.share:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case _WorkoutOption.saveAsTemplate:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case _WorkoutOption.delete:
+        return Workouts.of(context).deleteWorkout(workout.id);
+    }
+  }
+
+  _WorkoutOptionBundle _item(BuildContext context, _WorkoutOption option) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+
+    return switch (option) {
+      _WorkoutOption.edit => (
+          copy: L.of(context).edit,
+          style: textTheme.titleSmall,
+          icon: const Icon(Icons.edit_rounded, size: 16),
+        ),
+      _WorkoutOption.share => (
+          copy: L.of(context).share,
+          style: textTheme.titleSmall,
+          icon: const Icon(Icons.share, size: 16),
+        ),
+      _WorkoutOption.saveAsTemplate => (
+          copy: L.of(context).saveAsTemplate,
+          style: textTheme.titleSmall,
+          icon: const Icon(Icons.add_rounded, size: 16),
+        ),
+      _WorkoutOption.delete => (
+          copy: L.of(context).delete,
+          style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
+          icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
+        ),
+    };
+  }
 }
+
+typedef _WorkoutOptionBundle = ({String copy, TextStyle? style, Widget icon});
 
 const _shape = RoundedRectangleBorder(
   borderRadius: BorderRadius.all(Radius.circular(8)),
 );
+
+enum _WorkoutOption {
+  edit,
+  share,
+  saveAsTemplate,
+  delete;
+}

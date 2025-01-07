@@ -53,8 +53,8 @@ Future<void> showWorkoutSheet(
                             if (workouts.hasActiveWorkout)
                               PrimaryButton.shrunk(
                                 onPressed: () {
-                                  workouts.finishWorkout();
                                   context.goToWorkoutDone(workouts.activeWorkout?.id);
+                                  workouts.finishWorkout();
                                 },
                                 backgroundColor: theme.colorScheme.primaryContainer,
                                 child: Text(L.of(context).finish),

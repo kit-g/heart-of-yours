@@ -32,12 +32,17 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     centerTitle: true,
                   ),
                 ),
-                SliverList.builder(
-                  itemCount: history.length,
-                  itemBuilder: (_, index) {
-                    return HistoryItem(workout: history[history.length - index - 1]);
-                  },
-                )
+                if (history.isEmpty)
+                  const SliverFillRemaining(
+                    child: _EmptyState(),
+                  )
+                else
+                  SliverList.builder(
+                    itemCount: history.length,
+                    itemBuilder: (_, index) {
+                      return HistoryItem(workout: history[history.length - index - 1]);
+                    },
+                  )
               ],
             ),
         },
@@ -50,5 +55,37 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
   @override
   void afterFirstLayout(BuildContext context) {
     Workouts.of(context).initHistory();
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:emptyHistoryTitle, :emptyHistoryBody) = L.of(context);
+    final ThemeData(:textTheme) = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 12,
+          children: [
+            Text(
+              emptyHistoryTitle,
+              style: textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              emptyHistoryBody,
+              style: textTheme.bodyLarge,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

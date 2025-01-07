@@ -247,6 +247,30 @@ class L {
     );
   }
 
+  String get edit {
+    return Intl.message(
+      'Edit',
+      name: 'edit',
+      desc: 'Generic label',
+    );
+  }
+
+  String get delete {
+    return Intl.message(
+      'Delete',
+      name: 'delete',
+      desc: 'Generic label',
+    );
+  }
+
+  String get share {
+    return Intl.message(
+      'Share',
+      name: 'share',
+      desc: 'Generic label',
+    );
+  }
+
   String get okBang {
     return Intl.message(
       'Ok!',
@@ -310,6 +334,14 @@ class L {
       other: '$howMany lbs',
       name: 'lbs',
       desc: 'Generic label, pounds',
+    );
+  }
+
+  String get saveAsTemplate {
+    return Intl.message(
+      'Save as template',
+      name: 'saveAsTemplate',
+      desc: 'Workout set option, "save this workout as a template"',
     );
   }
 
@@ -382,6 +414,22 @@ class L {
       'Afternoon Workout',
       name: 'afternoonWorkout',
       desc: 'Default workout name',
+    );
+  }
+
+  String get emptyHistoryTitle {
+    return Intl.message(
+      'Your completed workouts will be here',
+      name: 'emptyHistoryTitle',
+      desc: 'emptyHistoryTitle',
+    );
+  }
+
+  String get emptyHistoryBody {
+    return Intl.message(
+      'Go get them done!',
+      name: 'emptyHistoryBody',
+      desc: 'emptyHistoryBody',
     );
   }
 

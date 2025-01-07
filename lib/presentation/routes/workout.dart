@@ -111,7 +111,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _onFinish(BuildContext context, Workouts workouts) {
-    workouts.finishWorkout();
     context.goToWorkoutDone(workouts.activeWorkout?.id);
+    workouts.finishWorkout();
   }
 }
