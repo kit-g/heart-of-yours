@@ -1,9 +1,12 @@
 part of 'history.dart';
 
-class _HistoryItem extends StatelessWidget {
+class HistoryItem extends StatelessWidget {
   final Workout workout;
 
-  const _HistoryItem({required this.workout});
+  const HistoryItem({
+    super.key,
+    required this.workout,
+  });
 
   @override
   Widget build(BuildContext context) {

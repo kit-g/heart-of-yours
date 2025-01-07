@@ -35,7 +35,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                 SliverList.builder(
                   itemCount: history.length,
                   itemBuilder: (_, index) {
-                    return _HistoryItem(workout: history[history.length - index - 1]);
+                    return HistoryItem(workout: history[history.length - index - 1]);
                   },
                 )
               ],

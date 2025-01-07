@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/router.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/workout/active_workout.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
@@ -27,7 +28,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:scaffoldBackgroundColor, :textTheme) = Theme.of(context);
+    final ThemeData(:scaffoldBackgroundColor, :textTheme, :colorScheme) = Theme.of(context);
 
     final L(:finish) = L.of(context);
     final workouts = Workouts.watch(context);
@@ -93,6 +94,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           onPressed: () {
                             _onFinish(context, workouts);
                           },
+                          backgroundColor: colorScheme.primaryContainer,
                           child: Text(finish),
                         )
                       ],
@@ -110,5 +112,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   void _onFinish(BuildContext context, Workouts workouts) {
     workouts.finishWorkout();
+    context.goToWorkoutDone(workouts.activeWorkout?.id);
   }
 }

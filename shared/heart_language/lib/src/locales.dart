@@ -247,6 +247,14 @@ class L {
     );
   }
 
+  String get okBang {
+    return Intl.message(
+      'Ok!',
+      name: 'okBang',
+      desc: 'Generic label',
+    );
+  }
+
   String get cancel {
     return Intl.message(
       'Cancel',
@@ -390,6 +398,22 @@ class L {
       'Used to generate a new theme',
       name: 'customThemeColorSettingSubtitle',
       desc: 'Setting item subtitle',
+    );
+  }
+
+  String get congratulations {
+    return Intl.message(
+      'Congratulations!',
+      name: 'congratulations',
+      desc: 'Workout complete screen, title',
+    );
+  }
+
+  String get congratulationsBody {
+    return Intl.message(
+      'Your workout is complete!',
+      name: 'congratulationsBody',
+      desc: 'Workout complete screen, body',
     );
   }
 

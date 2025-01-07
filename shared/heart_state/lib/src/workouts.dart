@@ -71,7 +71,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       _activeWorkoutId = workout.id;
       _workouts[workout.id] = workout;
     } else {
-      _workouts.remove(_activeWorkoutId);
       _activeWorkoutId = null;
     }
     notifyListeners();
@@ -309,4 +308,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     onError?.call(error, stacktrace: stacktrace);
   }
+
+  Workout? lookup(String id) => _workouts[id];
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/presentation/routes/done.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
@@ -24,6 +25,8 @@ const _historyName = 'history';
 const _historyPath = '/$_historyName';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
+const _doneName = 'done';
+const _donePath = '/$_doneName';
 
 RouteBase _profileRoute() {
   return GoRoute(
@@ -77,6 +80,22 @@ RouteBase _loginRoute() {
   );
 }
 
+RouteBase _workoutDoneRoute() {
+  return GoRoute(
+    path: _donePath,
+    builder: (context, state) {
+      try {
+        final id = state.uri.queryParameters['workoutId'];
+        final workout = Workouts.of(context).lookup(id!);
+        return WorkoutDone(workout: workout!);
+      } catch (_) {
+        return const Scaffold();
+      }
+    },
+    name: _doneName,
+  );
+}
+
 abstract final class HeartRouter {
   static final config = GoRouter(
     debugLogDiagnostics: false,
@@ -105,6 +124,7 @@ abstract final class HeartRouter {
         ],
       ),
       _loginRoute(),
+      _workoutDoneRoute(),
     ],
     redirect: (context, state) {
       final isLoggedIn = Auth.of(context).isLoggedIn;
@@ -129,5 +149,13 @@ extension ContextNavigation on BuildContext {
 
   void goToSettings() {
     return goNamed(_settingsName);
+  }
+
+  void goToWorkoutDone(String? workoutId) {
+    return goNamed(_doneName, queryParameters: {'workoutId': workoutId});
+  }
+
+  void goToWorkouts() {
+    return goNamed(_workoutName);
   }
 }

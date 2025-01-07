@@ -101,7 +101,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                 ),
               ),
               height: 40,
-              backgroundColor: backgroundColor,
             ),
           ),
         if (workouts.activeWorkout case Workout workout)
