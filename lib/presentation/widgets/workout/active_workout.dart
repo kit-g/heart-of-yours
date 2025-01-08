@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/router.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -202,7 +203,11 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                       const SizedBox(height: 8),
                       PrimaryButton.wide(
                         onPressed: () {
-                          _cancelWorkout(context);
+                          showCancelWorkoutDialog(
+                            context,
+                            workouts,
+                            onFinish: Navigator.of(context).pop,
+                          );
                         },
                         backgroundColor: colorScheme.errorContainer,
                         child: Center(
@@ -229,10 +234,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
     if (!hasActiveWorkout) {
       startWorkout(name: L.of(context).defaultWorkoutName());
     }
-  }
-
-  Future<void> _cancelWorkout(BuildContext context) async {
-    return Workouts.of(context).cancelActiveWorkout();
   }
 
   Future<Object?> _showExerciseDialog(BuildContext context) {

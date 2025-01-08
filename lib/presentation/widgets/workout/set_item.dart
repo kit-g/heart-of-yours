@@ -69,7 +69,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       ),
     ) = Theme.of(context);
     final L(:deleteSet) = L.of(context);
-    final color = set.completed ? tertiaryContainer : outlineVariant.withValues(alpha: .5);
+    final color = set.isCompleted ? tertiaryContainer : outlineVariant.withValues(alpha: .5);
 
     // builds the background for the dismissed set
     // based on the direction of the swipe
@@ -182,7 +182,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
   Future<void> _onDone(BuildContext context) async {
     final workouts = Workouts.of(context);
-    if (set.completed) {
+    if (set.isCompleted) {
       return workouts.markSetAsIncomplete(exercise, set);
     }
 

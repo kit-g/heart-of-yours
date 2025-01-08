@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/visual.dart';
-import 'package:heart/presentation/navigation/router.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/workout/active_workout.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
@@ -92,7 +91,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         ),
                         PrimaryButton.shrunk(
                           onPressed: () {
-                            _onFinish(context, workouts);
+                            showFinishWorkoutDialog(context, workouts);
                           },
                           backgroundColor: colorScheme.primaryContainer,
                           child: Text(finish),
@@ -108,10 +107,5 @@ class _WorkoutPageState extends State<WorkoutPage> {
         ),
       ),
     );
-  }
-
-  void _onFinish(BuildContext context, Workouts workouts) {
-    context.goToWorkoutDone(workouts.activeWorkout?.id);
-    workouts.finishWorkout();
   }
 }

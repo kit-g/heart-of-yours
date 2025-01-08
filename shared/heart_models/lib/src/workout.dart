@@ -10,7 +10,7 @@ sealed class ExerciseSet with UsesTimestampForId implements Model {
   @override
   final DateTime start;
 
-  bool completed = false;
+  bool isCompleted = false;
 
   ExerciseSet._({
     required this.exercise,
@@ -34,7 +34,7 @@ sealed class ExerciseSet with UsesTimestampForId implements Model {
       reps: json['reps'],
       weight: json['weight'],
       start: DateTime.parse(deSanitizeId(json['id'])),
-    )..completed = json['completed'] ?? false;
+    )..isCompleted = json['completed'] ?? false;
   }
 
   bool get canBeCompleted;
@@ -45,7 +45,7 @@ sealed class ExerciseSet with UsesTimestampForId implements Model {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'completed': completed,
+      'completed': isCompleted,
     };
   }
 
@@ -193,6 +193,12 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
   }
 
   ExerciseSet? get best;
+
+  /// whether at least one set was marked as done
+  bool get isStarted;
+
+  /// whether all sets were marked as done
+  bool get isValid;
 }
 
 /// A full workout
@@ -232,11 +238,19 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   /// marks the workout as complete
   void finish(DateTime end);
 
-  /// the workout was marked as complete
+  /// whether the workout was marked as complete
   bool get isCompleted;
 
   /// how long it lasted from [start] to [end]
   Duration? get duration;
+
+  /// whether the workout was actually started,
+  /// i.e. at least one set was marked as done
+  bool get isStarted;
+
+  /// whether the workout is ready to be finished
+  /// i.e. all selected sets are marked as complete
+  bool get isValid;
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -304,6 +318,12 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
       return null;
     }
   }
+
+  @override
+  bool get isStarted => any((set) => set.isCompleted);
+
+  @override
+  bool get isValid => every((set) => set.isCompleted);
 }
 
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
@@ -450,4 +470,10 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       null => null,
     };
   }
+
+  @override
+  bool get isStarted => any((exercise) => exercise.isStarted);
+
+  @override
+  bool get isValid => isStarted && every((exercise) => exercise.isValid);
 }

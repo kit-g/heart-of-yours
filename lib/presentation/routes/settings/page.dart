@@ -5,7 +5,7 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final L(:settings, :appearance) = L.of(context);
+    final L(:settings, :appearance, :aboutApp) = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -33,21 +33,33 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
           ),
-          body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: ListView(
-              children: [
-                Text(
+          body: ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
                   appearance,
                   style: textTheme.titleMedium,
                 ),
-                const SizedBox(height: 8),
-                const _ThemeModePicker(),
-                const SizedBox(height: 16),
-                const _ColorPicker(),
-                const SizedBox(height: 8),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: _ThemeModePicker(),
+              ),
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: _ColorPicker(),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                title: Text(aboutApp),
+                onTap: () {
+                  showAboutDialog(context: context);
+                },
+              )
+            ],
           ),
         ),
       ),

@@ -8,6 +8,7 @@ class InkButton extends StatelessWidget {
   final ShapeBorder? inkShape;
   final Color? backgroundColor;
   final BoxBorder? border;
+  final InteractiveInkFeatureFactory? splashFactory;
 
   const InkButton({
     super.key,
@@ -16,6 +17,7 @@ class InkButton extends StatelessWidget {
     this.backgroundColor,
     this.inkShape,
     this.border,
+    this.splashFactory,
   });
 
   const InkButton.rounded({
@@ -24,6 +26,7 @@ class InkButton extends StatelessWidget {
     required this.onPressed,
     this.backgroundColor,
     this.border,
+    this.splashFactory,
   }) : inkShape = const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
         );
@@ -46,6 +49,7 @@ class InkButton extends StatelessWidget {
           splashColor: backgroundColor?.withValues(alpha: .5),
           customBorder: inkShape,
           onTap: onPressed,
+          splashFactory: splashFactory,
           child: child,
         ),
       ),
@@ -63,6 +67,7 @@ class PrimaryButton extends StatelessWidget {
   final Color? backgroundColor;
   final bool enableFeedback;
   final BoxBorder? border;
+  final InteractiveInkFeatureFactory? splashFactory;
 
   const PrimaryButton.shrunk({
     super.key,
@@ -72,6 +77,7 @@ class PrimaryButton extends StatelessWidget {
     this.margin = _defaultMargin,
     this.enableFeedback = true,
     this.border,
+    this.splashFactory = InkRipple.splashFactory,
   }) : wide = false;
 
   const PrimaryButton.wide({
@@ -82,6 +88,7 @@ class PrimaryButton extends StatelessWidget {
     this.margin = _defaultMargin,
     this.enableFeedback = true,
     this.border,
+    this.splashFactory = InkRipple.splashFactory,
   }) : wide = true;
 
   @override

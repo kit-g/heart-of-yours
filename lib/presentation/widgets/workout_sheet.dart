@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/visual.dart';
-import 'package:heart/presentation/navigation/router.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/workout/active_workout.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
@@ -53,8 +52,7 @@ Future<void> showWorkoutSheet(
                             if (workouts.hasActiveWorkout)
                               PrimaryButton.shrunk(
                                 onPressed: () {
-                                  context.goToWorkoutDone(workouts.activeWorkout?.id);
-                                  workouts.finishWorkout();
+                                  showFinishWorkoutDialog(context, workouts);
                                 },
                                 backgroundColor: theme.colorScheme.primaryContainer,
                                 child: Text(L.of(context).finish),

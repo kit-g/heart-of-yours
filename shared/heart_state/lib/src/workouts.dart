@@ -190,7 +190,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       exercise,
       (each) {
         for (var set in each.where((s) => set == s)) {
-          set.completed = complete;
+          set.isCompleted = complete;
         }
       },
     );

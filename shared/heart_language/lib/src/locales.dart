@@ -449,6 +449,14 @@ class L {
     );
   }
 
+  String get aboutApp {
+    return Intl.message(
+      'About app',
+      name: 'aboutApp',
+      desc: 'Setting item title',
+    );
+  }
+
   String get congratulations {
     return Intl.message(
       'Congratulations!',
@@ -462,6 +470,78 @@ class L {
       'Your workout is complete!',
       name: 'congratulationsBody',
       desc: 'Workout complete screen, body',
+    );
+  }
+
+  String get finishWorkoutTitle {
+    return Intl.message(
+      'Finish Workout?',
+      name: 'finishWorkoutTitle',
+      desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get finishWorkoutWarningTitle {
+    return Intl.message(
+      'Complete Your Workout?',
+      name: 'finishWorkoutWarningTitle',
+      desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get finishWorkoutWarningBody {
+    return Intl.message(
+      'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.',
+      name: 'finishWorkoutWarningBody',
+      desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get finishWorkoutBody {
+    return Intl.message(
+      'Ready to finish this workout?',
+      name: 'finishWorkoutBody',
+      desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get cancelWorkoutBody {
+    return Intl.message(
+      'All progress made so far will be lost.',
+      name: 'cancelWorkoutBody',
+      desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get cancelWorkoutTitle {
+    return Intl.message(
+      'Do you want to cancel this workout?',
+      name: 'cancelWorkoutTitle',
+      desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get readyToFinish {
+    return Intl.message(
+      'Yes, I\'m done!',
+      name: 'readyToFinish',
+      desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get resumeWorkout {
+    return Intl.message(
+      'No, resume workout',
+      name: 'resumeWorkout',
+      desc: 'Workout cancellation confirmation dialog',
+    );
+  }
+
+  String get notReadyToFinish {
+    return Intl.message(
+      'No, one more set!',
+      name: 'notReadyToFinish',
+      desc: 'Workout completion confirmation dialog',
     );
   }
 

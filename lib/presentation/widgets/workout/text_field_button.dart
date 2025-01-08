@@ -36,7 +36,7 @@ class _TextFieldButton extends StatelessWidget {
                   return PrimaryButton.shrunk(
                     margin: EdgeInsets.zero,
                     backgroundColor: hasError ? colorScheme.error : color,
-                    border: switch ((hasError, focusNode.hasFocus, set.completed)) {
+                    border: switch ((hasError, focusNode.hasFocus, set.isCompleted)) {
                       (true, true, _) => Border.all(
                           color: colorScheme.onErrorContainer,
                           width: .5,
@@ -86,7 +86,7 @@ class _TextFieldButton extends StatelessWidget {
                           textAlignVertical: TextAlignVertical.center,
                           maxLines: 1,
                           minLines: 1,
-                          cursorColor: switch ((hasError, set.completed)) {
+                          cursorColor: switch ((hasError, set.isCompleted)) {
                             (true, _) => colorScheme.onError,
                             (false, true) => colorScheme.onTertiaryFixed,
                             (false, false) => colorScheme.onSurfaceVariant,
