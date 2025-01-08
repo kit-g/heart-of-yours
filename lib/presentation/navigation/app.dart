@@ -6,6 +6,7 @@ import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'router.dart';
 
@@ -40,6 +41,11 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Preferences>(
           create: (_) => Preferences(),
+        ),
+        ChangeNotifierProvider<AppInfo>(
+          create: (_) => AppInfo(
+            onError: reportToSentry,
+          ),
         ),
       ],
       builder: (__, _) {
@@ -107,8 +113,10 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App>, HasHaptic<_App>
   }
 
   Future<void> _initApp(BuildContext context) async {
+    _initAppInfo(context);
     var Exercises(:isInitialized, :init) = Exercises.of(context);
     final workouts = Workouts.of(context);
+
     if (!isInitialized) {
       init();
     }
@@ -122,5 +130,21 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App>, HasHaptic<_App>
       ..toMode(prefs.getThemeMode());
 
     workouts.init().then((_) => HeartRouter.refresh());
+  }
+
+  Future<void> _initAppInfo(BuildContext context) {
+    return AppInfo.of(context).init(
+      () {
+        return PackageInfo.fromPlatform().then<Package>(
+          (info) {
+            return (
+              appName: info.appName,
+              version: info.version,
+              build: info.buildNumber,
+            );
+          },
+        );
+      },
+    );
   }
 }

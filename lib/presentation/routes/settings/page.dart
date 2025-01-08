@@ -56,7 +56,13 @@ class SettingsPage extends StatelessWidget {
               ListTile(
                 title: Text(aboutApp),
                 onTap: () {
-                  showAboutDialog(context: context);
+                  final info = AppInfo.of(context);
+
+                  showAboutDialog(
+                    context: context,
+                    applicationVersion: info.fullVersion,
+                    applicationName: info.appName,
+                  );
                 },
               )
             ],
