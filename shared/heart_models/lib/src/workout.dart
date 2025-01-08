@@ -203,10 +203,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   Iterable<WorkoutExercise> get sets;
 
-  void finish(DateTime end);
-
-  void removeExercise(WorkoutExercise exercise);
-
   factory Workout({String? name}) {
     return _Workout(
       start: DateTime.now(),
@@ -216,16 +212,30 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   factory Workout.fromJson(Map json, ExerciseLookup lookForExercise) = _Workout.fromJson;
 
+  /// starts a new exercise
   void startExercise(Exercise exercise);
 
+  /// removes the [WorkoutExercise] from the workout
+  void removeExercise(WorkoutExercise exercise);
+
+  /// the total metric (e.g., weight)
+  /// in all sets of this exercise
   double? get total;
 
+  /// places [toInsert] before [before]
+  /// and moves all other exercises by 1.
   void swap(WorkoutExercise toInsert, WorkoutExercise before);
 
+  /// adds an exercise to the end of the workout
   void append(WorkoutExercise exercise);
 
+  /// marks the workout as complete
+  void finish(DateTime end);
+
+  /// the workout was marked as complete
   bool get isCompleted;
 
+  /// how long it lasted from [start] to [end]
   Duration? get duration;
 }
 
