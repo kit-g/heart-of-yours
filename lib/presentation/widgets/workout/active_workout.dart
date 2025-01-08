@@ -206,7 +206,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                           showCancelWorkoutDialog(
                             context,
                             workouts,
-                            onFinish: Navigator.of(context).pop,
                           );
                         },
                         backgroundColor: colorScheme.errorContainer,
