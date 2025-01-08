@@ -150,17 +150,20 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  void addEmptySet(WorkoutExercise exercise) {
-    final empty = ExerciseSet(exercise.exercise);
+  /// adds a new set to this exercise
+  /// tries to copy the previous set
+  /// or makes an empty one
+  Future<void>? addSet(WorkoutExercise exercise) {
+    final set = exercise.lastOrNull?.copy() ?? ExerciseSet(exercise.exercise);
     _forExercise(
       exercise,
-      (each) => each.add(empty),
+      (each) => each.add(set),
     );
 
     final doc = {
-      'exercises.${exercise.id}.sets.${empty.id}': empty.toMap(),
+      'exercises.${exercise.id}.sets.${set.id}': set.toMap(),
     };
-    _activeWorkoutDoc?.update(doc);
+    return _activeWorkoutDoc?.update(doc);
   }
 
   Future<void>? removeSet(WorkoutExercise exercise, ExerciseSet set) {

@@ -164,7 +164,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
                               ),
                             ),
                             onPressed: () {
-                              Workouts.of(context).addEmptySet(exercise);
+                              Workouts.of(context).addSet(exercise);
                             },
                           ),
                         ),

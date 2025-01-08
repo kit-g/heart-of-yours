@@ -64,6 +64,8 @@ sealed class ExerciseSet with UsesTimestampForId implements Model {
   bool operator <=(covariant ExerciseSet other) {
     return (total ?? 0) <= (other.total ?? 0);
   }
+
+  ExerciseSet copy();
 }
 
 /// A set meant to be executed in a number of repetitions
@@ -169,6 +171,16 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
       'weight': weight,
       ...super.toMap(),
     };
+  }
+
+  @override
+  ExerciseSet copy() {
+    return _WeightedSet(
+      exercise: exercise,
+      start: DateTime.now(), // a different id
+      weight: weight,
+      reps: reps,
+    );
   }
 }
 
