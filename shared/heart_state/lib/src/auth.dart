@@ -13,7 +13,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
 
   final void Function(User?)? onUserChange;
-  final void Function(Object)? onError;
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   User? _user;
 
@@ -37,7 +37,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         onUserChange?.call(_user);
         _registerUser(_user);
       },
-      onError: onError,
+      onError: (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+      },
     );
   }
 
@@ -50,21 +52,25 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> loginWithGoogle() async {
-    var googleAccount = await _googleSignIn.signIn();
-    final auth = await googleAccount?.authentication;
-    if (auth case GoogleSignInAuthentication(:String? accessToken, :String? idToken)) {
-      final cred = fb.GoogleAuthProvider.credential(
-        accessToken: accessToken,
-        idToken: idToken,
-      );
-      final authResult = await _firebase.signInWithCredential(cred);
-      final user = authResult.user;
+    try {
+      var googleAccount = await _googleSignIn.signIn();
+      final auth = await googleAccount?.authentication;
+      if (auth case GoogleSignInAuthentication(:String? accessToken, :String? idToken)) {
+        final cred = fb.GoogleAuthProvider.credential(
+          accessToken: accessToken,
+          idToken: idToken,
+        );
+        final authResult = await _firebase.signInWithCredential(cred);
+        final user = authResult.user;
 
-      _user = _cast(user);
+        _user = _cast(user);
 
-      _registerUser(_user);
+        _registerUser(_user);
 
-      notifyListeners();
+        notifyListeners();
+      }
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
     }
   }
 
@@ -90,10 +96,14 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> _registerUser(User? user) async {
-    if (user == null) return;
-    return _db //
-        .collection("users")
-        .doc(user.id)
-        .set(user.toMap());
+    try {
+      if (user == null) return;
+      return _db //
+          .collection("users")
+          .doc(user.id)
+          .set(user.toMap());
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+    }
   }
 }

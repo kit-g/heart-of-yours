@@ -7,8 +7,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final bool isCached;
   final _db = FirebaseFirestore.instance;
   final _scrollController = ScrollController();
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  Exercises({this.isCached = true});
+  Exercises({
+    this.isCached = true,
+    this.onError,
+  });
 
   bool isInitialized = false;
 
@@ -35,18 +39,22 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   }
 
   Future<void> init() async {
-    final options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
-    final all = await _db //
-        .collection('exercises')
-        .withConverter<Exercise>(
-          fromFirestore: _fromFirestore,
-          toFirestore: (exercise, _) => exercise.toMap(),
-        )
-        .get(options);
+    try {
+      final options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
+      final all = await _db //
+          .collection('exercises')
+          .withConverter<Exercise>(
+            fromFirestore: _fromFirestore,
+            toFirestore: (exercise, _) => exercise.toMap(),
+          )
+          .get(options);
 
-    _exercises.addAll(Map.fromEntries(all.docs.map(_snapshot)));
-    isInitialized = true;
-    notifyListeners();
+      _exercises.addAll(Map.fromEntries(all.docs.map(_snapshot)));
+      isInitialized = true;
+      notifyListeners();
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+    }
   }
 
   Iterable<Exercise> search(String query) {

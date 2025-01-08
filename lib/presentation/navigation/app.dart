@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/misc.dart';
@@ -19,11 +20,14 @@ class HeartApp extends StatelessWidget {
           create: (_) => AppTheme(),
         ),
         ChangeNotifierProvider<Exercises>(
-          create: (_) => Exercises(),
+          create: (_) => Exercises(
+            onError: reportToSentry,
+          ),
         ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
             lookForExercise: Exercises.of(context).lookup,
+            onError: reportToSentry,
           ),
         ),
         ChangeNotifierProvider<Auth>(

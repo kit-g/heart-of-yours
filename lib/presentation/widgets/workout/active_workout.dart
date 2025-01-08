@@ -1,4 +1,4 @@
-library active_workout;
+library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

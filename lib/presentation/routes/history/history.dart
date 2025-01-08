@@ -1,4 +1,4 @@
-library history;
+library;
 
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/misc.dart';
