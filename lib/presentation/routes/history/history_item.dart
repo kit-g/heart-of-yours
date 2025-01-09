@@ -2,10 +2,14 @@ part of 'history.dart';
 
 class HistoryItem extends StatelessWidget {
   final Workout workout;
+  final void Function(Workout)? onTap;
+  final bool showsMenuButton;
 
   const HistoryItem({
     super.key,
     required this.workout,
+    this.onTap,
+    this.showsMenuButton = true,
   });
 
   @override
@@ -17,7 +21,7 @@ class HistoryItem extends StatelessWidget {
       shape: _shape,
       child: InkWell(
         customBorder: _shape,
-        onTap: () {},
+        onTap: () => onTap?.call(workout),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
@@ -30,35 +34,38 @@ class HistoryItem extends StatelessWidget {
                     workout.name ?? '?',
                     style: textTheme.titleMedium,
                   ),
-                  PopupMenuButton<_WorkoutOption>(
-                    style: const ButtonStyle(
-                      visualDensity: VisualDensity(vertical: -3, horizontal: -3),
-                    ),
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.more_horiz),
-                    onSelected: (option) => _onTapOption(context, option, workout),
-                    itemBuilder: (context) {
-                      return _WorkoutOption.values.map(
-                        (option) {
-                          final (:copy, :style, :icon) = _item(context, option);
-                          return PopupMenuItem<_WorkoutOption>(
-                            height: 40,
-                            value: option,
-                            child: Row(
-                              spacing: 4,
-                              children: [
-                                icon,
-                                Text(
-                                  copy,
-                                  style: style,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ).toList();
-                    },
-                  ),
+                  if (showsMenuButton)
+                    PopupMenuButton<_WorkoutOption>(
+                      style: const ButtonStyle(
+                        visualDensity: VisualDensity(vertical: -3, horizontal: -3),
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.more_horiz),
+                      onSelected: (option) => _onTapOption(context, option, workout),
+                      itemBuilder: (context) {
+                        return _WorkoutOption.values.map(
+                          (option) {
+                            final (:copy, :style, :icon) = _item(context, option);
+                            return PopupMenuItem<_WorkoutOption>(
+                              height: 40,
+                              value: option,
+                              child: Row(
+                                spacing: 4,
+                                children: [
+                                  icon,
+                                  Text(
+                                    copy,
+                                    style: style,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ).toList();
+                      },
+                    )
+                  else
+                    const SizedBox.shrink()
                 ],
               ),
               Text(

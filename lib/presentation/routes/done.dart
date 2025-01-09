@@ -40,7 +40,10 @@ class WorkoutDone extends StatelessWidget {
               style: textTheme.bodyLarge,
             ),
             const SizedBox(height: 72),
-            HistoryItem(workout: workout),
+            HistoryItem(
+              workout: workout,
+              showsMenuButton: false,
+            ),
             const SizedBox(height: 72),
             OutlinedButton(
               onPressed: () {

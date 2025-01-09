@@ -5,7 +5,7 @@ import 'package:heart/core/env/config.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> initSentry(FutureOr<void> Function() appRunner) {
-  if (kDebugMode) return Future.value(null);
+  if (kDebugMode) appRunner();
   return SentryFlutter.init(
     (options) {
       options
@@ -27,4 +27,8 @@ Future<void> initSentry(FutureOr<void> Function() appRunner) {
 
 Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
   return Sentry.captureException(exception, stackTrace: stacktrace);
+}
+
+Future<void> messageSentry(String message) {
+  return Sentry.captureMessage(message);
 }

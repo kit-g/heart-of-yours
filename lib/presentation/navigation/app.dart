@@ -23,11 +23,18 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Exercises>(
           create: (_) => Exercises(
             onError: reportToSentry,
+            isCached: false,
           ),
         ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
-            lookForExercise: Exercises.of(context).lookup,
+            lookForExercise: (name) {
+              final exercise = Exercises.of(context).lookup(name);
+              if (exercise == null) {
+                reportToSentry('Exercise not found: $name');
+              }
+              return exercise;
+            },
             onError: reportToSentry,
           ),
         ),
@@ -68,7 +75,7 @@ class _App extends StatefulWidget {
   State<_App> createState() => _AppState();
 }
 
-class _AppState extends State<_App> with AfterLayoutMixin<_App>, HasHaptic<_App> {
+class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   @override
   Widget build(BuildContext context) {
     const theme = MaterialTheme();
