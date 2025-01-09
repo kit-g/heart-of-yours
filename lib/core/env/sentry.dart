@@ -28,7 +28,3 @@ Future<void> initSentry(FutureOr<void> Function() appRunner) {
 Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
   return Sentry.captureException(exception, stackTrace: stacktrace);
 }
-
-Future<void> messageSentry(String message) {
-  return Sentry.captureMessage(message);
-}

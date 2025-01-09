@@ -28,13 +28,7 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
-            lookForExercise: (name) {
-              final exercise = Exercises.of(context).lookup(name);
-              if (exercise == null) {
-                reportToSentry('Exercise not found: $name');
-              }
-              return exercise;
-            },
+            lookForExercise: Exercises.of(context).lookup,
             onError: reportToSentry,
           ),
         ),
