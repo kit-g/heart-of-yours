@@ -203,10 +203,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                       const SizedBox(height: 8),
                       PrimaryButton.wide(
                         onPressed: () {
-                          showCancelWorkoutDialog(
-                            context,
-                            workouts,
-                          );
+                          showCancelWorkoutDialog(context, workouts);
                         },
                         backgroundColor: colorScheme.errorContainer,
                         child: Center(

@@ -38,10 +38,6 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     :finishWorkoutWarningBody,
     :readyToFinish,
     :notReadyToFinish,
-    :cancelWorkoutBody,
-    :cancelWorkoutTitle,
-    :cancelWorkout,
-    :resumeWorkout,
   ) = L.of(context);
 
   final actions = [

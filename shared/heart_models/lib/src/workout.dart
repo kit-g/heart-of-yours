@@ -193,6 +193,10 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
 
   double? get total;
 
+  int? get order;
+
+  set order(int? v);
+
   void add(ExerciseSet set);
 
   bool remove(ExerciseSet set);
@@ -271,6 +275,9 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   @override
   final DateTime start;
 
+  @override
+  int? order;
+
   _WorkoutExercise._({
     ExerciseSet? starter,
     DateTime? start,
@@ -336,6 +343,14 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
 
   @override
   bool get isValid => every((set) => set.isCompleted);
+
+  @override
+  int compareTo(WorkoutExercise other) {
+    return switch ((other.order, order)) {
+      ((int there, int here)) => here.compareTo(there),
+      _ => super.compareTo(other),
+    };
+  }
 }
 
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
@@ -370,7 +385,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
                   Map sets => sets.values.map((set) => ExerciseSet.fromJson(exercise, set)).toList(),
                   _ => null,
                 },
-              );
+              )..order = each['order'];
             },
           )
           .nonNulls
@@ -412,13 +427,18 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   @override
   Map<String, dynamic> toMap() {
+    var l = toList();
     return {
       'id': id,
       'name': name,
       'start': start,
       'end': end,
       'exercises': {
-        for (var each in this) each.id: each.toMap(),
+        for (var each in l)
+          each.id: {
+            ...each.toMap(),
+            'order': l.indexOf(each),
+          },
       },
     };
   }

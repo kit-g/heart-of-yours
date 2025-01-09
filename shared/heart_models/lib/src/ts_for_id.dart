@@ -16,7 +16,7 @@ abstract mixin class UsesTimestampForId implements Comparable<UsesTimestampForId
   Duration elapsed() => DateTime.now().difference(start);
 
   @override
-  int compareTo(UsesTimestampForId other) {
+  int compareTo(covariant UsesTimestampForId other) {
     return start.compareTo(other.start);
   }
 }
