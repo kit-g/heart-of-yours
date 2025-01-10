@@ -8,6 +8,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final _db = FirebaseFirestore.instance;
   final _scrollController = ScrollController();
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final _selectedExercises = <Exercise>{};
 
   Exercises({
     this.isCached = true,
@@ -23,6 +24,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   @override
   void onSignOut() {
     _exercises.clear();
+    _selectedExercises.clear();
   }
 
   @override
@@ -63,6 +65,27 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   Exercise? lookup(ExerciseId id) {
     return _exercises[id];
+  }
+
+  Iterable<Exercise> get selected => _selectedExercises;
+
+  void select(Exercise exercise) {
+    _selectedExercises.add(exercise);
+    notifyListeners();
+  }
+
+  void deselect(Exercise exercise) {
+    _selectedExercises.remove(exercise);
+    notifyListeners();
+  }
+
+  bool hasSelected(Exercise exercise) {
+    return _selectedExercises.contains(exercise);
+  }
+
+  void unselectAll() {
+    _selectedExercises.clear();
+    notifyListeners();
   }
 }
 

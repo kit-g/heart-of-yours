@@ -263,6 +263,14 @@ class L {
     );
   }
 
+  String get add {
+    return Intl.message(
+      'Add',
+      name: 'add',
+      desc: 'Generic label',
+    );
+  }
+
   String get share {
     return Intl.message(
       'Share',

@@ -95,6 +95,14 @@ class _Exercise implements Exercise {
     if (query.isEmpty) return true;
     return name.toLowerCase().contains(query.toLowerCase());
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is Exercise && other.name == name;
+  }
+
+  @override
+  int get hashCode => name.hashCode;
 }
 
 typedef ExerciseId = String;

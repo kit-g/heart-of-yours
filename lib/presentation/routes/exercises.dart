@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/misc.dart';
-import 'package:heart/presentation/widgets/exercise_picker.dart';
+import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';

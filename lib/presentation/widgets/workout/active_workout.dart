@@ -6,13 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/router.dart';
+import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
 import '../buttons.dart';
-import '../exercise_picker.dart';
 
 part 'exercise_item.dart';
 
@@ -233,20 +233,73 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
   }
 
   Future<Object?> _showExerciseDialog(BuildContext context) {
+    final ThemeData(colorScheme: ColorScheme(surfaceContainerLow: color)) = Theme.of(context);
+    final L(:add) = L.of(context);
     return showDialog(
       context: context,
       builder: (context) {
         final exercises = Exercises.watch(context);
         return Card(
           child: ExercisePicker(
+            appBar: SliverPersistentHeader(
+              pinned: true,
+              delegate: FixedHeightHeaderDelegate(
+                backgroundColor: color,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                      ),
+                    ),
+                    PrimaryButton.shrunk(
+                      child: Center(
+                        child: Text(add),
+                      ),
+                      onPressed: () async {
+                        final workouts = Workouts.of(context);
+                        Navigator.pop(context);
+                        final selected = exercises.selected.toList();
+                        for (var each in selected) {
+                          await Future.delayed(
+                            const Duration(milliseconds: 2),
+                            () => workouts.startExercise(each),
+                          );
+                        }
+                      },
+                    )
+                  ],
+                ),
+                height: 40,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(12),
+                ),
+              ),
+            ),
             exercises: exercises,
+            backgroundColor: color,
             searchController: _searchController,
             focusNode: _focusNode,
             onExerciseSelected: (exercise) {
-              Navigator.pop(context);
-              Workouts.of(context).startExercise(exercise);
+              if (exercises.hasSelected(exercise)) {
+                exercises.deselect(exercise);
+              } else {
+                exercises.select(exercise);
+              }
             },
           ),
+        );
+      },
+    ).then<void>(
+      (_) {
+        Future.delayed(
+          const Duration(milliseconds: 100),
+          // ignore: use_build_context_synchronously
+          () => Exercises.of(context).unselectAll(),
         );
       },
     );
