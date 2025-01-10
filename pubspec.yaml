@@ -23,6 +23,7 @@ dependencies:
   heart_state:
     path: 'shared/heart_state'
   intl: any
+  logging: ^1.3.0
   package_info_plus: ^8.0.2
   sentry_flutter: ^8.12.0
 
