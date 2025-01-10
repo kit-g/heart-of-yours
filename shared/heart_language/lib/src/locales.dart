@@ -553,6 +553,14 @@ class L {
     );
   }
 
+  String get notificationSettings {
+    return Intl.message(
+      'Notification settings',
+      name: 'notificationSettings',
+      desc: 'Settings item',
+    );
+  }
+
   String defaultWorkoutName() {
     return switch (DateTime.now().hour) {
       >= 5 && < 12 => morningWorkout,
