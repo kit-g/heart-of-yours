@@ -201,11 +201,18 @@ class _WorkoutExerciseItem extends StatelessWidget {
     switch (option) {
       case _ExerciseOption.remove:
         return Workouts.of(context).removeExercise(exercise);
+      case _ExerciseOption.autoRestTimer:
+        return _selectRestTime(context);
       case _ExerciseOption.addNote:
       case _ExerciseOption.replace:
       case _ExerciseOption.weightUnit:
-      case _ExerciseOption.autoRestTimer:
       // TODO: Handle this case.
     }
+  }
+
+  Future<void> _selectRestTime(BuildContext context) async {
+    Navigator.of(context, rootNavigator: true);
+    final restInSeconds = await showDurationPicker(context);
+    print(restInSeconds);
   }
 }

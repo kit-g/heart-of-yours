@@ -13,7 +13,7 @@ Future<void> initSentry(FutureOr<void> Function() appRunner) {
         ..enableAutoPerformanceTracing = true
         ..enableWatchdogTerminationTracking = true
         ..enableMemoryPressureBreadcrumbs = true
-        ..dsn = AppConfig.sentryDsn
+        ..dsn = kDebugMode ? '' : AppConfig.sentryDsn
         ..tracesSampleRate = 1.0
         ..profilesSampleRate = 1.0
         ..diagnosticLevel = switch (AppConfig.env) {
