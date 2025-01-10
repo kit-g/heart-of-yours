@@ -96,6 +96,7 @@ class _Exercise implements Exercise {
     return name.toLowerCase().contains(query.toLowerCase());
   }
 
+  /// name is the database identifier
   @override
   bool operator ==(Object other) {
     return other is Exercise && other.name == name;

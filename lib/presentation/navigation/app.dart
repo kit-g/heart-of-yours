@@ -118,10 +118,6 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
     var Exercises(:isInitialized, :init) = Exercises.of(context);
     final workouts = Workouts.of(context);
 
-    if (!isInitialized) {
-      init();
-    }
-
     final prefs = Preferences.of(context);
     final theme = AppTheme.of(context);
     await prefs.init();
@@ -130,7 +126,15 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
       ..color = AppTheme.colorFromHex(prefs.getBaseColor())
       ..toMode(prefs.getThemeMode());
 
-    workouts.init().then((_) => HeartRouter.refresh());
+    if (!isInitialized) {
+      init().then<void>(
+        (_) {
+          // since workouts initialization looks up exercises
+          // in `Exercises`, we must chain these calls this way
+          workouts.init().then<void>((_) => HeartRouter.refresh());
+        },
+      );
+    }
   }
 
   Future<void> _initAppInfo(BuildContext context) {
