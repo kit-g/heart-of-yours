@@ -73,6 +73,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
       :previous,
       :lbs,
       :reps,
+      :restTimer,
     ) = L.of(context);
 
     final ThemeData(
@@ -155,6 +156,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                         exercise: set,
                         copy: addSet,
                         firstColumnCopy: setCopy,
+                        timerCopy: restTimer,
                         secondColumnCopy: previous,
                         thirdColumnCopy: lbs,
                         fourthColumnCopy: reps,

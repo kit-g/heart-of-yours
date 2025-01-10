@@ -28,23 +28,26 @@ Future<void> initNotifications() async {
 
 Future<bool?> requestNotificationPermission(BuildContext context) async {
   final platform = Theme.of(context).platform;
-  switch (platform) {
-    case TargetPlatform.iOS:
-      final platform = _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-
-      return platform?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          ) ??
-          false;
-
-    case TargetPlatform.android:
-    case TargetPlatform.macOS:
-    default:
-      // TODO: Handle this case.
-      throw UnimplementedError();
-  }
+  return switch (platform) {
+    TargetPlatform.iOS => _plugin //
+        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        ),
+    TargetPlatform.android => _plugin //
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission(),
+    TargetPlatform.macOS => _plugin //
+        .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        ),
+    _ => throw UnimplementedError()
+  };
 }
 
 Future<int> showNotification({

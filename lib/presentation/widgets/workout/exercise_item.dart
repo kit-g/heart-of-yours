@@ -3,6 +3,7 @@ part of 'active_workout.dart';
 class _WorkoutExerciseItem extends StatelessWidget {
   final int index;
   final String copy;
+  final String? timerCopy;
   final WorkoutExercise exercise;
   final String firstColumnCopy;
   final String secondColumnCopy;
@@ -25,6 +26,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
     required this.onDragEnded,
     required this.dragState,
     required this.currentlyHoveredItem,
+    this.timerCopy,
   });
 
   @override
@@ -56,26 +58,49 @@ class _WorkoutExerciseItem extends StatelessWidget {
                     exercise.exercise.name,
                     style: textTheme.titleMedium,
                   ),
-                  PopupMenuButton<_ExerciseOption>(
-                    style: const ButtonStyle(
-                      visualDensity: VisualDensity(vertical: 0, horizontal: -2),
-                    ),
-                    icon: const Icon(Icons.more_horiz),
-                    onSelected: (option) => _onTapExerciseOption(context, option),
-                    itemBuilder: (context) {
-                      return _ExerciseOption.values.map(
-                        (option) {
-                          return PopupMenuItem<_ExerciseOption>(
-                            height: 40,
-                            value: option,
-                            child: Text(
-                              _exerciseOptionCopy(context, option),
-                              style: _exerciseOptionStyle(textTheme, colorScheme, option),
-                            ),
+                  Row(
+                    children: [
+                      Selector<Timers, int?>(
+                        selector: (_, provider) => provider[exercise.exercise.name],
+                        builder: (_, seconds, __) {
+                          return AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: switch (seconds) {
+                              int() => IconButton(
+                                  tooltip: timerCopy,
+                                  visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
+                                  icon: const Icon(Icons.timer_outlined),
+                                  onPressed: () {
+                                    //
+                                  },
+                                ),
+                              null => const SizedBox.shrink(),
+                            },
                           );
                         },
-                      ).toList();
-                    },
+                      ),
+                      PopupMenuButton<_ExerciseOption>(
+                        style: const ButtonStyle(
+                          visualDensity: VisualDensity(vertical: 0, horizontal: -2),
+                        ),
+                        icon: const Icon(Icons.more_horiz),
+                        onSelected: (option) => _onTapExerciseOption(context, option),
+                        itemBuilder: (context) {
+                          return _ExerciseOption.values.map(
+                            (option) {
+                              return PopupMenuItem<_ExerciseOption>(
+                                height: 40,
+                                value: option,
+                                child: Text(
+                                  _exerciseOptionCopy(context, option),
+                                  style: _exerciseOptionStyle(textTheme, colorScheme, option),
+                                ),
+                              );
+                            },
+                          ).toList();
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -202,7 +227,10 @@ class _WorkoutExerciseItem extends StatelessWidget {
       case _ExerciseOption.remove:
         return Workouts.of(context).removeExercise(exercise);
       case _ExerciseOption.autoRestTimer:
-        return _selectRestTime(context);
+        return _selectRestTime(
+          context,
+          initialValue: Timers.of(context)[exercise.exercise.name],
+        );
       case _ExerciseOption.addNote:
       case _ExerciseOption.replace:
       case _ExerciseOption.weightUnit:
@@ -210,9 +238,18 @@ class _WorkoutExerciseItem extends StatelessWidget {
     }
   }
 
-  Future<void> _selectRestTime(BuildContext context) async {
-    Navigator.of(context, rootNavigator: true);
-    final restInSeconds = await showDurationPicker(context);
-    print(restInSeconds);
+  Future<void> _selectRestTime(BuildContext context, {int? initialValue}) async {
+    final name = exercise.exercise.name;
+    final timers = Timers.of(context);
+    final restInSeconds = await showDurationPicker(
+      context,
+      initialValue: initialValue,
+      subtitle: L.of(context).forExercise(name),
+    );
+    if (restInSeconds == null) {
+      timers.remove(name);
+    } else {
+      timers[name] = restInSeconds;
+    }
   }
 }

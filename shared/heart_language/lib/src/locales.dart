@@ -385,6 +385,14 @@ class L {
     );
   }
 
+  String get cancelTimer {
+    return Intl.message(
+      'Cancel timer',
+      name: 'cancelTimer',
+      desc: 'Button text',
+    );
+  }
+
   String get removeExercise {
     return Intl.message(
       'Remove exercise',
@@ -558,6 +566,14 @@ class L {
       'Notification settings',
       name: 'notificationSettings',
       desc: 'Settings item',
+    );
+  }
+
+  String forExercise(String exercise) {
+    return Intl.message(
+      'for $exercise',
+      name: 'forExercise',
+      desc: 'As in "Rest timer for bicep curl"',
     );
   }
 
