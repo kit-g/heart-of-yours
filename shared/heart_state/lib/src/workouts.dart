@@ -73,6 +73,20 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
+  ExerciseId? _pointedAtExercise;
+
+  ExerciseId? get pointedAtExercise => _pointedAtExercise;
+
+  set pointedAtExercise(ExerciseId? value) {
+    _pointedAtExercise = value;
+    notifyListeners();
+  }
+
+  Future<void> pointAt(ExerciseId exerciseId) {
+    pointedAtExercise = exerciseId;
+    return Future.delayed(const Duration(milliseconds: 300), () => pointedAtExercise = null);
+  }
+
   Future<void> init() async {
     if (userId case String userId) {
       _activeWorkout = await _getActiveWorkout(userId);

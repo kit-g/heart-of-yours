@@ -617,6 +617,22 @@ class L {
       desc: 'Rest timer',
     );
   }
+
+  String get restComplete {
+    return Intl.message(
+      'Rest complete!',
+      name: 'restComplete',
+      desc: 'Rest notification banner',
+    );
+  }
+
+  String restCompleteBody(String exercise) {
+    return Intl.message(
+      'Next: $exercise',
+      name: 'restCompleteBody',
+      desc: 'Rest notification banner',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

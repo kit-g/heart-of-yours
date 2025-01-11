@@ -5,12 +5,17 @@ import 'package:logging/logging.dart';
 final _plugin = FlutterLocalNotificationsPlugin();
 final _logger = Logger('Notifications');
 
+const _currentExercise = 0;
+
 @pragma('vm:entry-point')
 void _notificationTapBackground(NotificationResponse notificationResponse) {
   _logger.info('onDidReceiveBackgroundNotificationResponse $notificationResponse');
 }
 
-Future<void> initNotifications() async {
+Future<void> initNotifications({
+  void Function(String exerciseId)? onExerciseNotification,
+  void Function(Map)? onUnknownNotification,
+}) async {
   await _plugin.initialize(
     const InitializationSettings(
       iOS: DarwinInitializationSettings(
@@ -20,7 +25,12 @@ Future<void> initNotifications() async {
       ),
     ),
     onDidReceiveNotificationResponse: (notification) async {
-      _logger.info('onDidReceiveNotificationResponse $notification');
+      switch (notification) {
+        case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
+          return onExerciseNotification?.call(payload);
+        default:
+          return onUnknownNotification?.call(notification.toMap());
+      }
     },
     onDidReceiveBackgroundNotificationResponse: _notificationTapBackground,
   );
@@ -50,17 +60,19 @@ Future<bool?> requestNotificationPermission(BuildContext context) async {
   };
 }
 
-Future<int> showNotification({
+Future<int> _showNotification({
+  required int id,
   required String title,
   required String body,
   String? subtitle,
+  String? payload,
 }) async {
-  var id = 0;
   return _plugin
       .show(
         id,
         title,
         body,
+        payload: payload,
         NotificationDetails(
           iOS: DarwinNotificationDetails(subtitle: subtitle),
         ),
@@ -68,4 +80,31 @@ Future<int> showNotification({
       .then<int>(
         (_) => id,
       );
+}
+
+Future<int> showExerciseNotification({
+  required String exerciseId,
+  required String title,
+  required String body,
+  String? subtitle,
+}) {
+  return _showNotification(
+    id: _currentExercise,
+    title: title,
+    body: body,
+    subtitle: subtitle,
+    payload: exerciseId,
+  );
+}
+
+extension on NotificationResponse {
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'actionId': actionId,
+      'input': input,
+      'payload': payload,
+      'notificationResponseType': notificationResponseType,
+    };
+  }
 }

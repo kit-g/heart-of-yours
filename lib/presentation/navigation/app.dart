@@ -124,8 +124,20 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   }
 
   Future<void> _initApp(BuildContext context) async {
-    initNotifications();
+    initNotifications(
+      onExerciseNotification: (exerciseId) {
+        // exercises with a timer emit a local notification
+        // when tapped on, it will:
+        // - redirect the user to the workout page
+        HeartRouter.goToExercise(exerciseId);
+        // - trigger a slight animation highlighting the exercise
+        Workouts.of(context).pointAt(exerciseId);
+      },
+      onUnknownNotification: reportToSentry,
+    );
+
     _initAppInfo(context);
+
     var Exercises(:isInitialized, :init) = Exercises.of(context);
     final workouts = Workouts.of(context);
 

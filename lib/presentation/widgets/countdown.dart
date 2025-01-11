@@ -5,7 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart_language/heart_language.dart';
 
-Future<void> showCountdownDialog(BuildContext context, int totalDuration) {
+Future<void> showCountdownDialog(
+  BuildContext context,
+  int totalDuration, {
+  void Function(int)? onCountdown,
+}) {
   return showAdaptiveDialog(
     barrierDismissible: true,
     context: context,
@@ -17,7 +21,10 @@ Future<void> showCountdownDialog(BuildContext context, int totalDuration) {
         ),
         child: Wrap(
           children: [
-            Countdown(total: totalDuration),
+            Countdown(
+              total: totalDuration,
+              onCountdown: onCountdown,
+            ),
           ],
         ),
       );
@@ -27,10 +34,12 @@ Future<void> showCountdownDialog(BuildContext context, int totalDuration) {
 
 class Countdown extends StatefulWidget {
   final int total;
+  final void Function(int)? onCountdown;
 
   const Countdown({
     super.key,
     required this.total,
+    this.onCountdown,
   });
 
   @override
@@ -68,8 +77,11 @@ class _CountdownState extends State<Countdown> {
       (timer) {
         if (_remaining.value > 0) {
           _remaining.value--;
+
+          widget.onCountdown?.call(_remaining.value);
         } else {
           timer.cancel();
+          Navigator.pop(context);
         }
       },
     );
@@ -78,7 +90,7 @@ class _CountdownState extends State<Countdown> {
   void _adjustTime(int adjustment) {
     _remaining.value += adjustment;
     if (_remaining.value < 0) _remaining.value = 0;
-    if (_remaining.value > _total.value) _total.value = _remaining.value;
+    if (_remaining.value > _total.value) _total.value += adjustment;
   }
 
   @override
@@ -191,12 +203,15 @@ class _CountdownState extends State<Countdown> {
               ),
               Expanded(
                 child: PrimaryButton.wide(
-                  backgroundColor: colorScheme.primaryContainer,
+                  backgroundColor: colorScheme.primary,
                   onPressed: () {
                     _timer?.cancel();
                   },
                   child: Center(
-                    child: Text(skip),
+                    child: Text(
+                      skip,
+                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimary),
+                    ),
                   ),
                 ),
               ),

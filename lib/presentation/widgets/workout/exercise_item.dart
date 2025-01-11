@@ -13,6 +13,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final VoidCallback onDragEnded;
   final ValueNotifier<WorkoutExercise?> dragState;
   final ValueNotifier<WorkoutExercise?> currentlyHoveredItem;
+  final void Function(int)? onCountdown;
 
   const _WorkoutExerciseItem({
     required this.index,
@@ -27,6 +28,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
     required this.dragState,
     required this.currentlyHoveredItem,
     this.timerCopy,
+    this.onCountdown,
   });
 
   @override
@@ -66,12 +68,16 @@ class _WorkoutExerciseItem extends StatelessWidget {
                           return AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: switch (seconds) {
-                              int s => IconButton(
+                              int seconds => IconButton(
                                   tooltip: timerCopy,
                                   visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
                                   icon: const Icon(Icons.timer_outlined),
                                   onPressed: () {
-                                    showCountdownDialog(context, s);
+                                    showCountdownDialog(
+                                      context,
+                                      seconds,
+                                      onCountdown: onCountdown,
+                                    );
                                   },
                                 ),
                               null => const SizedBox.shrink(),
