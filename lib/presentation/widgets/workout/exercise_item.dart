@@ -66,12 +66,12 @@ class _WorkoutExerciseItem extends StatelessWidget {
                           return AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: switch (seconds) {
-                              int() => IconButton(
+                              int s => IconButton(
                                   tooltip: timerCopy,
                                   visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
                                   icon: const Icon(Icons.timer_outlined),
                                   onPressed: () {
-                                    //
+                                    showCountdownDialog(context, s);
                                   },
                                 ),
                               null => const SizedBox.shrink(),
@@ -91,9 +91,15 @@ class _WorkoutExerciseItem extends StatelessWidget {
                               return PopupMenuItem<_ExerciseOption>(
                                 height: 40,
                                 value: option,
-                                child: Text(
-                                  _exerciseOptionCopy(context, option),
-                                  style: _exerciseOptionStyle(textTheme, colorScheme, option),
+                                child: Row(
+                                  spacing: 4,
+                                  children: [
+                                    _exerciseOptionIcon(option, colorScheme),
+                                    Text(
+                                      _exerciseOptionCopy(context, option),
+                                      style: _exerciseOptionStyle(textTheme, colorScheme, option),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
@@ -219,6 +225,16 @@ class _WorkoutExerciseItem extends StatelessWidget {
     return switch (option) {
       _ExerciseOption.remove => theme.titleSmall?.copyWith(color: scheme.error),
       _ => theme.titleSmall,
+    };
+  }
+
+  Widget _exerciseOptionIcon(_ExerciseOption option, ColorScheme scheme) {
+    return switch (option) {
+      _ExerciseOption.remove => Icon(Icons.close, color: scheme.error),
+      _ExerciseOption.addNote => const Icon(Icons.close),
+      _ExerciseOption.replace => const Icon(Icons.close),
+      _ExerciseOption.weightUnit => const Icon(Icons.close),
+      _ExerciseOption.autoRestTimer => const Icon(Icons.timer_outlined),
     };
   }
 

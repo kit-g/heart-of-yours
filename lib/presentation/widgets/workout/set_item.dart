@@ -198,6 +198,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
       if (set.canBeCompleted) {
         workouts.markSetAsComplete(exercise, set);
+        _startTimer(context);
       }
 
       _repsFocus.unfocus();
@@ -226,5 +227,13 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         }
         _hasCrossedDismissThreshold.value = false;
     }
+  }
+
+  Future<void> _startTimer(BuildContext context) async {
+    final timers = Timers.of(context);
+    final timer = timers[exercise.exercise.name];
+
+    if (timer == null) return;
+    return showCountdownDialog(context, timer);
   }
 }

@@ -335,6 +335,14 @@ class L {
     );
   }
 
+  String get skip {
+    return Intl.message(
+      'Skip',
+      name: 'skip',
+      desc: 'Generic label, verb',
+    );
+  }
+
   String lb(int howMany) {
     return Intl.plural(
       howMany,
@@ -584,6 +592,30 @@ class L {
       >= 17 && < 21 => eveningWorkout,
       _ => nightWorkout,
     };
+  }
+
+  String get restTimerSubtitle {
+    return Intl.message(
+      'Adjust duration via the +/- buttons.',
+      name: 'restTimerSubtitle',
+      desc: 'Rest timer',
+    );
+  }
+
+  String get addSeconds {
+    return Intl.message(
+      '+10s',
+      name: 'addSeconds',
+      desc: 'Rest timer',
+    );
+  }
+
+  String get subtractSeconds {
+    return Intl.message(
+      '-10s',
+      name: 'subtractSeconds',
+      desc: 'Rest timer',
+    );
   }
 }
 
