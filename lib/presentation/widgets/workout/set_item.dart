@@ -242,12 +242,22 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   }
 
   Future<void> _onCountdown(BuildContext context) {
-    final L(:restComplete, :restCompleteBody) = L.of(context);
+    final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :lb) = L.of(context);
+    final workouts = Workouts.of(context);
+    final body = switch (workouts.nextIncomplete?.$2) {
+      WeightedSet(:double weight, :int reps) => weightedSetRepresentation(lb(weight.toInt()), reps),
+      // TODO: Handle this case.
+      CardioSet() => throw UnimplementedError(),
+      // TODO: Handle this case.
+      AssistedSet() => throw UnimplementedError(),
+      _ => null,
+    };
+    final nextExercise = workouts.nextIncomplete?.$1 ?? exercise;
     return showExerciseNotification(
-      exerciseId: exercise.id,
+      exerciseId: nextExercise.id,
       title: restComplete,
-      subtitle: restCompleteBody(exercise.exercise.name),
-      body: '230 lbs x 12',
+      subtitle: restCompleteBody(nextExercise.exercise.name),
+      body: body,
     );
   }
 }

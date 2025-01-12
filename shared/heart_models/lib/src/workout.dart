@@ -4,12 +4,17 @@ import 'exercise.dart';
 import 'misc.dart';
 import 'ts_for_id.dart';
 
+abstract interface class Completes {
+  bool get isCompleted;
+}
+
 /// A single set of an exercise
-sealed class ExerciseSet with UsesTimestampForId implements Model {
+sealed class ExerciseSet with UsesTimestampForId implements Model, Completes {
   final Exercise exercise;
   @override
   final DateTime start;
 
+  @override
   bool isCompleted = false;
 
   ExerciseSet._({
@@ -186,7 +191,7 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
 
 /// A collection of sets of the same exercise performed during a single workout
 /// E.g., squats 4x10
-abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements Model {
+abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements Model, Completes {
   Iterable<ExerciseSet> get sets;
 
   Exercise get exercise;
@@ -212,9 +217,6 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
 
   /// whether at least one set was marked as done
   bool get isStarted;
-
-  /// whether all sets were marked as done
-  bool get isValid;
 }
 
 /// A full workout
@@ -267,6 +269,8 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   /// whether the workout is ready to be finished
   /// i.e. all selected sets are marked as complete
   bool get isValid;
+
+  (WorkoutExercise, ExerciseSet)? nextIncomplete(WorkoutExercise exercise, ExerciseSet last);
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -342,15 +346,15 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   bool get isStarted => any((set) => set.isCompleted);
 
   @override
-  bool get isValid => every((set) => set.isCompleted);
-
-  @override
   int compareTo(WorkoutExercise other) {
     return switch ((other.order, order)) {
       ((int there, int here)) => here.compareTo(there),
       _ => super.compareTo(other),
     };
   }
+
+  @override
+  bool get isCompleted => every((set) => set.isCompleted);
 }
 
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
@@ -507,5 +511,27 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   bool get isStarted => any((exercise) => exercise.isStarted);
 
   @override
-  bool get isValid => isStarted && every((exercise) => exercise.isValid);
+  bool get isValid => isStarted && every((exercise) => exercise.isCompleted);
+
+  @override
+  (WorkoutExercise, ExerciseSet)? nextIncomplete(WorkoutExercise exercise, ExerciseSet last) {
+    return switch (exercise._nextIncomplete(last)) {
+      ExerciseSet set => (exercise, set),
+      _ => switch (_nextIncomplete(exercise)) {
+          WorkoutExercise next => (next, next.first),
+          _ => null,
+        }
+    };
+  }
+}
+
+extension on Iterable<Completes> {
+  Completes? _nextIncomplete(Completes element) {
+    try {
+      final l = toList();
+      return l.sublist(l.indexOf(element)).firstWhere((each) => !each.isCompleted);
+    } on StateError {
+      return null;
+    }
+  }
 }

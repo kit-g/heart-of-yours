@@ -633,6 +633,15 @@ class L {
       desc: 'Rest notification banner',
     );
   }
+
+  String weightedSetRepresentation(String weight, int reps) {
+    return Intl.message(
+      '$weight x $reps',
+      name: 'weightedSetRepresentation',
+      desc: 'Rest notification banner',
+      args: [weight, reps],
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

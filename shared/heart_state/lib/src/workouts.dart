@@ -37,6 +37,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   void onSignOut() {
     _workouts.clear();
     _activeWorkoutId = null;
+    userId = null;
+    _activeWorkoutId = null;
+    historyInitialized = false;
+    _notifiedOfActiveWorkout = false;
+    _latestMarkedSet = null;
   }
 
   static Workouts of(BuildContext context) {
@@ -62,6 +67,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   bool get hasUnNotifiedActiveWorkout => hasActiveWorkout && !_notifiedOfActiveWorkout;
 
   Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
+
+  (WorkoutExercise exercise, ExerciseSet set)? _latestMarkedSet;
+
+  (WorkoutExercise, ExerciseSet)? get nextIncomplete {
+    return switch (_latestMarkedSet) {
+      (WorkoutExercise exercise, ExerciseSet set) => activeWorkout?.nextIncomplete(exercise, set),
+      null => null,
+    };
+  }
 
   set _activeWorkout(Workout? value) {
     if (value case Workout workout) {
@@ -216,6 +230,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
+    _latestMarkedSet = (exercise, set);
     return _markSet(exercise, set, complete: true);
   }
 

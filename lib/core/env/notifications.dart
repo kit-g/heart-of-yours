@@ -63,7 +63,7 @@ Future<bool?> requestNotificationPermission(BuildContext context) async {
 Future<int> _showNotification({
   required int id,
   required String title,
-  required String body,
+  String? body,
   String? subtitle,
   String? payload,
 }) async {
@@ -85,7 +85,7 @@ Future<int> _showNotification({
 Future<int> showExerciseNotification({
   required String exerciseId,
   required String title,
-  required String body,
+  String? body,
   String? subtitle,
 }) {
   return _showNotification(
