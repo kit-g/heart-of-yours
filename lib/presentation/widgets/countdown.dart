@@ -53,13 +53,6 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
   late final Alarms alarms;
 
   @override
-  void initState() {
-    super.initState();
-
-    _total.value = widget.total;
-  }
-
-  @override
   void dispose() {
     _total.dispose();
     alarms.remainsInActiveExercise?.removeListener(_tickerListener);
@@ -231,11 +224,12 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
   void afterFirstLayout(BuildContext context) {
     alarms = Alarms.of(context);
 
+    _total.value = math.max(widget.total, alarms.activeExerciseTotal?.toInt() ?? 0);
+
     if (alarms.remainsInActiveExercise == null) {
-      alarms
-        ..startActiveExerciseTimer(widget.total, onComplete: widget.onCountdown)
-        ..remainsInActiveExercise?.addListener(_tickerListener);
+      alarms.startActiveExerciseTimer(widget.total, onComplete: widget.onCountdown);
     }
+    alarms.remainsInActiveExercise?.addListener(_tickerListener);
   }
 
   void _tickerListener() {

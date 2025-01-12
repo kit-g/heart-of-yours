@@ -19,11 +19,13 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     return Provider.of<Alarms>(context, listen: true);
   }
 
-  ({Timer timer, ValueNotifier<int> remains})? _activeExercise;
+  ({Timer timer, ValueNotifier<int> remains, num total})? _activeExercise;
 
   Timer? get activeExerciseTimer => _activeExercise?.timer;
 
   ValueNotifier<int>? get remainsInActiveExercise => _activeExercise?.remains;
+
+  num? get activeExerciseTotal => _activeExercise?.total;
 
   void stopActiveExerciseTimer() {
     _activeExercise
@@ -48,14 +50,20 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
             stopActiveExerciseTimer();
           }
         },
-      )
+      ),
+      total: duration,
     );
     notifyListeners();
   }
 
   void adjustActiveExerciseTime(int adjustment) {
-    if (_activeExercise?.remains.value case int v) {
-      _activeExercise?.remains.value = max(0, v + adjustment);
+    switch (_activeExercise) {
+      case (:Timer timer, :ValueNotifier<int> remains, :num total):
+        _activeExercise = (
+          timer: timer,
+          remains: remains..value = max(0, remains.value + adjustment),
+          total: max(0, total + adjustment),
+        );
     }
   }
 }
