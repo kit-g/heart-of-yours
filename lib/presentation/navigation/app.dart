@@ -53,6 +53,9 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Timers>(
           create: (_) => Timers(),
         ),
+        ChangeNotifierProvider<Alarms>(
+          create: (_) => Alarms(),
+        ),
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
             onError: reportToSentry,

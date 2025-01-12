@@ -2,13 +2,15 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:heart/core/utils/misc.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_state/heart_state.dart';
 
 Future<void> showCountdownDialog(
   BuildContext context,
   int totalDuration, {
-  void Function(int)? onCountdown,
+  VoidCallback? onCountdown,
 }) {
   return showAdaptiveDialog(
     barrierDismissible: true,
@@ -34,7 +36,7 @@ Future<void> showCountdownDialog(
 
 class Countdown extends StatefulWidget {
   final int total;
-  final void Function(int)? onCountdown;
+  final VoidCallback? onCountdown;
 
   const Countdown({
     super.key,
@@ -46,57 +48,32 @@ class Countdown extends StatefulWidget {
   State<Countdown> createState() => _CountdownState();
 }
 
-class _CountdownState extends State<Countdown> {
-  final _remaining = ValueNotifier<int>(0);
+class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> {
   final _total = ValueNotifier<int>(0);
-  Timer? _timer;
+  late final Alarms alarms;
 
   @override
   void initState() {
     super.initState();
 
     _total.value = widget.total;
-    _remaining.value = widget.total;
-
-    _startTimer();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _remaining.dispose();
     _total.dispose();
+    alarms.remainsInActiveExercise?.removeListener(_tickerListener);
 
     super.dispose();
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(
-      const Duration(seconds: 1),
-      (timer) {
-        if (_remaining.value > 0) {
-          _remaining.value--;
-
-          widget.onCountdown?.call(_remaining.value);
-        } else {
-          timer.cancel();
-          Navigator.pop(context);
-        }
-      },
-    );
-  }
-
-  void _adjustTime(int adjustment) {
-    _remaining.value += adjustment;
-    if (_remaining.value < 0) _remaining.value = 0;
-    if (_remaining.value > _total.value) _total.value += adjustment;
   }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final L(:skip, :addSeconds, :subtractSeconds, :restTimer, :restTimerSubtitle) = L.of(context);
+
+    final alarms = Alarms.watch(context);
+
     return Column(
       spacing: 32,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -135,19 +112,31 @@ class _CountdownState extends State<Countdown> {
             ValueListenableBuilder<int>(
               valueListenable: _total,
               builder: (_, total, __) {
-                return ValueListenableBuilder<int>(
-                  valueListenable: _remaining,
-                  builder: (_, remaining, __) {
-                    final progress = remaining / total;
-
-                    return CustomPaint(
-                      size: const Size(200, 200),
-                      painter: CircularTimerPainter(
-                        progress: progress,
-                        strokeColor: colorScheme.primary,
-                        backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: switch (alarms.remainsInActiveExercise) {
+                    ValueNotifier<int> seconds => ValueListenableBuilder<int>(
+                        valueListenable: seconds,
+                        builder: (_, remaining, __) {
+                          final progress = remaining / total;
+                          return CustomPaint(
+                            size: const Size(200, 200),
+                            painter: CircularTimerPainter(
+                              progress: progress,
+                              strokeColor: colorScheme.primary,
+                              backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                            ),
+                          );
+                        },
                       ),
-                    );
+                    null => CustomPaint(
+                        size: const Size(200, 200),
+                        painter: CircularTimerPainter(
+                          progress: 0,
+                          strokeColor: colorScheme.primary,
+                          backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                        ),
+                      ),
                   },
                 );
               },
@@ -155,13 +144,22 @@ class _CountdownState extends State<Countdown> {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ValueListenableBuilder<int>(
-                  valueListenable: _remaining,
-                  builder: (_, remaining, __) {
-                    return Text(
-                      _format(remaining),
-                      style: textTheme.headlineMedium,
-                    );
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: switch (alarms.remainsInActiveExercise) {
+                    ValueNotifier<int> seconds => ValueListenableBuilder<int>(
+                        valueListenable: seconds,
+                        builder: (_, remaining, child) {
+                          return Text(
+                            _format(remaining),
+                            style: textTheme.headlineMedium,
+                          );
+                        },
+                      ),
+                    null => Text(
+                        _format(0),
+                        style: textTheme.headlineMedium,
+                      ),
                   },
                 ),
                 ValueListenableBuilder<int>(
@@ -186,7 +184,10 @@ class _CountdownState extends State<Countdown> {
               Expanded(
                 child: PrimaryButton.wide(
                   backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
-                  onPressed: () => _adjustTime(-10),
+                  onPressed: () {
+                    alarms.adjustActiveExerciseTime(-10);
+                    _total.value = math.max(_total.value - 10, 0);
+                  },
                   child: Center(
                     child: Text(subtractSeconds),
                   ),
@@ -195,7 +196,10 @@ class _CountdownState extends State<Countdown> {
               Expanded(
                 child: PrimaryButton.wide(
                   backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
-                  onPressed: () => _adjustTime(10),
+                  onPressed: () {
+                    alarms.adjustActiveExerciseTime(10);
+                    _total.value += 10;
+                  },
                   child: Center(
                     child: Text(addSeconds),
                   ),
@@ -205,7 +209,8 @@ class _CountdownState extends State<Countdown> {
                 child: PrimaryButton.wide(
                   backgroundColor: colorScheme.primary,
                   onPressed: () {
-                    _timer?.cancel();
+                    Navigator.of(context).pop();
+                    alarms.stopActiveExerciseTimer();
                   },
                   child: Center(
                     child: Text(
@@ -222,6 +227,24 @@ class _CountdownState extends State<Countdown> {
     );
   }
 
+  @override
+  void afterFirstLayout(BuildContext context) {
+    alarms = Alarms.of(context);
+
+    if (alarms.remainsInActiveExercise == null) {
+      alarms
+        ..startActiveExerciseTimer(widget.total, onComplete: widget.onCountdown)
+        ..remainsInActiveExercise?.addListener(_tickerListener);
+    }
+  }
+
+  void _tickerListener() {
+    if (!context.mounted) return;
+    if (Alarms.of(context).remainsInActiveExercise?.value case int seconds when seconds == 0) {
+      Navigator.of(context).pop();
+    }
+  }
+
   String _format(int duration) {
     return "${_pad(duration ~/ 60)}:${_pad(duration % 60)}";
   }
@@ -235,23 +258,25 @@ class CircularTimerPainter extends CustomPainter {
   final double progress;
   final Color strokeColor;
   final Color backgroundColor;
+  final double strokeWidth;
 
   const CircularTimerPainter({
     required this.progress,
     required this.strokeColor,
     required this.backgroundColor,
+    this.strokeWidth = 10,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final basePaint = Paint()
       ..color = backgroundColor
-      ..strokeWidth = 10
+      ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
 
     final progressPaint = Paint()
       ..color = strokeColor
-      ..strokeWidth = 10
+      ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 

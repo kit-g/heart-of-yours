@@ -54,6 +54,7 @@ class _ProfilePageState extends State<ProfilePage> {
     Auth.of(context).onSignOut();
     Exercises.of(context).onSignOut();
     Preferences.of(context).onSignOut();
+    Alarms.of(context).onSignOut();
     Timers.of(context).onSignOut();
     Workouts.of(context).onSignOut();
   }

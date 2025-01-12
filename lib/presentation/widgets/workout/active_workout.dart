@@ -177,7 +177,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                                 _beingDragged.value = null;
                                 _currentlyHoveredExercise.value = null;
                               },
-                              onCountdown: (remains) => _onCountdown(set, remains),
+                              onCountdown: () => _onCountdown(set),
                             ),
                           );
                         },
@@ -320,18 +320,14 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
     );
   }
 
-  void _onCountdown(WorkoutExercise exercise, int remains) {
-    switch (remains) {
-      case 0:
-        final L(:restComplete, :restCompleteBody) = L.of(context);
-        showExerciseNotification(
-            exerciseId: exercise.id,
-            title: restComplete,
-            subtitle: restCompleteBody(exercise.exercise.name),
-            body: '230 lbs x 12');
-      case _:
-        //
-    }
+  Future<void> _onCountdown(WorkoutExercise exercise) {
+    final L(:restComplete, :restCompleteBody) = L.of(context);
+    return showExerciseNotification(
+      exerciseId: exercise.id,
+      title: restComplete,
+      subtitle: restCompleteBody(exercise.exercise.name),
+      body: '230 lbs x 12',
+    );
   }
 }
 

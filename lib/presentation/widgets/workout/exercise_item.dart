@@ -13,7 +13,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final VoidCallback onDragEnded;
   final ValueNotifier<WorkoutExercise?> dragState;
   final ValueNotifier<WorkoutExercise?> currentlyHoveredItem;
-  final void Function(int)? onCountdown;
+  final VoidCallback? onCountdown;
 
   const _WorkoutExerciseItem({
     required this.index,
