@@ -27,15 +27,20 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
 
   num? get activeExerciseTotal => _activeExercise?.total;
 
-  void stopActiveExerciseTimer() {
+  void _stopActiveExerciseTimer() {
     _activeExercise
       ?..timer.cancel()
       ..remains.dispose();
     _activeExercise = null;
   }
 
+  void stopActiveExerciseTimer() {
+    _stopActiveExerciseTimer();
+    notifyListeners();
+  }
+
   void startActiveExerciseTimer(int duration, {VoidCallback? onComplete}) {
-    stopActiveExerciseTimer();
+    _stopActiveExerciseTimer();
     _activeExercise = (
       remains: ValueNotifier<int>(duration),
       timer: Timer.periodic(
@@ -64,6 +69,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
           remains: remains..value = max(0, remains.value + adjustment),
           total: max(0, total + adjustment),
         );
+        notifyListeners();
     }
   }
 }

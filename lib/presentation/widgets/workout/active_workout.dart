@@ -163,7 +163,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                               exercise: set,
                               copy: addSet,
                               firstColumnCopy: setCopy,
-                              timerCopy: restTimer,
                               secondColumnCopy: previous,
                               thirdColumnCopy: lbs,
                               fourthColumnCopy: reps,
@@ -177,7 +176,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                                 _beingDragged.value = null;
                                 _currentlyHoveredExercise.value = null;
                               },
-                              onCountdown: () => _onCountdown(set),
                             ),
                           );
                         },
@@ -317,16 +315,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
           () => Exercises.of(context).unselectAll(),
         );
       },
-    );
-  }
-
-  Future<void> _onCountdown(WorkoutExercise exercise) {
-    final L(:restComplete, :restCompleteBody) = L.of(context);
-    return showExerciseNotification(
-      exerciseId: exercise.id,
-      title: restComplete,
-      subtitle: restCompleteBody(exercise.exercise.name),
-      body: '230 lbs x 12',
     );
   }
 }

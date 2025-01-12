@@ -234,6 +234,20 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     final timer = timers[exercise.exercise.name];
 
     if (timer == null) return;
-    return showCountdownDialog(context, timer);
+    return showCountdownDialog(
+      context,
+      timer,
+      onCountdown: () => _onCountdown(context),
+    );
+  }
+
+  Future<void> _onCountdown(BuildContext context) {
+    final L(:restComplete, :restCompleteBody) = L.of(context);
+    return showExerciseNotification(
+      exerciseId: exercise.id,
+      title: restComplete,
+      subtitle: restCompleteBody(exercise.exercise.name),
+      body: '230 lbs x 12',
+    );
   }
 }

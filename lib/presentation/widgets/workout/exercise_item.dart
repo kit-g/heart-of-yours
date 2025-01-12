@@ -3,7 +3,6 @@ part of 'active_workout.dart';
 class _WorkoutExerciseItem extends StatelessWidget {
   final int index;
   final String copy;
-  final String? timerCopy;
   final WorkoutExercise exercise;
   final String firstColumnCopy;
   final String secondColumnCopy;
@@ -13,7 +12,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final VoidCallback onDragEnded;
   final ValueNotifier<WorkoutExercise?> dragState;
   final ValueNotifier<WorkoutExercise?> currentlyHoveredItem;
-  final VoidCallback? onCountdown;
 
   const _WorkoutExerciseItem({
     required this.index,
@@ -27,8 +25,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
     required this.onDragEnded,
     required this.dragState,
     required this.currentlyHoveredItem,
-    this.timerCopy,
-    this.onCountdown,
   });
 
   @override
@@ -62,29 +58,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      Selector<Timers, int?>(
-                        selector: (_, provider) => provider[exercise.exercise.name],
-                        builder: (_, seconds, __) {
-                          return AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: switch (seconds) {
-                              int seconds => IconButton(
-                                  tooltip: timerCopy,
-                                  visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
-                                  icon: const Icon(Icons.timer_outlined),
-                                  onPressed: () {
-                                    showCountdownDialog(
-                                      context,
-                                      seconds,
-                                      onCountdown: onCountdown,
-                                    );
-                                  },
-                                ),
-                              null => const SizedBox.shrink(),
-                            },
-                          );
-                        },
-                      ),
                       PopupMenuButton<_ExerciseOption>(
                         style: const ButtonStyle(
                           visualDensity: VisualDensity(vertical: 0, horizontal: -2),
