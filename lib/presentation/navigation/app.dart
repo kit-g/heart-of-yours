@@ -128,6 +128,7 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
 
   Future<void> _initApp(BuildContext context) async {
     initNotifications(
+      platform: Theme.of(context).platform,
       onExerciseNotification: (exerciseId) {
         // exercises with a timer emit a local notification
         // when tapped on, it will:

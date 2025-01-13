@@ -6,6 +6,8 @@ final _plugin = FlutterLocalNotificationsPlugin();
 final _logger = Logger('Notifications');
 
 const _currentExercise = 0;
+const _defaultChannelId = 'heartChannel';
+const _defaultChannelName = 'heartChannel';
 
 @pragma('vm:entry-point')
 void _notificationTapBackground(NotificationResponse notificationResponse) {
@@ -13,9 +15,12 @@ void _notificationTapBackground(NotificationResponse notificationResponse) {
 }
 
 Future<void> initNotifications({
+  required TargetPlatform platform,
   void Function(String exerciseId)? onExerciseNotification,
   void Function(Map)? onUnknownNotification,
 }) async {
+  await _createNotificationChannel(platform);
+  await requestNotificationPermission(platform);
   await _plugin.initialize(
     const InitializationSettings(
       iOS: DarwinInitializationSettings(
@@ -23,6 +28,7 @@ Future<void> initNotifications({
         requestBadgePermission: true,
         requestAlertPermission: true,
       ),
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     ),
     onDidReceiveNotificationResponse: (notification) async {
       switch (notification) {
@@ -36,8 +42,7 @@ Future<void> initNotifications({
   );
 }
 
-Future<bool?> requestNotificationPermission(BuildContext context) async {
-  final platform = Theme.of(context).platform;
+Future<bool?> requestNotificationPermission(TargetPlatform platform) async {
   return switch (platform) {
     TargetPlatform.iOS => _plugin //
         .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
@@ -75,6 +80,19 @@ Future<int> _showNotification({
         payload: payload,
         NotificationDetails(
           iOS: DarwinNotificationDetails(subtitle: subtitle),
+          android: AndroidNotificationDetails(
+            _defaultChannelId,
+            _defaultChannelName,
+            icon: '@mipmap/ic_launcher',
+            enableVibration: false,
+            playSound: true,
+            styleInformation: switch ((body, subtitle)) {
+              (String b, String s) => BigTextStyleInformation('$s\n$b'),
+              (String b, null) => BigTextStyleInformation(b),
+              (null, String s) => BigTextStyleInformation(s),
+              (null, null) => null,
+            },
+          ),
         ),
       )
       .then<int>(
@@ -106,5 +124,22 @@ extension on NotificationResponse {
       'payload': payload,
       'notificationResponseType': notificationResponseType,
     };
+  }
+}
+
+Future<void> _createNotificationChannel(TargetPlatform platform) async {
+  switch (platform) {
+    case TargetPlatform.android:
+      const channel = AndroidNotificationChannel(
+        _defaultChannelId,
+        _defaultChannelName,
+        description: 'This channel is used for important notifications',
+        importance: Importance.defaultImportance,
+      );
+
+      return _plugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+    default:
   }
 }
