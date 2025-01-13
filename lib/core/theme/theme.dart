@@ -186,7 +186,7 @@ TextTheme _textTheme({Color? primaryColor, Color? secondaryColor}) {
     displayLarge: TextStyle(fontSize: 96.0, fontWeight: FontWeight.w300, letterSpacing: -1.5, color: primaryColor),
     displayMedium: TextStyle(fontSize: 60.0, fontWeight: FontWeight.w300, letterSpacing: -0.5, color: primaryColor),
     displaySmall: TextStyle(fontSize: 48.0, fontWeight: FontWeight.w400, letterSpacing: 0.0, color: primaryColor),
-    headlineMedium: TextStyle(fontSize: 34.0, fontWeight: FontWeight.w400, letterSpacing: 0.25, color: primaryColor),
+    headlineMedium: TextStyle(fontSize: 34.0, fontWeight: FontWeight.w700, letterSpacing: 0.25, color: primaryColor),
     headlineSmall: TextStyle(fontSize: 24.0, fontWeight: FontWeight.w400, letterSpacing: 0.0, color: primaryColor),
     titleLarge: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w700, letterSpacing: 0.15, color: primaryColor),
     titleMedium: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w700, letterSpacing: 0.15, color: primaryColor),

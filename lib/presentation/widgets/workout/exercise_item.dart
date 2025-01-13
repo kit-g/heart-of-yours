@@ -56,26 +56,36 @@ class _WorkoutExerciseItem extends StatelessWidget {
                     exercise.exercise.name,
                     style: textTheme.titleMedium,
                   ),
-                  PopupMenuButton<_ExerciseOption>(
-                    style: const ButtonStyle(
-                      visualDensity: VisualDensity(vertical: 0, horizontal: -2),
-                    ),
-                    icon: const Icon(Icons.more_horiz),
-                    onSelected: (option) => _onTapExerciseOption(context, option),
-                    itemBuilder: (context) {
-                      return _ExerciseOption.values.map(
-                        (option) {
-                          return PopupMenuItem<_ExerciseOption>(
-                            height: 40,
-                            value: option,
-                            child: Text(
-                              _exerciseOptionCopy(context, option),
-                              style: _exerciseOptionStyle(textTheme, colorScheme, option),
-                            ),
-                          );
+                  Row(
+                    children: [
+                      PopupMenuButton<_ExerciseOption>(
+                        style: const ButtonStyle(
+                          visualDensity: VisualDensity(vertical: 0, horizontal: -2),
+                        ),
+                        icon: const Icon(Icons.more_horiz),
+                        onSelected: (option) => _onTapExerciseOption(context, option),
+                        itemBuilder: (context) {
+                          return _ExerciseOption.values.map(
+                            (option) {
+                              return PopupMenuItem<_ExerciseOption>(
+                                height: 40,
+                                value: option,
+                                child: Row(
+                                  spacing: 4,
+                                  children: [
+                                    _exerciseOptionIcon(option, colorScheme),
+                                    Text(
+                                      _exerciseOptionCopy(context, option),
+                                      style: _exerciseOptionStyle(textTheme, colorScheme, option),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ).toList();
                         },
-                      ).toList();
-                    },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -197,15 +207,44 @@ class _WorkoutExerciseItem extends StatelessWidget {
     };
   }
 
+  Widget _exerciseOptionIcon(_ExerciseOption option, ColorScheme scheme) {
+    return switch (option) {
+      _ExerciseOption.remove => Icon(Icons.close, color: scheme.error),
+      _ExerciseOption.addNote => const Icon(Icons.close),
+      _ExerciseOption.replace => const Icon(Icons.close),
+      _ExerciseOption.weightUnit => const Icon(Icons.close),
+      _ExerciseOption.autoRestTimer => const Icon(Icons.timer_outlined),
+    };
+  }
+
   Future<void> _onTapExerciseOption(BuildContext context, _ExerciseOption option) async {
     switch (option) {
       case _ExerciseOption.remove:
         return Workouts.of(context).removeExercise(exercise);
+      case _ExerciseOption.autoRestTimer:
+        return _selectRestTime(
+          context,
+          initialValue: Timers.of(context)[exercise.exercise.name],
+        );
       case _ExerciseOption.addNote:
       case _ExerciseOption.replace:
       case _ExerciseOption.weightUnit:
-      case _ExerciseOption.autoRestTimer:
       // TODO: Handle this case.
+    }
+  }
+
+  Future<void> _selectRestTime(BuildContext context, {int? initialValue}) async {
+    final name = exercise.exercise.name;
+    final timers = Timers.of(context);
+    final restInSeconds = await showDurationPicker(
+      context,
+      initialValue: initialValue,
+      subtitle: L.of(context).forExercise(name),
+    );
+    if (restInSeconds == null) {
+      timers.remove(name);
+    } else {
+      timers[name] = restInSeconds;
     }
   }
 }

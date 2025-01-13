@@ -32,8 +32,8 @@ class AppFrame extends StatelessWidget {
               selector: (_, provider) => provider.hasActiveWorkout,
               builder: (_, hasActiveWorkout, __) {
                 return switch (hasActiveWorkout) {
-                  false => const Icon(Icons.fitness_center_rounded),
-                  true => const Icon(Icons.add_circle_outline_rounded),
+                  true => const Icon(Icons.fitness_center_rounded),
+                  false => const Icon(Icons.add_circle_outline_rounded),
                 };
               },
             ),

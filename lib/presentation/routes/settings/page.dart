@@ -5,7 +5,7 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final L(:settings, :appearance, :aboutApp) = L.of(context);
+    final L(:settings, :appearance, :aboutApp, :notificationSettings) = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -54,6 +54,7 @@ class SettingsPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ListTile(
+                leading: const Icon(Icons.info_outline_rounded),
                 title: Text(aboutApp),
                 onTap: () {
                   final info = AppInfo.of(context);
@@ -64,7 +65,15 @@ class SettingsPage extends StatelessWidget {
                     applicationName: info.appName,
                   );
                 },
-              )
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.edit_notifications_outlined),
+                title: Text(notificationSettings),
+                onTap: () {
+                  //
+                },
+              ),
             ],
           ),
         ),

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
-import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import 'utils.dart';
@@ -10,8 +9,6 @@ typedef WorkoutId = String;
 
 // Firestore collection
 const _collectionId = 'workouts';
-
-final _logger = Logger('Workouts');
 
 class Workouts with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
@@ -40,6 +37,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   void onSignOut() {
     _workouts.clear();
     _activeWorkoutId = null;
+    userId = null;
+    _activeWorkoutId = null;
+    historyInitialized = false;
+    _notifiedOfActiveWorkout = false;
+    _latestMarkedSet = null;
   }
 
   static Workouts of(BuildContext context) {
@@ -66,6 +68,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
 
+  (WorkoutExercise exercise, ExerciseSet set)? _latestMarkedSet;
+
+  (WorkoutExercise, ExerciseSet)? get nextIncomplete {
+    return switch (_latestMarkedSet) {
+      (WorkoutExercise exercise, ExerciseSet set) => activeWorkout?.nextIncomplete(exercise, set),
+      null => null,
+    };
+  }
+
   set _activeWorkout(Workout? value) {
     if (value case Workout workout) {
       _activeWorkoutId = workout.id;
@@ -74,6 +85,20 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       _activeWorkoutId = null;
     }
     notifyListeners();
+  }
+
+  ExerciseId? _pointedAtExercise;
+
+  ExerciseId? get pointedAtExercise => _pointedAtExercise;
+
+  set pointedAtExercise(ExerciseId? value) {
+    _pointedAtExercise = value;
+    notifyListeners();
+  }
+
+  Future<void> pointAt(ExerciseId exerciseId) {
+    pointedAtExercise = exerciseId;
+    return Future.delayed(const Duration(milliseconds: 300), () => pointedAtExercise = null);
   }
 
   Future<void> init() async {
@@ -96,7 +121,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         .doc(workout.id)
         .set(doc)
         .catchError(
-          (e, s) => _onError(e, stacktrace: s),
+          (e, s) => onError?.call(e, stacktrace: s),
         );
     notifyListeners();
   }
@@ -139,7 +164,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _activeWorkoutDoc?. //
         update({'exercises': activeWorkout?.toMap()['exercises']}) //
         .catchError(
-      (error, s) => _onError(error, stacktrace: s),
+      (error, s) => onError?.call(error, stacktrace: s),
     );
   }
 
@@ -205,6 +230,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
+    _latestMarkedSet = (exercise, set);
     return _markSet(exercise, set, complete: true);
   }
 
@@ -272,7 +298,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           .get();
       return querySnapshot.docs.firstOrNull?.data();
     } catch (error, s) {
-      _onError(error, stacktrace: s);
+      onError?.call(error, stacktrace: s);
       return null;
     }
   }
@@ -290,7 +316,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           .get(_options);
       return querySnapshot.docs.map((doc) => doc.data());
     } catch (error, s) {
-      _onError(error, stacktrace: s);
+      onError?.call(error, stacktrace: s);
       return null;
     }
   }
@@ -314,14 +340,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Workout _fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? _) {
     return Workout.fromJson(fromFirestoreMap(snapshot.data()!), lookForExercise);
-  }
-
-  void _onError(Object error, {stacktrace}) {
-    _logger
-      ..shout('${error.runtimeType}: $error')
-      ..shout(stacktrace);
-
-    onError?.call(error, stacktrace: stacktrace);
   }
 
   Workout? lookup(String id) => _workouts[id];

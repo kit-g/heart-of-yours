@@ -1,10 +1,11 @@
-library heart_state;
+library;
 
 export 'package:provider/provider.dart';
 
+export 'src/alarms.dart';
 export 'src/auth.dart';
 export 'src/exercises.dart';
 export 'src/package.dart';
 export 'src/preferences.dart';
-export 'src/utils.dart' show initLogging;
+export 'src/timers.dart';
 export 'src/workouts.dart';
