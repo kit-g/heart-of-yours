@@ -140,6 +140,13 @@ abstract final class HeartRouter {
   static void refresh() {
     return config.refresh();
   }
+
+  static void goToExercise(String exerciseId) {
+    return config.goNamed(
+      'workout',
+      queryParameters: {'exerciseId': exerciseId},
+    );
+  }
 }
 
 extension ContextNavigation on BuildContext {

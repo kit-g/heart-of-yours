@@ -43,7 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
           IconButton.outlined(
             tooltip: logOut,
             onPressed: () => _logout(context),
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout_rounded),
           ),
         ],
       ),
@@ -54,6 +54,8 @@ class _ProfilePageState extends State<ProfilePage> {
     Auth.of(context).onSignOut();
     Exercises.of(context).onSignOut();
     Preferences.of(context).onSignOut();
+    Alarms.of(context).onSignOut();
+    Timers.of(context).onSignOut();
     Workouts.of(context).onSignOut();
   }
 }

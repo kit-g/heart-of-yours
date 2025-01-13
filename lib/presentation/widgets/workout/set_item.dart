@@ -198,6 +198,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
       if (set.canBeCompleted) {
         workouts.markSetAsComplete(exercise, set);
+        _startTimer(context);
       }
 
       _repsFocus.unfocus();
@@ -226,5 +227,37 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         }
         _hasCrossedDismissThreshold.value = false;
     }
+  }
+
+  Future<void> _startTimer(BuildContext context) async {
+    final timers = Timers.of(context);
+    final timer = timers[exercise.exercise.name];
+
+    if (timer == null) return;
+    return showCountdownDialog(
+      context,
+      timer,
+      onCountdown: () => _onCountdown(context),
+    );
+  }
+
+  Future<void> _onCountdown(BuildContext context) {
+    final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :lb) = L.of(context);
+    final workouts = Workouts.of(context);
+    final body = switch (workouts.nextIncomplete?.$2) {
+      WeightedSet(:double weight, :int reps) => weightedSetRepresentation(lb(weight.toInt()), reps),
+      // TODO: Handle this case.
+      CardioSet() => throw UnimplementedError(),
+      // TODO: Handle this case.
+      AssistedSet() => throw UnimplementedError(),
+      _ => null,
+    };
+    final nextExercise = workouts.nextIncomplete?.$1 ?? exercise;
+    return showExerciseNotification(
+      exerciseId: nextExercise.id,
+      title: restComplete,
+      subtitle: restCompleteBody(nextExercise.exercise.name),
+      body: body,
+    );
   }
 }

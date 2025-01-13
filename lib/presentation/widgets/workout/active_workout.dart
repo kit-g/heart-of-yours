@@ -3,6 +3,9 @@ library;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/notifications.dart';
+import 'package:heart/presentation/widgets/countdown.dart';
+import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/router.dart';
@@ -72,6 +75,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
       :previous,
       :lbs,
       :reps,
+      :restTimer,
     ) = L.of(context);
 
     final ThemeData(
@@ -149,24 +153,33 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                   return Column(
                     children: [
                       if (hoveredOver == set) _divider,
-                      _WorkoutExerciseItem(
-                        index: index,
-                        exercise: set,
-                        copy: addSet,
-                        firstColumnCopy: setCopy,
-                        secondColumnCopy: previous,
-                        thirdColumnCopy: lbs,
-                        fourthColumnCopy: reps,
-                        dragState: _beingDragged,
-                        currentlyHoveredItem: _currentlyHoveredExercise,
-                        onDragStarted: () {
-                          _beingDragged.value = set;
+                      Selector<Workouts, bool>(
+                        builder: (_, isPointedAt, __) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 500),
+                            color: isPointedAt ? colorScheme.primary : Colors.transparent,
+                            child: _WorkoutExerciseItem(
+                              index: index,
+                              exercise: set,
+                              copy: addSet,
+                              firstColumnCopy: setCopy,
+                              secondColumnCopy: previous,
+                              thirdColumnCopy: lbs,
+                              fourthColumnCopy: reps,
+                              dragState: _beingDragged,
+                              currentlyHoveredItem: _currentlyHoveredExercise,
+                              onDragStarted: () {
+                                _beingDragged.value = set;
+                              },
+                              onDragEnded: () {
+                                buzz();
+                                _beingDragged.value = null;
+                                _currentlyHoveredExercise.value = null;
+                              },
+                            ),
+                          );
                         },
-                        onDragEnded: () {
-                          buzz();
-                          _beingDragged.value = null;
-                          _currentlyHoveredExercise.value = null;
-                        },
+                        selector: (_, provider) => provider.pointedAtExercise == set.id,
                       ),
                     ],
                   );

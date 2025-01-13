@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'router.dart';
@@ -29,7 +31,12 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
             lookForExercise: Exercises.of(context).lookup,
-            onError: reportToSentry,
+            onError: (error, {stacktrace}) {
+              Logger('Workouts')
+                ..shout('${error.runtimeType}: $error')
+                ..shout(stacktrace);
+              reportToSentry(error, stacktrace: stacktrace);
+            },
           ),
         ),
         ChangeNotifierProvider<Auth>(
@@ -42,6 +49,12 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Preferences>(
           create: (_) => Preferences(),
+        ),
+        ChangeNotifierProvider<Timers>(
+          create: (_) => Timers(),
+        ),
+        ChangeNotifierProvider<Alarms>(
+          create: (_) => Alarms(),
         ),
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
@@ -114,7 +127,21 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   }
 
   Future<void> _initApp(BuildContext context) async {
+    initNotifications(
+      platform: Theme.of(context).platform,
+      onExerciseNotification: (exerciseId) {
+        // exercises with a timer emit a local notification
+        // when tapped on, it will:
+        // - redirect the user to the workout page
+        HeartRouter.goToExercise(exerciseId);
+        // - trigger a slight animation highlighting the exercise
+        Workouts.of(context).pointAt(exerciseId);
+      },
+      onUnknownNotification: reportToSentry,
+    );
+
     _initAppInfo(context);
+
     var Exercises(:isInitialized, :init) = Exercises.of(context);
     final workouts = Workouts.of(context);
 

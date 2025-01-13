@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/workout/active_workout.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_language/heart_language.dart';
@@ -29,7 +30,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Widget build(BuildContext context) {
     final ThemeData(:scaffoldBackgroundColor, :textTheme, :colorScheme) = Theme.of(context);
 
-    final L(:finish) = L.of(context);
+    final L(:finish, :restTimer) = L.of(context);
     final workouts = Workouts.watch(context);
 
     if (workouts.activeWorkout?.name case String name when name.isNotEmpty) {
@@ -89,6 +90,47 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           initValue: workout.elapsed(),
                           style: textTheme.titleSmall,
                         ),
+                        Selector<Alarms, (ValueNotifier<int>?, num?)>(
+                          selector: (_, provider) => (provider.remainsInActiveExercise, provider.activeExerciseTotal),
+                          builder: (_, seconds, __) {
+                            return AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: switch (seconds) {
+                                (ValueNotifier<int> counter, num total) => ValueListenableBuilder<int>(
+                                    valueListenable: counter,
+                                    builder: (_, remains, __) {
+                                      return Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          SizedBox(
+                                            height: 32,
+                                            width: 32,
+                                            child: CustomPaint(
+                                              painter: CircularTimerPainter(
+                                                progress: remains / total,
+                                                strokeColor: colorScheme.primary,
+                                                backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                                                strokeWidth: 3,
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            tooltip: restTimer,
+                                            visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
+                                            icon: const Icon(Icons.timer_outlined),
+                                            onPressed: () {
+                                              showCountdownDialog(context, remains);
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                _ => const SizedBox.shrink(),
+                              },
+                            );
+                          },
+                        ),
                         PrimaryButton.shrunk(
                           onPressed: () {
                             showFinishWorkoutDialog(context, workouts);
@@ -98,7 +140,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         )
                       ],
                     ),
-                    height: 40,
+                    height: 48,
                   ),
                 ),
               ],

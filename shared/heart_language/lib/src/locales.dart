@@ -335,6 +335,14 @@ class L {
     );
   }
 
+  String get skip {
+    return Intl.message(
+      'Skip',
+      name: 'skip',
+      desc: 'Generic label, verb',
+    );
+  }
+
   String lb(int howMany) {
     return Intl.plural(
       howMany,
@@ -382,6 +390,14 @@ class L {
       'Rest timer',
       name: 'restTimer',
       desc: 'Exercise set option, "Set the rest timer for this exercise"',
+    );
+  }
+
+  String get cancelTimer {
+    return Intl.message(
+      'Cancel timer',
+      name: 'cancelTimer',
+      desc: 'Button text',
     );
   }
 
@@ -553,6 +569,22 @@ class L {
     );
   }
 
+  String get notificationSettings {
+    return Intl.message(
+      'Notification settings',
+      name: 'notificationSettings',
+      desc: 'Settings item',
+    );
+  }
+
+  String forExercise(String exercise) {
+    return Intl.message(
+      'for $exercise',
+      name: 'forExercise',
+      desc: 'As in "Rest timer for bicep curl"',
+    );
+  }
+
   String defaultWorkoutName() {
     return switch (DateTime.now().hour) {
       >= 5 && < 12 => morningWorkout,
@@ -560,6 +592,55 @@ class L {
       >= 17 && < 21 => eveningWorkout,
       _ => nightWorkout,
     };
+  }
+
+  String get restTimerSubtitle {
+    return Intl.message(
+      'Adjust duration via the +/- buttons.',
+      name: 'restTimerSubtitle',
+      desc: 'Rest timer',
+    );
+  }
+
+  String get addSeconds {
+    return Intl.message(
+      '+10s',
+      name: 'addSeconds',
+      desc: 'Rest timer',
+    );
+  }
+
+  String get subtractSeconds {
+    return Intl.message(
+      '-10s',
+      name: 'subtractSeconds',
+      desc: 'Rest timer',
+    );
+  }
+
+  String get restComplete {
+    return Intl.message(
+      'Rest complete!',
+      name: 'restComplete',
+      desc: 'Rest notification banner',
+    );
+  }
+
+  String restCompleteBody(String exercise) {
+    return Intl.message(
+      'Next: $exercise',
+      name: 'restCompleteBody',
+      desc: 'Rest notification banner',
+    );
+  }
+
+  String weightedSetRepresentation(String weight, int reps) {
+    return Intl.message(
+      '$weight x $reps',
+      name: 'weightedSetRepresentation',
+      desc: 'Rest notification banner',
+      args: [weight, reps],
+    );
   }
 }
 
