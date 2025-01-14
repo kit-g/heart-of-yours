@@ -8,7 +8,7 @@ import 'package:heart/presentation/routes/workout.dart';
 import 'package:heart_state/heart_state.dart';
 
 import '../routes/login.dart';
-import '../routes/profile.dart';
+import '../routes/profile/profile.dart';
 import '../widgets/app_frame.dart';
 
 export 'package:go_router/go_router.dart' show GoRouterState;
