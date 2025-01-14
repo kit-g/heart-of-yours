@@ -38,7 +38,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts.clear();
     _activeWorkoutId = null;
     userId = null;
-    _activeWorkoutId = null;
     historyInitialized = false;
     _notifiedOfActiveWorkout = false;
     _latestMarkedSet = null;
