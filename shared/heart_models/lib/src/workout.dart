@@ -3,6 +3,7 @@ import 'dart:math';
 import 'exercise.dart';
 import 'misc.dart';
 import 'ts_for_id.dart';
+import 'utils.dart';
 
 abstract interface class Completes {
   bool get isCompleted;
