@@ -1,8 +1,5 @@
 part of 'profile.dart';
 
-// how many weeks of workouts the chart will display
-const _maxWorkoutBars = 8;
-
 class WorkoutsAggregationChart extends StatefulWidget {
   final WorkoutAggregation workouts;
 
@@ -93,7 +90,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
                             ),
                           ),
                           borderData: FlBorderData(show: false),
-                          barGroups: widget.workouts.take(_maxWorkoutBars).indexed.map(
+                          barGroups: widget.workouts.indexed.map(
                             (record) {
                               final (index, summary) = record;
                               return _bar(index, summary);
