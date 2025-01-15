@@ -272,6 +272,10 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   bool get isValid;
 
   (WorkoutExercise, ExerciseSet)? nextIncomplete(WorkoutExercise exercise, ExerciseSet last);
+
+  Map<String, String> toSummary();
+
+  String weekOf();
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -523,6 +527,19 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
           _ => null,
         }
     };
+  }
+
+  @override
+  Map<String, String> toSummary() {
+    return {
+      'id': id,
+      if (name case String name) 'name': name,
+    };
+  }
+
+  @override
+  String weekOf() {
+    return sanitizeId(getMonday(start));
   }
 }
 

@@ -2,10 +2,12 @@ part of 'profile.dart';
 
 class WorkoutsAggregationChart extends StatefulWidget {
   final WorkoutAggregation workouts;
+  final double? opacity;
 
   const WorkoutsAggregationChart({
     super.key,
     required this.workouts,
+    this.opacity,
   });
 
   @override
@@ -38,72 +40,75 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
               workoutsPerWeek,
               style: textTheme.titleLarge,
             ),
-            const SizedBox(height: 4),
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  color: colorScheme.primaryContainer,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: _pointedAtBar,
-                    builder: (_, __, ___) {
-                      return BarChart(
-                        duration: animDuration,
-                        BarChartData(
-                          barTouchData: BarTouchData(
-                            touchTooltipData: BarTouchTooltipData(
-                              getTooltipColor: (_) => colorScheme.onTertiary,
-                              tooltipHorizontalAlignment: FLHorizontalAlignment.right, // todo
-                              tooltipMargin: -6 * 20, // todo
-                              getTooltipItem: _tooltip,
+              child: Opacity(
+                opacity: widget.opacity ?? 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    color: colorScheme.primaryContainer,
+
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: _pointedAtBar,
+                      builder: (_, __, ___) {
+                        return BarChart(
+                          duration: animDuration,
+                          BarChartData(
+                            barTouchData: BarTouchData(
+                              touchTooltipData: BarTouchTooltipData(
+                                getTooltipColor: (_) => colorScheme.onTertiary,
+                                tooltipHorizontalAlignment: FLHorizontalAlignment.right, // todo
+                                tooltipMargin: -6 * 20, // todo
+                                getTooltipItem: _tooltip,
+                              ),
+                              touchCallback: (FlTouchEvent event, barTouchResponse) {
+                                if (!event.isInterestedForInteractions || // todo
+                                    barTouchResponse == null ||
+                                    barTouchResponse.spot == null) {
+                                  _pointedAtBar.value = -1;
+                                  return;
+                                }
+                                _pointedAtBar.value = barTouchResponse.spot!.touchedBarGroupIndex;
+                              },
                             ),
-                            touchCallback: (FlTouchEvent event, barTouchResponse) {
-                              if (!event.isInterestedForInteractions || // todo
-                                  barTouchResponse == null ||
-                                  barTouchResponse.spot == null) {
-                                _pointedAtBar.value = -1;
-                                return;
-                              }
-                              _pointedAtBar.value = barTouchResponse.spot!.touchedBarGroupIndex;
-                            },
-                          ),
-                          titlesData: FlTitlesData(
-                            show: true,
-                            rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: _titles,
-                                reservedSize: 32,
+                            titlesData: FlTitlesData(
+                              show: true,
+                              rightTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              topTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: _titles,
+                                  reservedSize: 32,
+                                ),
+                              ),
+                              leftTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
                               ),
                             ),
-                            leftTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
+                            borderData: FlBorderData(show: false),
+                            barGroups: widget.workouts.indexed.map(
+                              (record) {
+                                final (index, summary) = record;
+                                return _bar(index, summary);
+                              },
+                            ).toList(),
+                            gridData: const FlGridData(
+                              show: true,
+                              drawHorizontalLine: true,
+                              drawVerticalLine: false,
                             ),
                           ),
-                          borderData: FlBorderData(show: false),
-                          barGroups: widget.workouts.indexed.map(
-                            (record) {
-                              final (index, summary) = record;
-                              return _bar(index, summary);
-                            },
-                          ).toList(),
-                          gridData: const FlGridData(
-                            show: true,
-                            drawHorizontalLine: true,
-                            drawVerticalLine: false,
-                          ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),

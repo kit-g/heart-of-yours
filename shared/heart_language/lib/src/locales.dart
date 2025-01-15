@@ -634,6 +634,22 @@ class L {
     );
   }
 
+  String get workoutsPerWeekTitle {
+    return Intl.message(
+      'Your workouts will be presented here',
+      name: 'workoutsPerWeekTitle',
+      desc: 'Chart label',
+    );
+  }
+
+  String get workoutsPerWeekBody {
+    return Intl.message(
+      'Go get them done!',
+      name: 'workoutsPerWeekBody',
+      desc: 'Chart label',
+    );
+  }
+
   String restCompleteBody(String exercise) {
     return Intl.message(
       'Next: $exercise',

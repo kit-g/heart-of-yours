@@ -128,8 +128,32 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> finishWorkout() async {
     activeWorkout?.finish(DateTime.now());
 
-    if (activeWorkout?.toMap() case Map<String, dynamic> doc) {
-      _activeWorkoutDoc?.update(doc);
+    final active = activeWorkout;
+    if (active == null) return;
+
+    if (_activeWorkoutDoc case DocumentReference<Map<String, dynamic>> workout) {
+      final user = _db.collection('users').doc(userId!);
+
+      _db.runTransaction(
+        (transaction) async {
+          final userSnapshot = await transaction.get(user);
+          final currentAggregations = userSnapshot.data()?['aggregations']?['workouts'] ?? {};
+
+          final updated = (currentAggregations[active.weekOf()] ?? []).take(_maxWorkoutBars).toList()
+            ..add(active.toSummary());
+
+          transaction
+            ..update(workout, active.toMap())
+            ..update(
+              user,
+              {'aggregations.workouts.${active.weekOf()}': updated},
+            );
+        },
+      ).catchError(
+        (error, stacktrace) {
+          onError?.call(error, stacktrace: stacktrace);
+        },
+      );
     }
     _activeWorkout = null;
   }
@@ -147,6 +171,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _collection.doc(workoutId).delete();
   }
 
+  // todo delete workout from aggregation
   Future<void> deleteWorkout(String workoutId) {
     _workouts.remove(workoutId);
     notifyListeners();
@@ -343,3 +368,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Workout? lookup(String id) => _workouts[id];
 }
+
+// how many weeks of workouts the chart will display
+const _maxWorkoutBars = 8;
