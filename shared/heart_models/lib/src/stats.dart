@@ -1,4 +1,8 @@
+import 'dart:math';
+
 import 'utils.dart';
+
+final _random = Random();
 
 abstract interface class WorkoutSummary {
   String get id;
@@ -23,14 +27,15 @@ abstract interface class WorkoutAggregation with Iterable<WeekSummary> {
   /// This method processes the provided JSON to generate a list of weeks, each
   /// containing workout data. It ensures that any missing weeks between the
   /// earliest and current weeks are populated as empty weeks. The result is
-  /// a complete list of weeks, which is sorted and limited to a maximum number
-  /// of weeks defined by [_maxWorkoutBars].
+  /// a complete sorted list of weeks.
   ///
   /// If the parsed data is empty, the method returns an empty [WorkoutAggregation].
   ///
   /// It also ensures that the weeks are represented in a reversed order (latest
   /// week first) and only retains the most recent weeks, up to the maximum defined.
   factory WorkoutAggregation.fromJson(Map<String, dynamic> json) = _WorkoutAggregation.fromJson;
+
+  factory WorkoutAggregation.dummy() = _WorkoutAggregation.dummy;
 }
 
 class _WorkoutSummary implements WorkoutSummary {
@@ -131,11 +136,39 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
         )
         .toList()
         .reversed
-        .take(_maxWorkoutBars)
         .toList()
       ..sort();
 
     return _WorkoutAggregation(weeks: completeWeeks);
+  }
+
+  factory _WorkoutAggregation.dummy({int limit = 8}) {
+    final currentWeekStart = getMonday(DateTime.timestamp());
+    final earliestWeekStart = currentWeekStart.subtract(Duration(days: 7 * limit - 1));
+
+    final weeks = Iterable.generate(
+      currentWeekStart.difference(earliestWeekStart).inDays ~/ 7 + 1,
+      (index) => earliestWeekStart.add(Duration(days: index * 7)),
+    ).map(
+      (iteration) {
+        return _WeekSummary(
+          weekId: sanitizeId(iteration),
+          workouts: List.generate(
+            2 + _random.nextInt(5),
+            (index) {
+              return _WorkoutSummary(
+                id: sanitizeId(
+                  iteration.copyWith(hour: iteration.hour + index),
+                ),
+                name: '',
+              );
+            },
+          ),
+        );
+      },
+    ).toList()
+      ..sort();
+    return _WorkoutAggregation(weeks: weeks);
   }
 }
 
@@ -148,6 +181,3 @@ extension on DateTime {
 bool _isTheSameDay(DateTime one, DateTime two) {
   return one.year == two.year && one.month == two.month && one.day == two.day;
 }
-
-// how many weeks of workouts the chart will display
-const _maxWorkoutBars = 8;
