@@ -47,7 +47,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               ],
             ),
         },
-        floatingActionButton: const WorkoutTimerFloatingButton(),
+        floatingActionButton: WorkoutTimerFloatingButton(
+          scrollableController: Scrolls.of(context).historyDraggableController,
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_language/heart_language.dart';
@@ -42,7 +43,9 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
           },
         ),
       ),
-      floatingActionButton: const WorkoutTimerFloatingButton(),
+      floatingActionButton: WorkoutTimerFloatingButton(
+        scrollableController: Scrolls.of(context).exercisesDraggableController,
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }

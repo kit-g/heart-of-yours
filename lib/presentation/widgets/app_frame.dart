@@ -73,10 +73,10 @@ class AppFrame extends StatelessWidget {
           return Scrolls.of(context).scrollWorkoutToTop();
         // history stack
         case 2:
-          return Scrolls.of(context).scrollHistoryToTop();
+          return Scrolls.of(context).resetHistoryStack();
         // exercises stack
         case 3:
-          return Scrolls.of(context).scrollExercisesToTop();
+          return Scrolls.of(context).resetExerciseStack();
       }
     }
   }

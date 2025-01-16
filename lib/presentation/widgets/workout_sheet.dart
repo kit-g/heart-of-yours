@@ -20,6 +20,7 @@ Future<void> showWorkoutSheet(
           snapSizes: const [.5],
           snap: true,
           expand: false,
+          controller: controller,
           builder: (_, innerController) {
             final theme = Theme.of(context);
             final workouts = Workouts.watch(context);

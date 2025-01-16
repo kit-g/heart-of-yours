@@ -135,7 +135,15 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         ),
                         PrimaryButton.shrunk(
                           onPressed: () {
-                            showFinishWorkoutDialog(context, workouts);
+                            showFinishWorkoutDialog(
+                              context,
+                              workouts,
+                              onFinish: () {
+                                Scrolls.of(context)
+                                  ..resetExerciseStack()
+                                  ..resetHistoryStack();
+                              },
+                            );
                           },
                           backgroundColor: colorScheme.primaryContainer,
                           child: Text(finish),

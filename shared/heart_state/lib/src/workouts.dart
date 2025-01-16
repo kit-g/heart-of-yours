@@ -21,7 +21,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Workouts({
     required this.lookForExercise,
     this.onError,
-    this.isCached = true,
+    this.isCached = false,
   }) : _options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
 
   CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);

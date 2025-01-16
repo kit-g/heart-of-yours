@@ -6,6 +6,8 @@ class Scrolls {
   final _exercisesScrollController = ScrollController();
   final _profileScrollController = ScrollController();
   final _workoutScrollController = ScrollController();
+  final _exercisesDraggableController = DraggableScrollableController();
+  final _historyDraggableController = DraggableScrollableController();
 
   ScrollController get historyScrollController => _historyScrollController;
 
@@ -15,13 +17,17 @@ class Scrolls {
 
   ScrollController get workoutScrollController => _workoutScrollController;
 
+  DraggableScrollableController get exercisesDraggableController => _exercisesDraggableController;
+
+  DraggableScrollableController get historyDraggableController => _historyDraggableController;
+
   static Scrolls of(BuildContext context) {
     return Provider.of<Scrolls>(context, listen: false);
   }
 
-  static void scrollToTop(ScrollController controller) {
+  static Future<void> _scrollToTop(ScrollController controller) async {
     if (controller.hasClients) {
-      controller.animateTo(
+      return controller.animateTo(
         controller.position.minScrollExtent,
         duration: const Duration(milliseconds: 1000),
         curve: Curves.easeIn,
@@ -29,19 +35,47 @@ class Scrolls {
     }
   }
 
-  void scrollHistoryToTop() {
-    return scrollToTop(_historyScrollController);
+  Future<void> scrollProfileToTop() {
+    return _scrollToTop(_profileScrollController);
   }
 
-  void scrollExercisesToTop() {
-    return scrollToTop(_exercisesScrollController);
+  Future<void> scrollWorkoutToTop() {
+    return _scrollToTop(_workoutScrollController);
   }
 
-  void scrollProfileToTop() {
-    return scrollToTop(_profileScrollController);
+  static Future<void> _closeSheet(DraggableScrollableController controller) async {
+    if (controller.isAttached) {
+      return controller.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeIn,
+      );
+    }
   }
 
-  void scrollWorkoutToTop() {
-    return scrollToTop(_workoutScrollController);
+  Future<void> resetExerciseStack() {
+    if (_exercisesDraggableController.isAttached && _exercisesDraggableController.isOpen) {
+      return _closeSheet(_exercisesDraggableController);
+    } else {
+      return _scrollToTop(_exercisesScrollController);
+    }
+  }
+
+  Future<void> resetHistoryStack() {
+    if (_historyDraggableController.isAttached && _historyDraggableController.isOpen) {
+      return _closeSheet(_historyDraggableController);
+    } else {
+      return _scrollToTop(_historyScrollController);
+    }
+  }
+}
+
+extension on DraggableScrollableController {
+  bool get isOpen {
+    try {
+      return size > 0;
+    } on AssertionError {
+      return false;
+    }
   }
 }
