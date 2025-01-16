@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-Future<void> initSentry(FutureOr<void> Function() appRunner) {
-  if (kDebugMode) appRunner();
+FutureOr<void> initSentry(FutureOr<void> Function() appRunner) {
+  if (kDebugMode) return appRunner();
   return SentryFlutter.init(
     (options) {
       options
@@ -13,7 +13,7 @@ Future<void> initSentry(FutureOr<void> Function() appRunner) {
         ..enableAutoPerformanceTracing = true
         ..enableWatchdogTerminationTracking = true
         ..enableMemoryPressureBreadcrumbs = true
-        ..dsn = kDebugMode ? '' : AppConfig.sentryDsn
+        ..dsn = AppConfig.sentryDsn
         ..tracesSampleRate = 1.0
         ..profilesSampleRate = 1.0
         ..diagnosticLevel = switch (AppConfig.env) {

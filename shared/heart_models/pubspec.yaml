@@ -1,6 +1,6 @@
 name: heart_models
 description: "Interfaces and data classes"
-version: 0.0.1
+version: 1.0.0
 publish_to: none
 
 environment:
@@ -8,4 +8,5 @@ environment:
 
 dev_dependencies:
   flutter_lints: ^4.0.0
+  test: any
 

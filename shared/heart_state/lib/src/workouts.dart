@@ -38,7 +38,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts.clear();
     _activeWorkoutId = null;
     userId = null;
-    _activeWorkoutId = null;
     historyInitialized = false;
     _notifiedOfActiveWorkout = false;
     _latestMarkedSet = null;
@@ -129,8 +128,39 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> finishWorkout() async {
     activeWorkout?.finish(DateTime.now());
 
-    if (activeWorkout?.toMap() case Map<String, dynamic> doc) {
-      _activeWorkoutDoc?.update(doc);
+    final active = activeWorkout;
+    if (active == null) return;
+
+    if (_activeWorkoutDoc case DocumentReference<Map<String, dynamic>> workout) {
+      final aggregation = _db.collection('aggregations').doc(userId!);
+      _db.runTransaction<void>(
+        (transaction) async {
+          final aggregationSnapshot = await transaction.get(aggregation);
+          final currentAggregations = switch (aggregationSnapshot.data()?['workouts']) {
+            Map existing => existing,
+            _ => <String, dynamic>{},
+          };
+          final currentWeek = switch (currentAggregations[active.weekOf()]) {
+            Map m => m,
+            _ => <String, String?>{},
+          };
+          final updated = currentWeek.take(_maxWorkoutBars)..addAll(active.toSummary().toMap());
+
+          transaction
+            ..update(workout, active.toMap())
+            ..set(
+              aggregation,
+              {
+                'workouts': {active.weekOf(): updated}
+              },
+              SetOptions(merge: true),
+            );
+        },
+      ).catchError(
+        (error, stacktrace) {
+          onError?.call(error, stacktrace: stacktrace);
+        },
+      );
     }
     _activeWorkout = null;
   }
@@ -151,7 +181,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> deleteWorkout(String workoutId) {
     _workouts.remove(workoutId);
     notifyListeners();
+
+    _deleteAggregation(workoutId);
     return _deleteWorkout(workoutId);
+  }
+
+  Future<void> _deleteAggregation(String workoutId) async {
+    if (userId case String id) {
+      var doc = {
+        'workouts.${deSanitizeId(workoutId).mondayKey()}.$workoutId': FieldValue.delete(),
+      };
+      return _db.collection('aggregations').doc(id).update(doc);
+    }
   }
 
   Future<void>? startExercise(Exercise exercise) {
@@ -303,7 +344,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<Iterable<Workout>?> _getHistory(String userId, {int pageSize = 5}) async {
+  Future<Iterable<Workout>?> _getHistory(String userId, {int pageSize = 7}) async {
     try {
       final querySnapshot = await _collection //
           .where('userId', isEqualTo: userId)
@@ -343,4 +384,30 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Workout? lookup(String id) => _workouts[id];
+}
+
+// how many weeks of workouts the chart will display
+const _maxWorkoutBars = 8;
+
+extension on String {
+  DateTime? mondayOf() {
+    try {
+      return getMonday(DateTime.parse(this));
+    } on FormatException {
+      return null;
+    }
+  }
+
+  String? mondayKey() {
+    return switch (mondayOf()) {
+      DateTime dt => sanitizeId(dt),
+      null => null,
+    };
+  }
+}
+
+extension _E<K, V> on Map<K, V> {
+  Map<K, V> take(int count) {
+    return Map.fromEntries(entries.take(count));
+  }
 }

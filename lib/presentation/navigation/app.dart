@@ -28,6 +28,11 @@ class HeartApp extends StatelessWidget {
             isCached: false,
           ),
         ),
+        ChangeNotifierProvider<Stats>(
+          create: (_) => Stats(
+            onError: reportToSentry,
+          ),
+        ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
             lookForExercise: Exercises.of(context).lookup,
@@ -43,6 +48,7 @@ class HeartApp extends StatelessWidget {
           create: (context) => Auth(
             onUserChange: (user) {
               HeartRouter.refresh();
+              Stats.of(context).userId = user?.id;
               Workouts.of(context).userId = user?.id;
             },
           ),
