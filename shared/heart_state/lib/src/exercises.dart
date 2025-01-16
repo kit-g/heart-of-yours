@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
   final bool isCached;
   final _db = FirebaseFirestore.instance;
-  final _scrollController = ScrollController();
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _selectedExercises = <Exercise>{};
 
@@ -16,8 +15,6 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   });
 
   bool isInitialized = false;
-
-  ScrollController get scrollController => _scrollController;
 
   final _exercises = <ExerciseId, Exercise>{};
 

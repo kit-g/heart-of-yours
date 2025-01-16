@@ -29,7 +29,7 @@ class ExercisePicker extends StatelessWidget {
     ) = L.of(context);
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
-      controller: exercises.scrollController,
+      controller: Scrolls.of(context).exercisesScrollController,
       slivers: [
         if (appBar case Widget bar) bar,
         SliverPersistentHeader(

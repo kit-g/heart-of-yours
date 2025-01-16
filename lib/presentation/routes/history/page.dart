@@ -21,6 +21,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             ),
           true => CustomScrollView(
               physics: const ClampingScrollPhysics(),
+              controller: Scrolls.of(context).historyScrollController,
               slivers: [
                 SliverAppBar(
                   scrolledUnderElevation: 0,

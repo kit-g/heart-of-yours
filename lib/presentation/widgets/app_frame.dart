@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -64,9 +64,19 @@ class AppFrame extends StatelessWidget {
           while (context.canPop()) {
             context.pop();
           }
+
+          if (!context.canPop()) {
+            return Scrolls.of(context).scrollProfileToTop();
+          }
+        // workout stack
+        case 1:
+          return Scrolls.of(context).scrollWorkoutToTop();
+        // history stack
+        case 2:
+          return Scrolls.of(context).scrollHistoryToTop();
         // exercises stack
         case 3:
-          return scrollToTop(Exercises.of(context).scrollController);
+          return Scrolls.of(context).scrollExercisesToTop();
       }
     }
   }

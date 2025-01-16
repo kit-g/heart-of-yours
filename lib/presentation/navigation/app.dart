@@ -5,6 +5,7 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:logging/logging.dart';
@@ -67,6 +68,9 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        Provider<Scrolls>(
+          create: (_) => Scrolls(),
+        )
       ],
       builder: (__, _) {
         return Consumer<AppTheme>(
