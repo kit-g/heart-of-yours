@@ -136,7 +136,12 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
       return _WorkoutAggregation.empty();
     }
 
-    final earliestWeekStart = parsed.first.startDate.toUtc();
+    final earliestParsedWeekStart = parsed.first.startDate.toUtc();
+    final limit = currentWeekStart.subtract(const Duration(days: 7 * 7));
+    final earliestWeekStart = switch (earliestParsedWeekStart.isAfter(limit)) {
+      true => limit,
+      false => earliestParsedWeekStart,
+    };
 
     final completeWeeks = Iterable.generate(
       // how many weeks exist between earliestWeekStart and currentWeekStart

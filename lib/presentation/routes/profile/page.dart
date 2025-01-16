@@ -48,7 +48,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
       body: Selector<Stats, WorkoutAggregation>(
         selector: (_, provider) => provider.workouts,
         builder: (_, workouts, __) {
-          return Column(
+          return ListView(
             children: [
               if (workouts.isEmpty)
                 Stack(
@@ -76,6 +76,8 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 )
               else
                 WorkoutsAggregationChart(workouts: workouts),
+              const SizedBox(height: 12),
+              const _Ad()
             ],
           );
         },
@@ -96,5 +98,43 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   @override
   void afterFirstLayout(BuildContext context) {
     Stats.of(context).init();
+  }
+}
+
+class _Ad extends StatelessWidget {
+  const _Ad();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+
+    return AspectRatio(
+      aspectRatio: 5 / 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  color: colorScheme.primaryContainer,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'More charts coming up!',
+                      style: textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

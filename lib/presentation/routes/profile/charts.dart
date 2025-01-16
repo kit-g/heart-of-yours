@@ -104,9 +104,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                               show: true,
                               drawHorizontalLine: true,
                               drawVerticalLine: false,
-                              checkToShowHorizontalLine: (v) {
-                                return v % 1 == 0;
-                              },
+                              checkToShowHorizontalLine: (v) => v % 1 == 0,
                             ),
                           ),
                         );
@@ -150,10 +148,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
     final ThemeData(:colorScheme) = Theme.of(context);
     final color = isPointedAt ? colorScheme.tertiary : colorScheme.primary;
     final gradient = LinearGradient(
-      colors: [
-        color,
-        color.withValues(alpha: .7)
-      ],
+      colors: [color, color.withValues(alpha: .7)],
       end: Alignment.topCenter,
       begin: Alignment.bottomCenter,
     );
@@ -168,18 +163,28 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
           borderRadius: const BorderRadius.all(Radius.circular(6)),
         ),
       ],
-      showingTooltipIndicators: [0],
+      // shows only when
+      showingTooltipIndicators: switch (summary.length) {
+        > 0 => [0],
+        _ => null,
+      },
     );
   }
 
   Widget _xTitles(double value, TitleMeta meta) {
-    final summary = widget.workouts.toList()[value.toInt()];
+    final index = value.toInt();
+    final summary = widget.workouts.toList()[index];
     return SideTitleWidget(
       meta: meta,
       space: 12,
-      child: Text(
-        DateFormat('d/M').format(summary.startDate),
-        style: Theme.of(context).textTheme.titleSmall,
+      child: SizedBox(
+        width: 44,
+        child: Center(
+          child: Text(
+            DateFormat('d/M').format(summary.startDate),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
       ),
     );
   }
@@ -196,7 +201,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
                 value.toInt().toString(),
-                style: Theme.of(context).textTheme.labelSmall,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
           ),

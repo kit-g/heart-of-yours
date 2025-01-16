@@ -344,7 +344,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<Iterable<Workout>?> _getHistory(String userId, {int pageSize = 5}) async {
+  Future<Iterable<Workout>?> _getHistory(String userId, {int pageSize = 7}) async {
     try {
       final querySnapshot = await _collection //
           .where('userId', isEqualTo: userId)
