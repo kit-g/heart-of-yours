@@ -49,6 +49,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         selector: (_, provider) => provider.workouts,
         builder: (_, workouts, __) {
           return ListView(
+            controller: Scrolls.of(context).profileScrollController,
             children: [
               if (workouts.isEmpty)
                 Stack(
@@ -77,7 +78,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               else
                 WorkoutsAggregationChart(workouts: workouts),
               const SizedBox(height: 12),
-              const _Ad()
+              const _Ad(),
             ],
           );
         },
