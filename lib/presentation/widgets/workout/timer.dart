@@ -77,7 +77,12 @@ class _WorkoutTimerState extends State<WorkoutTimer> {
 }
 
 class WorkoutTimerFloatingButton extends StatelessWidget {
-  const WorkoutTimerFloatingButton({super.key});
+  final DraggableScrollableController? scrollableController;
+
+  const WorkoutTimerFloatingButton({
+    super.key,
+    this.scrollableController,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +92,7 @@ class WorkoutTimerFloatingButton extends StatelessWidget {
         if (active == null) return const SizedBox.shrink();
         return FloatingActionButton.extended(
           onPressed: () {
-            showWorkoutSheet(context);
+            showWorkoutSheet(context, controller: scrollableController);
           },
           label: Row(
             spacing: 6,

@@ -86,7 +86,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                                 sideTitles: SideTitles(
                                   showTitles: true,
                                   interval: 1.0,
-                                  reservedSize: 32,
+                                  reservedSize: 28,
                                   minIncluded: false,
                                   maxIncluded: true,
                                   getTitlesWidget: _yTitles,
@@ -192,19 +192,16 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
   Widget _yTitles(double value, TitleMeta meta) {
     return SideTitleWidget(
       meta: meta,
-      space: 12,
       child: switch (value.toInt() % 2 == 0) {
         false => const SizedBox.shrink(),
-        true => Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                value.toInt().toString(),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
+        true => Padding(
+          padding: const EdgeInsets.only(left: 0.0),
+          child: Text(
+            value.toInt().toString(),
+            textAlign: TextAlign.end,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
+        ),
       },
     );
   }
