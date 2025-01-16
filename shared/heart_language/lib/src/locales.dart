@@ -87,6 +87,14 @@ class L {
     );
   }
 
+  String get logInWithApple {
+    return Intl.message(
+      'Log in with Apple',
+      name: 'logInWithApple',
+      desc: 'Button label',
+    );
+  }
+
   String get logOut {
     return Intl.message(
       'Log out',

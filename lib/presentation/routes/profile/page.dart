@@ -28,7 +28,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               String avatar when avatar.startsWith('https') => NetworkImage(avatar),
               _ => null,
             },
-            child: Text(displayName?.substring(0, 1) ?? '?'),
+            child: const Icon(Icons.person_rounded),
           ),
         ),
         title: Text(displayName ?? '?'),

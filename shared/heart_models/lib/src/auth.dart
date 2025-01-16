@@ -1,4 +1,6 @@
-abstract interface class User {
+import 'misc.dart';
+
+abstract interface class User implements Model {
   String? get displayName;
 
   String? get email;
@@ -25,7 +27,7 @@ abstract interface class User {
     );
   }
 
-  Map<String, dynamic> toMap();
+  User copyWith({String? displayName, String? email});
 }
 
 class _User implements User {
@@ -62,5 +64,16 @@ class _User implements User {
       if (avatar != null) 'avatar': avatar,
       if (createdAt != null) 'createdAt': createdAt,
     };
+  }
+
+  @override
+  User copyWith({String? displayName, String? email}) {
+    return _User(
+      displayName: displayName ?? this.displayName,
+      email: email ?? this.email,
+      avatar: avatar,
+      id: id,
+      createdAt: createdAt,
+    );
   }
 }

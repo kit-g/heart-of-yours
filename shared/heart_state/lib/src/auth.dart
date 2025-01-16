@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class Auth with ChangeNotifier implements SignOutStateSentry {
   final _googleSignIn = GoogleSignIn(scopes: ['profile', 'email']);
@@ -32,10 +33,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Auth({this.onUserChange, this.onError}) {
     _firebase.userChanges().listen(
-      (user) {
+      (user) async {
         _user = _cast(user);
         onUserChange?.call(_user);
-        _registerUser(_user);
+        _user = await _registerUser(_user);
       },
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
@@ -60,18 +61,62 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           accessToken: accessToken,
           idToken: idToken,
         );
-        final authResult = await _firebase.signInWithCredential(cred);
-        final user = authResult.user;
-
-        _user = _cast(user);
-
-        _registerUser(_user);
-
-        notifyListeners();
+        return _loginWithCredential(cred);
       }
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
+  }
+
+  Future<void> loginWithApple() async {
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oAuth = fb.OAuthProvider('apple.com');
+      final appleToken = oAuth.credential(
+        idToken: credential.identityToken,
+        accessToken: credential.authorizationCode,
+      );
+
+      final name = switch ((credential.givenName, credential.familyName)) {
+        (String first, String last) when first.isNotEmpty && last.isNotEmpty => '$first $last',
+        (String first, _) when first.isNotEmpty => first,
+        (_, String last) when last.isNotEmpty => last,
+        _ => null,
+      };
+
+      return _loginWithCredential(
+        appleToken,
+        appleEmail: credential.email,
+        appleName: name,
+      );
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+    }
+  }
+
+  Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) async {
+    return _firebase.signInWithCredential(credential).then<void>(
+      (result) {
+        _user = _cast(result.user)?.copyWith(displayName: appleName, email: appleEmail);
+
+        return _registerUser(_user).then(
+          (user) {
+            _user = user;
+            notifyListeners();
+          },
+        );
+      },
+    );
+  }
+
+  static Future<bool> isAppleSignInAvailable() {
+    return SignInWithApple.isAvailable();
   }
 
   Future<void> _logout() async {
@@ -90,20 +135,45 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  static User? fromJson(Map? json) {
+    return switch (json) {
+      {'id': String id} => User(
+          id: id,
+          email: json['email'],
+          displayName: json['displayName'],
+          avatar: json['avatar'],
+          createdAt: (json['createdAt'] as Timestamp).toDate(),
+        ),
+      _ => null,
+    };
+  }
+
   @override
   FutureOr<void> onSignOut() {
     return _logout();
   }
 
-  Future<void> _registerUser(User? user) async {
+  Future<User?> _registerUser(User? user) async {
+    if (user == null) return user;
     try {
-      if (user == null) return;
-      return _db //
-          .collection("users")
-          .doc(user.id)
-          .set(user.toMap());
+      final doc = _db.collection('users').doc(user.id);
+      final snapshot = await doc.get();
+
+      if (!snapshot.exists) {
+        final userDoc = {
+          ...user.toMap(),
+          'lastLogin': FieldValue.serverTimestamp(),
+        };
+
+        await doc.set(userDoc);
+        return user;
+      } else {
+        await doc.update({'lastLogin': FieldValue.serverTimestamp()});
+        return fromJson(snapshot.data());
+      }
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
+      return user;
     }
   }
 }
