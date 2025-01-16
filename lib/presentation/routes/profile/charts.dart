@@ -14,7 +14,7 @@ class WorkoutsAggregationChart extends StatefulWidget {
   State<StatefulWidget> createState() => _WorkoutsAggregationChartState();
 }
 
-class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
+class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> with HasHaptic<WorkoutsAggregationChart> {
   final animDuration = const Duration(milliseconds: 250);
 
   final _pointedAtBar = ValueNotifier<int>(-1);
@@ -47,7 +47,6 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
                   decoration: BoxDecoration(
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
                     color: colorScheme.primaryContainer,
-
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
@@ -57,22 +56,16 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
                         return BarChart(
                           duration: animDuration,
                           BarChartData(
+                            maxY: widget.workouts.max.toDouble() + 1,
+                            minY: 0,
                             barTouchData: BarTouchData(
                               touchTooltipData: BarTouchTooltipData(
-                                getTooltipColor: (_) => colorScheme.onTertiary,
-                                tooltipHorizontalAlignment: FLHorizontalAlignment.right, // todo
-                                tooltipMargin: -6 * 20, // todo
+                                getTooltipColor: (_) => Colors.transparent,
+                                tooltipHorizontalAlignment: FLHorizontalAlignment.center,
+                                tooltipMargin: 0,
                                 getTooltipItem: _tooltip,
                               ),
-                              touchCallback: (FlTouchEvent event, barTouchResponse) {
-                                if (!event.isInterestedForInteractions || // todo
-                                    barTouchResponse == null ||
-                                    barTouchResponse.spot == null) {
-                                  _pointedAtBar.value = -1;
-                                  return;
-                                }
-                                _pointedAtBar.value = barTouchResponse.spot!.touchedBarGroupIndex;
-                              },
+                              touchCallback: _onTouch,
                             ),
                             titlesData: FlTitlesData(
                               show: true,
@@ -85,12 +78,19 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
                               bottomTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
-                                  getTitlesWidget: _titles,
+                                  getTitlesWidget: _xTitles,
                                   reservedSize: 32,
                                 ),
                               ),
-                              leftTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  interval: 1.0,
+                                  reservedSize: 32,
+                                  minIncluded: false,
+                                  maxIncluded: true,
+                                  getTitlesWidget: _yTitles,
+                                ),
                               ),
                             ),
                             borderData: FlBorderData(show: false),
@@ -100,10 +100,13 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
                                 return _bar(index, summary);
                               },
                             ).toList(),
-                            gridData: const FlGridData(
+                            gridData: FlGridData(
                               show: true,
                               drawHorizontalLine: true,
                               drawVerticalLine: false,
+                              checkToShowHorizontalLine: (v) {
+                                return v % 1 == 0;
+                              },
                             ),
                           ),
                         );
@@ -119,6 +122,15 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
     );
   }
 
+  void _onTouch(FlTouchEvent event, BarTouchResponse? barTouchResponse) {
+    if (!event.isInterestedForInteractions || barTouchResponse == null || barTouchResponse.spot == null) {
+      _pointedAtBar.value = -1;
+      return;
+    }
+    buzz();
+    _pointedAtBar.value = barTouchResponse.spot!.touchedBarGroupIndex;
+  }
+
   BarTooltipItem? _tooltip(
     BarChartGroupData group,
     int groupIndex,
@@ -127,7 +139,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
   ) {
     final summary = widget.workouts.toList()[group.x];
     return BarTooltipItem(
-      summary.workouts.map((each) => each.name).join('\n'),
+      summary.length.toString(),
       Theme.of(context).textTheme.titleMedium!,
     );
   }
@@ -136,21 +148,31 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
     final isPointedAt = _pointedAtBar.value == index;
     final dy = summary.length.toDouble();
     final ThemeData(:colorScheme) = Theme.of(context);
+    final color = isPointedAt ? colorScheme.tertiary : colorScheme.primary;
+    final gradient = LinearGradient(
+      colors: [
+        color,
+        color.withValues(alpha: .7)
+      ],
+      end: Alignment.topCenter,
+      begin: Alignment.bottomCenter,
+    );
 
     return BarChartGroupData(
       x: index,
       barRods: [
         BarChartRodData(
-          toY: isPointedAt ? dy + 1 : dy,
-          color: isPointedAt ? colorScheme.tertiary : colorScheme.primary,
+          toY: isPointedAt ? dy + .1 : dy,
+          gradient: gradient,
           width: 22,
           borderRadius: const BorderRadius.all(Radius.circular(6)),
         ),
       ],
+      showingTooltipIndicators: [0],
     );
   }
 
-  Widget _titles(double value, TitleMeta meta) {
+  Widget _xTitles(double value, TitleMeta meta) {
     final summary = widget.workouts.toList()[value.toInt()];
     return SideTitleWidget(
       meta: meta,
@@ -159,6 +181,26 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> {
         DateFormat('d/M').format(summary.startDate),
         style: Theme.of(context).textTheme.titleSmall,
       ),
+    );
+  }
+
+  Widget _yTitles(double value, TitleMeta meta) {
+    return SideTitleWidget(
+      meta: meta,
+      space: 12,
+      child: switch (value.toInt() % 2 == 0) {
+        false => const SizedBox.shrink(),
+        true => Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                value.toInt().toString(),
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ),
+          ),
+      },
     );
   }
 }

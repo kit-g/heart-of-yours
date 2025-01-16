@@ -1,9 +1,9 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'misc.dart';
 import 'utils.dart';
 
-final _random = Random();
+final _random = math.Random();
 
 abstract interface class WorkoutSummary implements Model {
   String get id;
@@ -43,6 +43,8 @@ abstract interface class WorkoutAggregation with Iterable<WeekSummary> {
   factory WorkoutAggregation.dummy() = _WorkoutAggregation.dummy;
 
   factory WorkoutAggregation.empty() = _WorkoutAggregation.empty;
+
+  int get max;
 }
 
 class _WorkoutSummary implements WorkoutSummary {
@@ -186,6 +188,15 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
     ).toList()
       ..sort();
     return _WorkoutAggregation(weeks: weeks);
+  }
+
+  @override
+  int get max {
+    try {
+      return map((summary) => summary.length).reduce(math.max);
+    } on StateError {
+      return 0;
+    }
   }
 }
 
