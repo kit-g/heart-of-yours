@@ -54,9 +54,11 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    WorkoutsAggregationChart(
-                      opacity: .2,
-                      workouts: WorkoutAggregation.dummy(),
+                    IgnorePointer(
+                      child: WorkoutsAggregationChart(
+                        opacity: .2,
+                        workouts: WorkoutAggregation.dummy(),
+                      ),
                     ),
                     Column(
                       children: [
