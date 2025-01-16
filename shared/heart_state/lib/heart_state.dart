@@ -7,5 +7,6 @@ export 'src/auth.dart';
 export 'src/exercises.dart';
 export 'src/package.dart';
 export 'src/preferences.dart';
+export 'src/stats.dart';
 export 'src/timers.dart';
 export 'src/workouts.dart';

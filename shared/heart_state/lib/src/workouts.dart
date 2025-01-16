@@ -132,21 +132,28 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (active == null) return;
 
     if (_activeWorkoutDoc case DocumentReference<Map<String, dynamic>> workout) {
-      final user = _db.collection('users').doc(userId!);
-
-      _db.runTransaction(
+      final aggregation = _db.collection('aggregations').doc(userId!);
+      _db.runTransaction<void>(
         (transaction) async {
-          final userSnapshot = await transaction.get(user);
-          final currentAggregations = userSnapshot.data()?['aggregations']?['workouts'] ?? {};
-
-          final updated = (currentAggregations[active.weekOf()] ?? []).take(_maxWorkoutBars).toList()
-            ..add(active.toSummary());
+          final aggregationSnapshot = await transaction.get(aggregation);
+          final currentAggregations = switch (aggregationSnapshot.data()?['workouts']) {
+            Map existing => existing,
+            _ => <String, dynamic>{},
+          };
+          final currentWeek = switch (currentAggregations[active.weekOf()]) {
+            Map m => m,
+            _ => <String, String?>{},
+          };
+          final updated = currentWeek.take(_maxWorkoutBars)..addAll(active.toSummary().toMap());
 
           transaction
             ..update(workout, active.toMap())
-            ..update(
-              user,
-              {'aggregations.workouts.${active.weekOf()}': updated},
+            ..set(
+              aggregation,
+              {
+                'workouts': {active.weekOf(): updated}
+              },
+              SetOptions(merge: true),
             );
         },
       ).catchError(
@@ -171,11 +178,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _collection.doc(workoutId).delete();
   }
 
-  // todo delete workout from aggregation
   Future<void> deleteWorkout(String workoutId) {
     _workouts.remove(workoutId);
     notifyListeners();
+
+    _deleteAggregation(workoutId);
     return _deleteWorkout(workoutId);
+  }
+
+  Future<void> _deleteAggregation(String workoutId) async {
+    if (userId case String id) {
+      var doc = {
+        'workouts.${deSanitizeId(workoutId).mondayKey()}.$workoutId': FieldValue.delete(),
+      };
+      return _db.collection('aggregations').doc(id).update(doc);
+    }
   }
 
   Future<void>? startExercise(Exercise exercise) {
@@ -371,3 +388,26 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
 // how many weeks of workouts the chart will display
 const _maxWorkoutBars = 8;
+
+extension on String {
+  DateTime? mondayOf() {
+    try {
+      return getMonday(DateTime.parse(this));
+    } on FormatException {
+      return null;
+    }
+  }
+
+  String? mondayKey() {
+    return switch (mondayOf()) {
+      DateTime dt => sanitizeId(dt),
+      null => null,
+    };
+  }
+}
+
+extension _E<K, V> on Map<K, V> {
+  Map<K, V> take(int count) {
+    return Map.fromEntries(entries.take(count));
+  }
+}
