@@ -6,9 +6,10 @@ import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../routes/login.dart';
-import '../routes/profile.dart';
+import '../routes/profile/profile.dart';
 import '../widgets/app_frame.dart';
 
 export 'package:go_router/go_router.dart' show GoRouterState;
@@ -100,6 +101,9 @@ abstract final class HeartRouter {
   static final config = GoRouter(
     debugLogDiagnostics: false,
     initialLocation: _profilePath,
+    observers: [
+      SentryNavigatorObserver(),
+    ],
     routes: [
       StatefulShellRoute.indexedStack(
         pageBuilder: (_, state, shell) {

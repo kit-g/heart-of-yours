@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'exercise.dart';
 import 'misc.dart';
+import 'stats.dart';
 import 'ts_for_id.dart';
+import 'utils.dart';
 
 abstract interface class Completes {
   bool get isCompleted;
@@ -271,6 +273,10 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   bool get isValid;
 
   (WorkoutExercise, ExerciseSet)? nextIncomplete(WorkoutExercise exercise, ExerciseSet last);
+
+  WorkoutSummary toSummary();
+
+  String weekOf();
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -522,6 +528,19 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
           _ => null,
         }
     };
+  }
+
+  @override
+  WorkoutSummary toSummary() {
+    return WorkoutSummary(
+      id: id,
+      name: name,
+    );
+  }
+
+  @override
+  String weekOf() {
+    return sanitizeId(getMonday(start));
   }
 }
 
