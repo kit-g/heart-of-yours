@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'exercise.dart';
 import 'misc.dart';
+import 'stats.dart';
 import 'ts_for_id.dart';
 import 'utils.dart';
 
@@ -273,7 +274,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   (WorkoutExercise, ExerciseSet)? nextIncomplete(WorkoutExercise exercise, ExerciseSet last);
 
-  Map<String, String> toSummary();
+  WorkoutSummary toSummary();
 
   String weekOf();
 }
@@ -530,11 +531,11 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   }
 
   @override
-  Map<String, String> toSummary() {
-    return {
-      'id': id,
-      if (name case String name) 'name': name,
-    };
+  WorkoutSummary toSummary() {
+    return WorkoutSummary(
+      id: id,
+      name: name,
+    );
   }
 
   @override

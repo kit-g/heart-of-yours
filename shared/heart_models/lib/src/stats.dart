@@ -1,13 +1,18 @@
 import 'dart:math';
 
+import 'misc.dart';
 import 'utils.dart';
 
 final _random = Random();
 
-abstract interface class WorkoutSummary {
+abstract interface class WorkoutSummary implements Model {
   String get id;
 
-  String get name;
+  String? get name;
+
+  factory WorkoutSummary({required String id, String? name}) {
+    return _WorkoutSummary(id: id, name: name);
+  }
 }
 
 abstract interface class WeekSummary with Iterable<WorkoutSummary> implements Comparable<WeekSummary> {
@@ -36,18 +41,25 @@ abstract interface class WorkoutAggregation with Iterable<WeekSummary> {
   factory WorkoutAggregation.fromJson(Map<String, dynamic> json) = _WorkoutAggregation.fromJson;
 
   factory WorkoutAggregation.dummy() = _WorkoutAggregation.dummy;
+
+  factory WorkoutAggregation.empty() = _WorkoutAggregation.empty;
 }
 
 class _WorkoutSummary implements WorkoutSummary {
   @override
   final String id;
   @override
-  final String name;
+  final String? name;
 
   const _WorkoutSummary({
     required this.id,
     required this.name,
   });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {id: name};
+  }
 }
 
 class _WeekSummary with Iterable<WorkoutSummary> implements WeekSummary {
@@ -91,20 +103,23 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
   @override
   Iterator<WeekSummary> get iterator => weeks.iterator;
 
+  @override
+  bool get isEmpty => !any((summary) => summary.isNotEmpty);
+
   factory _WorkoutAggregation.empty() {
     return const _WorkoutAggregation(weeks: []);
   }
 
   factory _WorkoutAggregation.fromJson(Map<String, dynamic> json) {
     final parsed = json.entries.map(
-      (entry) {
+      (week) {
         return _WeekSummary(
-          weekId: entry.key,
-          workouts: (entry.value as Iterable).map(
-            (each) {
+          weekId: week.key,
+          workouts: (week.value as Map).entries.map(
+            (summary) {
               return _WorkoutSummary(
-                id: each['id'],
-                name: each['name'],
+                id: summary.key,
+                name: summary.value,
               );
             },
           ),
@@ -142,6 +157,7 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
     return _WorkoutAggregation(weeks: completeWeeks);
   }
 
+  /// generates a bunch of randomly populated week summaries
   factory _WorkoutAggregation.dummy({int limit = 8}) {
     final currentWeekStart = getMonday(DateTime.timestamp());
     final earliestWeekStart = currentWeekStart.subtract(Duration(days: 7 * limit - 1));
@@ -154,6 +170,7 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
         return _WeekSummary(
           weekId: sanitizeId(iteration),
           workouts: List.generate(
+            // between 2 and 6
             2 + _random.nextInt(5),
             (index) {
               return _WorkoutSummary(
