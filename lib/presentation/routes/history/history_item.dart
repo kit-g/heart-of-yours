@@ -151,15 +151,15 @@ class HistoryItem extends StatelessWidget {
 
   Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
     switch (option) {
-      case _WorkoutOption.edit:
-        // TODO: Handle this case.
-        throw UnimplementedError();
-      case _WorkoutOption.share:
-        // TODO: Handle this case.
-        throw UnimplementedError();
-      case _WorkoutOption.saveAsTemplate:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+      // case _WorkoutOption.edit:
+      //   // TODO: Handle this case.
+      //   throw UnimplementedError();
+      // case _WorkoutOption.share:
+      //   // TODO: Handle this case.
+      //   throw UnimplementedError();
+      // case _WorkoutOption.saveAsTemplate:
+      //   // TODO: Handle this case.
+      //   throw UnimplementedError();
       case _WorkoutOption.delete:
         return Workouts.of(context).deleteWorkout(workout.id);
     }
@@ -169,21 +169,21 @@ class HistoryItem extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return switch (option) {
-      _WorkoutOption.edit => (
-          copy: L.of(context).edit,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.edit_rounded, size: 16),
-        ),
-      _WorkoutOption.share => (
-          copy: L.of(context).share,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.share, size: 16),
-        ),
-      _WorkoutOption.saveAsTemplate => (
-          copy: L.of(context).saveAsTemplate,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.add_rounded, size: 16),
-        ),
+      // _WorkoutOption.edit => (
+      //     copy: L.of(context).edit,
+      //     style: textTheme.titleSmall,
+      //     icon: const Icon(Icons.edit_rounded, size: 16),
+      //   ),
+      // _WorkoutOption.share => (
+      //     copy: L.of(context).share,
+      //     style: textTheme.titleSmall,
+      //     icon: const Icon(Icons.share, size: 16),
+      //   ),
+      // _WorkoutOption.saveAsTemplate => (
+      //     copy: L.of(context).saveAsTemplate,
+      //     style: textTheme.titleSmall,
+      //     icon: const Icon(Icons.add_rounded, size: 16),
+      //   ),
       _WorkoutOption.delete => (
           copy: L.of(context).delete,
           style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
@@ -200,8 +200,8 @@ const _shape = RoundedRectangleBorder(
 );
 
 enum _WorkoutOption {
-  edit,
-  share,
-  saveAsTemplate,
+  // edit,
+  // share,
+  // saveAsTemplate,
   delete;
 }

@@ -18,9 +18,6 @@ void _selectAllText(TextEditingController controller) {
 }
 
 enum _ExerciseOption {
-  addNote,
-  replace,
-  weightUnit,
   autoRestTimer,
   remove;
 }

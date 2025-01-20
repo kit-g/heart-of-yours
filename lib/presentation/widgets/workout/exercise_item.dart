@@ -192,9 +192,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
 
   String _exerciseOptionCopy(BuildContext context, _ExerciseOption option) {
     return switch (option) {
-      _ExerciseOption.addNote => L.of(context).addNote,
-      _ExerciseOption.replace => L.of(context).replaceExercise,
-      _ExerciseOption.weightUnit => L.of(context).weightUnit,
       _ExerciseOption.autoRestTimer => L.of(context).restTimer,
       _ExerciseOption.remove => L.of(context).removeExercise,
     };
@@ -210,9 +207,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
   Widget _exerciseOptionIcon(_ExerciseOption option, ColorScheme scheme) {
     return switch (option) {
       _ExerciseOption.remove => Icon(Icons.close, color: scheme.error),
-      _ExerciseOption.addNote => const Icon(Icons.close),
-      _ExerciseOption.replace => const Icon(Icons.close),
-      _ExerciseOption.weightUnit => const Icon(Icons.close),
       _ExerciseOption.autoRestTimer => const Icon(Icons.timer_outlined),
     };
   }
@@ -226,10 +220,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
           context,
           initialValue: Timers.of(context)[exercise.exercise.name],
         );
-      case _ExerciseOption.addNote:
-      case _ExerciseOption.replace:
-      case _ExerciseOption.weightUnit:
-      // TODO: Handle this case.
     }
   }
 
