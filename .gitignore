@@ -53,3 +53,6 @@ app.*.map.json
 **/firebase.json
 pubspec.lock
 /env
+
+# test mocks
+*.mocks.dart
