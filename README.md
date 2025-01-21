@@ -119,3 +119,15 @@ solution recommended by
 the Flutter team. All business logic is localized in the `heart_state` package, and it also
 exposes `provider` to the
 app.
+
+## To test
+We'll test every package separately:
+
+```shell
+flutter test shared/heart_models
+# etc.
+```
+
+## CI
+
+Right now, the project has [a unit test GitHub action](.github/workflows/unit-tests.yml).

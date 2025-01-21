@@ -74,9 +74,10 @@ class _Exercise implements Exercise {
 
   @override
   Map<String, dynamic> toMap() {
+    var dir = '${direction.name.substring(0, 1).toUpperCase()}${direction.name.substring(1)}';
     return {
-      'direction': direction.name,
-      'name': name,
+      'direction': dir,
+      'exercise': name,
       'joint': joint,
       'level': level,
       'modality': modality,
@@ -93,7 +94,7 @@ class _Exercise implements Exercise {
   @override
   bool contains(String query) {
     if (query.isEmpty) return true;
-    return name.toLowerCase().contains(query.toLowerCase());
+    return name.trim().toLowerCase().contains(query.trim().toLowerCase());
   }
 
   /// name is the database identifier
