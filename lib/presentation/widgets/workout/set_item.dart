@@ -38,7 +38,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     switch (set) {
       case WeightedSet(:int reps, :double weight):
       case AssistedSet(:int reps, :double weight):
-        _weightController.text = weight.toString();
+        final rounder = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
+        _weightController.text = rounder;
         _repsController.text = reps.toString();
       default:
     }
