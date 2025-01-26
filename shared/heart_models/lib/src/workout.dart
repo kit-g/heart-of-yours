@@ -321,7 +321,13 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   Exercise get exercise => _sets.firstOrNull?.exercise ?? _exercise;
 
   @override
-  double? get total => map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
+  double? get total {
+    try {
+      return map((each) => each.total).reduce((a, b) => (a ?? 0) + (b ?? 0));
+    } on StateError {
+      return 0;
+    }
+  }
 
   @override
   String toString() {
