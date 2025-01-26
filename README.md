@@ -121,11 +121,14 @@ exposes `provider` to the
 app.
 
 ## To test
+
 We'll test every package separately:
 
 ```shell
-flutter test shared/heart_models
-# etc.
+# locally, from root
+cd shared/heart_models
+dart run build_runner build --delete-conflicting-outputs
+flutter test
 ```
 
 ## CI
