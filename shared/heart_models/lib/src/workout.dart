@@ -187,7 +187,7 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
       start: DateTime.now(), // a different id
       weight: weight,
       reps: reps,
-    );
+    )..isCompleted = isCompleted;
   }
 }
 
