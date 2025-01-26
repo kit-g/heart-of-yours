@@ -91,8 +91,8 @@ class _TextFieldButton extends StatelessWidget {
                             (false, true) => colorScheme.onTertiaryFixed,
                             (false, false) => colorScheme.onSurfaceVariant,
                           },
-                          onSubmitted: (value) {
-                            FocusScope.of(context).unfocus(); // Dismiss keyboard on done
+                          onSubmitted: (_) {
+                            FocusScope.of(context).unfocus();
                           },
                           onEditingComplete: () {},
                           onTap: () => _selectAllText(controller),

@@ -4,7 +4,7 @@ const _fixedColumnWidth = 32.0;
 const _fixedButtonHeight = 24.0;
 const _emptyValue = '-';
 
-final _inputFormatters = [
+final _inputFormatters = <TextInputFormatter>[
   FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d*)?')),
   LengthLimitingTextInputFormatter(5), // todo change to five digits, e.g. 123.45
   FilteringTextInputFormatter.singleLineFormatter,
