@@ -64,8 +64,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       onEditingComplete: () {
                         final text = _workoutNameController.text.trim();
                         final name = switch (text.isEmpty) {
-                          true => workouts.activeWorkout?.name ?? L.of(context).defaultWorkoutName(),
-                          false => text,
+                          true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
+                          false => text.trim(),
                         };
                         workouts.renameWorkout(name);
                         _workoutNameFocusNode.unfocus();
