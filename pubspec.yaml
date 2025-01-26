@@ -52,3 +52,6 @@ flutter:
           style: normal
         - asset: assets/fonts/Lato/Lato-Light.ttf
           weight: 200
+    - family: "Icons"
+      fonts:
+        - asset: assets/fonts/Icons.ttf
