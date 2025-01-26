@@ -350,6 +350,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       final querySnapshot = await _collection //
           .where('userId', isEqualTo: userId)
           .where('end', isNull: false)
+          .orderBy('end', descending: true)
           .withConverter(
             fromFirestore: _fromFirestore,
             toFirestore: (workout, _) => workout.toMap(),
