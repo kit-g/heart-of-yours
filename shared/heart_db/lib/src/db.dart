@@ -7,8 +7,10 @@ import 'package:sqflite/sqflite.dart';
 import 'sql.dart' as sql;
 
 const _exercises = 'exercises';
+const _sets = 'sets';
 const _syncs = 'syncs';
 const _workouts = 'workouts';
+const _workoutExercises = 'workout_exercises';
 
 final _logger = Logger('Sqlite');
 
@@ -33,6 +35,7 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
     await db.execute(sql.exercises);
     await db.execute(sql.syncs);
     await db.execute(sql.workouts);
+    await db.execute(sql.workoutExercises);
     await db.execute(sql.sets);
   }
 
@@ -101,6 +104,35 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
       {'end': workout.end?.toIso8601String()},
       where: 'id = ?',
       whereArgs: [workout.id],
+    );
+  }
+
+  @override
+  Future<void> startExercise(String workoutId, WorkoutExercise exercise) {
+    return _db.transaction<void>(
+      (txn) async {
+        final row = {
+          'workout_id': workoutId,
+          'exercise_id': exercise.exercise.name,
+          'id': exercise.id,
+        };
+
+        await txn.insert(_workoutExercises, row);
+
+        final batch = txn.batch();
+
+        for (var each in exercise) {
+          final row = {
+            'exercise_id': exercise.id,
+            'id': each.id,
+            'completed': each.isCompleted ? 1 : 0,
+          };
+
+          batch.insert(_sets, row);
+        }
+
+        batch.commit(noResult: true);
+      },
     );
   }
 }

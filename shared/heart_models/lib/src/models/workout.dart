@@ -239,7 +239,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   factory Workout.fromJson(Map json, ExerciseLookup lookForExercise) = _Workout.fromJson;
 
   /// starts a new exercise
-  void startExercise(Exercise exercise);
+  WorkoutExercise startExercise(Exercise exercise);
 
   /// removes the [WorkoutExercise] from the workout
   void removeExercise(WorkoutExercise exercise);
@@ -476,8 +476,10 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   }
 
   @override
-  void startExercise(Exercise exercise) {
-    _sets.add(WorkoutExercise(starter: ExerciseSet(exercise)));
+  WorkoutExercise startExercise(Exercise exercise) {
+    final ex = WorkoutExercise(starter: ExerciseSet(exercise));
+    _sets.add(ex);
+    return ex;
   }
 
   @override

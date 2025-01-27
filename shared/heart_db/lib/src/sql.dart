@@ -29,11 +29,19 @@ CREATE TABLE IF NOT EXISTS syncs
 );
 """;
 
+const workoutExercises = """
+CREATE TABLE IF NOT EXISTS workout_exercises
+(
+    workout_id  TEXT NOT NULL REFERENCES workouts (id) ON DELETE CASCADE,
+    exercise_id TEXT NOT NULL REFERENCES exercises (exercise) ON DELETE CASCADE,
+    id          TEXT NOT NULL PRIMARY KEY
+);
+""";
+
 const sets = """
 CREATE TABLE IF NOT EXISTS sets
 (
-    workout_id  TEXT    NOT NULL REFERENCES workouts (id),
-    exercise_id TEXT    NOT NULL REFERENCES exercises (exercise),
+    exercise_id TEXT    NOT NULL REFERENCES workout_exercises (id) ON DELETE CASCADE,
     id          TEXT    NOT NULL PRIMARY KEY,
     completed   INTEGER NOT NULL DEFAULT 0,
     weight      REAL,
