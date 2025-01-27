@@ -30,7 +30,7 @@ sealed class ExerciseSet with UsesTimestampForId implements Model, Completes {
           exercise: e,
           reps: reps,
           weight: weight,
-          start: start ?? DateTime.now(),
+          start: start ?? DateTime.timestamp(),
         ),
     };
   }
@@ -184,7 +184,7 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
   ExerciseSet copy() {
     return _WeightedSet(
       exercise: exercise,
-      start: DateTime.now(), // a different id
+      start: DateTime.timestamp(), // a different id
       weight: weight,
       reps: reps,
     );
@@ -231,7 +231,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   factory Workout({String? name}) {
     return _Workout(
-      start: DateTime.now(),
+      start: DateTime.timestamp(),
       name: name,
     );
   }
@@ -294,7 +294,7 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
     required Exercise exercise,
     List<ExerciseSet>? sets,
   })  : _exercise = exercise,
-        start = start ?? DateTime.now(),
+        start = start ?? DateTime.timestamp(),
         _sets = sets ?? [] {
     if (starter != null) {
       _sets.add(starter);
