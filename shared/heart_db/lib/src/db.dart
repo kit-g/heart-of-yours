@@ -26,7 +26,10 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
       join(path, 'heart.db'),
       version: 1,
       onUpgrade: _migrate,
-      onConfigure: (db) => _db = db,
+      onConfigure: (db) async {
+        _db = db;
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
     );
   }
 
@@ -148,6 +151,11 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
   @override
   Future<void> removeSet(ExerciseSet set) {
     return _db.delete(_sets, where: 'id = ?', whereArgs: [set.id]);
+  }
+
+  @override
+  Future<void> removeExercise(WorkoutExercise exercise) {
+    return _db.delete(_workoutExercises, where: 'id = ?', whereArgs: [exercise.id]);
   }
 }
 

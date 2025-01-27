@@ -9,6 +9,8 @@ abstract interface class WorkoutService {
 
   Future<void> startExercise(String workoutId, WorkoutExercise exercise);
 
+  Future<void> removeExercise(WorkoutExercise exercise);
+
   Future<void> addSet(WorkoutExercise exercise, ExerciseSet set);
 
   Future<void> removeSet(ExerciseSet set);
