@@ -8,11 +8,13 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final _db = FirebaseFirestore.instance;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _selectedExercises = <Exercise>{};
+  final ExerciseService _service;
 
   Exercises({
     this.isCached = true,
     this.onError,
-  });
+    required ExerciseService service,
+  }) : _service = service;
 
   bool isInitialized = false;
 
@@ -39,6 +41,15 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   Future<void> init() async {
     try {
+      final (_, local) = await _service.getExercises();
+
+      if (local.isNotEmpty) {
+        _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
+        isInitialized = true;
+        notifyListeners();
+        return;
+      }
+
       final options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
       final all = await _db //
           .collection('exercises')
@@ -49,6 +60,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
           .get(options);
 
       _exercises.addAll(Map.fromEntries(all.docs.map(_snapshot)));
+      _service.storeExercises(_exercises.values);
       isInitialized = true;
       notifyListeners();
     } catch (e, s) {

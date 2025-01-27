@@ -109,3 +109,9 @@ class _Exercise implements Exercise {
 
 typedef ExerciseId = String;
 typedef ExerciseLookup = Exercise? Function(ExerciseId);
+
+abstract interface class ExerciseService {
+  Future<(DateTime?, Iterable<Exercise>)> getExercises();
+
+  Future<void> storeExercises(Iterable<Exercise> exercises);
+}
