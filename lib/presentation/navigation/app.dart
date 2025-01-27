@@ -39,6 +39,7 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
+            service: db,
             lookForExercise: Exercises.of(context).lookup,
             onError: (error, {stacktrace}) {
               Logger('Workouts')

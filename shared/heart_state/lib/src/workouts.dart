@@ -17,12 +17,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final bool isCached;
   final GetOptions _options;
+  final WorkoutService _service;
 
   Workouts({
     required this.lookForExercise,
+    required WorkoutService service,
     this.onError,
     this.isCached = false,
-  }) : _options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
+  })  : _options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache),
+        _service = service;
 
   CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
 
@@ -111,6 +114,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 
+    _service.startWorkout(workout.id, workout.start, name: workout.name);
+
     final doc = {
       'userId': userId,
       ...workout.toMap(),
@@ -126,10 +131,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> finishWorkout() async {
-    activeWorkout?.finish(DateTime.now());
+    activeWorkout?.finish(DateTime.timestamp());
 
     final active = activeWorkout;
     if (active == null) return;
+
+    _service.finishWorkout(active);
 
     if (_activeWorkoutDoc case DocumentReference<Map<String, dynamic>> workout) {
       final aggregation = _db.collection('aggregations').doc(userId!);
@@ -169,6 +176,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts.remove(_activeWorkoutId);
     if (_activeWorkoutId case String id) {
       _deleteWorkout(id);
+      _service.deleteWorkout(id);
     }
     _activeWorkoutId = null;
     notifyListeners();
@@ -181,7 +189,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> deleteWorkout(String workoutId) {
     _workouts.remove(workoutId);
     notifyListeners();
-
+    _service.deleteWorkout(workoutId);
     _deleteAggregation(workoutId);
     return _deleteWorkout(workoutId);
   }
