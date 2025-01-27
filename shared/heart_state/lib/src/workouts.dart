@@ -263,6 +263,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     activeWorkout?.removeExercise(exercise);
     notifyListeners();
 
+    _service.removeExercise(exercise);
+
     final doc = {
       'exercises.${exercise.id}': FieldValue.delete(),
     };
