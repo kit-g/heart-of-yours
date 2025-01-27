@@ -237,6 +237,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       (each) => each.add(set),
     );
 
+    _service.addSet(exercise, set);
+
     final doc = {
       'exercises.${exercise.id}.sets.${set.id}': set.toMap(),
     };
@@ -248,6 +250,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       exercise,
       (each) => each.remove(set),
     );
+
+    _service.removeSet(set);
 
     final doc = {
       'exercises.${exercise.id}.sets.${set.id}': FieldValue.delete(),
