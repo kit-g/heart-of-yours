@@ -35,14 +35,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   void initState() {
     super.initState();
 
-    switch (set) {
-      case WeightedSet(:int reps, :double weight):
-      case AssistedSet(:int reps, :double weight):
-        final rounder = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
-        _weightController.text = rounder;
-        _repsController.text = reps.toString();
-      default:
-    }
+    _initTextControllers();
   }
 
   @override
@@ -260,5 +253,16 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       subtitle: restCompleteBody(nextExercise.exercise.name),
       body: body,
     );
+  }
+
+  void _initTextControllers() {
+    switch (set) {
+      case WeightedSet(:int reps, :double weight):
+      case AssistedSet(:int reps, :double weight):
+        final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
+        _weightController.text = rounded;
+        _repsController.text = reps.toString();
+      default:
+    }
   }
 }
