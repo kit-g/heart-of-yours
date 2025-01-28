@@ -11,7 +11,7 @@ abstract interface class Completes {
 }
 
 /// A single set of an exercise
-sealed class ExerciseSet with UsesTimestampForId implements Model, Completes {
+sealed class ExerciseSet with UsesTimestampForId implements Completes, Model, Storable {
   final Exercise exercise;
   @override
   final DateTime start;
@@ -207,6 +207,15 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
       reps: reps,
     );
   }
+
+  @override
+  Map<String, dynamic> toRow() {
+    return {
+      'id': id,
+      'reps': reps,
+      'weight': weight,
+    };
+  }
 }
 
 // ignore: unused_element
@@ -242,6 +251,15 @@ class _CardioSet extends SetForReps implements CardioSet {
     return switch ((duration, reps)) {
       (num duration, num reps) => (duration * reps).toDouble(),
       _ => null,
+    };
+  }
+
+  @override
+  Map<String, dynamic> toRow() {
+    return {
+      'id': id,
+      'reps': reps,
+      'duration': duration,
     };
   }
 }

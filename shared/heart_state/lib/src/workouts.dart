@@ -300,13 +300,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _forExercise(
       exercise,
       (each) {
-        switch (set) {
-          case WeightedSet s:
-            s.weight = weight;
-          case AssistedSet s:
-            s.weight = weight;
-          default:
-        }
+        set.setMeasurements(weight: weight);
       },
       notifies: false,
     );
@@ -316,11 +310,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _forExercise(
       exercise,
       (each) {
-        switch (set) {
-          case SetForReps s:
-            s.reps = reps;
-          default:
-        }
+        set.setMeasurements(reps: reps);
       },
       notifies: false,
     );
