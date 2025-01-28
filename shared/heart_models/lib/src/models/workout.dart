@@ -71,10 +71,10 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
     final exercisesById = rows.fold<Map<String, List<Map<String, Object?>>>>(
       {},
-      (acc, row) {
+      (accumulator, row) {
         final workoutExerciseId = row['workoutExerciseId'] as String;
-        (acc[workoutExerciseId] ??= []).add(row);
-        return acc;
+        (accumulator[workoutExerciseId] ??= []).add(row);
+        return accumulator;
       },
     );
 
