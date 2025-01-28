@@ -37,7 +37,7 @@ sealed class ExerciseSet with UsesTimestampForId implements Completes, Model, St
       exercise,
       reps: json['reps'],
       weight: json['weight'],
-      start: DateTime.parse(deSanitizeId(json['id'])),
+      start: DateTime.parse(deSanitizeId(json['id'] ?? json['setId'])),
     )..isCompleted = json['completed'] ?? false;
   }
 

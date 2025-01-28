@@ -182,6 +182,14 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
   Future<void> markSetAsIncomplete(ExerciseSet set) {
     return _makeSet(set, false);
   }
+
+  @override
+  Future<Workout?> getActiveWorkout() async {
+    final rows = await _db.rawQuery(sql.activeWorkout);
+    if (rows.isEmpty) return null;
+    final renamed = rows.map((row) => {for (var MapEntry(:key, :value) in row.entries) _toCamel(key): value});
+    return Workout.fromRows(renamed);
+  }
 }
 
 String _toSnake(String s) {

@@ -54,6 +54,62 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   factory Workout.fromJson(Map json, ExerciseLookup lookForExercise) = _Workout.fromJson;
 
+  factory Workout.fromRows(Iterable<Map<String, dynamic>> rows) {
+    if (rows.isEmpty) {
+      throw ArgumentError('Rows cannot be empty');
+    }
+
+    if (rows.length == 1 && rows.first['workoutExerciseId'] == null) {
+      return _Workout(
+        start: DateTime.parse(rows.first['start']),
+        name: rows.first['name'],
+      );
+    }
+
+    final firstRow = rows.first;
+    final workoutId = firstRow['workoutId'] as String;
+
+    final exercisesById = rows.fold<Map<String, List<Map<String, Object?>>>>(
+      {},
+      (acc, row) {
+        final workoutExerciseId = row['workoutExerciseId'] as String;
+        (acc[workoutExerciseId] ??= []).add(row);
+        return acc;
+      },
+    );
+
+    final exercises = exercisesById.entries.map(
+      (entry) {
+        final exercise = Exercise.fromJson(entry.value.first);
+
+        final sets = entry.value.map(
+          (row) {
+            row['completed'] = row['completed'] == 1;
+            return ExerciseSet.fromJson(exercise, row);
+          },
+        ).toList();
+
+        return _WorkoutExercise._(
+          exercise: exercise,
+          start: DateTime.parse(deSanitizeId(entry.key)),
+          sets: sets,
+        );
+      },
+    ).toList()
+      ..sort();
+
+    return _Workout(
+      start: DateTime.parse(firstRow['start'] as String),
+      name: firstRow['name'] as String?,
+      id: workoutId,
+      exercises: exercises,
+      end: switch (firstRow['end']) {
+        String s => DateTime.tryParse(s),
+        _ => null,
+      },
+    );
+  }
+
   /// starts a new exercise
   WorkoutExercise startExercise(Exercise exercise);
 
@@ -200,8 +256,11 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     required this.start,
     this.name,
     String? id,
-  })  : _sets = [],
-        _id = id;
+    List<WorkoutExercise>? exercises,
+    DateTime? end,
+  })  : _sets = exercises ?? <WorkoutExercise>[],
+        _id = id,
+        _end = end;
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     final exercises = switch (json['exercises']) {
@@ -230,9 +289,9 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       start: json['start'],
       name: json['name'],
       id: json['id'],
-    )
-      .._end = json['end']
-      .._sets.addAll(exercises);
+      end: json['end'],
+      exercises: exercises,
+    );
   }
 
   @override

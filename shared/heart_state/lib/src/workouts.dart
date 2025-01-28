@@ -342,7 +342,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Workout?> _getActiveWorkout(String userId) async {
     try {
-      final querySnapshot = await _collection //
+      final local = await _service.getActiveWorkout();
+
+      if (local != null) return local;
+      final querySnapshot = await _collection
           .where('userId', isEqualTo: userId)
           .where('end', isNull: true)
           .withConverter(

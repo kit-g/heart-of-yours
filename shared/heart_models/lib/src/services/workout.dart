@@ -21,4 +21,6 @@ abstract interface class WorkoutService {
   Future<void> markSetAsComplete(ExerciseSet set);
 
   Future<void> markSetAsIncomplete(ExerciseSet set);
+
+  Future<Workout?> getActiveWorkout();
 }
