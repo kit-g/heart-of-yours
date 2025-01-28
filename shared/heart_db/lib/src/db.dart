@@ -142,8 +142,8 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
   @override
   Future<void> addSet(WorkoutExercise exercise, ExerciseSet set) {
     final row = {
-      'id': set.id,
       'exercise_id': exercise.id,
+      ...set.toRow(),
     };
     return _db.insert(_sets, row);
   }
