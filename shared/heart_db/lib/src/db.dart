@@ -157,6 +157,16 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
   Future<void> removeExercise(WorkoutExercise exercise) {
     return _db.delete(_workoutExercises, where: 'id = ?', whereArgs: [exercise.id]);
   }
+
+  @override
+  Future<void> storeMeasurements(ExerciseSet set) {
+    final row = switch (set) {
+      CardioSet s => {'duration': s.duration, 'reps': s.reps},
+      WeightedSet s => {'weight': s.weight, 'reps': s.reps},
+      AssistedSet s => {'weight': s.weight, 'reps': s.reps},
+    };
+    return _db.update(_sets, row, where: 'id = ?', whereArgs: [set.id]);
+  }
 }
 
 String _toSnake(String s) {

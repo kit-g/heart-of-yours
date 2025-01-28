@@ -14,4 +14,6 @@ abstract interface class WorkoutService {
   Future<void> addSet(WorkoutExercise exercise, ExerciseSet set);
 
   Future<void> removeSet(ExerciseSet set);
+
+  Future<void> storeMeasurements(ExerciseSet set);
 }
