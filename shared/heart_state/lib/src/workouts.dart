@@ -289,10 +289,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
     _latestMarkedSet = (exercise, set);
+    _service.markSetAsComplete(set);
     return _markSet(exercise, set, complete: true);
   }
 
   Future<void>? markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
+    _service.markSetAsIncomplete(set);
     return _markSet(exercise, set, complete: false);
   }
 
