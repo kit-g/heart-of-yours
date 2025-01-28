@@ -73,6 +73,25 @@ sealed class ExerciseSet with UsesTimestampForId implements Model, Completes {
   }
 
   ExerciseSet copy();
+
+  void setMeasurements({
+    double? weight,
+    int? reps,
+    int? duration,
+  }) {
+    switch (this) {
+      case CardioSet self:
+        self.duration = duration;
+      case WeightedSet self:
+        self
+          ..weight = weight ?? self.weight
+          ..reps = reps ?? self.reps;
+      case AssistedSet self:
+        self
+          ..weight = weight ?? self.weight
+          ..reps = reps ?? self.reps;
+    }
+  }
 }
 
 /// A set meant to be executed in a number of repetitions
@@ -123,12 +142,11 @@ abstract class AssistedSet extends SetForReps {
 
 /// A cardio exercise
 abstract class CardioSet extends ExerciseSet {
-  final Duration duration;
-  final double distance;
+  abstract int? duration; // milliseconds
+  abstract double? distance;
+  abstract int? reps;
 
   CardioSet({
-    required this.duration,
-    required this.distance,
     required super.exercise,
     required super.start,
   }) : super._();
@@ -188,6 +206,43 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
       weight: weight,
       reps: reps,
     );
+  }
+}
+
+// ignore: unused_element
+class _CardioSet extends SetForReps implements CardioSet {
+  @override
+  double? distance;
+  @override
+  int? duration;
+  @override
+  int? reps;
+
+  _CardioSet({
+    required super.exercise,
+    required super.start,
+  });
+
+  @override
+  bool get canBeCompleted => distance != null && duration != null && reps != null;
+
+  @override
+  ExerciseSet copy() {
+    return _CardioSet(
+      exercise: exercise,
+      start: DateTime.timestamp(), // a different id
+    )
+      ..reps = reps
+      ..duration = duration
+      ..distance = distance;
+  }
+
+  @override
+  double? get total {
+    return switch ((duration, reps)) {
+      (num duration, num reps) => (duration * reps).toDouble(),
+      _ => null,
+    };
   }
 }
 
