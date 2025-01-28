@@ -206,6 +206,21 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
     );
   }
 
+  @override
+  Future<Iterable<Workout>?> getWorkoutHistory() async {
+    final rows = await _db.rawQuery(sql.history);
+    final mapped = rows.fold<Map<String, List<Map<String, Object?>>>>(
+      {},
+      (accumulator, row) {
+        final workoutExerciseId = row['workout_id'] as String;
+        final renamed = {for (var MapEntry(:key, :value) in row.entries) _toCamel(key): value};
+        (accumulator[workoutExerciseId] ??= []).add(renamed);
+        return accumulator;
+      },
+    );
+    return mapped.values.map((each) => Workout.fromRows(each));
+  }
+
   static void _storeWorkout(Batch batch, Workout workout) {
     final Workout(id: workoutId, :start, :name, :end) = workout;
     final row = {

@@ -117,3 +117,38 @@ WHERE NOT exists (
     WHERE workout_exercises.workout_id = _workout.id
 );
 """;
+
+
+const history = """
+WITH _workout AS (
+    SELECT *
+    FROM workouts
+    WHERE "end" IS NOT NULL
+)
+SELECT
+    _workout.id AS workout_id,
+    _workout.start,
+    _workout."end",
+    _workout.name,
+    workout_exercises.id as workout_exercise_id,
+    sets.id AS set_id,
+    sets.completed,
+    sets.weight,
+    sets.reps,
+    sets.duration,
+    exercise,
+    joint,
+    level,
+    modality,
+    muscle_group,
+    direction,
+    ulc
+FROM workout_exercises
+INNER JOIN _workout
+    ON _workout.id = workout_exercises.workout_id
+INNER JOIN sets
+    ON workout_exercises.id = sets.exercise_id
+INNER JOIN exercises e
+    ON e.exercise = workout_exercises.exercise_id
+    ;
+""";
