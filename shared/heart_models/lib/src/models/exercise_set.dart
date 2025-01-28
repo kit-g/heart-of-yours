@@ -211,6 +211,7 @@ class _WeightedSet extends _SetForReps implements WeightedSet {
       'id': id,
       'reps': reps,
       'weight': weight,
+      'completed': isCompleted ? 1 : 0,
     };
   }
 }
@@ -257,6 +258,7 @@ class _CardioSet extends SetForReps implements CardioSet {
       'id': id,
       'reps': reps,
       'duration': duration,
+      'completed': isCompleted ? 1 : 0,
     };
   }
 }

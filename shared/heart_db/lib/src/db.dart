@@ -190,6 +190,52 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
     final renamed = rows.map((row) => {for (var MapEntry(:key, :value) in row.entries) _toCamel(key): value});
     return Workout.fromRows(renamed);
   }
+
+  @override
+  Future<void> storeWorkoutHistory(Iterable<Workout> history) {
+    return _db.transaction(
+      (txn) async {
+        final batch = txn.batch();
+
+        for (var each in history) {
+          _storeWorkout(batch, each);
+        }
+
+        batch.commit();
+      },
+    );
+  }
+
+  static void _storeWorkout(Batch batch, Workout workout) {
+    final Workout(id: workoutId, :start, :name, :end) = workout;
+    final row = {
+      'id': workoutId,
+      'start': start.toIso8601String(),
+      if (name != null) 'name': name,
+      if (end != null) 'end': end.toIso8601String(),
+    };
+    batch.insert(_workouts, row, conflictAlgorithm: ConflictAlgorithm.replace);
+
+    for (var exercise in workout) {
+      final exerciseRow = {
+        'workout_id': workoutId,
+        'exercise_id': exercise.exercise.name,
+        'id': exercise.id,
+      };
+
+      batch.insert(_workoutExercises, exerciseRow, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      for (var set in exercise) {
+        final setRow = {
+          'exercise_id': exercise.id,
+          ...set.toRow(),
+          'completed': set.isCompleted ? 1 : 0,
+        };
+
+        batch.insert(_sets, setRow, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    }
+  }
 }
 
 String _toSnake(String s) {

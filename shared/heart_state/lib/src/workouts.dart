@@ -384,6 +384,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (userId case String id) {
       final workouts = await _getHistory(id);
       if (workouts != null) {
+        _service.storeWorkoutHistory(workouts);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
       }
       historyInitialized = true;
