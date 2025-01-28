@@ -1,3 +1,4 @@
+import '../models/exercise_set.dart';
 import '../models/workout.dart';
 
 abstract interface class WorkoutService {
