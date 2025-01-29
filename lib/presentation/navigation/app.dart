@@ -35,6 +35,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Stats>(
           create: (_) => Stats(
             onError: reportToSentry,
+            service: db,
           ),
         ),
         ChangeNotifierProvider<Workouts>(

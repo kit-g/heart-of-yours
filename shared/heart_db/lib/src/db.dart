@@ -14,7 +14,7 @@ const _workoutExercises = 'workout_exercises';
 
 final _logger = Logger('Sqlite');
 
-final class LocalDatabase implements ExerciseService, WorkoutService {
+final class LocalDatabase implements ExerciseService, StatsService, WorkoutService {
   static late final Database _db;
 
   static Future<void> init() async {
@@ -255,6 +255,17 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
   @override
   Future<void> renameWorkout({required String workoutId, required String name}) {
     return _db.update(_workouts, {'name': name}, where: 'id = ?', whereArgs: [workoutId]);
+  }
+
+  @override
+  Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack = 8}) {
+    final cutoff = getMonday(DateTime.timestamp()).subtract(Duration(days: 7 * (weeksBack ?? 0))).toIso8601String();
+    return _db.query(_workouts, where: 'start > ?', whereArgs: [cutoff]).then(
+      (rows) {
+        if (rows.isEmpty) return WorkoutAggregation.empty();
+        return WorkoutAggregation.fromRows(rows);
+      },
+    );
   }
 }
 

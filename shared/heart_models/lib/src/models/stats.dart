@@ -24,8 +24,6 @@ abstract interface class WeekSummary with Iterable<WorkoutSummary> implements Co
 }
 
 abstract interface class WorkoutAggregation with Iterable<WeekSummary> {
-  Iterable<WeekSummary> get weeks;
-
   /// A factory constructor for creating a [WorkoutAggregation] instance
   /// from a given [json] map.
   ///
@@ -39,6 +37,8 @@ abstract interface class WorkoutAggregation with Iterable<WeekSummary> {
   /// It also ensures that the weeks are represented in a reversed order (latest
   /// week first) and only retains the most recent weeks, up to the maximum defined.
   factory WorkoutAggregation.fromJson(Map<String, dynamic> json) = _WorkoutAggregation.fromJson;
+
+  factory WorkoutAggregation.fromRows(List<Map<String, dynamic>> rows) = _WorkoutAggregation.fromRows;
 
   factory WorkoutAggregation.dummy() = _WorkoutAggregation.dummy;
 
@@ -97,13 +97,12 @@ class _WeekSummary with Iterable<WorkoutSummary> implements WeekSummary {
 }
 
 class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregation {
-  @override
-  final Iterable<WeekSummary> weeks;
+  final Iterable<WeekSummary> _weeks;
 
-  const _WorkoutAggregation({required this.weeks});
+  const _WorkoutAggregation({required Iterable<WeekSummary> weeks}) : _weeks = weeks;
 
   @override
-  Iterator<WeekSummary> get iterator => weeks.iterator;
+  Iterator<WeekSummary> get iterator => _weeks.iterator;
 
   @override
   bool get isEmpty => !any((summary) => summary.isNotEmpty);
@@ -158,6 +157,56 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
         )
         .toList()
         .reversed
+        .toList()
+      ..sort();
+
+    return _WorkoutAggregation(weeks: completeWeeks);
+  }
+
+  factory _WorkoutAggregation.fromRows(List<Map<String, dynamic>> rows) {
+    final byWeek = <String, List<_WorkoutSummary>>{};
+
+    for (var row in rows) {
+      final DateTime start = DateTime.parse(row['start']);
+      final String weekId = sanitizeId(getMonday(start));
+
+      byWeek.putIfAbsent(weekId, () => []).add(
+            _WorkoutSummary(
+              id: row['id'],
+              name: row['name'],
+            ),
+          );
+    }
+
+    final parsed = byWeek.entries.map(
+      (entry) {
+        return _WeekSummary(
+          weekId: entry.key,
+          workouts: entry.value,
+        );
+      },
+    ).toList()
+      ..sort();
+
+    if (parsed.isEmpty) {
+      return _WorkoutAggregation.empty();
+    }
+
+    final currentWeekStart = getMonday(DateTime.timestamp());
+    final earliestParsedWeekStart = parsed.first.startDate.toUtc();
+    final limit = currentWeekStart.subtract(const Duration(days: 7 * 7));
+    final earliestWeekStart = earliestParsedWeekStart.isAfter(limit) ? limit : earliestParsedWeekStart;
+
+    final completeWeeks = Iterable.generate(
+      (currentWeekStart.difference(earliestWeekStart).inDays ~/ 7) + 1,
+      (index) => earliestWeekStart.add(Duration(days: index * 7)),
+    )
+        .map(
+          (weekStart) => parsed.firstWhere(
+            (w) => w.startDate.isAtSameWeekAs(weekStart),
+            orElse: () => _WeekSummary.empty(weekId: sanitizeId(weekStart)),
+          ),
+        )
         .toList()
       ..sort();
 
