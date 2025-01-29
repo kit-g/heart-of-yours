@@ -1,4 +1,4 @@
-import 'package:heart_models/src/ts_for_id.dart';
+import 'package:heart_models/src/models/ts_for_id.dart';
 import 'package:test/test.dart';
 
 class TestTimestampId with UsesTimestampForId {

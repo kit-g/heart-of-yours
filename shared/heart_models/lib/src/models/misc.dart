@@ -11,3 +11,7 @@ abstract interface class Searchable {
 abstract interface class Model {
   Map<String, dynamic> toMap();
 }
+
+abstract interface class Storable {
+  Map<String, dynamic> toRow();
+}

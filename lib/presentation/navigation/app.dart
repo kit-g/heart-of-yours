@@ -6,6 +6,7 @@ import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart_db/heart_db.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:logging/logging.dart';
@@ -18,6 +19,7 @@ class HeartApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final db = LocalDatabase();
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AppTheme>(
@@ -27,6 +29,7 @@ class HeartApp extends StatelessWidget {
           create: (_) => Exercises(
             onError: reportToSentry,
             isCached: false,
+            service: db,
           ),
         ),
         ChangeNotifierProvider<Stats>(
@@ -36,6 +39,7 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
+            service: db,
             lookForExercise: Exercises.of(context).lookup,
             onError: (error, {stacktrace}) {
               Logger('Workouts')
