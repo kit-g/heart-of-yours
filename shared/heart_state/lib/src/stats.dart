@@ -5,10 +5,13 @@ import 'package:provider/provider.dart';
 
 class Stats with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
-
+  final StatsService _service;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  Stats({required this.onError});
+  Stats({
+    required this.onError,
+    required StatsService service,
+  }) : _service = service;
 
   String? userId;
 
@@ -28,6 +31,13 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> init() async {
+    final local = await _service.getWorkoutSummary();
+    if (local.isNotEmpty) {
+      workouts = local;
+      notifyListeners();
+      return;
+    }
+
     if (userId case String id) {
       final user = await _db.collection('aggregations').doc(id).get();
       final aggregation = (user.data() ?? {})['workouts'] ?? <String, dynamic>{};
