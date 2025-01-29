@@ -109,3 +109,4 @@ class _Exercise implements Exercise {
 
 typedef ExerciseId = String;
 typedef ExerciseLookup = Exercise? Function(ExerciseId);
+

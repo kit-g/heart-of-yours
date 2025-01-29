@@ -17,12 +17,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final bool isCached;
   final GetOptions _options;
+  final WorkoutService _service;
 
   Workouts({
     required this.lookForExercise,
+    required WorkoutService service,
     this.onError,
     this.isCached = false,
-  }) : _options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
+  })  : _options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache),
+        _service = service;
 
   CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
 
@@ -111,6 +114,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 
+    _service.startWorkout(workout.id, workout.start, name: workout.name);
+
     final doc = {
       'userId': userId,
       ...workout.toMap(),
@@ -126,10 +131,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> finishWorkout() async {
-    activeWorkout?.finish(DateTime.now());
+    activeWorkout?.finish(DateTime.timestamp());
 
     final active = activeWorkout;
     if (active == null) return;
+
+    _service.finishWorkout(active);
 
     if (_activeWorkoutDoc case DocumentReference<Map<String, dynamic>> workout) {
       final aggregation = _db.collection('aggregations').doc(userId!);
@@ -169,6 +176,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts.remove(_activeWorkoutId);
     if (_activeWorkoutId case String id) {
       _deleteWorkout(id);
+      _service.deleteWorkout(id);
     }
     _activeWorkoutId = null;
     notifyListeners();
@@ -181,7 +189,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> deleteWorkout(String workoutId) {
     _workouts.remove(workoutId);
     notifyListeners();
-
+    _service.deleteWorkout(workoutId);
     _deleteAggregation(workoutId);
     return _deleteWorkout(workoutId);
   }
@@ -195,10 +203,13 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<void>? startExercise(Exercise exercise) {
-    activeWorkout?.startExercise(exercise);
-    notifyListeners();
-    return _syncSets();
+  Future<void> startExercise(Exercise exercise) async {
+    if (activeWorkout case Workout workout) {
+      final starter = workout.startExercise(exercise);
+      _service.startExercise(workout.id, starter);
+      notifyListeners();
+      return _syncSets();
+    }
   }
 
   Future<void>? _syncSets() {
@@ -226,6 +237,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       (each) => each.add(set),
     );
 
+    _service.addSet(exercise, set);
+
     final doc = {
       'exercises.${exercise.id}.sets.${set.id}': set.toMap(),
     };
@@ -238,6 +251,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       (each) => each.remove(set),
     );
 
+    _service.removeSet(set);
+
     final doc = {
       'exercises.${exercise.id}.sets.${set.id}': FieldValue.delete(),
     };
@@ -247,6 +262,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void>? removeExercise(WorkoutExercise exercise) {
     activeWorkout?.removeExercise(exercise);
     notifyListeners();
+
+    _service.removeExercise(exercise);
 
     final doc = {
       'exercises.${exercise.id}': FieldValue.delete(),
@@ -272,10 +289,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
     _latestMarkedSet = (exercise, set);
+    _service.markSetAsComplete(set);
     return _markSet(exercise, set, complete: true);
   }
 
   Future<void>? markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
+    _service.markSetAsIncomplete(set);
     return _markSet(exercise, set, complete: false);
   }
 
@@ -283,13 +302,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _forExercise(
       exercise,
       (each) {
-        switch (set) {
-          case WeightedSet s:
-            s.weight = weight;
-          case AssistedSet s:
-            s.weight = weight;
-          default:
-        }
+        set.setMeasurements(weight: weight);
       },
       notifies: false,
     );
@@ -299,14 +312,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _forExercise(
       exercise,
       (each) {
-        switch (set) {
-          case SetForReps s:
-            s.reps = reps;
-          default:
-        }
+        set.setMeasurements(reps: reps);
       },
       notifies: false,
     );
+  }
+
+  Future<void> storeMeasurements(ExerciseSet set) {
+    return _service.storeMeasurements(set);
   }
 
   Future<void>? swap(WorkoutExercise toInsert, WorkoutExercise after) {
@@ -323,13 +336,19 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void>? renameWorkout(String name) {
     activeWorkout?.name = name;
+    if (activeWorkout case Workout workout) {
+      _service.renameWorkout(workoutId: workout.id, name: name);
+    }
     notifyListeners();
     return _activeWorkoutDoc?.update({'name': name});
   }
 
   Future<Workout?> _getActiveWorkout(String userId) async {
     try {
-      final querySnapshot = await _collection //
+      final local = await _service.getActiveWorkout();
+
+      if (local != null) return local;
+      final querySnapshot = await _collection
           .where('userId', isEqualTo: userId)
           .where('end', isNull: true)
           .withConverter(
@@ -347,6 +366,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Iterable<Workout>?> _getHistory(String userId, {int pageSize = 7}) async {
     try {
+      final local = await _service.getWorkoutHistory();
+
+      if (local != null) return local;
+
       final querySnapshot = await _collection //
           .where('userId', isEqualTo: userId)
           .where('end', isNull: false)
@@ -368,6 +391,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (userId case String id) {
       final workouts = await _getHistory(id);
       if (workouts != null) {
+        _service.storeWorkoutHistory(workouts);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
       }
       historyInitialized = true;

@@ -35,14 +35,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   void initState() {
     super.initState();
 
-    switch (set) {
-      case WeightedSet(:int reps, :double weight):
-      case AssistedSet(:int reps, :double weight):
-        final rounder = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
-        _weightController.text = rounder;
-        _repsController.text = reps.toString();
-      default:
-    }
+    _initTextControllers();
+
+    _weightController.addListener(_weightListener);
+    _repsController.addListener(_repsListener);
   }
 
   @override
@@ -54,6 +50,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     _hasRepsError.dispose();
     _hasWeighError.dispose();
     _hasCrossedDismissThreshold.dispose();
+
+    _weightController.removeListener(_weightListener);
+    _repsController.removeListener(_repsListener);
 
     super.dispose();
   }
@@ -260,5 +259,43 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       subtitle: restCompleteBody(nextExercise.exercise.name),
       body: body,
     );
+  }
+
+  void _initTextControllers() {
+    switch (set) {
+      case WeightedSet(:int reps, :double weight):
+      case AssistedSet(:int reps, :double weight):
+        final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
+        _weightController.text = rounded;
+        _repsController.text = reps.toString();
+      default:
+    }
+  }
+
+  void _weightListener() {
+    if (!context.mounted) return;
+    bool hasChanged = false;
+    if (double.tryParse(_weightController.text) case double weight when weight > 0) {
+      set.setMeasurements(weight: weight);
+      hasChanged = true;
+    }
+
+    if (hasChanged) {
+      Workouts.of(context).storeMeasurements(set);
+    }
+  }
+
+  void _repsListener() {
+    if (!context.mounted) return;
+    bool hasChanged = false;
+
+    if (int.tryParse(_repsController.text) case int reps when reps > 0) {
+      set.setMeasurements(reps: reps);
+      hasChanged = true;
+    }
+
+    if (hasChanged) {
+      Workouts.of(context).storeMeasurements(set);
+    }
   }
 }
