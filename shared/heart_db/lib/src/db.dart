@@ -251,6 +251,11 @@ final class LocalDatabase implements ExerciseService, WorkoutService {
       }
     }
   }
+
+  @override
+  Future<void> renameWorkout({required String workoutId, required String name}) {
+    return _db.update(_workouts, {'name': name}, where: 'id = ?', whereArgs: [workoutId]);
+  }
 }
 
 String _toSnake(String s) {
