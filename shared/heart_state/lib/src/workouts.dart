@@ -336,6 +336,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void>? renameWorkout(String name) {
     activeWorkout?.name = name;
+    if (activeWorkout case Workout workout) {
+      _service.renameWorkout(workoutId: workout.id, name: name);
+    }
     notifyListeners();
     return _activeWorkoutDoc?.update({'name': name});
   }

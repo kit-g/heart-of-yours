@@ -27,4 +27,6 @@ abstract interface class WorkoutService {
   Future<void> storeWorkoutHistory(Iterable<Workout> history);
 
   Future<Iterable<Workout>?> getWorkoutHistory();
+
+  Future<void> renameWorkout({required String workoutId, required String name});
 }
