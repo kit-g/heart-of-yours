@@ -91,11 +91,19 @@ class SettingsPage extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.edit_notifications_outlined),
-                title: Text(notificationSettings),
-                onTap: () {
-                  //
+              FutureBuilder<bool>(
+                future: hasNotificationsPermission(Theme.of(context).platform),
+                builder: (context, snapshot) {
+                  return ListTile(
+                    leading: switch (snapshot.hasData && (snapshot.data ?? false)) {
+                      true => const Icon(Icons.edit_notifications_rounded),
+                      false => const Icon(Icons.notifications_off_rounded),
+                    },
+                    title: Text(notificationSettings),
+                    onTap: () {
+                      AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
+                    },
+                  );
                 },
               ),
             ],
