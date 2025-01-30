@@ -74,9 +74,10 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                 FutureBuilder<bool>(
                   future: _isAppleSignNnAvailable,
                   builder: (_, snapshot) {
+                    bool hasAppleSignIn = _isIos(context) && !snapshot.hasError && snapshot.hasData && snapshot.data!;
                     return AnimatedSwitcher(
                       duration: const Duration(milliseconds: 100),
-                      child: switch (!snapshot.hasError && snapshot.hasData && snapshot.data!) {
+                      child: switch (hasAppleSignIn) {
                         false => const SizedBox.shrink(),
                         true => Stack(
                             children: [
@@ -125,5 +126,9 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
         //
       }
     }
+  }
+
+  bool _isIos(BuildContext context) {
+    return Theme.of(context).platform == TargetPlatform.iOS;
   }
 }
