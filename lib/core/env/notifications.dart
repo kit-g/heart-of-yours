@@ -6,8 +6,8 @@ final _plugin = FlutterLocalNotificationsPlugin();
 final _logger = Logger('Notifications');
 
 const _currentExercise = 0;
-const _defaultChannelId = 'heartChannel';
-const _defaultChannelName = 'heartChannel';
+const _defaultChannelId = 'Rest Timers';
+const _defaultChannelName = 'Rest Timers';
 
 @pragma('vm:entry-point')
 void _notificationTapBackground(NotificationResponse notificationResponse) {
@@ -141,5 +141,22 @@ Future<void> _createNotificationChannel(TargetPlatform platform) async {
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
     default:
+  }
+}
+
+Future<bool> hasNotificationsPermission(TargetPlatform platform) async {
+  switch (platform) {
+    case TargetPlatform.android:
+      final enabled = await _plugin //
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.areNotificationsEnabled();
+      return enabled ?? false;
+    case TargetPlatform.iOS:
+      final options = await _plugin //
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.checkPermissions();
+      return options?.isEnabled ?? false;
+    default:
+      return false;
   }
 }
