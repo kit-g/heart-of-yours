@@ -2,12 +2,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:label="heart"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:icon="@mipmap/ic_launcher"
-            android:label="@string/app_name"
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
