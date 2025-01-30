@@ -16,6 +16,7 @@ enum Env {
 class AppConfig {
   const AppConfig._();
 
+  static const String appName = String.fromEnvironment('APP_NAME');
   static Env env = Env.fromString(const String.fromEnvironment('ENV').trim());
   static const String logLevel = String.fromEnvironment('LOG_LEVEL');
   static const String sentryDsn = String.fromEnvironment('SENTRY_DSN');
