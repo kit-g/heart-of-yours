@@ -47,6 +47,7 @@ The project has the following general structure.
     └── presentation
 ├── pubspec.yaml
 ├── shared
+    ├── heart_db
     ├── heart_language
     ├── heart_models
     └── heart_state
@@ -55,14 +56,11 @@ The project has the following general structure.
 ```
 
 This is a slightly modified MVVM-architecture where the data layer is moved to its own package (or
-two, rather -
-`heart_models` and `heart_state`), plus the same happened to the app's copy (`heart_language`). In
-this specific app,
-there are no services (or service abstractions) since its backend is in Firebase and the Firestore
-connection is private
-to the `heart_state` package and is not exposed to the app. In fact, the app has no direct
-dependency on Firebase and
-this is how separation of concerns is achieved.
+three, rather - `heart_models`, `heart_db` and `heart_state`), plus the same happened to the app's
+copy (`heart_language`). In this specific app, there are no services (or service abstractions) since
+its backend is in Firebase and the Firestore connection is private to the `heart_state` package and
+is not exposed to the app. In fact, the app has no direct dependency on Firebase and this is how
+separation of concerns is achieved.
 
 ## To set up
 
@@ -96,7 +94,7 @@ First, we'll create a `env/dev.json` file that looks like this:
 }
 ```
 
-Populate this with your values.
+Populate this with your values. Full list of variables is in `lib/core/env/config.dart`.
 
 Then, to run:
 

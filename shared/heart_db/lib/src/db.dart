@@ -168,19 +168,19 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
     return _db.update(_sets, row, where: 'id = ?', whereArgs: [set.id]);
   }
 
-  Future<void> _makeSet(ExerciseSet set, bool status) {
+  Future<void> _markSet(ExerciseSet set, bool status) {
     final row = {'completed': status ? 1 : 0};
     return _db.update(_sets, row, where: 'id = ?', whereArgs: [set.id]);
   }
 
   @override
   Future<void> markSetAsComplete(ExerciseSet set) {
-    return _makeSet(set, true);
+    return _markSet(set, true);
   }
 
   @override
   Future<void> markSetAsIncomplete(ExerciseSet set) {
-    return _makeSet(set, false);
+    return _markSet(set, false);
   }
 
   @override

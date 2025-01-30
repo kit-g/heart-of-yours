@@ -86,7 +86,7 @@ class SettingsPage extends StatelessWidget {
                   showAboutDialog(
                     context: context,
                     applicationVersion: info.fullVersion,
-                    applicationName: info.appName,
+                    applicationName: AppConfig.appName,
                   );
                 },
               ),
