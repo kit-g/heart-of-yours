@@ -6,15 +6,18 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:settings, :appearance, :aboutApp, :notificationSettings) = L.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final ThemeData(
+      :textTheme,
+      colorScheme: ColorScheme(:brightness, secondaryContainer: logoColor),
+    ) = Theme.of(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarIconBrightness: switch (colorScheme.brightness) {
+        statusBarIconBrightness: switch (brightness) {
           Brightness.dark => Brightness.light,
           Brightness.light => Brightness.dark,
         },
-        statusBarBrightness: colorScheme.brightness,
+        statusBarBrightness: brightness,
       ),
       child: SafeArea(
         child: Scaffold(
@@ -35,6 +38,27 @@ class SettingsPage extends StatelessWidget {
           ),
           body: ListView(
             children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      logoColor.withValues(alpha: .2),
+                      logoColor,
+                    ],
+                  ),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      LogoTitle(fontSize: 32),
+                      Motto(fontSize: 18),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(

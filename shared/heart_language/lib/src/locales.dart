@@ -23,6 +23,14 @@ class L {
     );
   }
 
+  String get motto {
+    return Intl.message(
+      'Every beat counts.',
+      name: 'motto',
+      desc: 'App\'s motto',
+    );
+  }
+
   String get toLightMode {
     return Intl.message(
       'Light',
