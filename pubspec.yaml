@@ -55,6 +55,11 @@ flutter:
           style: normal
         - asset: assets/fonts/Lato/Lato-Light.ttf
           weight: 200
+    - family: "Daydream"
+      fonts:
+        - asset: assets/fonts/Daydream.ttf
+          weight: 400
+          style: normal
     - family: "Icons"
       fonts:
         - asset: assets/fonts/Icons.ttf
