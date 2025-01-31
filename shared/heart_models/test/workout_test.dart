@@ -14,8 +14,8 @@ void main() {
       mockExercise = MockExercise();
 
       when(mockExercise.name).thenReturn('Mock Exercise');
-      when(mockExercise.category).thenReturn('Weighted Body Weight');
-      when(mockExercise.target).thenReturn('Chest');
+      when(mockExercise.category).thenReturn(Category.weightedBodyWeight);
+      when(mockExercise.target).thenReturn(Target.chest);
     },
   );
 

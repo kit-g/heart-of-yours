@@ -38,7 +38,7 @@ class _ExerciseItem extends StatelessWidget {
                     children: [
                       Text(exercise.name),
                       Text(
-                        exercise.target,
+                        exercise.target.value,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
