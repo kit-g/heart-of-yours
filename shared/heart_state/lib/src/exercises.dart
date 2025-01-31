@@ -9,6 +9,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
+  final _filters = <ExerciseFilter>{};
 
   Exercises({
     this.isCached = true,
@@ -28,6 +29,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   @override
   Iterator<Exercise> get iterator => _exercises.values.iterator;
+
+  Iterable<ExerciseFilter> get filters => _filters;
 
   Exercise operator [](int index) => _exercises.values.toList()[index];
 
@@ -94,6 +97,16 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   void unselectAll() {
     _selectedExercises.clear();
+    notifyListeners();
+  }
+
+  void addFilter(ExerciseFilter filter) {
+    _filters.add(filter);
+    notifyListeners();
+  }
+
+  void removeFilter(ExerciseFilter filter) {
+    _filters.remove(filter);
     notifyListeners();
   }
 }

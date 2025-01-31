@@ -1,6 +1,10 @@
 import 'misc.dart';
 
-enum Category {
+abstract interface class ExerciseFilter {
+  String get value;
+}
+
+enum Category implements ExerciseFilter {
   weightedBodyWeight('Weighted Body Weight'),
   assistedBodyWeight('Assisted Body Weight'),
   repsOnly('Reps Only'),
@@ -10,6 +14,7 @@ enum Category {
   dumbbell('Dumbbell'),
   barbell('Barbell');
 
+  @override
   final String value;
 
   const Category(this.value);
@@ -32,7 +37,7 @@ enum Category {
   String toString() => value;
 }
 
-enum Target {
+enum Target implements ExerciseFilter {
   core('Core'),
   arms('Arms'),
   back('Back'),
@@ -44,6 +49,7 @@ enum Target {
   fullBody('Full Body'),
   cardio('Cardio');
 
+  @override
   final String value;
 
   const Target(this.value);
@@ -110,9 +116,7 @@ class _Exercise implements Exercise {
   }
 
   @override
-  String toString() {
-    return name;
-  }
+  String toString() => name;
 
   @override
   bool contains(String query) {
