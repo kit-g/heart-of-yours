@@ -45,6 +45,13 @@ class _ExerciseItem extends StatelessWidget {
                   ),
                 ),
               ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: switch (selected) {
+                  true => const Icon(Icons.check_circle_rounded),
+                  false => const SizedBox.shrink(),
+                },
+              ),
             ],
           ),
         ),

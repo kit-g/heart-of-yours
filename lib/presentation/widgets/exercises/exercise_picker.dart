@@ -8,7 +8,10 @@ class ExercisePicker extends StatelessWidget {
   final Color? backgroundColor;
   final void Function(Exercise)? onExerciseSelected;
 
-  const ExercisePicker({
+  final _categoryKey = GlobalKey();
+  final _targetKey = GlobalKey();
+
+  ExercisePicker({
     super.key,
     required this.exercises,
     required this.searchController,
@@ -26,7 +29,11 @@ class ExercisePicker extends StatelessWidget {
       :pullExercise,
       :pushExercise,
       :staticExercise,
+      :target,
+      :category,
     ) = L.of(context);
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       controller: Scrolls.of(context).exercisesScrollController,
@@ -41,6 +48,104 @@ class ExercisePicker extends StatelessWidget {
               focusNode: focusNode,
               controller: searchController,
               hint: search,
+            ),
+          ),
+        ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: FixedHeightHeaderDelegate(
+            height: 44,
+            backgroundColor: backgroundColor,
+            child: Row(
+              spacing: 8,
+              children: [
+                Expanded(
+                  child: PrimaryButton.wide(
+                    key: _targetKey,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          left: 0,
+                          child: Icon(
+                            Icons.filter_alt_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Center(
+                          child: Text(
+                            target,
+                            style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
+                    ),
+                    onPressed: () async {
+                      return showMenu(
+                        context: context,
+                        position: _position(_targetKey),
+                        items: <PopupMenuEntry<ExerciseFilter>>[
+                          ...Target.values.map(
+                            (category) {
+                              return PopupMenuItem<ExerciseFilter>(
+                                height: 36,
+                                value: category,
+                                onTap: () => exercises.addFilter(category),
+                                child: Text(
+                                  category.value,
+                                  style: textTheme.titleSmall,
+                                ),
+                              );
+                            },
+                          )
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: PrimaryButton.wide(
+                    key: _categoryKey,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          left: 0,
+                          child: Icon(
+                            Icons.filter_alt_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Center(
+                          child: Text(
+                            category,
+                            style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
+                    ),
+                    onPressed: () async {
+                      return showMenu(
+                        context: context,
+                        position: _position(_categoryKey),
+                        items: <PopupMenuEntry<ExerciseFilter>>[
+                          ...Category.values.map(
+                            (category) {
+                              return PopupMenuItem<ExerciseFilter>(
+                                height: 36,
+                                value: category,
+                                onTap: () => exercises.addFilter(category),
+                                child: Text(
+                                  category.value,
+                                  style: textTheme.titleSmall,
+                                ),
+                              );
+                            },
+                          )
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -79,6 +184,18 @@ class ExercisePicker extends StatelessWidget {
             ),
         }
       ],
+    );
+  }
+
+  RelativeRect _position(GlobalKey key) {
+    final RenderBox renderBox = key.currentContext!.findRenderObject() as RenderBox;
+    final Offset offset = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+    return RelativeRect.fromLTRB(
+      offset.dx,
+      offset.dy + size.height, // Top (below the button)
+      offset.dx + size.width,
+      offset.dy + size.height, // Bottom (same as top for a dropdown effect)
     );
   }
 }

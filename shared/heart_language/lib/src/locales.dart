@@ -666,6 +666,22 @@ class L {
     );
   }
 
+  String get category {
+    return Intl.message(
+      'Category',
+      name: 'category',
+      desc: 'Label button that allows to choose Exercise category',
+    );
+  }
+
+  String get target {
+    return Intl.message(
+      'Target',
+      name: 'target',
+      desc: 'Label button that allows to choose Exercise target muscle group',
+    );
+  }
+
   String restCompleteBody(String exercise) {
     return Intl.message(
       'Next: $exercise',
