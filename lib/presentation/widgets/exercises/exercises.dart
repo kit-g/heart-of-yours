@@ -9,6 +9,5 @@ import 'package:heart_state/heart_state.dart';
 
 import '../search_field.dart';
 
-part 'direction_badge.dart';
 part 'exercise_item.dart';
 part 'exercise_picker.dart';
