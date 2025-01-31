@@ -682,6 +682,14 @@ class L {
     );
   }
 
+  String get removeFilter {
+    return Intl.message(
+      'Remove filter',
+      name: 'removeFilter',
+      desc: 'Tooltip on the button that removes exercise filter',
+    );
+  }
+
   String restCompleteBody(String exercise) {
     return Intl.message(
       'Next: $exercise',
