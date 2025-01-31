@@ -17,8 +17,8 @@ void main() {
           final exercise = Exercise.fromJson(_json);
 
           expect(exercise.name, 'Bench Press');
-          expect(exercise.target, 'Chest');
-          expect(exercise.category, 'Weighted Body Weight');
+          expect(exercise.target.value, 'Chest');
+          expect(exercise.category.value, 'Weighted Body Weight');
         },
       );
 

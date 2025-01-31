@@ -1,11 +1,79 @@
 import 'misc.dart';
 
+enum Category {
+  weightedBodyWeight('Weighted Body Weight'),
+  assistedBodyWeight('Assisted Body Weight'),
+  repsOnly('Reps Only'),
+  cardio('Cardio'),
+  duration('Duration'),
+  machine('Machine'),
+  dumbbell('Dumbbell'),
+  barbell('Barbell');
+
+  final String value;
+
+  const Category(this.value);
+
+  factory Category.fromString(String v) {
+    return switch (v) {
+      'Weighted Body Weight' => weightedBodyWeight,
+      'Assisted Body Weight' => assistedBodyWeight,
+      'Reps Only' => repsOnly,
+      'Cardio' => cardio,
+      'Duration' => duration,
+      'Machine' => machine,
+      'Dumbbell' => dumbbell,
+      'Barbell' => barbell,
+      _ => throw ArgumentError('Invalid value for Category: $v'),
+    };
+  }
+
+  @override
+  String toString() => value;
+}
+
+enum Target {
+  core('Core'),
+  arms('Arms'),
+  back('Back'),
+  chest('Chest'),
+  legs('Legs'),
+  shoulder('Shoulders'),
+  other('Other'),
+  olympic('Olympic'),
+  fullBody('Full Body'),
+  cardio('Cardio');
+
+  final String value;
+
+  const Target(this.value);
+
+  factory Target.fromString(String v) {
+    return switch (v) {
+      'Core' => core,
+      'Arms' => arms,
+      'Back' => back,
+      'Chest' => chest,
+      'Legs' => legs,
+      'Shoulders' => shoulder,
+      'Other' => other,
+      'Olympic' => olympic,
+      'Full Body' => fullBody,
+      'Cardio' => cardio,
+      _ => throw ArgumentError('Invalid value for Target: $v'),
+    };
+  }
+
+  @override
+  String toString() => value;
+}
+
 abstract interface class Exercise implements Searchable, Model {
   String get name;
 
-  String get category;
+  Category get category;
 
-  String get target;
+  Target get target;
 
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
 }
@@ -14,9 +82,9 @@ class _Exercise implements Exercise {
   @override
   final String name;
   @override
-  final String category;
+  final Category category;
   @override
-  final String target;
+  final Target target;
 
   const _Exercise({
     required this.name,
@@ -27,17 +95,17 @@ class _Exercise implements Exercise {
   factory _Exercise.fromJson(Map json) {
     return _Exercise(
       name: json['name'],
-      category: json['category'],
-      target: json['target'],
+      category: Category.fromString(json['category']),
+      target: Target.fromString(json['target']),
     );
   }
 
   @override
   Map<String, dynamic> toMap() {
     return {
-      'category': category,
+      'category': category.value,
       'name': name,
-      'target': target,
+      'target': target.value,
     };
   }
 
