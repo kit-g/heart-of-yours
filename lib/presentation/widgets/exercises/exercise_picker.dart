@@ -31,6 +31,7 @@ class ExercisePicker extends StatelessWidget {
       :staticExercise,
       :target,
       :category,
+      :removeFilter,
     ) = L.of(context);
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
@@ -60,95 +61,149 @@ class ExercisePicker extends StatelessWidget {
               spacing: 8,
               children: [
                 Expanded(
-                  child: PrimaryButton.wide(
-                    key: _targetKey,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 0,
-                          child: Icon(
-                            Icons.filter_alt_rounded,
-                            color: colorScheme.onSurfaceVariant,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: PrimaryButton.wide(
+                      backgroundColor: switch (exercises.targets.isEmpty) {
+                        true => colorScheme.surfaceContainer,
+                        false => null,
+                      },
+                      key: _targetKey,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            left: 0,
+                            child: Icon(
+                              Icons.filter_alt_rounded,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                        Center(
-                          child: Text(
-                            target,
-                            style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          Center(
+                            child: Text(
+                              target,
+                              style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    onPressed: () async {
-                      return showMenu(
-                        context: context,
-                        position: _position(_targetKey),
-                        items: <PopupMenuEntry<ExerciseFilter>>[
-                          ...Target.values.map(
-                            (category) {
-                              return PopupMenuItem<ExerciseFilter>(
-                                height: 36,
-                                value: category,
-                                onTap: () => exercises.addFilter(category),
-                                child: Text(
-                                  category.value,
-                                  style: textTheme.titleSmall,
-                                ),
-                              );
-                            },
-                          )
                         ],
-                      );
-                    },
+                      ),
+                      onPressed: () async {
+                        return showMenu(
+                          context: context,
+                          position: _position(_targetKey),
+                          items: <PopupMenuEntry<ExerciseFilter>>[
+                            ...Target.values.map(
+                              (category) {
+                                return PopupMenuItem<ExerciseFilter>(
+                                  height: 36,
+                                  value: category,
+                                  onTap: () => exercises.addFilter(category),
+                                  child: Text(
+                                    category.value,
+                                    style: textTheme.titleSmall,
+                                  ),
+                                );
+                              },
+                            )
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: PrimaryButton.wide(
-                    key: _categoryKey,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 0,
-                          child: Icon(
-                            Icons.filter_alt_rounded,
-                            color: colorScheme.onSurfaceVariant,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: PrimaryButton.wide(
+                      backgroundColor: switch (exercises.categories.isEmpty) {
+                        true => colorScheme.surfaceContainer,
+                        false => null,
+                      },
+                      key: _categoryKey,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            left: 0,
+                            child: Icon(
+                              Icons.filter_alt_rounded,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                        Center(
-                          child: Text(
-                            category,
-                            style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          Center(
+                            child: Text(
+                              category,
+                              style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    onPressed: () async {
-                      return showMenu(
-                        context: context,
-                        position: _position(_categoryKey),
-                        items: <PopupMenuEntry<ExerciseFilter>>[
-                          ...Category.values.map(
-                            (category) {
-                              return PopupMenuItem<ExerciseFilter>(
-                                height: 36,
-                                value: category,
-                                onTap: () => exercises.addFilter(category),
-                                child: Text(
-                                  category.value,
-                                  style: textTheme.titleSmall,
-                                ),
-                              );
-                            },
-                          )
                         ],
-                      );
-                    },
+                      ),
+                      onPressed: () async {
+                        return showMenu(
+                          context: context,
+                          position: _position(_categoryKey),
+                          items: <PopupMenuEntry<ExerciseFilter>>[
+                            ...Category.values.map(
+                              (category) {
+                                return PopupMenuItem<ExerciseFilter>(
+                                  height: 36,
+                                  value: category,
+                                  onTap: () => exercises.addFilter(category),
+                                  child: Text(
+                                    category.value,
+                                    style: textTheme.titleSmall,
+                                  ),
+                                );
+                              },
+                            )
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ),
+        if (exercises.filters.isNotEmpty)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: FixedHeightHeaderDelegate(
+              backgroundColor: backgroundColor,
+              height: 40,
+              padding: EdgeInsets.zero,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    ...exercises.filters.indexed.map(
+                      (record) {
+                        final (index, filter) = record;
+
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            left: (index == 0) ? 8.0 : 0.0,
+                            right: (index == exercises.filters.length - 1) ? 8.0 : 0.0,
+                          ),
+                          child: Chip(
+                            labelPadding: EdgeInsets.zero,
+                            label: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(filter.value),
+                            ),
+                            visualDensity: const VisualDensity(vertical: -4, horizontal: -0),
+                            onDeleted: () {
+                              exercises.removeFilter(filter);
+                            },
+                          ),
+                        );
+                      },
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ),
         switch (exercises.isInitialized) {
           false => const SliverFillRemaining(
               child: Center(

@@ -32,6 +32,10 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   Iterable<ExerciseFilter> get filters => _filters;
 
+  Iterable<ExerciseFilter> get categories => _filters.whereType<Category>();
+
+  Iterable<ExerciseFilter> get targets => _filters.whereType<Target>();
+
   Exercise operator [](int index) => _exercises.values.toList()[index];
 
   static Exercises of(BuildContext context) {
