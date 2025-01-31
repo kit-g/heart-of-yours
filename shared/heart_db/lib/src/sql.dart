@@ -11,13 +11,9 @@ CREATE TABLE IF NOT EXISTS workouts
 const exercises = """
 CREATE TABLE IF NOT EXISTS exercises
 (
-    exercise     TEXT NOT NULL PRIMARY KEY,
-    joint        TEXT NOT NULL,
-    level        TEXT NOT NULL,
-    modality     TEXT NOT NULL,
-    muscle_group TEXT NOT NULL,
-    direction    TEXT NOT NULL,
-    ulc          TEXT NOT NULL
+    name     TEXT NOT NULL PRIMARY KEY,
+    category TEXT NOT NULL,
+    target   TEXT NOT NULL
 );
 """;
 
@@ -33,7 +29,7 @@ const workoutExercises = """
 CREATE TABLE IF NOT EXISTS workout_exercises
 (
     workout_id     TEXT NOT NULL REFERENCES workouts (id) ON DELETE CASCADE,
-    exercise_id    TEXT NOT NULL REFERENCES exercises (exercise) ON DELETE CASCADE,
+    exercise_id    TEXT NOT NULL REFERENCES exercises (name) ON DELETE CASCADE,
     id             TEXT NOT NULL PRIMARY KEY,
     exercise_order INT
 );
@@ -71,20 +67,16 @@ SELECT
     sets.weight,
     sets.reps,
     sets.duration,
-    exercise,
-    joint,
-    level,
-    modality,
-    muscle_group,
-    direction,
-    ulc
+    e.name,
+    target,
+    category
 FROM workout_exercises
 INNER JOIN _workout
     ON _workout.id = workout_exercises.workout_id
 INNER JOIN sets
     ON workout_exercises.id = sets.exercise_id
 INNER JOIN exercises e
-    ON e.exercise = workout_exercises.exercise_id
+    ON e.name = workout_exercises.exercise_id
 
 UNION ALL
 
@@ -99,13 +91,9 @@ SELECT
     NULL AS weight,
     NULL AS reps,
     NULL AS duration,
-    NULL AS exercise,
-    NULL AS joint,
-    NULL AS level,
-    NULL AS modality,
-    NULL AS muscle_group,
-    NULL AS direction,
-    NULL AS ulc
+    NULL AS name,
+    NULL AS category,
+    NULL AS target
 FROM _workout
 WHERE NOT exists (
     SELECT 1
@@ -113,7 +101,7 @@ WHERE NOT exists (
     INNER JOIN sets
         ON workout_exercises.id = sets.exercise_id
     INNER JOIN exercises e
-        ON e.exercise = workout_exercises.exercise_id
+        ON e.name = workout_exercises.exercise_id
     WHERE workout_exercises.workout_id = _workout.id
 );
 """;
@@ -136,19 +124,15 @@ SELECT
     sets.weight,
     sets.reps,
     sets.duration,
-    exercise,
-    joint,
-    level,
-    modality,
-    muscle_group,
-    direction,
-    ulc
+    e.name,
+    target,
+    category
 FROM workout_exercises
 INNER JOIN _workout
     ON _workout.id = workout_exercises.workout_id
 INNER JOIN sets
     ON workout_exercises.id = sets.exercise_id
 INNER JOIN exercises e
-    ON e.exercise = workout_exercises.exercise_id
+    ON e.name = workout_exercises.exercise_id
     ;
 """;

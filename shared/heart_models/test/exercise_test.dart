@@ -2,32 +2,12 @@ import 'package:test/test.dart';
 import 'package:heart_models/heart_models.dart';
 
 const _json = {
-  'direction': 'Push',
-  'exercise': 'Bench Press',
-  'joint': 'Shoulder',
-  'level': 'Intermediate',
-  'modality': 'Strength',
-  'muscleGroup': 'Chest',
-  'ulc': 'bench-press',
+  'category': 'Weighted Body Weight',
+  'name': 'Bench Press',
+  'target': 'Chest',
 };
 
 void main() {
-  group(
-    'ExerciseDirection Tests',
-    () {
-      test(
-        'fromString returns correct enum value',
-        () {
-          expect(ExerciseDirection.fromString('Push'), ExerciseDirection.push);
-          expect(ExerciseDirection.fromString('Pull'), ExerciseDirection.pull);
-          expect(ExerciseDirection.fromString('Static'), ExerciseDirection.static);
-          expect(ExerciseDirection.fromString('Invalid'), ExerciseDirection.other);
-          expect(ExerciseDirection.fromString(null), ExerciseDirection.other);
-        },
-      );
-    },
-  );
-
   group(
     'Exercise Tests',
     () {
@@ -36,13 +16,9 @@ void main() {
         () {
           final exercise = Exercise.fromJson(_json);
 
-          expect(exercise.direction, ExerciseDirection.push);
           expect(exercise.name, 'Bench Press');
-          expect(exercise.joint, 'Shoulder');
-          expect(exercise.level, 'Intermediate');
-          expect(exercise.modality, 'Strength');
-          expect(exercise.muscleGroup, 'Chest');
-          expect(exercise.ulc, 'bench-press');
+          expect(exercise.target, 'Chest');
+          expect(exercise.category, 'Weighted Body Weight');
         },
       );
 
@@ -81,13 +57,9 @@ void main() {
 
           final exercise3 = Exercise.fromJson(
             {
-              'direction': 'Pull',
-              'exercise': 'Pull Up',
-              'joint': 'Elbow',
-              'level': 'Advanced',
-              'modality': 'Strength',
-              'muscleGroup': 'Back',
-              'ulc': 'pull-up',
+              'category': 'Weighted Body Weight',
+              'name': 'Squat',
+              'target': 'Legs',
             },
           );
 
