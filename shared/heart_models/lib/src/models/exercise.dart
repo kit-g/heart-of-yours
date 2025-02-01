@@ -82,6 +82,8 @@ abstract interface class Exercise implements Searchable, Model {
   Target get target;
 
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
+
+  bool fits(Iterable<ExerciseFilter> filters);
 }
 
 class _Exercise implements Exercise {
@@ -132,6 +134,17 @@ class _Exercise implements Exercise {
 
   @override
   int get hashCode => name.hashCode;
+
+  @override
+  bool fits(Iterable<ExerciseFilter> filters) {
+    final categories = filters.whereType<Category>();
+    final targets = filters.whereType<Target>();
+
+    final categoryMatches = categories.isEmpty || categories.contains(category);
+    final targetMatches = targets.isEmpty || targets.contains(target);
+
+    return categoryMatches && targetMatches;
+  }
 }
 
 typedef ExerciseId = String;

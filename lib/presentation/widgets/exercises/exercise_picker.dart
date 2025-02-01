@@ -213,7 +213,7 @@ class ExercisePicker extends StatelessWidget {
           true => ValueListenableBuilder(
               valueListenable: searchController,
               builder: (__, value, _) {
-                final found = exercises.search(value.text).toList();
+                final found = exercises.search(value.text, filters: true).toList();
                 return SliverList.separated(
                   itemCount: found.length,
                   itemBuilder: (_, index) {

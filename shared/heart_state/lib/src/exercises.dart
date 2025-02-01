@@ -75,8 +75,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
   }
 
-  Iterable<Exercise> search(String query) {
-    return _exercises.values.where((one) => one.contains(query));
+  Iterable<Exercise> search(String query, {bool filters = false}) {
+    bool fitsSearch(Exercise exercise) {
+      return exercise.contains(query) && (filters ? exercise.fits(_filters) : true);
+    }
+
+    return _exercises.values.where(fitsSearch);
   }
 
   Exercise? lookup(ExerciseId id) {
