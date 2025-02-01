@@ -245,11 +245,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :lb) = L.of(context);
     final workouts = Workouts.of(context);
     final body = switch (workouts.nextIncomplete?.$2) {
-      WeightedSet(:double weight, :int reps) => weightedSetRepresentation(lb(weight.toInt()), reps),
-      // TODO: Handle this case.
-      CardioSet() => throw UnimplementedError(),
-      // TODO: Handle this case.
-      AssistedSet() => throw UnimplementedError(),
+      ExerciseSet(:double weight, :int reps) => weightedSetRepresentation(lb(weight.toInt()), reps),
       _ => null,
     };
     final nextExercise = workouts.nextIncomplete?.$1 ?? exercise;
@@ -263,8 +259,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
   void _initTextControllers() {
     switch (set) {
-      case WeightedSet(:int reps, :double weight):
-      case AssistedSet(:int reps, :double weight):
+      case ExerciseSet(:int reps, :double weight):
         final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
         _weightController.text = rounded;
         _repsController.text = reps.toString();
