@@ -7,6 +7,7 @@ class _TextFieldButton extends StatelessWidget {
   final TextEditingController controller;
   final TextInputType keyboardType;
   final ValueNotifier<bool> errorState;
+  final List<TextInputFormatter>? formatters;
 
   const _TextFieldButton({
     required this.focusNode,
@@ -14,6 +15,7 @@ class _TextFieldButton extends StatelessWidget {
     this.color,
     required this.set,
     required this.controller,
+    this.formatters,
     this.keyboardType = const TextInputType.numberWithOptions(decimal: true),
   });
 
@@ -75,7 +77,7 @@ class _TextFieldButton extends StatelessWidget {
                           textInputAction: TextInputAction.done,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           controller: controller,
-                          inputFormatters: _inputFormatters,
+                          inputFormatters: formatters,
                           decoration: const InputDecoration.collapsed(hintText: _emptyValue),
                           style: switch (hasError) {
                             true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
