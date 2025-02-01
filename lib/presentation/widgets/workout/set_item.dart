@@ -147,7 +147,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               flex: 3,
               child: Center(
                 child: Text(set.category.name),
-                // child: Text(_emptyValue),
+                // child: Text(_emptyValue), todo
               ),
             ),
             Expanded(
@@ -195,6 +195,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               controller: _weightController,
               color: color,
               errorState: _hasWeighError,
+              formatters: _floatingPointFormatters,
             ),
           ),
           Expanded(
@@ -205,6 +206,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               color: color,
               keyboardType: TextInputType.number,
               errorState: _hasRepsError,
+              formatters: _integerFormatters,
             ),
           ),
         ];
@@ -218,6 +220,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               color: color,
               keyboardType: TextInputType.number,
               errorState: _hasRepsError,
+              formatters: _integerFormatters,
             ),
           ),
         ];
@@ -244,6 +247,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               color: color,
               keyboardType: TextInputType.number,
               errorState: _hasDistanceError,
+              formatters: _floatingPointFormatters,
             ),
           ),
           Expanded(
@@ -338,6 +342,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   }
 
   void _initTextControllers() {
+    // todo
     switch (set) {
       case ExerciseSet(:int reps, :double weight):
         final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);

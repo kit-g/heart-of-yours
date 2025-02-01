@@ -44,9 +44,10 @@ CREATE TABLE IF NOT EXISTS sets
     exercise_id TEXT    NOT NULL REFERENCES workout_exercises (id) ON DELETE CASCADE,
     id          TEXT    NOT NULL PRIMARY KEY,
     completed   INTEGER NOT NULL DEFAULT 0,
-    weight      REAL,
+    weight      REAL,  -- kgs
     reps        INT,
-    duration    REAL
+    duration    REAL,  -- seconds
+    distance    REAL   -- meters
 );
 """;
 

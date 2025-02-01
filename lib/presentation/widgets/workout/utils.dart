@@ -4,10 +4,14 @@ const _fixedColumnWidth = 32.0;
 const _fixedButtonHeight = 24.0;
 const _emptyValue = '-';
 
-final _inputFormatters = <TextInputFormatter>[
-  FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d*)?')),
-  LengthLimitingTextInputFormatter(5), // todo change to five digits, e.g. 123.45
+final _floatingPointFormatters = <TextInputFormatter>[
+  const NDigitFloatingPointFormatter(),
   FilteringTextInputFormatter.singleLineFormatter,
+];
+
+final _integerFormatters = <TextInputFormatter>[
+  FilteringTextInputFormatter.digitsOnly,
+  LengthLimitingTextInputFormatter(4),
 ];
 
 void _selectAllText(TextEditingController controller) {
@@ -188,3 +192,37 @@ Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   context.goToWorkoutDone(workouts.activeWorkout?.id);
   return workouts.finishWorkout();
 }
+
+class NDigitFloatingPointFormatter extends TextInputFormatter {
+  final int n;
+
+  const NDigitFloatingPointFormatter({this.n = 5});
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+
+    // ensure only digits and at most one decimal point are present
+    if (!RegExp(r'^\d*\.?\d*$').hasMatch(text)) {
+      return oldValue; // Reject invalid input
+    }
+
+    // if only a decimal point is entered, reject it (prevents just ".")
+    if (text == '.') return oldValue;
+
+    if (text.endsWith('.') && text.length >= n) return oldValue;
+    // split into integer and decimal parts
+    final parts = text.split('.');
+
+    // count total digits (excluding the decimal point)
+    final totalDigits = parts.fold<int>(0, (sum, part) => sum + part.length);
+
+    // enforce max digits (excluding the decimal point)
+    if (totalDigits > n) {
+      return oldValue;
+    }
+
+    return newValue;
+  }
+}
+
