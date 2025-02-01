@@ -14,12 +14,8 @@ void main() {
       mockExercise = MockExercise();
 
       when(mockExercise.name).thenReturn('Mock Exercise');
-      when(mockExercise.direction).thenReturn(ExerciseDirection.push);
-      when(mockExercise.joint).thenReturn('Mock Joint');
-      when(mockExercise.level).thenReturn('Beginner');
-      when(mockExercise.modality).thenReturn('Mock Modality');
-      when(mockExercise.muscleGroup).thenReturn('Mock Muscle');
-      when(mockExercise.ulc).thenReturn('ULC123');
+      when(mockExercise.category).thenReturn(Category.weightedBodyWeight);
+      when(mockExercise.target).thenReturn(Target.chest);
     },
   );
 

@@ -9,6 +9,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
+  final _filters = <ExerciseFilter>{};
 
   Exercises({
     this.isCached = true,
@@ -28,6 +29,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   @override
   Iterator<Exercise> get iterator => _exercises.values.iterator;
+
+  Iterable<ExerciseFilter> get filters => _filters;
+
+  Iterable<ExerciseFilter> get categories => _filters.whereType<Category>();
+
+  Iterable<ExerciseFilter> get targets => _filters.whereType<Target>();
 
   Exercise operator [](int index) => _exercises.values.toList()[index];
 
@@ -68,8 +75,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
   }
 
-  Iterable<Exercise> search(String query) {
-    return _exercises.values.where((one) => one.contains(query));
+  Iterable<Exercise> search(String query, {bool filters = false}) {
+    bool fitsSearch(Exercise exercise) {
+      return exercise.contains(query) && (filters ? exercise.fits(_filters) : true);
+    }
+
+    return _exercises.values.where(fitsSearch);
   }
 
   Exercise? lookup(ExerciseId id) {
@@ -94,6 +105,16 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   void unselectAll() {
     _selectedExercises.clear();
+    notifyListeners();
+  }
+
+  void addFilter(ExerciseFilter filter) {
+    _filters.add(filter);
+    notifyListeners();
+  }
+
+  void removeFilter(ExerciseFilter filter) {
+    _filters.remove(filter);
     notifyListeners();
   }
 }

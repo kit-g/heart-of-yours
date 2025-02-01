@@ -1,95 +1,124 @@
 import 'misc.dart';
 
-enum ExerciseDirection {
-  push,
-  pull,
-  static,
-  other;
+abstract interface class ExerciseFilter {
+  String get value;
+}
 
-  factory ExerciseDirection.fromString(String? s) {
-    return switch (s) {
-      'Push' => push,
-      'Pull' => pull,
-      'Static' => static,
-      _ => other,
+enum Category implements ExerciseFilter {
+  weightedBodyWeight('Weighted Body Weight'),
+  assistedBodyWeight('Assisted Body Weight'),
+  repsOnly('Reps Only'),
+  cardio('Cardio'),
+  duration('Duration'),
+  machine('Machine'),
+  dumbbell('Dumbbell'),
+  barbell('Barbell');
+
+  @override
+  final String value;
+
+  const Category(this.value);
+
+  factory Category.fromString(String v) {
+    return switch (v) {
+      'Weighted Body Weight' => weightedBodyWeight,
+      'Assisted Body Weight' => assistedBodyWeight,
+      'Reps Only' => repsOnly,
+      'Cardio' => cardio,
+      'Duration' => duration,
+      'Machine' => machine,
+      'Dumbbell' => dumbbell,
+      'Barbell' => barbell,
+      _ => throw ArgumentError('Invalid value for Category: $v'),
     };
   }
+
+  @override
+  String toString() => value;
+}
+
+enum Target implements ExerciseFilter {
+  core('Core'),
+  arms('Arms'),
+  back('Back'),
+  chest('Chest'),
+  legs('Legs'),
+  shoulder('Shoulders'),
+  other('Other'),
+  olympic('Olympic'),
+  fullBody('Full Body'),
+  cardio('Cardio');
+
+  @override
+  final String value;
+
+  const Target(this.value);
+
+  factory Target.fromString(String v) {
+    return switch (v) {
+      'Core' => core,
+      'Arms' => arms,
+      'Back' => back,
+      'Chest' => chest,
+      'Legs' => legs,
+      'Shoulders' => shoulder,
+      'Other' => other,
+      'Olympic' => olympic,
+      'Full Body' => fullBody,
+      'Cardio' => cardio,
+      _ => throw ArgumentError('Invalid value for Target: $v'),
+    };
+  }
+
+  @override
+  String toString() => value;
 }
 
 abstract interface class Exercise implements Searchable, Model {
-  ExerciseDirection get direction;
-
   String get name;
 
-  String get joint;
+  Category get category;
 
-  String get level;
-
-  String get modality;
-
-  String get muscleGroup;
-
-  String get ulc;
+  Target get target;
 
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
+
+  bool fits(Iterable<ExerciseFilter> filters);
 }
 
 class _Exercise implements Exercise {
   @override
-  final ExerciseDirection direction;
-  @override
   final String name;
   @override
-  final String joint;
+  final Category category;
   @override
-  final String level;
-  @override
-  final String modality;
-  @override
-  final String muscleGroup;
-  @override
-  final String ulc;
+  final Target target;
 
   const _Exercise({
-    required this.direction,
     required this.name,
-    required this.joint,
-    required this.level,
-    required this.modality,
-    required this.muscleGroup,
-    required this.ulc,
+    required this.category,
+    required this.target,
   });
 
   factory _Exercise.fromJson(Map json) {
     return _Exercise(
-      direction: ExerciseDirection.fromString(json['direction']),
-      name: json['exercise'],
-      joint: json['joint'],
-      level: json['level'],
-      modality: json['modality'],
-      muscleGroup: json['muscleGroup'],
-      ulc: json['ulc'],
+      name: json['name'],
+      category: Category.fromString(json['category']),
+      target: Target.fromString(json['target']),
     );
   }
 
   @override
   Map<String, dynamic> toMap() {
-    var dir = '${direction.name.substring(0, 1).toUpperCase()}${direction.name.substring(1)}';
     return {
-      'direction': dir,
-      'exercise': name,
-      'joint': joint,
-      'level': level,
-      'modality': modality,
-      'muscleGroup': muscleGroup,
-      'ulc': ulc,
+      'category': category.value,
+      'name': name,
+      'target': target.value,
     };
   }
 
   @override
-  String toString() {
-    return name;
-  }
+  String toString() => name;
 
   @override
   bool contains(String query) {
@@ -105,8 +134,18 @@ class _Exercise implements Exercise {
 
   @override
   int get hashCode => name.hashCode;
+
+  @override
+  bool fits(Iterable<ExerciseFilter> filters) {
+    final categories = filters.whereType<Category>();
+    final targets = filters.whereType<Target>();
+
+    final categoryMatches = categories.isEmpty || categories.contains(category);
+    final targetMatches = targets.isEmpty || targets.contains(target);
+
+    return categoryMatches && targetMatches;
+  }
 }
 
 typedef ExerciseId = String;
 typedef ExerciseLookup = Exercise? Function(ExerciseId);
-
