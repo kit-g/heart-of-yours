@@ -186,10 +186,14 @@ class ExercisePicker extends StatelessWidget {
                             right: (index == exercises.filters.length - 1) ? 8.0 : 0.0,
                           ),
                           child: Chip(
+                            deleteButtonTooltipMessage: removeFilter,
                             labelPadding: EdgeInsets.zero,
                             label: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: Text(filter.value),
+                              child: Text(
+                                filter.value,
+                                style: textTheme.bodyMedium,
+                              ),
                             ),
                             visualDensity: const VisualDensity(vertical: -4, horizontal: -0),
                             onDeleted: () {
@@ -248,9 +252,9 @@ class ExercisePicker extends StatelessWidget {
     final Size size = renderBox.size;
     return RelativeRect.fromLTRB(
       offset.dx,
-      offset.dy + size.height, // Top (below the button)
+      offset.dy + size.height, // top (below the button)
       offset.dx + size.width,
-      offset.dy + size.height, // Bottom (same as top for a dropdown effect)
+      offset.dy + size.height, // bottom (same as top for a dropdown effect)
     );
   }
 }

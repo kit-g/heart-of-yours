@@ -37,9 +37,21 @@ class _ExerciseItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(exercise.name),
-                      Text(
-                        exercise.target.value,
-                        style: Theme.of(context).textTheme.bodySmall,
+                      Row(
+                        children: [
+                          Text(
+                            exercise.target.value,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            ' - ',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            exercise.category.value,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ),
                     ],
                   ),
