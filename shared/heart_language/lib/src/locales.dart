@@ -247,11 +247,27 @@ class L {
     );
   }
 
+  String get time {
+    return Intl.message(
+      'Time',
+      name: 'time',
+      desc: 'Workout table, column header',
+    );
+  }
+
   String get kg {
     return Intl.message(
       'kg',
       name: 'kg',
       desc: 'Generic label, kilograms',
+    );
+  }
+
+  String get mile {
+    return Intl.message(
+      'mile',
+      name: 'mile',
+      desc: 'Generic label, miles',
     );
   }
 
@@ -590,6 +606,14 @@ class L {
       'Notification settings',
       name: 'notificationSettings',
       desc: 'Settings item',
+    );
+  }
+
+  String selected(int count) {
+    return Intl.message(
+      'Selected $count',
+      name: 'selected',
+      desc: 'Selected 4 exercises',
     );
   }
 

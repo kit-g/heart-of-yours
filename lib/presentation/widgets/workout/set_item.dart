@@ -23,10 +23,16 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   WorkoutExercise get exercise => widget.exercise;
 
   final _weightFocus = FocusNode();
-  final _weightController = TextEditingController();
   final _repsFocus = FocusNode();
+  final _durationFocus = FocusNode();
+  final _distanceFocus = FocusNode();
+  final _weightController = TextEditingController();
   final _repsController = TextEditingController();
+  final _durationController = TextEditingController();
+  final _distanceController = TextEditingController();
   final _hasWeighError = ValueNotifier<bool>(false);
+  final _hasDistanceError = ValueNotifier<bool>(false);
+  final _hasDurationError = ValueNotifier<bool>(false);
   final _hasRepsError = ValueNotifier<bool>(false);
   final _hasCrossedDismissThreshold = ValueNotifier<bool>(false);
   bool _hasBuzzedOnDismiss = false;
@@ -44,11 +50,17 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   @override
   void dispose() {
     _weightFocus.dispose();
-    _weightController.dispose();
     _repsFocus.dispose();
+    _distanceFocus.dispose();
+    _durationFocus.dispose();
+    _weightController.dispose();
     _repsController.dispose();
+    _durationController.dispose();
+    _distanceController.dispose();
     _hasRepsError.dispose();
     _hasWeighError.dispose();
+    _hasDistanceError.dispose();
+    _hasDurationError.dispose();
     _hasCrossedDismissThreshold.dispose();
 
     _weightController.removeListener(_weightListener);
@@ -131,29 +143,17 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               ),
               onPressed: () {},
             ),
-            const Expanded(
+            Expanded(
               flex: 3,
               child: Center(
-                child: Text(_emptyValue),
+                child: Text(set.category.name),
+                // child: Text(_emptyValue),
               ),
             ),
             Expanded(
-              child: _TextFieldButton(
-                focusNode: _weightFocus,
-                set: set,
-                controller: _weightController,
-                color: color,
-                errorState: _hasWeighError,
-              ),
-            ),
-            Expanded(
-              child: _TextFieldButton(
-                set: set,
-                focusNode: _repsFocus,
-                controller: _repsController,
-                color: color,
-                keyboardType: TextInputType.number,
-                errorState: _hasRepsError,
+              flex: 2,
+              child: Row(
+                children: _buttons(color),
               ),
             ),
             SizedBox(
@@ -178,6 +178,86 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         ),
       ),
     );
+  }
+
+  List<Widget> _buttons(Color color) {
+    switch (set.category) {
+      case Category.weightedBodyWeight:
+      case Category.assistedBodyWeight:
+      case Category.barbell:
+      case Category.dumbbell:
+      case Category.machine:
+        return [
+          Expanded(
+            child: _TextFieldButton(
+              focusNode: _weightFocus,
+              set: set,
+              controller: _weightController,
+              color: color,
+              errorState: _hasWeighError,
+            ),
+          ),
+          Expanded(
+            child: _TextFieldButton(
+              set: set,
+              focusNode: _repsFocus,
+              controller: _repsController,
+              color: color,
+              keyboardType: TextInputType.number,
+              errorState: _hasRepsError,
+            ),
+          ),
+        ];
+      case Category.repsOnly:
+        return [
+          Expanded(
+            child: _TextFieldButton(
+              set: set,
+              focusNode: _repsFocus,
+              controller: _repsController,
+              color: color,
+              keyboardType: TextInputType.number,
+              errorState: _hasRepsError,
+            ),
+          ),
+        ];
+      case Category.duration:
+        return [
+          Expanded(
+            child: _TextFieldButton(
+              set: set,
+              focusNode: _durationFocus,
+              controller: _durationController,
+              color: color,
+              keyboardType: TextInputType.number,
+              errorState: _hasDurationError,
+            ),
+          ),
+        ];
+      case Category.cardio:
+        return [
+          Expanded(
+            child: _TextFieldButton(
+              set: set,
+              focusNode: _distanceFocus,
+              controller: _distanceController,
+              color: color,
+              keyboardType: TextInputType.number,
+              errorState: _hasDistanceError,
+            ),
+          ),
+          Expanded(
+            child: _TextFieldButton(
+              set: set,
+              focusNode: _durationFocus,
+              controller: _durationController,
+              color: color,
+              keyboardType: TextInputType.number,
+              errorState: _hasDurationError,
+            ),
+          ),
+        ];
+    }
   }
 
   Future<void> _onDone(BuildContext context) async {
