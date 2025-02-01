@@ -139,27 +139,24 @@ class HistoryItem extends StatelessWidget {
   }
 
   static String _formatSet(L l, ExerciseSet? set) {
-    return switch (set) {
-      // TODO: Handle this case.
-      CardioSet() => throw UnimplementedError(),
-      WeightedSet s => '${l.lb(s.weight?.toInt() ?? 0)} x ${s.reps ?? 0}',
-      // TODO: Handle this case.
-      AssistedSet() => throw UnimplementedError(),
-      null => ' ',
-    };
+     switch (set?.category) {
+       case Category.weightedBodyWeight:
+       case Category.assistedBodyWeight:
+       case Category.machine:
+       case Category.dumbbell:
+       case Category.barbell:
+         return '${l.lb(set?.weight?.toInt() ?? 0)} x ${set?.reps ?? 0}';
+       case Category.cardio:
+       case Category.repsOnly:
+       case Category.duration:
+       case null:
+         // TODO: Handle this case.
+         throw UnimplementedError();
+    }
   }
 
   Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
     switch (option) {
-      // case _WorkoutOption.edit:
-      //   // TODO: Handle this case.
-      //   throw UnimplementedError();
-      // case _WorkoutOption.share:
-      //   // TODO: Handle this case.
-      //   throw UnimplementedError();
-      // case _WorkoutOption.saveAsTemplate:
-      //   // TODO: Handle this case.
-      //   throw UnimplementedError();
       case _WorkoutOption.delete:
         return Workouts.of(context).deleteWorkout(workout.id);
     }
