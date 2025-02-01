@@ -1145,6 +1145,8 @@ PODS:
     - abseil/meta/type_traits
     - abseil/xcprivacy
   - abseil/xcprivacy (1.20240116.2)
+  - app_settings (5.1.1):
+    - Flutter
   - AppAuth (1.7.6):
     - AppAuth/Core (= 1.7.6)
     - AppAuth/ExternalUserAgent (= 1.7.6)
@@ -1372,6 +1374,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - app_settings (from `.symlinks/plugins/app_settings/ios`)
   - cloud_firestore (from `.symlinks/plugins/cloud_firestore/ios`)
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
@@ -1411,6 +1414,8 @@ SPEC REPOS:
     - Sentry
 
 EXTERNAL SOURCES:
+  app_settings:
+    :path: ".symlinks/plugins/app_settings/ios"
   cloud_firestore:
     :path: ".symlinks/plugins/cloud_firestore/ios"
   firebase_auth:
@@ -1436,6 +1441,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   abseil: d121da9ef7e2ff4cab7666e76c5a3e0915ae08c3
+  app_settings: 017320c6a680cdc94c799949d95b84cb69389ebc
   AppAuth: d4f13a8fe0baf391b2108511793e4b479691fb73
   BoringSSL-GRPC: ca6a8e5d04812fce8ffd6437810c2d46f925eaeb
   cloud_firestore: f02547e5b28138821eb44a48e3c5f034ebb5411b

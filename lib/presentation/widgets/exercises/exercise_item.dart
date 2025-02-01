@@ -38,7 +38,7 @@ class _ExerciseItem extends StatelessWidget {
                     children: [
                       Text(exercise.name),
                       Text(
-                        exercise.muscleGroup,
+                        exercise.target.value,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -48,25 +48,8 @@ class _ExerciseItem extends StatelessWidget {
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: switch (selected) {
-                  true => const Icon(Icons.check_circle),
-                  false => Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16.0),
-                        child: _DirectionBadge(
-                          direction: exercise.direction,
-                          pullCopy: pullCopy,
-                          pushCopy: pushCopy,
-                          staticCopy: staticCopy,
-                        ),
-                      ),
-                      Text(
-                        exercise.level,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
+                  true => const Icon(Icons.check_circle_rounded),
+                  false => const SizedBox.shrink(),
                 },
               ),
             ],

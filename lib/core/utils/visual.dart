@@ -59,12 +59,14 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double height;
   final Color? backgroundColor;
   final BorderRadius borderRadius;
+  final EdgeInsets padding;
 
   const FixedHeightHeaderDelegate({
     required this.child,
     required this.height,
     this.backgroundColor,
     this.borderRadius = BorderRadius.zero,
+    this.padding = const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
   });
 
   @override
@@ -75,7 +77,7 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
         borderRadius: borderRadius,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+        padding: padding,
         child: SizedBox.expand(child: child),
       ),
     );
