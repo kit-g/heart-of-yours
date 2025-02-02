@@ -226,3 +226,29 @@ class NDigitFloatingPointFormatter extends TextInputFormatter {
   }
 }
 
+class TimeFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    // remove any existing formatting
+    final rawText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0+'), '');
+
+    // allow only digits and reject input longer than 5 digits
+    if (!RegExp(r'^[1-9]\d{0,4}$').hasMatch(rawText)) return oldValue;
+
+    // format the number into time
+    final formattedTime = switch (rawText.length) {
+      1 => '00:${rawText.padLeft(2, '0')}',
+      2 => '00:$rawText',
+      3 => '${rawText[0]}:${rawText.substring(1).padLeft(2, '0')}',
+      4 => '${rawText.substring(0, 2)}:${rawText.substring(2).padLeft(2, '0')}',
+      5 => '${rawText[0]}:${rawText.substring(1, 3)}:${rawText.substring(3).padLeft(2, '0')}',
+      _ => '',
+    };
+
+    // Return the formatted time with the correct cursor position
+    return TextEditingValue(
+      text: formattedTime,
+      selection: TextSelection.collapsed(offset: formattedTime.length),
+    );
+  }
+}
