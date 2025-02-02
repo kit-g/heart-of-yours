@@ -64,7 +64,7 @@ SELECT
     _workout.id AS workout_id,
     _workout.start,
     _workout."end",
-    _workout.name,
+    _workout.name AS workout_name,
     workout_exercises.id as workout_exercise_id,
     sets.id AS set_id,
     sets.completed,

@@ -174,7 +174,7 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
       case Category.dumbbell:
         this
           ..weight = weight ?? this.weight
-          ..reps = this.reps;
+          ..reps = reps ?? this.reps;
       case Category.repsOnly:
         this.reps = reps ?? this.reps;
       case Category.cardio:
