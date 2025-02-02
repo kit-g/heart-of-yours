@@ -100,7 +100,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
     return _Workout(
       start: DateTime.parse(firstRow['start'] as String),
-      name: firstRow['name'] as String?,
+      name: firstRow['workoutName'] as String?,
       id: workoutId,
       exercises: exercises,
       end: switch (firstRow['end']) {
