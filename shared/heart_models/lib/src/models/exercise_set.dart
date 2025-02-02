@@ -17,7 +17,7 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
 
   int? get duration;
 
-  int? get distance;
+  double? get distance;
 
   @override
   abstract bool isCompleted;
@@ -62,6 +62,7 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
     double? weight,
     int? reps,
     int? duration,
+    double? distance,
   });
 }
 
@@ -77,7 +78,7 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   @override
   int? duration;
   @override
-  int? distance;
+  double? distance;
 
   _ExerciseSet({
     required this.exercise,
@@ -153,22 +154,24 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   }
 
   @override
-  void setMeasurements({double? weight, int? reps, int? duration, int? distance}) {
+  void setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
     switch (category) {
       case Category.weightedBodyWeight:
       case Category.assistedBodyWeight:
       case Category.machine:
       case Category.barbell:
       case Category.dumbbell:
-        this.weight = weight;
-        this.reps = reps;
+        this
+          ..weight = weight ?? this.weight
+          ..reps = this.reps;
       case Category.repsOnly:
-        this.reps = reps;
+        this.reps = reps ?? this.reps;
       case Category.cardio:
-        this.distance = distance;
-        this.duration = duration;
+        this
+          ..distance = distance ?? this.distance
+          ..duration = duration ?? this.duration;
       case Category.duration:
-        this.duration = duration;
+        this.duration = duration ?? this.duration;
     }
   }
 
