@@ -19,6 +19,7 @@ class _ExerciseItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodySmall;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -41,15 +42,15 @@ class _ExerciseItem extends StatelessWidget {
                         children: [
                           Text(
                             exercise.target.value,
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: style,
                           ),
                           Text(
                             ' - ',
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: style,
                           ),
                           Text(
                             exercise.category.value,
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: style,
                           ),
                         ],
                       ),

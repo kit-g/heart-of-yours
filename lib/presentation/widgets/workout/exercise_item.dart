@@ -6,8 +6,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final WorkoutExercise exercise;
   final String firstColumnCopy;
   final String secondColumnCopy;
-  final String thirdColumnCopy;
-  final String fourthColumnCopy;
   final VoidCallback onDragStarted;
   final VoidCallback onDragEnded;
   final ValueNotifier<WorkoutExercise?> dragState;
@@ -19,8 +17,6 @@ class _WorkoutExerciseItem extends StatelessWidget {
     required this.copy,
     required this.firstColumnCopy,
     required this.secondColumnCopy,
-    required this.thirdColumnCopy,
-    required this.fourthColumnCopy,
     required this.onDragStarted,
     required this.onDragEnded,
     required this.dragState,
@@ -128,12 +124,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
                                 flex: 3,
                                 child: Center(child: Text(secondColumnCopy)),
                               ),
-                              Expanded(
-                                child: Center(child: Text(thirdColumnCopy)),
-                              ),
-                              Flexible(
-                                child: Center(child: Text(fourthColumnCopy)),
-                              ),
+                              ..._buttonsHeader(context),
                               const SizedBox(
                                 width: _fixedColumnWidth,
                                 child: Center(
@@ -188,6 +179,65 @@ class _WorkoutExerciseItem extends StatelessWidget {
         );
       },
     );
+  }
+
+  List<Widget> _buttonsHeader(BuildContext context) {
+    final l = L.of(context);
+
+    switch (exercise.exercise.category) {
+      case Category.machine:
+      case Category.dumbbell:
+      case Category.barbell:
+        return [
+          Expanded(
+            child: Center(child: Text(l.lbs)),
+          ),
+          Expanded(
+            child: Center(child: Text(l.reps)),
+          ),
+        ];
+      case Category.weightedBodyWeight:
+        return [
+          Expanded(
+            child: Center(child: Text('+${l.lbs}')),
+          ),
+          Expanded(
+            child: Center(child: Text(l.reps)),
+          ),
+        ];
+      case Category.assistedBodyWeight:
+        return [
+          Expanded(
+            child: Center(child: Text('-${l.lbs}')),
+          ),
+          Expanded(
+            child: Center(child: Text(l.reps)),
+          ),
+        ];
+      case Category.repsOnly:
+        return [
+          Expanded(
+            flex: 2,
+            child: Center(child: Text(l.reps)),
+          ),
+        ];
+      case Category.cardio:
+        return [
+          Expanded(
+            child: Center(child: Text(l.mile)),
+          ),
+          Expanded(
+            child: Center(child: Text(l.time)),
+          ),
+        ];
+      case Category.duration:
+        return [
+          Expanded(
+            flex: 2,
+            child: Center(child: Text(l.time)),
+          ),
+        ];
+    }
   }
 
   String _exerciseOptionCopy(BuildContext context, _ExerciseOption option) {

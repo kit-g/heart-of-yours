@@ -74,8 +74,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
       :addSet,
       set: setCopy,
       :previous,
-      :lbs,
-      :reps,
       :restTimer,
     ) = L.of(context);
 
@@ -165,8 +163,6 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                               copy: addSet,
                               firstColumnCopy: setCopy,
                               secondColumnCopy: previous,
-                              thirdColumnCopy: lbs,
-                              fourthColumnCopy: reps,
                               dragState: _beingDragged,
                               currentlyHoveredItem: _currentlyHoveredExercise,
                               onDragStarted: () {
@@ -255,7 +251,10 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
   }
 
   Future<Object?> _showExerciseDialog(BuildContext context) {
-    final ThemeData(colorScheme: ColorScheme(surfaceContainerLow: color)) = Theme.of(context);
+    final ThemeData(
+      colorScheme: ColorScheme(surfaceContainerLow: color),
+      :textTheme,
+    ) = Theme.of(context);
     final L(:add) = L.of(context);
     return showDialog(
       context: context,
@@ -278,21 +277,30 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                         size: 18,
                       ),
                     ),
-                    PrimaryButton.shrunk(
-                      child: Center(
-                        child: Text(add),
-                      ),
-                      onPressed: () async {
-                        final workouts = Workouts.of(context);
-                        Navigator.pop(context);
-                        final selected = exercises.selected.toList();
-                        for (var each in selected) {
-                          await Future.delayed(
-                            const Duration(milliseconds: 2),
-                            () => workouts.startExercise(each),
-                          );
-                        }
-                      },
+                    Row(
+                      spacing: 16,
+                      children: [
+                        if (exercises.selected.length case int selected when selected > 1)
+                          Text(
+                            L.of(context).selected(selected),
+                          ),
+                        PrimaryButton.shrunk(
+                          child: Center(
+                            child: Text(add),
+                          ),
+                          onPressed: () async {
+                            final workouts = Workouts.of(context);
+                            Navigator.pop(context);
+                            final selected = exercises.selected.toList();
+                            for (var each in selected) {
+                              await Future.delayed(
+                                const Duration(milliseconds: 2),
+                                () => workouts.startExercise(each),
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     )
                   ],
                 ),

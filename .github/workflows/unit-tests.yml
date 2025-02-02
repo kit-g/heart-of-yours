@@ -32,3 +32,6 @@ jobs:
       - name: Run tests in Models
         run: flutter test shared/heart_models
 
+      - name: Run app tests
+        run: flutter test
+

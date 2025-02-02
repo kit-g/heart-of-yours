@@ -119,7 +119,7 @@ class HistoryItem extends StatelessWidget {
                       ),
                       Expanded(
                         child: Text(
-                          _formatSet(l, exercise.best),
+                          _formatSet(context, exercise.best),
                           style: textTheme.titleSmall,
                         ),
                       )
@@ -138,28 +138,40 @@ class HistoryItem extends StatelessWidget {
     return DateFormat('EEEE, d MMM y').format(dt);
   }
 
-  static String _formatSet(L l, ExerciseSet? set) {
-    return switch (set) {
-      // TODO: Handle this case.
-      CardioSet() => throw UnimplementedError(),
-      WeightedSet s => '${l.lb(s.weight?.toInt() ?? 0)} x ${s.reps ?? 0}',
-      // TODO: Handle this case.
-      AssistedSet() => throw UnimplementedError(),
-      null => ' ',
-    };
+  static String _formatSet(BuildContext context, ExerciseSet? set) {
+    final l = L.of(context);
+    switch (set?.category) {
+      case Category.weightedBodyWeight:
+      case Category.assistedBodyWeight:
+      case Category.machine:
+      case Category.dumbbell:
+      case Category.barbell:
+        return '${l.lb(set?.weight?.toInt() ?? 0)} x ${set?.reps ?? 0}';
+      case Category.cardio:
+        return switch ((set?.distance, set?.duration)) {
+          (double distance, int seconds) when distance % 1 == 0 =>
+            '${l.miles(distance.toInt())} / ${seconds.formatted(context)}',
+          (double distance, int seconds) =>
+            '${distance.toStringAsFixed(1)} ${l.milesPlural} / ${seconds.formatted(context)}',
+          _ => '',
+        };
+      case Category.repsOnly:
+        return switch (set?.reps) {
+          int reps => '${reps}x',
+          _ => '',
+        };
+      case Category.duration:
+        return switch (set?.duration) {
+          int seconds => Duration(seconds: seconds).formatted(context),
+          _ => '',
+        };
+      case null:
+        return '';
+    }
   }
 
   Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
     switch (option) {
-      // case _WorkoutOption.edit:
-      //   // TODO: Handle this case.
-      //   throw UnimplementedError();
-      // case _WorkoutOption.share:
-      //   // TODO: Handle this case.
-      //   throw UnimplementedError();
-      // case _WorkoutOption.saveAsTemplate:
-      //   // TODO: Handle this case.
-      //   throw UnimplementedError();
       case _WorkoutOption.delete:
         return Workouts.of(context).deleteWorkout(workout.id);
     }
