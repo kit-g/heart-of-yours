@@ -10,3 +10,9 @@ extension on Duration {
     ].join(' ');
   }
 }
+
+extension on int {
+  String formatted(BuildContext context) {
+    return Duration(seconds: this).formatted(context);
+  }
+}

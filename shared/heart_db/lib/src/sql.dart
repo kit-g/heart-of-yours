@@ -11,9 +11,12 @@ CREATE TABLE IF NOT EXISTS workouts
 const exercises = """
 CREATE TABLE IF NOT EXISTS exercises
 (
-    name     TEXT NOT NULL PRIMARY KEY,
-    category TEXT NOT NULL,
-    target   TEXT NOT NULL
+    name         TEXT NOT NULL PRIMARY KEY,
+    category     TEXT NOT NULL,
+    target       TEXT NOT NULL,
+    last_done    TEXT,
+    last_results TEXT,
+    rest_timer   INT
 );
 """;
 
@@ -41,9 +44,10 @@ CREATE TABLE IF NOT EXISTS sets
     exercise_id TEXT    NOT NULL REFERENCES workout_exercises (id) ON DELETE CASCADE,
     id          TEXT    NOT NULL PRIMARY KEY,
     completed   INTEGER NOT NULL DEFAULT 0,
-    weight      REAL,
+    weight      REAL,  -- kgs
     reps        INT,
-    duration    REAL
+    duration    REAL,  -- seconds
+    distance    REAL   -- meters
 );
 """;
 
@@ -67,6 +71,7 @@ SELECT
     sets.weight,
     sets.reps,
     sets.duration,
+    sets.distance,
     e.name,
     target,
     category
@@ -91,6 +96,7 @@ SELECT
     NULL AS weight,
     NULL AS reps,
     NULL AS duration,
+    NULL AS distance,
     NULL AS name,
     NULL AS category,
     NULL AS target
@@ -124,6 +130,7 @@ SELECT
     sets.weight,
     sets.reps,
     sets.duration,
+    sets.distance,
     e.name,
     target,
     category
