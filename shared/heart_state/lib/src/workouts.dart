@@ -298,26 +298,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _markSet(exercise, set, complete: false);
   }
 
-  void setWeight(WorkoutExercise exercise, ExerciseSet set, double? weight) {
-    _forExercise(
-      exercise,
-      (each) {
-        set.setMeasurements(weight: weight);
-      },
-      notifies: false,
-    );
-  }
-
-  void setReps(WorkoutExercise exercise, ExerciseSet set, int? reps) {
-    _forExercise(
-      exercise,
-      (each) {
-        set.setMeasurements(reps: reps);
-      },
-      notifies: false,
-    );
-  }
-
   Future<void> storeMeasurements(ExerciseSet set) {
     return _service.storeMeasurements(set);
   }

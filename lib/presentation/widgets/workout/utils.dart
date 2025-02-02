@@ -218,9 +218,7 @@ class NDigitFloatingPointFormatter extends TextInputFormatter {
     final totalDigits = parts.fold<int>(0, (sum, part) => sum + part.length);
 
     // enforce max digits (excluding the decimal point)
-    if (totalDigits > n) {
-      return oldValue;
-    }
+    if (totalDigits > n) return oldValue;
 
     return newValue;
   }
@@ -245,7 +243,7 @@ class TimeFormatter extends TextInputFormatter {
       _ => '',
     };
 
-    // Return the formatted time with the correct cursor position
+    // return the formatted time with the correct cursor position
     return TextEditingValue(
       text: formattedTime,
       selection: TextSelection.collapsed(offset: formattedTime.length),

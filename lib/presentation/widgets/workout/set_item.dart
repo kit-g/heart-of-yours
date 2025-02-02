@@ -2,6 +2,8 @@ part of 'active_workout.dart';
 
 const _dismissThreshold = .5;
 
+/// A dismissible interactive widget that represent a single exercise set.
+/// Allows to store and update the measurements of the set.
 class _ExerciseSetItem extends StatefulWidget {
   final int index;
   final ExerciseSet set;
@@ -45,6 +47,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
     _weightController.addListener(_weightListener);
     _repsController.addListener(_repsListener);
+    _distanceController.addListener(_distanceListener);
+    _durationController.addListener(_durationListener);
   }
 
   @override
@@ -53,18 +57,24 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     _repsFocus.dispose();
     _distanceFocus.dispose();
     _durationFocus.dispose();
-    _weightController.dispose();
-    _repsController.dispose();
-    _durationController.dispose();
-    _distanceController.dispose();
     _hasRepsError.dispose();
     _hasWeighError.dispose();
     _hasDistanceError.dispose();
     _hasDurationError.dispose();
     _hasCrossedDismissThreshold.dispose();
 
-    _weightController.removeListener(_weightListener);
-    _repsController.removeListener(_repsListener);
+    _weightController
+      ..removeListener(_weightListener)
+      ..dispose();
+    _repsController
+      ..removeListener(_repsListener)
+      ..dispose();
+    _distanceController
+      ..removeListener(_distanceListener)
+      ..dispose();
+    _durationController
+      ..removeListener(_durationListener)
+      ..dispose();
 
     super.dispose();
   }
@@ -143,11 +153,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               ),
               onPressed: () {},
             ),
-            Expanded(
+            const Expanded(
               flex: 3,
               child: Center(
-                child: Text(set.category.name),
-                // child: Text(_emptyValue), todo
+                child: Text(_emptyValue),
               ),
             ),
             Expanded(
@@ -272,14 +281,39 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     }
 
     try {
-      final weight = double.parse(_weightController.text);
-      final reps = int.parse(_repsController.text);
+      switch (set.category) {
+        case Category.weightedBodyWeight:
+        case Category.assistedBodyWeight:
+        case Category.machine:
+        case Category.dumbbell:
+        case Category.barbell:
+          set.setMeasurements(
+            weight: double.parse(_weightController.text),
+            reps: int.parse(_repsController.text),
+          );
+          _hasWeighError.value = false;
+          _hasRepsError.value = false;
+        case Category.repsOnly:
+          set.setMeasurements(
+            reps: int.parse(_repsController.text),
+          );
+          _hasRepsError.value = false;
+        case Category.cardio:
+          final seconds = _parseDuration();
 
-      workouts.setWeight(exercise, set, weight);
-      _hasWeighError.value = false;
-
-      workouts.setReps(exercise, set, reps);
-      _hasRepsError.value = false;
+          set.setMeasurements(
+            distance: double.parse(_distanceController.text),
+            duration: seconds,
+          );
+          _hasDurationError.value = false;
+          _hasDistanceError.value = false;
+          _durationController.text = seconds.toDuration();
+        case Category.duration:
+          final seconds = _parseDuration();
+          set.setMeasurements(duration: seconds);
+          _hasDurationError.value = false;
+          _durationController.text = seconds.toDuration();
+      }
 
       if (set.canBeCompleted) {
         workouts.markSetAsComplete(exercise, set);
@@ -288,12 +322,18 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
       _repsFocus.unfocus();
       _weightFocus.unfocus();
+      _distanceFocus.unfocus();
+      _durationFocus.unfocus();
     } on FormatException {
       final repsCorrect = int.tryParse(_repsController.text) != null;
       final weightCorrect = double.tryParse(_weightController.text) != null;
+      final distanceCorrect = double.tryParse(_distanceController.text) != null;
+      final durationCorrect = _parseDuration() > 0;
 
       _hasRepsError.value = !repsCorrect;
       _hasWeighError.value = !weightCorrect;
+      _hasDistanceError.value = !distanceCorrect;
+      _hasDurationError.value = !durationCorrect;
     }
   }
 
@@ -343,16 +383,28 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   }
 
   void _initTextControllers() {
-    // todo
-    switch (set) {
-      case ExerciseSet(:int reps, :double weight):
-        final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
-        _weightController.text = rounded;
-        _repsController.text = reps.toString();
-      default:
+    var ExerciseSet(:reps, :weight, :distance, :duration) = set;
+
+    if (weight != null) {
+      final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
+      _weightController.text = rounded;
+    }
+
+    if (reps != null) {
+      _repsController.text = reps.toString();
+    }
+
+    if (distance != null) {
+      final rounded = distance % 1 == 0 ? distance.toInt().toString() : distance.toStringAsFixed(1);
+      _distanceController.text = rounded;
+    }
+
+    if (duration != null) {
+      _durationController.text = duration.toDuration();
     }
   }
 
+  /// Parses the weight input from `_weightController` and updates the set's weight measurement.
   void _weightListener() {
     if (!context.mounted) return;
     bool hasChanged = false;
@@ -366,6 +418,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     }
   }
 
+  /// Parses the reps input from `_repsController` and updates the set's reps measurement.
   void _repsListener() {
     if (!context.mounted) return;
     bool hasChanged = false;
@@ -379,4 +432,93 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       Workouts.of(context).storeMeasurements(set);
     }
   }
+
+  /// Parses the distance input from `_distanceController` and updates the set's distance.
+  void _distanceListener() {
+    if (!context.mounted) return;
+    bool hasChanged = false;
+
+    if (double.tryParse(_distanceController.text) case double distance when distance > 0) {
+      set.setMeasurements(distance: distance);
+      hasChanged = true;
+    }
+
+    if (hasChanged) {
+      Workouts.of(context).storeMeasurements(set);
+    }
+  }
+
+  /// Parses the duration input from `_durationController` and updates the set's duration.
+  ///
+  /// This function ensures that only valid numeric inputs are processed.
+  ///
+  /// Example inputs and their parsed values:
+  /// ```dart
+  /// "5"       -> 5 seconds
+  /// "50"      -> 50 seconds
+  /// "5:00"    -> 300 seconds (5 minutes)
+  /// "50:00"   -> 3000 seconds (50 minutes)
+  /// "5:00:00" -> 18000 seconds (5 hours)
+  /// "3:33"    -> 213 seconds (3 minutes, 33 seconds)
+  /// "01:02:03" -> 3723 seconds (1 hour, 2 minutes, 3 seconds)
+  /// ```
+  ///
+  /// If the parsed duration is greater than 0, it updates the stored workout measurements.
+  void _durationListener() {
+    if (!context.mounted) return;
+    bool hasChanged = false;
+
+    final seconds = _parseDuration();
+
+    if (seconds > 0) {
+      set.setMeasurements(duration: seconds);
+      hasChanged = true;
+    }
+
+    if (hasChanged) {
+      Workouts.of(context).storeMeasurements(set);
+    }
+  }
+
+  int _parseDuration() {
+    return switch (_durationController.text.split(':').toList()) {
+      [String s] => parse(s),
+      [String m, String s] => parse(m) * 60 + parse(s),
+      [String h, String m, String s] => parse(h) * 3600 + parse(m) * 60 + parse(s),
+      _ => throw const FormatException(),
+    };
+  }
+
+  static int parse(String v) => int.tryParse(v) ?? 0;
+}
+
+extension on int {
+  /// Converts a duration in seconds into a formatted string (`hh:mm:ss`, `mm:ss`, or `ss`).
+  ///
+  /// - If the duration is 3600 seconds or more, it returns `h:mm:ss`.
+  /// - If the duration is 60 seconds or more, it returns `m:ss`.
+  /// - Otherwise, it returns `s` (single number for seconds).
+  ///
+  /// Examples:
+  /// ```dart
+  /// 5.toDuration();      // "5"
+  /// 50.toDuration();     // "50"
+  /// 180.toDuration();    // "3:00"
+  /// 3000.toDuration();   // "50:00"
+  /// 18000.toDuration();  // "5:00:00"
+  /// 3723.toDuration();   // "1:02:03"
+  /// ```
+  String toDuration() {
+    if (this < 60) return "00:${_pad(this)}";
+    final minutes = (this ~/ 60) % 60;
+    final hours = this ~/ 3600;
+    final seconds = this % 60;
+
+    if (hours > 0) {
+      return "$hours:${_pad(minutes)}:${_pad(seconds)}";
+    }
+    return "$minutes:${_pad(seconds)}";
+  }
+
+  static String _pad(int n) => n.toString().padLeft(2, '0');
 }
