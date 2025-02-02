@@ -119,7 +119,7 @@ class HistoryItem extends StatelessWidget {
                       ),
                       Expanded(
                         child: Text(
-                          _formatSet(l, exercise.best),
+                          _formatSet(context, exercise.best),
                           style: textTheme.titleSmall,
                         ),
                       )
@@ -138,20 +138,35 @@ class HistoryItem extends StatelessWidget {
     return DateFormat('EEEE, d MMM y').format(dt);
   }
 
-  static String _formatSet(L l, ExerciseSet? set) {
-     switch (set?.category) {
-       case Category.weightedBodyWeight:
-       case Category.assistedBodyWeight:
-       case Category.machine:
-       case Category.dumbbell:
-       case Category.barbell:
-         return '${l.lb(set?.weight?.toInt() ?? 0)} x ${set?.reps ?? 0}';
-       case Category.cardio:
-       case Category.repsOnly:
-       case Category.duration:
-       case null:
-         // TODO: Handle this case.
-         throw UnimplementedError();
+  static String _formatSet(BuildContext context, ExerciseSet? set) {
+    final l = L.of(context);
+    switch (set?.category) {
+      case Category.weightedBodyWeight:
+      case Category.assistedBodyWeight:
+      case Category.machine:
+      case Category.dumbbell:
+      case Category.barbell:
+        return '${l.lb(set?.weight?.toInt() ?? 0)} x ${set?.reps ?? 0}';
+      case Category.cardio:
+        return switch ((set?.distance, set?.duration)) {
+          (double distance, int seconds) when distance % 1 == 0 =>
+            '${l.miles(distance.toInt())} / ${seconds.formatted(context)}',
+          (double distance, int seconds) =>
+            '${distance.toStringAsFixed(1)} ${l.milesPlural} / ${seconds.formatted(context)}',
+          _ => '',
+        };
+      case Category.repsOnly:
+        return switch (set?.reps) {
+          int reps => '${reps}x',
+          _ => '',
+        };
+      case Category.duration:
+        return switch (set?.duration) {
+          int seconds => Duration(seconds: seconds).formatted(context),
+          _ => '',
+        };
+      case null:
+        return '';
     }
   }
 

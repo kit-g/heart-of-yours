@@ -203,9 +203,7 @@ class NDigitFloatingPointFormatter extends TextInputFormatter {
     final text = newValue.text;
 
     // ensure only digits and at most one decimal point are present
-    if (!RegExp(r'^\d*\.?\d*$').hasMatch(text)) {
-      return oldValue; // Reject invalid input
-    }
+    if (!RegExp(r'^\d*\.?\d*$').hasMatch(text)) return oldValue;
 
     // if only a decimal point is entered, reject it (prevents just ".")
     if (text == '.') return oldValue;

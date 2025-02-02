@@ -14,7 +14,7 @@ void main() {
         .text;
   }
 
-  group('FiveDigitFloatingPointFormatter', () {
+  group('NDigitFloatingPointFormatter', () {
     test('Allows valid inputs with up to 5 digits total', () {
       expect(format('12345'), '12345');
       expect(format('1.23'), '1.23');
