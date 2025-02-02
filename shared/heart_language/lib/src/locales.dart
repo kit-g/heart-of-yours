@@ -271,6 +271,24 @@ class L {
     );
   }
 
+  String get milesPlural {
+    return Intl.message(
+      'miles',
+      name: 'milePlural',
+      desc: 'Generic label, miles',
+    );
+  }
+
+  String miles(int howMany) {
+    return Intl.plural(
+      howMany,
+      one: '$howMany mile',
+      other: '$howMany miles',
+      name: 'miles',
+      desc: 'Generic label, miles',
+    );
+  }
+
   String get ok {
     return Intl.message(
       'OK',

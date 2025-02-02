@@ -22,14 +22,23 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
   @override
   abstract bool isCompleted;
 
-  factory ExerciseSet(Exercise exercise, {DateTime? start, int? reps, double? weight}) {
+  factory ExerciseSet(
+    Exercise exercise, {
+    DateTime? start,
+    int? reps,
+    double? weight,
+    double? distance,
+    int? duration,
+  }) {
     return switch (exercise) {
       Exercise e => _ExerciseSet(
           exercise: e,
           start: start ?? DateTime.timestamp(),
         )
           ..reps = reps
-          ..weight = weight,
+          ..weight = weight
+          ..distance = distance
+          ..duration = duration,
     };
   }
 
@@ -38,6 +47,8 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
       exercise,
       reps: json['reps'],
       weight: json['weight'],
+      duration: (json['duration'] as num?)?.toInt(),
+      distance: (json['distance'] as num?)?.toDouble(),
       start: DateTime.parse(deSanitizeId(json['id'] ?? json['setId'])),
     )..isCompleted = json['completed'] ?? false;
   }

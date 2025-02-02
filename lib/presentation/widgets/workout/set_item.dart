@@ -243,6 +243,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               color: color,
               keyboardType: TextInputType.number,
               errorState: _hasDurationError,
+              formatters: [TimeFormatter()],
             ),
           ),
         ];

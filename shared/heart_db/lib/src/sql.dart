@@ -71,6 +71,7 @@ SELECT
     sets.weight,
     sets.reps,
     sets.duration,
+    sets.distance,
     e.name,
     target,
     category
@@ -95,6 +96,7 @@ SELECT
     NULL AS weight,
     NULL AS reps,
     NULL AS duration,
+    NULL AS distance,
     NULL AS name,
     NULL AS category,
     NULL AS target
@@ -128,6 +130,7 @@ SELECT
     sets.weight,
     sets.reps,
     sets.duration,
+    sets.distance,
     e.name,
     target,
     category
