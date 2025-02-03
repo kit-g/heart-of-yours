@@ -18,7 +18,6 @@ class _ThemeModePicker extends StatelessWidget {
                 constraints: BoxConstraints.expand(
                   width: (box.maxWidth - radius) / 3,
                 ),
-                borderRadius: BorderRadius.circular(radius),
                 isSelected: isSelected,
                 onPressed: (index) => _onPressed(context, index, appTheme),
                 children: <Widget>[

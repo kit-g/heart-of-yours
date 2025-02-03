@@ -5,7 +5,17 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final L(:settings, :appearance, :aboutApp, :notificationSettings) = L.of(context);
+    final L(
+      :settings,
+      :appearance,
+      :aboutApp,
+      :notificationSettings,
+      :units,
+      :weightUnit,
+      :distanceUnit,
+      :metric,
+      :imperial,
+    ) = L.of(context);
     final ThemeData(
       :textTheme,
       colorScheme: ColorScheme(:brightness, secondaryContainer: logoColor),
@@ -76,21 +86,57 @@ class SettingsPage extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: _ColorPicker(),
               ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.info_outline_rounded),
-                title: Text(aboutApp),
-                onTap: () {
-                  final info = AppInfo.of(context);
-
-                  showAboutDialog(
-                    context: context,
-                    applicationVersion: info.fullVersion,
-                    applicationName: AppConfig.appName,
-                  );
-                },
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  units,
+                  style: textTheme.titleMedium,
+                ),
               ),
-              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Selector<Preferences, MeasurementUnit>(
+                  selector: (_, provider) => provider.weightUnit,
+                  builder: (_, weight, __) {
+                    return FixedLengthSettingPicker<MeasurementUnit>(
+                      title: weightUnit,
+                      value: weight,
+                      onValueChanged: (unit) {
+                        if (unit != null) {
+                          Preferences.of(context).setWeightUnit(unit);
+                        }
+                      },
+                      children: {
+                        MeasurementUnit.imperial: Text(imperial),
+                        MeasurementUnit.metric: Text(metric),
+                      },
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Selector<Preferences, MeasurementUnit>(
+                  selector: (_, provider) => provider.distanceUnit,
+                  builder: (_, distance, __) {
+                    return FixedLengthSettingPicker<MeasurementUnit>(
+                      title: distanceUnit,
+                      value: distance,
+                      onValueChanged: (unit) {
+                        if (unit != null) {
+                          Preferences.of(context).setDistanceUnit(unit);
+                        }
+                      },
+                      children: {
+                        MeasurementUnit.imperial: Text(imperial),
+                        MeasurementUnit.metric: Text(metric),
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
               FutureBuilder<bool>(
                 future: hasNotificationsPermission(Theme.of(context).platform),
                 builder: (context, snapshot) {
@@ -103,6 +149,20 @@ class SettingsPage extends StatelessWidget {
                     onTap: () {
                       AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
                     },
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.info_outline_rounded),
+                title: Text(aboutApp),
+                onTap: () {
+                  final info = AppInfo.of(context);
+
+                  showAboutDialog(
+                    context: context,
+                    applicationVersion: info.fullVersion,
+                    applicationName: AppConfig.appName,
                   );
                 },
               ),

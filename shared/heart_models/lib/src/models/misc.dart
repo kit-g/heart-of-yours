@@ -15,3 +15,20 @@ abstract interface class Model {
 abstract interface class Storable {
   Map<String, dynamic> toRow();
 }
+
+enum MeasurementUnit {
+  imperial('Imperial'),
+  metric('Metric');
+
+  final String name;
+
+  const MeasurementUnit(this.name);
+
+  factory MeasurementUnit.fromString(String v) {
+    return switch (v) {
+      'Imperial' => MeasurementUnit.imperial,
+      'Metric' => MeasurementUnit.metric,
+      _ => throw ArgumentError(v),
+    };
+  }
+}
