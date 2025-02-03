@@ -183,6 +183,21 @@ class _WorkoutExerciseItem extends StatelessWidget {
 
   List<Widget> _buttonsHeader(BuildContext context) {
     final l = L.of(context);
+    final prefs = Preferences.watch(context);
+
+    String weightUnit() {
+      return switch (prefs.weightUnit) {
+        MeasurementUnit.metric => l.kg,
+        MeasurementUnit.imperial => l.lbs,
+      };
+    }
+
+    String distanceUnit() {
+      return switch (prefs.distanceUnit) {
+        MeasurementUnit.metric => l.km,
+        MeasurementUnit.imperial => l.mile,
+      };
+    }
 
     switch (exercise.exercise.category) {
       case Category.machine:
@@ -190,51 +205,71 @@ class _WorkoutExerciseItem extends StatelessWidget {
       case Category.barbell:
         return [
           Expanded(
-            child: Center(child: Text(l.lbs)),
+            child: Center(
+              child: Text(
+                weightUnit(),
+              ),
+            ),
           ),
           Expanded(
-            child: Center(child: Text(l.reps)),
+            child: Center(
+              child: Text(l.reps),
+            ),
           ),
         ];
       case Category.weightedBodyWeight:
         return [
           Expanded(
-            child: Center(child: Text('+${l.lbs}')),
+            child: Center(child: Text('+${weightUnit()}')),
           ),
           Expanded(
-            child: Center(child: Text(l.reps)),
+            child: Center(
+              child: Text(l.reps),
+            ),
           ),
         ];
       case Category.assistedBodyWeight:
         return [
           Expanded(
-            child: Center(child: Text('-${l.lbs}')),
+            child: Center(child: Text('-${weightUnit()}')),
           ),
           Expanded(
-            child: Center(child: Text(l.reps)),
+            child: Center(
+              child: Text(l.reps),
+            ),
           ),
         ];
       case Category.repsOnly:
         return [
           Expanded(
             flex: 2,
-            child: Center(child: Text(l.reps)),
+            child: Center(
+              child: Text(l.reps),
+            ),
           ),
         ];
       case Category.cardio:
         return [
           Expanded(
-            child: Center(child: Text(l.mile)),
+            child: Center(
+              child: Text(
+                distanceUnit(),
+              ),
+            ),
           ),
           Expanded(
-            child: Center(child: Text(l.time)),
+            child: Center(
+              child: Text(l.time),
+            ),
           ),
         ];
       case Category.duration:
         return [
           Expanded(
             flex: 2,
-            child: Center(child: Text(l.time)),
+            child: Center(
+              child: Text(l.time),
+            ),
           ),
         ];
     }

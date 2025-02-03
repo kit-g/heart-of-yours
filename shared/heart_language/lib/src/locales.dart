@@ -279,6 +279,14 @@ class L {
     );
   }
 
+  String get km {
+    return Intl.message(
+      'km',
+      name: 'km',
+      desc: 'Generic label, km',
+    );
+  }
+
   String get milesPlural {
     return Intl.message(
       'miles',

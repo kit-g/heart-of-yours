@@ -32,3 +32,9 @@ enum MeasurementUnit {
     };
   }
 }
+
+extension Units on num {
+  double get asPounds => this / 0.453592;
+
+  double get asMiles => this / 1609.34;
+}
