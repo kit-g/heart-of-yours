@@ -37,4 +37,8 @@ extension Units on num {
   double get asPounds => this / 0.453592;
 
   double get asMiles => this / 1609.34;
+
+  double get asKilograms => this * 0.453592;
+
+  double get asKilometers => this * 1.60934;
 }
