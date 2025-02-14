@@ -198,13 +198,29 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       case Category.machine:
         return [
           Expanded(
-            child: _TextFieldButton(
-              focusNode: _weightFocus,
-              set: set,
-              controller: _weightController,
-              color: color,
-              errorState: _hasWeighError,
-              formatters: _floatingPointFormatters,
+            child: Selector<Preferences, MeasurementUnit>(
+              selector: (_, provider) => provider.weightUnit,
+              builder: (_, unit, __) {
+                double? weight = set.weight;
+
+                if (weight != null) {
+                  weight = switch (unit) {
+                    MeasurementUnit.imperial => (weight.asPounds * 100).roundToDouble() / 100,
+                    MeasurementUnit.metric => (weight * 100).roundToDouble() / 100,
+                  };
+                  final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(2);
+                  _weightController.text = rounded;
+                }
+
+                return _TextFieldButton(
+                  focusNode: _weightFocus,
+                  set: set,
+                  controller: _weightController,
+                  color: color,
+                  errorState: _hasWeighError,
+                  formatters: _floatingPointFormatters,
+                );
+              },
             ),
           ),
           Expanded(
@@ -250,14 +266,28 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       case Category.cardio:
         return [
           Expanded(
-            child: _TextFieldButton(
-              set: set,
-              focusNode: _distanceFocus,
-              controller: _distanceController,
-              color: color,
-              keyboardType: TextInputType.number,
-              errorState: _hasDistanceError,
-              formatters: _floatingPointFormatters,
+            child: Selector<Preferences, MeasurementUnit>(
+              selector: (_, provider) => provider.distanceUnit,
+              builder: (_, unit, __) {
+                double? distance = set.distance;
+                if (distance != null) {
+                  distance = switch (unit) {
+                    MeasurementUnit.imperial => distance.asMiles,
+                    MeasurementUnit.metric => distance,
+                  };
+                  final rounded = distance % 1 == 0 ? distance.toInt().toString() : distance.toStringAsFixed(1);
+                  _distanceController.text = rounded;
+                }
+                return _TextFieldButton(
+                  set: set,
+                  focusNode: _distanceFocus,
+                  controller: _distanceController,
+                  color: color,
+                  keyboardType: TextInputType.number,
+                  errorState: _hasDistanceError,
+                  formatters: _floatingPointFormatters,
+                );
+              },
             ),
           ),
           Expanded(

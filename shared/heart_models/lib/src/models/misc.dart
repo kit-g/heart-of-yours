@@ -34,11 +34,11 @@ enum MeasurementUnit {
 }
 
 extension Units on num {
-  double get asPounds => this / 0.453592;
+  double get asPounds => this * 2.20462262185;
 
-  double get asMiles => this / 1609.34;
+  double get asKilograms => this * 0.45359237;
 
-  double get asKilograms => this * 0.453592;
+  double get asMiles => this * 0.62137119224;
 
-  double get asKilometers => this * 1.60934;
+  double get asKilometers => this * 1.609344;
 }
