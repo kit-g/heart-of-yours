@@ -37,8 +37,16 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
   bool get isStarted;
 }
 
+abstract interface class HasExercises {
+  /// starts a new exercise
+  WorkoutExercise add(Exercise exercise);
+
+  /// removes the [WorkoutExercise] from the workout
+  bool remove(WorkoutExercise exercise);
+}
+
 /// A full workout
-abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Model {
+abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements HasExercises, Model {
   abstract String? name;
 
   DateTime? get end;
@@ -109,12 +117,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
       },
     );
   }
-
-  /// starts a new exercise
-  WorkoutExercise startExercise(Exercise exercise);
-
-  /// removes the [WorkoutExercise] from the workout
-  void removeExercise(WorkoutExercise exercise);
 
   /// the total metric (e.g., weight)
   /// in all sets of this exercise
@@ -309,8 +311,8 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   Iterable<WorkoutExercise> get sets => _sets;
 
   @override
-  void removeExercise(WorkoutExercise exercise) {
-    _sets.remove(exercise);
+  bool remove(WorkoutExercise exercise) {
+    return _sets.remove(exercise);
   }
 
   @override
@@ -351,7 +353,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   }
 
   @override
-  WorkoutExercise startExercise(Exercise exercise) {
+  WorkoutExercise add(Exercise exercise) {
     final ex = WorkoutExercise(starter: ExerciseSet(exercise));
     _sets.add(ex);
     return ex;
