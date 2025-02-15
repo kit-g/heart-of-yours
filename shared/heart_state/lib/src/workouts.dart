@@ -205,7 +205,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> startExercise(Exercise exercise) async {
     if (activeWorkout case Workout workout) {
-      final starter = workout.startExercise(exercise);
+      final starter = workout.add(exercise);
       _service.startExercise(workout.id, starter);
       notifyListeners();
       return _syncSets();
@@ -260,7 +260,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? removeExercise(WorkoutExercise exercise) {
-    activeWorkout?.removeExercise(exercise);
+    activeWorkout?.remove(exercise);
     notifyListeners();
 
     _service.removeExercise(exercise);
