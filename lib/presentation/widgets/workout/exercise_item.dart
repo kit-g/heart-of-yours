@@ -4,6 +4,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final int index;
   final String copy;
   final WorkoutExercise exercise;
+  final void Function(WorkoutExercise) onAddSet;
   final String firstColumnCopy;
   final String secondColumnCopy;
   final VoidCallback onDragStarted;
@@ -14,6 +15,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   const _WorkoutExerciseItem({
     required this.index,
     required this.exercise,
+    required this.onAddSet,
     required this.copy,
     required this.firstColumnCopy,
     required this.secondColumnCopy,
@@ -164,9 +166,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            onPressed: () {
-                              Workouts.of(context).addSet(exercise);
-                            },
+                            onPressed: () => onAddSet(exercise),
                           ),
                         ),
                       ],
