@@ -294,6 +294,7 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                             final selected = exercises.selected.toList();
                             for (var each in selected) {
                               await Future.delayed(
+                                // for different IDs
                                 const Duration(milliseconds: 2),
                                 () => workouts.startExercise(each),
                               );

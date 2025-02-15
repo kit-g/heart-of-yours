@@ -1,4 +1,4 @@
-library heart_models;
+library;
 
 export 'src/models/auth.dart';
 export 'src/models/exercise.dart';
