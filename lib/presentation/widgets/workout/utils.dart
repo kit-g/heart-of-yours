@@ -1,4 +1,4 @@
-part of 'active_workout.dart';
+part of 'workout_detail.dart';
 
 const _fixedColumnWidth = 32.0;
 const _fixedButtonHeight = 24.0;
@@ -103,10 +103,10 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     );
   }
 
-  return showCancelWorkoutDialog(context, workouts, onFinish: onFinish);
+  return showCancelWorkoutDialog(context, onFinish: onFinish);
 }
 
-Future<void> showCancelWorkoutDialog(BuildContext context, Workouts workouts, {VoidCallback? onFinish}) {
+Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFinish}) {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
   final L(
     :cancelWorkoutBody,

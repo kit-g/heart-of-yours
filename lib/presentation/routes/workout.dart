@@ -3,7 +3,7 @@ import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
-import 'package:heart/presentation/widgets/workout/active_workout.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -40,21 +40,23 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
     return SafeArea(
       child: Scaffold(
-        body: ActiveWorkout(
-          controller: Scrolls.of(context).workoutScrollController,
-          workouts: workouts,
-          appBar: SliverAppBar(
-            scrolledUnderElevation: 0,
-            backgroundColor: scaffoldBackgroundColor,
-            pinned: true,
-            expandedHeight: 80.0,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: switch (workouts.activeWorkout) {
-                  null => Text(L.of(context).startWorkout),
-                  _ => TextField(
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: switch (workouts.activeWorkout) {
+            Workout active => WorkoutDetail(
+                controller: Scrolls.of(context).workoutScrollController,
+                exercises: active,
+                onDragExercise: (exercise) {
+                  workouts.append(exercise);
+                },
+                appBar: SliverAppBar(
+                  scrolledUnderElevation: 0,
+                  backgroundColor: scaffoldBackgroundColor,
+                  pinned: true,
+                  expandedHeight: 80.0,
+                  flexibleSpace: FlexibleSpaceBar(
+                    centerTitle: true,
+                    title: TextField(
                       focusNode: _workoutNameFocusNode,
                       textCapitalization: TextCapitalization.words,
                       textAlign: TextAlign.center,
@@ -74,87 +76,99 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         _workoutNameFocusNode.unfocus();
                       },
                     ),
-                },
-              ),
-            ),
-          ),
-          slivers: switch (workouts.activeWorkout) {
-            Workout workout => [
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: FixedHeightHeaderDelegate(
-                    backgroundColor: scaffoldBackgroundColor,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        WorkoutTimer(
-                          start: workout.start,
-                          initValue: workout.elapsed(),
-                          style: textTheme.titleSmall,
-                        ),
-                        Selector<Alarms, (ValueNotifier<int>?, num?)>(
-                          selector: (_, provider) => (provider.remainsInActiveExercise, provider.activeExerciseTotal),
-                          builder: (_, seconds, __) {
-                            return AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: switch (seconds) {
-                                (ValueNotifier<int> counter, num total) => ValueListenableBuilder<int>(
-                                    valueListenable: counter,
-                                    builder: (_, remains, __) {
-                                      return Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          SizedBox(
-                                            height: 32,
-                                            width: 32,
-                                            child: CustomPaint(
-                                              painter: CircularTimerPainter(
-                                                progress: remains / total,
-                                                strokeColor: colorScheme.primary,
-                                                backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
-                                                strokeWidth: 3,
-                                              ),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            tooltip: restTimer,
-                                            visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
-                                            icon: const Icon(Icons.timer_outlined),
-                                            onPressed: () {
-                                              showCountdownDialog(context, remains);
-                                            },
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                _ => const SizedBox.shrink(),
-                              },
-                            );
-                          },
-                        ),
-                        PrimaryButton.shrunk(
-                          onPressed: () {
-                            showFinishWorkoutDialog(
-                              context,
-                              workouts,
-                              onFinish: () {
-                                Scrolls.of(context)
-                                  ..resetExerciseStack()
-                                  ..resetHistoryStack();
-                              },
-                            );
-                          },
-                          backgroundColor: colorScheme.primaryContainer,
-                          child: Text(finish),
-                        )
-                      ],
-                    ),
-                    height: 48,
                   ),
                 ),
-              ],
-            null => null,
+                slivers: [
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: FixedHeightHeaderDelegate(
+                      backgroundColor: scaffoldBackgroundColor,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          WorkoutTimer(
+                            start: active.start,
+                            initValue: active.elapsed(),
+                            style: textTheme.titleSmall,
+                          ),
+                          Selector<Alarms, (ValueNotifier<int>?, num?)>(
+                            selector: (_, provider) => (provider.remainsInActiveExercise, provider.activeExerciseTotal),
+                            builder: (_, seconds, __) {
+                              return AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: switch (seconds) {
+                                  (ValueNotifier<int> counter, num total) => ValueListenableBuilder<int>(
+                                      valueListenable: counter,
+                                      builder: (_, remains, __) {
+                                        return Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            SizedBox(
+                                              height: 32,
+                                              width: 32,
+                                              child: CustomPaint(
+                                                painter: CircularTimerPainter(
+                                                  progress: remains / total,
+                                                  strokeColor: colorScheme.primary,
+                                                  backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                                                  strokeWidth: 3,
+                                                ),
+                                              ),
+                                            ),
+                                            IconButton(
+                                              tooltip: restTimer,
+                                              visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
+                                              icon: const Icon(Icons.timer_outlined),
+                                              onPressed: () {
+                                                showCountdownDialog(context, remains);
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  _ => const SizedBox.shrink(),
+                                },
+                              );
+                            },
+                          ),
+                          PrimaryButton.shrunk(
+                            onPressed: () {
+                              showFinishWorkoutDialog(
+                                context,
+                                workouts,
+                                onFinish: () {
+                                  Scrolls.of(context)
+                                    ..resetExerciseStack()
+                                    ..resetHistoryStack();
+                                },
+                              );
+                            },
+                            backgroundColor: colorScheme.primaryContainer,
+                            child: Text(finish),
+                          )
+                        ],
+                      ),
+                      height: 48,
+                    ),
+                  ),
+                ],
+              ),
+            null => CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    scrolledUnderElevation: 0,
+                    backgroundColor: scaffoldBackgroundColor,
+                    pinned: true,
+                    expandedHeight: 80.0,
+                    flexibleSpace: FlexibleSpaceBar(
+                      centerTitle: true,
+                      title: Text(L.of(context).startWorkout),
+                    ),
+                  ),
+                  const NewWorkoutHeader(),
+                ],
+              ),
           },
         ),
       ),

@@ -1,4 +1,4 @@
-part of 'active_workout.dart';
+part of 'workout_detail.dart';
 
 class _WorkoutExerciseItem extends StatelessWidget {
   final int index;
