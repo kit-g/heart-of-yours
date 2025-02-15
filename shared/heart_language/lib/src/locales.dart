@@ -71,6 +71,14 @@ class L {
     );
   }
 
+  String get save {
+    return Intl.message(
+      'Save',
+      name: 'save',
+      desc: 'Generic label',
+    );
+  }
+
   String get settings {
     return Intl.message(
       'Settings',
@@ -786,6 +794,30 @@ class L {
       name: 'weightedSetRepresentation',
       desc: 'Rest notification banner',
       args: [weight, reps],
+    );
+  }
+
+  String get templates {
+    return Intl.message(
+      'Templates',
+      name: 'templates',
+      desc: 'Workout templates section header',
+    );
+  }
+
+  String get template {
+    return Intl.message(
+      'Template',
+      name: 'template',
+      desc: 'A single workout template',
+    );
+  }
+
+  String get newTemplate {
+    return Intl.message(
+      'New Template',
+      name: 'newTemplate',
+      desc: 'New template form header',
     );
   }
 }
