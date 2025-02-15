@@ -1,11 +1,11 @@
 part of 'history.dart';
 
-class HistoryItem extends StatelessWidget {
+class WorkoutItem extends StatelessWidget {
   final Workout workout;
   final void Function(Workout)? onTap;
   final bool showsMenuButton;
 
-  const HistoryItem({
+  const WorkoutItem({
     super.key,
     required this.workout,
     this.onTap,
@@ -16,6 +16,7 @@ class HistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final l = L.of(context);
+    final prefs = Preferences.watch(context);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: _shape,
@@ -94,8 +95,9 @@ class HistoryItem extends StatelessWidget {
                           size: 18,
                         ),
                         Text(
-                          switch (workout.total?.toInt()) {
-                            int total when total > 0 => l.lb(total),
+                          switch ((workout.total?.toInt(), prefs.weightUnit)) {
+                            (int total, MeasurementUnit.imperial) when total > 0 => l.lb(total.asPounds.toInt()),
+                            (int total, MeasurementUnit.metric) when total > 0 => '$total ${l.kg}',
                             _ => '-',
                           },
                         ),
@@ -119,7 +121,12 @@ class HistoryItem extends StatelessWidget {
                       ),
                       Expanded(
                         child: Text(
-                          _formatSet(context, exercise.best),
+                          _formatSet(
+                            context,
+                            exercise.best,
+                            prefs.weightUnit,
+                            prefs.distanceUnit,
+                          ),
                           style: textTheme.titleSmall,
                         ),
                       )
@@ -138,7 +145,12 @@ class HistoryItem extends StatelessWidget {
     return DateFormat('EEEE, d MMM y').format(dt);
   }
 
-  static String _formatSet(BuildContext context, ExerciseSet? set) {
+  static String _formatSet(
+    BuildContext context,
+    ExerciseSet? set,
+    MeasurementUnit weightUnit,
+    MeasurementUnit distanceUnit,
+  ) {
     final l = L.of(context);
     switch (set?.category) {
       case Category.weightedBodyWeight:
@@ -146,13 +158,21 @@ class HistoryItem extends StatelessWidget {
       case Category.machine:
       case Category.dumbbell:
       case Category.barbell:
-        return '${l.lb(set?.weight?.toInt() ?? 0)} x ${set?.reps ?? 0}';
+        return switch (weightUnit) {
+          // e.g. 11 lbs x 15 reps
+          MeasurementUnit.imperial => '${l.lb((set?.weight ?? 0).asPounds.toInt())} x ${set?.reps ?? 0}',
+          // e.g. 11 kg x 15 reps
+          MeasurementUnit.metric => '${rounded(set?.weight)} ${l.kg} x ${set?.reps ?? 0}',
+        };
       case Category.cardio:
         return switch ((set?.distance, set?.duration)) {
-          (double distance, int seconds) when distance % 1 == 0 =>
-            '${l.miles(distance.toInt())} / ${seconds.formatted(context)}',
-          (double distance, int seconds) =>
-            '${distance.toStringAsFixed(1)} ${l.milesPlural} / ${seconds.formatted(context)}',
+          (double distance, int seconds) => switch (distanceUnit) {
+              // e.g. 11 miles / 10 min
+              MeasurementUnit.imperial =>
+                '${rounded(distance.asMiles)} ${l.milesPlural} / ${seconds.formatted(context)}',
+              // e.g. 11 km / 10 min
+              MeasurementUnit.metric => '${rounded(distance)} ${l.km} / ${seconds.formatted(context)}',
+            },
           _ => '',
         };
       case Category.repsOnly:
@@ -216,4 +236,9 @@ enum _WorkoutOption {
   // share,
   // saveAsTemplate,
   delete;
+}
+
+String rounded(num? v) {
+  if (v == null) return '';
+  return v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
 }
