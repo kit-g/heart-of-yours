@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:heart/presentation/widgets/workout/active_workout.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 
 void main() {
   const formatter = NDigitFloatingPointFormatter();
