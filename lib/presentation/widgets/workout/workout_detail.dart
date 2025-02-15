@@ -33,7 +33,9 @@ class WorkoutDetail extends StatefulWidget {
   final Widget? appBar;
   final ScrollController? controller;
   final List<Widget>? slivers;
-  final void Function(WorkoutExercise)? onDragExercise;
+  final void Function(WorkoutExercise) onDragExercise;
+  final void Function(WorkoutExercise) onAddSet;
+  final void Function(Iterable<Exercise>) onAddExercises;
 
   const WorkoutDetail({
     super.key,
@@ -41,7 +43,9 @@ class WorkoutDetail extends StatefulWidget {
     this.appBar,
     this.controller,
     this.slivers,
-    this.onDragExercise,
+    required this.onDragExercise,
+    required this.onAddSet,
+    required this.onAddExercises,
   });
 
   @override
@@ -115,7 +119,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                           _currentlyHoveredExercise.value = null;
                         },
                         onAcceptWithDetails: (details) {
-                          widget.onDragExercise?.call(details.data);
+                          widget.onDragExercise(details.data);
                         },
                         builder: (_, __, ___) {
                           return Column(
@@ -153,6 +157,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             secondColumnCopy: previous,
                             dragState: _beingDragged,
                             currentlyHoveredItem: _currentlyHoveredExercise,
+                            onAddSet: widget.onAddSet,
                             onDragStarted: () {
                               _beingDragged.value = set;
                             },
@@ -182,7 +187,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
               _currentlyHoveredExercise.value = null;
             },
             onAcceptWithDetails: (details) {
-              widget.onDragExercise?.call(details.data);
+              widget.onDragExercise(details.data);
             },
             builder: (_, __, ___) {
               return Padding(
@@ -267,16 +272,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             child: Text(add),
                           ),
                           onPressed: () async {
-                            final workouts = Workouts.of(context);
+                            widget.onAddExercises(exercises.selected);
                             Navigator.pop(context);
-                            final selected = exercises.selected.toList();
-                            for (var each in selected) {
-                              await Future.delayed(
-                                // for different IDs
-                                const Duration(milliseconds: 2),
-                                () => workouts.startExercise(each),
-                              );
-                            }
                           },
                         ),
                       ],

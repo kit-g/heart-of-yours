@@ -33,6 +33,17 @@ Future<void> showWorkoutSheet(
               onDragExercise: (exercise) {
                 workouts.append(exercise);
               },
+              onAddSet: workouts.addSet,
+              onAddExercises: (exercises) async {
+                final workouts = Workouts.of(context);
+                for (var each in exercises) {
+                  await Future.delayed(
+                    // for different IDs
+                    const Duration(milliseconds: 2),
+                    () => workouts.startExercise(each),
+                  );
+                }
+              },
               appBar: SliverPersistentHeader(
                 pinned: true,
                 delegate: FixedHeightHeaderDelegate(

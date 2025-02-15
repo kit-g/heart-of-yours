@@ -73,6 +73,9 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        ChangeNotifierProvider<Templates>(
+          create: (_) => Templates(service: db),
+        ),
         Provider<Scrolls>(
           create: (_) => Scrolls(),
         )

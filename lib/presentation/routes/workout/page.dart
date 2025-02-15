@@ -1,13 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:heart/core/utils/scrolls.dart';
-import 'package:heart/core/utils/visual.dart';
-import 'package:heart/presentation/widgets/buttons.dart';
-import 'package:heart/presentation/widgets/countdown.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart';
-import 'package:heart/presentation/widgets/workout/timer.dart';
-import 'package:heart_language/heart_language.dart';
-import 'package:heart_models/heart_models.dart';
-import 'package:heart_state/heart_state.dart';
+part of 'workout.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -48,6 +39,17 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 exercises: active,
                 onDragExercise: (exercise) {
                   workouts.append(exercise);
+                },
+                onAddSet: workouts.addSet,
+                onAddExercises: (exercises) async {
+                  final workouts = Workouts.of(context);
+                  for (var each in exercises) {
+                    await Future.delayed(
+                      // for different IDs
+                      const Duration(milliseconds: 2),
+                      () => workouts.startExercise(each),
+                    );
+                  }
                 },
                 appBar: SliverAppBar(
                   scrolledUnderElevation: 0,
@@ -154,21 +156,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ),
                 ],
               ),
-            null => CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    scrolledUnderElevation: 0,
-                    backgroundColor: scaffoldBackgroundColor,
-                    pinned: true,
-                    expandedHeight: 80.0,
-                    flexibleSpace: FlexibleSpaceBar(
-                      centerTitle: true,
-                      title: Text(L.of(context).startWorkout),
-                    ),
-                  ),
-                  const NewWorkoutHeader(),
-                ],
-              ),
+            null => const _NoActiveWorkoutLayout(),
           },
         ),
       ),

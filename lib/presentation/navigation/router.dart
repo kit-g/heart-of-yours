@@ -4,7 +4,7 @@ import 'package:heart/presentation/routes/done.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
-import 'package:heart/presentation/routes/workout.dart';
+import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -22,6 +22,7 @@ const _settingsName = 'settings';
 const _settingsPath = _settingsName;
 const _workoutName = 'workout';
 const _workoutPath = '/$_workoutName';
+const _templateEditorName = 'templateEditor';
 const _historyName = 'history';
 const _historyPath = '/$_historyName';
 const _exercisesName = 'exercises';
@@ -49,6 +50,13 @@ RouteBase _workoutRoute() {
     path: _workoutPath,
     builder: (__, _) => const WorkoutPage(),
     name: _workoutName,
+    routes: [
+      GoRoute(
+        path: 'templates',
+        builder: (__, _) => const TemplateEditor(),
+        name: _templateEditorName,
+      ),
+    ],
   );
 }
 
@@ -168,5 +176,9 @@ extension ContextNavigation on BuildContext {
 
   void goToWorkouts() {
     return goNamed(_workoutName);
+  }
+
+  void goToTemplateEditor() {
+    return goNamed(_templateEditorName);
   }
 }
