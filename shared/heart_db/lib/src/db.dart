@@ -14,7 +14,7 @@ const _workoutExercises = 'workout_exercises';
 
 final _logger = Logger('Sqlite');
 
-final class LocalDatabase implements ExerciseService, StatsService, WorkoutService {
+final class LocalDatabase implements ExerciseService, StatsService, TemplateService, WorkoutService {
   static late final Database _db;
 
   static Future<void> init() async {
@@ -267,6 +267,24 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
         return WorkoutAggregation.fromRows(rows);
       },
     );
+  }
+
+  @override
+  Future<void> deleteTemplate(String templateId) {
+    // TODO: implement deleteTemplate
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Iterable<Template>?> getTemplates() {
+    // TODO: implement getTemplates
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> saveTemplate(Template template) {
+    // TODO: implement saveTemplate
+    throw UnimplementedError();
   }
 }
 
