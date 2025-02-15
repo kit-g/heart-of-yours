@@ -23,6 +23,14 @@ class L {
     );
   }
 
+  String get units {
+    return Intl.message(
+      'Units',
+      name: 'units',
+      desc: 'Label',
+    );
+  }
+
   String get motto {
     return Intl.message(
       'Every beat counts.',
@@ -271,6 +279,14 @@ class L {
     );
   }
 
+  String get km {
+    return Intl.message(
+      'km',
+      name: 'km',
+      desc: 'Generic label, km',
+    );
+  }
+
   String get milesPlural {
     return Intl.message(
       'miles',
@@ -429,9 +445,33 @@ class L {
 
   String get weightUnit {
     return Intl.message(
-      'Weight unit',
+      'Weight',
       name: 'weightUnit',
       desc: 'Exercise set option, "choose weight unit for this set"',
+    );
+  }
+
+  String get distanceUnit {
+    return Intl.message(
+      'Distance',
+      name: 'distanceUnit',
+      desc: 'Exercise set option, "choose distance unit for this set"',
+    );
+  }
+
+  String get imperial {
+    return Intl.message(
+      'Imperial',
+      name: 'imperial',
+      desc: 'Measurement unit setting',
+    );
+  }
+
+  String get metric {
+    return Intl.message(
+      'Metric',
+      name: 'metric',
+      desc: 'Measurement unit setting',
     );
   }
 

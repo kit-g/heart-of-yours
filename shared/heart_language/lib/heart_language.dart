@@ -1,3 +1,3 @@
-library heart_language;
+library;
 
 export 'src/locales.dart';

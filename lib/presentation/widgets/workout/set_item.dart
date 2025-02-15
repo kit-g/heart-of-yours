@@ -198,13 +198,29 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       case Category.machine:
         return [
           Expanded(
-            child: _TextFieldButton(
-              focusNode: _weightFocus,
-              set: set,
-              controller: _weightController,
-              color: color,
-              errorState: _hasWeighError,
-              formatters: _floatingPointFormatters,
+            child: Selector<Preferences, MeasurementUnit>(
+              selector: (_, provider) => provider.weightUnit,
+              builder: (_, unit, __) {
+                double? weight = set.weight;
+
+                if (weight != null) {
+                  weight = switch (unit) {
+                    MeasurementUnit.imperial => (weight.asPounds * 100).roundToDouble() / 100,
+                    MeasurementUnit.metric => (weight * 100).roundToDouble() / 100,
+                  };
+                  final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(2);
+                  _weightController.text = rounded;
+                }
+
+                return _TextFieldButton(
+                  focusNode: _weightFocus,
+                  set: set,
+                  controller: _weightController,
+                  color: color,
+                  errorState: _hasWeighError,
+                  formatters: _floatingPointFormatters,
+                );
+              },
             ),
           ),
           Expanded(
@@ -250,14 +266,28 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       case Category.cardio:
         return [
           Expanded(
-            child: _TextFieldButton(
-              set: set,
-              focusNode: _distanceFocus,
-              controller: _distanceController,
-              color: color,
-              keyboardType: TextInputType.number,
-              errorState: _hasDistanceError,
-              formatters: _floatingPointFormatters,
+            child: Selector<Preferences, MeasurementUnit>(
+              selector: (_, provider) => provider.distanceUnit,
+              builder: (_, unit, __) {
+                double? distance = set.distance;
+                if (distance != null) {
+                  distance = switch (unit) {
+                    MeasurementUnit.imperial => distance.asMiles,
+                    MeasurementUnit.metric => distance,
+                  };
+                  final rounded = distance % 1 == 0 ? distance.toInt().toString() : distance.toStringAsFixed(1);
+                  _distanceController.text = rounded;
+                }
+                return _TextFieldButton(
+                  set: set,
+                  focusNode: _distanceFocus,
+                  controller: _distanceController,
+                  color: color,
+                  keyboardType: TextInputType.number,
+                  errorState: _hasDistanceError,
+                  formatters: _floatingPointFormatters,
+                );
+              },
             ),
           ),
           Expanded(
@@ -288,21 +318,21 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         case Category.machine:
         case Category.dumbbell:
         case Category.barbell:
-          set.setMeasurements(
+          _setMeasurements(
             weight: double.parse(_weightController.text),
             reps: int.parse(_repsController.text),
           );
           _hasWeighError.value = false;
           _hasRepsError.value = false;
         case Category.repsOnly:
-          set.setMeasurements(
+          _setMeasurements(
             reps: int.parse(_repsController.text),
           );
           _hasRepsError.value = false;
         case Category.cardio:
           final seconds = _parseDuration();
 
-          set.setMeasurements(
+          _setMeasurements(
             distance: double.parse(_distanceController.text),
             duration: seconds,
           );
@@ -311,7 +341,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
           _durationController.text = seconds.toDuration();
         case Category.duration:
           final seconds = _parseDuration();
-          set.setMeasurements(duration: seconds);
+          _setMeasurements(duration: seconds);
           _hasDurationError.value = false;
           _durationController.text = seconds.toDuration();
       }
@@ -410,7 +440,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     if (!context.mounted) return;
     bool hasChanged = false;
     if (double.tryParse(_weightController.text) case double weight when weight > 0) {
-      set.setMeasurements(weight: weight);
+      _setMeasurements(weight: weight);
       hasChanged = true;
     }
 
@@ -425,7 +455,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     bool hasChanged = false;
 
     if (int.tryParse(_repsController.text) case int reps when reps > 0) {
-      set.setMeasurements(reps: reps);
+      _setMeasurements(reps: reps);
       hasChanged = true;
     }
 
@@ -440,7 +470,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     bool hasChanged = false;
 
     if (double.tryParse(_distanceController.text) case double distance when distance > 0) {
-      set.setMeasurements(distance: distance);
+      _setMeasurements(distance: distance);
       hasChanged = true;
     }
 
@@ -491,6 +521,23 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   }
 
   static int parse(String v) => int.tryParse(v) ?? 0;
+
+  void _setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
+    if (!context.mounted) return;
+    final Preferences(:weightUnit, :distanceUnit) = Preferences.of(context);
+    set.setMeasurements(
+      duration: duration,
+      weight: switch (weightUnit) {
+        MeasurementUnit.imperial => weight?.asKilograms,
+        MeasurementUnit.metric => weight,
+      },
+      reps: reps,
+      distance: switch (distanceUnit) {
+        MeasurementUnit.imperial => distance?.asKilometers,
+        MeasurementUnit.metric => distance,
+      },
+    );
+  }
 }
 
 extension on int {
