@@ -181,7 +181,9 @@ class MaterialTheme {
         backgroundColor: colorScheme.surfaceContainer,
         deleteIconColor: colorScheme.outlineVariant,
         shape: const RoundedRectangleBorder(
-            side: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.all(Radius.circular(24))),
+          side: BorderSide(color: Colors.transparent),
+          borderRadius: BorderRadius.all(Radius.circular(24)),
+        ),
         brightness: colorScheme.brightness,
       ),
       toggleButtonsTheme: const ToggleButtonsThemeData(
