@@ -344,11 +344,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<Iterable<Workout>?> _getHistory(String userId, {int pageSize = 7}) async {
+  Future<Iterable<Workout>?> _getRemoteHistory(String userId, {int pageSize = 7}) async {
     try {
-      final local = await _service.getWorkoutHistory();
-      if (local?.isNotEmpty ?? false) return local;
-
       final querySnapshot = await _collection //
           .where('userId', isEqualTo: userId)
           .where('end', isNull: false)
@@ -368,10 +365,17 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> initHistory() async {
     if (userId case String id) {
-      final workouts = await _getHistory(id);
-      if (workouts != null) {
-        _service.storeWorkoutHistory(workouts);
-        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+      final local = await _service.getWorkoutHistory();
+      if (local != null) {
+        if (local.isNotEmpty) {
+          _workouts.addAll(Map.fromEntries(local.map(_entry)));
+        }
+      } else {
+        final workouts = await _getRemoteHistory(id);
+        if (workouts != null) {
+          _service.storeWorkoutHistory(workouts);
+          _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+        }
       }
       historyInitialized = true;
       notifyListeners();
