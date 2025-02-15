@@ -102,11 +102,17 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
 
   @override
   Future<void> finishWorkout(Workout workout) {
-    return _db.update(
-      _workouts,
-      {'end': workout.end?.toIso8601String()},
-      where: 'id = ?',
-      whereArgs: [workout.id],
+    return _db.transaction(
+      (txn) {
+        txn.update(
+          _workouts,
+          {'end': workout.end?.toIso8601String()},
+          where: 'id = ?',
+          whereArgs: [workout.id],
+        );
+        // we'll remove all the exercises that are not marked as finished
+        return txn.rawDelete(sql.removeUnfinished, [workout.id]);
+      },
     );
   }
 

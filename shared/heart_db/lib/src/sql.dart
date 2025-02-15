@@ -143,3 +143,14 @@ INNER JOIN exercises e
     ON e.name = workout_exercises.exercise_id
     ;
 """;
+
+const removeUnfinished = """
+DELETE
+FROM sets
+WHERE completed = 0
+  AND exercise_id IN (
+          SELECT id
+          FROM workout_exercises
+          WHERE workout_id = ?
+      );
+""";

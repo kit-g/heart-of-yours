@@ -114,7 +114,7 @@ class WorkoutItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${exercise.length} x ${exercise.exercise.name}',
+                          '${exercise.where((set) => set.isCompleted).length} x ${exercise.exercise.name}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
