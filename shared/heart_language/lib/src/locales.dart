@@ -199,6 +199,14 @@ class L {
     );
   }
 
+  String get startNewWorkoutFromTemplate {
+    return Intl.message(
+      'Start a new workout from this template?',
+      name: 'startNewWorkoutFromTemplate',
+      desc: 'Alert dialog',
+    );
+  }
+
   String get startWorkout {
     return Intl.message(
       'Start workout',

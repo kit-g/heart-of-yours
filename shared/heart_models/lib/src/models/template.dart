@@ -11,6 +11,8 @@ abstract interface class Template with Iterable<WorkoutExercise> implements Comp
 
   int get order;
 
+  Workout toWorkout();
+
   factory Template.empty({required String id, required int order}) {
     return _Template(
       exercises: [],
@@ -93,5 +95,24 @@ class _Template with Iterable<WorkoutExercise> implements Template {
   @override
   int compareTo(Template other) {
     return order.compareTo(other.order);
+  }
+
+  @override
+  Workout toWorkout() {
+    final workout = Workout(name: name);
+
+    for (final each in this) {
+      if (each.isNotEmpty) {
+        final exercise = WorkoutExercise(starter: each.first.copy());
+
+        for (var set in each.skip(1)) {
+          exercise.add(set.copy());
+        }
+
+        workout.append(exercise);
+      }
+    }
+
+    return workout;
   }
 }

@@ -45,7 +45,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 onRemoveExercise: workouts.removeExercise,
                 onAddExercises: (exercises) async {
                   final workouts = Workouts.of(context);
-                  for (var each in exercises) {
+                  // workouts.startExercise changes this iterable
+                  // so we need a copy to avoid
+                  // concurrent modification
+                  for (var each in exercises.toList()) {
                     await Future.delayed(
                       // for different IDs
                       const Duration(milliseconds: 2),

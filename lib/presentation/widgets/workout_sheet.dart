@@ -38,7 +38,7 @@ Future<void> showWorkoutSheet(
               onRemoveExercise: workouts.removeExercise,
               onAddExercises: (exercises) async {
                 final workouts = Workouts.of(context);
-                for (var each in exercises) {
+                for (var each in exercises.toList()) {
                   await Future.delayed(
                     // for different IDs
                     const Duration(milliseconds: 2),
