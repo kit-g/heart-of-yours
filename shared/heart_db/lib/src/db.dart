@@ -301,7 +301,7 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
 
   @override
   Future<void> deleteTemplate(String templateId) {
-    return _db.delete(_templates, where: 'template_id = ?', whereArgs: [templateId]);
+    return _db.delete(_templates, where: 'id = ?', whereArgs: [int.parse(templateId)]);
   }
 
   @override

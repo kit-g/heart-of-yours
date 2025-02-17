@@ -53,7 +53,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     editable?.remove(exercise);
   }
 
-  Future<void> addSet(WorkoutExercise exercise) async {
+  void addSet(WorkoutExercise exercise) {
     final set = exercise.lastOrNull?.copy() ?? ExerciseSet(exercise.exercise);
     exercise.add(set);
     notifyListeners();
@@ -67,6 +67,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     editable = null;
 
     notifyListeners();
+  }
+
+  Future<void> delete(Template template) async {
+    _templates.remove(template);
+    notifyListeners();
+    return _service.deleteTemplate(template.id);
   }
 
   bool get allowsNewTemplate => length < _maxTemplates;

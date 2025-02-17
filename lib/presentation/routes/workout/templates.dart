@@ -61,7 +61,9 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                 (template) {
                   return _TemplateCard(
                     template: template,
-                    onDelete: (template) {},
+                    onDelete: (template) {
+                      _showDeleteTemplateDialog(context, template);
+                    },
                     onEdit: (template) {},
                     onStartWorkout: (template) {},
                   );
@@ -70,6 +72,63 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Future<void> _showDeleteTemplateDialog(BuildContext context, Template template) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final L(
+      :deleteTemplateBody,
+      :deleteTemplateTitle,
+      :cancel,
+      :deleteThis,
+      :deleted,
+    ) = L.of(context);
+    return showBrandedDialog(
+      context,
+      title: Text(
+        deleteTemplateTitle,
+        textAlign: TextAlign.center,
+      ),
+      content: Text(
+        deleteTemplateBody,
+        textAlign: TextAlign.center,
+      ),
+      icon: Icon(
+        Icons.error_outline_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(cancel),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.errorContainer,
+              child: Center(
+                child: Text(
+                  deleteThis,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                ),
+              ),
+              onPressed: () async {
+                final scaffold = ScaffoldMessenger.of(context);
+                Navigator.of(context, rootNavigator: true).pop();
+                await Templates.of(context).delete(template);
+                scaffold.showSnackBar(SnackBar(content: Text(deleted)));
+              },
+            ),
+          ],
+        )
       ],
     );
   }

@@ -659,11 +659,43 @@ class L {
     );
   }
 
+  String get deleteThis {
+    return Intl.message(
+      'Yes, delete this',
+      name: 'deleteThis',
+      desc: 'Generic label',
+    );
+  }
+
+  String get deleted {
+    return Intl.message(
+      'Deleted',
+      name: 'deleted',
+      desc: 'Generic label',
+    );
+  }
+
   String get notReadyToFinish {
     return Intl.message(
       'No, one more set!',
       name: 'notReadyToFinish',
       desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get deleteTemplateTitle {
+    return Intl.message(
+      'Do you want to delete this workout template?',
+      name: 'deleteTemplateTitle',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get deleteTemplateBody {
+    return Intl.message(
+      'This cannot be undone',
+      name: 'deleteTemplateBody',
+      desc: 'Template deletion confirmation dialog',
     );
   }
 

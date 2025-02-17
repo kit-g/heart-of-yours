@@ -70,7 +70,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   ];
 
   if (isValid) {
-    return _showDialog(
+    return showBrandedDialog(
       context,
       title: Text(finishWorkoutTitle),
       titleTextStyle: textTheme.titleMedium,
@@ -87,7 +87,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   }
 
   if (isStarted) {
-    return _showDialog(
+    return showBrandedDialog(
       context,
       title: Text(finishWorkoutWarningTitle),
       titleTextStyle: textTheme.titleMedium,
@@ -114,7 +114,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
     :cancelWorkout,
     :resumeWorkout,
   ) = L.of(context);
-  return _showDialog(
+  return showBrandedDialog(
     context,
     title: Text(cancelWorkoutTitle),
     titleTextStyle: textTheme.titleMedium,
@@ -159,34 +159,6 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
   );
 }
 
-Future<void> _showDialog(
-  BuildContext context, {
-  required Widget title,
-  required Widget content,
-  Widget? icon,
-  TextStyle? titleTextStyle,
-  TextStyle? contentTextStyle,
-  List<Widget>? actions,
-}) {
-  return showDialog<void>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
-        contentPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-        icon: icon,
-        title: title,
-        titleTextStyle: titleTextStyle,
-        content: content,
-        contentTextStyle: contentTextStyle,
-        actions: actions,
-      );
-    },
-  );
-}
 
 Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   context.goToWorkoutDone(workouts.activeWorkout?.id);
