@@ -45,15 +45,18 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
             ),
           ),
         ),
-        SliverGrid.count(
-          crossAxisCount: 2,
-          children: [
-            ...templates.map(
-              (template) {
-                return _TemplateCard(template: template);
-              },
-            )
-          ],
+        SliverPadding(
+          padding: const EdgeInsets.all(8),
+          sliver: SliverGrid.count(
+            crossAxisCount: 2,
+            children: [
+              ...templates.map(
+                (template) {
+                  return _TemplateCard(template: template);
+                },
+              )
+            ],
+          ),
         ),
       ],
     );

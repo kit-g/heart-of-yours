@@ -326,6 +326,7 @@ class NewWorkoutHeader extends StatelessWidget {
     return SliverPersistentHeader(
       pinned: true,
       delegate: FixedHeightHeaderDelegate(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         child: PrimaryButton.wide(
           onPressed: () => _startWorkout(context),
           child: Center(

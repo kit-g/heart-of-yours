@@ -36,11 +36,7 @@ class TemplateEditor extends StatelessWidget {
           onAddSet: templates.addSet,
           onAddExercises: (exercises) async {
             for (var each in exercises) {
-              await Future.delayed(
-                // for different IDs
-                const Duration(milliseconds: 2),
-                () => templates.add(each),
-              );
+              await templates.add(each);
             }
           },
         ),
