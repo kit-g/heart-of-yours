@@ -50,11 +50,15 @@ class HeartApp extends StatelessWidget {
             },
           ),
         ),
+        ChangeNotifierProvider<Templates>(
+          create: (_) => Templates(service: db),
+        ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             onUserChange: (user) {
               HeartRouter.refresh();
               Stats.of(context).userId = user?.id;
+              Templates.of(context).userId = user?.id;
               Workouts.of(context).userId = user?.id;
             },
           ),
@@ -72,9 +76,6 @@ class HeartApp extends StatelessWidget {
           create: (_) => AppInfo(
             onError: reportToSentry,
           ),
-        ),
-        ChangeNotifierProvider<Templates>(
-          create: (_) => Templates(service: db),
         ),
         Provider<Scrolls>(
           create: (_) => Scrolls(),
@@ -163,6 +164,7 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
     var Exercises(:isInitialized, :init) = Exercises.of(context);
     final workouts = Workouts.of(context);
 
+    final templates = Templates.of(context);
     final prefs = Preferences.of(context);
     final theme = AppTheme.of(context);
     await prefs.init();
@@ -177,6 +179,7 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
           workouts.init().then<void>((_) => HeartRouter.refresh());
+          templates.init();
         },
       );
     }
