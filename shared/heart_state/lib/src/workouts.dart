@@ -109,8 +109,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<void> startWorkout({String? name}) async {
-    final workout = Workout(name: name);
+  Future<void> startWorkout({String? name, Workout? template}) async {
+    assert(name == null || template == null, 'Pass only the name or the full workout');
+    final workout = template ?? Workout(name: name);
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 

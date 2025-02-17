@@ -68,7 +68,12 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                       templates.editable = template;
                       context.goToTemplateEditor();
                     },
-                    onStartWorkout: (template) {},
+                    onStartWorkout: (template) {
+                      Workouts.of(context).startWorkout(template: template.toWorkout());
+                    },
+                    onTap: (template) {
+                      _showStartWorkoutDialog(context, template);
+                    },
                   );
                 },
               )
@@ -128,6 +133,99 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                 Navigator.of(context, rootNavigator: true).pop();
                 await Templates.of(context).delete(template);
                 scaffold.showSnackBar(SnackBar(content: Text(deleted)));
+              },
+            ),
+          ],
+        )
+      ],
+    );
+  }
+
+  Future<void> _showStartWorkoutDialog(BuildContext context, Template template) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final L(:cancel, :startWorkout, :startNewWorkoutFromTemplate, :editTemplate) = L.of(context);
+    return showBrandedDialog(
+      context,
+      title: Text(
+        startNewWorkoutFromTemplate,
+        textAlign: TextAlign.center,
+      ),
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Wrap(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+              child: Column(
+                spacing: 8,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...template.map(
+                    (exercise) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${exercise.length} x ${exercise.exercise.name}',
+                            style: textTheme.titleSmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            exercise.exercise.target.value,
+                            style: textTheme.bodyMedium,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ],
+                      );
+                    },
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      icon: Icon(
+        Icons.fitness_center_rounded,
+        color: colorScheme.onPrimaryContainer,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(cancel),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(editTemplate),
+              ),
+              onPressed: () {
+                Templates.of(context).editable = template;
+                Navigator.of(context, rootNavigator: true).pop();
+                context.goToTemplateEditor();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.primaryContainer,
+              child: Center(
+                child: Text(
+                  startWorkout,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+                Workouts.of(context).startWorkout(template: template.toWorkout());
               },
             ),
           ],

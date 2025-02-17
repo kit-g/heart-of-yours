@@ -5,12 +5,14 @@ class _TemplateCard extends StatelessWidget {
   final void Function(Template) onDelete;
   final void Function(Template) onEdit;
   final void Function(Template) onStartWorkout;
+  final void Function(Template) onTap;
 
   const _TemplateCard({
     required this.template,
     required this.onDelete,
     required this.onEdit,
     required this.onStartWorkout,
+    required this.onTap,
   });
 
   @override
@@ -18,90 +20,95 @@ class _TemplateCard extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final style = textTheme.bodyMedium?.copyWith(color: colorScheme.outline);
     return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Row(
-              spacing: 8,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    template.name ?? '',
-                    style: textTheme.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+      shape: _shape,
+      child: InkWell(
+        onTap: () => onTap(template),
+        customBorder: _shape,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Row(
+                spacing: 8,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      template.name ?? '',
+                      style: textTheme.titleMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                PopupMenuButton<_TemplateOption>(
-                  style: const ButtonStyle(
-                    visualDensity: VisualDensity(vertical: -3, horizontal: -3),
+                  PopupMenuButton<_TemplateOption>(
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity(vertical: -3, horizontal: -3),
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.more_horiz),
+                    itemBuilder: (_) {
+                      return _TemplateOption.values.map(
+                        (option) {
+                          final (:copy, :style, :icon) = _item(context, option);
+                          return PopupMenuItem<_TemplateOption>(
+                            onTap: () => _onSelected(option),
+                            child: Row(
+                              spacing: 4,
+                              children: [
+                                icon,
+                                Text(
+                                  copy,
+                                  style: style,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ).toList();
+                    },
                   ),
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.more_horiz),
-                  itemBuilder: (_) {
-                    return _TemplateOption.values.map(
-                      (option) {
-                        final (:copy, :style, :icon) = _item(context, option);
-                        return PopupMenuItem<_TemplateOption>(
-                          onTap: () => _onSelected(option),
-                          child: Row(
-                            spacing: 4,
-                            children: [
-                              icon,
-                              Text(
-                                copy,
-                                style: style,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ).toList();
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Column(
-              children: [
-                ...template.take(_maxPerCard).map(
-                  (exercise) {
-                    return Row(
-                      spacing: 8,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Text(
-                              exercise.exercise.name,
-                              style: style,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Column(
+                children: [
+                  ...template.take(_maxPerCard).map(
+                    (exercise) {
+                      return Row(
+                        spacing: 8,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Text(
+                                exercise.exercise.name,
+                                style: style,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
-                        ),
-                        Text(
-                          '${exercise.length}x',
-                          style: style,
-                        )
-                      ],
-                    );
-                  },
-                ),
-                if (template.length > _maxPerCard)
-                  Text(
-                    '...',
-                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
-                  )
-              ],
-            ),
-          )
-        ],
+                          Text(
+                            '${exercise.length}x',
+                            style: style,
+                          )
+                        ],
+                      );
+                    },
+                  ),
+                  if (template.length > _maxPerCard)
+                    Text(
+                      '...',
+                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
+                    )
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -140,3 +147,7 @@ class _TemplateCard extends StatelessWidget {
 const _maxPerCard = 5;
 
 enum _TemplateOption { edit, startWorkout, delete }
+
+const _shape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.all(Radius.circular(8)),
+);

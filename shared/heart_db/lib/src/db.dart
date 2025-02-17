@@ -111,6 +111,12 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   Future<void> finishWorkout(Workout workout) {
     return _db.transaction(
       (txn) {
+        final batch = txn.batch();
+
+        _storeWorkout(batch, workout);
+
+        batch.commit(noResult: true);
+
         txn.update(
           _workouts,
           {'end': workout.end?.toIso8601String()},
@@ -147,7 +153,7 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
           batch.insert(_sets, row);
         }
 
-        batch.commit(noResult: true);
+        await batch.commit(noResult: true);
       },
     );
   }
@@ -279,9 +285,9 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   Future<void> updateTemplate(Template template) {
     return _db.transaction(
       (txn) {
-        txn.update(_templates, {'name': template.name});
-
-        txn.delete(_templatesExercises, where: 'template_id = ?', whereArgs: [int.parse(template.id)]);
+        txn
+          ..update(_templates, {'name': template.name})
+          ..delete(_templatesExercises, where: 'template_id = ?', whereArgs: [int.parse(template.id)]);
 
         final batch = txn.batch();
 
