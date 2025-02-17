@@ -9,7 +9,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:scaffoldBackgroundColor, :textTheme) = Theme.of(context);
+    final ThemeData(:scaffoldBackgroundColor, :textTheme, :colorScheme) = Theme.of(context);
     final L(:startWorkout, templates: copy, :template) = L.of(context);
     final templates = Templates.watch(context);
     return CustomScrollView(
@@ -35,12 +35,19 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                   copy,
                   style: textTheme.headlineSmall,
                 ),
-                PrimaryButton.shrunk(
-                  onPressed: () {
-                    context.goToTemplateEditor();
-                  },
-                  child: Text('+ $template'),
-                ),
+                if (templates.allowsNewTemplate)
+                  PrimaryButton.shrunk(
+                    backgroundColor: colorScheme.secondaryContainer,
+                    onPressed: () {
+                      context.goToTemplateEditor();
+                    },
+                    child: Row(
+                      children: [
+                        const Icon(Icons.add_rounded, size: 18),
+                        Text(template),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -52,7 +59,12 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
             children: [
               ...templates.map(
                 (template) {
-                  return _TemplateCard(template: template);
+                  return _TemplateCard(
+                    template: template,
+                    onDelete: (template) {},
+                    onEdit: (template) {},
+                    onStartWorkout: (template) {},
+                  );
                 },
               )
             ],
