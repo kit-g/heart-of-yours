@@ -53,7 +53,11 @@ RouteBase _workoutRoute() {
     routes: [
       GoRoute(
         path: 'templates',
-        builder: (__, _) => const TemplateEditor(),
+        builder: (__, state) {
+          return TemplateEditor(
+            isNewTemplate: state.uri.queryParameters['newTemplate'] == 'true',
+          );
+        },
         name: _templateEditorName,
       ),
     ],
@@ -178,7 +182,7 @@ extension ContextNavigation on BuildContext {
     return goNamed(_workoutName);
   }
 
-  void goToTemplateEditor() {
-    return goNamed(_templateEditorName);
+  void goToTemplateEditor({bool? newTemplate}) {
+    return goNamed(_templateEditorName, queryParameters: {'newTemplate': newTemplate.toString()});
   }
 }

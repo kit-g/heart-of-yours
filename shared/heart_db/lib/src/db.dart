@@ -279,6 +279,8 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   Future<void> updateTemplate(Template template) {
     return _db.transaction(
       (txn) {
+        txn.update(_templates, {'name': template.name});
+
         txn.delete(_templatesExercises, where: 'template_id = ?', whereArgs: [int.parse(template.id)]);
 
         final batch = txn.batch();
@@ -325,7 +327,7 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
 
   @override
   Future<Template> startTemplate({required int order, String? userId}) async {
-    return _db.insert(_templates, {'user_id': userId, 'order_in_parent': order}).then(
+    return _db.insert(_templates, {'user_id': userId, 'order_in_parent': order}).then<Template>(
       (id) {
         return Template.empty(id: id.toString(), order: order);
       },

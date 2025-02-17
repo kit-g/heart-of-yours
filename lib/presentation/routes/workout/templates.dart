@@ -39,7 +39,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                   PrimaryButton.shrunk(
                     backgroundColor: colorScheme.secondaryContainer,
                     onPressed: () {
-                      context.goToTemplateEditor();
+                      context.goToTemplateEditor(newTemplate: true);
                     },
                     child: Row(
                       children: [
