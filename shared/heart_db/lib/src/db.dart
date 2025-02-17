@@ -279,6 +279,8 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   Future<void> updateTemplate(Template template) {
     return _db.transaction(
       (txn) {
+        txn.delete(_templatesExercises, where: 'template_id = ?', whereArgs: [int.parse(template.id)]);
+
         final batch = txn.batch();
 
         for (var exercise in template) {

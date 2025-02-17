@@ -33,8 +33,7 @@ abstract interface class Template with Iterable<WorkoutExercise> implements Comp
             return ExerciseSet.fromJson(exercise, json);
           },
         ).toList();
-        final workoutExercise = WorkoutExercise(starter: sets.first);
-
+        final workoutExercise = WorkoutExercise(starter: sets.firstOrNull ?? ExerciseSet(exercise));
         for (var set in sets.skip(1)) {
           workoutExercise.add(set);
         }

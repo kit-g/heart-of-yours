@@ -33,7 +33,9 @@ class TemplateEditor extends StatelessWidget {
           onDragExercise: (_) {
             // todo
           },
+          onRemoveSet: templates.removeSet,
           onAddSet: templates.addSet,
+          onRemoveExercise: templates.removeExercise,
           onAddExercises: (exercises) async {
             for (var each in exercises) {
               await templates.add(each);

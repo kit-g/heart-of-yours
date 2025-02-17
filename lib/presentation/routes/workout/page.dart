@@ -41,6 +41,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   workouts.append(exercise);
                 },
                 onAddSet: workouts.addSet,
+                onRemoveSet: workouts.removeSet,
+                onRemoveExercise: workouts.removeExercise,
                 onAddExercises: (exercises) async {
                   final workouts = Workouts.of(context);
                   for (var each in exercises) {

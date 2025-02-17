@@ -64,7 +64,10 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                     onDelete: (template) {
                       _showDeleteTemplateDialog(context, template);
                     },
-                    onEdit: (template) {},
+                    onEdit: (template) {
+                      templates.editable = template;
+                      context.goToTemplateEditor();
+                    },
                     onStartWorkout: (template) {},
                   );
                 },

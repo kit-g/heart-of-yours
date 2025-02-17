@@ -59,6 +59,16 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     notifyListeners();
   }
 
+  void removeSet(WorkoutExercise exercise, ExerciseSet set) {
+    exercise.remove(set);
+    notifyListeners();
+  }
+
+  void removeExercise(WorkoutExercise exercise) {
+    editable?.remove(exercise);
+    notifyListeners();
+  }
+
   Future<void> saveEditable() async {
     if (editable case Template template) {
       _templates.add(template);
@@ -69,7 +79,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     notifyListeners();
   }
 
-  Future<void> delete(Template template) async {
+  Future<void> delete(Template template) {
     _templates.remove(template);
     notifyListeners();
     return _service.deleteTemplate(template.id);
