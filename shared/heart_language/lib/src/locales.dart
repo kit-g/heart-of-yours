@@ -852,6 +852,22 @@ class L {
       desc: 'New template form header',
     );
   }
+
+  String get editTemplate {
+    return Intl.message(
+      'Edit Template',
+      name: 'editTemplate',
+      desc: 'Edit template form header',
+    );
+  }
+
+  String get templateName {
+    return Intl.message(
+      'Template name',
+      name: 'templateName',
+      desc: 'Edit template text field hint',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

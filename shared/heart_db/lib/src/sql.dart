@@ -54,9 +54,11 @@ CREATE TABLE IF NOT EXISTS sets
 const templates = """
 CREATE TABLE IF NOT EXISTS templates
 (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    name       TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now') || '+00:00')
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT,
+    user_id         TEXT,
+    order_in_parent INTEGER,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now') || '+00:00')
 );
 """;
 
@@ -64,12 +66,9 @@ const templatesExercises = """
 CREATE TABLE IF NOT EXISTS template_exercises
 (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    template_id INTEGER  NOT NULL REFERENCES templates ON DELETE CASCADE,
-    exercise_id TEXT NOT NULL REFERENCES workout_exercises ON DELETE CASCADE,
-    weight      REAL,
-    reps        INT,
-    duration    REAL,
-    sets        INTEGER  NOT NULL
+    template_id INTEGER NOT NULL REFERENCES templates ON DELETE CASCADE,
+    exercise_id TEXT    NOT NULL REFERENCES exercises ON DELETE CASCADE,
+    description TEXT
 );
 """;
 
