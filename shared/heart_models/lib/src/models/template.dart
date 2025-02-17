@@ -45,7 +45,7 @@ abstract interface class Template with Iterable<WorkoutExercise> implements Comp
 
     return _Template(
       id: first['templateId'].toString(),
-      name: first['name'],
+      name: first['templateName'],
       order: first['orderInParent'] as int? ?? 0,
       exercises: exercises,
     );
