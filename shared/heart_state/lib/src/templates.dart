@@ -68,4 +68,8 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
     notifyListeners();
   }
+
+  bool get allowsNewTemplate => length < _maxTemplates;
 }
+
+const _maxTemplates = 6;
