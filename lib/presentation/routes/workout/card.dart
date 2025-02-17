@@ -41,12 +41,12 @@ class _TemplateCard extends StatelessWidget {
                   ),
                   padding: EdgeInsets.zero,
                   icon: const Icon(Icons.more_horiz),
-                  onSelected: _onSelected,
                   itemBuilder: (_) {
                     return _TemplateOption.values.map(
                       (option) {
                         final (:copy, :style, :icon) = _item(context, option);
                         return PopupMenuItem<_TemplateOption>(
+                          onTap: () => _onSelected(option),
                           child: Row(
                             spacing: 4,
                             children: [

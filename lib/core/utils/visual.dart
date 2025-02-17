@@ -94,3 +94,35 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
     return backgroundColor != oldDelegate.backgroundColor || child != oldDelegate.child;
   }
 }
+
+Future<void> showBrandedDialog(
+  BuildContext context, {
+  required Widget title,
+  required Widget content,
+  Widget? icon,
+  TextStyle? titleTextStyle,
+  TextStyle? contentTextStyle,
+  List<Widget>? actions,
+}) {
+  final ThemeData(:textTheme) = Theme.of(context);
+
+
+  return showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
+        contentPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+        icon: icon,
+        title: title,
+        titleTextStyle: titleTextStyle ?? textTheme.titleMedium,
+        content: content,
+        contentTextStyle: contentTextStyle,
+        actions: actions,
+      );
+    },
+  );
+}
