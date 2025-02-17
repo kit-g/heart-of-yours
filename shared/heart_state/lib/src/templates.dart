@@ -1,14 +1,18 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateSentry {
-  final _templates = <Template>{};
+  final _templates = SplayTreeSet<Template>();
   final TemplateService _service;
 
   Templates({required TemplateService service}) : _service = service;
 
   Template? editable;
+
+  String? userId;
 
   @override
   void onSignOut() {
@@ -26,8 +30,21 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     return Provider.of<Templates>(context, listen: true);
   }
 
-  void add(Exercise exercise) {
-    editable ??= Template.empty();
+  Future<void> init() async {
+    if (userId == null) return;
+    return _service.getTemplates(userId!).then<void>(
+      (templates) {
+        _templates.addAll(templates);
+        notifyListeners();
+      },
+    );
+  }
+
+  Future<void> add(Exercise exercise) async {
+    editable ??= await _service.startTemplate(
+      userId: userId,
+      order: (_templates.lastOrNull?.order ?? 0) + 1,
+    );
     editable?.add(exercise);
     notifyListeners();
   }
@@ -43,8 +60,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   Future<void> saveEditable() async {
-    if (editable != null) {
-      _templates.add(editable!);
+    if (editable case Template template) {
+      _templates.add(template);
+      await _service.updateTemplate(template);
     }
     editable = null;
 
