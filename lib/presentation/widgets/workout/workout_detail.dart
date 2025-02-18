@@ -28,31 +28,43 @@ part 'text_field_button.dart';
 
 part 'utils.dart';
 
-class ActiveWorkout extends StatefulWidget {
-  final Workouts workouts;
+class WorkoutDetail extends StatefulWidget {
+  final Iterable<WorkoutExercise> exercises;
   final Widget? appBar;
   final ScrollController? controller;
   final List<Widget>? slivers;
+  final void Function(WorkoutExercise) onDragExercise;
+  final void Function(WorkoutExercise) onAddSet;
+  final void Function(WorkoutExercise) onRemoveExercise;
+  final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
+  final void Function(Iterable<Exercise>) onAddExercises;
+  final bool needsCancelWorkoutButton;
 
-  const ActiveWorkout({
+  const WorkoutDetail({
     super.key,
-    required this.workouts,
+    required this.exercises,
     this.appBar,
     this.controller,
     this.slivers,
+    required this.onDragExercise,
+    required this.onAddSet,
+    required this.onRemoveSet,
+    required this.onRemoveExercise,
+    required this.onAddExercises,
+    this.needsCancelWorkoutButton = true,
   });
 
   @override
-  State<ActiveWorkout> createState() => _ActiveWorkoutState();
+  State<WorkoutDetail> createState() => _WorkoutDetailState();
 }
 
-class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWorkout> {
+class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDetail> {
   final _focusNode = FocusNode();
   final _searchController = TextEditingController();
   final _beingDragged = ValueNotifier<WorkoutExercise?>(null);
   final _currentlyHoveredExercise = ValueNotifier<WorkoutExercise?>(null);
 
-  Workouts get workouts => widget.workouts;
+  Iterable<WorkoutExercise> get exercises => widget.exercises;
 
   @override
   void dispose() {
@@ -94,128 +106,116 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
             child: SizedBox(height: 16),
           ),
         ...?widget.slivers,
-        if (!workouts.hasActiveWorkout)
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: FixedHeightHeaderDelegate(
-              child: PrimaryButton.wide(
-                onPressed: () => _startWorkout(context),
-                child: Center(
-                  child: Text(startNewWorkout),
-                ),
-              ),
-              height: 40,
-            ),
-          ),
-        if (workouts.activeWorkout case Workout workout)
-          SliverList.builder(
-            itemCount: workout.length + 1,
-            itemBuilder: (_, index) {
-              if (index == workout.length) {
-                return ValueListenableBuilder<WorkoutExercise?>(
-                  valueListenable: _currentlyHoveredExercise,
-                  builder: (_, hoveredOver, __) {
-                    return ValueListenableBuilder<WorkoutExercise?>(
-                      valueListenable: _beingDragged,
-                      builder: (_, dragged, __) {
-                        return DragTarget<WorkoutExercise>(
-                          onWillAcceptWithDetails: (_) {
-                            _currentlyHoveredExercise.value = null;
-                            return true;
-                          },
-                          onLeave: (_) {
-                            _currentlyHoveredExercise.value = null;
-                          },
-                          onAcceptWithDetails: (details) {
-                            workouts.append(details.data);
-                          },
-                          builder: (_, __, ___) {
-                            return Column(
-                              children: [
-                                if (hoveredOver == null && dragged != null) _divider,
-                                const SizedBox(height: 12),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                );
-              }
-
-              var sets = workout.toList();
-              var set = sets[index];
+        SliverList.builder(
+          itemCount: exercises.length + 1,
+          itemBuilder: (_, index) {
+            if (index == exercises.length) {
               return ValueListenableBuilder<WorkoutExercise?>(
                 valueListenable: _currentlyHoveredExercise,
                 builder: (_, hoveredOver, __) {
-                  return Column(
-                    children: [
-                      if (hoveredOver == set) _divider,
-                      Selector<Workouts, bool>(
-                        builder: (_, isPointedAt, __) {
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 500),
-                            color: isPointedAt ? colorScheme.primary : Colors.transparent,
-                            child: _WorkoutExerciseItem(
-                              index: index,
-                              exercise: set,
-                              copy: addSet,
-                              firstColumnCopy: setCopy,
-                              secondColumnCopy: previous,
-                              dragState: _beingDragged,
-                              currentlyHoveredItem: _currentlyHoveredExercise,
-                              onDragStarted: () {
-                                _beingDragged.value = set;
-                              },
-                              onDragEnded: () {
-                                buzz();
-                                _beingDragged.value = null;
-                                _currentlyHoveredExercise.value = null;
-                              },
-                            ),
+                  return ValueListenableBuilder<WorkoutExercise?>(
+                    valueListenable: _beingDragged,
+                    builder: (_, dragged, __) {
+                      return DragTarget<WorkoutExercise>(
+                        onWillAcceptWithDetails: (_) {
+                          _currentlyHoveredExercise.value = null;
+                          return true;
+                        },
+                        onLeave: (_) {
+                          _currentlyHoveredExercise.value = null;
+                        },
+                        onAcceptWithDetails: (details) {
+                          widget.onDragExercise(details.data);
+                        },
+                        builder: (_, __, ___) {
+                          return Column(
+                            children: [
+                              if (hoveredOver == null && dragged != null) _divider,
+                              const SizedBox(height: 12),
+                            ],
                           );
                         },
-                        selector: (_, provider) => provider.pointedAtExercise == set.id,
-                      ),
-                    ],
+                      );
+                    },
                   );
                 },
               );
+            }
+
+            var sets = exercises.toList();
+            var set = sets[index];
+            return ValueListenableBuilder<WorkoutExercise?>(
+              valueListenable: _currentlyHoveredExercise,
+              builder: (_, hoveredOver, __) {
+                return Column(
+                  children: [
+                    if (hoveredOver == set) _divider,
+                    Selector<Workouts, bool>(
+                      builder: (_, isPointedAt, __) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          color: isPointedAt ? colorScheme.primary : Colors.transparent,
+                          child: _WorkoutExerciseItem(
+                            index: index,
+                            exercise: set,
+                            copy: addSet,
+                            firstColumnCopy: setCopy,
+                            secondColumnCopy: previous,
+                            dragState: _beingDragged,
+                            currentlyHoveredItem: _currentlyHoveredExercise,
+                            onAddSet: widget.onAddSet,
+                            onRemoveSet: widget.onRemoveSet,
+                            onRemoveExercise: widget.onRemoveExercise,
+                            onDragStarted: () {
+                              _beingDragged.value = set;
+                            },
+                            onDragEnded: () {
+                              buzz();
+                              _beingDragged.value = null;
+                              _currentlyHoveredExercise.value = null;
+                            },
+                          ),
+                        );
+                      },
+                      selector: (_, provider) => provider.pointedAtExercise == set.id,
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+        SliverToBoxAdapter(
+          child: DragTarget<WorkoutExercise>(
+            onWillAcceptWithDetails: (_) {
+              _currentlyHoveredExercise.value = null;
+              return true;
             },
-          ),
-        if (workouts.hasActiveWorkout)
-          SliverToBoxAdapter(
-            child: DragTarget<WorkoutExercise>(
-              onWillAcceptWithDetails: (_) {
-                _currentlyHoveredExercise.value = null;
-                return true;
-              },
-              onLeave: (_) {
-                _currentlyHoveredExercise.value = null;
-              },
-              onAcceptWithDetails: (details) {
-                workouts.append(details.data);
-              },
-              builder: (_, __, ___) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Column(
-                    children: [
-                      PrimaryButton.wide(
-                        onPressed: () {
-                          _showExerciseDialog(context);
-                        },
-                        child: Center(
-                          child: Text(addExercises),
-                        ),
+            onLeave: (_) {
+              _currentlyHoveredExercise.value = null;
+            },
+            onAcceptWithDetails: (details) {
+              widget.onDragExercise(details.data);
+            },
+            builder: (_, __, ___) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Column(
+                  children: [
+                    PrimaryButton.wide(
+                      onPressed: () {
+                        _showExerciseDialog(context);
+                      },
+                      child: Center(
+                        child: Text(addExercises),
                       ),
-                      const SizedBox(height: 8),
+                    ),
+                    const SizedBox(height: 8),
+                    if (widget.needsCancelWorkoutButton) ...[
                       PrimaryButton.wide(
                         onPressed: () {
                           showCancelWorkoutDialog(
                             context,
-                            workouts,
                             onFinish: () {
                               Scrolls.of(context)
                                 ..resetExerciseStack()
@@ -232,22 +232,15 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                         ),
                       ),
                       const SizedBox(height: 8),
-                    ],
-                  ),
-                );
-              },
-            ),
-          )
+                    ]
+                  ],
+                ),
+              );
+            },
+          ),
+        )
       ],
     );
-  }
-
-  Future<void> _startWorkout(BuildContext context) async {
-    final Workouts(:startWorkout, :hasActiveWorkout) = Workouts.of(context);
-
-    if (!hasActiveWorkout) {
-      startWorkout(name: L.of(context).defaultWorkoutName());
-    }
   }
 
   Future<Object?> _showExerciseDialog(BuildContext context) {
@@ -289,16 +282,8 @@ class _ActiveWorkoutState extends State<ActiveWorkout> with HasHaptic<ActiveWork
                             child: Text(add),
                           ),
                           onPressed: () async {
-                            final workouts = Workouts.of(context);
+                            widget.onAddExercises(exercises.selected);
                             Navigator.pop(context);
-                            final selected = exercises.selected.toList();
-                            for (var each in selected) {
-                              await Future.delayed(
-                                // for different IDs
-                                const Duration(milliseconds: 2),
-                                () => workouts.startExercise(each),
-                              );
-                            }
                           },
                         ),
                       ],
@@ -342,3 +327,32 @@ const _divider = Divider(
   indent: 8,
   endIndent: 8,
 );
+
+class NewWorkoutHeader extends StatelessWidget {
+  const NewWorkoutHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPersistentHeader(
+      pinned: true,
+      delegate: FixedHeightHeaderDelegate(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        child: PrimaryButton.wide(
+          onPressed: () => _startWorkout(context),
+          child: Center(
+            child: Text(L.of(context).startNewWorkout),
+          ),
+        ),
+        height: 40,
+      ),
+    );
+  }
+
+  Future<void> _startWorkout(BuildContext context) async {
+    final Workouts(:startWorkout, :hasActiveWorkout) = Workouts.of(context);
+
+    if (!hasActiveWorkout) {
+      startWorkout(name: L.of(context).defaultWorkoutName());
+    }
+  }
+}

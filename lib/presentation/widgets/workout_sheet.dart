@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
-import 'package:heart/presentation/widgets/workout/active_workout.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
@@ -24,9 +24,28 @@ Future<void> showWorkoutSheet(
           builder: (_, innerController) {
             final theme = Theme.of(context);
             final workouts = Workouts.watch(context);
-            return ActiveWorkout(
-              workouts: workouts,
+            if (workouts.activeWorkout == null) {
+              return const SizedBox.shrink();
+            }
+            return WorkoutDetail(
+              exercises: workouts.activeWorkout!,
               controller: innerController,
+              onDragExercise: (exercise) {
+                workouts.append(exercise);
+              },
+              onAddSet: workouts.addSet,
+              onRemoveSet: workouts.removeSet,
+              onRemoveExercise: workouts.removeExercise,
+              onAddExercises: (exercises) async {
+                final workouts = Workouts.of(context);
+                for (var each in exercises.toList()) {
+                  await Future.delayed(
+                    // for different IDs
+                    const Duration(milliseconds: 2),
+                    () => workouts.startExercise(each),
+                  );
+                }
+              },
               appBar: SliverPersistentHeader(
                 pinned: true,
                 delegate: FixedHeightHeaderDelegate(

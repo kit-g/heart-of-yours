@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:heart_models/heart_models.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
@@ -11,19 +12,22 @@ const _sets = 'sets';
 const _syncs = 'syncs';
 const _workouts = 'workouts';
 const _workoutExercises = 'workout_exercises';
+const _templates = 'templates';
+const _templatesExercises = 'template_exercises';
 
 final _logger = Logger('Sqlite');
 
-final class LocalDatabase implements ExerciseService, StatsService, WorkoutService {
+final class LocalDatabase implements ExerciseService, StatsService, TemplateService, WorkoutService {
   static late final Database _db;
 
   static Future<void> init() async {
     var path = await getDatabasesPath();
     // await deleteDatabase(path);
 
-    _logger.info('Local database at $path');
+    const name = 'heart.db';
+    _logger.info('Local database at $path/$name');
     await openDatabase(
-      join(path, 'heart.db'),
+      join(path, name),
       version: 1,
       onUpgrade: _migrate,
       onConfigure: (db) async {
@@ -35,11 +39,17 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
 
   static FutureOr<void> _migrate(Database db, int oldVersion, int newVersion) async {
     _logger.info('Migrating local database from version $oldVersion to $newVersion');
-    await db.execute(sql.exercises);
-    await db.execute(sql.syncs);
-    await db.execute(sql.workouts);
-    await db.execute(sql.workoutExercises);
-    await db.execute(sql.sets);
+    _db.transaction(
+      (txn) async {
+        await txn.execute(sql.exercises);
+        await txn.execute(sql.syncs);
+        await txn.execute(sql.workouts);
+        await txn.execute(sql.workoutExercises);
+        await txn.execute(sql.sets);
+        await txn.execute(sql.templates);
+        await txn.execute(sql.templatesExercises);
+      },
+    );
   }
 
   @override
@@ -49,10 +59,7 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
         final rows = await txn.query('exercises');
         final exercises = rows.map(
           (row) {
-            final formatted = {
-              for (var MapEntry(:key, :value) in row.entries) _toCamel(key): value,
-            };
-            return Exercise.fromJson(formatted);
+            return Exercise.fromJson(row.toCamel());
           },
         );
 
@@ -73,9 +80,9 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
         final batch = txn.batch();
         for (var each in exercises) {
           var row = {
-            for (var MapEntry(:key, :value) in each.toMap().entries) _toSnake(key): value,
+            for (var MapEntry(:key, :value) in each.toMap().entries) key.toSnake(): value,
           };
-          batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.ignore);
+          batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.replace);
         }
 
         txn.insert(_syncs, {'table_name': _exercises});
@@ -104,6 +111,12 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
   Future<void> finishWorkout(Workout workout) {
     return _db.transaction(
       (txn) {
+        final batch = txn.batch();
+
+        _storeWorkout(batch, workout);
+
+        batch.commit(noResult: true);
+
         txn.update(
           _workouts,
           {'end': workout.end?.toIso8601String()},
@@ -140,7 +153,7 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
           batch.insert(_sets, row);
         }
 
-        batch.commit(noResult: true);
+        await batch.commit(noResult: true);
       },
     );
   }
@@ -188,7 +201,7 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
   Future<Workout?> getActiveWorkout() async {
     final rows = await _db.rawQuery(sql.activeWorkout);
     if (rows.isEmpty) return null;
-    final renamed = rows.map((row) => {for (var MapEntry(:key, :value) in row.entries) _toCamel(key): value});
+    final renamed = rows.map((row) => row.toCamel());
     return Workout.fromRows(renamed);
   }
 
@@ -214,8 +227,7 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
       {},
       (accumulator, row) {
         final workoutExerciseId = row['workout_id'] as String;
-        final renamed = {for (var MapEntry(:key, :value) in row.entries) _toCamel(key): value};
-        (accumulator[workoutExerciseId] ??= []).add(renamed);
+        (accumulator[workoutExerciseId] ??= []).add(row.toCamel());
         return accumulator;
       },
     );
@@ -268,13 +280,82 @@ final class LocalDatabase implements ExerciseService, StatsService, WorkoutServi
       },
     );
   }
+
+  @override
+  Future<void> updateTemplate(Template template) {
+    return _db.transaction(
+      (txn) {
+        txn
+          ..update(_templates, {'name': template.name}, where: 'id = ?', whereArgs: [int.parse(template.id)])
+          ..delete(_templatesExercises, where: 'template_id = ?', whereArgs: [int.parse(template.id)]);
+
+        final batch = txn.batch();
+
+        for (var exercise in template) {
+          var desc = exercise.map((set) => set.toMap()).toList();
+
+          batch.insert(
+            _templatesExercises,
+            {
+              'template_id': int.parse(template.id),
+              'exercise_id': exercise.exercise.name,
+              'description': jsonEncode(desc),
+            },
+          );
+        }
+
+        return batch.commit(noResult: true);
+      },
+    );
+  }
+
+  @override
+  Future<void> deleteTemplate(String templateId) {
+    return _db.delete(_templates, where: 'id = ?', whereArgs: [int.parse(templateId)]);
+  }
+
+  @override
+  Future<Iterable<Template>> getTemplates(String userId) async {
+    final rows = (await _db.rawQuery(sql.getTemplates, [userId])).map((row) => row.toCamel());
+    if (rows.isEmpty) return [];
+
+    final grouped = rows.fold<Map<String, List<Map<String, dynamic>>>>(
+      {},
+      (acc, row) {
+        final templateId = row['templateId'].toString();
+        acc.putIfAbsent(templateId, () => []).add(row);
+        return acc;
+      },
+    );
+
+    return grouped.entries.map((entry) => Template.fromRows(entry.value));
+  }
+
+  @override
+  Future<Template> startTemplate({required int order, String? userId}) async {
+    return _db.insert(_templates, {'user_id': userId, 'order_in_parent': order}).then<Template>(
+      (id) {
+        return Template.empty(id: id.toString(), order: order);
+      },
+    );
+  }
 }
 
-String _toSnake(String s) {
-  return s.replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (match) => '${match[1]}_${match[2]}').toLowerCase();
+extension on String {
+  String toCamel() {
+    final words = this.split('_');
+    return words.first + words.skip(1).map((word) => word[0].toUpperCase() + word.substring(1)).join();
+  }
+
+  String toSnake() {
+    return replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (match) => '${match[1]}_${match[2]}').toLowerCase();
+  }
 }
 
-String _toCamel(String s) {
-  final words = s.split('_');
-  return words.first + words.skip(1).map((word) => word[0].toUpperCase() + word.substring(1)).join();
+extension on Map<String, dynamic> {
+  Map<String, dynamic> toCamel() {
+    return {
+      for (var MapEntry(:key, :value) in entries) key.toCamel(): value,
+    };
+  }
 }

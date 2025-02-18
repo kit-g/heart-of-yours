@@ -1,4 +1,4 @@
-part of 'active_workout.dart';
+part of 'workout_detail.dart';
 
 const _fixedColumnWidth = 32.0;
 const _fixedButtonHeight = 24.0;
@@ -70,7 +70,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   ];
 
   if (isValid) {
-    return _showDialog(
+    return showBrandedDialog(
       context,
       title: Text(finishWorkoutTitle),
       titleTextStyle: textTheme.titleMedium,
@@ -87,7 +87,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   }
 
   if (isStarted) {
-    return _showDialog(
+    return showBrandedDialog(
       context,
       title: Text(finishWorkoutWarningTitle),
       titleTextStyle: textTheme.titleMedium,
@@ -103,10 +103,10 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     );
   }
 
-  return showCancelWorkoutDialog(context, workouts, onFinish: onFinish);
+  return showCancelWorkoutDialog(context, onFinish: onFinish);
 }
 
-Future<void> showCancelWorkoutDialog(BuildContext context, Workouts workouts, {VoidCallback? onFinish}) {
+Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFinish}) {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
   final L(
     :cancelWorkoutBody,
@@ -114,7 +114,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, Workouts workouts, {V
     :cancelWorkout,
     :resumeWorkout,
   ) = L.of(context);
-  return _showDialog(
+  return showBrandedDialog(
     context,
     title: Text(cancelWorkoutTitle),
     titleTextStyle: textTheme.titleMedium,
@@ -159,34 +159,6 @@ Future<void> showCancelWorkoutDialog(BuildContext context, Workouts workouts, {V
   );
 }
 
-Future<void> _showDialog(
-  BuildContext context, {
-  required Widget title,
-  required Widget content,
-  Widget? icon,
-  TextStyle? titleTextStyle,
-  TextStyle? contentTextStyle,
-  List<Widget>? actions,
-}) {
-  return showDialog<void>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
-        contentPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-        icon: icon,
-        title: title,
-        titleTextStyle: titleTextStyle,
-        content: content,
-        contentTextStyle: contentTextStyle,
-        actions: actions,
-      );
-    },
-  );
-}
 
 Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   context.goToWorkoutDone(workouts.activeWorkout?.id);

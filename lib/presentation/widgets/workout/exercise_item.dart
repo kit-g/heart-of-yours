@@ -1,9 +1,12 @@
-part of 'active_workout.dart';
+part of 'workout_detail.dart';
 
 class _WorkoutExerciseItem extends StatelessWidget {
   final int index;
   final String copy;
   final WorkoutExercise exercise;
+  final void Function(WorkoutExercise) onAddSet;
+  final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
+  final void Function(WorkoutExercise) onRemoveExercise;
   final String firstColumnCopy;
   final String secondColumnCopy;
   final VoidCallback onDragStarted;
@@ -14,6 +17,9 @@ class _WorkoutExerciseItem extends StatelessWidget {
   const _WorkoutExerciseItem({
     required this.index,
     required this.exercise,
+    required this.onAddSet,
+    required this.onRemoveSet,
+    required this.onRemoveExercise,
     required this.copy,
     required this.firstColumnCopy,
     required this.secondColumnCopy,
@@ -143,6 +149,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
                               index: set.$1 + 1,
                               set: set.$2,
                               exercise: exercise,
+                              onRemoveSet: onRemoveSet,
                             );
                           },
                         ),
@@ -164,9 +171,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            onPressed: () {
-                              Workouts.of(context).addSet(exercise);
-                            },
+                            onPressed: () => onAddSet(exercise),
                           ),
                         ),
                       ],
@@ -299,7 +304,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   Future<void> _onTapExerciseOption(BuildContext context, _ExerciseOption option) async {
     switch (option) {
       case _ExerciseOption.remove:
-        return Workouts.of(context).removeExercise(exercise);
+        return onRemoveExercise(exercise);
       case _ExerciseOption.autoRestTimer:
         return _selectRestTime(
           context,

@@ -1,4 +1,4 @@
-part of 'active_workout.dart';
+part of 'workout_detail.dart';
 
 const _dismissThreshold = .5;
 
@@ -8,11 +8,13 @@ class _ExerciseSetItem extends StatefulWidget {
   final int index;
   final ExerciseSet set;
   final WorkoutExercise exercise;
+  final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
 
   const _ExerciseSetItem({
     required this.set,
     required this.index,
     required this.exercise,
+    required this.onRemoveSet,
   });
 
   @override
@@ -133,7 +135,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       dismissThresholds: const {DismissDirection.horizontal: _dismissThreshold},
       onDismissed: (_) {
         _hasBuzzedOnDismiss = false;
-        Workouts.of(context).removeSet(exercise, set);
+        widget.onRemoveSet(exercise, set);
       },
       onUpdate: _onSwipe,
       key: ValueKey<String>(set.id),
