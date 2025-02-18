@@ -707,6 +707,38 @@ class L {
     );
   }
 
+  String get quitEditing {
+    return Intl.message(
+      'Quit editing?',
+      name: 'quitEditing',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get changesWillBeLost {
+    return Intl.message(
+      'All changes will be lost',
+      name: 'changesWillBeLost',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get quitPage {
+    return Intl.message(
+      'Quit this page',
+      name: 'quitPage',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get stayHere {
+    return Intl.message(
+      'Stay here',
+      name: 'stayHere',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
   String get notificationSettings {
     return Intl.message(
       'Notification settings',
