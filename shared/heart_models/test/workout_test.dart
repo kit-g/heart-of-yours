@@ -289,7 +289,7 @@ void main() {
         'Removing a WorkoutExercise updates the workout',
         () {
           workout.append(workoutExercise);
-          workout.removeExercise(workoutExercise);
+          workout.remove(workoutExercise);
 
           expect(workout.sets, isEmpty);
         },
@@ -382,7 +382,7 @@ void main() {
       test(
         'startExercise adds a new exercise to the workout',
         () {
-          workout.startExercise(mockExercise);
+          workout.add(mockExercise);
 
           expect(workout.sets.length, equals(1));
           expect(workout.sets.first.exercise, equals(mockExercise));

@@ -189,6 +189,19 @@ class MaterialTheme {
       toggleButtonsTheme: const ToggleButtonsThemeData(
         borderRadius: BorderRadius.all(Radius.circular(4)),
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: colorScheme.inverseSurface,
+        contentTextStyle: TextStyle(
+          fontFamily: 'Lato',
+          fontSize: 14,
+          color: colorScheme.onInverseSurface,
+          fontWeight: FontWeight.w400,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+        ),
+      ),
     );
   }
 }

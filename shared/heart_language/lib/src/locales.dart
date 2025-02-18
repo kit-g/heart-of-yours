@@ -71,6 +71,14 @@ class L {
     );
   }
 
+  String get save {
+    return Intl.message(
+      'Save',
+      name: 'save',
+      desc: 'Generic label',
+    );
+  }
+
   String get settings {
     return Intl.message(
       'Settings',
@@ -188,6 +196,14 @@ class L {
       'Start a new workout',
       name: 'startNewWorkout',
       desc: 'Button label',
+    );
+  }
+
+  String get startNewWorkoutFromTemplate {
+    return Intl.message(
+      'Start a new workout from this template?',
+      name: 'startNewWorkoutFromTemplate',
+      desc: 'Alert dialog',
     );
   }
 
@@ -651,11 +667,75 @@ class L {
     );
   }
 
+  String get deleteThis {
+    return Intl.message(
+      'Yes, delete this',
+      name: 'deleteThis',
+      desc: 'Generic label',
+    );
+  }
+
+  String get deleted {
+    return Intl.message(
+      'Deleted',
+      name: 'deleted',
+      desc: 'Generic label',
+    );
+  }
+
   String get notReadyToFinish {
     return Intl.message(
       'No, one more set!',
       name: 'notReadyToFinish',
       desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get deleteTemplateTitle {
+    return Intl.message(
+      'Do you want to delete this workout template?',
+      name: 'deleteTemplateTitle',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get deleteTemplateBody {
+    return Intl.message(
+      'This cannot be undone',
+      name: 'deleteTemplateBody',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get quitEditing {
+    return Intl.message(
+      'Quit editing?',
+      name: 'quitEditing',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get changesWillBeLost {
+    return Intl.message(
+      'All changes will be lost',
+      name: 'changesWillBeLost',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get quitPage {
+    return Intl.message(
+      'Quit this page',
+      name: 'quitPage',
+      desc: 'Template deletion confirmation dialog',
+    );
+  }
+
+  String get stayHere {
+    return Intl.message(
+      'Stay here',
+      name: 'stayHere',
+      desc: 'Template deletion confirmation dialog',
     );
   }
 
@@ -786,6 +866,46 @@ class L {
       name: 'weightedSetRepresentation',
       desc: 'Rest notification banner',
       args: [weight, reps],
+    );
+  }
+
+  String get templates {
+    return Intl.message(
+      'Templates',
+      name: 'templates',
+      desc: 'Workout templates section header',
+    );
+  }
+
+  String get template {
+    return Intl.message(
+      'Template',
+      name: 'template',
+      desc: 'A single workout template',
+    );
+  }
+
+  String get newTemplate {
+    return Intl.message(
+      'New Template',
+      name: 'newTemplate',
+      desc: 'New template form header',
+    );
+  }
+
+  String get editTemplate {
+    return Intl.message(
+      'Edit Template',
+      name: 'editTemplate',
+      desc: 'Edit template form header',
+    );
+  }
+
+  String get templateName {
+    return Intl.message(
+      'Template name',
+      name: 'templateName',
+      desc: 'Edit template text field hint',
     );
   }
 }

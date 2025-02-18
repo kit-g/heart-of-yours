@@ -47,10 +47,30 @@ CREATE TABLE IF NOT EXISTS sets
     weight      REAL,  -- kgs
     reps        INT,
     duration    REAL,  -- seconds
-    distance    REAL   -- meters
+    distance    REAL   -- kilometers
 );
 """;
 
+const templates = """
+CREATE TABLE IF NOT EXISTS templates
+(
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT,
+    user_id         TEXT,
+    order_in_parent INTEGER,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now') || '+00:00')
+);
+""";
+
+const templatesExercises = """
+CREATE TABLE IF NOT EXISTS template_exercises
+(
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    template_id INTEGER NOT NULL REFERENCES templates ON DELETE CASCADE,
+    exercise_id TEXT    NOT NULL REFERENCES exercises ON DELETE CASCADE,
+    description TEXT
+);
+""";
 
 const activeWorkout = """
 WITH _workout AS (
@@ -112,7 +132,6 @@ WHERE NOT exists (
 );
 """;
 
-
 const history = """
 WITH _workout AS (
     SELECT *
@@ -153,4 +172,27 @@ WHERE completed = 0
           FROM workout_exercises
           WHERE workout_id = ?
       );
+""";
+
+const getTemplates = """
+SELECT 
+    templates.name as template_name,
+    order_in_parent,
+    created_at,
+    te.id ,
+    template_id,
+    description,
+    e.name,
+    category,
+    target,
+    last_done,
+    last_results,
+    rest_timer
+FROM templates
+INNER JOIN main.template_exercises te
+    ON templates.id = te.template_id
+INNER JOIN main.exercises e
+    ON te.exercise_id = e.name
+WHERE user_id = ?
+;
 """;
