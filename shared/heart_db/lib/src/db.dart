@@ -24,9 +24,10 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
     var path = await getDatabasesPath();
     // await deleteDatabase(path);
 
-    _logger.info('Local database at $path');
+    const name = 'heart.db';
+    _logger.info('Local database at $path/$name');
     await openDatabase(
-      join(path, 'heart.db'),
+      join(path, name),
       version: 1,
       onUpgrade: _migrate,
       onConfigure: (db) async {
@@ -40,14 +41,13 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
     _logger.info('Migrating local database from version $oldVersion to $newVersion');
     _db.transaction(
       (txn) async {
-        txn
-          ..execute(sql.exercises)
-          ..execute(sql.syncs)
-          ..execute(sql.workouts)
-          ..execute(sql.workoutExercises)
-          ..execute(sql.sets)
-          ..execute(sql.templates)
-          ..execute(sql.templatesExercises);
+        await txn.execute(sql.exercises);
+        await txn.execute(sql.syncs);
+        await txn.execute(sql.workouts);
+        await txn.execute(sql.workoutExercises);
+        await txn.execute(sql.sets);
+        await txn.execute(sql.templates);
+        await txn.execute(sql.templatesExercises);
       },
     );
   }
@@ -82,7 +82,7 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
           var row = {
             for (var MapEntry(:key, :value) in each.toMap().entries) key.toSnake(): value,
           };
-          batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.ignore);
+          batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.replace);
         }
 
         txn.insert(_syncs, {'table_name': _exercises});
@@ -286,7 +286,7 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
     return _db.transaction(
       (txn) {
         txn
-          ..update(_templates, {'name': template.name})
+          ..update(_templates, {'name': template.name}, where: 'id = ?', whereArgs: [int.parse(template.id)])
           ..delete(_templatesExercises, where: 'template_id = ?', whereArgs: [int.parse(template.id)]);
 
         final batch = txn.batch();

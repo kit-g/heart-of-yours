@@ -38,6 +38,7 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(Iterable<Exercise>) onAddExercises;
+  final bool needsCancelWorkoutButton;
 
   const WorkoutDetail({
     super.key,
@@ -50,6 +51,7 @@ class WorkoutDetail extends StatefulWidget {
     required this.onRemoveSet,
     required this.onRemoveExercise,
     required this.onAddExercises,
+    this.needsCancelWorkoutButton = true,
   });
 
   @override
@@ -209,26 +211,28 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                       ),
                     ),
                     const SizedBox(height: 8),
-                    PrimaryButton.wide(
-                      onPressed: () {
-                        showCancelWorkoutDialog(
-                          context,
-                          onFinish: () {
-                            Scrolls.of(context)
-                              ..resetExerciseStack()
-                              ..resetHistoryStack();
-                          },
-                        );
-                      },
-                      backgroundColor: colorScheme.errorContainer,
-                      child: Center(
-                        child: Text(
-                          cancelWorkout,
-                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                    if (widget.needsCancelWorkoutButton) ...[
+                      PrimaryButton.wide(
+                        onPressed: () {
+                          showCancelWorkoutDialog(
+                            context,
+                            onFinish: () {
+                              Scrolls.of(context)
+                                ..resetExerciseStack()
+                                ..resetHistoryStack();
+                            },
+                          );
+                        },
+                        backgroundColor: colorScheme.errorContainer,
+                        child: Center(
+                          child: Text(
+                            cancelWorkout,
+                            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 8),
+                    ]
                   ],
                 ),
               );

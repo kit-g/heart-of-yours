@@ -106,7 +106,6 @@ Future<void> showBrandedDialog(
 }) {
   final ThemeData(:textTheme) = Theme.of(context);
 
-
   return showDialog<void>(
     context: context,
     builder: (context) {
