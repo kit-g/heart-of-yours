@@ -39,6 +39,7 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
+  final bool allowsCompletingSet;
 
   const WorkoutDetail({
     super.key,
@@ -52,6 +53,7 @@ class WorkoutDetail extends StatefulWidget {
     required this.onRemoveExercise,
     required this.onAddExercises,
     this.needsCancelWorkoutButton = true,
+    required this.allowsCompletingSet,
   });
 
   @override
@@ -174,6 +176,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                               _beingDragged.value = null;
                               _currentlyHoveredExercise.value = null;
                             },
+                            allowCompleting: widget.allowsCompletingSet,
                           ),
                         );
                       },

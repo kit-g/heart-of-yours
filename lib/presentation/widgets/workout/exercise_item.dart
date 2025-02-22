@@ -13,6 +13,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final VoidCallback onDragEnded;
   final ValueNotifier<WorkoutExercise?> dragState;
   final ValueNotifier<WorkoutExercise?> currentlyHoveredItem;
+  final bool allowCompleting;
 
   const _WorkoutExerciseItem({
     required this.index,
@@ -27,6 +28,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
     required this.onDragEnded,
     required this.dragState,
     required this.currentlyHoveredItem,
+    required this.allowCompleting,
   });
 
   @override
@@ -131,11 +133,11 @@ class _WorkoutExerciseItem extends StatelessWidget {
                                 child: Center(child: Text(secondColumnCopy)),
                               ),
                               ..._buttonsHeader(context),
-                              const SizedBox(
+                              SizedBox(
                                 width: _fixedColumnWidth,
                                 child: Center(
                                   child: Icon(
-                                    Icons.done,
+                                    allowCompleting ? Icons.done : Icons.lock_outline_rounded,
                                     size: 18,
                                   ),
                                 ),
@@ -150,6 +152,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
                               set: set.$2,
                               exercise: exercise,
                               onRemoveSet: onRemoveSet,
+                              isLocked: !allowCompleting,
                             );
                           },
                         ),
