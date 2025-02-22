@@ -93,13 +93,14 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   }
 
   @override
-  Future<void> startWorkout(String workoutId, DateTime start, {String? name}) {
-    final row = {
-      'id': workoutId,
-      'start': start.toIso8601String(),
-      if (name != null) 'name': name,
-    };
-    return _db.insert(_workouts, row);
+  Future<void> startWorkout(Workout workout) {
+    return _db.transaction(
+      (txn) async {
+        final batch = txn.batch();
+        _storeWorkout(batch, workout);
+        await batch.commit(noResult: true);
+      },
+    );
   }
 
   @override

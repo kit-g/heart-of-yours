@@ -2,7 +2,7 @@ import '../models/exercise_set.dart';
 import '../models/workout.dart';
 
 abstract interface class WorkoutService {
-  Future<void> startWorkout(String workoutId, DateTime start, {String? name});
+  Future<void> startWorkout(Workout workout);
 
   Future<void> deleteWorkout(String workoutId);
 

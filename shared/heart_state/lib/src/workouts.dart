@@ -115,7 +115,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 
-    _service.startWorkout(workout.id, workout.start, name: workout.name);
+    _service.startWorkout(workout);
 
     final doc = {
       'userId': userId,
