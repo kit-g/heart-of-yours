@@ -33,6 +33,7 @@ Future<void> showWorkoutSheet(
               onDragExercise: (exercise) {
                 workouts.append(exercise);
               },
+              allowsCompletingSet: true,
               onAddSet: workouts.addSet,
               onRemoveSet: workouts.removeSet,
               onRemoveExercise: workouts.removeExercise,

@@ -9,12 +9,14 @@ class _ExerciseSetItem extends StatefulWidget {
   final ExerciseSet set;
   final WorkoutExercise exercise;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
+  final bool isLocked;
 
   const _ExerciseSetItem({
     required this.set,
     required this.index,
     required this.exercise,
     required this.onRemoveSet,
+    required this.isLocked,
   });
 
   @override
@@ -175,11 +177,18 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
                 child: PrimaryButton.shrunk(
                   backgroundColor: color,
                   margin: EdgeInsets.zero,
-                  onPressed: () => _onDone(context),
-                  child: const Center(
-                    child: Icon(
-                      Icons.done,
-                      size: 18,
+                  onPressed: () {
+                    if (!widget.isLocked) {
+                      _onDone(context);
+                    }
+                  },
+                  child: Center(
+                    child: Opacity(
+                      opacity: widget.isLocked ? .5 : 1,
+                      child: const Icon(
+                        Icons.done,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),

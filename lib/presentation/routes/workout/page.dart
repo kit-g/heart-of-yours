@@ -37,6 +37,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             Workout active => WorkoutDetail(
                 controller: Scrolls.of(context).workoutScrollController,
                 exercises: active,
+                allowsCompletingSet: true,
                 onDragExercise: (exercise) {
                   workouts.append(exercise);
                 },

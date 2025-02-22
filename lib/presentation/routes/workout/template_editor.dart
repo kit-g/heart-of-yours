@@ -109,6 +109,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
                 await templates.add(each);
               }
             },
+            allowsCompletingSet: false,
           ),
         ),
       ),
