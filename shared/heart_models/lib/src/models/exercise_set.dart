@@ -67,7 +67,7 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
 
   bool operator <=(covariant ExerciseSet other);
 
-  ExerciseSet copy();
+  ExerciseSet copy({DateTime? start});
 
   void setMeasurements({
     double? weight,
@@ -134,12 +134,12 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   @override
   bool get canBeCompleted {
     switch (category) {
-      case Category.weightedBodyWeight:
       case Category.assistedBodyWeight:
       case Category.barbell:
       case Category.dumbbell:
       case Category.machine:
         return reps != null && weight != null;
+      case Category.weightedBodyWeight:
       case Category.repsOnly:
         return reps != null;
       case Category.cardio:
@@ -153,10 +153,10 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   Category get category => exercise.category;
 
   @override
-  ExerciseSet copy() {
+  ExerciseSet copy({DateTime? start}) {
     return _ExerciseSet(
       exercise: exercise,
-      start: DateTime.timestamp(),
+      start: start ?? DateTime.timestamp(),
     )
       ..weight = weight
       ..duration = duration

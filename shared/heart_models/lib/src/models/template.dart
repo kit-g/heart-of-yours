@@ -105,8 +105,9 @@ class _Template with Iterable<WorkoutExercise> implements Template {
       if (each.isNotEmpty) {
         final exercise = WorkoutExercise(starter: each.first.copy());
 
-        for (var set in each.skip(1)) {
-          exercise.add(set.copy());
+        for (var (index, set) in each.skip(1).indexed) {
+          final start = DateTime.timestamp().add(Duration(milliseconds: 2 * index));
+          exercise.add(set.copy(start: start));
         }
 
         workout.append(exercise);

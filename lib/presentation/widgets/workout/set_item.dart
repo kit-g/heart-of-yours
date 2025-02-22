@@ -36,7 +36,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   final _repsController = TextEditingController();
   final _durationController = TextEditingController();
   final _distanceController = TextEditingController();
-  final _hasWeighError = ValueNotifier<bool>(false);
+  final _hasWeightError = ValueNotifier<bool>(false);
   final _hasDistanceError = ValueNotifier<bool>(false);
   final _hasDurationError = ValueNotifier<bool>(false);
   final _hasRepsError = ValueNotifier<bool>(false);
@@ -62,7 +62,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     _distanceFocus.dispose();
     _durationFocus.dispose();
     _hasRepsError.dispose();
-    _hasWeighError.dispose();
+    _hasWeightError.dispose();
     _hasDistanceError.dispose();
     _hasDurationError.dispose();
     _hasCrossedDismissThreshold.dispose();
@@ -228,7 +228,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
                   set: set,
                   controller: _weightController,
                   color: color,
-                  errorState: _hasWeighError,
+                  errorState: _hasWeightError,
                   formatters: _floatingPointFormatters,
                 );
               },
@@ -325,6 +325,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     try {
       switch (set.category) {
         case Category.weightedBodyWeight:
+          _setMeasurements(
+            weight: double.tryParse(_weightController.text), // we'll allow null for this
+            reps: int.parse(_repsController.text),
+          );
+          _hasWeightError.value = false;
+          _hasRepsError.value = false;
         case Category.assistedBodyWeight:
         case Category.machine:
         case Category.dumbbell:
@@ -333,7 +339,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
             weight: double.parse(_weightController.text),
             reps: int.parse(_repsController.text),
           );
-          _hasWeighError.value = false;
+          _hasWeightError.value = false;
           _hasRepsError.value = false;
         case Category.repsOnly:
           _setMeasurements(
@@ -373,7 +379,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       final durationCorrect = _parseDuration() > 0;
 
       _hasRepsError.value = !repsCorrect;
-      _hasWeighError.value = !weightCorrect;
+      _hasWeightError.value = !weightCorrect;
       _hasDistanceError.value = !distanceCorrect;
       _hasDurationError.value = !durationCorrect;
     }
