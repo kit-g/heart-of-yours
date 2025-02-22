@@ -158,11 +158,16 @@ class WorkoutItem extends StatelessWidget {
       case Category.machine:
       case Category.dumbbell:
       case Category.barbell:
-        return switch (weightUnit) {
+        return switch ((set?.weight, weightUnit)) {
+          // if weight is 0: 15x
+          (double weight, _) when weight <= 0 => '${set?.reps ?? 0}x',
+          (null, _) => '${set?.reps ?? 0}x',
           // e.g. 11 lbs x 15 reps
-          MeasurementUnit.imperial => '${l.lb((set?.weight ?? 0).asPounds.toInt())} x ${set?.reps ?? 0}',
+          (double weight, MeasurementUnit.imperial) when weight > 0 =>
+            '${l.lb(weight.asPounds.toInt())} x ${set?.reps ?? 0}',
           // e.g. 11 kg x 15 reps
-          MeasurementUnit.metric => '${rounded(set?.weight)} ${l.kg} x ${set?.reps ?? 0}',
+          (double weight, MeasurementUnit.metric) when weight > 0 => '${rounded(weight)} ${l.kg} x ${set?.reps ?? 0}',
+          (_, _) => '',
         };
       case Category.cardio:
         return switch ((set?.distance, set?.duration)) {
