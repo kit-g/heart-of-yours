@@ -274,7 +274,7 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   @override
   Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack = 8}) {
     final cutoff = getMonday(DateTime.timestamp()).subtract(Duration(days: 7 * (weeksBack ?? 0))).toIso8601String();
-    return _db.query(_workouts, where: 'start > ?', whereArgs: [cutoff]).then(
+    return _db.query(_workouts, where: 'start > ? AND end IS NOT NULL', whereArgs: [cutoff]).then(
       (rows) {
         if (rows.isEmpty) return WorkoutAggregation.empty();
         return WorkoutAggregation.fromRows(rows);
