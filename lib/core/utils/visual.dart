@@ -98,7 +98,7 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
 Future<void> showBrandedDialog(
   BuildContext context, {
   required Widget title,
-  required Widget content,
+  Widget? content,
   Widget? icon,
   TextStyle? titleTextStyle,
   TextStyle? contentTextStyle,
