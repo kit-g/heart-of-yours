@@ -199,6 +199,22 @@ class L {
     );
   }
 
+  String get cancelCurrentWorkoutTitle {
+    return Intl.message(
+      'Cancel current workout?',
+      name: 'cancelCurrentWorkoutTitle',
+      desc: 'Button label',
+    );
+  }
+
+  String get cancelCurrentWorkoutBody {
+    return Intl.message(
+      'You have a workout in progress. Do you want to cancel it and start a new one?',
+      name: 'cancelCurrentWorkoutBody',
+      desc: 'Button label',
+    );
+  }
+
   String get startNewWorkoutFromTemplate {
     return Intl.message(
       'Start a new workout from this template?',
@@ -341,6 +357,14 @@ class L {
     return Intl.message(
       'Delete',
       name: 'delete',
+      desc: 'Generic label',
+    );
+  }
+
+  String get repeat {
+    return Intl.message(
+      'Repeat',
+      name: 'repeat',
       desc: 'Generic label',
     );
   }
@@ -656,6 +680,22 @@ class L {
       'Yes, I\'m done!',
       name: 'readyToFinish',
       desc: 'Workout completion confirmation dialog',
+    );
+  }
+
+  String get keepCurrentAccount {
+    return Intl.message(
+      'No, keep current workout',
+      name: 'keepCurrentAccount',
+      desc: 'Workout start confirmation dialog',
+    );
+  }
+
+  String get cancelAndStartNewWorkout {
+    return Intl.message(
+      'Yes, cancel that one and start a new workout',
+      name: 'cancelAndStartNewWorkout',
+      desc: 'Workout start confirmation dialog',
     );
   }
 
