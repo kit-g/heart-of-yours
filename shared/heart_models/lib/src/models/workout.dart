@@ -151,6 +151,9 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   WorkoutSummary toSummary();
 
   String weekOf();
+
+  /// Makes a copy of itself with a new set of IDs
+  Workout copy();
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -426,6 +429,26 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   @override
   String weekOf() {
     return sanitizeId(getMonday(start));
+  }
+
+  @override
+  Workout copy() {
+    final workout = Workout(name: name);
+
+    for (final each in this) {
+      if (each.isNotEmpty) {
+        final exercise = WorkoutExercise(starter: each.first.copy());
+
+        for (var (index, set) in each.skip(1).indexed) {
+          final start = DateTime.timestamp().add(Duration(milliseconds: 2 * index));
+          exercise.add(set.copy(start: start));
+        }
+
+        workout.append(exercise);
+      }
+    }
+
+    return workout;
   }
 }
 
