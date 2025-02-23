@@ -4,12 +4,14 @@ class WorkoutItem extends StatelessWidget {
   final Workout workout;
   final void Function(Workout)? onTap;
   final bool showsMenuButton;
+  final VoidCallback? onStartNewWorkout;
 
   const WorkoutItem({
     super.key,
     required this.workout,
     this.onTap,
     this.showsMenuButton = true,
+    this.onStartNewWorkout,
   });
 
   @override
@@ -195,10 +197,18 @@ class WorkoutItem extends StatelessWidget {
     }
   }
 
-  Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
+  Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) {
     switch (option) {
       case _WorkoutOption.delete:
         return Workouts.of(context).deleteWorkout(workout.id);
+      case _WorkoutOption.repeat:
+        final workouts = Workouts.of(context);
+
+        if (workouts.activeWorkout == null) {
+          return _showStartNewWorkoutDialog(context, workout);
+        } else {
+          return _showCancelActiveWorkoutDialog(context, workout);
+        }
     }
   }
 
@@ -221,12 +231,137 @@ class WorkoutItem extends StatelessWidget {
       //     style: textTheme.titleSmall,
       //     icon: const Icon(Icons.add_rounded, size: 16),
       //   ),
+      _WorkoutOption.repeat => (
+          copy: L.of(context).repeat,
+          style: textTheme.titleSmall,
+          icon: const Icon(Icons.fitness_center_rounded, size: 16),
+        ),
       _WorkoutOption.delete => (
           copy: L.of(context).delete,
           style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
           icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
         ),
     };
+  }
+
+  Future<void> _showCancelActiveWorkoutDialog(BuildContext context, Workout workout) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final L(
+      :cancelCurrentWorkoutTitle,
+      :cancelCurrentWorkoutBody,
+      :keepCurrentAccount,
+      :cancelAndStartNewWorkout,
+    ) = L.of(context);
+    return showBrandedDialog(
+      context,
+      title: Text(
+        cancelCurrentWorkoutTitle,
+        textAlign: TextAlign.center,
+      ),
+      content: Text(
+        cancelCurrentWorkoutBody,
+        textAlign: TextAlign.center,
+      ),
+      icon: Icon(
+        Icons.error_outline_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(
+                  keepCurrentAccount,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.errorContainer,
+              child: Center(
+                child: Text(
+                  cancelAndStartNewWorkout,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              onPressed: () {
+                final workouts = Workouts.of(context);
+
+                workouts.cancelActiveWorkout().then(
+                  (_) {
+                    onStartNewWorkout?.call();
+                    return workouts.startWorkout(template: workout.copy());
+                  },
+                );
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+          ],
+        )
+      ],
+    );
+  }
+
+  Future<void> _showStartNewWorkoutDialog(BuildContext context, Workout workout) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final L(
+      :startNewWorkoutFromTemplate,
+      :cancelCurrentWorkoutBody,
+      :cancel,
+      :startWorkout,
+    ) = L.of(context);
+    return showBrandedDialog(
+      context,
+      title: Text(
+        startNewWorkoutFromTemplate,
+        textAlign: TextAlign.center,
+      ),
+      icon: Icon(
+        Icons.check_circle_outline_rounded,
+        color: colorScheme.onPrimaryContainer,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(
+                  cancel,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.primaryContainer,
+              child: Center(
+                child: Text(
+                  startWorkout,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+                onStartNewWorkout?.call();
+                Workouts.of(context).startWorkout(template: workout.copy());
+              },
+            ),
+          ],
+        )
+      ],
+    );
   }
 }
 
@@ -240,6 +375,7 @@ enum _WorkoutOption {
   // edit,
   // share,
   // saveAsTemplate,
+  repeat,
   delete;
 }
 
