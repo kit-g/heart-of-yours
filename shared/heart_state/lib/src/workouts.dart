@@ -29,13 +29,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
 
-  DocumentReference<Map<String, dynamic>>? get _activeWorkoutDoc {
-    return switch (_activeWorkoutId) {
-      WorkoutId id => _collection.doc(id),
-      null => null,
-    };
-  }
-
   @override
   void onSignOut() {
     _workouts.clear();
@@ -109,26 +102,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<void> startWorkout({String? name, Workout? template}) async {
+  Future<void> startWorkout({String? name, Workout? template}) {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     final workout = template ?? Workout(name: name);
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 
-    _service.startWorkout(workout);
-
-    final doc = {
-      'userId': userId,
-      ...workout.toMap(),
-    };
-
-    _collection //
-        .doc(workout.id)
-        .set(doc)
-        .catchError(
-          (e, s) => onError?.call(e, stacktrace: s),
-        );
     notifyListeners();
+    return _service.startWorkout(workout);
   }
 
   Future<void> finishWorkout() async {
@@ -139,37 +120,42 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     _service.finishWorkout(active);
 
-    if (_activeWorkoutDoc case DocumentReference<Map<String, dynamic>> workout) {
-      final aggregation = _db.collection('aggregations').doc(userId!);
-      _db.runTransaction<void>(
-        (transaction) async {
-          final aggregationSnapshot = await transaction.get(aggregation);
-          final currentAggregations = switch (aggregationSnapshot.data()?['workouts']) {
-            Map existing => existing,
-            _ => <String, dynamic>{},
-          };
-          final currentWeek = switch (currentAggregations[active.weekOf()]) {
-            Map m => m,
-            _ => <String, String?>{},
-          };
-          final updated = currentWeek.take(_maxWorkoutBars)..addAll(active.toSummary().toMap());
+    final aggregation = _db.collection('aggregations').doc(userId!);
 
-          transaction
-            ..update(workout, active.toMap())
-            ..set(
-              aggregation,
-              {
-                'workouts': {active.weekOf(): updated}
-              },
-              SetOptions(merge: true),
-            );
-        },
-      ).catchError(
-        (error, stacktrace) {
-          onError?.call(error, stacktrace: stacktrace);
-        },
-      );
-    }
+    _db.runTransaction<void>(
+      (transaction) async {
+        final aggregationSnapshot = await transaction.get(aggregation);
+        final currentAggregations = switch (aggregationSnapshot.data()?['workouts']) {
+          Map existing => existing,
+          _ => <String, dynamic>{},
+        };
+        final currentWeek = switch (currentAggregations[active.weekOf()]) {
+          Map m => m,
+          _ => <String, String?>{},
+        };
+        final updated = currentWeek.take(_maxWorkoutBars)..addAll(active.toSummary().toMap());
+
+        transaction
+          ..set(
+            _collection.doc(active.id),
+            {
+              'userId': userId,
+              ...active.toMap(),
+            },
+          )
+          ..set(
+            aggregation,
+            {
+              'workouts': {active.weekOf(): updated}
+            },
+            SetOptions(merge: true),
+          );
+      },
+    ).catchError(
+      (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+      },
+    );
     _activeWorkout = null;
   }
 
@@ -207,18 +193,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> startExercise(Exercise exercise) async {
     if (activeWorkout case Workout workout) {
       final starter = workout.add(exercise);
-      _service.startExercise(workout.id, starter);
       notifyListeners();
-      return _syncSets();
+      return _service.startExercise(workout.id, starter);
     }
-  }
-
-  Future<void>? _syncSets() {
-    return _activeWorkoutDoc?. //
-        update({'exercises': activeWorkout?.toMap()['exercises']}) //
-        .catchError(
-      (error, s) => onError?.call(error, stacktrace: s),
-    );
   }
 
   void _forExercise(WorkoutExercise exercise, void Function(WorkoutExercise) action, {bool notifies = true}) {
@@ -238,12 +215,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       (each) => each.add(set),
     );
 
-    _service.addSet(exercise, set);
-
-    final doc = {
-      'exercises.${exercise.id}.sets.${set.id}': set.toMap(),
-    };
-    return _activeWorkoutDoc?.update(doc);
+    return _service.addSet(exercise, set);
   }
 
   Future<void>? removeSet(WorkoutExercise exercise, ExerciseSet set) {
@@ -252,76 +224,49 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       (each) => each.remove(set),
     );
 
-    _service.removeSet(set);
-
-    final doc = {
-      'exercises.${exercise.id}.sets.${set.id}': FieldValue.delete(),
-    };
-    return _activeWorkoutDoc?.update(doc);
+    return _service.removeSet(set);
   }
 
   Future<void>? removeExercise(WorkoutExercise exercise) {
     activeWorkout?.remove(exercise);
     notifyListeners();
 
-    _service.removeExercise(exercise);
-
-    final doc = {
-      'exercises.${exercise.id}': FieldValue.delete(),
-    };
-    return _activeWorkoutDoc?.update(doc);
-  }
-
-  Future<void>? _markSet(WorkoutExercise exercise, ExerciseSet set, {required bool complete}) {
-    _forExercise(
-      exercise,
-      (each) {
-        for (var set in each.where((s) => set == s)) {
-          set.isCompleted = complete;
-        }
-      },
-    );
-
-    final updated = {
-      'exercises.${exercise.id}.sets.${set.id}': set.toMap(),
-    };
-    return _activeWorkoutDoc?.update(updated);
+    return _service.removeExercise(exercise);
   }
 
   Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
+    set.isCompleted = true;
     _latestMarkedSet = (exercise, set);
-    _service.markSetAsComplete(set);
-    return _markSet(exercise, set, complete: true);
+    notifyListeners();
+    return _service.markSetAsComplete(set);
   }
 
   Future<void>? markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
-    _service.markSetAsIncomplete(set);
-    return _markSet(exercise, set, complete: false);
+    set.isCompleted = false;
+    notifyListeners();
+    return _service.markSetAsIncomplete(set);
   }
 
   Future<void> storeMeasurements(ExerciseSet set) {
     return _service.storeMeasurements(set);
   }
 
-  Future<void>? swap(WorkoutExercise toInsert, WorkoutExercise after) {
+  Future<void>? swap(WorkoutExercise toInsert, WorkoutExercise after) async {
     activeWorkout?.swap(toInsert, after);
     notifyListeners();
-    return _syncSets();
   }
 
-  Future<void>? append(WorkoutExercise exercise) {
+  Future<void>? append(WorkoutExercise exercise) async {
     activeWorkout?.append(exercise);
     notifyListeners();
-    return _syncSets();
   }
 
-  Future<void>? renameWorkout(String name) {
+  Future<void>? renameWorkout(String name) async {
     activeWorkout?.name = name;
     if (activeWorkout case Workout workout) {
       _service.renameWorkout(workoutId: workout.id, name: name);
     }
     notifyListeners();
-    return _activeWorkoutDoc?.update({'name': name});
   }
 
   Future<Workout?> _getActiveWorkout(String userId) async {
