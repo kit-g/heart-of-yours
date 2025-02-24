@@ -16,6 +16,10 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
   late Future<bool> _isAppleSignNnAvailable;
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _passwordObscurityController = ValueNotifier<bool>(true);
 
   @override
   void initState() {
@@ -25,8 +29,15 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
   }
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final L(:logInWithGoogle, :logInWithApple) = L.of(context);
+    final L(:logInWithGoogle, :logInWithApple, :orConnector) = L.of(context);
     final ThemeData(textTheme: TextTheme(titleMedium: style)) = Theme.of(context);
 
     return Scaffold(
@@ -38,7 +49,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
               child: Logo(),
             ),
             Expanded(
-              flex: 3,
+              flex: 5,
               child: ValueListenableBuilder<bool>(
                 valueListenable: loader,
                 builder: (_, loading, child) {
@@ -56,8 +67,19 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 60.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
-                    spacing: 24,
+                    // spacing: 24,
                     children: [
+                      _Form(
+                        formKey: _formKey,
+                        emailController: _emailController,
+                        passwordController: _passwordController,
+                        onLogin: _logInWithEmail,
+                        obscurityController: _passwordObscurityController,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(orConnector),
+                      ),
                       Stack(
                         children: [
                           const Positioned(
@@ -67,7 +89,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                             child: Icon(CustomIcons.google),
                           ),
                           OutlinedButton(
-                            onPressed: () => _logIn(context, Auth.of(context).loginWithGoogle),
+                            onPressed: () => _logIn(Auth.of(context).loginWithGoogle),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -98,7 +120,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                                       child: Icon(CustomIcons.appstore),
                                     ),
                                     OutlinedButton(
-                                      onPressed: () => _logIn(context, Auth.of(context).loginWithApple),
+                                      onPressed: () => _logIn(Auth.of(context).loginWithApple),
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
@@ -126,7 +148,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
     );
   }
 
-  Future<void> _logIn(BuildContext context, AsyncCallback callback) async {
+  Future<void> _logIn(AsyncCallback callback) async {
     try {
       startLoading();
       await callback();
@@ -141,7 +163,97 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
     }
   }
 
+  Future<void> _logInWithEmail() async {
+    if (!_formKey.currentState!.validate()) return;
+    return _logIn(
+      () async {
+        final email = _emailController.text.trim();
+        final password = _passwordController.text.trim();
+        Auth.of(context).loginWithEmailAndPassword(email: email, password: password);
+      },
+    );
+  }
+
   bool _isIos(BuildContext context) {
     return Theme.of(context).platform == TargetPlatform.iOS;
+  }
+}
+
+class _Form extends StatelessWidget {
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final GlobalKey<FormState> formKey;
+  final VoidCallback onLogin;
+  final ValueNotifier<bool> obscurityController;
+
+  const _Form({
+    required this.formKey,
+    required this.emailController,
+    required this.passwordController,
+    required this.onLogin,
+    required this.obscurityController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:logIn, :email, :password, :cannotBeEmpty, :showPassword, :hidePassword) = L.of(context);
+    final ThemeData(:textTheme) = Theme.of(context);
+
+    String? validator(String? value) {
+      return (value?.isEmpty ?? true) ? cannotBeEmpty : null;
+    }
+
+    return Form(
+      key: formKey,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: obscurityController,
+        builder: (_, hide, __) {
+          return Column(
+            spacing: 12,
+            children: [
+              TextFormField(
+                controller: emailController,
+                decoration: InputDecoration(hintText: email),
+                keyboardType: TextInputType.emailAddress,
+                validator: validator,
+              ),
+              TextFormField(
+                controller: passwordController,
+                decoration: InputDecoration(
+                  hintText: password,
+                  suffixIcon: IconButton(
+                    tooltip: hide ? showPassword : hidePassword,
+                    padding: EdgeInsets.zero,
+                    splashRadius: 16,
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: 0),
+                    onPressed: () {
+                      obscurityController.value = !obscurityController.value;
+                    },
+                    icon: Icon(
+                      hide ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                obscureText: hide,
+                validator: validator,
+              ),
+              OutlinedButton(
+                onPressed: onLogin,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      logIn,
+                      style: textTheme.titleMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

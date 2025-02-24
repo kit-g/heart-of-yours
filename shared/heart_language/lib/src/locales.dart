@@ -948,6 +948,38 @@ class L {
       desc: 'Edit template text field hint',
     );
   }
+
+  String get cannotBeEmpty {
+    return Intl.message(
+      'Cannot be empty',
+      name: 'cannotBeEmpty',
+      desc: 'Form validation message',
+    );
+  }
+
+  String get showPassword {
+    return Intl.message(
+      'Show password',
+      name: 'showPassword',
+      desc: 'Tooltip message',
+    );
+  }
+
+  String get hidePassword {
+    return Intl.message(
+      'Hide password',
+      name: 'hidePassword',
+      desc: 'Tooltip message',
+    );
+  }
+
+  String get orConnector {
+    return Intl.message(
+      '- or -',
+      name: 'orConnector',
+      desc: 'Connects two widgets, this OR that',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
