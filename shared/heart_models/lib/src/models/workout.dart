@@ -217,7 +217,7 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
       'id': id,
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
       'sets': {
-        for (var each in this) each.id: each.toMap(),
+        for (var each in where((each) => each.isCompleted)) each.id: each.toMap(),
       }
     };
   }
