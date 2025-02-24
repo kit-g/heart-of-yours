@@ -331,10 +331,11 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       'end': end,
       'exercises': {
         for (var each in l)
-          each.id: {
-            ...each.toMap(),
-            'order': l.indexOf(each),
-          },
+          if (each.isNotEmpty)
+            each.id: {
+              ...each.toMap(),
+              'order': l.indexOf(each),
+            },
       },
     };
   }
