@@ -109,7 +109,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _activeWorkoutId = workout.id;
 
     notifyListeners();
-    return _service.startWorkout(workout);
+    return _service.startWorkout(workout, userId!);
   }
 
   Future<void> finishWorkout() async {
@@ -118,7 +118,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     final active = activeWorkout;
     if (active == null) return;
 
-    _service.finishWorkout(active);
+    _service.finishWorkout(active, userId!);
 
     final aggregation = _db.collection('aggregations').doc(userId!);
 
@@ -162,7 +162,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> cancelActiveWorkout() async {
     _workouts.remove(_activeWorkoutId);
     if (_activeWorkoutId case String id) {
-      _deleteWorkout(id);
+      _deleteWorkout(id).catchError(
+        (error) {
+          switch (error) {
+            case FirebaseException(:var code) when code == 'permission-denied':
+            // ok
+          }
+        },
+      );
       _service.deleteWorkout(id);
     }
     _activeWorkoutId = null;
@@ -271,7 +278,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Workout?> _getActiveWorkout(String userId) async {
     try {
-      final local = await _service.getActiveWorkout();
+      final local = await _service.getActiveWorkout(userId);
 
       if (local != null) return local;
       final querySnapshot = await _collection
@@ -311,7 +318,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> initHistory() async {
     if (userId case String id) {
-      final local = await _service.getWorkoutHistory();
+      final local = await _service.getWorkoutHistory(id);
       if (local != null) {
         if (local.isNotEmpty) {
           _workouts.addAll(Map.fromEntries(local.map(_entry)));
@@ -319,7 +326,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       } else {
         final workouts = await _getRemoteHistory(id);
         if (workouts != null) {
-          _service.storeWorkoutHistory(workouts);
+          _service.storeWorkoutHistory(workouts, id);
           _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
         }
       }

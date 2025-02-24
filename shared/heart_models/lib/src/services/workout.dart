@@ -2,11 +2,11 @@ import '../models/exercise_set.dart';
 import '../models/workout.dart';
 
 abstract interface class WorkoutService {
-  Future<void> startWorkout(Workout workout);
+  Future<void> startWorkout(Workout workout, String userId);
 
   Future<void> deleteWorkout(String workoutId);
 
-  Future<void> finishWorkout(Workout workout);
+  Future<void> finishWorkout(Workout workout, String userId);
 
   Future<void> startExercise(String workoutId, WorkoutExercise exercise);
 
@@ -22,11 +22,11 @@ abstract interface class WorkoutService {
 
   Future<void> markSetAsIncomplete(ExerciseSet set);
 
-  Future<Workout?> getActiveWorkout();
+  Future<Workout?> getActiveWorkout(String? userId);
 
-  Future<void> storeWorkoutHistory(Iterable<Workout> history);
+  Future<void> storeWorkoutHistory(Iterable<Workout> history, String userId);
 
-  Future<Iterable<Workout>?> getWorkoutHistory();
+  Future<Iterable<Workout>?> getWorkoutHistory(String userId);
 
   Future<void> renameWorkout({required String workoutId, required String name});
 }
