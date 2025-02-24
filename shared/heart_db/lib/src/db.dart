@@ -41,13 +41,14 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
     _logger.info('Migrating local database from version $oldVersion to $newVersion');
     _db.transaction(
       (txn) async {
-        await txn.execute(sql.exercises);
-        await txn.execute(sql.syncs);
-        await txn.execute(sql.workouts);
-        await txn.execute(sql.workoutExercises);
-        await txn.execute(sql.sets);
-        await txn.execute(sql.templates);
-        await txn.execute(sql.templatesExercises);
+        txn
+          ..execute(sql.exercises)
+          ..execute(sql.syncs)
+          ..execute(sql.workouts)
+          ..execute(sql.workoutExercises)
+          ..execute(sql.sets)
+          ..execute(sql.templates)
+          ..execute(sql.templatesExercises);
       },
     );
   }
