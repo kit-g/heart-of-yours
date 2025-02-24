@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS workouts
     id      TEXT NOT NULL PRIMARY KEY,
     start   TEXT NOT NULL,
     "end"   TEXT,
+    user_id TEXT NOT NULL,
     name    TEXT
 );
 """;
@@ -16,6 +17,7 @@ CREATE TABLE IF NOT EXISTS exercises
     target       TEXT NOT NULL,
     last_done    TEXT,
     last_results TEXT,
+    user_id      TEXT,
     rest_timer   INT
 );
 """;
@@ -77,6 +79,7 @@ WITH _workout AS (
     SELECT *
     FROM workouts
     WHERE "end" IS NULL
+      AND user_id = ?
     ORDER BY start DESC
     LIMIT 1
 )
@@ -137,6 +140,7 @@ WITH _workout AS (
     SELECT *
     FROM workouts
     WHERE "end" IS NOT NULL
+      AND user_id = ?
 )
 SELECT
     _workout.id AS workout_id,
@@ -193,6 +197,6 @@ INNER JOIN main.template_exercises te
     ON templates.id = te.template_id
 INNER JOIN main.exercises e
     ON te.exercise_id = e.name
-WHERE user_id = ?
+WHERE templates.user_id = ?
 ;
 """;

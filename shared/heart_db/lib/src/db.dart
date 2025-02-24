@@ -94,11 +94,11 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   }
 
   @override
-  Future<void> startWorkout(Workout workout) {
+  Future<void> startWorkout(Workout workout, String userId) {
     return _db.transaction(
       (txn) async {
         final batch = txn.batch();
-        _storeWorkout(batch, workout);
+        _storeWorkout(batch, workout, userId);
         await batch.commit(noResult: true);
       },
     );
@@ -110,12 +110,12 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   }
 
   @override
-  Future<void> finishWorkout(Workout workout) {
+  Future<void> finishWorkout(Workout workout, String userId) {
     return _db.transaction(
       (txn) {
         final batch = txn.batch();
 
-        _storeWorkout(batch, workout);
+        _storeWorkout(batch, workout, userId);
 
         batch.commit(noResult: true);
 
@@ -200,21 +200,21 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   }
 
   @override
-  Future<Workout?> getActiveWorkout() async {
-    final rows = await _db.rawQuery(sql.activeWorkout);
+  Future<Workout?> getActiveWorkout(String? userId) async {
+    final rows = await _db.rawQuery(sql.activeWorkout, [userId]);
     if (rows.isEmpty) return null;
     final renamed = rows.map((row) => row.toCamel());
     return Workout.fromRows(renamed);
   }
 
   @override
-  Future<void> storeWorkoutHistory(Iterable<Workout> history) {
+  Future<void> storeWorkoutHistory(Iterable<Workout> history, String userId) {
     return _db.transaction(
       (txn) async {
         final batch = txn.batch();
 
         for (var each in history) {
-          _storeWorkout(batch, each);
+          _storeWorkout(batch, each, userId);
         }
 
         batch.commit();
@@ -223,8 +223,8 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
   }
 
   @override
-  Future<Iterable<Workout>?> getWorkoutHistory() async {
-    final rows = await _db.rawQuery(sql.history);
+  Future<Iterable<Workout>?> getWorkoutHistory(String userId) async {
+    final rows = await _db.rawQuery(sql.history, [userId]);
     final mapped = rows.fold<Map<String, List<Map<String, Object?>>>>(
       {},
       (accumulator, row) {
@@ -236,11 +236,12 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
     return mapped.values.map((each) => Workout.fromRows(each));
   }
 
-  static void _storeWorkout(Batch batch, Workout workout) {
+  static void _storeWorkout(Batch batch, Workout workout, String userId) {
     final Workout(id: workoutId, :start, :name, :end) = workout;
     final row = {
       'id': workoutId,
       'start': start.toIso8601String(),
+      'user_id': userId,
       if (name != null) 'name': name,
       if (end != null) 'end': end.toIso8601String(),
     };
