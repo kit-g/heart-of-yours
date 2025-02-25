@@ -150,6 +150,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
   }
 
   Future<void> _logIn(AsyncCallback callback) async {
+    _loginError.value = null;
     final l = L.of(context);
 
     try {
@@ -159,8 +160,8 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
       final copy = switch (error.reason) {
         AuthExceptionReason.invalidEmail => l.invalidCredentials,
         AuthExceptionReason.wrongPassword => l.invalidCredentials,
-        AuthExceptionReason.userDisabled => l.userDisabled,
         AuthExceptionReason.userNotFound => l.invalidCredentials,
+        AuthExceptionReason.userDisabled => l.userDisabled,
         AuthExceptionReason.unknown => l.unknownError,
       };
       _loginError.value = copy;
@@ -211,7 +212,7 @@ class _Form extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final L(:logIn, :email, :password, :cannotBeEmpty, :showPassword, :hidePassword) = L.of(context);
+    final L(:logIn, :email, :password, :cannotBeEmpty, :showPassword, :hidePassword, :forgotPassword) = L.of(context);
     final ThemeData(:textTheme) = Theme.of(context);
 
     String? validator(String? value) {
@@ -224,16 +225,21 @@ class _Form extends StatelessWidget {
         valueListenable: obscurityController,
         builder: (_, hide, __) {
           return Column(
-            spacing: 12,
+            // spacing: 12,
             children: [
               TextFormField(
                 controller: emailController,
                 decoration: InputDecoration(hintText: email),
                 keyboardType: TextInputType.emailAddress,
                 validator: validator,
+                autocorrect: false,
+                maxLines: 1,
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: passwordController,
+                autocorrect: false,
+                maxLines: 1,
                 decoration: InputDecoration(
                   hintText: password,
                   suffixIcon: IconButton(
@@ -253,12 +259,32 @@ class _Form extends StatelessWidget {
                 obscureText: hide,
                 validator: validator,
               ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.all(4),
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    textStyle: textTheme.bodyMedium,
+                  ),
+                  child: Text(forgotPassword),
+                ),
+              ),
+              const SizedBox(height: 8),
               ValueListenableBuilder<String?>(
                 valueListenable: error,
                 builder: (_, error, child) {
                   return _Error(message: error);
                 },
               ),
+              const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: onLogin,
                 child: Row(
@@ -301,16 +327,16 @@ class _Error extends StatelessWidget {
             child: Row(
               spacing: 8,
               children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: colorScheme.onErrorContainer,
+                ),
                 Expanded(
                   child: Text(
                     error,
                     style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
                   ),
                 ),
-                Icon(
-                  Icons.error_outline_rounded,
-                  color: colorScheme.onErrorContainer,
-                )
               ],
             ),
           ),

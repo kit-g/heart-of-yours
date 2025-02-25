@@ -989,6 +989,14 @@ class L {
     );
   }
 
+  String get forgotPassword {
+    return Intl.message(
+      'Forgot password?',
+      name: 'forgotPassword',
+      desc: 'Login button',
+    );
+  }
+
   String get userDisabled {
     return Intl.message(
       'This account is disabled',
