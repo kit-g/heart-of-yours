@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordObscurityController = ValueNotifier<bool>(true);
+  final _loginError = ValueNotifier<String?>(null);
 
   @override
   void initState() {
@@ -67,7 +68,6 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 60.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
-                    // spacing: 24,
                     children: [
                       _Form(
                         formKey: _formKey,
@@ -75,6 +75,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                         passwordController: _passwordController,
                         onLogin: _logInWithEmail,
                         obscurityController: _passwordObscurityController,
+                        error: _loginError,
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
@@ -105,8 +106,8 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                       FutureBuilder<bool>(
                         future: _isAppleSignNnAvailable,
                         builder: (_, snapshot) {
-                          bool hasAppleSignIn =
-                              _isIos(context) && !snapshot.hasError && snapshot.hasData && snapshot.data!;
+                          final AsyncSnapshot(:hasData, :hasError, data: available) = snapshot;
+                          bool hasAppleSignIn = _isIos(context) && !hasError && hasData && available!;
                           return AnimatedSwitcher(
                             duration: const Duration(milliseconds: 100),
                             child: switch (hasAppleSignIn) {
@@ -149,9 +150,20 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
   }
 
   Future<void> _logIn(AsyncCallback callback) async {
+    final l = L.of(context);
+
     try {
       startLoading();
       await callback();
+    } on AuthException catch (error) {
+      final copy = switch (error.reason) {
+        AuthExceptionReason.invalidEmail => l.invalidCredentials,
+        AuthExceptionReason.wrongPassword => l.invalidCredentials,
+        AuthExceptionReason.userDisabled => l.userDisabled,
+        AuthExceptionReason.userNotFound => l.invalidCredentials,
+        AuthExceptionReason.unknown => l.unknownError,
+      };
+      _loginError.value = copy;
     } catch (error, stacktrace) {
       reportToSentry(error, stacktrace: stacktrace);
     } finally {
@@ -166,10 +178,11 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
   Future<void> _logInWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
     return _logIn(
-      () async {
-        final email = _emailController.text.trim();
-        final password = _passwordController.text.trim();
-        Auth.of(context).loginWithEmailAndPassword(email: email, password: password);
+      () {
+        return Auth.of(context).loginWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
       },
     );
   }
@@ -185,6 +198,7 @@ class _Form extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final VoidCallback onLogin;
   final ValueNotifier<bool> obscurityController;
+  final ValueNotifier<String?> error;
 
   const _Form({
     required this.formKey,
@@ -192,6 +206,7 @@ class _Form extends StatelessWidget {
     required this.passwordController,
     required this.onLogin,
     required this.obscurityController,
+    required this.error,
   });
 
   @override
@@ -238,6 +253,12 @@ class _Form extends StatelessWidget {
                 obscureText: hide,
                 validator: validator,
               ),
+              ValueListenableBuilder<String?>(
+                valueListenable: error,
+                builder: (_, error, child) {
+                  return _Error(message: error);
+                },
+              ),
               OutlinedButton(
                 onPressed: onLogin,
                 child: Row(
@@ -254,6 +275,46 @@ class _Form extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _Error extends StatelessWidget {
+  final String? message;
+
+  const _Error({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: switch (message) {
+        null => const SizedBox.shrink(),
+        String error => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer,
+              borderRadius: const BorderRadius.all(Radius.circular(6)),
+            ),
+            child: Row(
+              spacing: 8,
+              children: [
+                Expanded(
+                  child: Text(
+                    error,
+                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                  ),
+                ),
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: colorScheme.onErrorContainer,
+                )
+              ],
+            ),
+          ),
+      },
     );
   }
 }
