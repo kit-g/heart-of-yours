@@ -980,6 +980,35 @@ class L {
       desc: 'Connects two widgets, this OR that',
     );
   }
+
+  String get invalidCredentials {
+    return Intl.message(
+      'Looks like something’s off. Please check your email and password and try again.',
+      name: 'invalidCredentials',
+      desc: 'Login error message',
+    );
+  }
+
+  String get userDisabled {
+    return Intl.message(
+      'This account is disabled',
+      name: 'userDisabled',
+      desc: 'Login error message',
+    );
+  }
+
+  String get unknownError {
+    return Intl.message(
+      'Unknown error occurred',
+      name: 'unknownError',
+      desc: 'Login error message',
+    );
+  }
+//   invalidEmail
+// wrongPassword
+// userDisabled
+// userNotFound
+// unknown
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
