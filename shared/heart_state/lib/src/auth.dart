@@ -115,6 +115,19 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  Future<void> loginWithEmailAndPassword({required String email, required String password}) async {
+    try {
+      await _firebase.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } on fb.FirebaseAuthException catch (error) {
+      throw AuthException(AuthExceptionReason.fromCode(error.code));
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
+
   static Future<bool> isAppleSignInAvailable() {
     return SignInWithApple.isAvailable();
   }
@@ -175,5 +188,35 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       onError?.call(e, stacktrace: s);
       return user;
     }
+  }
+}
+
+enum AuthExceptionReason {
+  invalidEmail,
+  wrongPassword,
+  userDisabled,
+  userNotFound,
+  unknown;
+
+  factory AuthExceptionReason.fromCode(String code) {
+    return switch (code) {
+      'wrong-password' => wrongPassword,
+      'invalid-credential' => wrongPassword,
+      'invalid-email' => invalidEmail,
+      'user-disabled' => userDisabled,
+      'user-not-found' => userNotFound,
+      _ => unknown,
+    };
+  }
+}
+
+class AuthException implements Exception {
+  final AuthExceptionReason reason;
+
+  AuthException(this.reason);
+
+  @override
+  String toString() {
+    return reason.toString();
   }
 }
