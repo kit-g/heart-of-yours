@@ -1012,11 +1012,6 @@ class L {
       desc: 'Login error message',
     );
   }
-//   invalidEmail
-// wrongPassword
-// userDisabled
-// userNotFound
-// unknown
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
