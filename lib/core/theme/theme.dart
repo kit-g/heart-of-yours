@@ -214,6 +214,7 @@ class MaterialTheme {
           textStyle: textTheme.bodyMedium?.copyWith(fontFamily: 'Lato'),
         ),
       ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(strokeWidth: 2),
     );
   }
 }
