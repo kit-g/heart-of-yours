@@ -54,6 +54,16 @@ mixin LoadingState<T extends StatefulWidget> on State<T> {
   }
 }
 
+mixin HasError<T extends StatefulWidget> on State<T> {
+  final error = ValueNotifier<String?>(null);
+
+  @override
+  void dispose() {
+    error.dispose();
+    super.dispose();
+  }
+}
+
 class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   final double height;

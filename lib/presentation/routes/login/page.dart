@@ -165,7 +165,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
       startLoading();
       await callback();
     } on AuthException catch (e) {
-      error.value = errorCopy(l, e.reason);
+      error.value = _errorCopy(l, e.reason);
     } catch (error, stacktrace) {
       reportToSentry(error, stacktrace: stacktrace);
     } finally {

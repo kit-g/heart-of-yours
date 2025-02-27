@@ -997,6 +997,22 @@ class L {
     );
   }
 
+  String get sendResetLink {
+    return Intl.message(
+      'Send Reset Link',
+      name: 'sendResetLink',
+      desc: 'Password recovery flow',
+    );
+  }
+
+  String get sendResetLinkBody {
+    return Intl.message(
+      'Enter you email and we\'ll help you reset your password',
+      name: 'sendResetLinkBody',
+      desc: 'Password recovery flow',
+    );
+  }
+
   String get userDisabled {
     return Intl.message(
       'This account is disabled',
