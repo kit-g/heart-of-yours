@@ -33,7 +33,6 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
   @override
   Widget build(BuildContext context) {
     final L(:logInWithGoogle, :logInWithApple, :orConnector) = L.of(context);
-    final ThemeData(textTheme: TextTheme(titleMedium: style)) = Theme.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -97,10 +96,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Text(
-                                            logInWithGoogle,
-                                            style: style,
-                                          ),
+                                          Text(logInWithGoogle),
                                         ],
                                       ),
                                     ),
@@ -128,10 +124,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                                 child: Row(
                                                   mainAxisAlignment: MainAxisAlignment.center,
                                                   children: [
-                                                    Text(
-                                                      logInWithApple,
-                                                      style: style,
-                                                    ),
+                                                    Text(logInWithApple),
                                                   ],
                                                 ),
                                               ),

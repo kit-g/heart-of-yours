@@ -22,7 +22,6 @@ class _Form extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:logIn, :email, :password, :cannotBeEmpty, :showPassword, :hidePassword, :forgotPassword) = L.of(context);
-    final ThemeData(:textTheme) = Theme.of(context);
 
     String? validator(String? value) {
       return (value?.isEmpty ?? true) ? cannotBeEmpty : null;
@@ -88,10 +87,7 @@ class _Form extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      logIn,
-                      style: textTheme.titleMedium,
-                    ),
+                    Text(logIn),
                   ],
                 ),
               ),

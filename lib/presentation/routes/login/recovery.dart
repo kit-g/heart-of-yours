@@ -89,15 +89,7 @@ class _RecoveryPageState extends State<RecoveryPage> with LoadingState<RecoveryP
                               true => null,
                               false => _resetPassword,
                             },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  sendResetLink,
-                                  style: textTheme.titleMedium,
-                                ),
-                              ],
-                            ),
+                            child: Text(sendResetLink),
                           );
                         },
                         child: const Center(
