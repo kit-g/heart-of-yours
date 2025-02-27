@@ -34,7 +34,6 @@ class _Form extends StatelessWidget {
         valueListenable: obscurityController,
         builder: (_, hide, __) {
           return Column(
-            // spacing: 12,
             children: [
               TextFormField(
                 controller: emailController,
@@ -73,16 +72,6 @@ class _Form extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: onPasswordRecovery,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.all(4),
-                    minimumSize: const Size(0, 0),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    textStyle: textTheme.bodyMedium,
-                  ),
                   child: Text(forgotPassword),
                 ),
               ),
