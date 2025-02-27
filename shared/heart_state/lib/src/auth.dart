@@ -116,15 +116,28 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> loginWithEmailAndPassword({required String email, required String password}) async {
-    try {
-      await _firebase.signInWithEmailAndPassword(
+    return _toFirebase(
+      _firebase.signInWithEmailAndPassword(
         email: email,
         password: password,
-      );
+      ),
+    );
+  }
+
+  Future<void> sendPasswordRecoveryEmail(String email) async {
+    return _toFirebase(
+      _firebase.sendPasswordResetEmail(email: email),
+    );
+  }
+
+  Future<T?> _toFirebase<T>(Future<T?> action) async {
+    try {
+      return await action;
     } on fb.FirebaseAuthException catch (error) {
       throw AuthException(AuthExceptionReason.fromCode(error.code));
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
+      return Future.error(error);
     }
   }
 
