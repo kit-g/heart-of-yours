@@ -202,6 +202,18 @@ class MaterialTheme {
           borderRadius: BorderRadius.all(Radius.circular(4)),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.all(4),
+          minimumSize: const Size(0, 0),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          textStyle: textTheme.bodyMedium?.copyWith(fontFamily: 'Lato'),
+        ),
+      ),
     );
   }
 }
