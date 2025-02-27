@@ -8,7 +8,7 @@ import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import '../routes/login.dart';
+import '../routes/login/login.dart';
 import '../routes/profile/profile.dart';
 import '../widgets/app_frame.dart';
 
@@ -23,6 +23,7 @@ const _settingsPath = _settingsName;
 const _workoutName = 'workout';
 const _workoutPath = '/$_workoutName';
 const _templateEditorName = 'templateEditor';
+const _recoveryName = 'recovery';
 const _historyName = 'history';
 const _historyPath = '/$_historyName';
 const _exercisesName = 'exercises';
@@ -83,13 +84,24 @@ RouteBase _exercisesRoute() {
 RouteBase _loginRoute() {
   return GoRoute(
     path: _loginPath,
-    builder: (__, _) => const LoginPage(),
+    builder: (context, _) {
+      return LoginPage(
+        onPasswordRecovery: context.goToPasswordRecoveryPage,
+      );
+    },
     name: _loginName,
     redirect: (context, state) {
       final isLoggedIn = Auth.of(context).isLoggedIn;
       if (isLoggedIn) return _profilePath;
       return null;
     },
+    routes: [
+      GoRoute(
+        path: _recoveryName,
+        builder: (__, _) => const RecoveryPage(),
+        name: _recoveryName,
+      ),
+    ],
   );
 }
 
@@ -143,6 +155,10 @@ abstract final class HeartRouter {
       _workoutDoneRoute(),
     ],
     redirect: (context, state) {
+      if (state.fullPath == '$_loginPath/$_recoveryName') {
+        return state.namedLocation(_recoveryName);
+      }
+
       final isLoggedIn = Auth.of(context).isLoggedIn;
       if (!isLoggedIn) return _loginPath;
       if (Workouts.of(context).hasUnNotifiedActiveWorkout) {
@@ -184,5 +200,9 @@ extension ContextNavigation on BuildContext {
 
   void goToTemplateEditor({bool? newTemplate}) {
     return goNamed(_templateEditorName, queryParameters: {'newTemplate': newTemplate.toString()});
+  }
+
+  void goToPasswordRecoveryPage() {
+    return goNamed(_recoveryName);
   }
 }
