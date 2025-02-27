@@ -9,13 +9,12 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
+class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, HasError<LoginPage> {
   late Future<bool> _isAppleSignNnAvailable;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordObscurityController = ValueNotifier<bool>(true);
-  final _loginError = ValueNotifier<String?>(null);
 
   @override
   void initState() {
@@ -62,7 +61,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                               child: switch (loading) {
                                 false => child!,
                                 true => const Center(
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(),
                                   )
                               },
                             );
@@ -78,7 +77,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
                                   passwordController: _passwordController,
                                   onLogin: _logInWithEmail,
                                   obscurityController: _passwordObscurityController,
-                                  error: _loginError,
+                                  error: error,
                                   onPasswordRecovery: widget.onPasswordRecovery,
                                 ),
                                 Padding(
@@ -159,21 +158,14 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage> {
   }
 
   Future<void> _logIn(AsyncCallback callback) async {
-    _loginError.value = null;
+    error.value = null;
     final l = L.of(context);
 
     try {
       startLoading();
       await callback();
-    } on AuthException catch (error) {
-      final copy = switch (error.reason) {
-        AuthExceptionReason.invalidEmail => l.invalidCredentials,
-        AuthExceptionReason.wrongPassword => l.invalidCredentials,
-        AuthExceptionReason.userNotFound => l.invalidCredentials,
-        AuthExceptionReason.userDisabled => l.userDisabled,
-        AuthExceptionReason.unknown => l.unknownError,
-      };
-      _loginError.value = copy;
+    } on AuthException catch (e) {
+      error.value = errorCopy(l, e.reason);
     } catch (error, stacktrace) {
       reportToSentry(error, stacktrace: stacktrace);
     } finally {
