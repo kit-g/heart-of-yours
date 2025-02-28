@@ -167,12 +167,11 @@ abstract final class HeartRouter {
       _workoutDoneRoute(),
     ],
     redirect: (context, state) {
-      switch (state.fullPath) {
-        case '$_loginPath/$_recoveryName':
-          // there might be a query in recovery path, see RecoveryPage
-          return state.namedLocation(_recoveryName, queryParameters: state.uri.queryParameters);
-        case '$_loginPath/$_signUpName':
-          return state.namedLocation(_signUpName, queryParameters: state.uri.queryParameters);
+      switch (state.fullPath?.split('/')) {
+        // login sub-routes
+        case ['', _loginName, String part]:
+          // there might be a query in path, see _loginRoute
+          return state.namedLocation(part, queryParameters: state.uri.queryParameters);
       }
 
       final isLoggedIn = Auth.of(context).isLoggedIn;
@@ -186,6 +185,7 @@ abstract final class HeartRouter {
         Workouts.of(context).notifyOfActiveWorkout();
         return _workoutPath;
       }
+
       return null;
     },
   );
