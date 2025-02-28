@@ -115,9 +115,18 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
-  Future<void> loginWithEmailAndPassword({required String email, required String password}) async {
+  Future<void> logInWithEmailAndPassword({required String email, required String password}) async {
     return _toFirebase(
       _firebase.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      ),
+    );
+  }
+
+  Future<void> signUpWithEmailAndPassword({required String email, required String password}) async {
+    return _toFirebase(
+      _firebase.createUserWithEmailAndPassword(
         email: email,
         password: password,
       ),

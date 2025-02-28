@@ -2,11 +2,13 @@ part of 'login.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(String?) onPasswordRecovery;
+  final void Function(String?) onSignUp;
   final String? address;
 
   const LoginPage({
     super.key,
     required this.onPasswordRecovery,
+    required this.onSignUp,
     this.address,
   });
 
@@ -37,7 +39,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
 
   @override
   Widget build(BuildContext context) {
-    final L(:logInWithGoogle, :logInWithApple, :orConnector) = L.of(context);
+    final L(:logInWithGoogle, :logInWithApple, :orConnector, :signUp) = L.of(context);
 
     if (widget.address case String s when s.isNotEmpty) {
       _emailController.text = s;
@@ -145,6 +147,20 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                     );
                                   },
                                 ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(orConnector),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    widget.onSignUp(_emailController.text);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(signUp),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
                               ],
                             ),
                           ),
@@ -185,7 +201,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
     if (!_formKey.currentState!.validate()) return;
     return _logIn(
       () {
-        return Auth.of(context).loginWithEmailAndPassword(
+        return Auth.of(context).logInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );

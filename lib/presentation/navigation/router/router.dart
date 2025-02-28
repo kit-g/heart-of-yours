@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/done.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
+import 'package:heart/presentation/routes/login/sign_up.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart_state/heart_state.dart';
@@ -80,6 +81,9 @@ RouteBase _loginRoute() {
         onPasswordRecovery: (address) {
           context.goToPasswordRecoveryPage(address: address);
         },
+        onSignUp: (address) {
+          context.goToSignUp();
+        },
         address: state.uri.queryParameters['address'],
       );
     },
@@ -102,6 +106,13 @@ RouteBase _loginRoute() {
         },
         name: _recoveryName,
       ),
+      GoRoute(
+        path: _signUpName,
+        name: _signUpName,
+        builder: (context, state) {
+          return const SignUpPage();
+        },
+      )
     ],
   );
 }
@@ -156,9 +167,12 @@ abstract final class HeartRouter {
       _workoutDoneRoute(),
     ],
     redirect: (context, state) {
-      if (state.fullPath == '$_loginPath/$_recoveryName') {
-        // there might be a query in recovery path, see RecoveryPage
-        return state.namedLocation(_recoveryName, queryParameters: state.uri.queryParameters);
+      switch (state.fullPath) {
+        case '$_loginPath/$_recoveryName':
+          // there might be a query in recovery path, see RecoveryPage
+          return state.namedLocation(_recoveryName, queryParameters: state.uri.queryParameters);
+        case '$_loginPath/$_signUpName':
+          return state.namedLocation(_signUpName, queryParameters: state.uri.queryParameters);
       }
 
       final isLoggedIn = Auth.of(context).isLoggedIn;

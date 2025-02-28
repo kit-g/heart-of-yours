@@ -10,11 +10,10 @@ const _workoutName = 'workout';
 const _workoutPath = '/$_workoutName';
 const _templateEditorName = 'templateEditor';
 const _recoveryName = 'recovery';
+const _signUpName = 'signUp';
 const _historyName = 'history';
 const _historyPath = '/$_historyName';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
 const _doneName = 'done';
 const _donePath = '/$_doneName';
-
-
