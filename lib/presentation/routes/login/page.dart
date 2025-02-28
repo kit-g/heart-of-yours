@@ -1,9 +1,14 @@
 part of 'login.dart';
 
 class LoginPage extends StatefulWidget {
-  final VoidCallback onPasswordRecovery;
+  final void Function(String?) onPasswordRecovery;
+  final String? address;
 
-  const LoginPage({super.key, required this.onPasswordRecovery});
+  const LoginPage({
+    super.key,
+    required this.onPasswordRecovery,
+    this.address,
+  });
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -33,6 +38,10 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
   @override
   Widget build(BuildContext context) {
     final L(:logInWithGoogle, :logInWithApple, :orConnector) = L.of(context);
+
+    if (widget.address case String s when s.isNotEmpty) {
+      _emailController.text = s;
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -77,7 +86,9 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                   onLogin: _logInWithEmail,
                                   obscurityController: _passwordObscurityController,
                                   error: error,
-                                  onPasswordRecovery: widget.onPasswordRecovery,
+                                  onPasswordRecovery: () {
+                                    widget.onPasswordRecovery(_emailController.text.trim());
+                                  },
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),

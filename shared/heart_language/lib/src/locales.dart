@@ -1005,6 +1005,14 @@ class L {
     );
   }
 
+  String get recoveryLinkMessage {
+    return Intl.message(
+      'If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.',
+      name: 'recoveryLinkMessage',
+      desc: 'Password recovery flow',
+    );
+  }
+
   String get sendResetLinkBody {
     return Intl.message(
       'Enter you email and we\'ll help you reset your password',

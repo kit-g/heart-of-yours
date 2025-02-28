@@ -1,7 +1,14 @@
 part of 'login.dart';
 
 class RecoveryPage extends StatefulWidget {
-  const RecoveryPage({super.key});
+  final void Function(String) onLinkSent;
+  final String? address;
+
+  const RecoveryPage({
+    super.key,
+    required this.onLinkSent,
+    this.address,
+  });
 
   @override
   State<RecoveryPage> createState() => _RecoveryPageState();
@@ -10,6 +17,15 @@ class RecoveryPage extends StatefulWidget {
 class _RecoveryPageState extends State<RecoveryPage> with LoadingState<RecoveryPage>, HasError<RecoveryPage> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.address case String s when s.isNotEmpty) {
+      _emailController.text = s;
+    }
+  }
 
   @override
   void dispose() {
@@ -109,14 +125,25 @@ class _RecoveryPageState extends State<RecoveryPage> with LoadingState<RecoveryP
 
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
-
-    error.value = null;
+    final messenger = ScaffoldMessenger.of(context);
+    final focus = FocusScope.of(context);
     final l = L.of(context);
 
+    error.value = null;
+
     try {
+      focus.unfocus();
       startLoading();
-      // await Future.delayed(Duration(seconds: 1));
       await Auth.of(context).sendPasswordRecoveryEmail(_emailController.text.trim());
+
+      widget.onLinkSent(_emailController.text.trim());
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l.recoveryLinkMessage),
+        ),
+      );
     } on AuthException catch (e) {
       error.value = _errorCopy(l, e.reason);
     } catch (error, stacktrace) {
