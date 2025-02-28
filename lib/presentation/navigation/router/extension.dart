@@ -22,4 +22,8 @@ extension on BuildContext {
   void goToPasswordRecoveryPage({String? address}) {
     return goNamed(_recoveryName, queryParameters: {'address': address});
   }
+
+  void goToSignUp() {
+    return goNamed(_signUpName);
+  }
 }

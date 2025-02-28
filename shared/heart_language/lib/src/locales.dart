@@ -983,7 +983,7 @@ class L {
 
   String get invalidCredentials {
     return Intl.message(
-      'Looks like something’s off. Please check your email and password and try again.',
+      'Well, that didn\'t work! Double-check your details, eh?',
       name: 'invalidCredentials',
       desc: 'Login error message',
     );
@@ -994,6 +994,14 @@ class L {
       'Forgot password?',
       name: 'forgotPassword',
       desc: 'Login button',
+    );
+  }
+
+  String get signUp {
+    return Intl.message(
+      'Sign up',
+      name: 'signUp',
+      desc: 'Generic label',
     );
   }
 
