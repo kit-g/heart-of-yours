@@ -1,0 +1,20 @@
+part of 'router.dart';
+
+const _profileName = 'profile';
+const _profilePath = '/$_profileName';
+const _loginName = 'login';
+const _loginPath = '/$_loginName';
+const _settingsName = 'settings';
+const _settingsPath = _settingsName;
+const _workoutName = 'workout';
+const _workoutPath = '/$_workoutName';
+const _templateEditorName = 'templateEditor';
+const _recoveryName = 'recovery';
+const _historyName = 'history';
+const _historyPath = '/$_historyName';
+const _exercisesName = 'exercises';
+const _exercisesPath = '/$_exercisesName';
+const _doneName = 'done';
+const _donePath = '/$_doneName';
+
+
