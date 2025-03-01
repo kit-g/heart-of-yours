@@ -20,8 +20,9 @@ bool _isApple(BuildContext context) {
   };
 }
 
-mixin AsyncState<T extends StatefulWidget> on State<T>, LoadingState<T>, HasError<T> {
+mixin AsyncState<T extends StatefulWidget> on State<T>, LoadingState<T>, HasError<T>, HasHaptic<T> {
   Future<void> run(AsyncCallback callback, {AsyncCallback? onEmailExists}) async {
+    buzz();
     error.value = null;
     final l = L.of(context);
 

@@ -14,7 +14,8 @@ class RecoveryPage extends StatefulWidget {
   State<RecoveryPage> createState() => _RecoveryPageState();
 }
 
-class _RecoveryPageState extends State<RecoveryPage> with LoadingState<RecoveryPage>, HasError<RecoveryPage> {
+class _RecoveryPageState extends State<RecoveryPage>
+    with LoadingState<RecoveryPage>, HasError<RecoveryPage>, HasHaptic<RecoveryPage> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -129,6 +130,7 @@ class _RecoveryPageState extends State<RecoveryPage> with LoadingState<RecoveryP
   }
 
   Future<void> _resetPassword() async {
+    buzz();
     if (!_formKey.currentState!.validate()) return;
     final messenger = ScaffoldMessenger.of(context);
     final focus = FocusScope.of(context);
