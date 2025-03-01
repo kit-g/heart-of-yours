@@ -15,4 +15,6 @@ part 'page.dart';
 
 part 'recovery.dart';
 
+part 'sign_up.dart';
+
 part 'utils.dart';

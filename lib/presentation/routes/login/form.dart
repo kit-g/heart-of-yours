@@ -3,25 +3,39 @@ part of 'login.dart';
 class _Form extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final TextEditingController? nameController;
   final GlobalKey<FormState> formKey;
-  final VoidCallback onLogin;
+  final VoidCallback onAction;
   final ValueNotifier<bool> obscurityController;
   final ValueNotifier<String?> error;
-  final VoidCallback onPasswordRecovery;
+  final VoidCallback? onPasswordRecovery;
+  final bool needsName;
+  final String actionButtonCopy;
 
   const _Form({
     required this.formKey,
     required this.emailController,
     required this.passwordController,
-    required this.onLogin,
+    this.nameController,
+    required this.onAction,
     required this.obscurityController,
     required this.error,
-    required this.onPasswordRecovery,
+    this.onPasswordRecovery,
+    this.needsName = false,
+    required this.actionButtonCopy,
   });
 
   @override
   Widget build(BuildContext context) {
-    final L(:logIn, :email, :password, :cannotBeEmpty, :showPassword, :hidePassword, :forgotPassword) = L.of(context);
+    final L(
+      :email,
+      :password,
+      :cannotBeEmpty,
+      :showPassword,
+      :hidePassword,
+      :forgotPassword,
+      :nameOptional,
+    ) = L.of(context);
 
     String? validator(String? value) {
       return (value?.isEmpty ?? true) ? cannotBeEmpty : null;
@@ -42,6 +56,16 @@ class _Form extends StatelessWidget {
                 autocorrect: false,
                 maxLines: 1,
               ),
+              if (nameController != null) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(hintText: nameOptional),
+                  keyboardType: TextInputType.name,
+                  autocorrect: false,
+                  maxLines: 1,
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: passwordController,
@@ -66,14 +90,16 @@ class _Form extends StatelessWidget {
                 obscureText: hide,
                 validator: validator,
               ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: onPasswordRecovery,
-                  child: Text(forgotPassword),
+              if (onPasswordRecovery != null) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: onPasswordRecovery,
+                    child: Text(forgotPassword),
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 8),
               ValueListenableBuilder<String?>(
                 valueListenable: error,
@@ -83,11 +109,11 @@ class _Form extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               OutlinedButton(
-                onPressed: onLogin,
+                onPressed: onAction,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(logIn),
+                    Text(actionButtonCopy),
                   ],
                 ),
               ),

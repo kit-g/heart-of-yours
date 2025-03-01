@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/done.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
-import 'package:heart/presentation/routes/login/sign_up.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart_state/heart_state.dart';
@@ -14,8 +13,6 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../routes/login/login.dart';
 import '../../routes/profile/profile.dart';
 import '../../widgets/app_frame.dart';
-
-export 'package:go_router/go_router.dart' show GoRouterState;
 
 part 'constants.dart';
 
@@ -109,8 +106,31 @@ RouteBase _loginRoute() {
       GoRoute(
         path: _signUpName,
         name: _signUpName,
-        builder: (context, state) {
-          return const SignUpPage();
+        pageBuilder: (context, state) {
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: SignUpPage(
+              onLogin: (address) {
+                return context.goNamed(_loginName, queryParameters: {'address': address});
+              },
+            ),
+            transitionsBuilder: (__, animation, _, child) {
+              var scaleAnimation = Tween(begin: .8, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutBack,
+                ),
+              );
+
+              return ScaleTransition(
+                scale: scaleAnimation,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+          );
         },
       )
     ],

@@ -71,6 +71,14 @@ class L {
     );
   }
 
+  String get nameOptional {
+    return Intl.message(
+      'Name (optional)',
+      name: 'nameOptional',
+      desc: 'Field hint',
+    );
+  }
+
   String get save {
     return Intl.message(
       'Save',
@@ -111,10 +119,26 @@ class L {
     );
   }
 
+  String get signUpWithGoogle {
+    return Intl.message(
+      'Sign up with Google',
+      name: 'signUpWithGoogle',
+      desc: 'Button label',
+    );
+  }
+
   String get logInWithApple {
     return Intl.message(
       'Log in with Apple',
       name: 'logInWithApple',
+      desc: 'Button label',
+    );
+  }
+
+  String get signUpWithApple {
+    return Intl.message(
+      'Sign up with Apple',
+      name: 'signUpWithApple',
       desc: 'Button label',
     );
   }
