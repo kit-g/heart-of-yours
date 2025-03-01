@@ -218,6 +218,7 @@ enum AuthExceptionReason {
   wrongPassword,
   userDisabled,
   userNotFound,
+  emailInUse,
   unknown;
 
   factory AuthExceptionReason.fromCode(String code) {
@@ -227,6 +228,7 @@ enum AuthExceptionReason {
       'invalid-email' => invalidEmail,
       'user-disabled' => userDisabled,
       'user-not-found' => userNotFound,
+      'email-already-in-use' => emailInUse,
       _ => unknown,
     };
   }
