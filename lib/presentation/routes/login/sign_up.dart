@@ -1,9 +1,14 @@
 part of 'login.dart';
 
 class SignUpPage extends StatefulWidget {
+  final String? address;
   final void Function(String?) onLogin;
 
-  const SignUpPage({super.key, required this.onLogin});
+  const SignUpPage({
+    super.key,
+    required this.onLogin,
+    this.address,
+  });
 
   @override
   State<SignUpPage> createState() => _SignUpPageState();
@@ -23,6 +28,10 @@ class _SignUpPageState extends State<SignUpPage>
     super.initState();
 
     _isAppleSignNnAvailable = Auth.isAppleSignInAvailable();
+
+    if (widget.address case String s when s.isNotEmpty) {
+      _emailController.text = s;
+    }
   }
 
   @override
