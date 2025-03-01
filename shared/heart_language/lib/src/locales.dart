@@ -1013,6 +1013,14 @@ class L {
     );
   }
 
+  String get weakPassword {
+    return Intl.message(
+      'Almost there! Try a stronger password to keep your account safe.',
+      name: 'invalidCredentials',
+      desc: 'Login error message',
+    );
+  }
+
   String get forgotPassword {
     return Intl.message(
       'Forgot password?',
