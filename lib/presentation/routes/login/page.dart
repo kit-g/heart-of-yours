@@ -17,7 +17,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage>
-    with LoadingState<LoginPage>, HasError<LoginPage>, AsyncState<LoginPage> {
+    with LoadingState<LoginPage>, HasError<LoginPage>, HasHaptic<LoginPage>, AsyncState<LoginPage> {
   late Future<bool> _isAppleSignNnAvailable;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -156,6 +156,7 @@ class _LoginPageState extends State<LoginPage>
                                 ),
                                 TextButton(
                                   onPressed: () {
+                                    buzz();
                                     widget.onSignUp(_emailController.text);
                                   },
                                   child: Padding(

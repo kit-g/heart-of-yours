@@ -15,7 +15,7 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage>
-    with LoadingState<SignUpPage>, HasError<SignUpPage>, AsyncState<SignUpPage> {
+    with LoadingState<SignUpPage>, HasError<SignUpPage>, HasHaptic<SignUpPage>, AsyncState<SignUpPage> {
   late Future<bool> _isAppleSignNnAvailable;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -154,6 +154,7 @@ class _SignUpPageState extends State<SignUpPage>
                                 ),
                                 TextButton(
                                   onPressed: () {
+                                    buzz();
                                     widget.onLogin(_emailController.text);
                                   },
                                   child: Padding(
@@ -179,6 +180,7 @@ class _SignUpPageState extends State<SignUpPage>
   }
 
   Future<void> _signUpWithEmail() async {
+    buzz();
     if (!_formKey.currentState!.validate()) return;
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -235,6 +237,7 @@ class _SignUpPageState extends State<SignUpPage>
                 child: Text(emailExistsCancelButton),
               ),
               onPressed: () {
+                buzz();
                 Navigator.of(context, rootNavigator: true).pop();
               },
             ),
@@ -247,6 +250,7 @@ class _SignUpPageState extends State<SignUpPage>
                 ),
               ),
               onPressed: () {
+                buzz();
                 Navigator.of(context, rootNavigator: true).pop(true);
               },
             ),
@@ -256,3 +260,4 @@ class _SignUpPageState extends State<SignUpPage>
     );
   }
 }
+// todo update name
