@@ -23,7 +23,7 @@ extension on BuildContext {
     return goNamed(_recoveryName, queryParameters: {'address': address});
   }
 
-  void goToSignUp() {
-    return goNamed(_signUpName);
+  void goToSignUp({String? address}) {
+    return goNamed(_signUpName, queryParameters: {'address': address});
   }
 }

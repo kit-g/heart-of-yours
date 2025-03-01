@@ -79,7 +79,7 @@ RouteBase _loginRoute() {
           context.goToPasswordRecoveryPage(address: address);
         },
         onSignUp: (address) {
-          context.goToSignUp();
+          context.goToSignUp(address: address);
         },
         address: state.uri.queryParameters['address'],
       );
@@ -110,6 +110,7 @@ RouteBase _loginRoute() {
           return CustomTransitionPage(
             key: state.pageKey,
             child: SignUpPage(
+              address: state.uri.queryParameters['address'],
               onLogin: (address) {
                 return context.goNamed(_loginName, queryParameters: {'address': address});
               },
