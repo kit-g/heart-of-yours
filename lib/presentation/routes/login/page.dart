@@ -16,7 +16,8 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, HasError<LoginPage> {
+class _LoginPageState extends State<LoginPage>
+    with LoadingState<LoginPage>, HasError<LoginPage>, AsyncState<LoginPage> {
   late Future<bool> _isAppleSignNnAvailable;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -39,7 +40,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
 
   @override
   Widget build(BuildContext context) {
-    final L(:logInWithGoogle, :logInWithApple, :orConnector, :signUp) = L.of(context);
+    final L(:logInWithGoogle, :logInWithApple, :orConnector, :signUp, :logIn) = L.of(context);
 
     if (widget.address case String s when s.isNotEmpty) {
       _emailController.text = s;
@@ -85,12 +86,14 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                   formKey: _formKey,
                                   emailController: _emailController,
                                   passwordController: _passwordController,
-                                  onLogin: _logInWithEmail,
+                                  onAction: _logInWithEmail,
                                   obscurityController: _passwordObscurityController,
                                   error: error,
                                   onPasswordRecovery: () {
                                     widget.onPasswordRecovery(_emailController.text.trim());
                                   },
+                                  needsName: false,
+                                  actionButtonCopy: logIn,
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
@@ -105,7 +108,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                       child: Icon(CustomIcons.google),
                                     ),
                                     OutlinedButton(
-                                      onPressed: () => _logIn(Auth.of(context).loginWithGoogle),
+                                      onPressed: () => run(Auth.of(context).loginWithGoogle),
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
@@ -119,7 +122,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                   future: _isAppleSignNnAvailable,
                                   builder: (_, snapshot) {
                                     final AsyncSnapshot(:hasData, :hasError, data: available) = snapshot;
-                                    bool hasAppleSignIn = _isIos(context) && !hasError && hasData && available!;
+                                    bool hasAppleSignIn = _isApple(context) && !hasError && hasData && available!;
                                     return AnimatedSwitcher(
                                       duration: const Duration(milliseconds: 100),
                                       child: switch (hasAppleSignIn) {
@@ -133,7 +136,7 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
                                                 child: Icon(CustomIcons.appstore),
                                               ),
                                               OutlinedButton(
-                                                onPressed: () => _logIn(Auth.of(context).loginWithApple),
+                                                onPressed: () => run(Auth.of(context).loginWithApple),
                                                 child: Row(
                                                   mainAxisAlignment: MainAxisAlignment.center,
                                                   children: [
@@ -177,29 +180,9 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
     );
   }
 
-  Future<void> _logIn(AsyncCallback callback) async {
-    error.value = null;
-    final l = L.of(context);
-
-    try {
-      startLoading();
-      await callback();
-    } on AuthException catch (e) {
-      error.value = _errorCopy(l, e.reason);
-    } catch (error, stacktrace) {
-      reportToSentry(error, stacktrace: stacktrace);
-    } finally {
-      try {
-        stopLoading();
-      } catch (_) {
-        //
-      }
-    }
-  }
-
   Future<void> _logInWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
-    return _logIn(
+    return run(
       () {
         return Auth.of(context).logInWithEmailAndPassword(
           email: _emailController.text.trim(),
@@ -207,9 +190,5 @@ class _LoginPageState extends State<LoginPage> with LoadingState<LoginPage>, Has
         );
       },
     );
-  }
-
-  bool _isIos(BuildContext context) {
-    return Theme.of(context).platform == TargetPlatform.iOS;
   }
 }
