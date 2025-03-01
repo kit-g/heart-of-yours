@@ -1045,6 +1045,39 @@ class L {
     );
   }
 
+  String get emailExistsTitle {
+    return Intl.message(
+      'Email already exists',
+      name: 'emailExistsTitle',
+      desc: 'Email exists dialog',
+    );
+  }
+
+  String get emailExistsOkButton {
+    return Intl.message(
+      'Yes, sign me in!',
+      name: 'emailExistsOkButton',
+      desc: 'Email exists dialog',
+    );
+  }
+
+  String get emailExistsCancelButton {
+    return Intl.message(
+      'No, I got this',
+      name: 'emailExistsCancelButton',
+      desc: 'Email exists dialog',
+    );
+  }
+
+  String emailExistsBody(String address) {
+    return Intl.message(
+      'An account with $address already exists. Would you like to log in instead?',
+      name: 'emailExistsBody',
+      desc: 'Email exists dialog',
+      args: [address],
+    );
+  }
+
   String get sendResetLinkBody {
     return Intl.message(
       'Enter you email and we\'ll help you reset your password',

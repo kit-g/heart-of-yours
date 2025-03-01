@@ -171,13 +171,79 @@ class _SignUpPageState extends State<SignUpPage>
 
   Future<void> _signUpWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
     return run(
       () {
         return Auth.of(context).signUpWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
         );
       },
+      onEmailExists: () async {
+        final shouldProceed = await _showConfirmSignInDialog(context, email) ?? false;
+        if (!shouldProceed) return;
+
+        return run(
+          () {
+            return Auth.of(context).logInWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<bool?> _showConfirmSignInDialog(BuildContext context, String email) async {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final L(
+      :emailExistsTitle,
+      :emailExistsBody,
+      :emailExistsCancelButton,
+      :emailExistsOkButton,
+    ) = L.of(context);
+    return showBrandedDialog(
+      context,
+      title: Text(emailExistsTitle),
+      titleTextStyle: textTheme.titleMedium,
+      content: Text(
+        emailExistsBody(email),
+        textAlign: TextAlign.center,
+      ),
+      icon: Icon(
+        Icons.error_outline_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(emailExistsCancelButton),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.errorContainer,
+              child: Center(
+                child: Text(
+                  emailExistsOkButton,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop(true);
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

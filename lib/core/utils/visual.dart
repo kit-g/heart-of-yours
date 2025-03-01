@@ -105,7 +105,7 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-Future<void> showBrandedDialog(
+Future<T?> showBrandedDialog<T>(
   BuildContext context, {
   required Widget title,
   Widget? content,
@@ -116,7 +116,7 @@ Future<void> showBrandedDialog(
 }) {
   final ThemeData(:textTheme) = Theme.of(context);
 
-  return showDialog<void>(
+  return showDialog<T>(
     context: context,
     builder: (context) {
       return AlertDialog(

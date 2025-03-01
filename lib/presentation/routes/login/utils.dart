@@ -7,6 +7,7 @@ String _errorCopy(L l, AuthExceptionReason reason) {
     AuthExceptionReason.userNotFound => l.invalidCredentials,
     AuthExceptionReason.userDisabled => l.userDisabled,
     AuthExceptionReason.unknown => l.unknownError,
+    AuthExceptionReason.emailInUse => l.unknownError,
   };
 }
 
@@ -19,7 +20,7 @@ bool _isApple(BuildContext context) {
 }
 
 mixin AsyncState<T extends StatefulWidget> on State<T>, LoadingState<T>, HasError<T> {
-  Future<void> run(AsyncCallback callback) async {
+  Future<void> run(AsyncCallback callback, {AsyncCallback? onEmailExists}) async {
     error.value = null;
     final l = L.of(context);
 
@@ -27,9 +28,15 @@ mixin AsyncState<T extends StatefulWidget> on State<T>, LoadingState<T>, HasErro
       startLoading();
       await callback();
     } on AuthException catch (e) {
-      error.value = _errorCopy(l, e.reason);
+      switch (e.reason) {
+        case AuthExceptionReason.emailInUse:
+          return onEmailExists?.call();
+        default:
+          error.value = _errorCopy(l, e.reason);
+          return;
+      }
     } catch (error, stacktrace) {
-      reportToSentry(error, stacktrace: stacktrace);
+      return reportToSentry(error, stacktrace: stacktrace);
     } finally {
       try {
         stopLoading();
