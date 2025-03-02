@@ -84,7 +84,10 @@ class _ColorPickerState extends State<_ColorPicker> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text(cancel),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(cancel),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -92,10 +95,13 @@ class _ColorPickerState extends State<_ColorPicker> {
                 Preferences.of(context).setBaseColor(_color?.toHexString());
                 Navigator.of(context).pop();
               },
-              child: Text(ok),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(ok),
+              ),
             ),
           ],
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0,vertical: 8),
         );
       },
     );
