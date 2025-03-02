@@ -1,7 +1,12 @@
 part of 'history.dart';
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key});
+  final VoidCallback onNewWorkout;
+
+  const HistoryPage({
+    super.key,
+    required this.onNewWorkout,
+  });
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -43,7 +48,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     itemBuilder: (_, index) {
                       return WorkoutItem(
                         workout: history[history.length - index - 1],
-                        onStartNewWorkout: context.goToWorkouts,
+                        onStartNewWorkout: widget.onNewWorkout,
                       );
                     },
                   )

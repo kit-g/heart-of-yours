@@ -59,7 +59,9 @@ RouteBase _workoutRoute() {
 RouteBase _historyRoute() {
   return GoRoute(
     path: _historyPath,
-    builder: (__, _) => const HistoryPage(),
+    builder: (context, _) {
+      return HistoryPage(onNewWorkout: context.goToWorkouts);
+    },
     name: _historyName,
   );
 }
@@ -149,7 +151,10 @@ RouteBase _workoutDoneRoute() {
       try {
         final id = state.uri.queryParameters['workoutId'];
         final workout = Workouts.of(context).lookup(id!);
-        return WorkoutDone(workout: workout!);
+        return WorkoutDone(
+          workout: workout!,
+          onQuit: context.goToWorkouts,
+        );
       } catch (_) {
         return const Scaffold();
       }

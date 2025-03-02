@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 
 class WorkoutDone extends StatelessWidget {
   final Workout workout;
+  final VoidCallback onQuit;
 
   const WorkoutDone({
     super.key,
     required this.workout,
+    required this.onQuit,
   });
 
   @override
@@ -20,9 +21,7 @@ class WorkoutDone extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () {
-            context.goToWorkouts();
-          },
+          onPressed: onQuit,
           icon: const Icon(Icons.close_rounded),
         ),
       ),
@@ -46,9 +45,7 @@ class WorkoutDone extends StatelessWidget {
             ),
             const SizedBox(height: 72),
             OutlinedButton(
-              onPressed: () {
-                context.goToWorkouts();
-              },
+              onPressed: onQuit,
               child: Text(okBang),
             ),
           ],
