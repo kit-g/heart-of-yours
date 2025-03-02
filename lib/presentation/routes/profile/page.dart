@@ -1,7 +1,12 @@
 part of 'profile.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final VoidCallback onSettings;
+
+  const ProfilePage({
+    super.key,
+    required this.onSettings,
+  });
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -35,7 +40,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         actions: [
           IconButton(
             tooltip: settings,
-            onPressed: context.goToSettings,
+            onPressed: widget.onSettings,
             icon: const Icon(Icons.settings_rounded),
           ),
           IconButton.outlined(

@@ -21,7 +21,11 @@ part 'extension.dart';
 RouteBase _profileRoute() {
   return GoRoute(
     path: _profilePath,
-    builder: (__, _) => const ProfilePage(),
+    builder: (context, _) {
+      return ProfilePage(
+        onSettings: context.goToSettings,
+      );
+    },
     name: _profileName,
     routes: [
       GoRoute(
