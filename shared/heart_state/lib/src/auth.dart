@@ -14,6 +14,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
 
   final void Function(User?)? onUserChange;
+  final Future<void> Function()? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   User? _user;
@@ -31,7 +32,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  Auth({this.onUserChange, this.onError}) {
+  Auth({this.onUserChange, this.onError, this.onEnter}) {
     _firebase.userChanges().listen(
       (user) async {
         _user = _cast(user);
@@ -96,7 +97,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         appleName: name,
       );
     } catch (e, s) {
-      onError?.call(e, stacktrace: s);
+      return onError?.call(e, stacktrace: s);
     }
   }
 
@@ -121,6 +122,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         email: email,
         password: password,
       ),
+    ).then(
+      (_) {
+        return onEnter?.call();
+      },
     );
   }
 
@@ -145,6 +150,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     if (!(cred?.user?.emailVerified ?? false)) {
       cred?.user?.sendEmailVerification();
     }
+
+    return onEnter?.call();
   }
 
   Future<void> updateName(String? name) async {

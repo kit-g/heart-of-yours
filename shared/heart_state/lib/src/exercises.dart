@@ -23,6 +23,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   @override
   void onSignOut() {
+    isInitialized = false;
     _exercises.clear();
     _selectedExercises.clear();
   }

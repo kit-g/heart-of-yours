@@ -55,6 +55,7 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
+            onEnter: () => _initApp(context),
             onUserChange: (user) {
               HeartRouter.refresh();
               Stats.of(context).userId = user?.id;
@@ -144,60 +145,61 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   void afterFirstLayout(BuildContext context) {
     _initApp(context);
   }
+}
 
-  Future<void> _initApp(BuildContext context) async {
-    initNotifications(
-      platform: Theme.of(context).platform,
-      onExerciseNotification: (exerciseId) {
-        // exercises with a timer emit a local notification
-        // when tapped on, it will:
-        // - redirect the user to the workout page
-        HeartRouter.goToExercise(exerciseId);
-        // - trigger a slight animation highlighting the exercise
-        Workouts.of(context).pointAt(exerciseId);
+Future<void> _initApp(BuildContext context) async {
+  print('init');
+  initNotifications(
+    platform: Theme.of(context).platform,
+    onExerciseNotification: (exerciseId) {
+      // exercises with a timer emit a local notification
+      // when tapped on, it will:
+      // - redirect the user to the workout page
+      HeartRouter.goToExercise(exerciseId);
+      // - trigger a slight animation highlighting the exercise
+      Workouts.of(context).pointAt(exerciseId);
+    },
+    onUnknownNotification: reportToSentry,
+  );
+
+  _initAppInfo(context);
+
+  var Exercises(:isInitialized, :init) = Exercises.of(context);
+  final workouts = Workouts.of(context);
+
+  final templates = Templates.of(context);
+  final prefs = Preferences.of(context);
+  final theme = AppTheme.of(context);
+  await prefs.init();
+
+  theme
+    ..color = AppTheme.colorFromHex(prefs.getBaseColor())
+    ..toMode(prefs.getThemeMode());
+
+  if (!isInitialized) {
+    init().then<void>(
+      (_) {
+        // since workouts initialization looks up exercises
+        // in `Exercises`, we must chain these calls this way
+        workouts.init().then<void>((_) => HeartRouter.refresh());
+        templates.init();
       },
-      onUnknownNotification: reportToSentry,
     );
+  }
+}
 
-    _initAppInfo(context);
-
-    var Exercises(:isInitialized, :init) = Exercises.of(context);
-    final workouts = Workouts.of(context);
-
-    final templates = Templates.of(context);
-    final prefs = Preferences.of(context);
-    final theme = AppTheme.of(context);
-    await prefs.init();
-
-    theme
-      ..color = AppTheme.colorFromHex(prefs.getBaseColor())
-      ..toMode(prefs.getThemeMode());
-
-    if (!isInitialized) {
-      init().then<void>(
-        (_) {
-          // since workouts initialization looks up exercises
-          // in `Exercises`, we must chain these calls this way
-          workouts.init().then<void>((_) => HeartRouter.refresh());
-          templates.init();
+Future<void> _initAppInfo(BuildContext context) {
+  return AppInfo.of(context).init(
+    () {
+      return PackageInfo.fromPlatform().then<Package>(
+        (info) {
+          return (
+            appName: info.appName,
+            version: info.version,
+            build: info.buildNumber,
+          );
         },
       );
-    }
-  }
-
-  Future<void> _initAppInfo(BuildContext context) {
-    return AppInfo.of(context).init(
-      () {
-        return PackageInfo.fromPlatform().then<Package>(
-          (info) {
-            return (
-              appName: info.appName,
-              version: info.version,
-              build: info.buildNumber,
-            );
-          },
-        );
-      },
-    );
-  }
+    },
+  );
 }
