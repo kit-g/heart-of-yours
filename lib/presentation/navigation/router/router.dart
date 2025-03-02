@@ -40,7 +40,11 @@ RouteBase _profileRoute() {
 RouteBase _workoutRoute() {
   return GoRoute(
     path: _workoutPath,
-    builder: (__, _) => const WorkoutPage(),
+    builder: (context, _) {
+      return WorkoutPage(
+        goToTemplateEditor: context.goToTemplateEditor,
+      );
+    },
     name: _workoutName,
     routes: [
       GoRoute(
