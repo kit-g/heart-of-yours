@@ -133,17 +133,29 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
 
     if (name case String name) {
-      final user = _firebase.currentUser;
-      if (user != null) {
-        await user.updateProfile(displayName: name);
-        await user.reload();
+      if (cred?.user case fb.User user) {
+        await user.updateDisplayName(name);
         _user = _cast(user);
+
+        updateName(name);
         notifyListeners();
       }
     }
 
     if (!(cred?.user?.emailVerified ?? false)) {
       cred?.user?.sendEmailVerification();
+    }
+  }
+
+  Future<void> updateName(String? name) async {
+    if (user?.id case String userId) {
+      final doc = _db.collection('users').doc(userId);
+
+      final snapshot = await doc.get();
+
+      if (snapshot.exists) {
+        await doc.update({'displayName': name});
+      }
     }
   }
 
