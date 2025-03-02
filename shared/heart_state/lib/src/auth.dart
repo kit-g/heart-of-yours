@@ -100,7 +100,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) async {
+  Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) {
     return _firebase.signInWithCredential(credential).then<void>(
       (result) {
         _user = _cast(result.user)?.copyWith(displayName: appleName, email: appleEmail);
@@ -113,6 +113,67 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         );
       },
     );
+  }
+
+  Future<void> logInWithEmailAndPassword({required String email, required String password}) {
+    return _toFirebase<void>(
+      _firebase.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      ),
+    );
+  }
+
+  Future<void> signUpWithEmailAndPassword({required String email, required String password, String? name}) async {
+    final cred = await _toFirebase<fb.UserCredential>(
+      _firebase.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      ),
+    );
+
+    if (name case String name) {
+      if (cred?.user case fb.User user) {
+        await user.updateDisplayName(name);
+        _user = _cast(user);
+
+        updateName(name);
+        notifyListeners();
+      }
+    }
+
+    if (!(cred?.user?.emailVerified ?? false)) {
+      cred?.user?.sendEmailVerification();
+    }
+  }
+
+  Future<void> updateName(String? name) async {
+    if (user?.id case String userId) {
+      final doc = _db.collection('users').doc(userId);
+
+      final snapshot = await doc.get();
+
+      if (snapshot.exists) {
+        await doc.update({'displayName': name});
+      }
+    }
+  }
+
+  Future<void> sendPasswordRecoveryEmail(String email) {
+    return _toFirebase<void>(
+      _firebase.sendPasswordResetEmail(email: email),
+    );
+  }
+
+  Future<T?> _toFirebase<T>(Future<T?> action) async {
+    try {
+      return await action;
+    } on fb.FirebaseAuthException catch (error) {
+      throw AuthException(AuthExceptionReason.fromCode(error.code));
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return Future.error(error);
+    }
   }
 
   static Future<bool> isAppleSignInAvailable() {
@@ -175,5 +236,39 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       onError?.call(e, stacktrace: s);
       return user;
     }
+  }
+}
+
+enum AuthExceptionReason {
+  invalidEmail,
+  wrongPassword,
+  userDisabled,
+  userNotFound,
+  emailInUse,
+  weakPassword,
+  unknown;
+
+  factory AuthExceptionReason.fromCode(String code) {
+    return switch (code) {
+      'wrong-password' => wrongPassword,
+      'invalid-credential' => wrongPassword,
+      'invalid-email' => invalidEmail,
+      'user-disabled' => userDisabled,
+      'user-not-found' => userNotFound,
+      'email-already-in-use' => emailInUse,
+      'weak-password' => weakPassword,
+      _ => unknown,
+    };
+  }
+}
+
+class AuthException implements Exception {
+  final AuthExceptionReason reason;
+
+  AuthException(this.reason);
+
+  @override
+  String toString() {
+    return reason.toString();
   }
 }

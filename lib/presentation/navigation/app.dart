@@ -12,7 +12,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import 'router.dart';
+import 'router/router.dart';
 
 class HeartApp extends StatelessWidget {
   const HeartApp({super.key});

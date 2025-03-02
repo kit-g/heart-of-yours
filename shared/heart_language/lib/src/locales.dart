@@ -71,6 +71,14 @@ class L {
     );
   }
 
+  String get nameOptional {
+    return Intl.message(
+      'Name (optional)',
+      name: 'nameOptional',
+      desc: 'Field hint',
+    );
+  }
+
   String get save {
     return Intl.message(
       'Save',
@@ -111,10 +119,26 @@ class L {
     );
   }
 
+  String get signUpWithGoogle {
+    return Intl.message(
+      'Sign up with Google',
+      name: 'signUpWithGoogle',
+      desc: 'Button label',
+    );
+  }
+
   String get logInWithApple {
     return Intl.message(
       'Log in with Apple',
       name: 'logInWithApple',
+      desc: 'Button label',
+    );
+  }
+
+  String get signUpWithApple {
+    return Intl.message(
+      'Sign up with Apple',
+      name: 'signUpWithApple',
       desc: 'Button label',
     );
   }
@@ -946,6 +970,143 @@ class L {
       'Template name',
       name: 'templateName',
       desc: 'Edit template text field hint',
+    );
+  }
+
+  String get cannotBeEmpty {
+    return Intl.message(
+      'Cannot be empty',
+      name: 'cannotBeEmpty',
+      desc: 'Form validation message',
+    );
+  }
+
+  String get showPassword {
+    return Intl.message(
+      'Show password',
+      name: 'showPassword',
+      desc: 'Tooltip message',
+    );
+  }
+
+  String get hidePassword {
+    return Intl.message(
+      'Hide password',
+      name: 'hidePassword',
+      desc: 'Tooltip message',
+    );
+  }
+
+  String get orConnector {
+    return Intl.message(
+      '- or -',
+      name: 'orConnector',
+      desc: 'Connects two widgets, this OR that',
+    );
+  }
+
+  String get invalidCredentials {
+    return Intl.message(
+      'Well, that didn\'t work! Double-check your details, eh?',
+      name: 'invalidCredentials',
+      desc: 'Login error message',
+    );
+  }
+
+  String get weakPassword {
+    return Intl.message(
+      'Almost there! Try a stronger password to keep your account safe.',
+      name: 'invalidCredentials',
+      desc: 'Login error message',
+    );
+  }
+
+  String get forgotPassword {
+    return Intl.message(
+      'Forgot password?',
+      name: 'forgotPassword',
+      desc: 'Login button',
+    );
+  }
+
+  String get signUp {
+    return Intl.message(
+      'Sign up',
+      name: 'signUp',
+      desc: 'Generic label',
+    );
+  }
+
+  String get sendResetLink {
+    return Intl.message(
+      'Send Reset Link',
+      name: 'sendResetLink',
+      desc: 'Password recovery flow',
+    );
+  }
+
+  String get recoveryLinkMessage {
+    return Intl.message(
+      'If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.',
+      name: 'recoveryLinkMessage',
+      desc: 'Password recovery flow',
+    );
+  }
+
+  String get emailExistsTitle {
+    return Intl.message(
+      'Email already exists',
+      name: 'emailExistsTitle',
+      desc: 'Email exists dialog',
+    );
+  }
+
+  String get emailExistsOkButton {
+    return Intl.message(
+      'Yes, sign me in!',
+      name: 'emailExistsOkButton',
+      desc: 'Email exists dialog',
+    );
+  }
+
+  String get emailExistsCancelButton {
+    return Intl.message(
+      'No, I got this',
+      name: 'emailExistsCancelButton',
+      desc: 'Email exists dialog',
+    );
+  }
+
+  String emailExistsBody(String address) {
+    return Intl.message(
+      'An account with $address already exists. Would you like to log in instead?',
+      name: 'emailExistsBody',
+      desc: 'Email exists dialog',
+      args: [address],
+    );
+  }
+
+  String get sendResetLinkBody {
+    return Intl.message(
+      'Enter you email and we\'ll help you reset your password',
+      name: 'sendResetLinkBody',
+      desc: 'Password recovery flow',
+    );
+  }
+
+  String get userDisabled {
+    return Intl.message(
+      'This account is disabled',
+      name: 'userDisabled',
+      desc: 'Login error message',
+    );
+  }
+
+  String get unknownError {
+    return Intl.message(
+      'Unknown error occurred',
+      name: 'unknownError',
+      desc: 'Login error message',
     );
   }
 }

@@ -54,6 +54,16 @@ mixin LoadingState<T extends StatefulWidget> on State<T> {
   }
 }
 
+mixin HasError<T extends StatefulWidget> on State<T> {
+  final error = ValueNotifier<String?>(null);
+
+  @override
+  void dispose() {
+    error.dispose();
+    super.dispose();
+  }
+}
+
 class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   final double height;
@@ -95,7 +105,7 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-Future<void> showBrandedDialog(
+Future<T?> showBrandedDialog<T>(
   BuildContext context, {
   required Widget title,
   Widget? content,
@@ -106,7 +116,7 @@ Future<void> showBrandedDialog(
 }) {
   final ThemeData(:textTheme) = Theme.of(context);
 
-  return showDialog<void>(
+  return showDialog<T>(
     context: context,
     builder: (context) {
       return AlertDialog(

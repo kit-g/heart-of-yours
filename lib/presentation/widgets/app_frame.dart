@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart_language/heart_language.dart';
@@ -53,6 +54,7 @@ class AppFrame extends StatelessWidget {
   }
 
   Future<void> _onTap(BuildContext context, int index) async {
+    HapticFeedback.mediumImpact();
     if (shell.currentIndex != index) {
       // switch to that navigation stack unless already there
       return shell.goBranch(index);
