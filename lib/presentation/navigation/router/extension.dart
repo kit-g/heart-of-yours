@@ -4,10 +4,6 @@ extension ContextNavigation on BuildContext {
   void goToWorkoutDone(String? workoutId) {
     return goNamed(_doneName, queryParameters: {'workoutId': workoutId});
   }
-
-  void goToTemplateEditor({bool? newTemplate}) {
-    return goNamed(_templateEditorName, queryParameters: {'newTemplate': newTemplate.toString()});
-  }
 }
 
 extension on BuildContext {
@@ -25,5 +21,9 @@ extension on BuildContext {
 
   void goToWorkouts() {
     return goNamed(_workoutName);
+  }
+
+  void goToTemplateEditor({bool? newTemplate}) {
+    return goNamed(_templateEditorName, queryParameters: {'newTemplate': newTemplate.toString()});
   }
 }

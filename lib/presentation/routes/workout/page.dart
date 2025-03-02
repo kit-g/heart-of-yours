@@ -1,7 +1,12 @@
 part of 'workout.dart';
 
 class WorkoutPage extends StatefulWidget {
-  const WorkoutPage({super.key});
+  final void Function({bool? newTemplate}) goToTemplateEditor;
+
+  const WorkoutPage({
+    super.key,
+    required this.goToTemplateEditor,
+  });
 
   @override
   State<WorkoutPage> createState() => _WorkoutPageState();
@@ -162,7 +167,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ),
                 ],
               ),
-            null => const _NoActiveWorkoutLayout(),
+            null => _NoActiveWorkoutLayout(goToTemplateEditor: widget.goToTemplateEditor),
           },
         ),
       ),

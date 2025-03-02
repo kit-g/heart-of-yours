@@ -5,7 +5,9 @@ part of 'workout.dart';
 /// Allows to start a new workout
 /// or choose from a set of workout templates or create new ones
 class _NoActiveWorkoutLayout extends StatelessWidget {
-  const _NoActiveWorkoutLayout();
+  final void Function({bool? newTemplate}) goToTemplateEditor;
+
+  const _NoActiveWorkoutLayout({required this.goToTemplateEditor});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                   PrimaryButton.shrunk(
                     backgroundColor: colorScheme.secondaryContainer,
                     onPressed: () {
-                      context.goToTemplateEditor(newTemplate: true);
+                      goToTemplateEditor(newTemplate: true);
                     },
                     child: Row(
                       children: [
@@ -66,7 +68,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                     },
                     onEdit: (template) {
                       templates.editable = template;
-                      context.goToTemplateEditor();
+                      goToTemplateEditor();
                     },
                     onStartWorkout: (template) {
                       Workouts.of(context).startWorkout(template: template.toWorkout());
@@ -212,7 +214,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
               onPressed: () {
                 Templates.of(context).editable = template;
                 Navigator.of(context, rootNavigator: true).pop();
-                context.goToTemplateEditor();
+                goToTemplateEditor();
               },
             ),
             PrimaryButton.wide(
