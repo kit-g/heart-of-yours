@@ -189,6 +189,7 @@ class _SignUpPageState extends State<SignUpPage>
         return Auth.of(context).signUpWithEmailAndPassword(
           email: email,
           password: password,
+          name: _nameController.text.trim(),
         );
       },
       onEmailExists: () async {
@@ -260,4 +261,3 @@ class _SignUpPageState extends State<SignUpPage>
     );
   }
 }
-// todo update name

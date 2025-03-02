@@ -100,7 +100,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) async {
+  Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) {
     return _firebase.signInWithCredential(credential).then<void>(
       (result) {
         _user = _cast(result.user)?.copyWith(displayName: appleName, email: appleEmail);
@@ -115,8 +115,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
-  Future<void> logInWithEmailAndPassword({required String email, required String password}) async {
-    return _toFirebase(
+  Future<void> logInWithEmailAndPassword({required String email, required String password}) {
+    return _toFirebase<void>(
       _firebase.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -124,17 +124,31 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
-  Future<void> signUpWithEmailAndPassword({required String email, required String password}) async {
-    return _toFirebase(
+  Future<void> signUpWithEmailAndPassword({required String email, required String password, String? name}) async {
+    final cred = await _toFirebase<fb.UserCredential>(
       _firebase.createUserWithEmailAndPassword(
         email: email,
         password: password,
       ),
     );
+
+    if (name case String name) {
+      final user = _firebase.currentUser;
+      if (user != null) {
+        await user.updateProfile(displayName: name);
+        await user.reload();
+        _user = _cast(user);
+        notifyListeners();
+      }
+    }
+
+    if (!(cred?.user?.emailVerified ?? false)) {
+      cred?.user?.sendEmailVerification();
+    }
   }
 
-  Future<void> sendPasswordRecoveryEmail(String email) async {
-    return _toFirebase(
+  Future<void> sendPasswordRecoveryEmail(String email) {
+    return _toFirebase<void>(
       _firebase.sendPasswordResetEmail(email: email),
     );
   }
