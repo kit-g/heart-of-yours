@@ -202,6 +202,25 @@ class MaterialTheme {
           borderRadius: BorderRadius.all(Radius.circular(4)),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.all(4),
+          minimumSize: const Size(0, 0),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          textStyle: textTheme.bodyMedium?.copyWith(fontFamily: 'Lato'),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          textStyle: textTheme.titleMedium?.copyWith(fontFamily: 'Lato'),
+          foregroundColor: colorScheme.onSurface,
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(strokeWidth: 2),
     );
   }
 }

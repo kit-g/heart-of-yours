@@ -1,3 +1,5 @@
+library;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/presentation/routes/done.dart';
@@ -8,27 +10,13 @@ import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import '../routes/login.dart';
-import '../routes/profile/profile.dart';
-import '../widgets/app_frame.dart';
+import '../../routes/login/login.dart';
+import '../../routes/profile/profile.dart';
+import '../../widgets/app_frame.dart';
 
-export 'package:go_router/go_router.dart' show GoRouterState;
+part 'constants.dart';
 
-const _profileName = 'profile';
-const _profilePath = '/$_profileName';
-const _loginName = 'login';
-const _loginPath = '/$_loginName';
-const _settingsName = 'settings';
-const _settingsPath = _settingsName;
-const _workoutName = 'workout';
-const _workoutPath = '/$_workoutName';
-const _templateEditorName = 'templateEditor';
-const _historyName = 'history';
-const _historyPath = '/$_historyName';
-const _exercisesName = 'exercises';
-const _exercisesPath = '/$_exercisesName';
-const _doneName = 'done';
-const _donePath = '/$_doneName';
+part 'extension.dart';
 
 RouteBase _profileRoute() {
   return GoRoute(
@@ -83,13 +71,70 @@ RouteBase _exercisesRoute() {
 RouteBase _loginRoute() {
   return GoRoute(
     path: _loginPath,
-    builder: (__, _) => const LoginPage(),
+    builder: (context, state) {
+      // login page and password recovery page will communicate through the query parameter
+      // this will enable us to preserve the content of the email field.
+      return LoginPage(
+        onPasswordRecovery: (address) {
+          context.goToPasswordRecoveryPage(address: address);
+        },
+        onSignUp: (address) {
+          context.goToSignUp(address: address);
+        },
+        address: state.uri.queryParameters['address'],
+      );
+    },
     name: _loginName,
     redirect: (context, state) {
       final isLoggedIn = Auth.of(context).isLoggedIn;
       if (isLoggedIn) return _profilePath;
       return null;
     },
+    routes: [
+      GoRoute(
+        path: _recoveryName,
+        builder: (context, state) {
+          return RecoveryPage(
+            address: state.uri.queryParameters['address'],
+            onLinkSent: (address) {
+              return context.goNamed(_loginName, queryParameters: {'address': address});
+            },
+          );
+        },
+        name: _recoveryName,
+      ),
+      GoRoute(
+        path: _signUpName,
+        name: _signUpName,
+        pageBuilder: (context, state) {
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: SignUpPage(
+              address: state.uri.queryParameters['address'],
+              onLogin: (address) {
+                return context.goNamed(_loginName, queryParameters: {'address': address});
+              },
+            ),
+            transitionsBuilder: (__, animation, _, child) {
+              var scaleAnimation = Tween(begin: .8, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutBack,
+                ),
+              );
+
+              return ScaleTransition(
+                scale: scaleAnimation,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+          );
+        },
+      )
+    ],
   );
 }
 
@@ -143,12 +188,25 @@ abstract final class HeartRouter {
       _workoutDoneRoute(),
     ],
     redirect: (context, state) {
+      switch (state.fullPath?.split('/')) {
+        // login sub-routes
+        case ['', _loginName, String part]:
+          // there might be a query in path, see _loginRoute
+          return state.namedLocation(part, queryParameters: state.uri.queryParameters);
+      }
+
       final isLoggedIn = Auth.of(context).isLoggedIn;
-      if (!isLoggedIn) return _loginPath;
+
+      if (!isLoggedIn) {
+        // same as RecoveryPage
+        return state.namedLocation(_loginName, queryParameters: state.uri.queryParameters);
+      }
+
       if (Workouts.of(context).hasUnNotifiedActiveWorkout) {
         Workouts.of(context).notifyOfActiveWorkout();
         return _workoutPath;
       }
+
       return null;
     },
   );
@@ -162,27 +220,5 @@ abstract final class HeartRouter {
       'workout',
       queryParameters: {'exerciseId': exerciseId},
     );
-  }
-}
-
-extension ContextNavigation on BuildContext {
-  void goHome() {
-    return goNamed(_profileName);
-  }
-
-  void goToSettings() {
-    return goNamed(_settingsName);
-  }
-
-  void goToWorkoutDone(String? workoutId) {
-    return goNamed(_doneName, queryParameters: {'workoutId': workoutId});
-  }
-
-  void goToWorkouts() {
-    return goNamed(_workoutName);
-  }
-
-  void goToTemplateEditor({bool? newTemplate}) {
-    return goNamed(_templateEditorName, queryParameters: {'newTemplate': newTemplate.toString()});
   }
 }
