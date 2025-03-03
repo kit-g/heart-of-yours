@@ -15,10 +15,7 @@ CREATE TABLE IF NOT EXISTS exercises
     name         TEXT NOT NULL PRIMARY KEY,
     category     TEXT NOT NULL,
     target       TEXT NOT NULL,
-    last_done    TEXT,
-    last_results TEXT,
-    user_id      TEXT,
-    rest_timer   INT
+    user_id      TEXT
 );
 """;
 
@@ -188,10 +185,7 @@ SELECT
     description,
     e.name,
     category,
-    target,
-    last_done,
-    last_results,
-    rest_timer
+    target
 FROM templates
 INNER JOIN main.template_exercises te
     ON templates.id = te.template_id
@@ -199,4 +193,16 @@ INNER JOIN main.exercises e
     ON te.exercise_id = e.name
 WHERE templates.user_id = ?
 ;
+""";
+
+const exerciseDetails = """
+CREATE TABLE IF NOT EXISTS exercise_details
+(
+    exercise_name TEXT NOT NULL REFERENCES exercises ON DELETE CASCADE,
+    user_id       TEXT NOT NULL,
+    last_done     TEXT,
+    last_results  TEXT,
+    rest_timer    INTEGER,
+    PRIMARY KEY (exercise_name, user_id)
+);
 """;
