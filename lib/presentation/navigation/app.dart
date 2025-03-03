@@ -53,6 +53,9 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Templates>(
           create: (_) => Templates(service: db),
         ),
+        ChangeNotifierProvider<Timers>(
+          create: (_) => Timers(service: db),
+        ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             onEnter: () => _initApp(context),
@@ -60,15 +63,13 @@ class HeartApp extends StatelessWidget {
               HeartRouter.refresh();
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
+              Timers.of(context).userId = user?.id;
               Workouts.of(context).userId = user?.id;
             },
           ),
         ),
         ChangeNotifierProvider<Preferences>(
           create: (_) => Preferences(),
-        ),
-        ChangeNotifierProvider<Timers>(
-          create: (_) => Timers(),
         ),
         ChangeNotifierProvider<Alarms>(
           create: (_) => Alarms(),
@@ -148,7 +149,6 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
 }
 
 Future<void> _initApp(BuildContext context) async {
-  print('init');
   initNotifications(
     platform: Theme.of(context).platform,
     onExerciseNotification: (exerciseId) {
@@ -170,6 +170,7 @@ Future<void> _initApp(BuildContext context) async {
   final templates = Templates.of(context);
   final prefs = Preferences.of(context);
   final theme = AppTheme.of(context);
+  final timers = Timers.of(context);
   await prefs.init();
 
   theme
@@ -183,6 +184,7 @@ Future<void> _initApp(BuildContext context) async {
         // in `Exercises`, we must chain these calls this way
         workouts.init().then<void>((_) => HeartRouter.refresh());
         templates.init();
+        timers.init();
       },
     );
   }
