@@ -79,15 +79,34 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
 
   @override
   Future<void> setRestTimer({required String exerciseName, required String userId, required int? seconds}) {
-    return _db.insert(
-      // todo wrong, upsert
-      _exerciseDetails,
-      {
-        'rest_timer': seconds,
-        'exercise_name': exerciseName,
-        'user_id': userId,
+    return _db.transaction(
+      (txn) async {
+        final rows = await txn.query(
+          _exerciseDetails,
+          where: 'exercise_name = ? AND user_id = ?',
+          whereArgs: [exerciseName, userId],
+        );
+
+        switch (rows) {
+          case [Map _]: // exists
+            txn.update(
+              _exerciseDetails,
+              {'rest_timer': seconds},
+              where: 'exercise_name = ? AND user_id = ?',
+              whereArgs: [exerciseName, userId],
+            );
+          default: // new
+            txn.insert(
+              _exerciseDetails,
+              {
+                'rest_timer': seconds,
+                'exercise_name': exerciseName,
+                'user_id': userId,
+              },
+              conflictAlgorithm: ConflictAlgorithm.replace,
+            );
+        }
       },
-      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
@@ -99,7 +118,6 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
       where: 'user_id = ? AND rest_timer IS NOT NULL',
       whereArgs: [userId],
     );
-    print(rows);
 
     return Map.fromEntries(
       rows.map(
