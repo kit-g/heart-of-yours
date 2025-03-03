@@ -62,6 +62,19 @@ class _WorkoutExerciseItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
+                      Selector<Timers, int?>(
+                        selector: (_, provider) => provider[exercise.exercise.name],
+                        builder: (_, seconds, __) {
+                          if (seconds == null) return const SizedBox.shrink();
+                          return IconButton(
+                            visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
+                            icon: const Icon(Icons.timer_outlined),
+                            onPressed: () {
+                              _selectRestTime(context, initialValue: seconds);
+                            },
+                          );
+                        },
+                      ),
                       PopupMenuButton<_ExerciseOption>(
                         style: const ButtonStyle(
                           visualDensity: VisualDensity(vertical: 0, horizontal: -2),
@@ -325,9 +338,9 @@ class _WorkoutExerciseItem extends StatelessWidget {
       subtitle: L.of(context).forExercise(name),
     );
     if (restInSeconds == null) {
-      timers.remove(name);
+      return timers.remove(name);
     } else {
-      timers[name] = restInSeconds;
+      return timers.setRestTimer(name, restInSeconds);
     }
   }
 }
