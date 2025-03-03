@@ -1,23 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:heart_models/heart_models.dart';
-import 'package:logging/logging.dart';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+part of '../heart_db.dart';
 
-import 'sql.dart' as sql;
-
-const _exercises = 'exercises';
-const _sets = 'sets';
-const _syncs = 'syncs';
-const _workouts = 'workouts';
-const _workoutExercises = 'workout_exercises';
-const _templates = 'templates';
-const _templatesExercises = 'template_exercises';
-
-final _logger = Logger('Sqlite');
-
-final class LocalDatabase implements ExerciseService, StatsService, TemplateService, WorkoutService {
+final class LocalDatabase implements TimersService, ExerciseService, StatsService, TemplateService, WorkoutService {
   static late final Database _db;
 
   static Future<void> init() async {
@@ -48,7 +31,8 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
           ..execute(sql.workoutExercises)
           ..execute(sql.sets)
           ..execute(sql.templates)
-          ..execute(sql.templatesExercises);
+          ..execute(sql.templatesExercises)
+          ..execute(sql.exerciseDetails);
       },
     );
   }
@@ -90,6 +74,42 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
 
         return batch.commit(noResult: true);
       },
+    );
+  }
+
+  @override
+  Future<void> setRestTimer({required String exerciseName, required String userId, required int? seconds}) {
+    return _db.insert(
+      // todo wrong, upsert
+      _exerciseDetails,
+      {
+        'rest_timer': seconds,
+        'exercise_name': exerciseName,
+        'user_id': userId,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<Map<String, int>> getTimers(String userId) async {
+    final rows = await _db.query(
+      _exerciseDetails,
+      columns: ['exercise_name', 'rest_timer'],
+      where: 'user_id = ? AND rest_timer IS NOT NULL',
+      whereArgs: [userId],
+    );
+    print(rows);
+
+    return Map.fromEntries(
+      rows.map(
+        (row) {
+          return MapEntry(
+            row['exercise_name'] as String,
+            row['rest_timer'] as int,
+          );
+        },
+      ),
     );
   }
 
@@ -341,24 +361,5 @@ final class LocalDatabase implements ExerciseService, StatsService, TemplateServ
         return Template.empty(id: id.toString(), order: order);
       },
     );
-  }
-}
-
-extension on String {
-  String toCamel() {
-    final words = this.split('_');
-    return words.first + words.skip(1).map((word) => word[0].toUpperCase() + word.substring(1)).join();
-  }
-
-  String toSnake() {
-    return replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (match) => '${match[1]}_${match[2]}').toLowerCase();
-  }
-}
-
-extension on Map<String, dynamic> {
-  Map<String, dynamic> toCamel() {
-    return {
-      for (var MapEntry(:key, :value) in entries) key.toCamel(): value,
-    };
   }
 }

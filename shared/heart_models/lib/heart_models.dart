@@ -8,6 +8,7 @@ export 'src/models/stats.dart';
 export 'src/models/template.dart';
 export 'src/models/utils.dart';
 export 'src/models/workout.dart';
+export 'src/services/timers.dart';
 export 'src/services/exercises.dart';
 export 'src/services/stats.dart';
 export 'src/services/templates.dart';
