@@ -2,9 +2,10 @@ import 'dart:convert';
 
 import 'exercise.dart';
 import 'exercise_set.dart';
+import 'misc.dart';
 import 'workout.dart';
 
-abstract interface class Template with Iterable<WorkoutExercise> implements Comparable<Template>, HasExercises {
+abstract interface class Template with Iterable<WorkoutExercise> implements Comparable<Template>, HasExercises, Model {
   abstract String? name;
 
   String get id;
@@ -115,5 +116,10 @@ class _Template with Iterable<WorkoutExercise> implements Template {
     }
 
     return workout;
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    throw UnimplementedError();
   }
 }
