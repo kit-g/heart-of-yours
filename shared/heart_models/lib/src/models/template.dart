@@ -120,6 +120,25 @@ class _Template with Iterable<WorkoutExercise> implements Template {
 
   @override
   Map<String, dynamic> toMap() {
-    throw UnimplementedError();
+    return {
+      'id': id,
+      'name': name,
+      'order': order,
+      'exercises': {
+        for (var exercise in this) exercise.id: exercise.toFullMap(),
+      }
+    };
+  }
+}
+
+extension on WorkoutExercise {
+  Map<String, dynamic> toFullMap() {
+    return {
+      'id': id,
+      if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
+      'sets': {
+        for (var each in this) each.id: each.toMap(),
+      }
+    };
   }
 }
