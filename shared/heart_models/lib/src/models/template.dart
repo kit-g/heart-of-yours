@@ -52,6 +52,15 @@ abstract interface class Template with Iterable<WorkoutExercise> implements Comp
       exercises: exercises,
     );
   }
+
+  factory Template.fromJson(Map json, ExerciseLookup lookForExercise) {
+    return _Template(
+      exercises: WorkoutExercise.fromCollection(json, lookForExercise),
+      id: json['id'],
+      order: json['order'],
+      name: json['name'],
+    );
+  }
 }
 
 class _Template with Iterable<WorkoutExercise> implements Template {
