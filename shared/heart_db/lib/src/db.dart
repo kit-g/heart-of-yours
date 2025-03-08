@@ -356,8 +356,9 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
-  Future<Iterable<Template>> getTemplates(String userId) async {
-    final rows = (await _db.rawQuery(sql.getTemplates, [userId])).map((row) => row.toCamel());
+  Future<Iterable<Template>> getTemplates(String? userId) async {
+    final query = userId == null ? sql.getSampleTemplates : sql.getTemplates;
+    final rows = (await _db.rawQuery(query, [userId])).map((row) => row.toCamel());
     if (rows.isEmpty) return [];
 
     final grouped = rows.fold<Map<String, List<Map<String, dynamic>>>>(
@@ -377,6 +378,41 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
     return _db.insert(_templates, {'user_id': userId, 'order_in_parent': order}).then<Template>(
       (id) {
         return Template.empty(id: id.toString(), order: order);
+      },
+    );
+  }
+
+  @override
+  Future<void> storeTemplates(Iterable<Template> templates, {String? userId}) {
+    return _db.transaction(
+      (txn) async {
+        final batch = txn.batch();
+
+        for (final template in templates) {
+          batch.insert(
+            _templates,
+            {
+              ...template.toRow(),
+              'user_id': userId,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+
+          for (final exercise in template) {
+            var desc = exercise.map((set) => set.toMap()).toList();
+
+            batch.insert(
+              _templatesExercises,
+              {
+                'template_id': int.parse(template.id),
+                'exercise_id': exercise.exercise.name,
+                'description': jsonEncode(desc),
+              },
+            );
+          }
+        }
+
+        batch.commit(noResult: true);
       },
     );
   }

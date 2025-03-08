@@ -2,9 +2,12 @@ import 'dart:convert';
 
 import 'exercise.dart';
 import 'exercise_set.dart';
+import 'misc.dart';
 import 'workout.dart';
 
-abstract interface class Template with Iterable<WorkoutExercise> implements Comparable<Template>, HasExercises {
+abstract interface class Template
+    with Iterable<WorkoutExercise>
+    implements Comparable<Template>, HasExercises, Model, Storable {
   abstract String? name;
 
   String get id;
@@ -49,6 +52,15 @@ abstract interface class Template with Iterable<WorkoutExercise> implements Comp
       name: first['templateName'],
       order: first['orderInParent'] as int? ?? 0,
       exercises: exercises,
+    );
+  }
+
+  factory Template.fromJson(Map json, ExerciseLookup lookForExercise) {
+    return _Template(
+      exercises: WorkoutExercise.fromCollection(json, lookForExercise),
+      id: json['id'].toString(),
+      order: json['order'],
+      name: json['name'],
     );
   }
 }
@@ -115,5 +127,38 @@ class _Template with Iterable<WorkoutExercise> implements Template {
     }
 
     return workout;
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'order': order,
+      'exercises': {
+        for (var exercise in this) exercise.id: exercise.toFullMap(),
+      }
+    };
+  }
+
+  @override
+  Map<String, dynamic> toRow() {
+    return {
+      'id': id,
+      'name': name,
+      'order_in_parent': order,
+    };
+  }
+}
+
+extension on WorkoutExercise {
+  Map<String, dynamic> toFullMap() {
+    return {
+      'id': id,
+      if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
+      'sets': {
+        for (var each in this) each.id: each.toMap(),
+      }
+    };
   }
 }
