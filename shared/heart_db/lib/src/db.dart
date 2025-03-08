@@ -380,4 +380,39 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
       },
     );
   }
+
+  @override
+  Future<void> storeTemplates(Iterable<Template> templates, {String? userId}) {
+    return _db.transaction(
+      (txn) async {
+        final batch = txn.batch();
+
+        for (final template in templates) {
+          batch.insert(
+            _templates,
+            {
+              ...template.toRow(),
+              'user_id': userId,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+
+          for (final exercise in template) {
+            var desc = exercise.map((set) => set.toMap()).toList();
+
+            batch.insert(
+              _templatesExercises,
+              {
+                'template_id': int.parse(template.id),
+                'exercise_id': exercise.exercise.name,
+                'description': jsonEncode(desc),
+              },
+            );
+          }
+        }
+
+        batch.commit(noResult: true);
+      },
+    );
+  }
 }

@@ -1,14 +1,23 @@
 import 'dart:collection';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/src/utils.dart';
 import 'package:provider/provider.dart';
 
 class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateSentry {
   final _templates = SplayTreeSet<Template>();
   final TemplateService _service;
+  final _db = FirebaseFirestore.instance;
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final ExerciseLookup lookForExercise;
 
-  Templates({required TemplateService service}) : _service = service;
+  Templates({
+    required TemplateService service,
+    required this.lookForExercise,
+    this.onError,
+  }) : _service = service;
 
   Template? editable;
 
@@ -32,12 +41,20 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   Future<void> init() async {
     if (userId == null) return;
-    return _service.getTemplates(userId!).then<void>(
-      (templates) {
-        _templates.addAll(templates);
-        notifyListeners();
-      },
-    );
+    final local = await _service.getTemplates(userId!);
+
+    if (local.isNotEmpty) {
+      _templates.addAll(local);
+      return notifyListeners();
+    }
+
+    final remote = await _getRemoteTemplates() ?? [];
+
+    if (remote.isNotEmpty) {
+      _templates.addAll(remote);
+      notifyListeners();
+      return _service.storeTemplates(remote, userId: userId);
+    }
   }
 
   Future<void> add(Exercise exercise) async {
@@ -73,16 +90,57 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     if (editable case Template template) {
       _templates.add(template);
       await _service.updateTemplate(template);
+      await _saveRemoteTemplate(template);
     }
     editable = null;
 
     notifyListeners();
   }
 
+  Future<void> _saveRemoteTemplate(Template template) async {
+    if (userId case String userId) {
+      final doc = {
+        'templates.${template.id}': template.toMap(),
+      };
+      return _db.collection('users').doc(userId).update(doc);
+    }
+  }
+
+  Future<void> _deleteRemoteTemplate(String templateId) async {
+    if (userId case String userId) {
+      final doc = {
+        'templates.$templateId': FieldValue.delete(),
+      };
+      return _db.collection('users').doc(userId).update(doc);
+    }
+  }
+
+  Future<Iterable<Template>?> _getRemoteTemplates() async {
+    if (userId case String userId) {
+      final snapshot = await _db //
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (snapshot.exists) {
+        return switch (snapshot.data()?['templates']) {
+          Map m => m.values.map((each) => Template.fromJson(fromFirestoreMap(each), lookForExercise)).toList(),
+          _ => null,
+        };
+      }
+    }
+    return null;
+  }
+
   Future<void> delete(Template template) {
     _templates.remove(template);
     notifyListeners();
-    return _service.deleteTemplate(template.id);
+    return Future.wait(
+      [
+        _service.deleteTemplate(template.id),
+        _deleteRemoteTemplate(template.id),
+      ],
+    );
   }
 
   bool get allowsNewTemplate => length < _maxTemplates;
