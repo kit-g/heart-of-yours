@@ -26,6 +26,8 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   @override
   void onSignOut() {
+    editable = null;
+    userId = null;
     _templates.clear();
   }
 
