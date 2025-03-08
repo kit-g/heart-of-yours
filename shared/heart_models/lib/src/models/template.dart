@@ -5,7 +5,9 @@ import 'exercise_set.dart';
 import 'misc.dart';
 import 'workout.dart';
 
-abstract interface class Template with Iterable<WorkoutExercise> implements Comparable<Template>, HasExercises, Model {
+abstract interface class Template
+    with Iterable<WorkoutExercise>
+    implements Comparable<Template>, HasExercises, Model, Storable {
   abstract String? name;
 
   String get id;
@@ -136,6 +138,15 @@ class _Template with Iterable<WorkoutExercise> implements Template {
       'exercises': {
         for (var exercise in this) exercise.id: exercise.toFullMap(),
       }
+    };
+  }
+
+  @override
+  Map<String, dynamic> toRow() {
+    return {
+      'id': id,
+      'name': name,
+      'order_in_parent': order,
     };
   }
 }

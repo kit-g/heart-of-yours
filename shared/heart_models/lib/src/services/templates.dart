@@ -8,4 +8,6 @@ abstract interface class TemplateService {
   Future<void> updateTemplate(Template template);
 
   Future<void> deleteTemplate(String templateId);
+
+  Future<void> storeTemplates(Iterable<Template> templates, {String? userId});
 }
