@@ -12,7 +12,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData(:scaffoldBackgroundColor, :textTheme, :colorScheme) = Theme.of(context);
-    final L(:startWorkout, templates: copy, :template) = L.of(context);
+    final L(:startWorkout, templates: copy, :template, :exampleTemplates) = L.of(context);
     final templates = Templates.watch(context);
     return CustomScrollView(
       slivers: [
@@ -82,6 +82,42 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
             ],
           ),
         ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  exampleTemplates,
+                  style: textTheme.headlineSmall,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.all(8),
+          sliver: SliverGrid.count(
+            crossAxisCount: 2,
+            children: [
+              ...templates.samples.map(
+                (template) {
+                  return _TemplateCard(
+                    template: template,
+                    onTap: (template) {
+                      _showStartWorkoutDialog(context, template, allowsEditing: false);
+                    },
+                    onStartWorkout: (template) {
+                      Workouts.of(context).startWorkout(template: template.toWorkout());
+                    },
+                    options: const [_TemplateOption.startWorkout],
+                  );
+                },
+              )
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -143,7 +179,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
     );
   }
 
-  Future<void> _showStartWorkoutDialog(BuildContext context, Template template) {
+  Future<void> _showStartWorkoutDialog(BuildContext context, Template template, {allowsEditing = true}) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final L(:cancel, :startWorkout, :startNewWorkoutFromTemplate, :editTemplate) = L.of(context);
     return showBrandedDialog(
@@ -206,17 +242,18 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                 Navigator.of(context, rootNavigator: true).pop();
               },
             ),
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
-              child: Center(
-                child: Text(editTemplate),
+            if (allowsEditing)
+              PrimaryButton.wide(
+                backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                child: Center(
+                  child: Text(editTemplate),
+                ),
+                onPressed: () {
+                  Templates.of(context).editable = template;
+                  Navigator.of(context, rootNavigator: true).pop();
+                  goToTemplateEditor();
+                },
               ),
-              onPressed: () {
-                Templates.of(context).editable = template;
-                Navigator.of(context, rootNavigator: true).pop();
-                goToTemplateEditor();
-              },
-            ),
             PrimaryButton.wide(
               backgroundColor: colorScheme.primaryContainer,
               child: Center(

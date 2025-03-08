@@ -51,7 +51,11 @@ class HeartApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<Templates>(
-          create: (_) => Templates(service: db),
+          create: (context) => Templates(
+            service: db,
+            onError: reportToSentry,
+            lookForExercise: Exercises.of(context).lookup,
+          ),
         ),
         ChangeNotifierProvider<Timers>(
           create: (_) => Timers(service: db),
