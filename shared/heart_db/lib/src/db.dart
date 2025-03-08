@@ -356,8 +356,9 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
-  Future<Iterable<Template>> getTemplates(String userId) async {
-    final rows = (await _db.rawQuery(sql.getTemplates, [userId])).map((row) => row.toCamel());
+  Future<Iterable<Template>> getTemplates(String? userId) async {
+    final query = userId == null ? sql.getSampleTemplates : sql.getTemplates;
+    final rows = (await _db.rawQuery(query, [userId])).map((row) => row.toCamel());
     if (rows.isEmpty) return [];
 
     final grouped = rows.fold<Map<String, List<Map<String, dynamic>>>>(

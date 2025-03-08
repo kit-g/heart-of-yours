@@ -195,6 +195,26 @@ WHERE templates.user_id = ?
 ;
 """;
 
+const getSampleTemplates = """
+SELECT 
+    templates.name as template_name,
+    order_in_parent,
+    created_at,
+    te.id ,
+    template_id,
+    description,
+    e.name,
+    category,
+    target
+FROM templates
+INNER JOIN main.template_exercises te
+    ON templates.id = te.template_id
+INNER JOIN main.exercises e
+    ON te.exercise_id = e.name
+WHERE templates.user_id IS NULL
+;
+""";
+
 const exerciseDetails = """
 CREATE TABLE IF NOT EXISTS exercise_details
 (
