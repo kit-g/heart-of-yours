@@ -2,16 +2,18 @@ part of 'workout.dart';
 
 class _TemplateCard extends StatelessWidget {
   final Template template;
-  final void Function(Template) onDelete;
-  final void Function(Template) onEdit;
-  final void Function(Template) onStartWorkout;
+  final void Function(Template)? onDelete;
+  final void Function(Template)? onEdit;
+  final void Function(Template)? onStartWorkout;
   final void Function(Template) onTap;
+  final List<_TemplateOption>? options;
 
   const _TemplateCard({
     required this.template,
-    required this.onDelete,
-    required this.onEdit,
-    required this.onStartWorkout,
+    this.onDelete,
+    this.onEdit,
+    this.onStartWorkout,
+    this.options,
     required this.onTap,
   });
 
@@ -48,7 +50,7 @@ class _TemplateCard extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     icon: const Icon(Icons.more_horiz),
                     itemBuilder: (_) {
-                      return _TemplateOption.values.map(
+                      return (options ?? _TemplateOption.values).map(
                         (option) {
                           final (:copy, :style, :icon) = _item(context, option);
                           return PopupMenuItem<_TemplateOption>(
@@ -115,9 +117,9 @@ class _TemplateCard extends StatelessWidget {
 
   void _onSelected(_TemplateOption option) {
     return switch (option) {
-      _TemplateOption.edit => onEdit(template),
-      _TemplateOption.delete => onDelete(template),
-      _TemplateOption.startWorkout => onStartWorkout(template),
+      _TemplateOption.edit => onEdit?.call(template),
+      _TemplateOption.delete => onDelete?.call(template),
+      _TemplateOption.startWorkout => onStartWorkout?.call(template),
     };
   }
 

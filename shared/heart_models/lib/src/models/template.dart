@@ -58,7 +58,7 @@ abstract interface class Template
   factory Template.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Template(
       exercises: WorkoutExercise.fromCollection(json, lookForExercise),
-      id: json['id'],
+      id: json['id'].toString(),
       order: json['order'],
       name: json['name'],
     );
