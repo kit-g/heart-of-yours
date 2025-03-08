@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
@@ -110,25 +111,35 @@ class _App extends StatefulWidget {
 class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   @override
   Widget build(BuildContext context) {
-    const theme = MaterialTheme();
+    AppConfig;
     return MaterialApp.router(
       theme: switch (widget.theme.color) {
-        Color color => theme.theme(
+        Color color => theme(
             ColorScheme.fromSeed(
               seedColor: color,
               brightness: Brightness.light,
             ),
           ),
-        null => theme.light(),
+        null => theme(
+            ColorScheme.fromSeed(
+              seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
+              brightness: Brightness.light,
+            ),
+          ),
       },
       darkTheme: switch (widget.theme.color) {
-        Color color => theme.theme(
+        Color color => theme(
             ColorScheme.fromSeed(
               seedColor: color,
               brightness: Brightness.dark,
             ),
           ),
-        null => theme.dark(),
+        null => theme(
+            ColorScheme.fromSeed(
+              seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
+              brightness: Brightness.dark,
+            ),
+          ),
       },
       themeMode: widget.theme.mode,
       debugShowCheckedModeBanner: false,
