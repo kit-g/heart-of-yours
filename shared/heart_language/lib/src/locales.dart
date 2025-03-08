@@ -941,6 +941,14 @@ class L {
     );
   }
 
+  String get exampleTemplates {
+    return Intl.message(
+      'Example templates',
+      name: 'exampleTemplates',
+      desc: 'Workout templates section header',
+    );
+  }
+
   String get template {
     return Intl.message(
       'Template',
