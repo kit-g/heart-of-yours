@@ -5,8 +5,10 @@ import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
+import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
@@ -21,6 +23,8 @@ class HeartApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final db = LocalDatabase();
+    final api = Api(gateway: AppConfig.api);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AppTheme>(
@@ -63,6 +67,7 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
+            service: api,
             onEnter: () => _initApp(context),
             onUserChange: (user) {
               HeartRouter.refresh();
@@ -177,7 +182,16 @@ Future<void> _initApp(BuildContext context) async {
     onUnknownNotification: reportToSentry,
   );
 
-  _initAppInfo(context);
+  final auth = Auth.of(context);
+  final info = AppInfo.of(context);
+  _initAppInfo(context).then(
+    (_) async {
+      _initApi(
+        sessionToken: await auth.sessionToken,
+        appVersion: info.fullVersion,
+      );
+    },
+  );
 
   var Exercises(:isInitialized, :init) = Exercises.of(context);
   final workouts = Workouts.of(context);
@@ -218,5 +232,14 @@ Future<void> _initAppInfo(BuildContext context) {
         },
       );
     },
+  );
+}
+
+Future<void> _initApi({String? sessionToken, String? appVersion}) async {
+  Api.instance.authenticate(
+    headers(
+      sessionToken: sessionToken,
+      appVersion: appVersion,
+    ),
   );
 }

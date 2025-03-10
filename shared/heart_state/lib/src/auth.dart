@@ -14,6 +14,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
 
   final void Function(User?)? onUserChange;
+  final AccountService _service;
   final Future<void> Function()? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
@@ -32,7 +33,12 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  Auth({this.onUserChange, this.onError, this.onEnter}) {
+  Auth({
+    this.onUserChange,
+    this.onError,
+    this.onEnter,
+    required AccountService service,
+  }) : _service = service {
     _firebase.userChanges().listen(
       (user) async {
         _user = _cast(user);
@@ -244,6 +250,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       return user;
     }
   }
+
+  Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
 }
 
 enum AuthExceptionReason {
