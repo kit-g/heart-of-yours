@@ -1118,11 +1118,54 @@ class L {
     );
   }
 
-  String get accountManagement {
+  String get accountControl {
     return Intl.message(
-      'Account management',
-      name: 'accountManagement',
+      'Account control',
+      name: 'accountControl',
       desc: 'Settings item',
+    );
+  }
+
+  String get deleteAccount {
+    return Intl.message(
+      'Delete account',
+      name: 'deleteAccount',
+      desc: 'Settings item',
+    );
+  }
+
+  String get deleteAccountTitle {
+    return Intl.message(
+      'Are you sure you want to delete your account?',
+      name: 'deleteAccountTitle',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String deleteAccountBody(String deadline) {
+    return Intl.message(
+      'Your account is scheduled for deletion in $deadline days. '
+      'During this time, you can still sign in and reverse this decision. '
+      'Once the deadline has passed, your account and personal data will be permanently deleted.',
+      name: 'deleteAccountBody',
+      desc: 'Delete account dialog',
+      args: [deadline],
+    );
+  }
+
+  String get deleteAccountCancelMessage {
+    return Intl.message(
+      'Oh no, I like it here!',
+      name: 'deleteAccountCancelMessage',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get deleteAccountConfirmMessage {
+    return Intl.message(
+      'Yep, go on without me!',
+      name: 'deleteAccountConfirmMessage',
+      desc: 'Delete account dialog',
     );
   }
 }

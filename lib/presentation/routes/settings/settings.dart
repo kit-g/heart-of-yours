@@ -7,6 +7,8 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/theme/state.dart';
+import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/logo.dart';
 import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart_language/heart_language.dart';
