@@ -1005,6 +1005,14 @@ class L {
     );
   }
 
+  String get yourPassword {
+    return Intl.message(
+      'Your password',
+      name: 'yourPassword',
+      desc: 'Tooltip message',
+    );
+  }
+
   String get orConnector {
     return Intl.message(
       '- or -',
@@ -1165,6 +1173,30 @@ class L {
     return Intl.message(
       'Yep, go on without me!',
       name: 'deleteAccountConfirmMessage',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get confirmDeleteAccountTitle {
+    return Intl.message(
+      'Confirm your account deletion',
+      name: 'confirmDeleteAccountTitle',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get confirmDeleteAccountCancelMessage {
+    return Intl.message(
+      'Changed my mind, cancel',
+      name: 'confirmDeleteAccountCancelMessage',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get confirmDeleteAccountOkMessage {
+    return Intl.message(
+      'Farewell!',
+      name: 'confirmDeleteAccountOkMessage',
       desc: 'Delete account dialog',
     );
   }
