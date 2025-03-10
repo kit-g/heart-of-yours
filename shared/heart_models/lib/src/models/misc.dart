@@ -42,3 +42,7 @@ extension Units on num {
 
   double get asKilometers => this * 1.609344;
 }
+
+abstract interface class HeaderAuthenticatedService {
+  void authenticate(Map<String, String> headers);
+}
