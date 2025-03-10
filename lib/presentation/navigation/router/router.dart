@@ -30,9 +30,20 @@ RouteBase _profileRoute() {
     routes: [
       GoRoute(
         path: _settingsPath,
-        builder: (__, _) => const SettingsPage(),
+        builder: (context, _) {
+          return SettingsPage(
+            onAccountManagement: context.goToAccountManagement,
+          );
+        },
         name: _settingsName,
-      )
+        routes: [
+          GoRoute(
+            path: _accountManagementPath,
+            builder: (__, _) => const AccountManagementPage(),
+            name: _accountManagementName,
+          ),
+        ],
+      ),
     ],
   );
 }

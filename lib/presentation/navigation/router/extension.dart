@@ -26,4 +26,8 @@ extension on BuildContext {
   void goToTemplateEditor({bool? newTemplate}) {
     return goNamed(_templateEditorName, queryParameters: {'newTemplate': newTemplate.toString()});
   }
+
+  void goToAccountManagement() {
+    return goNamed(_accountManagementName);
+  }
 }
