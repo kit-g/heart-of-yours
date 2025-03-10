@@ -97,6 +97,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     Exercises.of(context).onSignOut();
     Preferences.of(context).onSignOut();
     Stats.of(context).onSignOut();
+    Templates.of(context).onSignOut();
     Timers.of(context).onSignOut();
     Workouts.of(context).onSignOut();
   }
