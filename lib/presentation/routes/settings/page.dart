@@ -1,21 +1,28 @@
 part of 'settings.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  final VoidCallback onAccountManagement;
+
+  const SettingsPage({
+    super.key,
+    required this.onAccountManagement,
+  });
 
   @override
   Widget build(BuildContext context) {
     final L(
-      :settings,
-      :appearance,
       :aboutApp,
+      :accountManagement,
+      :appearance,
+      :distanceUnit,
+      :imperial,
+      :metric,
       :notificationSettings,
+      :settings,
       :units,
       :weightUnit,
-      :distanceUnit,
-      :metric,
-      :imperial,
     ) = L.of(context);
+
     final ThemeData(
       :textTheme,
       colorScheme: ColorScheme(:brightness, secondaryContainer: logoColor),
@@ -48,26 +55,7 @@ class SettingsPage extends StatelessWidget {
           ),
           body: ListView(
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      logoColor.withValues(alpha: .2),
-                      logoColor,
-                    ],
-                  ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      LogoTitle(fontSize: 32),
-                      Motto(fontSize: 18),
-                    ],
-                  ),
-                ),
-              ),
+              const LogoStripe(),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -165,6 +153,12 @@ class SettingsPage extends StatelessWidget {
                     applicationName: AppConfig.appName,
                   );
                 },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.manage_accounts_rounded),
+                title: Text(accountManagement),
+                onTap: onAccountManagement,
               ),
             ],
           ),

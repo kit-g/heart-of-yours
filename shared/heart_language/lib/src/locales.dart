@@ -1117,6 +1117,14 @@ class L {
       desc: 'Login error message',
     );
   }
+
+  String get accountManagement {
+    return Intl.message(
+      'Account management',
+      name: 'accountManagement',
+      desc: 'Settings item',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
