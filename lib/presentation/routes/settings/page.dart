@@ -12,7 +12,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final L(
       :aboutApp,
-      :accountManagement,
+      :accountControl,
       :appearance,
       :distanceUnit,
       :imperial,
@@ -157,7 +157,7 @@ class SettingsPage extends StatelessWidget {
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.manage_accounts_rounded),
-                title: Text(accountManagement),
+                title: Text(accountControl),
                 onTap: onAccountManagement,
               ),
             ],
