@@ -18,6 +18,23 @@ void snack(
   );
 }
 
+extension ScaffoldMessengerStateExtension on ScaffoldMessengerState {
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> snack(
+    String content, {
+    SnackBarAction? action,
+    Duration? duration,
+  }) {
+    return showSnackBar(
+      SnackBar(
+        content: Text(content),
+        showCloseIcon: true,
+        action: action,
+        duration: duration = const Duration(seconds: 4),
+      ),
+    );
+  }
+}
+
 void snackOnError(BuildContext context, dynamic error) {
   return switch (error) {
     ArgumentError(:var message) => snack(context, message.toString()),
