@@ -18,8 +18,12 @@ final class Api with Requests implements AccountService, HeaderAuthenticatedServ
   }
 
   @override
-  Future<void> deleteAccount({required String accountId,required String password}) {
-    return delete('${_Router.accounts}/$accountId', query: {'password': password});
+  Future<String?> deleteAccount({required String accountId}) async {
+    final (json, code) = await delete('${_Router.accounts}/$accountId');
+    return switch (code) {
+      < 400 => null,
+      _ => throw json, // error
+    };
   }
 
   @override
