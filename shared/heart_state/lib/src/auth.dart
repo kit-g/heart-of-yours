@@ -252,6 +252,24 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
+
+  Future<void> scheduleAccountForDeletion({
+    required String password,
+    required void Function(String?) onAuthenticate,
+  }) async {
+    Future<void> callback() async {
+      switch (_user) {
+        case User(:String email, id: String accountId):
+          final cred = fb.EmailAuthProvider.credential(email: email, password: password);
+          final authenticated = await _firebase.currentUser?.reauthenticateWithCredential(cred);
+          onAuthenticate(await authenticated?.user?.getIdToken());
+          await _service.deleteAccount(accountId: accountId);
+          await _logout();
+      }
+    }
+
+    return _toFirebase(callback());
+  }
 }
 
 enum AuthExceptionReason {

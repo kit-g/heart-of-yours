@@ -1,3 +1,3 @@
 abstract interface class AccountService {
-  Future<void> deleteAccount({required String accountId, required String password});
+  Future<String?> deleteAccount({required String accountId});
 }
