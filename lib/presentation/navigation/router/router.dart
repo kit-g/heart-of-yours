@@ -2,16 +2,17 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/core/env/sentry.dart';
 import 'package:heart/presentation/routes/done.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
+import 'package:heart/presentation/routes/login/login.dart';
+import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import '../../routes/login/login.dart';
-import '../../routes/profile/profile.dart';
 import '../../widgets/app_frame.dart';
 
 part 'constants.dart';
@@ -39,7 +40,7 @@ RouteBase _profileRoute() {
         routes: [
           GoRoute(
             path: _accountManagementPath,
-            builder: (__, _) => const AccountManagementPage(),
+            builder: (__, _) => const AccountManagementPage(onError: reportToSentry),
             name: _accountManagementName,
           ),
         ],

@@ -1,7 +1,9 @@
 part of 'settings.dart';
 
 class AccountManagementPage extends StatefulWidget {
-  const AccountManagementPage({super.key});
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
+
+  const AccountManagementPage({super.key, this.onError});
 
   @override
   State<AccountManagementPage> createState() => _AccountManagementPageState();
@@ -9,14 +11,12 @@ class AccountManagementPage extends StatefulWidget {
 
 class _AccountManagementPageState extends State<AccountManagementPage> with LoadingState<AccountManagementPage> {
   final _passwordController = TextEditingController();
-  final _obscurityController = ValueNotifier(false);
-  final _passwordFocusNode = FocusNode();
+  final _obscurityController = ValueNotifier(true);
 
   @override
   void dispose() {
     _passwordController.dispose();
     _obscurityController.dispose();
-    _passwordFocusNode.dispose();
 
     super.dispose();
   }
@@ -34,22 +34,33 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
           child: LogoStripe(),
         ),
       ),
-      body: ListView(
-        children: [
-          ListTile(
-            onTap: () {
-              _onDeleteAccount(context);
-            },
-            leading: Icon(
-              Icons.auto_delete_rounded,
-              color: colorScheme.error,
-            ),
-            title: Text(
-              deleteAccount,
-              style: textTheme.bodyLarge?.copyWith(color: colorScheme.error),
-            ),
-          )
-        ],
+      body: ValueListenableBuilder<bool>(
+        valueListenable: loader,
+        builder: (_, loading, child) {
+          if (loading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          return ListView(
+            children: [
+              ListTile(
+                onTap: () {
+                  _onDeleteAccount(context);
+                },
+                leading: Icon(
+                  Icons.auto_delete_rounded,
+                  color: colorScheme.error,
+                ),
+                title: Text(
+                  deleteAccount,
+                  style: textTheme.bodyLarge?.copyWith(color: colorScheme.error),
+                ),
+              )
+            ],
+          );
+        },
       ),
     );
   }
@@ -69,9 +80,12 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
         deleteAccountTitle,
         textAlign: TextAlign.center,
       ),
-      content: Text(
-        deleteAccountBody(AppConfig.accountDeletionDeadline),
-        textAlign: TextAlign.center,
+      content: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          deleteAccountBody(AppConfig.accountDeletionDeadline),
+          textAlign: TextAlign.center,
+        ),
       ),
       icon: Icon(
         Icons.auto_delete_rounded,
@@ -132,33 +146,10 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
           valueListenable: _obscurityController,
           builder: (_, hide, __) {
             return TextField(
+              autocorrect: false,
               controller: _passwordController,
               obscureText: hide,
-              focusNode: _passwordFocusNode,
-              decoration: InputDecoration(
-                hintText: yourPassword,
-                suffixIcon: ListenableBuilder(
-                  listenable: _passwordFocusNode,
-                  builder: (_, __) {
-                    return Offstage(
-                      offstage: !_passwordFocusNode.hasFocus,
-                      child: IconButton(
-                        tooltip: hide ? showPassword : hidePassword,
-                        padding: EdgeInsets.zero,
-                        splashRadius: 16,
-                        visualDensity: const VisualDensity(horizontal: -2, vertical: 0),
-                        onPressed: () {
-                          _obscurityController.value = !_obscurityController.value;
-                        },
-                        icon: Icon(
-                          hide ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                          size: 20,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+              decoration: InputDecoration(hintText: yourPassword),
               textAlign: TextAlign.center,
             );
           },
@@ -191,12 +182,41 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
               ),
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
-                Navigator.of(context).pop();
+                _requestAccountDeletion(context);
               },
             ),
           ],
         )
       ],
     );
+  }
+
+  Future<void> _requestAccountDeletion(BuildContext context) async {
+    startLoading();
+    final messenger = ScaffoldMessenger.of(context);
+    final l = L.of(context);
+    try {
+      await Auth.of(context).scheduleAccountForDeletion(
+        password: _passwordController.text.trim(),
+        onAuthenticate: (token) {
+          if (token != null) {
+            Api.instance.authenticate(
+              headers(
+                sessionToken: token,
+                appVersion: AppInfo.of(context).fullVersion,
+              ),
+            );
+          }
+        },
+      );
+      _passwordController.clear();
+    } on AuthException {
+      messenger.snack(l.invalidCredentials);
+    } catch (e, s) {
+      widget.onError?.call(e, stacktrace: s);
+      messenger.snack(e.toString());
+    } finally {
+      stopLoading();
+    }
   }
 }
