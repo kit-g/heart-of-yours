@@ -19,6 +19,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   go_router: ^14.6.3
+  heart_api:
+    path: 'shared/heart_api'
   heart_db:
     path: 'shared/heart_db'
   heart_language:

@@ -60,3 +60,34 @@ class Motto extends StatelessWidget {
     );
   }
 }
+
+class LogoStripe extends StatelessWidget {
+  final Color? backgroundColor;
+
+  const LogoStripe({super.key, this.backgroundColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = backgroundColor ?? Theme.of(context).colorScheme.secondaryContainer;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: .2),
+            color,
+          ],
+        ),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            LogoTitle(fontSize: 32),
+            Motto(fontSize: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}

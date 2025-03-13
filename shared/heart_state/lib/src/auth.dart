@@ -14,6 +14,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final _db = FirebaseFirestore.instance;
 
   final void Function(User?)? onUserChange;
+  final AccountService _service;
   final Future<void> Function()? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
@@ -32,12 +33,17 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  Auth({this.onUserChange, this.onError, this.onEnter}) {
+  Auth({
+    this.onUserChange,
+    this.onError,
+    this.onEnter,
+    required AccountService service,
+  }) : _service = service {
     _firebase.userChanges().listen(
       (user) async {
         _user = _cast(user);
-        onUserChange?.call(_user);
         _user = await _registerUser(_user);
+        onUserChange?.call(_user);
       },
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
@@ -211,6 +217,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           displayName: json['displayName'],
           avatar: json['avatar'],
           createdAt: (json['createdAt'] as Timestamp).toDate(),
+          scheduledForDeletionAt: switch (json['scheduledForDeletionAt']) {
+            String s when s.isNotEmpty => DateTime.tryParse(s),
+            _ => null,
+          },
         ),
       _ => null,
     };
@@ -227,7 +237,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       final doc = _db.collection('users').doc(user.id);
       final snapshot = await doc.get();
 
-      if (!snapshot.exists) {
+      if (snapshot.exists) {
+        await doc.update({'lastLogin': FieldValue.serverTimestamp()});
+        return fromJson(snapshot.data());
+      } else {
         final userDoc = {
           ...user.toMap(),
           'lastLogin': FieldValue.serverTimestamp(),
@@ -235,13 +248,40 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
         await doc.set(userDoc);
         return user;
-      } else {
-        await doc.update({'lastLogin': FieldValue.serverTimestamp()});
-        return fromJson(snapshot.data());
       }
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
       return user;
+    }
+  }
+
+  Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
+
+  Future<void> scheduleAccountForDeletion({
+    required String password,
+    required void Function(String?) onAuthenticate,
+  }) async {
+    Future<void> callback() async {
+      switch (_user) {
+        case User(:String email, id: String accountId):
+          final cred = fb.EmailAuthProvider.credential(email: email, password: password);
+          final authenticated = await _firebase.currentUser?.reauthenticateWithCredential(cred);
+          onAuthenticate(await authenticated?.user?.getIdToken());
+          await _service.deleteAccount(accountId: accountId);
+          await _logout();
+      }
+    }
+
+    return _toFirebase(callback());
+  }
+
+  Future<void> deleteAccountDeletionSchedule() async {
+    switch (_user) {
+      case User(id: String accountId):
+        await _service.undoAccountDeletion(accountId);
+        // copy without the deletion timestamp
+        _user = _user?.copyWith();
+        notifyListeners();
     }
   }
 }
