@@ -11,12 +11,15 @@ abstract interface class User implements Model {
 
   DateTime? get createdAt;
 
+  DateTime? get scheduledForDeletionAt;
+
   factory User({
     String? displayName,
     String? email,
     String? avatar,
     required String id,
     DateTime? createdAt,
+    DateTime? scheduledForDeletionAt,
   }) {
     return _User(
       displayName: displayName,
@@ -24,6 +27,7 @@ abstract interface class User implements Model {
       avatar: avatar,
       id: id,
       createdAt: createdAt,
+      scheduledForDeletionAt: scheduledForDeletionAt,
     );
   }
 
@@ -41,6 +45,8 @@ class _User implements User {
   final String id;
   @override
   final DateTime? createdAt;
+  @override
+  final DateTime? scheduledForDeletionAt;
 
   const _User({
     required this.displayName,
@@ -48,6 +54,7 @@ class _User implements User {
     required this.avatar,
     required this.id,
     required this.createdAt,
+    this.scheduledForDeletionAt,
   });
 
   @override

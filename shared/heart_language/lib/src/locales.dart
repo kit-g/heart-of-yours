@@ -1005,6 +1005,14 @@ class L {
     );
   }
 
+  String get yourPassword {
+    return Intl.message(
+      'Your password',
+      name: 'yourPassword',
+      desc: 'Tooltip message',
+    );
+  }
+
   String get orConnector {
     return Intl.message(
       '- or -',
@@ -1115,6 +1123,116 @@ class L {
       'Unknown error occurred',
       name: 'unknownError',
       desc: 'Login error message',
+    );
+  }
+
+  String get accountControl {
+    return Intl.message(
+      'Account control',
+      name: 'accountControl',
+      desc: 'Settings item',
+    );
+  }
+
+  String get dangerZone {
+    return Intl.message(
+      'Danger zone',
+      name: 'dangerZone',
+      desc: 'Settings header',
+    );
+  }
+
+  String get deleteAccount {
+    return Intl.message(
+      'Delete account',
+      name: 'deleteAccount',
+      desc: 'Settings item',
+    );
+  }
+
+  String get deleteAccountTitle {
+    return Intl.message(
+      'Are you sure you want to delete your account?',
+      name: 'deleteAccountTitle',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String deleteAccountBody(String deadline) {
+    return Intl.message(
+      'Your account is scheduled for deletion in $deadline days. '
+      'During this time, you can still sign in and reverse this decision. '
+      'Once the deadline has passed, your account and personal data will be permanently deleted.',
+      name: 'deleteAccountBody',
+      desc: 'Delete account dialog',
+      args: [deadline],
+    );
+  }
+
+  String get deleteAccountCancelMessage {
+    return Intl.message(
+      'Oh no, I like it here!',
+      name: 'deleteAccountCancelMessage',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get deleteAccountConfirmMessage {
+    return Intl.message(
+      'Yep, go on without me!',
+      name: 'deleteAccountConfirmMessage',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get confirmDeleteAccountTitle {
+    return Intl.message(
+      'Confirm your account deletion',
+      name: 'confirmDeleteAccountTitle',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get confirmDeleteAccountCancelMessage {
+    return Intl.message(
+      'Changed my mind, cancel',
+      name: 'confirmDeleteAccountCancelMessage',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get confirmDeleteAccountOkMessage {
+    return Intl.message(
+      'Farewell!',
+      name: 'confirmDeleteAccountOkMessage',
+      desc: 'Delete account dialog',
+    );
+  }
+
+  String get accountDeleted {
+    return Intl.message(
+      'Account deleted',
+      name: 'accountDeleted',
+      desc: 'Delete account page',
+    );
+  }
+
+  String accountDeletedBody(String date) {
+    return Intl.message(
+      'Your account has been scheduled for deletion on $date.\n\n'
+      'If you change your mind, you can restore your account anytime before this date.\n\n'
+      'Simply click the button below to cancel the deletion and keep your account safe.',
+      name: 'accountDeletedBody',
+      desc: 'Delete account page',
+      args: [date],
+    );
+  }
+
+  String get accountDeletedAction {
+    return Intl.message(
+      '🔥🏆 Undo the Goodbye 🥇🔥',
+      name: 'accountDeletedAction',
+      desc: 'Delete account page',
     );
   }
 }

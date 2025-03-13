@@ -45,7 +45,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
           ),
           IconButton.outlined(
             tooltip: logOut,
-            onPressed: () => _logout(context),
+            onPressed: () => clearState(context),
             icon: const Icon(Icons.logout_rounded),
           ),
         ],
@@ -89,16 +89,6 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         },
       ),
     );
-  }
-
-  void _logout(BuildContext context) {
-    Alarms.of(context).onSignOut();
-    Auth.of(context).onSignOut();
-    Exercises.of(context).onSignOut();
-    Preferences.of(context).onSignOut();
-    Stats.of(context).onSignOut();
-    Timers.of(context).onSignOut();
-    Workouts.of(context).onSignOut();
   }
 
   @override

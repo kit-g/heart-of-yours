@@ -2,21 +2,24 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/core/env/sentry.dart';
 import 'package:heart/presentation/routes/done.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
+import 'package:heart/presentation/routes/login/login.dart';
+import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import '../../routes/login/login.dart';
-import '../../routes/profile/profile.dart';
 import '../../widgets/app_frame.dart';
 
 part 'constants.dart';
 
 part 'extension.dart';
+
+part 'animation.dart';
 
 RouteBase _profileRoute() {
   return GoRoute(
@@ -30,9 +33,20 @@ RouteBase _profileRoute() {
     routes: [
       GoRoute(
         path: _settingsPath,
-        builder: (__, _) => const SettingsPage(),
+        builder: (context, _) {
+          return SettingsPage(
+            onAccountManagement: context.goToAccountManagement,
+          );
+        },
         name: _settingsName,
-      )
+        routes: [
+          GoRoute(
+            path: _accountManagementPath,
+            builder: (__, _) => const AccountManagementPage(onError: reportToSentry),
+            name: _accountManagementName,
+          ),
+        ],
+      ),
     ],
   );
 }
@@ -125,22 +139,7 @@ RouteBase _loginRoute() {
                 return context.goNamed(_loginName, queryParameters: {'address': address});
               },
             ),
-            transitionsBuilder: (__, animation, _, child) {
-              var scaleAnimation = Tween(begin: .8, end: 1.0).animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutBack,
-                ),
-              );
-
-              return ScaleTransition(
-                scale: scaleAnimation,
-                child: FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
-              );
-            },
+            transitionsBuilder: _pageTransition,
           );
         },
       )
@@ -164,6 +163,23 @@ RouteBase _workoutDoneRoute() {
       }
     },
     name: _doneName,
+  );
+}
+
+RouteBase _restoreAccountRoute() {
+  return GoRoute(
+    path: _restoreAccountPath,
+    pageBuilder: (context, state) {
+      return CustomTransitionPage(
+        key: state.pageKey,
+        child: RestoreAccountPage(
+          onUndo: context.goToWorkouts,
+          onError: reportToSentry,
+        ),
+        transitionsBuilder: _pageTransition,
+      );
+    },
+    name: _restoreAccountName,
   );
 }
 
@@ -199,6 +215,7 @@ abstract final class HeartRouter {
       ),
       _loginRoute(),
       _workoutDoneRoute(),
+      _restoreAccountRoute(),
     ],
     redirect: (context, state) {
       switch (state.fullPath?.split('/')) {
@@ -208,7 +225,9 @@ abstract final class HeartRouter {
           return state.namedLocation(part, queryParameters: state.uri.queryParameters);
       }
 
-      final isLoggedIn = Auth.of(context).isLoggedIn;
+      final auth = Auth.of(context);
+
+      final isLoggedIn = auth.isLoggedIn;
 
       if (!isLoggedIn) {
         // same as RecoveryPage
@@ -218,6 +237,10 @@ abstract final class HeartRouter {
       if (Workouts.of(context).hasUnNotifiedActiveWorkout) {
         Workouts.of(context).notifyOfActiveWorkout();
         return _workoutPath;
+      }
+
+      if (auth.user?.scheduledForDeletionAt != null) {
+        return _restoreAccountPath;
       }
 
       return null;
