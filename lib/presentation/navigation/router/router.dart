@@ -19,6 +19,8 @@ part 'constants.dart';
 
 part 'extension.dart';
 
+part 'animation.dart';
+
 RouteBase _profileRoute() {
   return GoRoute(
     path: _profilePath,
@@ -137,22 +139,7 @@ RouteBase _loginRoute() {
                 return context.goNamed(_loginName, queryParameters: {'address': address});
               },
             ),
-            transitionsBuilder: (__, animation, _, child) {
-              var scaleAnimation = Tween(begin: .8, end: 1.0).animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutBack,
-                ),
-              );
-
-              return ScaleTransition(
-                scale: scaleAnimation,
-                child: FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
-              );
-            },
+            transitionsBuilder: _pageTransition,
           );
         },
       )
@@ -182,10 +169,14 @@ RouteBase _workoutDoneRoute() {
 RouteBase _restoreAccountRoute() {
   return GoRoute(
     path: _restoreAccountPath,
-    builder: (context, __) {
-      return RestoreAccountPage(
-        onUndo: context.goToWorkouts,
-        onError: reportToSentry,
+    pageBuilder: (context, state) {
+      return CustomTransitionPage(
+        key: state.pageKey,
+        child: RestoreAccountPage(
+          onUndo: context.goToWorkouts,
+          onError: reportToSentry,
+        ),
+        transitionsBuilder: _pageTransition,
       );
     },
     name: _restoreAccountName,
