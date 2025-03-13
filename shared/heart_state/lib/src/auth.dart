@@ -274,6 +274,16 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
     return _toFirebase(callback());
   }
+
+  Future<void> deleteAccountDeletionSchedule() async {
+    switch (_user) {
+      case User(id: String accountId):
+        await _service.undoAccountDeletion(accountId);
+        // copy without the deletion timestamp
+        _user = _user?.copyWith();
+        notifyListeners();
+    }
+  }
 }
 
 enum AuthExceptionReason {

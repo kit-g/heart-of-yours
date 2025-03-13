@@ -182,7 +182,9 @@ RouteBase _workoutDoneRoute() {
 RouteBase _restoreAccountRoute() {
   return GoRoute(
     path: _restoreAccountPath,
-    builder: (_, __) => const RestoreAccountPage(),
+    builder: (context, __) {
+      return RestoreAccountPage(onUndo: context.goToWorkouts);
+    },
     name: _restoreAccountName,
   );
 }

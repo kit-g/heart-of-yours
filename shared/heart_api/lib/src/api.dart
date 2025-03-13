@@ -18,6 +18,11 @@ final class Api with Requests implements AccountService, HeaderAuthenticatedServ
   }
 
   @override
+  void authenticate(Map<String, String> headers) {
+    instance.defaultHeaders = headers;
+  }
+
+  @override
   Future<String?> deleteAccount({required String accountId}) async {
     final (json, code) = await delete('${_Router.accounts}/$accountId');
     return switch (code) {
@@ -27,8 +32,11 @@ final class Api with Requests implements AccountService, HeaderAuthenticatedServ
   }
 
   @override
-  void authenticate(Map<String, String> headers) {
-    instance.defaultHeaders = headers;
+  Future<void> undoAccountDeletion(String accountId) {
+    return put(
+      '${_Router.accounts}/$accountId',
+      body: {'action': 'undoAccountDeletion'},
+    );
   }
 }
 
