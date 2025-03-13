@@ -1,7 +1,12 @@
 part of 'settings.dart';
 
 class RestoreAccountPage extends StatefulWidget {
-  const RestoreAccountPage({super.key});
+  final VoidCallback onUndo;
+
+  const RestoreAccountPage({
+    super.key,
+    required this.onUndo,
+  });
 
   @override
   State<RestoreAccountPage> createState() => _RestoreAccountPageState();
@@ -36,22 +41,35 @@ class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingSta
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 64),
-            child: Text(
-              accountDeletedBody(
-                RestoreAccountPage._formatDate(auth.user!.scheduledForDeletionAt!.toLocal()),
-              ),
-              style: Theme.of(context).textTheme.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          ValueListenableBuilder<bool>(
-            valueListenable: loader,
-            builder: (context, loading, _) {
-              return OutlinedButton(
-                onPressed: () {},
-                child: Text(accountDeletedAction),
-              );
+            child: switch (auth.user?.scheduledForDeletionAt) {
+              DateTime t => Text(
+                  accountDeletedBody(
+                    RestoreAccountPage._formatDate(t.toLocal()),
+                  ),
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+              _ => const SizedBox()
             },
+          ),
+          Center(
+            child: ValueListenableBuilder<bool>(
+              valueListenable: loader,
+              builder: (context, loading, _) {
+                return OutlinedButton(
+                  onPressed: switch (loading) {
+                    true => null,
+                    false => () async {
+                        startLoading();
+                        await auth.deleteAccountDeletionSchedule();
+                        stopLoading();
+                        widget.onUndo();
+                      },
+                  },
+                  child: Text(accountDeletedAction),
+                );
+              },
+            ),
           ),
         ],
       ),
