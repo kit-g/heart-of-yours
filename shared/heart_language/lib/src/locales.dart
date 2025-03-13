@@ -1134,6 +1134,14 @@ class L {
     );
   }
 
+  String get dangerZone {
+    return Intl.message(
+      'Danger zone',
+      name: 'dangerZone',
+      desc: 'Settings header',
+    );
+  }
+
   String get deleteAccount {
     return Intl.message(
       'Delete account',

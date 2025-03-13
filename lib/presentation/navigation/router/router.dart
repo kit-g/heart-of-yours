@@ -183,7 +183,10 @@ RouteBase _restoreAccountRoute() {
   return GoRoute(
     path: _restoreAccountPath,
     builder: (context, __) {
-      return RestoreAccountPage(onUndo: context.goToWorkouts);
+      return RestoreAccountPage(
+        onUndo: context.goToWorkouts,
+        onError: reportToSentry,
+      );
     },
     name: _restoreAccountName,
   );
