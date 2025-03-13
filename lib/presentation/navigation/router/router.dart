@@ -179,6 +179,14 @@ RouteBase _workoutDoneRoute() {
   );
 }
 
+RouteBase _restoreAccountRoute() {
+  return GoRoute(
+    path: _restoreAccountPath,
+    builder: (_, __) => const RestoreAccountPage(),
+    name: _restoreAccountName,
+  );
+}
+
 abstract final class HeartRouter {
   static final config = GoRouter(
     debugLogDiagnostics: false,
@@ -211,6 +219,7 @@ abstract final class HeartRouter {
       ),
       _loginRoute(),
       _workoutDoneRoute(),
+      _restoreAccountRoute(),
     ],
     redirect: (context, state) {
       switch (state.fullPath?.split('/')) {
@@ -220,7 +229,9 @@ abstract final class HeartRouter {
           return state.namedLocation(part, queryParameters: state.uri.queryParameters);
       }
 
-      final isLoggedIn = Auth.of(context).isLoggedIn;
+      final auth = Auth.of(context);
+
+      final isLoggedIn = auth.isLoggedIn;
 
       if (!isLoggedIn) {
         // same as RecoveryPage
@@ -230,6 +241,10 @@ abstract final class HeartRouter {
       if (Workouts.of(context).hasUnNotifiedActiveWorkout) {
         Workouts.of(context).notifyOfActiveWorkout();
         return _workoutPath;
+      }
+
+      if (auth.user?.scheduledForDeletionAt != null) {
+        return _restoreAccountPath;
       }
 
       return null;

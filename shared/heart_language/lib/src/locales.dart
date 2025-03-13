@@ -1200,6 +1200,33 @@ class L {
       desc: 'Delete account dialog',
     );
   }
+
+  String get accountDeleted {
+    return Intl.message(
+      'Account deleted',
+      name: 'accountDeleted',
+      desc: 'Delete account page',
+    );
+  }
+
+  String accountDeletedBody(String date) {
+    return Intl.message(
+      'Your account has been scheduled for deletion on $date.\n\n'
+      'If you change your mind, you can restore your account anytime before this date.\n\n'
+      'Simply click the button below to cancel the deletion and keep your account safe.',
+      name: 'accountDeletedBody',
+      desc: 'Delete account page',
+      args: [date],
+    );
+  }
+
+  String get accountDeletedAction {
+    return Intl.message(
+      '🔥🏆 Undo the Goodbye 🥇🔥',
+      name: 'accountDeletedAction',
+      desc: 'Delete account page',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

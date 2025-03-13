@@ -42,8 +42,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     _firebase.userChanges().listen(
       (user) async {
         _user = _cast(user);
-        onUserChange?.call(_user);
         _user = await _registerUser(_user);
+        onUserChange?.call(_user);
       },
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
@@ -217,6 +217,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           displayName: json['displayName'],
           avatar: json['avatar'],
           createdAt: (json['createdAt'] as Timestamp).toDate(),
+          scheduledForDeletionAt: switch (json['scheduledForDeletionAt']) {
+            String s when s.isNotEmpty => DateTime.tryParse(s),
+            _ => null,
+          },
         ),
       _ => null,
     };
@@ -233,7 +237,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       final doc = _db.collection('users').doc(user.id);
       final snapshot = await doc.get();
 
-      if (!snapshot.exists) {
+      if (snapshot.exists) {
+        await doc.update({'lastLogin': FieldValue.serverTimestamp()});
+        return fromJson(snapshot.data());
+      } else {
         final userDoc = {
           ...user.toMap(),
           'lastLogin': FieldValue.serverTimestamp(),
@@ -241,9 +248,6 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
         await doc.set(userDoc);
         return user;
-      } else {
-        await doc.update({'lastLogin': FieldValue.serverTimestamp()});
-        return fromJson(snapshot.data());
       }
     } catch (e, s) {
       onError?.call(e, stacktrace: s);

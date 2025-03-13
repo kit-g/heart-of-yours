@@ -19,3 +19,5 @@ const _doneName = 'done';
 const _donePath = '/$_doneName';
 const _accountManagementPath = 'account';
 const _accountManagementName = _accountManagementPath;
+const _restoreAccountName = 'restoreAccount';
+const _restoreAccountPath = '/$_restoreAccountName';
