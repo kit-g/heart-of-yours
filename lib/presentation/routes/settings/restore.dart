@@ -2,10 +2,12 @@ part of 'settings.dart';
 
 class RestoreAccountPage extends StatefulWidget {
   final VoidCallback onUndo;
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   const RestoreAccountPage({
     super.key,
     required this.onUndo,
+    this.onError,
   });
 
   @override
@@ -61,9 +63,15 @@ class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingSta
                     true => null,
                     false => () async {
                         startLoading();
-                        await auth.deleteAccountDeletionSchedule();
-                        stopLoading();
-                        widget.onUndo();
+
+                        try {
+                          await auth.deleteAccountDeletionSchedule();
+                          widget.onUndo();
+                        } catch (e, s) {
+                          widget.onError?.call(e, stacktrace: s);
+                        } finally {
+                          stopLoading();
+                        }
                       },
                   },
                   child: Text(accountDeletedAction),

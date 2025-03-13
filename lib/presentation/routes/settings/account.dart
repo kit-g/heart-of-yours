@@ -23,7 +23,7 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
 
   @override
   Widget build(BuildContext context) {
-    final L(:accountControl, :deleteAccount) = L.of(context);
+    final L(:accountControl, :deleteAccount, :dangerZone) = L.of(context);
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     return Scaffold(
@@ -45,6 +45,14 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
 
           return ListView(
             children: [
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  dangerZone,
+                  style: textTheme.titleMedium?.copyWith(color: colorScheme.error),
+                ),
+              ),
               ListTile(
                 onTap: () {
                   _onDeleteAccount(context);
