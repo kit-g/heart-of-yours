@@ -57,7 +57,7 @@ class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingSta
           Center(
             child: ValueListenableBuilder<bool>(
               valueListenable: loader,
-              builder: (context, loading, _) {
+              builder: (__, loading, _) {
                 return OutlinedButton(
                   onPressed: switch (loading) {
                     true => null,
