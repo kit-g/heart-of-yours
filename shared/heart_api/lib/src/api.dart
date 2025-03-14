@@ -32,10 +32,18 @@ final class Api with Requests implements AccountService, HeaderAuthenticatedServ
   }
 
   @override
-  Future<void> undoAccountDeletion(String accountId) {
+  Future<String?> undoAccountDeletion(String accountId) {
     return put(
       '${_Router.accounts}/$accountId',
       body: {'action': 'undoAccountDeletion'},
+    ).then(
+      (response) {
+        final (json, code) = response;
+        return switch (code) {
+          < 400 => null,
+          _ => throw json, // error
+        };
+      },
     );
   }
 }
