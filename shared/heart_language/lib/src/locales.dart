@@ -79,6 +79,30 @@ class L {
     );
   }
 
+  String get name {
+    return Intl.message(
+      'Name',
+      name: 'name',
+      desc: 'Field hint',
+    );
+  }
+
+  String get saveName {
+    return Intl.message(
+      'Save name',
+      name: 'saveName',
+      desc: 'Hint',
+    );
+  }
+
+  String get changeName {
+    return Intl.message(
+      'Change name',
+      name: 'changeName',
+      desc: 'Hint',
+    );
+  }
+
   String get save {
     return Intl.message(
       'Save',
