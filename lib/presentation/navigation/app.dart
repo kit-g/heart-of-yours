@@ -65,10 +65,18 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Timers>(
           create: (_) => Timers(service: db),
         ),
+        ChangeNotifierProvider<Preferences>(
+          create: (_) => Preferences(),
+        ),
+        ChangeNotifierProvider<AppInfo>(
+          create: (_) => AppInfo(
+            onError: reportToSentry,
+          ),
+        ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             service: api,
-            onEnter: () => _initApp(context),
+            onEnter: (session) => _initApp(context, session),
             onUserChange: (user) {
               HeartRouter.refresh();
               Stats.of(context).userId = user?.id;
@@ -78,20 +86,12 @@ class HeartApp extends StatelessWidget {
             },
           ),
         ),
-        ChangeNotifierProvider<Preferences>(
-          create: (_) => Preferences(),
-        ),
         ChangeNotifierProvider<Alarms>(
           create: (_) => Alarms(),
         ),
-        ChangeNotifierProvider<AppInfo>(
-          create: (_) => AppInfo(
-            onError: reportToSentry,
-          ),
-        ),
         Provider<Scrolls>(
           create: (_) => Scrolls(),
-        )
+        ),
       ],
       builder: (__, _) {
         return Consumer<AppTheme>(
@@ -168,7 +168,7 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   }
 }
 
-Future<void> _initApp(BuildContext context) async {
+Future<void> _initApp(BuildContext context, [String? sessionToken]) async {
   initNotifications(
     platform: Theme.of(context).platform,
     onExerciseNotification: (exerciseId) {
@@ -182,12 +182,11 @@ Future<void> _initApp(BuildContext context) async {
     onUnknownNotification: reportToSentry,
   );
 
-  final auth = Auth.of(context);
   final info = AppInfo.of(context);
   _initAppInfo(context).then(
-    (_) async {
+    (_) {
       _initApi(
-        sessionToken: await auth.sessionToken,
+        sessionToken: sessionToken,
         appVersion: info.fullVersion,
       );
     },

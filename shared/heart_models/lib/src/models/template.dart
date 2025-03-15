@@ -63,6 +63,15 @@ abstract interface class Template
       name: json['name'],
     );
   }
+
+  factory Template.fromWorkout(String id, Workout workout, int order) {
+    return _Template(
+      exercises: workout.toList(),
+      id: id,
+      order: order,
+      name: workout.name,
+    );
+  }
 }
 
 class _Template with Iterable<WorkoutExercise> implements Template {

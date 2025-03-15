@@ -78,7 +78,13 @@ RouteBase _historyRoute() {
   return GoRoute(
     path: _historyPath,
     builder: (context, _) {
-      return HistoryPage(onNewWorkout: context.goToWorkouts);
+      return HistoryPage(
+        onNewWorkout: context.goToWorkouts,
+        onSaveAsTemplate: (workout) {
+          Templates.of(context).workoutToTemplate(workout);
+          context.goToTemplateEditor(newTemplate: true);
+        },
+      );
     },
     name: _historyName,
   );

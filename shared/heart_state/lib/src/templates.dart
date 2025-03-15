@@ -172,6 +172,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     _service.storeTemplates(remote);
     _samples.addAll(remote);
   }
+
+  Future<void> workoutToTemplate(Workout workout) async {
+    final raw = await _service.startTemplate(userId: userId);
+    editable = Template.fromWorkout(raw.id, workout, raw.order);
+    return notifyListeners();
+  }
 }
 
 const _maxTemplates = 6;

@@ -198,25 +198,24 @@ class TimeFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     // remove any existing formatting
-    final rawText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0+'), '');
+    final raw = newValue.text.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0+'), '');
 
     // allow only digits and reject input longer than 5 digits
-    if (!RegExp(r'^[1-9]\d{0,4}$').hasMatch(rawText)) return oldValue;
+    if (!RegExp(r'^[1-9]\d{0,4}$').hasMatch(raw)) return oldValue;
 
-    // format the number into time
-    final formattedTime = switch (rawText.length) {
-      1 => '00:${rawText.padLeft(2, '0')}',
-      2 => '00:$rawText',
-      3 => '${rawText[0]}:${rawText.substring(1).padLeft(2, '0')}',
-      4 => '${rawText.substring(0, 2)}:${rawText.substring(2).padLeft(2, '0')}',
-      5 => '${rawText[0]}:${rawText.substring(1, 3)}:${rawText.substring(3).padLeft(2, '0')}',
+    final formatted = switch (raw.length) {
+      1 => '00:${raw.padLeft(2, '0')}',
+      2 => '00:$raw',
+      3 => '${raw[0]}:${raw.substring(1).padLeft(2, '0')}',
+      4 => '${raw.substring(0, 2)}:${raw.substring(2).padLeft(2, '0')}',
+      5 => '${raw[0]}:${raw.substring(1, 3)}:${raw.substring(3).padLeft(2, '0')}',
       _ => '',
     };
 
-    // return the formatted time with the correct cursor position
+    // formatted time with the correct cursor position
     return TextEditingValue(
-      text: formattedTime,
-      selection: TextSelection.collapsed(offset: formattedTime.length),
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
