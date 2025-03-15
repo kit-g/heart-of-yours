@@ -15,7 +15,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   final void Function(User?)? onUserChange;
   final AccountService _service;
-  final Future<void> Function()? onEnter;
+  final Future<void> Function(String?)? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   User? _user;
@@ -42,8 +42,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     _firebase.userChanges().listen(
       (user) async {
         _user = _cast(user);
-        _user = await _registerUser(_user);
         onUserChange?.call(_user);
+        _user = await _registerUser(_user);
+        onEnter?.call(await user?.getIdToken());
       },
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
@@ -123,14 +124,14 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> logInWithEmailAndPassword({required String email, required String password}) {
-    return _toFirebase<void>(
+    return _toFirebase<fb.UserCredential>(
       _firebase.signInWithEmailAndPassword(
         email: email,
         password: password,
       ),
     ).then(
-      (_) {
-        return onEnter?.call();
+      (cred) async {
+        return onEnter?.call(await cred?.user?.getIdToken());
       },
     );
   }
@@ -157,7 +158,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       cred?.user?.sendEmailVerification();
     }
 
-    return onEnter?.call();
+    return onEnter?.call(await cred?.user?.getIdToken());
   }
 
   Future<void> updateName(String? name) async {

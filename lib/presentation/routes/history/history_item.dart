@@ -5,6 +5,7 @@ class WorkoutItem extends StatelessWidget {
   final void Function(Workout)? onTap;
   final bool showsMenuButton;
   final VoidCallback? onStartNewWorkout;
+  final void Function(Workout)? onSaveAsTemplate;
 
   const WorkoutItem({
     super.key,
@@ -12,6 +13,7 @@ class WorkoutItem extends StatelessWidget {
     this.onTap,
     this.showsMenuButton = true,
     this.onStartNewWorkout,
+    this.onSaveAsTemplate,
   });
 
   @override
@@ -197,7 +199,7 @@ class WorkoutItem extends StatelessWidget {
     }
   }
 
-  Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) {
+  Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
     switch (option) {
       case _WorkoutOption.delete:
         return Workouts.of(context).deleteWorkout(workout.id);
@@ -209,6 +211,8 @@ class WorkoutItem extends StatelessWidget {
         } else {
           return _showCancelActiveWorkoutDialog(context, workout);
         }
+      case _WorkoutOption.saveAsTemplate:
+        return onSaveAsTemplate?.call(workout);
     }
   }
 
@@ -226,11 +230,11 @@ class WorkoutItem extends StatelessWidget {
       //     style: textTheme.titleSmall,
       //     icon: const Icon(Icons.share, size: 16),
       //   ),
-      // _WorkoutOption.saveAsTemplate => (
-      //     copy: L.of(context).saveAsTemplate,
-      //     style: textTheme.titleSmall,
-      //     icon: const Icon(Icons.add_rounded, size: 16),
-      //   ),
+      _WorkoutOption.saveAsTemplate => (
+          copy: L.of(context).saveAsTemplate,
+          style: textTheme.titleSmall,
+          icon: const Icon(Icons.add_rounded, size: 16),
+        ),
       _WorkoutOption.repeat => (
           copy: L.of(context).repeat,
           style: textTheme.titleSmall,
@@ -374,7 +378,7 @@ const _shape = RoundedRectangleBorder(
 enum _WorkoutOption {
   // edit,
   // share,
-  // saveAsTemplate,
+  saveAsTemplate,
   repeat,
   delete;
 }

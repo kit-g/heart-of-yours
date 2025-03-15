@@ -2,10 +2,12 @@ part of 'history.dart';
 
 class HistoryPage extends StatefulWidget {
   final VoidCallback onNewWorkout;
+  final void Function(Workout)? onSaveAsTemplate;
 
   const HistoryPage({
     super.key,
     required this.onNewWorkout,
+    required this.onSaveAsTemplate,
   });
 
   @override
@@ -49,6 +51,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                       return WorkoutItem(
                         workout: history[history.length - index - 1],
                         onStartNewWorkout: widget.onNewWorkout,
+                        onSaveAsTemplate: widget.onSaveAsTemplate,
                       );
                     },
                   )
