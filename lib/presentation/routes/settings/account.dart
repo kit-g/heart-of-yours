@@ -27,7 +27,17 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
 
   @override
   Widget build(BuildContext context) {
-    final L(:accountControl, :deleteAccount, :dangerZone, :name, :saveName, :changeName) = L.of(context);
+    final L(
+      :accountControl,
+      :deleteAccount,
+      :dangerZone,
+      :name,
+      :saveName,
+      :changeName,
+      :resetPassword,
+      :noConnectivity,
+      :recoveryLinkMessageSent,
+    ) = L.of(context);
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     return Scaffold(
@@ -54,6 +64,29 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
 
           return ListView(
             children: [
+              const SizedBox(height: 8),
+              ListTile(
+                title: Text(resetPassword),
+                onTap: () async {
+                  if (auth.user?.email case String email) {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      startLoading();
+                      await auth.sendPasswordRecoveryEmail(email);
+                      messenger.snack(recoveryLinkMessageSent);
+                    } on AuthException catch (e, s) {
+                      switch (e.reason) {
+                        case AuthExceptionReason.networkRequestFailed:
+                          messenger.snack(noConnectivity);
+                        default:
+                          widget.onError?.call(e, stacktrace: s);
+                      }
+                    } finally {
+                      stopLoading();
+                    }
+                  }
+                },
+              ),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
