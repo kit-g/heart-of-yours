@@ -11,10 +11,14 @@ class AccountManagementPage extends StatefulWidget {
 
 class _AccountManagementPageState extends State<AccountManagementPage> with LoadingState<AccountManagementPage> {
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _nameFocusNode = FocusNode();
   final _obscurityController = ValueNotifier(true);
 
   @override
   void dispose() {
+    _nameFocusNode.dispose();
+    _nameController.dispose();
     _passwordController.dispose();
     _obscurityController.dispose();
 
@@ -23,7 +27,7 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
 
   @override
   Widget build(BuildContext context) {
-    final L(:accountControl, :deleteAccount, :dangerZone) = L.of(context);
+    final L(:accountControl, :deleteAccount, :dangerZone, :name, :saveName, :changeName) = L.of(context);
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     return Scaffold(
@@ -42,9 +46,63 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
               child: CircularProgressIndicator(),
             );
           }
+          final auth = Auth.watch(context);
+
+          if (auth.user?.displayName case String name) {
+            _nameController.text = name;
+          }
 
           return ListView(
             children: [
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  changeName,
+                  style: textTheme.titleMedium,
+                ),
+              ),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _nameController,
+                builder: (_, value, __) {
+                  return ListenableBuilder(
+                    listenable: _nameFocusNode,
+                    builder: (context, __) {
+                      final current = value.text.trim();
+                      final hasChangedName = auth.user?.displayName != current;
+                      final shouldSave = current.isNotEmpty && hasChangedName;
+                      return ListTile(
+                        title: TextField(
+                          autocorrect: false,
+                          focusNode: _nameFocusNode,
+                          controller: _nameController,
+                          onSubmitted: (_) {
+                            if (shouldSave) {
+                              auth.updateName(current);
+                            }
+                            _nameFocusNode.unfocus();
+                          },
+                          decoration: InputDecoration.collapsed(hintText: name),
+                        ),
+                        trailing: switch (_nameFocusNode.hasFocus) {
+                          false => null,
+                          true => IconButton(
+                              tooltip: saveName,
+                              icon: const Icon(Icons.done_all_rounded),
+                              onPressed: switch (shouldSave) {
+                                true => () {
+                                    auth.updateName(current);
+                                    _nameFocusNode.unfocus();
+                                  },
+                                false => null,
+                              },
+                            ),
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),

@@ -162,6 +162,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> updateName(String? name) async {
     if (user?.id case String userId) {
+      _firebase.currentUser?.updateDisplayName(name);
       final doc = _db.collection('users').doc(userId);
 
       final snapshot = await doc.get();
