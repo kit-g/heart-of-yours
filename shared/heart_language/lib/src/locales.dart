@@ -1037,6 +1037,14 @@ class L {
     );
   }
 
+  String get resetPassword {
+    return Intl.message(
+      'Reset password',
+      name: 'resetPassword',
+      desc: 'Button',
+    );
+  }
+
   String get orConnector {
     return Intl.message(
       '- or -',
@@ -1069,6 +1077,14 @@ class L {
     );
   }
 
+  String get noConnectivity {
+    return Intl.message(
+      "Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!",
+      name: 'noConnectivity',
+      desc: 'Error message',
+    );
+  }
+
   String get signUp {
     return Intl.message(
       'Sign up',
@@ -1089,6 +1105,14 @@ class L {
     return Intl.message(
       'If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.',
       name: 'recoveryLinkMessage',
+      desc: 'Password recovery flow',
+    );
+  }
+
+  String get recoveryLinkMessageSent {
+    return Intl.message(
+      "💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).",
+      name: 'recoveryLinkMessageSent',
       desc: 'Password recovery flow',
     );
   }

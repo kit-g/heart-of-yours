@@ -294,6 +294,7 @@ enum AuthExceptionReason {
   userNotFound,
   emailInUse,
   weakPassword,
+  networkRequestFailed,
   unknown;
 
   factory AuthExceptionReason.fromCode(String code) {
@@ -305,6 +306,7 @@ enum AuthExceptionReason {
       'user-not-found' => userNotFound,
       'email-already-in-use' => emailInUse,
       'weak-password' => weakPassword,
+      'network-request-failed' => networkRequestFailed,
       _ => unknown,
     };
   }

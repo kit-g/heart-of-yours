@@ -9,6 +9,7 @@ String _errorCopy(L l, AuthExceptionReason reason) {
     AuthExceptionReason.unknown => l.unknownError,
     AuthExceptionReason.emailInUse => l.unknownError,
     AuthExceptionReason.weakPassword => l.weakPassword,
+    AuthExceptionReason.networkRequestFailed => l.noConnectivity,
   };
 }
 
