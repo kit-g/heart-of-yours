@@ -374,10 +374,15 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
-  Future<Template> startTemplate({required int order, String? userId}) async {
-    return _db.insert(_templates, {'user_id': userId, 'order_in_parent': order}).then<Template>(
-      (id) {
-        return Template.empty(id: id.toString(), order: order);
+  Future<Template> startTemplate({int? order, String? userId}) async {
+    return _db.transaction(
+      (txn) async {
+        final newOrder = order ?? (await _getMaxValue(txn, _templates, 'order_in_parent') + 1);
+        return txn.insert(_templates, {'user_id': userId, 'order_in_parent': newOrder}).then<Template>(
+          (id) {
+            return Template.empty(id: id.toString(), order: newOrder);
+          },
+        );
       },
     );
   }
@@ -416,4 +421,12 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
       },
     );
   }
+}
+
+Future<int> _getMaxValue(DatabaseExecutor db, String table, String column) async {
+  final rows = await db.rawQuery('SELECT max($column) AS max_value FROM $table;');
+  return switch (rows) {
+    [{'max_value': num v}] => v.toInt(),
+    _ => 0,
+  };
 }
