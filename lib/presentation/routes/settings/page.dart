@@ -52,10 +52,13 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
             ),
+            bottom: const PreferredSize(
+              preferredSize: Size.fromHeight(56),
+              child: LogoStripe(),
+            ),
           ),
           body: ListView(
             children: [
-              const LogoStripe(),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
