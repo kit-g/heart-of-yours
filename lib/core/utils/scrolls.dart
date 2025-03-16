@@ -6,6 +6,7 @@ class Scrolls {
   final _exercisesScrollController = ScrollController();
   final _profileScrollController = ScrollController();
   final _workoutScrollController = ScrollController();
+  final _editWorkoutScrollController = ScrollController();
   final _exercisesDraggableController = DraggableScrollableController();
   final _historyDraggableController = DraggableScrollableController();
 
@@ -16,6 +17,8 @@ class Scrolls {
   ScrollController get profileScrollController => _profileScrollController;
 
   ScrollController get workoutScrollController => _workoutScrollController;
+
+  ScrollController get editWorkoutScrollController => _editWorkoutScrollController;
 
   DraggableScrollableController get exercisesDraggableController => _exercisesDraggableController;
 
@@ -41,6 +44,10 @@ class Scrolls {
 
   Future<void> scrollWorkoutToTop() {
     return _scrollToTop(_workoutScrollController);
+  }
+
+  Future<void> scrollEditableWorkoutToTop() {
+    return _scrollToTop(_editWorkoutScrollController);
   }
 
   static Future<void> _closeSheet(DraggableScrollableController controller) async {
