@@ -43,86 +43,154 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return ListenableBuilder(
       listenable: _notifier,
       builder: (_, __) {
-        return Scaffold(
-          appBar: AppBar(
-            scrolledUnderElevation: 0,
-            backgroundColor: scaffoldBackgroundColor,
-            title: Text(editWorkout),
-            actions: [
-              ValueListenableBuilder<TextEditingValue>(
-                valueListenable: _controller,
-                builder: (_, value, __) {
-                  final enabled = workout.isNotEmpty && value.text.isNotEmpty;
-                  return AnimatedOpacity(
-                    opacity: enabled ? 1 : .3,
-                    duration: const Duration(milliseconds: 200),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: PrimaryButton.shrunk(
-                        backgroundColor: colorScheme.secondaryContainer,
-                        onPressed: switch (enabled) {
-                          true => () {
-                              Workouts.of(context).saveWorkout(_notifier.workout);
-                              Navigator.of(context).pop();
-                            },
-                          false => buzz,
-                        },
-                        child: Text(save),
+        return PopScope(
+          canPop: !_notifier.hasChanged,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              _showDiscardTemplateDialog(context);
+            }
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              scrolledUnderElevation: 0,
+              backgroundColor: scaffoldBackgroundColor,
+              title: Text(editWorkout),
+              actions: [
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _controller,
+                  builder: (_, value, __) {
+                    final enabled = workout.isNotEmpty && value.text.isNotEmpty;
+                    return AnimatedOpacity(
+                      opacity: enabled ? 1 : .3,
+                      duration: const Duration(milliseconds: 200),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: PrimaryButton.shrunk(
+                          backgroundColor: colorScheme.secondaryContainer,
+                          onPressed: switch (enabled) {
+                            true => () {
+                                Workouts.of(context).saveWorkout(_notifier.workout);
+                                Navigator.of(context).pop();
+                              },
+                            false => buzz,
+                          },
+                          child: Text(save),
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(56),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: AppBarTextField(
-                  hint: workoutName,
-                  style: textTheme.titleMedium,
-                  hintStyle: textTheme.bodyLarge,
-                  onChanged: (value) {
-                    _notifier.workout.name = value.trim();
+                    );
                   },
-                  focusNode: _focusNode,
-                  controller: _controller,
+                ),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(56),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: AppBarTextField(
+                    hint: workoutName,
+                    style: textTheme.titleMedium,
+                    hintStyle: textTheme.bodyLarge,
+                    onChanged: (value) {
+                      _notifier.name = value.trim();
+                    },
+                    focusNode: _focusNode,
+                    controller: _controller,
+                  ),
                 ),
               ),
             ),
-          ),
-          body: SafeArea(
-            child: WorkoutDetail(
-              exercises: workout,
-              needsCancelWorkoutButton: false,
-              controller: Scrolls.of(context).editWorkoutScrollController,
-              onDragExercise: (exercise) {
-                //
-              },
-              onAddSet: _notifier.addSet,
-              onRemoveSet: _notifier.removeSet,
-              onRemoveExercise: _notifier.removeExercise,
-              onSetDone: _notifier.markSet,
-              onAddExercises: (exercises) async {
-                for (var each in exercises.toList()) {
-                  await Future.delayed(
-                    // for different IDs
-                    const Duration(milliseconds: 2),
-                    () => _notifier.add(each),
-                  );
-                }
-              },
-              allowsCompletingSet: true,
+            body: SafeArea(
+              child: WorkoutDetail(
+                exercises: workout,
+                needsCancelWorkoutButton: false,
+                controller: Scrolls.of(context).editWorkoutScrollController,
+                onDragExercise: (exercise) {
+                  //
+                },
+                onAddSet: _notifier.addSet,
+                onRemoveSet: _notifier.removeSet,
+                onRemoveExercise: _notifier.removeExercise,
+                onSetDone: _notifier.markSet,
+                onAddExercises: (exercises) async {
+                  for (var each in exercises.toList()) {
+                    await Future.delayed(
+                      // for different IDs
+                      const Duration(milliseconds: 2),
+                      () => _notifier.add(each),
+                    );
+                  }
+                },
+                allowsCompletingSet: true,
+              ),
             ),
           ),
         );
       },
     );
   }
+
+  Future<void> _showDiscardTemplateDialog(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final L(
+      :quitEditing,
+      :changesWillBeLost,
+      :stayHere,
+      :quitPage,
+    ) = L.of(context);
+
+    return showBrandedDialog(
+      context,
+      title: Text(
+        quitEditing,
+        textAlign: TextAlign.center,
+      ),
+      content: Text(
+        changesWillBeLost,
+        textAlign: TextAlign.center,
+      ),
+      icon: Icon(
+        Icons.error_outline_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(stayHere),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.errorContainer,
+              child: Center(
+                child: Text(
+                  quitPage,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                ),
+              ),
+              onPressed: () {
+                Templates.of(context).editable = null;
+                Navigator.of(context, rootNavigator: true).pop();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        )
+      ],
+    );
+  }
 }
 
 class _WorkoutNotifier with ChangeNotifier {
   final Workout workout;
+
+  bool _hasChanged = false;
+
+  bool get hasChanged => _hasChanged;
 
   _WorkoutNotifier(this.workout);
 
@@ -132,10 +200,7 @@ class _WorkoutNotifier with ChangeNotifier {
   }
 
   void removeSet(WorkoutExercise exercise, ExerciseSet set) {
-    _forExercise(
-      exercise,
-      (each) => each.remove(set),
-    );
+    _forExercise(exercise, (each) => each.remove(set));
   }
 
   void removeExercise(WorkoutExercise exercise) {
@@ -153,10 +218,19 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
-  void _forExercise(WorkoutExercise exercise, void Function(WorkoutExercise) action, {bool notifies = true}) {
+  void _forExercise(WorkoutExercise exercise, void Function(WorkoutExercise) action) {
     workout.where((each) => each == exercise).forEach(action);
-    if (notifies) {
-      notifyListeners();
-    }
+    notifyListeners();
+  }
+
+  set name(String? value) {
+    workout.name = value;
+    notifyListeners();
+  }
+
+  @override
+  void notifyListeners() {
+    _hasChanged = true;
+    super.notifyListeners();
   }
 }
