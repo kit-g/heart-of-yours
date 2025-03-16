@@ -173,7 +173,6 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 ),
               ),
               onPressed: () {
-                Templates.of(context).editable = null;
                 Navigator.of(context, rootNavigator: true).pop();
                 Navigator.of(context).pop();
               },
