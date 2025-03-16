@@ -27,6 +27,7 @@ RouteBase _profileRoute() {
     builder: (context, _) {
       return ProfilePage(
         onSettings: context.goToSettings,
+        onAccount: context.goToAccountManagement,
       );
     },
     name: _profileName,
