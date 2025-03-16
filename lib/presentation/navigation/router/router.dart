@@ -97,7 +97,9 @@ RouteBase _historyRoute() {
           try {
             final workoutId = state.uri.queryParameters['workoutId'];
             final workout = Workouts.of(context).lookup(workoutId!);
-            return WorkoutEditor(workout: workout!);
+            return WorkoutEditor(
+              copy: workout!.copy(sameId: true)..completeAllSets(),
+            );
           } catch (e) {
             throw GoException(e.toString());
           }

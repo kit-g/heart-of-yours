@@ -112,17 +112,24 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _service.startWorkout(workout, userId!);
   }
 
-  Future<void> finishWorkout() async {
+  Future<void> finishActiveWorkout() async {
     activeWorkout?.finish(DateTime.timestamp());
 
     final active = activeWorkout;
     if (active == null) return;
 
+    await saveWorkout(active);
+    _activeWorkout = null;
+  }
+
+  Future<void> saveWorkout(Workout active) {
     _service.finishWorkout(active, userId!);
 
+    _workouts[active.id] = active;
+    notifyListeners();
     final aggregation = _db.collection('aggregations').doc(userId!);
 
-    _db.runTransaction<void>(
+    return _db.runTransaction<void>(
       (transaction) async {
         final aggregationSnapshot = await transaction.get(aggregation);
         final currentAggregations = switch (aggregationSnapshot.data()?['workouts']) {
@@ -156,18 +163,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         onError?.call(error, stacktrace: stacktrace);
       },
     );
-    _activeWorkout = null;
   }
 
   Future<void> cancelActiveWorkout() async {
     _workouts.remove(_activeWorkoutId);
     if (_activeWorkoutId case String id) {
       _deleteWorkout(id).catchError(
-        (error) {
+        (error, stacktrace) {
           switch (error) {
             case FirebaseException(:var code) when code == 'permission-denied':
             // ok in this case, since the workout might not be in Firebase
             default:
+              onError?.call(error, stacktrace: stacktrace);
           }
         },
       );

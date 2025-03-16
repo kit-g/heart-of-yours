@@ -5,13 +5,15 @@ const _widerRadius = Radius.circular(12);
 const _widerBorderRadius = BorderRadius.all(_widerRadius);
 const _widerRoundedBorder = RoundedRectangleBorder(borderRadius: _widerBorderRadius);
 
+const _font = 'Lato';
+
 ThemeData theme(ColorScheme colorScheme) {
   final textTheme = _textTheme(primaryColor: colorScheme.onSurface, secondaryColor: colorScheme.outline);
   return ThemeData(
     useMaterial3: true,
     brightness: colorScheme.brightness,
     colorScheme: colorScheme,
-    fontFamily: 'Lato',
+    fontFamily: _font,
     textTheme: textTheme,
     scaffoldBackgroundColor: colorScheme.surface,
     canvasColor: colorScheme.surface,
@@ -79,7 +81,7 @@ ThemeData theme(ColorScheme colorScheme) {
     snackBarTheme: SnackBarThemeData(
       backgroundColor: colorScheme.inverseSurface,
       contentTextStyle: TextStyle(
-        fontFamily: 'Lato',
+        fontFamily: _font,
         fontSize: 14,
         color: colorScheme.onInverseSurface,
         fontWeight: FontWeight.w400,
@@ -98,12 +100,12 @@ ThemeData theme(ColorScheme colorScheme) {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
-        textStyle: textTheme.bodyMedium?.copyWith(fontFamily: 'Lato'),
+        textStyle: textTheme.bodyMedium?.copyWith(fontFamily: _font),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        textStyle: textTheme.titleMedium?.copyWith(fontFamily: 'Lato'),
+        textStyle: textTheme.titleMedium?.copyWith(fontFamily: _font),
         foregroundColor: colorScheme.onSurface,
       ),
     ),
