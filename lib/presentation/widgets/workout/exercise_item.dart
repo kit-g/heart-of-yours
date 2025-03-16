@@ -1,6 +1,6 @@
 part of 'workout_detail.dart';
 
-class _WorkoutExerciseItem extends StatelessWidget {
+class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerciseItem> {
   final int index;
   final String copy;
   final WorkoutExercise exercise;
@@ -321,6 +321,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   }
 
   Future<void> _onTapExerciseOption(BuildContext context, _ExerciseOption option) async {
+    buzz();
     switch (option) {
       case _ExerciseOption.remove:
         return onRemoveExercise(exercise);
