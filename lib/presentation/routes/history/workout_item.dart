@@ -6,6 +6,7 @@ class WorkoutItem extends StatelessWidget {
   final bool showsMenuButton;
   final VoidCallback? onStartNewWorkout;
   final void Function(Workout)? onSaveAsTemplate;
+  final void Function(Workout)? onEditWorkout;
 
   const WorkoutItem({
     super.key,
@@ -14,6 +15,7 @@ class WorkoutItem extends StatelessWidget {
     this.showsMenuButton = true,
     this.onStartNewWorkout,
     this.onSaveAsTemplate,
+    this.onEditWorkout,
   });
 
   @override
@@ -213,6 +215,8 @@ class WorkoutItem extends StatelessWidget {
         }
       case _WorkoutOption.saveAsTemplate:
         return onSaveAsTemplate?.call(workout);
+      case _WorkoutOption.edit:
+        return onEditWorkout?.call(workout);
     }
   }
 
@@ -220,16 +224,11 @@ class WorkoutItem extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return switch (option) {
-      // _WorkoutOption.edit => (
-      //     copy: L.of(context).edit,
-      //     style: textTheme.titleSmall,
-      //     icon: const Icon(Icons.edit_rounded, size: 16),
-      //   ),
-      // _WorkoutOption.share => (
-      //     copy: L.of(context).share,
-      //     style: textTheme.titleSmall,
-      //     icon: const Icon(Icons.share, size: 16),
-      //   ),
+      _WorkoutOption.edit => (
+          copy: L.of(context).edit,
+          style: textTheme.titleSmall,
+          icon: const Icon(Icons.edit_rounded, size: 16),
+        ),
       _WorkoutOption.saveAsTemplate => (
           copy: L.of(context).saveAsTemplate,
           style: textTheme.titleSmall,
@@ -245,6 +244,11 @@ class WorkoutItem extends StatelessWidget {
           style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
           icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
         ),
+      // _WorkoutOption.share => (
+      //     copy: L.of(context).share,
+      //     style: textTheme.titleSmall,
+      //     icon: const Icon(Icons.share, size: 16),
+      //   ),
     };
   }
 
@@ -376,8 +380,8 @@ const _shape = RoundedRectangleBorder(
 );
 
 enum _WorkoutOption {
-  // edit,
   // share,
+  edit,
   saveAsTemplate,
   repeat,
   delete;

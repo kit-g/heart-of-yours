@@ -9,6 +9,7 @@ class _ExerciseSetItem extends StatefulWidget {
   final ExerciseSet set;
   final WorkoutExercise exercise;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
+  final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final bool isLocked;
 
   const _ExerciseSetItem({
@@ -16,6 +17,7 @@ class _ExerciseSetItem extends StatefulWidget {
     required this.index,
     required this.exercise,
     required this.onRemoveSet,
+    this.onSetDone,
     required this.isLocked,
   });
 
@@ -179,7 +181,11 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
                   margin: EdgeInsets.zero,
                   onPressed: () {
                     if (!widget.isLocked) {
-                      _onDone(context);
+                      if (widget.onSetDone != null) {
+                        widget.onSetDone?.call(exercise, set);
+                      } else {
+                        _onDone(context);
+                      }
                     }
                   },
                   child: Center(

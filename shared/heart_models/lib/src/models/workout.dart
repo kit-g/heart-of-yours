@@ -157,7 +157,9 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   String weekOf();
 
   /// Makes a copy of itself with a new set of IDs
-  Workout copy();
+  Workout copy({bool sameId});
+
+  void completeAllSets();
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -415,8 +417,11 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   }
 
   @override
-  Workout copy() {
-    final workout = Workout(name: name);
+  Workout copy({bool sameId = false}) {
+    final workout = _Workout(
+      name: name,
+      start: sameId ? start : DateTime.timestamp(),
+    );
 
     for (final each in this) {
       if (each.isNotEmpty) {
@@ -431,7 +436,20 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       }
     }
 
+    if (end case DateTime dt) {
+      workout.finish(dt);
+    }
+
     return workout;
+  }
+
+  @override
+  void completeAllSets() {
+    for (var each in this) {
+      for (var set in each) {
+        set.isCompleted = true;
+      }
+    }
   }
 }
 
