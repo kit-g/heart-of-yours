@@ -6,6 +6,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
   final WorkoutExercise exercise;
   final void Function(WorkoutExercise) onAddSet;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
+  final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final void Function(WorkoutExercise) onRemoveExercise;
   final String firstColumnCopy;
   final String secondColumnCopy;
@@ -20,6 +21,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
     required this.exercise,
     required this.onAddSet,
     required this.onRemoveSet,
+    this.onSetDone,
     required this.onRemoveExercise,
     required this.copy,
     required this.firstColumnCopy,
@@ -166,6 +168,7 @@ class _WorkoutExerciseItem extends StatelessWidget {
                               exercise: exercise,
                               onRemoveSet: onRemoveSet,
                               isLocked: !allowCompleting,
+                              onSetDone: onSetDone,
                             );
                           },
                         ),

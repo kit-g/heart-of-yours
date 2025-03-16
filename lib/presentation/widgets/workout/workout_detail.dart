@@ -37,6 +37,7 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(WorkoutExercise) onAddSet;
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
+  final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
@@ -50,6 +51,7 @@ class WorkoutDetail extends StatefulWidget {
     required this.onDragExercise,
     required this.onAddSet,
     required this.onRemoveSet,
+    this.onSetDone,
     required this.onRemoveExercise,
     required this.onAddExercises,
     this.needsCancelWorkoutButton = true,
@@ -167,6 +169,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             currentlyHoveredItem: _currentlyHoveredExercise,
                             onAddSet: widget.onAddSet,
                             onRemoveSet: widget.onRemoveSet,
+                            onSetDone: widget.onSetDone,
                             onRemoveExercise: widget.onRemoveExercise,
                             onDragStarted: () {
                               _beingDragged.value = set;
