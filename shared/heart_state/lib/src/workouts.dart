@@ -172,6 +172,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         (error, stacktrace) {
           switch (error) {
             case FirebaseException(:var code) when code == 'permission-denied':
+              return;
             // ok in this case, since the workout might not be in Firebase
             default:
               onError?.call(error, stacktrace: stacktrace);
