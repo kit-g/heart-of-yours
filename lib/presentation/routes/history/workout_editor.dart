@@ -69,8 +69,14 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                           backgroundColor: colorScheme.secondaryContainer,
                           onPressed: switch (enabled) {
                             true => () {
-                                Workouts.of(context).saveWorkout(_notifier.workout);
-                                Navigator.of(context).pop();
+                                _showFinishWorkoutDialog(
+                                  context,
+                                  workout,
+                                  onFinish: () {
+                                    Workouts.of(context).saveWorkout(_notifier.workout);
+                                    Navigator.of(context).pop();
+                                  },
+                                );
                               },
                             false => buzz,
                           },
@@ -180,6 +186,58 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
           ],
         )
       ],
+    );
+  }
+
+  Future<void> _showFinishWorkoutDialog(BuildContext context, Workout workout, {VoidCallback? onFinish}) async {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final L(
+      :finishWorkoutWarningTitle,
+      :finishWorkoutWarningBody,
+      :readyToFinish,
+      :notReadyToFinish,
+    ) = L.of(context);
+
+    final actions = [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            child: Center(
+              child: Text(notReadyToFinish),
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+          ),
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.primaryContainer,
+            child: Center(
+              child: Text(readyToFinish),
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              onFinish?.call();
+            },
+          ),
+        ],
+      ),
+    ];
+
+    return showBrandedDialog(
+      context,
+      title: Text(finishWorkoutWarningTitle),
+      titleTextStyle: textTheme.titleMedium,
+      icon: Icon(
+        Icons.error_outline_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      content: Text(
+        finishWorkoutWarningBody,
+        textAlign: TextAlign.center,
+      ),
+      actions: actions,
     );
   }
 }
