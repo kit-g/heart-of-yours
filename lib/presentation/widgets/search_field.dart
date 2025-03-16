@@ -20,6 +20,7 @@ class SearchField extends StatelessWidget {
       listenable: focusNode,
       builder: (__, _) {
         return TextField(
+          autocorrect: false,
           controller: controller,
           focusNode: focusNode,
           decoration: InputDecoration(
