@@ -1,6 +1,6 @@
 part of 'workout.dart';
 
-class _TemplateCard extends StatelessWidget {
+class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
   final Template template;
   final void Function(Template)? onDelete;
   final void Function(Template)? onEdit;
@@ -24,7 +24,10 @@ class _TemplateCard extends StatelessWidget {
     return Card(
       shape: _shape,
       child: InkWell(
-        onTap: () => onTap(template),
+        onTap: () {
+          buzz();
+          onTap(template);
+        },
         customBorder: _shape,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

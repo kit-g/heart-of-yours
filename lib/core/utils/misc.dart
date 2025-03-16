@@ -21,7 +21,7 @@ void copyToClipboard(String content) {
   Clipboard.setData(ClipboardData(text: content));
 }
 
-mixin HasHaptic<T extends StatefulWidget> on State<T> {
+mixin HasHaptic<T> {
   void buzz() {
     HapticFeedback.mediumImpact();
   }

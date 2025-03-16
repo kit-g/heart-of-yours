@@ -1,6 +1,6 @@
 part of 'exercises.dart';
 
-class ExercisePicker extends StatelessWidget {
+class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   final Exercises exercises;
   final TextEditingController searchController;
   final Widget? appBar;
@@ -96,7 +96,10 @@ class ExercisePicker extends StatelessWidget {
                                 return PopupMenuItem<ExerciseFilter>(
                                   height: 36,
                                   value: category,
-                                  onTap: () => exercises.addFilter(category),
+                                  onTap: () {
+                                    buzz();
+                                    exercises.addFilter(category);
+                                  },
                                   child: Text(
                                     category.value,
                                     style: textTheme.titleSmall,
@@ -146,7 +149,10 @@ class ExercisePicker extends StatelessWidget {
                                 return PopupMenuItem<ExerciseFilter>(
                                   height: 36,
                                   value: category,
-                                  onTap: () => exercises.addFilter(category),
+                                  onTap: () {
+                                    buzz();
+                                    exercises.addFilter(category);
+                                  },
                                   child: Text(
                                     category.value,
                                     style: textTheme.titleSmall,
@@ -197,6 +203,7 @@ class ExercisePicker extends StatelessWidget {
                             ),
                             visualDensity: const VisualDensity(vertical: -4, horizontal: -0),
                             onDeleted: () {
+                              buzz();
                               exercises.removeFilter(filter);
                             },
                           ),

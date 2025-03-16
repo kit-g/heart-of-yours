@@ -1,6 +1,6 @@
 part of 'settings.dart';
 
-class _ThemeModePicker extends StatelessWidget {
+class _ThemeModePicker extends StatelessWidget with HasHaptic {
   const _ThemeModePicker();
 
   @override
@@ -61,6 +61,7 @@ class _ThemeModePicker extends StatelessWidget {
   }
 
   void _onPressed(BuildContext context, int index, AppTheme appTheme) {
+    buzz();
     switch (index) {
       case 0:
         Preferences.of(context).setThemeMode(ThemeMode.system);

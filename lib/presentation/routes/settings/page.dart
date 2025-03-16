@@ -1,6 +1,6 @@
 part of 'settings.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
 
   const SettingsPage({
@@ -94,6 +94,7 @@ class SettingsPage extends StatelessWidget {
                       title: weightUnit,
                       value: weight,
                       onValueChanged: (unit) {
+                        buzz();
                         if (unit != null) {
                           Preferences.of(context).setWeightUnit(unit);
                         }
@@ -115,6 +116,7 @@ class SettingsPage extends StatelessWidget {
                       title: distanceUnit,
                       value: distance,
                       onValueChanged: (unit) {
+                        buzz();
                         if (unit != null) {
                           Preferences.of(context).setDistanceUnit(unit);
                         }

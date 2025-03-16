@@ -9,7 +9,8 @@ class AccountManagementPage extends StatefulWidget {
   State<AccountManagementPage> createState() => _AccountManagementPageState();
 }
 
-class _AccountManagementPageState extends State<AccountManagementPage> with LoadingState<AccountManagementPage> {
+class _AccountManagementPageState extends State<AccountManagementPage>
+    with LoadingState<AccountManagementPage>, HasHaptic<AccountManagementPage> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _nameFocusNode = FocusNode();
@@ -110,6 +111,7 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
                           focusNode: _nameFocusNode,
                           controller: _nameController,
                           onSubmitted: (_) {
+                            buzz();
                             if (shouldSave) {
                               auth.updateName(current);
                             }
@@ -121,9 +123,10 @@ class _AccountManagementPageState extends State<AccountManagementPage> with Load
                           false => null,
                           true => IconButton(
                               tooltip: saveName,
-                              icon: const Icon(Icons.done_all_rounded),
+                              icon: const Icon(Icons.check_circle_rounded),
                               onPressed: switch (shouldSave) {
                                 true => () {
+                                    buzz();
                                     auth.updateName(current);
                                     _nameFocusNode.unfocus();
                                   },

@@ -7,7 +7,7 @@ class _ColorPicker extends StatefulWidget {
   State<_ColorPicker> createState() => _ColorPickerState();
 }
 
-class _ColorPickerState extends State<_ColorPicker> {
+class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker> {
   Color? _color;
 
   @override
@@ -58,6 +58,7 @@ class _ColorPickerState extends State<_ColorPicker> {
 
   Future<void> _showColorPicker(BuildContext context) {
     final L(:cancel, :ok) = L.of(context);
+    buzz();
     return showDialog<void>(
       context: context,
       builder: (context) {
@@ -82,6 +83,7 @@ class _ColorPickerState extends State<_ColorPicker> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
+                buzz();
                 Navigator.of(context).pop();
               },
               child: Padding(
@@ -91,6 +93,7 @@ class _ColorPickerState extends State<_ColorPicker> {
             ),
             TextButton(
               onPressed: () {
+                buzz();
                 AppTheme.of(context).color = _color;
                 Preferences.of(context).setBaseColor(_color?.toHexString());
                 Navigator.of(context).pop();

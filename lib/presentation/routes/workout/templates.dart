@@ -74,6 +74,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                       Workouts.of(context).startWorkout(template: template.toWorkout());
                     },
                     onTap: (template) {
+
                       _showStartWorkoutDialog(context, template);
                     },
                   );

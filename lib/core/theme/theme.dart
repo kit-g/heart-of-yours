@@ -103,6 +103,7 @@ ThemeData theme(ColorScheme colorScheme) {
         textStyle: textTheme.bodyMedium?.copyWith(fontFamily: _font),
       ),
     ),
+    listTileTheme: const ListTileThemeData(enableFeedback: true),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         textStyle: textTheme.titleMedium?.copyWith(fontFamily: _font),
