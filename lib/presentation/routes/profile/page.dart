@@ -2,17 +2,19 @@ part of 'profile.dart';
 
 class ProfilePage extends StatefulWidget {
   final VoidCallback onSettings;
+  final VoidCallback onAccount;
 
   const ProfilePage({
     super.key,
     required this.onSettings,
+    required this.onAccount,
   });
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<ProfilePage> {
+class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<ProfilePage>, HasHaptic<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final L(:logOut, :settings, :workoutsPerWeekTitle, :workoutsPerWeekBody) = L.of(context);
@@ -28,15 +30,21 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         leadingWidth: 64,
         leading: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: CircleAvatar(
-            foregroundImage: switch (avatar) {
-              String avatar when avatar.startsWith('https') => NetworkImage(avatar),
-              _ => null,
-            },
-            child: const Icon(Icons.person_rounded),
+          child: GestureDetector(
+            onTap: _toAccount,
+            child: CircleAvatar(
+              foregroundImage: switch (avatar) {
+                String avatar when avatar.startsWith('https') => NetworkImage(avatar),
+                _ => null,
+              },
+              child: const Icon(Icons.person_rounded),
+            ),
           ),
         ),
-        title: Text(displayName ?? '?'),
+        title: GestureDetector(
+          onTap: _toAccount,
+          child: Text(displayName ?? '?'),
+        ),
         actions: [
           IconButton(
             tooltip: settings,
@@ -94,6 +102,11 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   @override
   void afterFirstLayout(BuildContext context) {
     Stats.of(context).init();
+  }
+
+  void _toAccount() {
+    buzz();
+    widget.onAccount();
   }
 }
 

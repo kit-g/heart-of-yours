@@ -27,6 +27,7 @@ RouteBase _profileRoute() {
     builder: (context, _) {
       return ProfilePage(
         onSettings: context.goToSettings,
+        onAccount: context.goToAccountManagement,
       );
     },
     name: _profileName,
@@ -84,9 +85,29 @@ RouteBase _historyRoute() {
           Templates.of(context).workoutToTemplate(workout);
           context.goToTemplateEditor(newTemplate: true);
         },
+        onEditWorkout: (workout) {
+          context.goToWorkoutEditor(workout.id);
+        },
       );
     },
     name: _historyName,
+    routes: [
+      GoRoute(
+        path: _historyEditPath,
+        builder: (context, state) {
+          try {
+            final workoutId = state.uri.queryParameters['workoutId'];
+            final workout = Workouts.of(context).lookup(workoutId!);
+            return WorkoutEditor(
+              copy: workout!.copy(sameId: true)..completeAllSets(),
+            );
+          } catch (e) {
+            throw GoException(e.toString());
+          }
+        },
+        name: _historyEditName,
+      )
+    ],
   );
 }
 
@@ -164,8 +185,8 @@ RouteBase _workoutDoneRoute() {
           workout: workout!,
           onQuit: context.goToWorkouts,
         );
-      } catch (_) {
-        return const Scaffold();
+      } catch (e) {
+        throw GoException('$e');
       }
     },
     name: _doneName,

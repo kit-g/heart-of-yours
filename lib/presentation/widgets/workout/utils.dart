@@ -162,7 +162,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
 
 Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   context.goToWorkoutDone(workouts.activeWorkout?.id);
-  return workouts.finishWorkout();
+  return workouts.finishActiveWorkout();
 }
 
 class NDigitFloatingPointFormatter extends TextInputFormatter {

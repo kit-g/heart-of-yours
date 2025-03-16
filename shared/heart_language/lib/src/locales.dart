@@ -997,11 +997,27 @@ class L {
     );
   }
 
+  String get editWorkout {
+    return Intl.message(
+      'Edit Workout',
+      name: 'editWorkout',
+      desc: 'Edit workout form header',
+    );
+  }
+
   String get templateName {
     return Intl.message(
       'Template name',
       name: 'templateName',
       desc: 'Edit template text field hint',
+    );
+  }
+
+  String get workoutName {
+    return Intl.message(
+      'Workout name',
+      name: 'workoutName',
+      desc: 'Edit workout text field hint',
     );
   }
 

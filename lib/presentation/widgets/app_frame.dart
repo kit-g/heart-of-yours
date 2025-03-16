@@ -75,7 +75,13 @@ class AppFrame extends StatelessWidget {
           return Scrolls.of(context).scrollWorkoutToTop();
         // history stack
         case 2:
-          return Scrolls.of(context).resetHistoryStack();
+          if (GoRouterState.of(context).matchedLocation == '/history/edit') {
+            return Scrolls.of(context).scrollEditableWorkoutToTop();
+          }
+
+          if (!context.canPop()) {
+            return Scrolls.of(context).resetHistoryStack();
+          }
         // exercises stack
         case 3:
           return Scrolls.of(context).resetExerciseStack();
