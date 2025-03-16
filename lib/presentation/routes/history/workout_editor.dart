@@ -95,6 +95,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
             child: WorkoutDetail(
               exercises: workout,
               needsCancelWorkoutButton: false,
+              controller: Scrolls.of(context).editWorkoutScrollController,
               onDragExercise: (exercise) {
                 //
               },
