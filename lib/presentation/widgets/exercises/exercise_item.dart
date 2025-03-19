@@ -30,7 +30,9 @@ class _ExerciseItem extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Row(
+            spacing: 8,
             children: [
+              _Badge(exercise: exercise),
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
