@@ -100,9 +100,18 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                                     buzz();
                                     exercises.addFilter(category);
                                   },
-                                  child: Text(
-                                    category.value,
-                                    style: textTheme.titleSmall,
+                                  child: Row(
+                                    spacing: 8,
+                                    children: [
+                                      Text(
+                                        category.icon,
+                                        style: textTheme.titleLarge,
+                                      ),
+                                      Text(
+                                        category.value,
+                                        style: textTheme.titleSmall,
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
