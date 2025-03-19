@@ -1,5 +1,6 @@
 library;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
@@ -11,5 +12,8 @@ import 'package:heart_state/heart_state.dart';
 
 import '../search_field.dart';
 
+part 'badge.dart';
+
 part 'exercise_item.dart';
+
 part 'exercise_picker.dart';
