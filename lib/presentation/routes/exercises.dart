@@ -39,7 +39,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
           focusNode: _focusNode,
           backgroundColor: backgroundColor,
           onExerciseSelected: (e) {
-            //
+            copyToClipboard(e.name);
           },
         ),
       ),

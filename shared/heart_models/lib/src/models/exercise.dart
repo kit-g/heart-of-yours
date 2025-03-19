@@ -70,6 +70,21 @@ enum Target implements ExerciseFilter {
     };
   }
 
+  String get icon {
+    return switch (this) {
+      core => '🏋️',
+      arms => '💪',
+      back => '🦾',
+      chest => '🏋️‍♀️',
+      legs => '🦵',
+      shoulder => '🤷‍♀️',
+      other => '❓',
+      olympic => '🏅',
+      fullBody => '🤸‍♀️',
+      cardio => '❤️',
+    };
+  }
+
   @override
   String toString() => value;
 }
@@ -80,6 +95,10 @@ abstract interface class Exercise implements Searchable, Model {
   Category get category;
 
   Target get target;
+
+  String? get asset;
+
+  String? get thumbnail;
 
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
 
@@ -93,11 +112,17 @@ class _Exercise implements Exercise {
   final Category category;
   @override
   final Target target;
+  @override
+  final String? asset;
+  @override
+  final String? thumbnail;
 
   const _Exercise({
     required this.name,
     required this.category,
     required this.target,
+    this.asset,
+    this.thumbnail,
   });
 
   factory _Exercise.fromJson(Map json) {
@@ -105,6 +130,8 @@ class _Exercise implements Exercise {
       name: json['name'],
       category: Category.fromString(json['category']),
       target: Target.fromString(json['target']),
+      asset: json['asset'],
+      thumbnail: json['thumbnail'],
     );
   }
 
@@ -114,6 +141,8 @@ class _Exercise implements Exercise {
       'category': category.value,
       'name': name,
       'target': target.value,
+      if (asset != null) 'asset': asset,
+      if (thumbnail != null) 'thumbnail': thumbnail,
     };
   }
 

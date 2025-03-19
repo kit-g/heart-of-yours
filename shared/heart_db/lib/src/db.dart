@@ -3,7 +3,7 @@ part of '../heart_db.dart';
 final class LocalDatabase implements TimersService, ExerciseService, StatsService, TemplateService, WorkoutService {
   static late final Database _db;
 
-  static Future<void> init() async {
+  static Future<void> init([int version = 1]) async {
     var path = await getDatabasesPath();
     // await deleteDatabase(path);
 
@@ -11,7 +11,7 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
     _logger.info('Local database at $path/$name');
     await openDatabase(
       join(path, name),
-      version: 1,
+      version: version,
       onUpgrade: _migrate,
       onConfigure: (db) async {
         _db = db;
