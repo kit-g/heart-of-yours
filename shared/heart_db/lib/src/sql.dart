@@ -12,12 +12,16 @@ CREATE TABLE IF NOT EXISTS workouts
 const exercises = """
 CREATE TABLE IF NOT EXISTS exercises
 (
-    name      TEXT NOT NULL PRIMARY KEY,
-    category  TEXT NOT NULL,
-    target    TEXT NOT NULL,
-    asset     TEXT,
-    thumbnail TEXT,
-    user_id   TEXT
+    name             TEXT NOT NULL PRIMARY KEY,
+    category         TEXT NOT NULL,
+    target           TEXT NOT NULL,
+    asset            TEXT,
+    asset_width      INT,
+    asset_height     INT,
+    thumbnail        TEXT,
+    thumbnail_width  INT,
+    thumbnail_height INT,
+    user_id          TEXT
 );
 """;
 

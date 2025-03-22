@@ -12,7 +12,7 @@ class _Badge extends StatelessWidget {
       width: _size,
       child: ClipRRect(
         borderRadius: const BorderRadius.all(Radius.circular(6)),
-        child: switch (exercise.thumbnail) {
+        child: switch (exercise.thumbnail?.link) {
           String url when url.startsWith('https://') => CachedNetworkImage(
               imageUrl: url,
               fit: BoxFit.cover,
