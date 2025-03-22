@@ -1,6 +1,6 @@
 part of 'done.dart';
 
-class Particle {
+class _Particle {
   /// initial horizontal position
   final double startX;
 
@@ -40,7 +40,7 @@ class Particle {
   /// how fast it wobbles
   final double oscillationFrequency;
 
-  Particle()
+  _Particle()
       : startX = _rng.nextDouble() * 20 - 10,
         startY = _rng.nextDouble() * 10,
         initialVelocityX = (_rng.nextDouble() - 0.5) * 200,
@@ -58,11 +58,11 @@ class Particle {
         oscillationFrequency = _rng.nextDouble() * 5 + 2;
 }
 
-class ConfettiPainter extends CustomPainter {
-  final List<Particle> particles;
+class _ConfettiPainter extends CustomPainter {
+  final List<_Particle> particles;
   final double progress;
 
-  ConfettiPainter(this.particles, this.progress);
+  _ConfettiPainter(this.particles, this.progress);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -122,42 +122,6 @@ class ConfettiPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 
-  void _drawHeart(Canvas canvas, double x, double y, double size, Paint paint) {
-    final width = size;
-    final height = size;
-    final path = Path();
-    final startX = (size / 2) - (width / 2);
-    final startY = (size / 2) - height * 0.6;
-
-    path
-      ..moveTo(
-        startX + (0.5 * width),
-        startY + (height * 0.4),
-      )
-      ..cubicTo(
-        startX + (0.2 * width),
-        startY + (height * 0.1),
-        startX + (-0.25 * width),
-        startY + (height * 0.6),
-        startX + (0.5 * width),
-        startY + height,
-      )
-      ..moveTo(
-        startX + (0.5 * width),
-        startY + (height * 0.4),
-      )
-      ..cubicTo(
-        startX + (0.8 * width),
-        startY + (height * 0.1),
-        startX + (1.25 * width),
-        startY + (height * 0.6),
-        startX + (0.5 * width),
-        startY + height,
-      );
-
-    canvas.drawPath(path, paint);
-  }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
@@ -178,7 +142,7 @@ class Confetti extends StatefulWidget {
 
 class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late List<Particle> particles;
+  late List<_Particle> particles;
 
   @override
   void initState() {
@@ -188,16 +152,16 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
       duration: Duration(seconds: widget.duration),
     )..forward();
 
-    particles = List.generate(widget.particleCount, (_) => Particle());
+    particles = List.generate(widget.particleCount, (_) => _Particle());
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (_, __) {
+    return ValueListenableBuilder<double>(
+      valueListenable: _controller,
+      builder: (_, value, __) {
         return CustomPaint(
-          painter: ConfettiPainter(particles, _controller.value),
+          painter: _ConfettiPainter(particles, value),
         );
       },
     );
