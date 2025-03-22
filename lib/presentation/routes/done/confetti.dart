@@ -172,15 +172,6 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
     _controller.dispose();
     super.dispose();
   }
-
-  @override
-  void reassemble() {
-    super.reassemble();
-
-    _controller
-      ..reset()
-      ..forward();
-  }
 }
 
 final _rng = Random();

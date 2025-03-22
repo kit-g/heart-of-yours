@@ -323,6 +323,22 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
+  Future<int> getWeeklyWorkoutCount(DateTime d) {
+    final monday = getMonday(d);
+    return _db.rawQuery('SELECT count(*) AS c FROM workouts WHERE start > ? AND end < ?', [
+      monday.toIso8601String(),
+      (monday.add(const Duration(days: 7)).toIso8601String()),
+    ]).then(
+      (rows) {
+        return switch (rows) {
+          [{'c': num count}] => count.toInt(),
+          _ => 0,
+        };
+      },
+    );
+  }
+
+  @override
   Future<void> updateTemplate(Template template) {
     return _db.transaction(
       (txn) {

@@ -184,6 +184,7 @@ RouteBase _workoutDoneRoute() {
         return WorkoutDone(
           workout: workout!,
           onQuit: context.goToWorkouts,
+          workoutsThisWeekCallback: () => Stats.of(context).getWeeklyWorkoutCount(workout.start),
         );
       } catch (e) {
         throw GoException('$e');
