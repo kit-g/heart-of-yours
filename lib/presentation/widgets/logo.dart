@@ -43,10 +43,12 @@ class LogoTitle extends StatelessWidget {
 
 class Motto extends StatelessWidget {
   final double fontSize;
+  final FontWeight? weight;
 
   const Motto({
     super.key,
     this.fontSize = 24,
+    this.weight,
   });
 
   @override
@@ -56,6 +58,7 @@ class Motto extends StatelessWidget {
       style: TextStyle(
         fontFamily: 'Daydream',
         fontSize: fontSize,
+        fontWeight: weight,
       ),
     );
   }
