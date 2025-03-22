@@ -96,9 +96,9 @@ abstract interface class Exercise implements Searchable, Model {
 
   Target get target;
 
-  String? get asset;
+  Asset? get asset;
 
-  String? get thumbnail;
+  Asset? get thumbnail;
 
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
 
@@ -113,9 +113,9 @@ class _Exercise implements Exercise {
   @override
   final Target target;
   @override
-  final String? asset;
+  final Asset? asset;
   @override
-  final String? thumbnail;
+  final Asset? thumbnail;
 
   const _Exercise({
     required this.name,
@@ -126,12 +126,25 @@ class _Exercise implements Exercise {
   });
 
   factory _Exercise.fromJson(Map json) {
+    print(json);
     return _Exercise(
       name: json['name'],
       category: Category.fromString(json['category']),
       target: Target.fromString(json['target']),
-      asset: json['asset'],
-      thumbnail: json['thumbnail'],
+      asset: switch (json['asset']) {
+        // comes from remote
+        {'link': String link} => (link: link, width: json['asset']['width'], height: json['asset']['height']),
+        // comes from local SQLite
+        String link => (link: link, width: json['assetWidth'], height: json['assetHeight']) as Asset,
+        _ => null,
+      },
+      thumbnail: switch (json['thumbnail']) {
+        // comes from remote
+        {'link': String link} => (link: link, width: json['thumbnail']['width'], height: json['thumbnail']['height']),
+        // comes from local SQLite
+        String link => (link: link, width: json['thumbnailWidth'], height: json['thumbnailHeight']) as Asset,
+        _ => null,
+      },
     );
   }
 
@@ -141,8 +154,16 @@ class _Exercise implements Exercise {
       'category': category.value,
       'name': name,
       'target': target.value,
-      if (asset != null) 'asset': asset,
-      if (thumbnail != null) 'thumbnail': thumbnail,
+      if (asset case Asset asset) ...{
+        'asset': asset.link,
+        'assetHeight': asset.height,
+        'assetWidth': asset.width,
+      },
+      if (thumbnail case Asset thumbnail) ...{
+        'thumbnail': thumbnail.link,
+        'thumbnailHeight': thumbnail.height,
+        'thumbnailWidth': thumbnail.width,
+      }
     };
   }
 
@@ -178,3 +199,4 @@ class _Exercise implements Exercise {
 
 typedef ExerciseId = String;
 typedef ExerciseLookup = Exercise? Function(ExerciseId);
+typedef Asset = ({String link, int? width, int? height});
