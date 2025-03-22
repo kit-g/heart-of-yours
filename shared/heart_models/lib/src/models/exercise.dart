@@ -126,7 +126,6 @@ class _Exercise implements Exercise {
   });
 
   factory _Exercise.fromJson(Map json) {
-    print(json);
     return _Exercise(
       name: json['name'],
       category: Category.fromString(json['category']),

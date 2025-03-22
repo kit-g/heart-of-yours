@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
@@ -40,20 +39,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
           focusNode: _focusNode,
           backgroundColor: backgroundColor,
           onExerciseSelected: (e) {
-            // copyToClipboard(e.name);
-            // showAdaptiveDialog(
-            //   context: context,
-            //   barrierDismissible: true,
-            //   builder: (context) {
-            //     return AlertDialog.adaptive(
             //
-            //       content: switch (e.asset?.link) {
-            //         String s => CachedNetworkImage(imageUrl: s),
-            //         _ => Text('empty'),
-            //       },
-            //     );
-            //   },
-            // );
           },
         ),
       ),
