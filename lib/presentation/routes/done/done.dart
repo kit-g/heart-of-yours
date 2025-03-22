@@ -7,7 +7,11 @@ import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 
-part 'animation.dart';
+part 'confetti.dart';
+
+part 'counter.dart';
+
+part 'heart.dart';
 
 class WorkoutDone extends StatelessWidget {
   final Workout? workout;
@@ -22,7 +26,7 @@ class WorkoutDone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:congratulations, :congratulationsBody, :okBang) = L.of(context);
-    final ThemeData(:textTheme) = Theme.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -38,16 +42,23 @@ class WorkoutDone extends StatelessWidget {
             Center(
               child: Column(
                 children: [
-                  const SizedBox(height: 72),
+                  const SizedBox(height: 36),
+                  _Counter(
+                    count: 5,
+                    color: colorScheme.error,
+                    duration: 300,
+                    size: 50,
+                  ),
+                  const SizedBox(height: 16),
                   Stack(
                     children: [
                       Text(
                         congratulations,
                         style: textTheme.headlineSmall,
                       ),
-                      const Positioned.fill(
-                        child: Confetti(particleCount: 70),
-                      ),
+                      // const Positioned.fill(
+                      //   child: Confetti(particleCount: 70),
+                      // ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -69,36 +80,36 @@ class WorkoutDone extends StatelessWidget {
                 ],
               ),
             ),
-            Builder(
-              builder: (context) {
-                final size = MediaQuery.sizeOf(context);
-                return Positioned(
-                  bottom: size.height * .2,
-                  right: size.width * .3,
-                  child: const Confetti(particleCount: 70),
-                );
-              },
-            ),
-            Builder(
-              builder: (context) {
-                final size = MediaQuery.sizeOf(context);
-                return Positioned(
-                  bottom: size.height * .5,
-                  left: size.width * .3,
-                  child: const Confetti(particleCount: 90),
-                );
-              },
-            ),
-            Builder(
-              builder: (context) {
-                final size = MediaQuery.sizeOf(context);
-                return Positioned(
-                  bottom: size.height * .1,
-                  left: size.width * .3,
-                  child: const Confetti(particleCount: 90),
-                );
-              },
-            ),
+            // Builder(
+            //   builder: (context) {
+            //     final size = MediaQuery.sizeOf(context);
+            //     return Positioned(
+            //       bottom: size.height * .2,
+            //       right: size.width * .3,
+            //       child: const Confetti(particleCount: 70),
+            //     );
+            //   },
+            // ),
+            // Builder(
+            //   builder: (context) {
+            //     final size = MediaQuery.sizeOf(context);
+            //     return Positioned(
+            //       bottom: size.height * .5,
+            //       left: size.width * .3,
+            //       child: const Confetti(particleCount: 90),
+            //     );
+            //   },
+            // ),
+            // Builder(
+            //   builder: (context) {
+            //     final size = MediaQuery.sizeOf(context);
+            //     return Positioned(
+            //       bottom: size.height * .1,
+            //       left: size.width * .3,
+            //       child: const Confetti(particleCount: 90),
+            //     );
+            //   },
+            // ),
           ],
         ),
       ),
