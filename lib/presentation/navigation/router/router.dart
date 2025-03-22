@@ -262,7 +262,7 @@ abstract final class HeartRouter {
         return state.namedLocation(_loginName, queryParameters: state.uri.queryParameters);
       }
 
-      if (Workouts.of(context).hasUnNotifiedActiveWorkout) {
+      if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
         Workouts.of(context).notifyOfActiveWorkout();
         return _workoutPath;
       }

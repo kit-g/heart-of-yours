@@ -46,7 +46,7 @@ class Particle {
         initialVelocityX = (_rng.nextDouble() - 0.5) * 200,
         initialVelocityY = -(_rng.nextDouble() * 500 + 40),
         gravity = 100 + _rng.nextInt(500).toDouble(),
-        size = _rng.nextDouble() * 12 + 8,
+        size = _rng.nextDouble() * 20 + 8,
         color = Colors.primaries[_rng.nextInt(Colors.primaries.length)],
         isStar = _rng.nextBool(),
         initialRotation = _rng.nextDouble() * 2 * pi,
