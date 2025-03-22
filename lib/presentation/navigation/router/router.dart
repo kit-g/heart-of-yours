@@ -3,7 +3,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
-import 'package:heart/presentation/routes/done.dart';
+import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
@@ -184,6 +184,7 @@ RouteBase _workoutDoneRoute() {
         return WorkoutDone(
           workout: workout!,
           onQuit: context.goToWorkouts,
+          workoutsThisWeekCallback: () => Stats.of(context).getWeeklyWorkoutCount(workout.start),
         );
       } catch (e) {
         throw GoException('$e');
@@ -213,7 +214,8 @@ RouteBase _restoreAccountRoute() {
 abstract final class HeartRouter {
   static final config = GoRouter(
     debugLogDiagnostics: false,
-    initialLocation: _profilePath,
+    initialLocation: _donePath,
+    // initialLocation: _profilePath,
     observers: [
       SentryNavigatorObserver(),
     ],
@@ -261,7 +263,7 @@ abstract final class HeartRouter {
         return state.namedLocation(_loginName, queryParameters: state.uri.queryParameters);
       }
 
-      if (Workouts.of(context).hasUnNotifiedActiveWorkout) {
+      if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
         Workouts.of(context).notifyOfActiveWorkout();
         return _workoutPath;
       }
