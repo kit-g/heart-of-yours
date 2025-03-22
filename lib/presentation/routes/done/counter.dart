@@ -28,12 +28,11 @@ class _CounterState extends State<_Counter> with TickerProviderStateMixin {
     _controllers = List.generate(
       widget.count,
       (index) {
-        final controller = AnimationController(
+        return AnimationController(
           duration: Duration(milliseconds: widget.duration),
+          reverseDuration: Duration(milliseconds: (widget.duration / 2).ceil()),
           vsync: this,
         );
-        controller.repeat(reverse: true); // pulse effect
-        return controller;
       },
     );
 
@@ -53,38 +52,36 @@ class _CounterState extends State<_Counter> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: _animations.map((animation) {
-        return ValueListenableBuilder<double>(
-          valueListenable: animation,
-          builder: (_, value, __) {
-            return Transform.scale(
-              scale: value,
-              child: CustomPaint(
-                size: Size.square(widget.size),
-                painter: _PulsePainter(color: widget.color),
-              ),
-            );
-          },
-        );
-      }).toList(),
+      children: _animations.map(
+        (animation) {
+          return ValueListenableBuilder<double>(
+            valueListenable: animation,
+            builder: (_, value, __) {
+              return Transform.scale(
+                scale: value,
+                child: CustomPaint(
+                  size: Size.square(widget.size),
+                  painter: _PulsePainter(color: widget.color),
+                ),
+              );
+            },
+          );
+        },
+      ).toList(),
     );
-  }
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    _initAnimations();
-    _animate();
   }
 
   void _animate() {
     void animate((int, AnimationController) each) {
+      final (index, controller) = each;
       Future.delayed(
-        Duration(milliseconds: each.$1 * widget.duration),
+        Duration(milliseconds: index * widget.duration),
         () {
-          each.$2
+          controller
             ..reset()
-            ..forward();
+            ..forward().then(
+              (_) => controller.reverse(),
+            );
         },
       );
     }
@@ -94,10 +91,11 @@ class _CounterState extends State<_Counter> with TickerProviderStateMixin {
 
   void _initAnimations() {
     _animations = _controllers.map((controller) {
-      return Tween<double>(begin: 1.4, end: 1).animate(
+      return Tween<double>(begin: 1, end: 1.4).animate(
         CurvedAnimation(
           parent: controller,
-          curve: Curves.easeInOut,
+          curve: Curves.ease,
+          reverseCurve: Curves.ease,
         ),
       );
     }).toList();

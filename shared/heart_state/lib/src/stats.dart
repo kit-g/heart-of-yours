@@ -45,4 +45,8 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
       notifyListeners();
     }
   }
+
+  Future<int> getWeeklyWorkoutCount(DateTime d) {
+    return _service.getWeeklyWorkoutCount(d);
+  }
 }
