@@ -21,6 +21,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   final _exercises = <ExerciseId, Exercise>{};
 
+  String? userId;
+
   @override
   void onSignOut() {
     isInitialized = false;
@@ -117,6 +119,13 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   void removeFilter(ExerciseFilter filter) {
     _filters.remove(filter);
     notifyListeners();
+  }
+
+  Future<Iterable<ExerciseAct>> getExerciseHistory(Exercise exercise, {int? pageSize, String? anchor}) async {
+    if (userId case String id) {
+      return _service.getExerciseHistory(id, exercise, pageSize: pageSize, anchor: anchor);
+    }
+    return [];
   }
 }
 
