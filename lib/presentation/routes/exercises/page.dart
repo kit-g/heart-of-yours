@@ -51,9 +51,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
           //     barrierDismissible: true,
           //     builder: (context) {
           //       return Dialog(
-          //         child: ExerciseDetailPage(
-          //           exercise: e,
-          //         ),
+          //         child: ExerciseDetailPage(exercise: e),
           //       );
           //     },
           //   );

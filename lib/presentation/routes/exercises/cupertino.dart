@@ -60,13 +60,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
           _section.value = _ExerciseSection.values.toList()[index];
         },
         controller: _pageController,
-        children: _ExerciseSection.values.map(
-          (s) {
-            return Center(
-              child: Text(_copy(context, s)),
-            );
-          },
-        ).toList(),
+        children: _pages(widget.exercise),
       ),
     );
   }
