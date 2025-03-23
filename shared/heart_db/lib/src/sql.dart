@@ -233,3 +233,23 @@ CREATE TABLE IF NOT EXISTS exercise_details
     PRIMARY KEY (exercise_name, user_id)
 );
 """;
+
+const getExerciseHistory = """
+SELECT
+   we.id AS exercise_id,
+   workouts.id AS workout_id,
+   workouts.name AS workout_name,
+   sets.weight,
+   sets.reps,
+   sets.duration,
+   sets.completed,
+   sets.id AS set_id,
+   sets.distance
+FROM workout_exercises we
+INNER JOIN workouts ON we.workout_id = workouts.id
+INNER JOIN sets ON we.id = sets.exercise_id
+WHERE we.exercise_id = ?
+  AND workouts.user_id = ?
+  AND sets.completed
+;
+""";

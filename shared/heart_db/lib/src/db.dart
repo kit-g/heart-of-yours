@@ -78,6 +78,25 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
+  Future<Iterable<ExerciseAct>> getExerciseHistory(String userId, Exercise exercise, {int? pageSize, String? anchor}) {
+    return _db.rawQuery(sql.getExerciseHistory, [exercise.name, userId]).then<Iterable<ExerciseAct>>(
+      (rows) {
+        if (rows.isEmpty) return [];
+        final grouped = rows.fold<Map<String, List<Map<String, dynamic>>>>(
+          {},
+          (acc, row) {
+            final converted = row.toCamel();
+            final workoutId = converted['workoutId'].toString();
+            acc.putIfAbsent(workoutId, () => []).add(converted);
+            return acc;
+          },
+        );
+        return grouped.values.map((group) => ExerciseAct.fromRows(exercise, group));
+      },
+    );
+  }
+
+  @override
   Future<void> setRestTimer({required String exerciseName, required String userId, required int? seconds}) {
     return _db.transaction(
       (txn) async {

@@ -319,6 +319,14 @@ class L {
     );
   }
 
+  String get sets {
+    return Intl.message(
+      'Sets',
+      name: 'sets',
+      desc: 'Card header',
+    );
+  }
+
   String get previous {
     return Intl.message(
       'Previous',
@@ -1321,6 +1329,38 @@ class L {
       'Charts',
       name: 'charts',
       desc: 'Generic label',
+    );
+  }
+
+  String get emptyExerciseHistoryTitle {
+    return Intl.message(
+      'Ghost Reps Detected 👻',
+      name: 'emptyExerciseHistoryTitle',
+      desc: 'Exercise history empty state',
+    );
+  }
+
+  String get emptyExerciseHistoryBody {
+    return Intl.message(
+      'Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!',
+      name: 'emptyExerciseHistoryBody',
+      desc: 'Exercise history empty state',
+    );
+  }
+
+  String get errorExerciseHistoryTitle {
+    return Intl.message(
+      'Oops! Someone Skipped the Data Day 🤷‍♀️',
+      name: 'errorExerciseHistoryTitle',
+      desc: 'Exercise history empty state',
+    );
+  }
+
+  String get errorExerciseHistoryBody {
+    return Intl.message(
+      'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!',
+      name: 'errorExerciseHistoryBody',
+      desc: 'Exercise history empty state',
     );
   }
 }
