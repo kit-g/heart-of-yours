@@ -11,12 +11,20 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+part 'about.dart';
+
+part 'charts.dart';
+
 part 'cupertino.dart';
 
 part 'detail.dart';
 
+part 'history.dart';
+
 part 'material.dart';
 
 part 'page.dart';
+
+part 'records.dart';
 
 part 'utils.dart';

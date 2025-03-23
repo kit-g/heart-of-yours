@@ -42,13 +42,7 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
       ),
       body: TabBarView(
         controller: _controller,
-        children: _ExerciseSection.values.map(
-          (s) {
-            return Center(
-              child: Text(_copy(context, s)),
-            );
-          },
-        ).toList(),
+        children: _pages(widget.exercise),
       ),
     );
   }
