@@ -45,6 +45,19 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
           searchController: _searchController,
           focusNode: _focusNode,
           backgroundColor: backgroundColor,
+          // onExerciseSelected: (e) {
+          //   showAdaptiveDialog(
+          //     context: context,
+          //     barrierDismissible: true,
+          //     builder: (context) {
+          //       return Dialog(
+          //         child: ExerciseDetailPage(
+          //           exercise: e,
+          //         ),
+          //       );
+          //     },
+          //   );
+          // },
           onExerciseSelected: widget.onExercise,
         ),
       ),
