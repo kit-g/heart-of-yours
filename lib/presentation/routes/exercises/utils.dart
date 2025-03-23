@@ -7,6 +7,12 @@ enum _ExerciseSection {
   records;
 }
 
+extension on Exercise {
+  Iterable<_ExerciseSection> get sections {
+    return _ExerciseSection.values.where((one) => hasInfo ? true : one != _ExerciseSection.about);
+  }
+}
+
 String _copy(BuildContext context, _ExerciseSection section) {
   return switch (section) {
     _ExerciseSection.about => L.of(context).about,
@@ -17,12 +23,30 @@ String _copy(BuildContext context, _ExerciseSection section) {
 }
 
 List<Widget> _pages(Exercise exercise) {
-  return _ExerciseSection.values.map((section) {
-    return switch (section) {
-      _ExerciseSection.about => _About(exercise: exercise),
-      _ExerciseSection.history => _History(exercise: exercise),
-      _ExerciseSection.charts => _Charts(exercise: exercise),
-      _ExerciseSection.records => _Records(exercise: exercise),
-    };
+  return exercise.sections.map((section) {
+    return _Page(section: section, exercise: exercise);
   }).toList();
+}
+
+class _Page extends StatelessWidget {
+  final _ExerciseSection section;
+  final Exercise exercise;
+
+  const _Page({
+    required this.section,
+    required this.exercise,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0, right: 16, top: 16),
+      child: switch (section) {
+        _ExerciseSection.about => _About(exercise: exercise),
+        _ExerciseSection.history => _History(exercise: exercise),
+        _ExerciseSection.charts => _Charts(exercise: exercise),
+        _ExerciseSection.records => _Records(exercise: exercise),
+      },
+    );
+  }
 }

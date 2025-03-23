@@ -12,7 +12,14 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
 class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage>
     with SingleTickerProviderStateMixin<_MaterialExerciseDetailPage> {
   final _section = ValueNotifier<_ExerciseSection?>(_ExerciseSection.about);
-  late final _controller = TabController(length: _ExerciseSection.values.length, vsync: this);
+  late final TabController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = TabController(length: widget.exercise.sections.length, vsync: this);
+  }
 
   @override
   void dispose() {
@@ -34,7 +41,7 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
             builder: (_, section, __) {
               return TabBar(
                 controller: _controller,
-                tabs: _ExerciseSection.values.map((section) => Tab(text: _copy(context, section))).toList(),
+                tabs: widget.exercise.sections.map((section) => Tab(text: _copy(context, section))).toList(),
               );
             },
           ),

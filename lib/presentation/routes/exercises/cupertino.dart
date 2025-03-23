@@ -10,8 +10,15 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
 }
 
 class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPage> {
-  final _section = ValueNotifier<_ExerciseSection?>(_ExerciseSection.about);
+  final _section = ValueNotifier<_ExerciseSection?>(null);
   final _pageController = PageController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _section.value = widget.exercise.sections.first;
+  }
 
   @override
   void dispose() {
@@ -33,7 +40,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
             builder: (_, section, __) {
               return CupertinoSlidingSegmentedControl<_ExerciseSection>(
                 children: Map.fromEntries(
-                  _ExerciseSection.values.map(
+                  widget.exercise.sections.map(
                     (section) {
                       return MapEntry(section, Text(_copy(context, section)));
                     },
@@ -44,7 +51,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
                   _section.value = section;
                   if (section != null) {
                     _pageController.animateToPage(
-                      _ExerciseSection.values.toList().indexOf(section),
+                      widget.exercise.sections.toList().indexOf(section),
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.ease,
                     );
@@ -57,7 +64,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
       ),
       body: PageView(
         onPageChanged: (index) {
-          _section.value = _ExerciseSection.values.toList()[index];
+          _section.value = widget.exercise.sections.toList()[index];
         },
         controller: _pageController,
         children: _pages(widget.exercise),
