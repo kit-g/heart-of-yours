@@ -2,8 +2,12 @@ part of 'exercises.dart';
 
 class _MaterialExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
+  final void Function(String) onTapWorkout;
 
-  const _MaterialExerciseDetailPage({required this.exercise});
+  const _MaterialExerciseDetailPage({
+    required this.exercise,
+    required this.onTapWorkout,
+  });
 
   @override
   State<_MaterialExerciseDetailPage> createState() => _MaterialExerciseDetailPageState();
@@ -49,7 +53,7 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
       ),
       body: TabBarView(
         controller: _controller,
-        children: _pages(widget.exercise),
+        children: _pages(widget.exercise, onTapWorkout: widget.onTapWorkout),
       ),
     );
   }

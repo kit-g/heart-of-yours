@@ -22,19 +22,28 @@ String _copy(BuildContext context, _ExerciseSection section) {
   };
 }
 
-List<Widget> _pages(Exercise exercise) {
+List<Widget> _pages(
+  Exercise exercise, {
+  required final void Function(String) onTapWorkout,
+}) {
   return exercise.sections.map((section) {
-    return _Page(section: section, exercise: exercise);
+    return _Page(
+      section: section,
+      exercise: exercise,
+      onTapWorkout: onTapWorkout,
+    );
   }).toList();
 }
 
 class _Page extends StatelessWidget {
   final _ExerciseSection section;
   final Exercise exercise;
+  final void Function(String) onTapWorkout;
 
   const _Page({
     required this.section,
     required this.exercise,
+    required this.onTapWorkout,
   });
 
   @override
@@ -43,9 +52,15 @@ class _Page extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16.0, right: 16, top: 16),
       child: switch (section) {
         _ExerciseSection.about => _About(exercise: exercise),
-        _ExerciseSection.history => _History(exercise: exercise),
         _ExerciseSection.charts => _Charts(exercise: exercise),
         _ExerciseSection.records => _Records(exercise: exercise),
+        _ExerciseSection.history => _History(
+            exercise: exercise,
+            historyLookup: (exercise, {pageSize, anchor}) {
+              return Exercises.of(context).getExerciseHistory(exercise, pageSize: pageSize, anchor: anchor);
+            },
+            onTapWorkout: onTapWorkout,
+          ),
       },
     );
   }

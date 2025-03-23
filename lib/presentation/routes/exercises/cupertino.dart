@@ -2,8 +2,12 @@ part of 'exercises.dart';
 
 class _CupertinoExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
+  final void Function(String) onTapWorkout;
 
-  const _CupertinoExerciseDetailPage({required this.exercise});
+  const _CupertinoExerciseDetailPage({
+    required this.exercise,
+    required this.onTapWorkout,
+  });
 
   @override
   State<_CupertinoExerciseDetailPage> createState() => _CupertinoExerciseDetailPageState();
@@ -67,7 +71,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
           _section.value = widget.exercise.sections.toList()[index];
         },
         controller: _pageController,
-        children: _pages(widget.exercise),
+        children: _pages(widget.exercise, onTapWorkout: widget.onTapWorkout),
       ),
     );
   }

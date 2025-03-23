@@ -79,6 +79,7 @@ class HeartApp extends StatelessWidget {
             onEnter: (session) => _initApp(context, session),
             onUserChange: (user) {
               HeartRouter.refresh();
+              Exercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
               Timers.of(context).userId = user?.id;
