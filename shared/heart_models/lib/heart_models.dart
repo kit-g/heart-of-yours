@@ -1,5 +1,6 @@
 library;
 
+export 'src/models/act.dart';
 export 'src/models/auth.dart';
 export 'src/models/exercise.dart';
 export 'src/models/exercise_set.dart';
