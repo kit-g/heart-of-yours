@@ -1,13 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:heart/core/utils/misc.dart';
-import 'package:heart/core/utils/scrolls.dart';
-import 'package:heart/presentation/widgets/exercises/exercises.dart';
-import 'package:heart/presentation/widgets/workout/timer.dart';
-import 'package:heart_language/heart_language.dart';
-import 'package:heart_state/heart_state.dart';
+part of 'exercises.dart';
 
 class ExercisesPage extends StatefulWidget {
-  const ExercisesPage({super.key});
+  final void Function(Exercise) onExercise;
+
+  const ExercisesPage({
+    super.key,
+    required this.onExercise,
+  });
 
   @override
   State<ExercisesPage> createState() => _ExercisesPageState();
@@ -16,6 +15,14 @@ class ExercisesPage extends StatefulWidget {
 class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<ExercisesPage> {
   final _focusNode = FocusNode();
   final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _searchController.dispose();
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +45,7 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
           searchController: _searchController,
           focusNode: _focusNode,
           backgroundColor: backgroundColor,
-          onExerciseSelected: (e) {
-            //
-          },
+          onExerciseSelected: widget.onExercise,
         ),
       ),
       floatingActionButton: WorkoutTimerFloatingButton(
