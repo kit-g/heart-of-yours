@@ -1299,6 +1299,30 @@ class L {
       desc: 'Delete account page',
     );
   }
+
+  String get about {
+    return Intl.message(
+      'About',
+      name: 'about',
+      desc: 'Generic label',
+    );
+  }
+
+  String get records {
+    return Intl.message(
+      'Records',
+      name: 'records',
+      desc: 'Generic label',
+    );
+  }
+
+  String get charts {
+    return Intl.message(
+      'Charts',
+      name: 'charts',
+      desc: 'Generic label',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
