@@ -133,14 +133,33 @@ class _Card extends StatelessWidget {
   }
 
   String _formatSet(ExerciseSet set, {required MeasurementUnit distanceUnit, required MeasurementUnit weightUnit}) {
+    String w(double weight) {
+      return switch (weightUnit) {
+        MeasurementUnit.imperial => weight.asPounds.toStringAsFixed(2),
+        MeasurementUnit.metric => weight.toStringAsFixed(2),
+      };
+    }
+
     switch (set.category) {
       case Category.weightedBodyWeight:
+        return switch (set) {
+          ExerciseSet(:double weight, :int reps) => '+${w(weight)} x $reps',
+          _ => '',
+        };
       case Category.assistedBodyWeight:
+        return switch (set) {
+          ExerciseSet(:double weight, :int reps) => '-${w(weight)} x $reps',
+          _ => '',
+        };
       case Category.repsOnly:
-      case Category.dumbbell:
-      case Category.barbell:
+        return '${set.reps} x';
       case Category.machine:
-        return '${set.reps}x';
+      case Category.barbell:
+      case Category.dumbbell:
+        return switch (set) {
+          ExerciseSet(:double weight, :int reps) => '${w(weight)} x $reps',
+          _ => '',
+        };
       case Category.duration:
         return switch (set) {
           ExerciseSet(:int duration) => Duration(seconds: duration).formatted(),
