@@ -2,7 +2,7 @@ part of 'exercises.dart';
 
 class ExerciseDetailPage extends StatelessWidget {
   final Exercise exercise;
-  final void Function(String) onTapWorkout;
+  final Future<void> Function(String) onTapWorkout;
 
   const ExerciseDetailPage({
     super.key,

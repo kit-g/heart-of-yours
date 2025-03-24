@@ -24,6 +24,8 @@ abstract interface class WorkoutService {
 
   Future<Workout?> getActiveWorkout(String? userId);
 
+  Future<Workout?> getWorkout(String? userId, String workoutId);
+
   Future<void> storeWorkoutHistory(Iterable<Workout> history, String userId);
 
   Future<Iterable<Workout>?> getWorkoutHistory(String userId);
