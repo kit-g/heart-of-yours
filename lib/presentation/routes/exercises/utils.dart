@@ -24,7 +24,7 @@ String _copy(BuildContext context, _ExerciseSection section) {
 
 List<Widget> _pages(
   Exercise exercise, {
-  required final void Function(String) onTapWorkout,
+  required final Future<void> Function(String) onTapWorkout,
 }) {
   return exercise.sections.map((section) {
     return _Page(
@@ -38,7 +38,7 @@ List<Widget> _pages(
 class _Page extends StatelessWidget {
   final _ExerciseSection section;
   final Exercise exercise;
-  final void Function(String) onTapWorkout;
+  final Future<void> Function(String) onTapWorkout;
 
   const _Page({
     required this.section,

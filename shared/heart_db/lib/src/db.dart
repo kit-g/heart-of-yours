@@ -265,6 +265,17 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
+  Future<Workout?> getWorkout(String? userId, String workoutId) {
+    return _db.rawQuery(sql.getWorkout, [workoutId, userId]).then<Workout?>(
+      (rows) {
+        if (rows.isEmpty) return null;
+        final renamed = rows.map((row) => row.toCamel());
+        return Workout.fromRows(renamed);
+      },
+    );
+  }
+
+  @override
   Future<void> storeWorkoutHistory(Iterable<Workout> history, String userId) {
     return _db.transaction(
       (txn) async {

@@ -128,7 +128,17 @@ RouteBase _exercisesRoute() {
         builder: (context, state) {
           final exerciseId = state.pathParameters['exerciseId']!;
           final exercise = Exercises.of(context).lookup(exerciseId);
-          return ExerciseDetailPage(exercise: exercise!);
+          return ExerciseDetailPage(
+            exercise: exercise!,
+            onTapWorkout: (workoutId) {
+              return Workouts.of(context).fetchWorkout(workoutId).then(
+                (_) {
+                  if (!context.mounted) return;
+                  context.goToWorkoutEditor(workoutId);
+                },
+              );
+            },
+          );
         },
         name: _exerciseDetailName,
       ),

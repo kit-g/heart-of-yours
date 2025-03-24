@@ -2,7 +2,7 @@ part of 'exercises.dart';
 
 class _CupertinoExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
-  final void Function(String) onTapWorkout;
+  final Future<void> Function(String) onTapWorkout;
 
   const _CupertinoExerciseDetailPage({
     required this.exercise,

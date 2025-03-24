@@ -139,6 +139,68 @@ WHERE NOT exists (
 );
 """;
 
+
+const getWorkout = """
+WITH _workout AS (
+    SELECT *
+    FROM workouts
+    WHERE id = ?
+      AND user_id = ?
+    ORDER BY start DESC
+    LIMIT 1
+)
+SELECT
+    _workout.id AS workout_id,
+    _workout.start,
+    _workout."end",
+    _workout.name AS workout_name,
+    workout_exercises.id as workout_exercise_id,
+    sets.id AS set_id,
+    sets.completed,
+    sets.weight,
+    sets.reps,
+    sets.duration,
+    sets.distance,
+    e.name,
+    target,
+    category
+FROM workout_exercises
+INNER JOIN _workout
+    ON _workout.id = workout_exercises.workout_id
+INNER JOIN sets
+    ON workout_exercises.id = sets.exercise_id
+INNER JOIN exercises e
+    ON e.name = workout_exercises.exercise_id
+
+UNION ALL
+
+SELECT
+    _workout.id AS workout_id,
+    _workout.start,
+    _workout."end",
+    _workout.name AS workout_name,
+    NULL AS workout_exercise_id,
+    NULL AS set_id,
+    NULL AS completed,
+    NULL AS weight,
+    NULL AS reps,
+    NULL AS duration,
+    NULL AS distance,
+    NULL AS name,
+    NULL AS category,
+    NULL AS target
+FROM _workout
+WHERE NOT exists (
+    SELECT 1
+    FROM workout_exercises
+    INNER JOIN sets
+        ON workout_exercises.id = sets.exercise_id
+    INNER JOIN exercises e
+        ON e.name = workout_exercises.exercise_id
+    WHERE workout_exercises.workout_id = _workout.id
+);
+""";
+
 const history = """
 WITH _workout AS (
     SELECT *

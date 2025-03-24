@@ -3,7 +3,7 @@ part of 'exercises.dart';
 class _History extends StatelessWidget {
   final Exercise exercise;
   final Future<Iterable<ExerciseAct>> Function(Exercise exercise, {int? pageSize, String? anchor}) historyLookup;
-  final void Function(String) onTapWorkout;
+  final Future<void> Function(String) onTapWorkout;
 
   const _History({
     required this.exercise,
