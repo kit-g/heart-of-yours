@@ -1363,6 +1363,46 @@ class L {
       desc: 'Exercise history empty state',
     );
   }
+
+  String get personalRecords {
+    return Intl.message(
+      'Personal records',
+      name: 'personalRecords',
+      desc: 'Records screen, title',
+    );
+  }
+
+  String get maxDuration {
+    return Intl.message(
+      'Max duration',
+      name: 'maxDuration',
+      desc: 'Records screen, metric name',
+    );
+  }
+
+  String get maxDistance {
+    return Intl.message(
+      'Max distance',
+      name: 'maxDistance',
+      desc: 'Records screen, metric name',
+    );
+  }
+
+  String get maxWeight {
+    return Intl.message(
+      'Max weight',
+      name: 'maxWeight',
+      desc: 'Records screen, metric name',
+    );
+  }
+
+  String get maxReps {
+    return Intl.message(
+      'Max reps',
+      name: 'maxReps',
+      desc: 'Records screen, metric name',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

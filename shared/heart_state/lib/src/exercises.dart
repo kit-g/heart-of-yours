@@ -127,6 +127,13 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
     return [];
   }
+
+  Future<Map?> getExerciseRecords(Exercise exercise) async {
+    if (userId case String id) {
+      return _service.getRecord(id, exercise);
+    }
+    return null;
+  }
 }
 
 MapEntry<ExerciseId, Exercise> _snapshot(QueryDocumentSnapshot<Exercise> snapshot) {

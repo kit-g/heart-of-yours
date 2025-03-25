@@ -139,7 +139,6 @@ WHERE NOT exists (
 );
 """;
 
-
 const getWorkout = """
 WITH _workout AS (
     SELECT *
@@ -314,4 +313,50 @@ WHERE we.exercise_id = ?
   AND workouts.user_id = ?
   AND sets.completed
 ;
+""";
+
+const weightRecord = """
+SELECT
+    max(reps) AS reps,
+    max(weight) AS weight
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
+""";
+
+const distanceRecord = """
+SELECT
+    max(duration) AS duration,
+    max(distance) AS distance
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
+""";
+
+const durationRecord = """
+SELECT
+    max(duration) AS duration
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
+""";
+
+const repsRecord = """
+SELECT
+    max(reps) AS reps
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
 """;
