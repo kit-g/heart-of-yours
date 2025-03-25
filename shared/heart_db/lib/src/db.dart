@@ -97,6 +97,28 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
+  Future<Map?> getRecord(String userId, Exercise exercise) {
+    final query = switch (exercise.category) {
+      Category.weightedBodyWeight => sql.weightRecord,
+      Category.assistedBodyWeight => sql.weightRecord,
+      Category.dumbbell => sql.weightRecord,
+      Category.machine => sql.weightRecord,
+      Category.barbell => sql.weightRecord,
+      Category.repsOnly => sql.repsRecord,
+      Category.cardio => sql.distanceRecord,
+      Category.duration => sql.durationRecord,
+    };
+    return _db.rawQuery(query, [userId, exercise.name]).then(
+      (rows) {
+        return switch (rows) {
+          [Map m] => m,
+          _ => null,
+        };
+      },
+    );
+  }
+
+  @override
   Future<void> setRestTimer({required String exerciseName, required String userId, required int? seconds}) {
     return _db.transaction(
       (txn) async {

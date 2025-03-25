@@ -113,11 +113,7 @@ class _Card extends StatelessWidget {
                         TextSpan(text: '${index + 1}.', style: textTheme.titleSmall),
                         const TextSpan(text: '  '),
                         TextSpan(
-                          text: _formatSet(
-                            set,
-                            distanceUnit: prefs.distanceUnit,
-                            weightUnit: prefs.weightUnit,
-                          ),
+                          text: _formatSet(set, prefs: prefs),
                           style: textTheme.bodyMedium,
                         ),
                       ],
@@ -132,23 +128,16 @@ class _Card extends StatelessWidget {
     );
   }
 
-  String _formatSet(ExerciseSet set, {required MeasurementUnit distanceUnit, required MeasurementUnit weightUnit}) {
-    String w(double weight) {
-      return switch (weightUnit) {
-        MeasurementUnit.imperial => weight.asPounds.toStringAsFixed(2),
-        MeasurementUnit.metric => weight.toStringAsFixed(2),
-      };
-    }
-
+  String _formatSet(ExerciseSet set, {required Preferences prefs}) {
     switch (set.category) {
       case Category.weightedBodyWeight:
         return switch (set) {
-          ExerciseSet(:double weight, :int reps) => '+${w(weight)} x $reps',
+          ExerciseSet(:double weight, :int reps) => '+${prefs.weight(weight)} x $reps',
           _ => '',
         };
       case Category.assistedBodyWeight:
         return switch (set) {
-          ExerciseSet(:double weight, :int reps) => '-${w(weight)} x $reps',
+          ExerciseSet(:double weight, :int reps) => '-${prefs.weight(weight)} x $reps',
           _ => '',
         };
       case Category.repsOnly:
@@ -157,7 +146,7 @@ class _Card extends StatelessWidget {
       case Category.barbell:
       case Category.dumbbell:
         return switch (set) {
-          ExerciseSet(:double weight, :int reps) => '${w(weight)} x $reps',
+          ExerciseSet(:double weight, :int reps) => '${prefs.weight(weight)} x $reps',
           _ => '',
         };
       case Category.duration:
@@ -166,91 +155,13 @@ class _Card extends StatelessWidget {
           _ => '',
         };
       case Category.cardio:
-        String dist(double distance) {
-          return switch (distanceUnit) {
-            MeasurementUnit.imperial => distance.asMiles.toStringAsFixed(2),
-            MeasurementUnit.metric => distance.toString(),
-          };
-        }
         return switch (set) {
           ExerciseSet(:int duration, :double distance) => ''
               '${Duration(seconds: duration).formatted()}'
               ' | '
-              '${dist(distance)}',
+              '${prefs.distance(distance)}',
           _ => '',
         };
     }
-  }
-}
-
-const _shape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.all(Radius.circular(8)),
-);
-
-extension on Duration {
-  String formatted() {
-    final minutes = _pad(inMinutes.remainder(60));
-    final seconds = _pad(inSeconds.remainder(60));
-    return switch (inHours) {
-      > 0 => '${_pad(inHours)}:$minutes:$seconds',
-      _ => '$minutes:$seconds',
-    };
-  }
-
-  static String _pad(int n) => n.toString().padLeft(2, '0');
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final L(emptyExerciseHistoryTitle: title, emptyExerciseHistoryBody: body) = L.of(context);
-    return _OddState(title: title, body: body);
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState();
-
-  @override
-  Widget build(BuildContext context) {
-    final L(errorExerciseHistoryTitle: title, errorExerciseHistoryBody: body) = L.of(context);
-    return _OddState(title: title, body: body);
-  }
-}
-
-class _OddState extends StatelessWidget {
-  final String title;
-  final String body;
-
-  const _OddState({
-    required this.title,
-    required this.body,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData(:textTheme) = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        spacing: 32,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            style: textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          Text(
-            body,
-            style: textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 }

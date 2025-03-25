@@ -53,7 +53,10 @@ class _Page extends StatelessWidget {
       child: switch (section) {
         _ExerciseSection.about => _About(exercise: exercise),
         _ExerciseSection.charts => _Charts(exercise: exercise),
-        _ExerciseSection.records => _Records(exercise: exercise),
+        _ExerciseSection.records => _Records(
+            exercise: exercise,
+            recordsLookup: Exercises.of(context).getExerciseRecords,
+          ),
         _ExerciseSection.history => _History(
             exercise: exercise,
             historyLookup: (exercise, {pageSize, anchor}) {
@@ -64,4 +67,21 @@ class _Page extends StatelessWidget {
       },
     );
   }
+}
+
+const _shape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.all(Radius.circular(8)),
+);
+
+extension on Duration {
+  String formatted() {
+    final minutes = _pad(inMinutes.remainder(60));
+    final seconds = _pad(inSeconds.remainder(60));
+    return switch (inHours) {
+      > 0 => '${_pad(inHours)}:$minutes:$seconds',
+      _ => '$minutes:$seconds',
+    };
+  }
+
+  static String _pad(int n) => n.toString().padLeft(2, '0');
 }

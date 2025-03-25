@@ -127,7 +127,7 @@ TextTheme _textTheme({Color? primaryColor, Color? secondaryColor}) {
     bodyLarge: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w400, letterSpacing: 0.5, color: primaryColor),
     bodyMedium: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w400, letterSpacing: 0.25, color: primaryColor),
     bodySmall: TextStyle(fontSize: 12.0, fontWeight: FontWeight.w400, letterSpacing: 0.4, color: secondaryColor),
-    labelLarge: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w700, letterSpacing: 1.25, color: secondaryColor),
+    labelLarge: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w700, letterSpacing: 0.25, color: secondaryColor),
     labelSmall: TextStyle(fontSize: 10.0, fontWeight: FontWeight.w400, letterSpacing: 1.5, color: secondaryColor),
   );
 }
