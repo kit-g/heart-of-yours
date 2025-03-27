@@ -490,6 +490,41 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
       },
     );
   }
+
+  @override
+  Future<List<(num, DateTime)>> getRepsHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getRepsHistory, limit: limit);
+  }
+
+  @override
+  Future<List<(num, DateTime)>> getDistanceHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getDistanceHistory, limit: limit);
+  }
+
+  @override
+  Future<List<(num, DateTime)>> getDurationHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getDurationHistory, limit: limit);
+  }
+
+  @override
+  Future<List<(num, DateTime)>> getWeightHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getWeightHistory, limit: limit);
+  }
+
+  Future<List<(num, DateTime)>> _getMetric(String userId, Exercise exercise, String query, {int? limit}) {
+    return _db.rawQuery(query, [userId, exercise.name, limit ?? 30]).then(
+      (rows) {
+        return rows.map(
+          (row) {
+            return switch (row) {
+              {'value': num value, 'when': String id} => (value, DateTime.parse(deSanitizeId(id))),
+              _ => throw ArgumentError('_getMetric: $row'),
+            };
+          },
+        ).toList();
+      },
+    );
+  }
 }
 
 Future<int> _getMaxValue(DatabaseExecutor db, String table, String column) async {
