@@ -134,6 +134,34 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
     return null;
   }
+
+  Future<List<(num, DateTime)>?> getRepsHistory(Exercise exercise) async {
+    if (userId case String id) {
+      return _service.getRepsHistory(id, exercise, limit: _exerciseHistoryLimit);
+    }
+    return null;
+  }
+
+  Future<List<(num, DateTime)>?> getDistanceHistory(Exercise exercise) async {
+    if (userId case String id) {
+      return _service.getDistanceHistory(id, exercise, limit: _exerciseHistoryLimit);
+    }
+    return null;
+  }
+
+  Future<List<(num, DateTime)>?> getDurationHistory(Exercise exercise) async {
+    if (userId case String id) {
+      return _service.getDurationHistory(id, exercise, limit: _exerciseHistoryLimit);
+    }
+    return null;
+  }
+
+  Future<List<(num, DateTime)>?> getWeightHistory(Exercise exercise) async {
+    if (userId case String id) {
+      return _service.getWeightHistory(id, exercise, limit: _exerciseHistoryLimit);
+    }
+    return null;
+  }
 }
 
 MapEntry<ExerciseId, Exercise> _snapshot(QueryDocumentSnapshot<Exercise> snapshot) {
@@ -144,3 +172,5 @@ MapEntry<ExerciseId, Exercise> _snapshot(QueryDocumentSnapshot<Exercise> snapsho
 Exercise _fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? _) {
   return Exercise.fromJson(snapshot.data()!);
 }
+
+const _exerciseHistoryLimit = 30;
