@@ -26,7 +26,11 @@ class _History extends StatelessWidget {
           (ConnectionState.done, null, Iterable<ExerciseAct> query) => Builder(
               builder: (_) {
                 if (query.isEmpty) {
-                  return const _EmptyState();
+                  return const Column(
+                    children: [
+                      _EmptyState(),
+                    ],
+                  );
                 }
 
                 final acts = query.toList()..sort();

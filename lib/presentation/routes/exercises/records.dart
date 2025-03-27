@@ -76,7 +76,11 @@ class _Records extends StatelessWidget {
                         (name: l.maxDuration, value: Duration(seconds: duration.toInt()).formatted()),
                       ],
                     ),
-                  _ => const _EmptyState(),
+                  _ => const Column(
+                    children: [
+                      _EmptyState(),
+                    ],
+                  ),
                 };
               },
             ),

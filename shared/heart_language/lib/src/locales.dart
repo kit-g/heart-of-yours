@@ -555,6 +555,14 @@ class L {
     );
   }
 
+  String get duration {
+    return Intl.message(
+      'Duration',
+      name: 'duration',
+      desc: 'Duration label',
+    );
+  }
+
   String get imperial {
     return Intl.message(
       'Imperial',
