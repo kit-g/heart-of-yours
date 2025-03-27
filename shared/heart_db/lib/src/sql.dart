@@ -360,3 +360,63 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed;
 """;
+
+const getWeightHistory = """
+SELECT
+    sets.weight AS "value",
+    sets.id AS "when"
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+ORDER BY sets.id DESC
+LIMIT ?
+;
+""";
+
+const getRepsHistory = """
+SELECT
+    sets.reps AS "value",
+    sets.id AS "when"
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+ORDER BY sets.id DESC
+LIMIT ?
+;
+""";
+
+const getDurationHistory = """
+SELECT
+    sets.duration AS "value",
+    sets.id AS "when"
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+ORDER BY sets.id DESC
+LIMIT ?
+;
+""";
+
+const getDistanceHistory = """
+SELECT
+    sets.distance AS "value",
+    sets.id AS "when"
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+ORDER BY sets.id DESC
+LIMIT ?
+;
+""";
