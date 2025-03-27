@@ -52,7 +52,13 @@ class _Page extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16.0, right: 16, top: 16),
       child: switch (section) {
         _ExerciseSection.about => _About(exercise: exercise),
-        _ExerciseSection.charts => _Charts(exercise: exercise),
+        _ExerciseSection.charts => _Charts(
+            exercise: exercise,
+            weightHistoryLookup: Exercises.of(context).getWeightHistory,
+            repsHistoryLookup: Exercises.of(context).getRepsHistory,
+            distanceHistoryLookup: Exercises.of(context).getDistanceHistory,
+            durationHistoryLookup: Exercises.of(context).getDurationHistory,
+          ),
         _ExerciseSection.records => _Records(
             exercise: exercise,
             recordsLookup: Exercises.of(context).getExerciseRecords,

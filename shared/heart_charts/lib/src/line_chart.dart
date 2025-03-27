@@ -12,13 +12,21 @@ class HistoryChart extends StatefulWidget {
   final Color indicatorStrokeColor;
   final LineSeries series;
   final TextStyle? bottomAxisLabelStyle;
+  final TextStyle? leftAxisLabelStyle;
   final String Function(int x)? getBottomLabel;
+  final String Function(double y)? getLeftLabel;
+  final String Function(double x, double y)? getTooltip;
+  final Widget? topLabel;
 
   HistoryChart({
     super.key,
     required Iterable<Dot> series,
     this.bottomAxisLabelStyle,
+    this.leftAxisLabelStyle,
     this.getBottomLabel,
+    this.getLeftLabel,
+    this.topLabel,
+    this.getTooltip,
     Color? gradientColor1,
     Color? gradientColor2,
     Color? gradientColor3,
@@ -124,11 +132,11 @@ class _HistoryChartState extends State<HistoryChart> {
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (touchedSpot) => Colors.pink,
                     tooltipRoundedRadius: 8,
-                    getTooltipItems: (List<LineBarSpot> lineBarsSpot) {
+                    getTooltipItems: (lineBarsSpot) {
                       return lineBarsSpot.map(
-                        (lineBarSpot) {
+                        (spot) {
                           return LineTooltipItem(
-                            lineBarSpot.y.toString(),
+                            widget.getTooltip?.call(spot.x, spot.y) ?? spot.y.toString(),
                             const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           );
                         },
@@ -140,10 +148,25 @@ class _HistoryChartState extends State<HistoryChart> {
                 minY: series.lowerBoundaryY - 1,
                 maxY: series.upperBoundaryY + 1,
                 titlesData: FlTitlesData(
-                  leftTitles: const AxisTitles(
-                    axisNameWidget: Text('count'),
-                    axisNameSize: 24,
-                    sideTitles: SideTitles(showTitles: false, reservedSize: 0),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      getTitlesWidget: switch (widget.getLeftLabel) {
+                        String Function(double) callback => (value, meta) {
+                            return SideTitleWidget(
+                              meta: meta,
+                              child: Text(
+                                callback(value),
+                                style: widget.bottomAxisLabelStyle,
+                              ),
+                            );
+                          },
+                        null => defaultGetTitle,
+                      },
+                      showTitles: true,
+                      reservedSize: 50,
+                      maxIncluded: false,
+                      minIncluded: false,
+                    ),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -166,14 +189,16 @@ class _HistoryChartState extends State<HistoryChart> {
                     ),
                   ),
                   rightTitles: const AxisTitles(
-                    axisNameWidget: Text('count'),
                     sideTitles: SideTitles(showTitles: false, reservedSize: 0),
                   ),
-                  topTitles: const AxisTitles(
-                    axisNameWidget: Text('Wall clock', textAlign: TextAlign.left),
-                    axisNameSize: 24,
-                    sideTitles: SideTitles(showTitles: true, reservedSize: 0),
-                  ),
+                  topTitles: switch (widget.topLabel) {
+                    Widget label => AxisTitles(
+                        axisNameWidget: label,
+                        axisNameSize: 22,
+                        sideTitles: SideTitles(showTitles: true, reservedSize: 0),
+                      ),
+                    null => AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  },
                 ),
                 borderData: FlBorderData(show: false),
               ),
