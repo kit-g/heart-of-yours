@@ -77,7 +77,6 @@ class _Records extends StatelessWidget {
                       ],
                     ),
                   _ => const _EmptyState(),
-                  // _ => const _EmptyState(),
                 };
               },
             ),
