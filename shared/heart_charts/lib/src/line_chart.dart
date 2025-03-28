@@ -164,7 +164,7 @@ class _HistoryChartState extends State<HistoryChart> {
                         null => defaultGetTitle,
                       },
                       showTitles: true,
-                      reservedSize: 50,
+                      reservedSize: 60,
                       maxIncluded: false,
                       minIncluded: false,
                     ),

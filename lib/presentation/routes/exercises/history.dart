@@ -163,7 +163,7 @@ class _Card extends StatelessWidget {
           ExerciseSet(:int duration, :double distance) => ''
               '${Duration(seconds: duration).formatted()}'
               ' | '
-              '${prefs.distance(distance)}',
+              '${_double(prefs.distanceValue(distance))}',
           _ => '',
         };
     }
