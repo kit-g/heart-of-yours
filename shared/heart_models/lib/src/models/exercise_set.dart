@@ -50,7 +50,11 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
       duration: (json['duration'] as num?)?.toInt(),
       distance: (json['distance'] as num?)?.toDouble(),
       start: DateTime.parse(deSanitizeId(json['id'] ?? json['setId'])),
-    )..isCompleted = json['completed'] ?? false;
+    )..isCompleted = switch (json['completed']) {
+        bool completed => completed,
+        1 => true,
+        _ => false,
+      };
   }
 
   bool get canBeCompleted;

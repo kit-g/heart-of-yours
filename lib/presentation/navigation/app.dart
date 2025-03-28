@@ -8,6 +8,7 @@ import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_language/heart_language.dart';
@@ -79,6 +80,7 @@ class HeartApp extends StatelessWidget {
             onEnter: (session) => _initApp(context, session),
             onUserChange: (user) {
               HeartRouter.refresh();
+              Exercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
               Timers.of(context).userId = user?.id;
@@ -189,6 +191,8 @@ Future<void> _initApp(BuildContext context, [String? sessionToken]) async {
         sessionToken: sessionToken,
         appVersion: info.fullVersion,
       );
+
+      AppImage.headers = imageHeaders(appVersion: info.version);
     },
   );
 

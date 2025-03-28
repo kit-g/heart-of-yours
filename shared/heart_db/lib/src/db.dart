@@ -78,6 +78,47 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
   }
 
   @override
+  Future<Iterable<ExerciseAct>> getExerciseHistory(String userId, Exercise exercise, {int? pageSize, String? anchor}) {
+    return _db.rawQuery(sql.getExerciseHistory, [exercise.name, userId]).then<Iterable<ExerciseAct>>(
+      (rows) {
+        if (rows.isEmpty) return [];
+        final grouped = rows.fold<Map<String, List<Map<String, dynamic>>>>(
+          {},
+          (acc, row) {
+            final converted = row.toCamel();
+            final workoutId = converted['workoutId'].toString();
+            acc.putIfAbsent(workoutId, () => []).add(converted);
+            return acc;
+          },
+        );
+        return grouped.values.map((group) => ExerciseAct.fromRows(exercise, group));
+      },
+    );
+  }
+
+  @override
+  Future<Map?> getRecord(String userId, Exercise exercise) {
+    final query = switch (exercise.category) {
+      Category.weightedBodyWeight => sql.weightRecord,
+      Category.assistedBodyWeight => sql.weightRecord,
+      Category.dumbbell => sql.weightRecord,
+      Category.machine => sql.weightRecord,
+      Category.barbell => sql.weightRecord,
+      Category.repsOnly => sql.repsRecord,
+      Category.cardio => sql.distanceRecord,
+      Category.duration => sql.durationRecord,
+    };
+    return _db.rawQuery(query, [userId, exercise.name]).then(
+      (rows) {
+        return switch (rows) {
+          [Map m] => m,
+          _ => null,
+        };
+      },
+    );
+  }
+
+  @override
   Future<void> setRestTimer({required String exerciseName, required String userId, required int? seconds}) {
     return _db.transaction(
       (txn) async {
@@ -243,6 +284,17 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
     if (rows.isEmpty) return null;
     final renamed = rows.map((row) => row.toCamel());
     return Workout.fromRows(renamed);
+  }
+
+  @override
+  Future<Workout?> getWorkout(String? userId, String workoutId) {
+    return _db.rawQuery(sql.getWorkout, [workoutId, userId]).then<Workout?>(
+      (rows) {
+        if (rows.isEmpty) return null;
+        final renamed = rows.map((row) => row.toCamel());
+        return Workout.fromRows(renamed);
+      },
+    );
   }
 
   @override
@@ -435,6 +487,41 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
         }
 
         batch.commit(noResult: true);
+      },
+    );
+  }
+
+  @override
+  Future<List<(num, DateTime)>> getRepsHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getRepsHistory, limit: limit);
+  }
+
+  @override
+  Future<List<(num, DateTime)>> getDistanceHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getDistanceHistory, limit: limit);
+  }
+
+  @override
+  Future<List<(num, DateTime)>> getDurationHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getDurationHistory, limit: limit);
+  }
+
+  @override
+  Future<List<(num, DateTime)>> getWeightHistory(String userId, Exercise exercise, {int? limit}) {
+    return _getMetric(userId, exercise, sql.getWeightHistory, limit: limit);
+  }
+
+  Future<List<(num, DateTime)>> _getMetric(String userId, Exercise exercise, String query, {int? limit}) {
+    return _db.rawQuery(query, [userId, exercise.name, limit ?? 30]).then(
+      (rows) {
+        return rows.map(
+          (row) {
+            return switch (row) {
+              {'value': num value, 'when': String id} => (value, DateTime.parse(deSanitizeId(id))),
+              _ => throw ArgumentError('_getMetric: $row'),
+            };
+          },
+        ).toList();
       },
     );
   }

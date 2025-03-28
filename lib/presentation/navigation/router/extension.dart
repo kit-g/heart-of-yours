@@ -34,4 +34,8 @@ extension on BuildContext {
   void goToWorkoutEditor(String workoutId) {
     return goNamed(_historyEditName, queryParameters: {'workoutId': workoutId});
   }
+
+  void goToExerciseDetail(String exerciseId) {
+    return go('$_exercisesPath/$exerciseId');
+  }
 }

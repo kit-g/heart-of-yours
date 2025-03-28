@@ -100,6 +100,10 @@ abstract interface class Exercise implements Searchable, Model {
 
   Asset? get thumbnail;
 
+  String? get instructions;
+
+  bool get hasInfo;
+
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
 
   bool fits(Iterable<ExerciseFilter> filters);
@@ -116,6 +120,8 @@ class _Exercise implements Exercise {
   final Asset? asset;
   @override
   final Asset? thumbnail;
+  @override
+  final String? instructions;
 
   const _Exercise({
     required this.name,
@@ -123,6 +129,7 @@ class _Exercise implements Exercise {
     required this.target,
     this.asset,
     this.thumbnail,
+    this.instructions,
   });
 
   factory _Exercise.fromJson(Map json) {
@@ -144,6 +151,7 @@ class _Exercise implements Exercise {
         String link => (link: link, width: json['thumbnailWidth'], height: json['thumbnailHeight']) as Asset,
         _ => null,
       },
+      instructions: json['instructions'],
     );
   }
 
@@ -153,6 +161,7 @@ class _Exercise implements Exercise {
       'category': category.value,
       'name': name,
       'target': target.value,
+      if (instructions != null) 'instructions': instructions,
       if (asset case Asset asset) ...{
         'asset': asset.link,
         'assetHeight': asset.height,
@@ -194,6 +203,9 @@ class _Exercise implements Exercise {
 
     return categoryMatches && targetMatches;
   }
+
+  @override
+  bool get hasInfo => [asset, instructions, thumbnail].any((attr) => attr != null);
 }
 
 typedef ExerciseId = String;
