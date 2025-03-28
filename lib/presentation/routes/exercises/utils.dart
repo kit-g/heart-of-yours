@@ -91,3 +91,32 @@ extension on Duration {
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
 }
+
+String _double(double value) {
+  final rounded = double.parse(value.toStringAsFixed(2));
+  return rounded % 1 == 0 ? rounded.toInt().toString() : rounded.toStringAsFixed(1);
+}
+
+/// finds "beautiful timestamps
+/// for chart axes
+/// e.g., 1:30 or 30:00 are beautiful
+/// and 1:15 and 33:30 are ugly
+String? _beautify(double y) {
+  int seconds = y.round();
+
+  final roundTo = switch (y.round()) {
+    < 60 => 10, // to nearest 10s
+    < 600 => 30, // to nearest 30s
+    < 3600 => 300, // to nearest 5min
+    _ => 900, // to nearest 5min
+  };
+
+  // apply rounding
+  int rounded = (seconds / roundTo).round() * roundTo;
+
+  // filter out "ugly" labels
+  if (rounded % 60 != 0 && rounded >= 600) {
+    return null; // drop values that aren’t full minutes after 10 min
+  }
+  return Duration(seconds: rounded).formatted();
+}

@@ -31,6 +31,26 @@ class _Charts extends StatelessWidget {
       };
     }
 
+    Widget repsLabel(double y) {
+      return switch (y % 1 == 0) {
+        true => Text(
+            y.toInt().toString(),
+            style: textTheme.bodySmall,
+          ),
+        false => const SizedBox.shrink(),
+      };
+    }
+
+    Widget weightLabel(double y) {
+      return switch (y % 2 == 0) {
+        true => Text(
+            y.toInt().toString(),
+            style: textTheme.bodySmall,
+          ),
+        false => const SizedBox.shrink(),
+      };
+    }
+
     switch (exercise.category) {
       case Category.weightedBodyWeight:
       case Category.assistedBodyWeight:
@@ -44,6 +64,7 @@ class _Charts extends StatelessWidget {
               callback: () => weightHistoryLookup!(exercise),
               label: l.weightUnit,
               converter: (v) => prefs.weightValue(v),
+              getLeftLabel: weightLabel,
             ),
             const SizedBox(height: 12),
             _Chart(
@@ -51,6 +72,7 @@ class _Charts extends StatelessWidget {
               callback: () => repsHistoryLookup!(exercise),
               label: l.reps,
               converter: (v) => v.toDouble(),
+              getLeftLabel: repsLabel,
             ),
           ],
         );
@@ -62,6 +84,7 @@ class _Charts extends StatelessWidget {
               callback: () => repsHistoryLookup!(exercise),
               label: l.reps,
               converter: (v) => v.toDouble(),
+              getLeftLabel: repsLabel,
             ),
           ],
         );
@@ -173,29 +196,4 @@ class _Chart extends StatelessWidget {
       },
     );
   }
-}
-
-String _double(double value) {
-  final rounded = double.parse(value.toStringAsFixed(2));
-  return rounded % 1 == 0 ? rounded.toInt().toString() : rounded.toStringAsFixed(1);
-}
-
-String? _beautify(double y) {
-  int seconds = y.round();
-
-  final roundTo = switch (y.round()) {
-    < 60 => 10, // to nearest 10s
-    < 600 => 30, // to nearest 30s
-    < 3600 => 300, // to nearest 5min
-    _ => 900, // to nearest 5min
-  };
-
-  // apply rounding
-  int rounded = (seconds / roundTo).round() * roundTo;
-
-  // filter out "ugly" labels
-  if (rounded % 60 != 0 && rounded >= 600) {
-    return null; // drop values that aren’t full minutes after 10 min
-  }
-  return Duration(seconds: rounded).formatted();
 }

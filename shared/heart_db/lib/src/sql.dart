@@ -363,60 +363,64 @@ WHERE workouts.user_id = ?
 
 const getWeightHistory = """
 SELECT
-    sets.weight AS "value",
-    sets.id AS "when"
+    MAX(sets.weight) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-ORDER BY sets.id DESC
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
 LIMIT ?
 ;
 """;
 
 const getRepsHistory = """
 SELECT
-    sets.reps AS "value",
-    sets.id AS "when"
+    MAX(sets.reps) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-ORDER BY sets.id DESC
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
 LIMIT ?
 ;
 """;
 
 const getDurationHistory = """
 SELECT
-    sets.duration AS "value",
-    sets.id AS "when"
+    MAX(sets.duration) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-ORDER BY sets.id DESC
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
 LIMIT ?
 ;
 """;
 
 const getDistanceHistory = """
 SELECT
-    sets.distance AS "value",
-    sets.id AS "when"
+    MAX(sets.distance) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-ORDER BY sets.id DESC
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
 LIMIT ?
 ;
 """;
