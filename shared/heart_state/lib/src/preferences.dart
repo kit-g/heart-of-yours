@@ -96,4 +96,29 @@ class Preferences with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
     return _prefs?.setString(_distanceUnit, unit.name);
   }
+
+  String distance(num value) {
+    return switch (distanceUnit) {
+      MeasurementUnit.imperial => value.asMiles.toStringAsFixed(2),
+      MeasurementUnit.metric => value.toString(),
+    };
+  }
+
+  double distanceValue(num value) {
+    return switch (distanceUnit) {
+      MeasurementUnit.imperial => value.asMiles,
+      MeasurementUnit.metric => value.toDouble(),
+    };
+  }
+
+  String weight(num value) {
+    return weightValue(value).toStringAsFixed(2);
+  }
+
+  double weightValue(num value) {
+    return switch (weightUnit) {
+      MeasurementUnit.imperial => value.asPounds,
+      MeasurementUnit.metric => value.toDouble(),
+    };
+  }
 }

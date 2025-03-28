@@ -13,8 +13,8 @@ class _Badge extends StatelessWidget {
       child: ClipRRect(
         borderRadius: const BorderRadius.all(Radius.circular(6)),
         child: switch (exercise.thumbnail?.link) {
-          String url when url.startsWith('https://') => CachedNetworkImage(
-              imageUrl: url,
+          String url when url.startsWith('https://') => AppImage(
+              url: url,
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) {
                 return _EmptyBadge(target: exercise.target);

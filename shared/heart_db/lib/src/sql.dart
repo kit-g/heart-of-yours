@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS exercises
     thumbnail        TEXT,
     thumbnail_width  INT,
     thumbnail_height INT,
+    instructions     TEXT,
     user_id          TEXT
 );
 """;
@@ -82,6 +83,67 @@ WITH _workout AS (
     SELECT *
     FROM workouts
     WHERE "end" IS NULL
+      AND user_id = ?
+    ORDER BY start DESC
+    LIMIT 1
+)
+SELECT
+    _workout.id AS workout_id,
+    _workout.start,
+    _workout."end",
+    _workout.name AS workout_name,
+    workout_exercises.id as workout_exercise_id,
+    sets.id AS set_id,
+    sets.completed,
+    sets.weight,
+    sets.reps,
+    sets.duration,
+    sets.distance,
+    e.name,
+    target,
+    category
+FROM workout_exercises
+INNER JOIN _workout
+    ON _workout.id = workout_exercises.workout_id
+INNER JOIN sets
+    ON workout_exercises.id = sets.exercise_id
+INNER JOIN exercises e
+    ON e.name = workout_exercises.exercise_id
+
+UNION ALL
+
+SELECT
+    _workout.id AS workout_id,
+    _workout.start,
+    _workout."end",
+    _workout.name AS workout_name,
+    NULL AS workout_exercise_id,
+    NULL AS set_id,
+    NULL AS completed,
+    NULL AS weight,
+    NULL AS reps,
+    NULL AS duration,
+    NULL AS distance,
+    NULL AS name,
+    NULL AS category,
+    NULL AS target
+FROM _workout
+WHERE NOT exists (
+    SELECT 1
+    FROM workout_exercises
+    INNER JOIN sets
+        ON workout_exercises.id = sets.exercise_id
+    INNER JOIN exercises e
+        ON e.name = workout_exercises.exercise_id
+    WHERE workout_exercises.workout_id = _workout.id
+);
+""";
+
+const getWorkout = """
+WITH _workout AS (
+    SELECT *
+    FROM workouts
+    WHERE id = ?
       AND user_id = ?
     ORDER BY start DESC
     LIMIT 1
@@ -231,4 +293,134 @@ CREATE TABLE IF NOT EXISTS exercise_details
     rest_timer    INTEGER,
     PRIMARY KEY (exercise_name, user_id)
 );
+""";
+
+const getExerciseHistory = """
+SELECT
+   we.id AS exercise_id,
+   workouts.id AS workout_id,
+   workouts.name AS workout_name,
+   sets.weight,
+   sets.reps,
+   sets.duration,
+   sets.completed,
+   sets.id AS set_id,
+   sets.distance
+FROM workout_exercises we
+INNER JOIN workouts ON we.workout_id = workouts.id
+INNER JOIN sets ON we.id = sets.exercise_id
+WHERE we.exercise_id = ?
+  AND workouts.user_id = ?
+  AND sets.completed
+;
+""";
+
+const weightRecord = """
+SELECT
+    max(reps) AS reps,
+    max(weight) AS weight
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
+""";
+
+const distanceRecord = """
+SELECT
+    max(duration) AS duration,
+    max(distance) AS distance
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
+""";
+
+const durationRecord = """
+SELECT
+    max(duration) AS duration
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
+""";
+
+const repsRecord = """
+SELECT
+    max(reps) AS reps
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed;
+""";
+
+const getWeightHistory = """
+SELECT
+    MAX(sets.weight) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
+LIMIT ?
+;
+""";
+
+const getRepsHistory = """
+SELECT
+    MAX(sets.reps) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
+LIMIT ?
+;
+""";
+
+const getDurationHistory = """
+SELECT
+    MAX(sets.duration) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
+LIMIT ?
+;
+""";
+
+const getDistanceHistory = """
+SELECT
+    MAX(sets.distance) AS "value",
+    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+FROM sets
+INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
+INNER JOIN main.workouts ON workouts.id = we.workout_id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed
+GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+ORDER BY "when" DESC
+LIMIT ?
+;
 """;

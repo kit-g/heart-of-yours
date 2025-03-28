@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/presentation/routes/done/done.dart';
-import 'package:heart/presentation/routes/exercises.dart';
+import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
@@ -114,8 +114,35 @@ RouteBase _historyRoute() {
 RouteBase _exercisesRoute() {
   return GoRoute(
     path: _exercisesPath,
-    builder: (__, _) => const ExercisesPage(),
+    builder: (context, _) {
+      return ExercisesPage(
+        onExercise: (exercise) {
+          context.goToExerciseDetail(exercise.name);
+        },
+      );
+    },
     name: _exercisesName,
+    routes: [
+      GoRoute(
+        path: ':exerciseId',
+        builder: (context, state) {
+          final exerciseId = state.pathParameters['exerciseId']!;
+          final exercise = Exercises.of(context).lookup(exerciseId);
+          return ExerciseDetailPage(
+            exercise: exercise!,
+            onTapWorkout: (workoutId) {
+              return Workouts.of(context).fetchWorkout(workoutId).then(
+                (_) {
+                  if (!context.mounted) return;
+                  context.goToWorkoutEditor(workoutId);
+                },
+              );
+            },
+          );
+        },
+        name: _exerciseDetailName,
+      ),
+    ],
   );
 }
 

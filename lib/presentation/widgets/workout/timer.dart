@@ -91,6 +91,7 @@ class WorkoutTimerFloatingButton extends StatelessWidget {
       builder: (_, active, child) {
         if (active == null) return const SizedBox.shrink();
         return FloatingActionButton.extended(
+          heroTag: null,
           onPressed: () {
             showWorkoutSheet(context, controller: scrollableController);
           },

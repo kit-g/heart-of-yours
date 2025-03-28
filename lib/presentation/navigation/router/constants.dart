@@ -17,6 +17,7 @@ const _historyEditName = 'edit';
 const _historyEditPath = _historyEditName;
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
+const _exerciseDetailName = 'exerciseDetail';
 const _doneName = 'done';
 const _donePath = '/$_doneName';
 const _accountManagementPath = 'account';

@@ -319,6 +319,14 @@ class L {
     );
   }
 
+  String get sets {
+    return Intl.message(
+      'Sets',
+      name: 'sets',
+      desc: 'Card header',
+    );
+  }
+
   String get previous {
     return Intl.message(
       'Previous',
@@ -544,6 +552,14 @@ class L {
       'Distance',
       name: 'distanceUnit',
       desc: 'Exercise set option, "choose distance unit for this set"',
+    );
+  }
+
+  String get duration {
+    return Intl.message(
+      'Duration',
+      name: 'duration',
+      desc: 'Duration label',
     );
   }
 
@@ -1297,6 +1313,102 @@ class L {
       '🔥🏆 Undo the Goodbye 🥇🔥',
       name: 'accountDeletedAction',
       desc: 'Delete account page',
+    );
+  }
+
+  String get about {
+    return Intl.message(
+      'About',
+      name: 'about',
+      desc: 'Generic label',
+    );
+  }
+
+  String get records {
+    return Intl.message(
+      'Records',
+      name: 'records',
+      desc: 'Generic label',
+    );
+  }
+
+  String get charts {
+    return Intl.message(
+      'Charts',
+      name: 'charts',
+      desc: 'Generic label',
+    );
+  }
+
+  String get emptyExerciseHistoryTitle {
+    return Intl.message(
+      'Ghost Reps Detected 👻',
+      name: 'emptyExerciseHistoryTitle',
+      desc: 'Exercise history empty state',
+    );
+  }
+
+  String get emptyExerciseHistoryBody {
+    return Intl.message(
+      'Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!',
+      name: 'emptyExerciseHistoryBody',
+      desc: 'Exercise history empty state',
+    );
+  }
+
+  String get errorExerciseHistoryTitle {
+    return Intl.message(
+      'Oops! Someone Skipped the Data Day 🤷‍♀️',
+      name: 'errorExerciseHistoryTitle',
+      desc: 'Exercise history empty state',
+    );
+  }
+
+  String get errorExerciseHistoryBody {
+    return Intl.message(
+      'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!',
+      name: 'errorExerciseHistoryBody',
+      desc: 'Exercise history empty state',
+    );
+  }
+
+  String get personalRecords {
+    return Intl.message(
+      'Personal records',
+      name: 'personalRecords',
+      desc: 'Records screen, title',
+    );
+  }
+
+  String get maxDuration {
+    return Intl.message(
+      'Max duration',
+      name: 'maxDuration',
+      desc: 'Records screen, metric name',
+    );
+  }
+
+  String get maxDistance {
+    return Intl.message(
+      'Max distance',
+      name: 'maxDistance',
+      desc: 'Records screen, metric name',
+    );
+  }
+
+  String get maxWeight {
+    return Intl.message(
+      'Max weight',
+      name: 'maxWeight',
+      desc: 'Records screen, metric name',
+    );
+  }
+
+  String get maxReps {
+    return Intl.message(
+      'Max reps',
+      name: 'maxReps',
+      desc: 'Records screen, metric name',
     );
   }
 }

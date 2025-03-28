@@ -84,7 +84,13 @@ class AppFrame extends StatelessWidget {
           }
         // exercises stack
         case 3:
-          return Scrolls.of(context).resetExerciseStack();
+          if (!context.canPop()) {
+            return Scrolls.of(context).resetExerciseStack();
+          } else {
+            while (context.canPop()) {
+              context.pop();
+            }
+          }
       }
     }
   }

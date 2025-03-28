@@ -102,6 +102,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  Future<void> fetchWorkout(String workoutId) async {
+    if (userId case String userId) {
+      final workout = await _service.getWorkout(userId, workoutId);
+      if (workout != null) {
+        _workouts[workoutId] = workout;
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> startWorkout({String? name, Workout? template}) {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     final workout = template ?? Workout(name: name);
@@ -328,10 +338,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> initHistory() async {
     if (userId case String id) {
       final local = await _service.getWorkoutHistory(id);
-      if (local != null) {
-        if (local.isNotEmpty) {
-          _workouts.addAll(Map.fromEntries(local.map(_entry)));
-        }
+      if (local case Iterable<Workout> local when local.isNotEmpty) {
+        _workouts.addAll(Map.fromEntries(local.map(_entry)));
       } else {
         final workouts = await _getRemoteHistory(id);
         if (workouts != null) {
