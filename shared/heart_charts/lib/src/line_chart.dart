@@ -12,9 +12,8 @@ class HistoryChart extends StatefulWidget {
   final Color indicatorStrokeColor;
   final LineSeries series;
   final TextStyle? bottomAxisLabelStyle;
-  final TextStyle? leftAxisLabelStyle;
   final String Function(int x)? getBottomLabel;
-  final String Function(double y)? getLeftLabel;
+  final Widget Function(double y)? getLeftLabel;
   final String Function(double x, double y)? getTooltip;
   final Widget? topLabel;
 
@@ -22,7 +21,6 @@ class HistoryChart extends StatefulWidget {
     super.key,
     required Iterable<Dot> series,
     this.bottomAxisLabelStyle,
-    this.leftAxisLabelStyle,
     this.getBottomLabel,
     this.getLeftLabel,
     this.topLabel,
@@ -43,6 +41,12 @@ class HistoryChart extends StatefulWidget {
 
 class _HistoryChartState extends State<HistoryChart> {
   LineSeries get series => widget.series;
+
+  @override
+  void dispose() {
+    series.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +79,7 @@ class _HistoryChartState extends State<HistoryChart> {
         final tooltipsOnBar = lineBarsData[0];
 
         return LayoutBuilder(
-          builder: (context, constraints) {
+          builder: (_, constraints) {
             return LineChart(
               LineChartData(
                 showingTooltipIndicators: series.tooltipIndices.map(
@@ -145,19 +149,16 @@ class _HistoryChartState extends State<HistoryChart> {
                   ),
                 ),
                 lineBarsData: lineBarsData,
-                minY: series.lowerBoundaryY - 1,
-                maxY: series.upperBoundaryY + 1,
+                minY: series.lowerBoundaryY * .9,
+                maxY: series.upperBoundaryY * 1.1,
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       getTitlesWidget: switch (widget.getLeftLabel) {
-                        String Function(double) callback => (value, meta) {
+                        Widget Function(double) callback => (value, meta) {
                             return SideTitleWidget(
                               meta: meta,
-                              child: Text(
-                                callback(value),
-                                style: widget.bottomAxisLabelStyle,
-                              ),
+                              child: callback(value),
                             );
                           },
                         null => defaultGetTitle,

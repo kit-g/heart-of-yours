@@ -19,8 +19,17 @@ class _Charts extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
+    final ThemeData(:textTheme) = Theme.of(context);
 
-    const expandedEmptyState = Expanded(child: _EmptyState());
+    Widget durationLabel(double y) {
+      return switch (_beautify(y)) {
+        String v => Text(
+            v,
+            style: textTheme.bodySmall,
+          ),
+        null => const SizedBox.shrink(),
+      };
+    }
 
     switch (exercise.category) {
       case Category.weightedBodyWeight:
@@ -49,7 +58,7 @@ class _Charts extends StatelessWidget {
         return Column(
           children: [
             _Chart(
-              emptyState: expandedEmptyState,
+              emptyState: const _EmptyState(),
               callback: () => repsHistoryLookup!(exercise),
               label: l.reps,
               converter: (v) => v.toDouble(),
@@ -64,9 +73,7 @@ class _Charts extends StatelessWidget {
               callback: () => durationHistoryLookup!(exercise),
               label: l.duration,
               converter: (v) => v.toDouble(),
-              getLeftLabel: (y) {
-                return Duration(seconds: y.toInt()).formatted();
-              },
+              getLeftLabel: durationLabel,
               getTooltip: (y) => Duration(seconds: y.toInt()).formatted(),
             ),
             const SizedBox(height: 12),
@@ -82,13 +89,11 @@ class _Charts extends StatelessWidget {
         return Column(
           children: [
             _Chart(
-              emptyState: expandedEmptyState,
+              emptyState: const _EmptyState(),
               callback: () => durationHistoryLookup!(exercise),
               label: l.duration,
               converter: (v) => v.toDouble(),
-              getLeftLabel: (y) {
-                return Duration(seconds: y.toInt()).formatted();
-              },
+              getLeftLabel: durationLabel,
               getTooltip: (y) => Duration(seconds: y.toInt()).formatted(),
             ),
           ],
@@ -102,7 +107,7 @@ class _Chart extends StatelessWidget {
   final Widget emptyState;
   final String label;
   final double Function(num) converter;
-  final String Function(double y)? getLeftLabel;
+  final Widget Function(double y)? getLeftLabel;
   final String Function(double y)? getTooltip;
 
   const _Chart({
@@ -173,4 +178,24 @@ class _Chart extends StatelessWidget {
 String _double(double value) {
   final rounded = double.parse(value.toStringAsFixed(2));
   return rounded % 1 == 0 ? rounded.toInt().toString() : rounded.toStringAsFixed(1);
+}
+
+String? _beautify(double y) {
+  int seconds = y.round();
+
+  final roundTo = switch (y.round()) {
+    < 60 => 10, // to nearest 10s
+    < 600 => 30, // to nearest 30s
+    < 3600 => 300, // to nearest 5min
+    _ => 900, // to nearest 5min
+  };
+
+  // apply rounding
+  int rounded = (seconds / roundTo).round() * roundTo;
+
+  // filter out "ugly" labels
+  if (rounded % 60 != 0 && rounded >= 600) {
+    return null; // drop values that aren’t full minutes after 10 min
+  }
+  return Duration(seconds: rounded).formatted();
 }
