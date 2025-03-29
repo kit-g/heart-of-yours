@@ -181,7 +181,11 @@ class _Exercise implements Exercise {
   @override
   bool contains(String query) {
     if (query.isEmpty) return true;
-    return name.trim().toLowerCase().contains(query.trim().toLowerCase());
+
+    final queryWords = query.toLowerCase().split(RegExp(r'\s+')).map((w) => w.trim());
+    final nameWords = name.toLowerCase().split(RegExp(r'[\s\(\)]+')).map((w) => w.trim());
+
+    return queryWords.every((queryWord) => nameWords.any((nameWord) => nameWord.contains(queryWord)));
   }
 
   /// name is the database identifier
