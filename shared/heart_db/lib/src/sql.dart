@@ -288,8 +288,6 @@ CREATE TABLE IF NOT EXISTS exercise_details
 (
     exercise_name TEXT NOT NULL REFERENCES exercises ON DELETE CASCADE,
     user_id       TEXT NOT NULL,
-    last_done     TEXT,
-    last_results  TEXT,
     rest_timer    INTEGER,
     PRIMARY KEY (exercise_name, user_id)
 );
@@ -422,5 +420,40 @@ WHERE workouts.user_id = ?
 GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
 ORDER BY "when" DESC
 LIMIT ?
+;
+""";
+
+const getPreviousExercises = """
+WITH _recent AS (
+    SELECT
+        we.exercise_id,
+        we.workout_id,
+        we.id AS workout_exercise_id,
+        w.start AS last_workout_date
+    FROM workout_exercises we
+    JOIN sets s ON s.exercise_id = we.id
+    JOIN workouts w ON w.id = we.workout_id
+    WHERE s.completed = 1
+      AND w.user_id = ?
+    GROUP BY we.exercise_id
+    HAVING MAX(w.start)
+)
+SELECT
+    _recent.exercise_id AS "exerciseId",
+    _recent.workout_exercise_id,
+    _recent.last_workout_date,
+    json_group_array(
+        json_object(
+            'set_id', s.id,
+            'weight', s.weight,
+            'reps', s.reps,
+            'duration', s.duration,
+            'distance', s.distance
+        )
+    ) AS sets
+FROM _recent
+JOIN sets s ON s.exercise_id = _recent.workout_exercise_id
+WHERE s.completed = 1
+GROUP BY _recent.exercise_id, _recent.workout_exercise_id, _recent.last_workout_date
 ;
 """;

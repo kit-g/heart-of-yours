@@ -1,6 +1,7 @@
 part of '../heart_db.dart';
 
-final class LocalDatabase implements TimersService, ExerciseService, StatsService, TemplateService, WorkoutService {
+final class LocalDatabase
+    implements TimersService, ExerciseService, PreviousExerciseService, StatsService, TemplateService, WorkoutService {
   static late final Database _db;
 
   static Future<void> init([int version = 1]) async {
@@ -522,6 +523,24 @@ final class LocalDatabase implements TimersService, ExerciseService, StatsServic
             };
           },
         ).toList();
+      },
+    );
+  }
+
+  @override
+  Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSets(String userId) {
+    return _db.rawQuery(sql.getPreviousExercises, [userId]).then(
+      (rows) {
+        return Map.fromEntries(
+          rows.map(
+            (row) {
+              return MapEntry(
+                row['exerciseId'] as String,
+                List.castFrom<dynamic, Map<String, dynamic>>(jsonDecode(row['sets'] as String) as List),
+              );
+            },
+          ),
+        );
       },
     );
   }
