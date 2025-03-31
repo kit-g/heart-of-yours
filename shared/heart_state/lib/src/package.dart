@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 typedef Package = ({String appName, String version, String build});
 
 class AppInfo with ChangeNotifier {
-  late final Package _package;
+  late Package _package;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   AppInfo({this.onError});

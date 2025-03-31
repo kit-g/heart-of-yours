@@ -35,6 +35,8 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     ) = L.of(context);
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
+    final preferences = Preferences.watch(context);
+
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       controller: Scrolls.of(context).exercisesScrollController,
@@ -241,6 +243,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     return _ExerciseItem(
                       exercise: exercise,
                       pushCopy: pushExercise,
+                      preferences: preferences,
                       pullCopy: pullExercise,
                       staticCopy: staticExercise,
                       onExerciseSelected: onExerciseSelected,

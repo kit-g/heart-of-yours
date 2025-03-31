@@ -2,6 +2,7 @@ part of 'exercises.dart';
 
 class _ExerciseItem extends StatelessWidget {
   final Exercise exercise;
+  final Preferences preferences;
   final String pushCopy;
   final String pullCopy;
   final String staticCopy;
@@ -10,6 +11,7 @@ class _ExerciseItem extends StatelessWidget {
 
   const _ExerciseItem({
     required this.exercise,
+    required this.preferences,
     required this.pushCopy,
     required this.pullCopy,
     required this.staticCopy,
@@ -34,6 +36,7 @@ class _ExerciseItem extends StatelessWidget {
             children: [
               _Badge(exercise: exercise),
               Expanded(
+                flex: 2,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Column(
@@ -60,12 +63,32 @@ class _ExerciseItem extends StatelessWidget {
                   ),
                 ),
               ),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: switch (selected) {
-                  true => const Icon(Icons.check_circle_rounded),
-                  false => const SizedBox.shrink(),
-                },
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: switch (selected) {
+                    true => const Align(
+                      alignment: Alignment.centerRight,
+                        child: Icon(Icons.check_circle_rounded),
+                      ),
+                    false => Selector<PreviousExercises, Map<String, dynamic>?>(
+                        selector: (_, provider) => provider.last(exercise.name),
+                        builder: (_, metric, __) {
+                          return switch (metric) {
+                            Map<String, dynamic> m => Align(
+                                alignment: Alignment.centerRight,
+                                child: PreviousSet(
+                                  previousValue: m,
+                                  prefs: preferences,
+                                  exercise: exercise,
+                                ),
+                              ),
+                            null => const SizedBox.shrink(),
+                          };
+                        },
+                      )
+                  },
+                ),
               ),
             ],
           ),
