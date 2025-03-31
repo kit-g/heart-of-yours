@@ -11,6 +11,7 @@ class _ExerciseSetItem extends StatefulWidget {
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final bool isLocked;
+  final Map<String, dynamic>? previousValue;
 
   const _ExerciseSetItem({
     required this.set,
@@ -19,6 +20,7 @@ class _ExerciseSetItem extends StatefulWidget {
     required this.onRemoveSet,
     this.onSetDone,
     required this.isLocked,
+    this.previousValue,
   });
 
   @override
@@ -133,6 +135,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       );
     }
 
+    final prefs = Preferences.watch(context);
+
     return Dismissible(
       background: dismissBackground(alignment: Alignment.centerLeft),
       secondaryBackground: dismissBackground(alignment: Alignment.centerRight),
@@ -159,10 +163,17 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               ),
               onPressed: () {},
             ),
-            const Expanded(
+            Expanded(
               flex: 3,
               child: Center(
-                child: Text(_emptyValue),
+                child: switch (widget.previousValue) {
+                  Map<String, dynamic> m => PreviousSet(
+                      previousValue: m,
+                      exercise: exercise.exercise,
+                      prefs: prefs,
+                    ),
+                  null => const Text(_emptyValue),
+                },
               ),
             ),
             Expanded(
