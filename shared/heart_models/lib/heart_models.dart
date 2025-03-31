@@ -11,6 +11,7 @@ export 'src/models/utils.dart';
 export 'src/models/workout.dart';
 export 'src/services/accounts.dart';
 export 'src/services/exercises.dart';
+export 'src/services/previous.dart';
 export 'src/services/stats.dart';
 export 'src/services/templates.dart';
 export 'src/services/timers.dart';
