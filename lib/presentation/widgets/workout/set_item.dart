@@ -11,6 +11,7 @@ class _ExerciseSetItem extends StatefulWidget {
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final bool isLocked;
+  final Map<String, dynamic>? previousValue;
 
   const _ExerciseSetItem({
     required this.set,
@@ -19,6 +20,7 @@ class _ExerciseSetItem extends StatefulWidget {
     required this.onRemoveSet,
     this.onSetDone,
     required this.isLocked,
+    this.previousValue,
   });
 
   @override
@@ -95,6 +97,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         :error,
         :onError,
       ),
+      :scaffoldBackgroundColor,
     ) = Theme.of(context);
     final L(:deleteSet) = L.of(context);
     final color = set.isCompleted ? tertiaryContainer : outlineVariant.withValues(alpha: .5);
@@ -133,6 +136,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       );
     }
 
+    final prefs = Preferences.watch(context);
+
     return Dismissible(
       background: dismissBackground(alignment: Alignment.centerLeft),
       secondaryBackground: dismissBackground(alignment: Alignment.centerRight),
@@ -159,10 +164,52 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               ),
               onPressed: () {},
             ),
-            const Expanded(
+            Expanded(
               flex: 3,
               child: Center(
-                child: Text(_emptyValue),
+                child: switch (widget.previousValue) {
+                  Map<String, dynamic> m => PrimaryButton.shrunk(
+                      backgroundColor: scaffoldBackgroundColor,
+                      margin: const EdgeInsets.all(4),
+                      child: PreviousSet(
+                        previousValue: m,
+                        exercise: exercise.exercise,
+                        prefs: prefs,
+                      ),
+                      onPressed: () {
+                        buzz();
+                        switch (exercise.exercise.category) {
+                          case Category.weightedBodyWeight:
+                          case Category.assistedBodyWeight:
+                          case Category.machine:
+                          case Category.dumbbell:
+                          case Category.barbell:
+                            switch (m) {
+                              case {'weight': num weight, 'reps': int reps}:
+                                _weightController.text = prefs.weight(weight);
+                                _repsController.text = '$reps';
+                            }
+                          case Category.repsOnly:
+                            switch (m) {
+                              case {'reps': int reps}:
+                                _repsController.text = '$reps';
+                            }
+                          case Category.cardio:
+                            switch (m) {
+                              case {'duration': num duration, 'distance': num distance}:
+                                _durationController.text = duration.toInt().toDuration();
+                                _distanceController.text = prefs.distance(distance);
+                            }
+                          case Category.duration:
+                            switch (m) {
+                              case {'duration': num duration}:
+                                _durationController.text = duration.toInt().toDuration();
+                            }
+                        }
+                      },
+                    ),
+                  null => const Text(_emptyValue),
+                },
               ),
             ),
             Expanded(

@@ -50,6 +50,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         currentlyHoveredItem.value = exercise;
       },
       builder: (_, candidates, rejects) {
+        final previous = PreviousExercises.watch(context);
         return ValueListenableBuilder<WorkoutExercise?>(
           valueListenable: dragState,
           builder: (_, draggedExercise, __) {
@@ -169,6 +170,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               onRemoveSet: onRemoveSet,
                               isLocked: !allowCompleting,
                               onSetDone: onSetDone,
+                              previousValue: previous.at(exercise.exercise.name, set.$1),
                             );
                           },
                         ),

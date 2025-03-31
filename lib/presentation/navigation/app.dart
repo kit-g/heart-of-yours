@@ -66,6 +66,9 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Timers>(
           create: (_) => Timers(service: db),
         ),
+        ChangeNotifierProvider<PreviousExercises>(
+          create: (_) => PreviousExercises(service: db),
+        ),
         ChangeNotifierProvider<Preferences>(
           create: (_) => Preferences(),
         ),
@@ -81,6 +84,7 @@ class HeartApp extends StatelessWidget {
             onUserChange: (user) {
               HeartRouter.refresh();
               Exercises.of(context).userId = user?.id;
+              PreviousExercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
               Timers.of(context).userId = user?.id;
@@ -203,6 +207,7 @@ Future<void> _initApp(BuildContext context, [String? sessionToken]) async {
   final prefs = Preferences.of(context);
   final theme = AppTheme.of(context);
   final timers = Timers.of(context);
+  final previous = PreviousExercises.of(context);
   await prefs.init();
 
   theme
@@ -217,6 +222,7 @@ Future<void> _initApp(BuildContext context, [String? sessionToken]) async {
         workouts.init().then<void>((_) => HeartRouter.refresh());
         templates.init();
         timers.init();
+        previous.init();
       },
     );
   }

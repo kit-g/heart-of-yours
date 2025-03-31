@@ -98,10 +98,8 @@ class Preferences with ChangeNotifier implements SignOutStateSentry {
   }
 
   String distance(num value) {
-    return switch (distanceUnit) {
-      MeasurementUnit.imperial => value.asMiles.toStringAsFixed(2),
-      MeasurementUnit.metric => value.toString(),
-    };
+    final v = distanceValue(value);
+    return v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
   }
 
   double distanceValue(num value) {
@@ -112,7 +110,8 @@ class Preferences with ChangeNotifier implements SignOutStateSentry {
   }
 
   String weight(num value) {
-    return weightValue(value).toStringAsFixed(2);
+    final v = weightValue(value);
+    return v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
   }
 
   double weightValue(num value) {
