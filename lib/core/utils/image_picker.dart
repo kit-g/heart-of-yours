@@ -21,29 +21,34 @@ Future<LocalFile?> capturePhoto() async {
   return photo.toLocalFile();
 }
 
-Future<LocalImage?> cropImage(BuildContext context, LocalFile file) async {
+Future<LocalImage?> cropImage(BuildContext context, LocalFile file, String header) async {
+  final ThemeData(:appBarTheme, :scaffoldBackgroundColor, :colorScheme) = Theme.of(context);
+
   final cropped = await _cropper.cropImage(
     sourcePath: file.$2,
     uiSettings: [
       AndroidUiSettings(
-        toolbarTitle: 'Cropper',
-        toolbarColor: Colors.deepOrange,
-        toolbarWidgetColor: Colors.white,
-        aspectRatioPresets: [
+        toolbarTitle: header,
+        toolbarColor: colorScheme.surface,
+        toolbarWidgetColor: colorScheme.onSurface,
+        backgroundColor: scaffoldBackgroundColor,
+        cropFrameColor: colorScheme.tertiaryContainer,
+        cropGridColor: colorScheme.tertiary,
+        cropStyle: CropStyle.rectangle,
+        dimmedLayerColor: colorScheme.primaryContainer.withValues(alpha: .3),
+        aspectRatioPresets: const [
           CropAspectRatioPreset.original,
           CropAspectRatioPreset.square,
         ],
       ),
       IOSUiSettings(
-        title: 'Cropper',
-        aspectRatioPresets: [
+        title: header,
+        aspectRatioPresets: const [
           CropAspectRatioPreset.original,
           CropAspectRatioPreset.square,
         ],
       ),
-      WebUiSettings(
-        context: context,
-      ),
+      WebUiSettings(context: context),
     ],
   );
   return switch (cropped) {
@@ -52,22 +57,22 @@ Future<LocalImage?> cropImage(BuildContext context, LocalFile file) async {
   };
 }
 
-Future<LocalImage?> pickAndCropGalleryImage(BuildContext context) async {
+Future<LocalImage?> pickAndCropGalleryImage(BuildContext context, String copy) async {
   return pickGalleryImage().then<LocalImage?>(
     (image) {
       if (image == null) return null;
       if (!context.mounted) return null;
-      return cropImage(context, image);
+      return cropImage(context, image, copy);
     },
   );
 }
 
-Future<LocalImage?> captureAndCropPhoto(BuildContext context) async {
+Future<LocalImage?> captureAndCropPhoto(BuildContext context, String copy) async {
   return capturePhoto().then<LocalImage?>(
     (image) {
       if (image == null) return null;
       if (!context.mounted) return null;
-      return cropImage(context, image);
+      return cropImage(context, image, copy);
     },
   );
 }

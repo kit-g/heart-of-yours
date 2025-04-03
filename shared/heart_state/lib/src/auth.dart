@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
@@ -285,6 +286,34 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         _user = _user?.copyWith();
         notifyListeners();
     }
+  }
+
+  Future<({String url, Map<String, String> fields})?> getAvatarUploadLink({String? imageMimeType}) async {
+    if (user?.id case String userId) {
+      return _service.getAvatarUploadLink(userId, imageMimeType: imageMimeType);
+    }
+    return null;
+  }
+
+  Future<bool> updateAvatar(
+    (Uint8List, {String? mimeType, String? name}) localImage, {
+    final void Function(int bytes, int totalBytes)? onProgress,
+  }) async {
+    if (user case User user) {
+      user.localAvatar = localImage.$1;
+      notifyListeners();
+      try {
+        final uploadLink = await _service.getAvatarUploadLink(user.id, imageMimeType: localImage.mimeType);
+        if (uploadLink != null) {
+          final avatar = ('file', localImage.$1, contentType: localImage.mimeType, filename: localImage.name);
+          return _service.uploadAvatar(uploadLink, avatar, onProgress: onProgress);
+        }
+      } catch (e, s) {
+        onError?.call(e, stacktrace: s);
+        return false;
+      }
+    }
+    return false;
   }
 }
 

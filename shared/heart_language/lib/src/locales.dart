@@ -71,6 +71,22 @@ class L {
     );
   }
 
+  String get yourEmail {
+    return Intl.message(
+      'Your email',
+      name: 'yourEmail',
+      desc: 'Generic label',
+    );
+  }
+
+  String get cropAvatar {
+    return Intl.message(
+      'Crop avatar',
+      name: 'cropAvatar',
+      desc: 'Label in the image cropper',
+    );
+  }
+
   String get nameOptional {
     return Intl.message(
       'Name (optional)',
