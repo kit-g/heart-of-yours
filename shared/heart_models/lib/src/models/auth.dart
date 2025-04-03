@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'misc.dart';
 
 abstract interface class User implements Model {
@@ -12,6 +14,8 @@ abstract interface class User implements Model {
   DateTime? get createdAt;
 
   DateTime? get scheduledForDeletionAt;
+
+  Uint8List? localAvatar;
 
   factory User({
     String? displayName,
@@ -47,8 +51,10 @@ class _User implements User {
   final DateTime? createdAt;
   @override
   final DateTime? scheduledForDeletionAt;
+  @override
+  Uint8List? localAvatar;
 
-  const _User({
+  _User({
     required this.displayName,
     required this.email,
     required this.avatar,
