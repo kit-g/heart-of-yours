@@ -23,27 +23,27 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     final auth = Auth.watch(context);
     final user = auth.user;
     if (user == null) return const Scaffold();
-    final User(:avatar, :email, :displayName) = user;
+    final User(:avatar, :email, :displayName, :localAvatar) = user;
 
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 64,
-        leading: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: GestureDetector(
-            onTap: _toAccount,
-            child: CircleAvatar(
-              foregroundImage: switch (avatar) {
-                String avatar when avatar.startsWith('https') => NetworkImage(avatar),
-                _ => null,
-              },
-              child: const Icon(Icons.person_rounded),
-            ),
-          ),
-        ),
         title: GestureDetector(
           onTap: _toAccount,
-          child: Text(displayName ?? '?'),
+          child: Row(
+            spacing: 16,
+            children: [
+              GestureDetector(
+                onTap: _toAccount,
+                child: Avatar(
+                  remote: avatar,
+                  local: localAvatar,
+                  radius: 24,
+                ),
+              ),
+              Text(displayName ?? '?'),
+            ],
+          ),
         ),
         actions: [
           IconButton(

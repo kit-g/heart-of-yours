@@ -78,7 +78,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                       return AnimatedOpacity(
                         duration: const Duration(milliseconds: 200),
                         opacity: progress == null ? 1 : .3,
-                        child: _Avatar(
+                        child: EditableAvatar(
                           local: auth.user?.localAvatar,
                           remote: auth.user?.avatar,
                           radius: 60,
