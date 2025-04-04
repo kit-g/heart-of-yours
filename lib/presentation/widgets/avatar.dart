@@ -1,13 +1,18 @@
-part of 'settings.dart';
+import 'dart:typed_data';
 
-class _Avatar extends StatelessWidget {
+import 'package:flutter/material.dart';
+
+import 'image.dart';
+
+class EditableAvatar extends StatelessWidget {
   final String? remote;
   final Uint8List? local;
   final double radius;
   final VoidCallback? onTap;
   final double? progress;
 
-  const _Avatar({
+  const EditableAvatar({
+    super.key,
     this.onTap,
     this.remote,
     this.local,
@@ -34,22 +39,10 @@ class _Avatar extends StatelessWidget {
                 color: colorScheme.primaryContainer,
               ),
             ),
-          Container(
-            height: radius * 2,
-            width: radius * 2,
-            padding: const EdgeInsets.all(2),
-            child: switch ((remote, local)) {
-              (null, null) => CircleAvatar(
-                  child: Icon(Icons.person_rounded, size: radius),
-                ),
-              (String? remote, Uint8List? local) => ClipOval(
-                  child: AppImage(
-                    url: remote,
-                    bytes: local,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-            },
+          Avatar(
+            radius: radius,
+            local: local,
+            remote: remote,
           ),
           Positioned(
             bottom: 0,
@@ -80,6 +73,35 @@ class _Avatar extends StatelessWidget {
           )
         ],
       ),
+    );
+  }
+}
+
+class Avatar extends StatelessWidget {
+  final String? remote;
+  final Uint8List? local;
+  final double radius;
+
+  const Avatar({super.key, this.remote, this.local, required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: radius * 2,
+      width: radius * 2,
+      padding: const EdgeInsets.all(2),
+      child: switch ((remote, local)) {
+        (null, null) => CircleAvatar(
+            child: Icon(Icons.person_rounded, size: radius),
+          ),
+        (String? remote, Uint8List? local) => ClipOval(
+            child: AppImage(
+              url: remote,
+              bytes: local,
+              fit: BoxFit.cover,
+            ),
+          ),
+      },
     );
   }
 }
