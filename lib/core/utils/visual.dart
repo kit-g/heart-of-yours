@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 void snack(
@@ -151,4 +152,68 @@ Future<T?> showBrandedDialog<T>(
       );
     },
   );
+}
+
+class BottomMenuAction {
+  final String title;
+  final Widget? icon;
+  final VoidCallback? onPressed;
+  final bool isDestructive;
+
+  BottomMenuAction({
+    required this.title,
+    this.icon,
+    this.onPressed,
+    this.isDestructive = false,
+  });
+}
+
+Future<T?> showBottomMenu<T>(BuildContext context, List<BottomMenuAction> actions) {
+  switch (Theme.of(context).platform) {
+    case TargetPlatform.iOS:
+    case TargetPlatform.macOS:
+      return showCupertinoModalPopup<T>(
+        useRootNavigator: false,
+        context: context,
+        builder: (context) => CupertinoActionSheet(
+          actions: actions.map(
+            (action) {
+              return CupertinoActionSheetAction(
+                onPressed: action.onPressed ?? () {},
+                isDestructiveAction: action.isDestructive,
+                child: Text(action.title),
+              );
+            },
+          ).toList(),
+        ),
+      );
+    case _:
+      return showModalBottomSheet<T>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => Wrap(
+          children: [
+            Column(
+              children: [
+                const SizedBox(height: 8),
+                ...actions.map(
+                  (action) {
+                    return ListTile(
+                      onTap: action.onPressed,
+                      leading: action.icon,
+                      title: Text(
+                        action.title,
+                        style: TextStyle(
+                          color: action.isDestructive ? Theme.of(context).colorScheme.error : null,
+                        ),
+                      ),
+                    );
+                  },
+                )
+              ],
+            ),
+          ],
+        ),
+      );
+  }
 }

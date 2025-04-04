@@ -1427,6 +1427,30 @@ class L {
       desc: 'Records screen, metric name',
     );
   }
+
+  String get capturePhoto {
+    return Intl.message(
+      'Take a new photo',
+      name: 'capturePhoto',
+      desc: 'Image picker menu',
+    );
+  }
+
+  String get chooseFromGallery {
+    return Intl.message(
+      'Choose from library',
+      name: 'chooseFromGallery',
+      desc: 'Image picker menu',
+    );
+  }
+
+  String get removeCurrentPhoto {
+    return Intl.message(
+      'Remove current photo',
+      name: 'removeCurrentPhoto',
+      desc: 'Image picker menu',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {

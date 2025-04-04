@@ -362,12 +362,12 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     }
   }
 
-  Future<void> _onAvatar(BuildContext context) async {
+  Future<void> _uploadAvatar(BuildContext context, Future<LocalImage?> Function() getImage) async {
     final auth = Auth.of(context);
     buzz();
 
     _avatarController.value = .001;
-    final image = await pickAndCropGalleryImage(context, L.of(context).cropAvatar);
+    final image = await getImage();
     if (image != null) {
       await auth.updateAvatar(
         image,
@@ -377,5 +377,59 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       );
     }
     _avatarController.value = null;
+  }
+
+  Future<void> _removeExistingAvatar(BuildContext context) async {
+    buzz();
+    Auth.of(context).updateAvatar(null);
+  }
+
+  Future<void> _onAvatar(BuildContext context) async {
+    final L(:capturePhoto, :chooseFromGallery, :removeCurrentPhoto, :cancel) = L.of(context);
+    final ThemeData(:colorScheme, :platform) = Theme.of(context);
+
+    void pop() {
+      final isApple = platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+      Navigator.of(context, rootNavigator: !isApple).pop();
+    }
+
+    return showBottomMenu<void>(
+      context,
+      [
+        BottomMenuAction(
+          title: capturePhoto,
+          onPressed: () {
+            pop();
+            _uploadAvatar(context, () => captureAndCropPhoto(context, L.of(context).cropAvatar));
+          },
+          icon: const Icon(Icons.camera_alt_rounded),
+        ),
+        BottomMenuAction(
+          title: chooseFromGallery,
+          onPressed: () {
+            pop();
+            _uploadAvatar(context, () => pickAndCropGalleryImage(context, L.of(context).cropAvatar));
+          },
+          icon: const Icon(Icons.photo_library_rounded),
+        ),
+        BottomMenuAction(
+          title: removeCurrentPhoto,
+          onPressed: () {
+            pop();
+            _removeExistingAvatar(context);
+          },
+          icon: Icon(
+            Icons.delete_rounded,
+            color: colorScheme.error,
+          ),
+          isDestructive: true,
+        ),
+        BottomMenuAction(
+          title: cancel,
+          onPressed: pop,
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ],
+    );
   }
 }
