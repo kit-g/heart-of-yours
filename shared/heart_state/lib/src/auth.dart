@@ -296,9 +296,16 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<bool> updateAvatar(
-    (Uint8List, {String? mimeType, String? name}) localImage, {
+    (Uint8List, {String? mimeType, String? name})? localImage, {
     final void Function(int bytes, int totalBytes)? onProgress,
   }) async {
+    // deleting avatar
+    if (localImage == null) {
+      user?.localAvatar = null;
+      notifyListeners();
+      return true;
+    }
+    // uploading new avatar
     if (user case User user) {
       user.localAvatar = localImage.$1;
       notifyListeners();
