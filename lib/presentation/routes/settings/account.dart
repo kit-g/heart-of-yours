@@ -41,6 +41,9 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       :noConnectivity,
       :recoveryLinkMessageSent,
       :yourEmail,
+      :resetPasswordBody,
+      :cancel,
+      :ok,
     ) = L.of(context);
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
@@ -109,23 +112,68 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               ListTile(
                 title: Text(resetPassword),
                 onTap: () async {
-                  if (auth.user?.email case String email) {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      startLoading();
-                      await auth.sendPasswordRecoveryEmail(email);
-                      messenger.snack(recoveryLinkMessageSent);
-                    } on AuthException catch (e, s) {
-                      switch (e.reason) {
-                        case AuthExceptionReason.networkRequestFailed:
-                          messenger.snack(noConnectivity);
-                        default:
-                          widget.onError?.call(e, stacktrace: s);
-                      }
-                    } finally {
-                      stopLoading();
-                    }
-                  }
+                  return showBrandedDialog<void>(
+                    context,
+                    title: Text(
+                      resetPassword,
+                      textAlign: TextAlign.center,
+                    ),
+                    content: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        resetPasswordBody,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    actions: [
+                      Column(
+                        spacing: 8,
+                        children: [
+                          PrimaryButton.wide(
+                            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                            child: Center(
+                              child: Text(
+                                cancel,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context, rootNavigator: true).pop();
+                            },
+                          ),
+                          PrimaryButton.wide(
+                            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                            child: Center(
+                              child: Text(
+                                ok,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            onPressed: () async {
+                              Navigator.of(context, rootNavigator: true).pop();
+                              if (auth.user?.email case String email) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                try {
+                                  startLoading();
+                                  await auth.sendPasswordRecoveryEmail(email);
+                                  messenger.snack(recoveryLinkMessageSent);
+                                } on AuthException catch (e, s) {
+                                  switch (e.reason) {
+                                    case AuthExceptionReason.networkRequestFailed:
+                                      messenger.snack(noConnectivity);
+                                    default:
+                                      widget.onError?.call(e, stacktrace: s);
+                                  }
+                                } finally {
+                                  stopLoading();
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      )
+                    ],
+                  );
                 },
               ),
               const SizedBox(height: 8),
@@ -373,7 +421,11 @@ class _AccountManagementPageState extends State<AccountManagementPage>
         image,
         AppConfig.avatarLink,
         onProgress: (bytes, totalBytes) {
+          final progress = bytes / totalBytes;
           _avatarController.value = totalBytes > 0 ? (bytes / totalBytes) : null;
+          if (progress >= .999) {
+            _avatarController.value = null;
+          }
         },
         onDone: CachedNetworkImage.evictFromCache,
       );
@@ -390,10 +442,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     final L(:capturePhoto, :chooseFromGallery, :removeCurrentPhoto, :cancel) = L.of(context);
     final ThemeData(:colorScheme, :platform) = Theme.of(context);
 
-    void pop() {
-      final isApple = platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
-      Navigator.of(context, rootNavigator: !isApple).pop();
-    }
+    var pop = Navigator.of(context).pop;
 
     return showBottomMenu<void>(
       context,

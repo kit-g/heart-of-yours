@@ -45,6 +45,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         _user = _cast(user);
         onUserChange?.call(_user);
         _user = await _registerUser(_user);
+        notifyListeners();
         onEnter?.call(await user?.getIdToken());
       },
       onError: (error, stacktrace) {
@@ -315,6 +316,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           if (success) {
             // if it succeeds, store the URL in the database
             // and notify Firebase about it
+            await Future.delayed(const Duration(seconds: 5));
             final resultingUrl = '$avatarStorage/${user.id}?v=${DateTime.now().millisecondsSinceEpoch}';
             _firebase.currentUser?.updatePhotoURL(resultingUrl);
             _db.collection('users').doc(user.id).update({'avatar': resultingUrl});
