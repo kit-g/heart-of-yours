@@ -16,7 +16,7 @@ class _Badge extends StatelessWidget {
           String url when url.startsWith('https://') => AppImage(
               url: url,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) {
+              errorWidget: (_, __) {
                 return _EmptyBadge(target: exercise.target);
               },
               progressIndicatorBuilder: (_, __, ___) {
