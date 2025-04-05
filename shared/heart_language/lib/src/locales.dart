@@ -1093,6 +1093,14 @@ class L {
     );
   }
 
+  String get resetPasswordBody {
+    return Intl.message(
+      'We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌',
+      name: 'resetPasswordBody',
+      desc: 'Button',
+    );
+  }
+
   String get orConnector {
     return Intl.message(
       '- or -',
