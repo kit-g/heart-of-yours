@@ -3,11 +3,13 @@ part of 'profile.dart';
 class ProfilePage extends StatefulWidget {
   final VoidCallback onSettings;
   final VoidCallback onAccount;
+  final VoidCallback onAvatar;
 
   const ProfilePage({
     super.key,
     required this.onSettings,
     required this.onAccount,
+    required this.onAvatar,
   });
 
   @override
@@ -34,11 +36,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
             spacing: 16,
             children: [
               GestureDetector(
-                onTap: _toAccount,
-                child: Avatar(
-                  remote: avatar,
-                  local: localAvatar,
-                  radius: 24,
+                onTap: _toAvatar,
+                child: Hero(
+                  tag: 'avatar',
+                  child: Avatar(
+                    remote: avatar,
+                    local: localAvatar,
+                    radius: 24,
+                  ),
                 ),
               ),
               Text(displayName ?? '?'),
@@ -107,6 +112,11 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   void _toAccount() {
     buzz();
     widget.onAccount();
+  }
+
+  void _toAvatar() {
+    buzz();
+    widget.onAvatar();
   }
 }
 
