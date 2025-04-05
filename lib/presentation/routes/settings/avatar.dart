@@ -14,7 +14,6 @@ class AvatarPage extends StatelessWidget {
     final user = auth.user;
     if (user == null) return const Scaffold();
     final User(:avatar, :localAvatar) = user;
-    final size = MediaQuery.sizeOf(context);
     return Theme(
       data: ThemeData(brightness: Brightness.dark),
       child: Scaffold(
@@ -27,16 +26,21 @@ class AvatarPage extends StatelessWidget {
           backgroundColor: Colors.transparent,
         ),
         body: Center(
-          child: SizedBox.square(
-            dimension: size.width - 100,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Hero(
               tag: 'avatar',
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: AppImage(
-                  url: avatar,
-                  bytes: localAvatar,
-                  fit: BoxFit.cover,
+                child: InteractiveViewer(
+                  panEnabled: true,
+                  scaleFactor: 2,
+                  scaleEnabled: true,
+                  child: AppImage(
+                    url: avatar,
+                    bytes: localAvatar,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
