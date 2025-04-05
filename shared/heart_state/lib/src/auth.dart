@@ -296,24 +296,31 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<bool> updateAvatar(
-    (Uint8List, {String? mimeType, String? name})? localImage, {
+    (Uint8List, {String? mimeType, String? name}) localImage,
+    String avatarStorage, {
     final void Function(int bytes, int totalBytes)? onProgress,
+    final void Function(String url)? onDone,
   }) async {
-    // deleting avatar
-    if (localImage == null) {
-      user?.localAvatar = null;
-      notifyListeners();
-      return true;
-    }
-    // uploading new avatar
     if (user case User user) {
+      // update local image and notify the UI
       user.localAvatar = localImage.$1;
       notifyListeners();
       try {
+        // get pre-signed URL for the upload
         final uploadLink = await _service.getAvatarUploadLink(user.id, imageMimeType: localImage.mimeType);
         if (uploadLink != null) {
+          // push the image to the bucket
           final avatar = ('file', localImage.$1, contentType: localImage.mimeType, filename: localImage.name);
-          return _service.uploadAvatar(uploadLink, avatar, onProgress: onProgress);
+          final success = await _service.uploadAvatar(uploadLink, avatar, onProgress: onProgress);
+          if (success) {
+            // if it succeeds, store the URL in the database
+            // and notify Firebase about it
+            final resultingUrl = '$avatarStorage/${user.id}?v=${DateTime.now().millisecondsSinceEpoch}';
+            _firebase.currentUser?.updatePhotoURL(resultingUrl);
+            _db.collection('users').doc(user.id).update({'avatar': resultingUrl});
+            onDone?.call(resultingUrl);
+          }
+          return success;
         }
       } catch (e, s) {
         onError?.call(e, stacktrace: s);
@@ -321,6 +328,13 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       }
     }
     return false;
+  }
+
+  Future<bool> removeAvatar() async {
+    user?.localAvatar = null;
+    _firebase.currentUser?.updateProfile(photoURL: null);
+    notifyListeners();
+    return true;
   }
 }
 
