@@ -71,6 +71,22 @@ class L {
     );
   }
 
+  String get yourEmail {
+    return Intl.message(
+      'Your email',
+      name: 'yourEmail',
+      desc: 'Generic label',
+    );
+  }
+
+  String get cropAvatar {
+    return Intl.message(
+      'Crop avatar',
+      name: 'cropAvatar',
+      desc: 'Label in the image cropper',
+    );
+  }
+
   String get nameOptional {
     return Intl.message(
       'Name (optional)',
@@ -1409,6 +1425,30 @@ class L {
       'Max reps',
       name: 'maxReps',
       desc: 'Records screen, metric name',
+    );
+  }
+
+  String get capturePhoto {
+    return Intl.message(
+      'Take a new photo',
+      name: 'capturePhoto',
+      desc: 'Image picker menu',
+    );
+  }
+
+  String get chooseFromGallery {
+    return Intl.message(
+      'Choose from library',
+      name: 'chooseFromGallery',
+      desc: 'Image picker menu',
+    );
+  }
+
+  String get removeCurrentPhoto {
+    return Intl.message(
+      'Remove current photo',
+      name: 'removeCurrentPhoto',
+      desc: 'Image picker menu',
     );
   }
 }

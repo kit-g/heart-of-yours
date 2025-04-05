@@ -32,6 +32,33 @@ final class Api with Requests implements AccountService, HeaderAuthenticatedServ
   }
 
   @override
+  Future<PreSignedUrl?> getAvatarUploadLink(String userId, {String? imageMimeType}) async {
+    final (json, code) = await get(
+      '${_Router.accounts}/$userId',
+      query: {
+        'action': 'uploadAvatar',
+        if (imageMimeType != null) 'mimeType': imageMimeType,
+      },
+    );
+    return switch (json) {
+      {'url': String url, 'fields': Map fields} => (
+          fields: Map.castFrom<dynamic, dynamic, String, String>(fields),
+          url: url,
+        ),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<bool> uploadAvatar(
+    PreSignedUrl cred,
+    (String field, List<int> value, {String? filename, String? contentType}) file, {
+    final void Function(int bytes, int totalBytes)? onProgress,
+  }) {
+    return uploadToBucket(cred, file, onProgress: onProgress);
+  }
+
+  @override
   Future<String?> undoAccountDeletion(String accountId) {
     return put(
       '${_Router.accounts}/$accountId',

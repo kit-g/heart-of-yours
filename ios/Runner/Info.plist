@@ -45,6 +45,10 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow photo library access to change your avatar.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow camera access to take a new avatar photo.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

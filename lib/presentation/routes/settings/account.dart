@@ -15,6 +15,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
   final _nameController = TextEditingController();
   final _nameFocusNode = FocusNode();
   final _obscurityController = ValueNotifier(true);
+  final _avatarController = ValueNotifier<double?>(null);
 
   @override
   void dispose() {
@@ -22,6 +23,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     _nameController.dispose();
     _passwordController.dispose();
     _obscurityController.dispose();
+    _avatarController.dispose();
 
     super.dispose();
   }
@@ -38,6 +40,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       :resetPassword,
       :noConnectivity,
       :recoveryLinkMessageSent,
+      :yourEmail,
     ) = L.of(context);
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
@@ -65,7 +68,44 @@ class _AccountManagementPageState extends State<AccountManagementPage>
 
           return ListView(
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ValueListenableBuilder<double?>(
+                    valueListenable: _avatarController,
+                    builder: (_, progress, __) {
+                      return AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: progress == null ? 1 : .3,
+                        child: EditableAvatar(
+                          local: auth.user?.localAvatar,
+                          remote: auth.user?.avatar,
+                          radius: 60,
+                          progress: progress,
+                          onTap: switch (loading) {
+                            true => null,
+                            false => () => _onAvatar(context),
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              if (auth.user?.email case String email) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    yourEmail,
+                    style: textTheme.titleMedium,
+                  ),
+                ),
+                ListTile(
+                  title: Text(email),
+                ),
+              ],
               ListTile(
                 title: Text(resetPassword),
                 onTap: () async {
@@ -320,5 +360,78 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     } finally {
       stopLoading();
     }
+  }
+
+  Future<void> _uploadAvatar(BuildContext context, Future<LocalImage?> Function() getImage) async {
+    final auth = Auth.of(context);
+    buzz();
+
+    _avatarController.value = .001;
+    final image = await getImage();
+    if (image != null) {
+      await auth.updateAvatar(
+        image,
+        AppConfig.avatarLink,
+        onProgress: (bytes, totalBytes) {
+          _avatarController.value = totalBytes > 0 ? (bytes / totalBytes) : null;
+        },
+        onDone: CachedNetworkImage.evictFromCache,
+      );
+    }
+    _avatarController.value = null;
+  }
+
+  Future<void> _removeExistingAvatar(BuildContext context) async {
+    buzz();
+    Auth.of(context).removeAvatar();
+  }
+
+  Future<void> _onAvatar(BuildContext context) async {
+    final L(:capturePhoto, :chooseFromGallery, :removeCurrentPhoto, :cancel) = L.of(context);
+    final ThemeData(:colorScheme, :platform) = Theme.of(context);
+
+    void pop() {
+      final isApple = platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+      Navigator.of(context, rootNavigator: !isApple).pop();
+    }
+
+    return showBottomMenu<void>(
+      context,
+      [
+        BottomMenuAction(
+          title: capturePhoto,
+          onPressed: () {
+            pop();
+            _uploadAvatar(context, () => captureAndCropPhoto(context, L.of(context).cropAvatar));
+          },
+          icon: const Icon(Icons.camera_alt_rounded),
+        ),
+        BottomMenuAction(
+          title: chooseFromGallery,
+          onPressed: () {
+            pop();
+            _uploadAvatar(context, () => pickAndCropGalleryImage(context, L.of(context).cropAvatar));
+          },
+          icon: const Icon(Icons.photo_library_rounded),
+        ),
+        BottomMenuAction(
+          title: removeCurrentPhoto,
+          onPressed: () {
+            pop();
+            _removeExistingAvatar(context);
+          },
+          icon: Icon(
+            Icons.delete_rounded,
+            color: colorScheme.error,
+          ),
+          isDestructive: true,
+        ),
+        BottomMenuAction(
+          title: cancel,
+          onPressed: pop,
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ],
+    );
   }
 }

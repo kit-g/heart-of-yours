@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
@@ -285,6 +286,55 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         _user = _user?.copyWith();
         notifyListeners();
     }
+  }
+
+  Future<({String url, Map<String, String> fields})?> getAvatarUploadLink({String? imageMimeType}) async {
+    if (user?.id case String userId) {
+      return _service.getAvatarUploadLink(userId, imageMimeType: imageMimeType);
+    }
+    return null;
+  }
+
+  Future<bool> updateAvatar(
+    (Uint8List, {String? mimeType, String? name}) localImage,
+    String avatarStorage, {
+    final void Function(int bytes, int totalBytes)? onProgress,
+    final void Function(String url)? onDone,
+  }) async {
+    if (user case User user) {
+      // update local image and notify the UI
+      user.localAvatar = localImage.$1;
+      notifyListeners();
+      try {
+        // get pre-signed URL for the upload
+        final uploadLink = await _service.getAvatarUploadLink(user.id, imageMimeType: localImage.mimeType);
+        if (uploadLink != null) {
+          // push the image to the bucket
+          final avatar = ('file', localImage.$1, contentType: localImage.mimeType, filename: localImage.name);
+          final success = await _service.uploadAvatar(uploadLink, avatar, onProgress: onProgress);
+          if (success) {
+            // if it succeeds, store the URL in the database
+            // and notify Firebase about it
+            final resultingUrl = '$avatarStorage/${user.id}?v=${DateTime.now().millisecondsSinceEpoch}';
+            _firebase.currentUser?.updatePhotoURL(resultingUrl);
+            _db.collection('users').doc(user.id).update({'avatar': resultingUrl});
+            onDone?.call(resultingUrl);
+          }
+          return success;
+        }
+      } catch (e, s) {
+        onError?.call(e, stacktrace: s);
+        return false;
+      }
+    }
+    return false;
+  }
+
+  Future<bool> removeAvatar() async {
+    user?.localAvatar = null;
+    _firebase.currentUser?.updateProfile(photoURL: null);
+    notifyListeners();
+    return true;
   }
 }
 
