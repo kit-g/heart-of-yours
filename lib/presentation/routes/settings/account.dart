@@ -371,9 +371,11 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     if (image != null) {
       await auth.updateAvatar(
         image,
+        AppConfig.avatarLink,
         onProgress: (bytes, totalBytes) {
           _avatarController.value = totalBytes > 0 ? (bytes / totalBytes) : null;
         },
+        onDone: CachedNetworkImage.evictFromCache,
       );
     }
     _avatarController.value = null;
@@ -381,7 +383,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
 
   Future<void> _removeExistingAvatar(BuildContext context) async {
     buzz();
-    Auth.of(context).updateAvatar(null);
+    Auth.of(context).removeAvatar();
   }
 
   Future<void> _onAvatar(BuildContext context) async {
