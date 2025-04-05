@@ -31,6 +31,10 @@ extension on BuildContext {
     return goNamed(_accountManagementName);
   }
 
+  void goToAvatar() {
+    return goNamed(_avatarName);
+  }
+
   void goToWorkoutEditor(String workoutId) {
     return goNamed(_historyEditName, queryParameters: {'workoutId': workoutId});
   }

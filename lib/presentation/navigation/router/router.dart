@@ -28,6 +28,7 @@ RouteBase _profileRoute() {
       return ProfilePage(
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
+        onAvatar: context.goToAvatar,
       );
     },
     name: _profileName,
@@ -272,6 +273,13 @@ abstract final class HeartRouter {
       _loginRoute(),
       _workoutDoneRoute(),
       _restoreAccountRoute(),
+      GoRoute(
+        path: _avatarPath,
+        builder: (context, _) =>  AvatarPage(
+          onBack: () => context.goNamed(_profileName),
+        ),
+        name: _avatarName,
+      ),
     ],
     redirect: (context, state) {
       switch (state.fullPath?.split('/')) {
