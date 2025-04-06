@@ -109,9 +109,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 exercises: workout,
                 needsCancelWorkoutButton: false,
                 controller: Scrolls.of(context).editWorkoutScrollController,
-                onDragExercise: (exercise) {
-                  //
-                },
+                onDragExercise: _notifier.append,
                 onSwapExercise: _notifier.swap,
                 onAddSet: _notifier.addSet,
                 onRemoveSet: _notifier.removeSet,
@@ -278,6 +276,11 @@ class _WorkoutNotifier with ChangeNotifier {
 
   void swap(WorkoutExercise one, WorkoutExercise two) {
     workout.swap(one, two);
+    notifyListeners();
+  }
+
+  void append(WorkoutExercise exercise) {
+    workout.append(exercise);
     notifyListeners();
   }
 
