@@ -11,6 +11,10 @@ extension on BuildContext {
     return goNamed(_settingsName);
   }
 
+  void goToProfile() {
+    return goNamed(_profileName);
+  }
+
   void goToPasswordRecoveryPage({String? address}) {
     return goNamed(_recoveryName, queryParameters: {'address': address});
   }

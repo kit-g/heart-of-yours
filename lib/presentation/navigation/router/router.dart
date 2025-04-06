@@ -246,6 +246,17 @@ RouteBase _restoreAccountRoute() {
   );
 }
 
+RouteBase _avatarRoute() {
+  return GoRoute(
+    path: _avatarPath,
+    builder: (context, _) => AvatarPage(
+      onBack: context.goToProfile,
+      onEdit: context.goToAccountManagement,
+    ),
+    name: _avatarName,
+  );
+}
+
 abstract final class HeartRouter {
   static final config = GoRouter(
     debugLogDiagnostics: false,
@@ -280,13 +291,7 @@ abstract final class HeartRouter {
       _loginRoute(),
       _workoutDoneRoute(),
       _restoreAccountRoute(),
-      GoRoute(
-        path: _avatarPath,
-        builder: (context, _) => AvatarPage(
-          onBack: () => context.goNamed(_profileName),
-        ),
-        name: _avatarName,
-      ),
+      _avatarRoute(),
     ],
     redirect: (context, state) {
       switch (state.fullPath?.split('/')) {
