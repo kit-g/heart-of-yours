@@ -49,6 +49,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 onAddSet: workouts.addSet,
                 onRemoveSet: workouts.removeSet,
                 onRemoveExercise: workouts.removeExercise,
+                onSwapExercise: workouts.swap,
                 onAddExercises: (exercises) async {
                   final workouts = Workouts.of(context);
                   // workouts.startExercise changes this iterable
