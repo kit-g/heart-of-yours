@@ -92,6 +92,11 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     notifyListeners();
   }
 
+  void swap(WorkoutExercise toInsert, WorkoutExercise before) {
+    editable?.swap(toInsert, before);
+    notifyListeners();
+  }
+
   Future<void> saveEditable() async {
     if (editable case Template template) {
       _templates.add(template);
