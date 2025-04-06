@@ -93,10 +93,9 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
     final exercises = exercisesById.entries.map(
       (entry) {
         final exercise = Exercise.fromJson(entry.value.first);
-
+        final order = entry.value.first['exerciseOrder'] as int?;
         final sets = entry.value.map(
           (row) {
-            row['completed'] = row['completed'] == 1;
             return ExerciseSet.fromJson(exercise, row);
           },
         ).toList();
@@ -105,7 +104,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
           exercise: exercise,
           start: DateTime.parse(deSanitizeId(entry.key)),
           sets: sets,
-        );
+        )..order = order;
       },
     ).toList()
       ..sort();
