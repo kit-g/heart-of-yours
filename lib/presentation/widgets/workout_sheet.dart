@@ -30,9 +30,8 @@ Future<void> showWorkoutSheet(
             return WorkoutDetail(
               exercises: workouts.activeWorkout!,
               controller: innerController,
-              onDragExercise: (exercise) {
-                workouts.append(exercise);
-              },
+              onDragExercise: workouts.append,
+              onSwapExercise: workouts.swap,
               allowsCompletingSet: true,
               onAddSet: workouts.addSet,
               onRemoveSet: workouts.removeSet,
