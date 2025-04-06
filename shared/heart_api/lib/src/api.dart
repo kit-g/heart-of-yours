@@ -59,6 +59,15 @@ final class Api with Requests implements AccountService, HeaderAuthenticatedServ
   }
 
   @override
+  Future<bool> removeAvatar(String userId) async {
+    final (_, code) = await put(
+      '${_Router.accounts}/$userId',
+      body: {'action': 'removeAvatar'},
+    );
+    return 200 <= code && code < 300;
+  }
+
+  @override
   Future<String?> undoAccountDeletion(String accountId) {
     return put(
       '${_Router.accounts}/$accountId',

@@ -7,13 +7,13 @@ abstract interface class User implements Model {
 
   String? get email;
 
-  String? get avatar;
-
   String get id;
 
   DateTime? get createdAt;
 
   DateTime? get scheduledForDeletionAt;
+
+  String? remoteAvatar;
 
   Uint8List? localAvatar;
 
@@ -28,7 +28,7 @@ abstract interface class User implements Model {
     return _User(
       displayName: displayName,
       email: email,
-      avatar: avatar,
+      remoteAvatar: avatar,
       id: id,
       createdAt: createdAt,
       scheduledForDeletionAt: scheduledForDeletionAt,
@@ -44,7 +44,7 @@ class _User implements User {
   @override
   final String? email;
   @override
-  final String? avatar;
+  String? remoteAvatar;
   @override
   final String id;
   @override
@@ -57,7 +57,7 @@ class _User implements User {
   _User({
     required this.displayName,
     required this.email,
-    required this.avatar,
+    required this.remoteAvatar,
     required this.id,
     required this.createdAt,
     this.scheduledForDeletionAt,
@@ -74,7 +74,7 @@ class _User implements User {
       'id': id,
       if (displayName != null) 'displayName': displayName,
       if (email != null) 'email': email,
-      if (avatar != null) 'avatar': avatar,
+      if (remoteAvatar != null) 'avatar': remoteAvatar,
       if (createdAt != null) 'createdAt': createdAt,
     };
   }
@@ -84,7 +84,7 @@ class _User implements User {
     return _User(
       displayName: displayName ?? this.displayName,
       email: email ?? this.email,
-      avatar: avatar,
+      remoteAvatar: remoteAvatar,
       id: id,
       createdAt: createdAt,
     );
