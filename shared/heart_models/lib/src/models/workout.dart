@@ -47,6 +47,13 @@ abstract interface class HasExercises {
 
   /// removes the [WorkoutExercise] from the workout
   bool remove(WorkoutExercise exercise);
+
+  /// places [toInsert] before [before]
+  /// and moves all other exercises by 1.
+  void swap(WorkoutExercise toInsert, WorkoutExercise before);
+
+  /// adds an exercise to the end of the workout
+  void append(WorkoutExercise exercise);
 }
 
 /// A full workout
@@ -124,13 +131,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   /// the total metric (e.g., weight)
   /// in all sets of this exercise
   double? get total;
-
-  /// places [toInsert] before [before]
-  /// and moves all other exercises by 1.
-  void swap(WorkoutExercise toInsert, WorkoutExercise before);
-
-  /// adds an exercise to the end of the workout
-  void append(WorkoutExercise exercise);
 
   /// marks the workout as complete
   void finish(DateTime end);

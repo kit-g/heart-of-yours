@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'exercise.dart';
 import 'exercise_set.dart';
@@ -157,6 +158,25 @@ class _Template with Iterable<WorkoutExercise> implements Template {
       'name': name,
       'order_in_parent': order,
     };
+  }
+
+  @override
+  void swap(WorkoutExercise toInsert, WorkoutExercise before) {
+    final toInsertIndex = _exercises.indexOf(toInsert);
+    final beforeIndex = _exercises.indexOf(before);
+    final descending = beforeIndex > toInsertIndex;
+    final newIndex = descending ? max(beforeIndex - 1, 0) : beforeIndex;
+
+    _exercises
+      ..remove(toInsert)
+      ..insert(newIndex, toInsert);
+  }
+
+  @override
+  void append(WorkoutExercise exercise) {
+    _exercises
+      ..remove(exercise)
+      ..add(exercise);
   }
 }
 

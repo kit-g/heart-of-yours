@@ -43,12 +43,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 controller: Scrolls.of(context).workoutScrollController,
                 exercises: active,
                 allowsCompletingSet: true,
-                onDragExercise: (exercise) {
-                  workouts.append(exercise);
-                },
+                onDragExercise: workouts.append,
                 onAddSet: workouts.addSet,
                 onRemoveSet: workouts.removeSet,
                 onRemoveExercise: workouts.removeExercise,
+                onSwapExercise: workouts.swap,
                 onAddExercises: (exercises) async {
                   final workouts = Workouts.of(context);
                   // workouts.startExercise changes this iterable
