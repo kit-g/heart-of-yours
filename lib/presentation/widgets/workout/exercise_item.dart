@@ -8,6 +8,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final void Function(WorkoutExercise) onRemoveExercise;
+  final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final String firstColumnCopy;
   final String secondColumnCopy;
   final VoidCallback onDragStarted;
@@ -23,6 +24,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.onRemoveSet,
     this.onSetDone,
     required this.onRemoveExercise,
+    required this.onSwapExercise,
     required this.copy,
     required this.firstColumnCopy,
     required this.secondColumnCopy,
@@ -44,7 +46,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       },
       onAcceptWithDetails: (details) {
         currentlyHoveredItem.value = null;
-        Workouts.of(context).swap(details.data, exercise);
+        onSwapExercise(details.data, exercise);
       },
       onMove: (_) {
         currentlyHoveredItem.value = exercise;

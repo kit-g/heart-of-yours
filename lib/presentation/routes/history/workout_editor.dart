@@ -112,6 +112,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onDragExercise: (exercise) {
                   //
                 },
+                onSwapExercise: _notifier.swap,
                 onAddSet: _notifier.addSet,
                 onRemoveSet: _notifier.removeSet,
                 onRemoveExercise: _notifier.removeExercise,
@@ -272,6 +273,11 @@ class _WorkoutNotifier with ChangeNotifier {
 
   void markSet(WorkoutExercise _, ExerciseSet set) {
     set.isCompleted = !set.isCompleted;
+    notifyListeners();
+  }
+
+  void swap(WorkoutExercise one, WorkoutExercise two) {
+    workout.swap(one, two);
     notifyListeners();
   }
 
