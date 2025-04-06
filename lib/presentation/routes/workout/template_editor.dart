@@ -92,9 +92,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
         body: SafeArea(
           child: WorkoutDetail(
             exercises: templates.editable ?? [],
-            onDragExercise: (_) {
-              // todo
-            },
+            onDragExercise: templates.append,
             onRemoveSet: templates.removeSet,
             onAddSet: templates.addSet,
             onRemoveExercise: templates.removeExercise,
