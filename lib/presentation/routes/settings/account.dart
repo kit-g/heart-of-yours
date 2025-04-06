@@ -83,7 +83,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                         opacity: progress == null ? 1 : .3,
                         child: EditableAvatar(
                           local: auth.user?.localAvatar,
-                          remote: auth.user?.avatar,
+                          remote: auth.user?.remoteAvatar,
                           radius: 60,
                           progress: progress,
                           onTap: switch (loading) {

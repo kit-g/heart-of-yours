@@ -18,7 +18,7 @@ void main() {
 
           expect(user.displayName, 'John Doe');
           expect(user.email, 'johndoe@example.com');
-          expect(user.avatar, 'https://example.com/avatar.jpg');
+          expect(user.remoteAvatar, 'https://example.com/avatar.jpg');
           expect(user.id, 'user123');
           expect(user.createdAt, DateTime.parse('2025-01-01T12:00:00Z'));
         },
@@ -64,7 +64,7 @@ void main() {
 
           expect(updatedUser.displayName, 'Jane Doe');
           expect(updatedUser.email, 'janedoe@example.com');
-          expect(updatedUser.avatar, 'https://example.com/avatar.jpg');
+          expect(updatedUser.remoteAvatar, 'https://example.com/avatar.jpg');
           expect(updatedUser.id, 'user123');
           expect(updatedUser.createdAt, DateTime.parse('2025-01-01T12:00:00Z'));
         },
@@ -85,7 +85,7 @@ void main() {
 
           expect(updatedUser.displayName, 'John Doe');
           expect(updatedUser.email, 'johndoe@example.com');
-          expect(updatedUser.avatar, 'https://example.com/avatar.jpg');
+          expect(updatedUser.remoteAvatar, 'https://example.com/avatar.jpg');
           expect(updatedUser.id, 'user123');
           expect(updatedUser.createdAt, DateTime.parse('2025-01-01T12:00:00Z'));
         },
@@ -100,7 +100,7 @@ void main() {
 
           expect(user.displayName, null);
           expect(user.email, null);
-          expect(user.avatar, null);
+          expect(user.remoteAvatar, null);
           expect(user.id, 'user123');
           expect(user.createdAt, null);
         },

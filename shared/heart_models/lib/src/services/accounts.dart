@@ -10,4 +10,6 @@ abstract interface class AccountService {
     (String field, List<int> value, {String? filename, String? contentType}) avatar, {
     final void Function(int bytes, int totalBytes)? onProgress,
   });
+
+  Future<bool> removeAvatar(String userId);
 }

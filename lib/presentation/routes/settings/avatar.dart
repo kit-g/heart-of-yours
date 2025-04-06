@@ -13,7 +13,7 @@ class AvatarPage extends StatelessWidget {
     final auth = Auth.watch(context);
     final user = auth.user;
     if (user == null) return const Scaffold();
-    final User(:avatar, :localAvatar) = user;
+    final User(remoteAvatar:avatar, :localAvatar) = user;
     return Theme(
       data: ThemeData(brightness: Brightness.dark),
       child: Scaffold(

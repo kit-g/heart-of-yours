@@ -333,8 +333,16 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<bool> removeAvatar() async {
-    user?.localAvatar = null;
+    user
+      ?..localAvatar = null
+      ..remoteAvatar = null;
     _firebase.currentUser?.updateProfile(photoURL: null);
+
+    if (user?.id case String userId) {
+      _service.removeAvatar(userId);
+      _db.collection('users').doc(userId).update({'avatar': FieldValue.delete()});
+    }
+
     notifyListeners();
     return true;
   }
