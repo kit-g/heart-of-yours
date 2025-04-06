@@ -338,10 +338,12 @@ final class LocalDatabase
     };
     batch.insert(_workouts, row, conflictAlgorithm: ConflictAlgorithm.replace);
 
-    for (var exercise in workout) {
+    for (var each in workout.indexed) {
+      var (order, exercise) = each;
       final exerciseRow = {
         'workout_id': workoutId,
         'exercise_id': exercise.exercise.name,
+        'exercise_order': order,
         'id': exercise.id,
       };
 
