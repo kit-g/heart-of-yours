@@ -17,8 +17,6 @@ abstract interface class Template
 
   Workout toWorkout();
 
-  void swap(WorkoutExercise toInsert, WorkoutExercise before);
-
   factory Template.empty({required String id, required int order}) {
     return _Template(
       exercises: [],
@@ -172,6 +170,13 @@ class _Template with Iterable<WorkoutExercise> implements Template {
     _exercises
       ..remove(toInsert)
       ..insert(newIndex, toInsert);
+  }
+
+  @override
+  void append(WorkoutExercise exercise) {
+    _exercises
+      ..remove(exercise)
+      ..add(exercise);
   }
 }
 
