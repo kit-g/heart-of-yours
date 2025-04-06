@@ -28,7 +28,14 @@ RouteBase _profileRoute() {
       return ProfilePage(
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
-        onAvatar: context.goToAvatar,
+        onAvatar: () {
+          final user = Auth.of(context).user;
+          if (user?.localAvatar != null || user?.remoteAvatar != null) {
+            return context.goToAvatar();
+          }
+
+          return context.goToAccountManagement();
+        },
       );
     },
     name: _profileName,
@@ -275,7 +282,7 @@ abstract final class HeartRouter {
       _restoreAccountRoute(),
       GoRoute(
         path: _avatarPath,
-        builder: (context, _) =>  AvatarPage(
+        builder: (context, _) => AvatarPage(
           onBack: () => context.goNamed(_profileName),
         ),
         name: _avatarName,
