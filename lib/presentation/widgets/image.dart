@@ -31,6 +31,7 @@ class AppImage extends StatelessWidget {
           },
         ),
       (String url, _) when url.startsWith('https') => CachedNetworkImage(
+          fadeInDuration: const Duration(milliseconds: 200),
           httpHeaders: _headers,
           imageUrl: url,
           fit: fit,

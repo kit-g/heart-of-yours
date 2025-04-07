@@ -71,7 +71,7 @@ final class LocalDatabase
           batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.replace);
         }
 
-        txn.insert(_syncs, {'table_name': _exercises});
+        txn.insert(_syncs, {'table_name': _exercises}, conflictAlgorithm: ConflictAlgorithm.replace);
 
         return batch.commit(noResult: true);
       },
