@@ -49,16 +49,19 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return Provider.of<Exercises>(context, listen: true);
   }
 
-  Future<void> init() async {
+  Future<void> init({DateTime? lastSync}) async {
     try {
-      final (_, local) = await _service.getExercises();
+      final (localSync, local) = await _service.getExercises();
 
       if (local.isNotEmpty) {
         _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
         isInitialized = true;
         notifyListeners();
-        return;
       }
+
+      if (localSync == null) return;
+      if (lastSync == null) return;
+      if (localSync.isAfter(lastSync)) return;
 
       final options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
       final all = await _db //

@@ -30,7 +30,9 @@ class AppConfig {
 
   static String get appLink => Uri.https(_appLink).toString();
 
-  static String get mediaLink => Uri.https(_mediaLink).toString();
+  static String get mediaLink => _mediaLink;
 
   static String get avatarLink => Uri.https(_mediaLink, 'avatars').toString();
+
+  static String get configLink => Uri.https(_mediaLink, 'config').toString();
 }

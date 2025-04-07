@@ -25,6 +25,7 @@ class HeartApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final db = LocalDatabase();
     final api = Api(gateway: AppConfig.api);
+    final config = ConfigApi(gateway: AppConfig.mediaLink);
 
     return MultiProvider(
       providers: [
@@ -54,6 +55,12 @@ class HeartApp extends StatelessWidget {
                 ..shout(stacktrace);
               reportToSentry(error, stacktrace: stacktrace);
             },
+          ),
+        ),
+        Provider<RemoteConfig>(
+          create: (_) => RemoteConfig(
+            service: config,
+            onError: reportToSentry,
           ),
         ),
         ChangeNotifierProvider<Templates>(
@@ -208,14 +215,19 @@ Future<void> _initApp(BuildContext context, [String? sessionToken]) async {
   final theme = AppTheme.of(context);
   final timers = Timers.of(context);
   final previous = PreviousExercises.of(context);
-  await prefs.init();
+  final config = RemoteConfig.of(context);
+
+  await Future.wait([
+    config.init(),
+    prefs.init(),
+  ]);
 
   theme
     ..color = AppTheme.colorFromHex(prefs.getBaseColor())
     ..toMode(prefs.getThemeMode());
 
   if (!isInitialized) {
-    init().then<void>(
+    init(lastSync: config.exercisesLastSynced).then<void>(
       (_) {
         // since workouts initialization looks up exercises
         // in `Exercises`, we must chain these calls this way

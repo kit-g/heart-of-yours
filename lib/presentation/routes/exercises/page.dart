@@ -12,7 +12,7 @@ class ExercisesPage extends StatefulWidget {
   State<ExercisesPage> createState() => _ExercisesPageState();
 }
 
-class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<ExercisesPage> {
+class _ExercisesPageState extends State<ExercisesPage> {
   final _focusNode = FocusNode();
   final _searchController = TextEditingController();
 
@@ -45,17 +45,6 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
           searchController: _searchController,
           focusNode: _focusNode,
           backgroundColor: backgroundColor,
-          // onExerciseSelected: (e) {
-          //   showAdaptiveDialog(
-          //     context: context,
-          //     barrierDismissible: true,
-          //     builder: (context) {
-          //       return Dialog(
-          //         child: ExerciseDetailPage(exercise: e),
-          //       );
-          //     },
-          //   );
-          // },
           onExerciseSelected: widget.onExercise,
         ),
       ),
@@ -64,13 +53,5 @@ class _ExercisesPageState extends State<ExercisesPage> with AfterLayoutMixin<Exe
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
-  }
-
-  @override
-  void afterFirstLayout(BuildContext context) {
-    var Exercises(:isInitialized, :init) = Exercises.of(context);
-    if (!isInitialized) {
-      init();
-    }
   }
 }
