@@ -1,5 +1,6 @@
 library;
 
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -260,10 +261,10 @@ RouteBase _avatarRoute() {
 abstract final class HeartRouter {
   static final config = GoRouter(
     debugLogDiagnostics: false,
-    initialLocation: _donePath,
-    // initialLocation: _profilePath,
+    initialLocation: _profilePath,
     observers: [
       SentryNavigatorObserver(),
+      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
     ],
     routes: [
       StatefulShellRoute.indexedStack(
