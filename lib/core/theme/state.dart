@@ -1,3 +1,5 @@
+import 'dart:math' show pow, sqrt;
+
 import 'package:flutter/material.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -61,4 +63,39 @@ class AppTheme with ChangeNotifier {
       return null;
     }
   }
+
+  String heart() {
+    return switch (color) {
+      Color seed => _coloredEmoji(seed),
+      null => '💜',
+    };
+  }
 }
+
+String _coloredEmoji(Color seedColor) {
+  return _heartColors.entries.reduce(
+    (a, b) {
+      final aDistance = _distance(seedColor, a.value);
+      final bDistance = _distance(seedColor, b.value);
+      return aDistance < bDistance ? a : b;
+    },
+  ).key;
+}
+
+double _distance(Color a, Color b) {
+  return sqrt(
+    pow(a.r - b.r, 2) + pow(a.g - b.g, 2) + pow(a.b - b.b, 2),
+  );
+}
+
+const _heartColors = {
+  '❤️': Color(0xFFFF0000), // Red
+  '🧡': Color(0xFFFFA500), // Orange
+  '💛': Color(0xFFFFFF00), // Yellow
+  '💚': Color(0xFF00FF00), // Green
+  '💙': Color(0xFF0000FF), // Blue
+  '💜': Color(0xFF800080), // Purple
+  '🖤': Color(0xFF000000), // Black
+  '🤍': Color(0xFFFFFFFF), // White
+  '🤎': Color(0xFF8B4513), // Brown
+};
