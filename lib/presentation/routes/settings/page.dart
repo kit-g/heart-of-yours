@@ -214,15 +214,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         child: Center(
                           child: Text(toFeedback),
                         ),
-                        onPressed: () {
-                          Navigator.of(context, rootNavigator: true).pop();
-
-                          BetterFeedback.of(context).show(
-                            (feedback) {
-                              //
-                            },
-                          );
-                        },
+                        onPressed: () => _openFeedback(context),
                       ),
                     ],
                   );
@@ -232,6 +224,28 @@ class SettingsPage extends StatelessWidget with HasHaptic {
           ),
         ),
       ),
+    );
+  }
+
+  void _openFeedback(BuildContext context) {
+    Navigator.of(context, rootNavigator: true).pop();
+    final L(:feedbackReceived) = L.of(context);
+    final heart = AppTheme.of(context).heart();
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    BetterFeedback.of(context).show(
+      (feedback) {
+        Api.instance.submitFeedback(feedback: feedback.text, screenshot: feedback.screenshot).then(
+          (success) {
+            if (success) {
+              messenger.showSnackBar(
+                SnackBar(content: Text('$feedbackReceived $heart')),
+              );
+            }
+          },
+        );
+      },
     );
   }
 }

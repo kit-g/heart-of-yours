@@ -1,7 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:heart_models/heart_models.dart';
 import 'package:network_utils/network_utils.dart';
 
-final class Api with Requests implements AccountService, HeaderAuthenticatedService {
+final class Api with Requests implements AccountService, FeedbackService, HeaderAuthenticatedService {
   @override
   late String gateway;
 
@@ -82,8 +84,28 @@ final class Api with Requests implements AccountService, HeaderAuthenticatedServ
       },
     );
   }
+
+  @override
+  Future<bool> submitFeedback({String? feedback, Uint8List? screenshot}) async {
+    final (json, code) = await post(_Router.feedback, body: {'message': feedback});
+
+    final link = switch (json) {
+      {'url': String url, 'fields': Map fields} => (
+          fields: Map.castFrom<dynamic, dynamic, String, String>(fields),
+          url: url,
+        ),
+      _ => null,
+    };
+
+    if (link != null && screenshot != null) {
+      uploadToBucket(link, ('file', screenshot, filename: null, contentType: null));
+      return true;
+    }
+    return false;
+  }
 }
 
 abstract final class _Router {
   static const accounts = 'api/accounts';
+  static const feedback = 'api/feedback';
 }
