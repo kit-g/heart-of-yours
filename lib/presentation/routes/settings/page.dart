@@ -21,13 +21,25 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :settings,
       :units,
       :weightUnit,
+      :leaveFeedback,
+      :cancel,
+      :toFeedback,
+      :leaveFeedbackBody,
     ) = L.of(context);
 
     final ThemeData(
       :textTheme,
-      colorScheme: ColorScheme(:brightness, secondaryContainer: logoColor),
+      colorScheme: ColorScheme(
+        :brightness,
+        secondaryContainer: logoColor,
+        :outlineVariant,
+        :primaryContainer,
+        :onPrimaryContainer,
+        :primary,
+      ),
     ) = Theme.of(context);
 
+    final heart = AppTheme.of(context).heart();
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarIconBrightness: switch (brightness) {
@@ -152,10 +164,14 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 onTap: () {
                   final info = AppInfo.of(context);
 
-                  showAboutDialog(
+                  showDialog(
                     context: context,
-                    applicationVersion: info.fullVersion,
-                    applicationName: AppConfig.appName,
+                    builder: (context) {
+                      return AboutDialog.adaptive(
+                        applicationVersion: info.fullVersion,
+                        applicationName: AppConfig.appName,
+                      );
+                    },
                   );
                 },
               ),
@@ -164,6 +180,53 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 leading: const Icon(Icons.manage_accounts_rounded),
                 title: Text(accountControl),
                 onTap: onAccountManagement,
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.feedback_rounded),
+                title: Text('$leaveFeedback $heart'),
+                onTap: () {
+                  showBrandedDialog(
+                    context,
+                    title: Text(leaveFeedback),
+                    titleTextStyle: textTheme.titleMedium,
+                    icon: Icon(
+                      Icons.feedback_rounded,
+                      color: onPrimaryContainer,
+                    ),
+                    content: Text(
+                      leaveFeedbackBody(AppTheme.of(context).heart()),
+                      textAlign: TextAlign.center,
+                    ),
+                    actions: [
+                      PrimaryButton.wide(
+                        backgroundColor: outlineVariant.withValues(alpha: .5),
+                        child: Center(
+                          child: Text(cancel),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      PrimaryButton.wide(
+                        backgroundColor: primaryContainer,
+                        child: Center(
+                          child: Text(toFeedback),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context, rootNavigator: true).pop();
+
+                          BetterFeedback.of(context).show(
+                            (feedback) {
+                              //
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),

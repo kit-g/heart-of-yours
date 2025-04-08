@@ -25,7 +25,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     final auth = Auth.watch(context);
     final user = auth.user;
     if (user == null) return const Scaffold();
-    final User(remoteAvatar:avatar, :email, :displayName, :localAvatar) = user;
+    final User(remoteAvatar: avatar, :email, :displayName, :localAvatar) = user;
 
     return Scaffold(
       appBar: AppBar(
