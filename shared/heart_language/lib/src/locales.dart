@@ -1248,11 +1248,19 @@ class L {
 
   String leaveFeedbackBody(String emoji) {
     return Intl.message(
-      'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it\n\n'
+      'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\n\n'
       'We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. '
       'So thanks. Seriously. $emoji',
       name: 'leaveFeedback',
       desc: 'Settings item',
+    );
+  }
+
+  String get feedbackReceived {
+    return Intl.message(
+      'Your feedback was received, thank you!',
+      name: 'feedbackReceived',
+      desc: 'Confirmation snack message',
     );
   }
 
