@@ -1,3 +1,4 @@
+import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:heart/core/env/config.dart';
@@ -129,49 +130,68 @@ class _App extends StatefulWidget {
 class _AppState extends State<_App> with AfterLayoutMixin<_App> {
   @override
   Widget build(BuildContext context) {
-    AppConfig;
-    return MaterialApp.router(
-      theme: switch (widget.theme.color) {
-        Color color => theme(
-            ColorScheme.fromSeed(
-              seedColor: color,
-              brightness: Brightness.light,
-            ),
+    final light = switch (widget.theme.color) {
+      Color color => theme(
+          ColorScheme.fromSeed(
+            seedColor: color,
+            brightness: Brightness.light,
           ),
-        null => theme(
-            ColorScheme.fromSeed(
-              seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
-              brightness: Brightness.light,
-            ),
+        ),
+      null => theme(
+          ColorScheme.fromSeed(
+            seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
+            brightness: Brightness.light,
           ),
-      },
-      darkTheme: switch (widget.theme.color) {
-        Color color => theme(
-            ColorScheme.fromSeed(
-              seedColor: color,
-              brightness: Brightness.dark,
-            ),
+        ),
+    };
+    final dark = switch (widget.theme.color) {
+      Color color => theme(
+          ColorScheme.fromSeed(
+            seedColor: color,
+            brightness: Brightness.dark,
           ),
-        null => theme(
-            ColorScheme.fromSeed(
-              seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
-              brightness: Brightness.dark,
-            ),
+        ),
+      null => theme(
+          ColorScheme.fromSeed(
+            seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
+            brightness: Brightness.dark,
           ),
-      },
+        ),
+    };
+    return BetterFeedback(
       themeMode: widget.theme.mode,
-      debugShowCheckedModeBanner: false,
-      routerConfig: HeartRouter.config,
-      supportedLocales: const [
-        Locale('en', 'CA'),
-        Locale('fr', 'CA'),
-      ],
-      localizationsDelegates: const [
-        LocsDelegate(),
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      theme: FeedbackThemeData(
+        sheetIsDraggable: false,
+        feedbackSheetColor: light.colorScheme.surface,
+        bottomSheetDescriptionStyle: light.textTheme.titleMedium!,
+        colorScheme: light.colorScheme,
+        bottomSheetTextInputStyle: light.textTheme.bodyMedium!,
+        activeFeedbackModeColor: light.colorScheme.primary,
+      ),
+      darkTheme: FeedbackThemeData(
+        feedbackSheetColor: dark.colorScheme.surface,
+        bottomSheetDescriptionStyle: dark.textTheme.titleMedium!,
+        colorScheme: dark.colorScheme,
+        bottomSheetTextInputStyle: dark.textTheme.bodyMedium!,
+        activeFeedbackModeColor: dark.colorScheme.primary,
+      ),
+      child: MaterialApp.router(
+        theme: light,
+        darkTheme: dark,
+        themeMode: widget.theme.mode,
+        debugShowCheckedModeBanner: false,
+        routerConfig: HeartRouter.config,
+        supportedLocales: const [
+          Locale('en', 'CA'),
+          Locale('fr', 'CA'),
+        ],
+        localizationsDelegates: const [
+          LocsDelegate(),
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+      ),
     );
   }
 
