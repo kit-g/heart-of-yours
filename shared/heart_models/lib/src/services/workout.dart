@@ -1,3 +1,4 @@
+import '../models/exercise.dart';
 import '../models/exercise_set.dart';
 import '../models/workout.dart';
 
@@ -31,4 +32,12 @@ abstract interface class WorkoutService {
   Future<Iterable<Workout>?> getWorkoutHistory(String userId);
 
   Future<void> renameWorkout({required String workoutId, required String name});
+}
+
+abstract interface class RemoteWorkoutService {
+  Future<Iterable<Workout>?> getWorkouts(ExerciseLookup lookForExercise, {int? pageSize, String? since});
+
+  Future<bool> saveWorkout(Workout workout);
+
+  Future<bool> deleteWorkout(String workoutId);
 }

@@ -18,3 +18,7 @@ abstract interface class ExerciseService {
 
   Future<List<(num, DateTime)>> getDurationHistory(String userId, Exercise exercise, {int? limit});
 }
+
+abstract interface class RemoteExerciseService {
+  Future<Iterable<Exercise>> getExercises();
+}
