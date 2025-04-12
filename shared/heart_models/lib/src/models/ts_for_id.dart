@@ -1,11 +1,9 @@
-import 'utils.dart';
-
 abstract mixin class UsesTimestampForId implements Comparable<UsesTimestampForId> {
   DateTime get start;
 
   /// Firebase uses "." as the separator for nested structures
   /// so we need to escape it.
-  String get id => sanitizeId(start);
+  String get id => start.toIso8601String();
 
   @override
   bool operator ==(Object other) {
@@ -22,4 +20,3 @@ abstract mixin class UsesTimestampForId implements Comparable<UsesTimestampForId
     return start.compareTo(other.start);
   }
 }
-

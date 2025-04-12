@@ -3,7 +3,14 @@ import 'dart:typed_data';
 import 'package:heart_models/heart_models.dart';
 import 'package:network_utils/network_utils.dart';
 
-final class Api with Requests implements AccountService, FeedbackService, HeaderAuthenticatedService {
+final class Api
+    with Requests
+    implements
+        AccountService,
+        FeedbackService,
+        HeaderAuthenticatedService,
+        RemoteExerciseService,
+        RemoteWorkoutService {
   @override
   late String gateway;
 
@@ -21,6 +28,8 @@ final class Api with Requests implements AccountService, FeedbackService, Header
 
   @override
   void authenticate(Map<String, String> headers) {
+    // print((headers['Authorization'] as String).substring(0, 400));
+    // print((headers['Authorization'] as String).substring(400));
     instance.defaultHeaders = headers;
   }
 
@@ -103,9 +112,50 @@ final class Api with Requests implements AccountService, FeedbackService, Header
     }
     return false;
   }
+
+  @override
+  Future<bool> deleteWorkout(String workoutId) async {
+    final (_, code) = await delete('${_Router.workouts}/$workoutId');
+    return code == 204;
+  }
+
+  @override
+  Future<bool> saveWorkout(Workout workout) async {
+    final (_, code) = await post(
+      _Router.workouts,
+      body: workout.toMap(),
+    );
+    return code == 201;
+  }
+
+  @override
+  Future<Iterable<Workout>?> getWorkouts(ExerciseLookup lookForExercise, {int? pageSize, String? since}) async {
+    final (json, code) = await get(
+      _Router.workouts,
+      query: {
+        if (pageSize != null) 'pageSize': pageSize.toString(),
+        if (since != null) 'since': since,
+      },
+    );
+    return switch (json) {
+      {'workouts': List l} => l.map((e) => Workout.fromJson(e, lookForExercise)),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<Iterable<Exercise>> getExercises() async {
+    final (json, code) = await get(_Router.exercises);
+    return switch (json) {
+      {'exercises': List l} => l.map((e) => Exercise.fromJson(e)),
+      _ => [],
+    };
+  }
 }
 
 abstract final class _Router {
   static const accounts = 'api/accounts';
+  static const exercises = 'api/exercises';
   static const feedback = 'api/feedback';
+  static const workouts = 'api/workouts';
 }

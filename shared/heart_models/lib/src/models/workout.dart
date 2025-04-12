@@ -274,10 +274,10 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Workout(
-      start: json['start'],
+      start: DateTime.parse(json['start']),
       name: json['name'],
       id: json['id'],
-      end: json['end'],
+      end: DateTime.tryParse(json['end']),
       exercises: _exercisesFromCollection(json['exercises'], lookForExercise),
     );
   }
@@ -310,8 +310,8 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     return {
       'id': id,
       'name': name,
-      'start': start,
-      'end': end,
+      'start': start.toIso8601String(),
+      'end': end?.toIso8601String(),
       'exercises': {
         for (var each in l)
           if (each.isNotEmpty)
@@ -465,16 +465,16 @@ extension on Iterable<Completes> {
 
 List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLookup lookForExercise) {
   return switch (collection) {
-    Map m => m.values
+    List l => l
         .map(
           (each) {
             final exercise = lookForExercise(each['exercise']);
             if (exercise == null) return null;
             return _WorkoutExercise._(
               exercise: exercise,
-              start: DateTime.parse(deSanitizeId(each['id'])),
+              start: DateTime.parse(each['id']),
               sets: switch (each['sets']) {
-                Map sets => sets.values.map((set) => ExerciseSet.fromJson(exercise, set)).toList(),
+                List sets => sets.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
                 _ => null,
               },
             )..order = each['order'];
