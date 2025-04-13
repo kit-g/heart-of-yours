@@ -1,4 +1,9 @@
-abstract interface class AccountService {
+import '../models/auth.dart';
+import '../models/misc.dart';
+
+abstract interface class AccountService implements HeaderAuthenticatedService {
+  Future<User> registerAccount(User user);
+
   Future<String?> undoAccountDeletion(String accountId);
 
   Future<String?> deleteAccount({required String accountId});

@@ -45,4 +45,6 @@ extension Units on num {
 
 abstract interface class HeaderAuthenticatedService {
   void authenticate(Map<String, String> headers);
+
+  bool get isAuthenticated;
 }

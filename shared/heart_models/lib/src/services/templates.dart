@@ -11,3 +11,11 @@ abstract interface class TemplateService {
 
   Future<void> storeTemplates(Iterable<Template> templates, {String? userId});
 }
+
+abstract interface class RemoteTemplateService {
+  Future<Iterable<Template>?> getTemplates(ExerciseLookup lookForExercise);
+
+  Future<bool> saveTemplate(Template template);
+
+  Future<bool> deleteTemplate(String templateId);
+}

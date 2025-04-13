@@ -46,7 +46,10 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
     return ExerciseSet(
       exercise,
       reps: json['reps'],
-      weight: json['weight'],
+      weight: switch (json['weight']) {
+        num weight => weight.toDouble(),
+        _ => null,
+      },
       duration: (json['duration'] as num?)?.toInt(),
       distance: (json['distance'] as num?)?.toDouble(),
       start: DateTime.parse(deSanitizeId(json['id'] ?? json['setId'])),

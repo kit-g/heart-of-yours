@@ -36,6 +36,25 @@ abstract interface class User implements Model {
   }
 
   User copyWith({String? displayName, String? email});
+
+  factory User.fromJson(Map json) {
+    return User(
+      displayName: json['displayName'] as String?,
+      email: json['email'] as String?,
+      avatar: json['avatar'] as String?,
+      id: json['id'] as String,
+      createdAt: switch (json['createdAt']) {
+        int epoch => DateTime.fromMillisecondsSinceEpoch(epoch, isUtc: true),
+        String s => DateTime.tryParse(s),
+        _ => null,
+      },
+      scheduledForDeletionAt: switch (json['scheduledForDeletionAt']) {
+        int epoch => DateTime.fromMillisecondsSinceEpoch(epoch, isUtc: true),
+        String s => DateTime.tryParse(s),
+        _ => null,
+      },
+    );
+  }
 }
 
 class _User implements User {
@@ -75,7 +94,7 @@ class _User implements User {
       if (displayName != null) 'displayName': displayName,
       if (email != null) 'email': email,
       if (remoteAvatar != null) 'avatar': remoteAvatar,
-      if (createdAt != null) 'createdAt': createdAt,
+      if (createdAt != null) 'createdAt': createdAt?.toIso8601String(),
     };
   }
 

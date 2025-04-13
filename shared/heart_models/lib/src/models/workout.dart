@@ -153,8 +153,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   WorkoutSummary toSummary();
 
-  String weekOf();
-
   /// Makes a copy of itself with a new set of IDs
   Workout copy({bool sameId});
 
@@ -221,9 +219,9 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
     return {
       'id': id,
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
-      'sets': {
-        for (var each in where((each) => each.isCompleted)) each.id: each.toMap(),
-      }
+      'sets': [
+        for (var each in where((each) => each.isCompleted)) each.toMap(),
+      ]
     };
   }
 
@@ -274,10 +272,10 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Workout(
-      start: json['start'],
+      start: DateTime.parse(json['start']),
       name: json['name'],
       id: json['id'],
-      end: json['end'],
+      end: DateTime.tryParse(json['end']),
       exercises: _exercisesFromCollection(json['exercises'], lookForExercise),
     );
   }
@@ -310,16 +308,16 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     return {
       'id': id,
       'name': name,
-      'start': start,
-      'end': end,
-      'exercises': {
+      'start': start.toIso8601String(),
+      'end': end?.toIso8601String(),
+      'exercises': [
         for (var each in l)
           if (each.isNotEmpty)
-            each.id: {
+            {
               ...each.toMap(),
               'order': l.indexOf(each),
             },
-      },
+      ],
     };
   }
 
@@ -411,11 +409,6 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   }
 
   @override
-  String weekOf() {
-    return sanitizeId(getMonday(start));
-  }
-
-  @override
   Workout copy({bool sameId = false}) {
     final workout = _Workout(
       name: name,
@@ -464,25 +457,22 @@ extension on Iterable<Completes> {
 }
 
 List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLookup lookForExercise) {
+  WorkoutExercise? parse(dynamic each) {
+    final exercise = lookForExercise(each['exercise']);
+    if (exercise == null) return null;
+    return _WorkoutExercise._(
+      exercise: exercise,
+      start: DateTime.parse(each['id']),
+      sets: switch (each['sets']) {
+        List sets => sets.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
+        _ => null,
+      },
+    )..order = each['order'];
+  }
+
   return switch (collection) {
-    Map m => m.values
-        .map(
-          (each) {
-            final exercise = lookForExercise(each['exercise']);
-            if (exercise == null) return null;
-            return _WorkoutExercise._(
-              exercise: exercise,
-              start: DateTime.parse(deSanitizeId(each['id'])),
-              sets: switch (each['sets']) {
-                Map sets => sets.values.map((set) => ExerciseSet.fromJson(exercise, set)).toList(),
-                _ => null,
-              },
-            )..order = each['order'];
-          },
-        )
-        .nonNulls
-        .toList()
-      ..sort(),
+    List l => l.map(parse).nonNulls.toList()..sort(),
+    Map m => m.values.map(parse).nonNulls.toList()..sort(),
     _ => <WorkoutExercise>[],
   };
 }
