@@ -18,7 +18,7 @@ void main() {
           final timestamp = DateTime.parse('2025-01-01T12:00:00.000Z');
           final instance = TestTimestampId(timestamp);
 
-          expect(instance.id, '2025-01-01T12:00:00.000Z'.replaceAll('.', '_'));
+          expect(instance.id, '2025-01-01T12:00:00.000Z');
         },
       );
 

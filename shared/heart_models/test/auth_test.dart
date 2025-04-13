@@ -43,7 +43,7 @@ void main() {
               'email': 'johndoe@example.com',
               'avatar': 'https://example.com/avatar.jpg',
               'id': 'user123',
-              'createdAt': DateTime.parse('2025-01-01T12:00:00Z'),
+              'createdAt': '2025-01-01T12:00:00.000Z',
             },
           );
         },

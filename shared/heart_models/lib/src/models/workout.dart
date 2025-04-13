@@ -153,8 +153,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   WorkoutSummary toSummary();
 
-  String weekOf();
-
   /// Makes a copy of itself with a new set of IDs
   Workout copy({bool sameId});
 
@@ -408,11 +406,6 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       id: id,
       name: name,
     );
-  }
-
-  @override
-  String weekOf() {
-    return sanitizeId(getMonday(start));
   }
 
   @override
