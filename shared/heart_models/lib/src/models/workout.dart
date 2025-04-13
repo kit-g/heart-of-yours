@@ -221,9 +221,9 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
     return {
       'id': id,
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
-      'sets': {
-        for (var each in where((each) => each.isCompleted)) each.id: each.toMap(),
-      }
+      'sets': [
+        for (var each in where((each) => each.isCompleted)) each.toMap(),
+      ]
     };
   }
 
@@ -312,14 +312,14 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       'name': name,
       'start': start.toIso8601String(),
       'end': end?.toIso8601String(),
-      'exercises': {
+      'exercises': [
         for (var each in l)
           if (each.isNotEmpty)
-            each.id: {
+            {
               ...each.toMap(),
               'order': l.indexOf(each),
             },
-      },
+      ],
     };
   }
 

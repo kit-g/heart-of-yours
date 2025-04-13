@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -12,8 +11,6 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 class Auth with ChangeNotifier implements SignOutStateSentry {
   final _googleSignIn = GoogleSignIn(scopes: ['profile', 'email']);
   final _firebase = fb.FirebaseAuth.instance;
-  final _db = FirebaseFirestore.instance;
-
   final void Function(User?)? onUserChange;
   final AccountService _service;
   final Future<void> Function(String?)? onEnter;
@@ -164,16 +161,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> updateName(String? name) async {
-    if (user?.id case String userId) {
-      _firebase.currentUser?.updateDisplayName(name);
-      final doc = _db.collection('users').doc(userId);
-
-      final snapshot = await doc.get();
-
-      if (snapshot.exists) {
-        await doc.update({'displayName': name});
-      }
-    }
+    _firebase.currentUser?.updateDisplayName(name);
   }
 
   Future<void> sendPasswordRecoveryEmail(String email) {
@@ -213,23 +201,6 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
-  static User? fromJson(Map? json) {
-    return switch (json) {
-      {'id': String id} => User(
-          id: id,
-          email: json['email'],
-          displayName: json['displayName'],
-          avatar: json['avatar'],
-          createdAt: (json['createdAt'] as Timestamp).toDate(),
-          scheduledForDeletionAt: switch (json['scheduledForDeletionAt']) {
-            String s when s.isNotEmpty => DateTime.tryParse(s),
-            _ => null,
-          },
-        ),
-      _ => null,
-    };
-  }
-
   @override
   FutureOr<void> onSignOut() {
     return _logout();
@@ -237,26 +208,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<User?> _registerUser(User? user) async {
     if (user == null) return user;
-    try {
-      final doc = _db.collection('users').doc(user.id);
-      final snapshot = await doc.get();
-
-      if (snapshot.exists) {
-        await doc.update({'lastLogin': FieldValue.serverTimestamp()});
-        return fromJson(snapshot.data());
-      } else {
-        final userDoc = {
-          ...user.toMap(),
-          'lastLogin': FieldValue.serverTimestamp(),
-        };
-
-        await doc.set(userDoc);
-        return user;
-      }
-    } catch (e, s) {
-      onError?.call(e, stacktrace: s);
-      return user;
-    }
+    if (!_service.isAuthenticated) return user;
+    return _service.registerAccount(user);
   }
 
   Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
@@ -319,7 +272,6 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
             await Future.delayed(const Duration(seconds: 5));
             final resultingUrl = '$avatarStorage/${user.id}?v=${DateTime.now().millisecondsSinceEpoch}';
             _firebase.currentUser?.updatePhotoURL(resultingUrl);
-            _db.collection('users').doc(user.id).update({'avatar': resultingUrl});
             onDone?.call(resultingUrl);
           }
           return success;
@@ -340,7 +292,6 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
     if (user?.id case String userId) {
       _service.removeAvatar(userId);
-      _db.collection('users').doc(userId).update({'avatar': FieldValue.delete()});
     }
 
     notifyListeners();
