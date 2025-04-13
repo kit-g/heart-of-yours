@@ -164,14 +164,10 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 onTap: () {
                   final info = AppInfo.of(context);
 
-                  showDialog(
+                  showAboutDialog(
                     context: context,
-                    builder: (context) {
-                      return AboutDialog.adaptive(
-                        applicationVersion: info.fullVersion,
-                        applicationName: AppConfig.appName,
-                      );
-                    },
+                    applicationVersion: info.fullVersion,
+                    applicationName: AppConfig.appName,
                   );
                 },
               ),
