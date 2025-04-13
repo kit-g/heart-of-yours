@@ -65,7 +65,7 @@ void main() {
             map,
             equals(
               {
-                'id': sanitizeId(startTime),
+                'id': startTime.toIso8601String(),
                 'completed': false,
                 'reps': 8,
                 'weight': 100.0,
