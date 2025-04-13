@@ -56,6 +56,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
         _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
         isInitialized = true;
         notifyListeners();
+        return;
       }
 
       if (localSync == null) return;
