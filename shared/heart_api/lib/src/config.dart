@@ -27,4 +27,7 @@ final class ConfigApi with Requests implements RemoteConfigService, HeaderAuthen
     final (json, _) = await get('/config');
     return json;
   }
+
+  @override
+  bool get isAuthenticated => false;
 }

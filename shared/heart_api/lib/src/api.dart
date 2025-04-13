@@ -28,9 +28,24 @@ final class Api
 
   @override
   void authenticate(Map<String, String> headers) {
-    // print((headers['Authorization'] as String).substring(0, 400));
-    // print((headers['Authorization'] as String).substring(400));
     instance.defaultHeaders = headers;
+  }
+
+  @override
+  bool get isAuthenticated {
+    return switch (defaultHeaders) {
+      {'Authorization': String token} => switch (token.split(' ')) {
+          ['Bearer', String token] when token.isNotEmpty => true,
+          _ => false,
+        },
+      _ => false,
+    };
+  }
+
+  @override
+  Future<User> registerAccount(User user) async {
+    final (json, _) = await post(_Router.accounts, body: user.toMap());
+    return User.fromJson(json);
   }
 
   @override
