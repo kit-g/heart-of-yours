@@ -29,5 +29,14 @@ final class ConfigApi with Requests implements RemoteConfigService, HeaderAuthen
   }
 
   @override
-  bool get isAuthenticated => false;
+  bool get isAuthenticated => false; // not needed
+
+  @override
+  Future<Iterable<Template>> getSampleTemplates(ExerciseLookup lookForExercise) async {
+    final (json, _) = await get('/templates');
+    return switch (json) {
+      {'workouts': Map m} => m.values.map((e) => Template.fromJson(e, lookForExercise)),
+      _ => [],
+    };
+  }
 }

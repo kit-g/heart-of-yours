@@ -464,25 +464,22 @@ extension on Iterable<Completes> {
 }
 
 List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLookup lookForExercise) {
+  WorkoutExercise? parse(dynamic each) {
+    final exercise = lookForExercise(each['exercise']);
+    if (exercise == null) return null;
+    return _WorkoutExercise._(
+      exercise: exercise,
+      start: DateTime.parse(each['id']),
+      sets: switch (each['sets']) {
+        List sets => sets.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
+        _ => null,
+      },
+    )..order = each['order'];
+  }
+
   return switch (collection) {
-    List l => l
-        .map(
-          (each) {
-            final exercise = lookForExercise(each['exercise']);
-            if (exercise == null) return null;
-            return _WorkoutExercise._(
-              exercise: exercise,
-              start: DateTime.parse(each['id']),
-              sets: switch (each['sets']) {
-                List sets => sets.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
-                _ => null,
-              },
-            )..order = each['order'];
-          },
-        )
-        .nonNulls
-        .toList()
-      ..sort(),
+    List l => l.map(parse).nonNulls.toList()..sort(),
+    Map m => m.values.map(parse).nonNulls.toList()..sort(),
     _ => <WorkoutExercise>[],
   };
 }
