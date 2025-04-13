@@ -145,9 +145,9 @@ class _Template with Iterable<WorkoutExercise> implements Template {
       'id': id,
       'name': name,
       'order': order,
-      'exercises': {
-        for (var exercise in this) exercise.id: exercise.toFullMap(),
-      }
+      'exercises': [
+        for (var exercise in this) exercise.toFullMap(),
+      ]
     };
   }
 
@@ -185,9 +185,9 @@ extension on WorkoutExercise {
     return {
       'id': id,
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
-      'sets': {
-        for (var each in this) each.id: each.toMap(),
-      }
+      'sets': [
+        for (var each in this) each.toMap(),
+      ]
     };
   }
 }

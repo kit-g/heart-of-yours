@@ -10,6 +10,7 @@ final class Api
         FeedbackService,
         HeaderAuthenticatedService,
         RemoteExerciseService,
+        RemoteTemplateService,
         RemoteWorkoutService {
   @override
   late String gateway;
@@ -166,11 +167,36 @@ final class Api
       _ => [],
     };
   }
+
+  @override
+  Future<bool> deleteTemplate(String templateId) async {
+    final (_, code) = await delete('${_Router.templates}/$templateId');
+    return code == 204;
+  }
+
+  @override
+  Future<Iterable<Template>?> getTemplates(ExerciseLookup lookForExercise) async {
+    final (json, _) = await get(_Router.templates);
+    return switch (json) {
+      {'templates': List l} => l.map((e) => Template.fromJson(e, lookForExercise)),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<bool> saveTemplate(Template template) async {
+    final (_, code) = await post(
+      _Router.templates,
+      body: template.toMap(),
+    );
+    return code == 201;
+  }
 }
 
 abstract final class _Router {
   static const accounts = 'api/accounts';
   static const exercises = 'api/exercises';
   static const feedback = 'api/feedback';
+  static const templates = 'api/templates';
   static const workouts = 'api/workouts';
 }
