@@ -1,33 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
-import 'utils.dart';
-
 typedef WorkoutId = String;
 
-// Firestore collection
-const _collectionId = 'workouts';
-
 class Workouts with ChangeNotifier implements SignOutStateSentry {
-  final _db = FirebaseFirestore.instance;
   final _workouts = <WorkoutId, Workout>{};
   final ExerciseLookup lookForExercise;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
-  final bool isCached;
-  final GetOptions _options;
-  final WorkoutService _service;
+  final WorkoutService _localService;
+  final RemoteWorkoutService _remoteService;
 
   Workouts({
     required this.lookForExercise,
     required WorkoutService service,
+    required RemoteWorkoutService remoteService,
     this.onError,
-    this.isCached = false,
-  })  : _options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache),
-        _service = service;
+  })  : _localService = service,
+        _remoteService = remoteService;
 
-  CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
+  // CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
 
   @override
   void onSignOut() {
@@ -104,7 +96,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> fetchWorkout(String workoutId) async {
     if (userId case String userId) {
-      final workout = await _service.getWorkout(userId, workoutId);
+      final workout = await _localService.getWorkout(userId, workoutId);
       if (workout != null) {
         _workouts[workoutId] = workout;
         notifyListeners();
@@ -119,7 +111,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _activeWorkoutId = workout.id;
 
     notifyListeners();
-    return _service.startWorkout(workout, userId!);
+    return _localService.startWorkout(workout, userId!);
   }
 
   Future<void> finishActiveWorkout() async {
@@ -133,46 +125,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> saveWorkout(Workout active) {
-    _service.finishWorkout(active, userId!);
+    _localService.finishWorkout(active, userId!);
 
     _workouts[active.id] = active;
     notifyListeners();
-    final aggregation = _db.collection('aggregations').doc(userId!);
 
-    return _db.runTransaction<void>(
-      (transaction) async {
-        final aggregationSnapshot = await transaction.get(aggregation);
-        final currentAggregations = switch (aggregationSnapshot.data()?['workouts']) {
-          Map existing => existing,
-          _ => <String, dynamic>{},
-        };
-        final currentWeek = switch (currentAggregations[active.weekOf()]) {
-          Map m => m,
-          _ => <String, String?>{},
-        };
-        final updated = currentWeek.take(_maxWorkoutBars)..addAll(active.toSummary().toMap());
-
-        transaction
-          ..set(
-            _collection.doc(active.id),
-            {
-              'userId': userId,
-              ...active.toMap(),
-            },
-          )
-          ..set(
-            aggregation,
-            {
-              'workouts': {active.weekOf(): updated}
-            },
-            SetOptions(merge: true),
-          );
-      },
-    ).catchError(
-      (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-      },
-    );
+    return _remoteService.saveWorkout(active);
   }
 
   Future<void> cancelActiveWorkout() async {
@@ -180,47 +138,31 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (_activeWorkoutId case String id) {
       _deleteWorkout(id).catchError(
         (error, stacktrace) {
-          switch (error) {
-            case FirebaseException(:var code) when code == 'permission-denied':
-              return;
-            // ok in this case, since the workout might not be in Firebase
-            default:
-              onError?.call(error, stacktrace: stacktrace);
-          }
+          onError?.call(error, stacktrace: stacktrace);
         },
       );
-      _service.deleteWorkout(id);
+      _localService.deleteWorkout(id);
     }
     _activeWorkoutId = null;
     notifyListeners();
   }
 
   Future<void> _deleteWorkout(String workoutId) {
-    return _collection.doc(workoutId).delete();
+    return _remoteService.deleteWorkout(workoutId);
   }
 
   Future<void> deleteWorkout(String workoutId) {
     _workouts.remove(workoutId);
     notifyListeners();
-    _service.deleteWorkout(workoutId);
-    _deleteAggregation(workoutId);
+    _localService.deleteWorkout(workoutId);
     return _deleteWorkout(workoutId);
-  }
-
-  Future<void> _deleteAggregation(String workoutId) async {
-    if (userId case String id) {
-      var doc = {
-        'workouts.${deSanitizeId(workoutId).mondayKey()}.$workoutId': FieldValue.delete(),
-      };
-      return _db.collection('aggregations').doc(id).update(doc);
-    }
   }
 
   Future<void> startExercise(Exercise exercise) async {
     if (activeWorkout case Workout workout) {
       final starter = workout.add(exercise);
       notifyListeners();
-      return _service.startExercise(workout.id, starter);
+      return _localService.startExercise(workout.id, starter);
     }
   }
 
@@ -241,7 +183,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       (each) => each.add(set),
     );
 
-    return _service.addSet(exercise, set);
+    return _localService.addSet(exercise, set);
   }
 
   Future<void>? removeSet(WorkoutExercise exercise, ExerciseSet set) {
@@ -250,31 +192,31 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       (each) => each.remove(set),
     );
 
-    return _service.removeSet(set);
+    return _localService.removeSet(set);
   }
 
   Future<void>? removeExercise(WorkoutExercise exercise) {
     activeWorkout?.remove(exercise);
     notifyListeners();
 
-    return _service.removeExercise(exercise);
+    return _localService.removeExercise(exercise);
   }
 
   Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
     set.isCompleted = true;
     _latestMarkedSet = (exercise, set);
     notifyListeners();
-    return _service.markSetAsComplete(set);
+    return _localService.markSetAsComplete(set);
   }
 
   Future<void>? markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
     set.isCompleted = false;
     notifyListeners();
-    return _service.markSetAsIncomplete(set);
+    return _localService.markSetAsIncomplete(set);
   }
 
   Future<void> storeMeasurements(ExerciseSet set) {
-    return _service.storeMeasurements(set);
+    return _localService.storeMeasurements(set);
   }
 
   Future<void>? swap(WorkoutExercise toInsert, WorkoutExercise after) async {
@@ -290,45 +232,23 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void>? renameWorkout(String name) async {
     activeWorkout?.name = name;
     if (activeWorkout case Workout workout) {
-      _service.renameWorkout(workoutId: workout.id, name: name);
+      _localService.renameWorkout(workoutId: workout.id, name: name);
     }
     notifyListeners();
   }
 
   Future<Workout?> _getActiveWorkout(String userId) async {
     try {
-      final local = await _service.getActiveWorkout(userId);
-
-      if (local != null) return local;
-      final querySnapshot = await _collection
-          .where('userId', isEqualTo: userId)
-          .where('end', isNull: true)
-          .withConverter(
-            fromFirestore: _fromFirestore,
-            toFirestore: (workout, _) => workout.toMap(),
-          )
-          .limit(1)
-          .get();
-      return querySnapshot.docs.firstOrNull?.data();
+      return _localService.getActiveWorkout(userId);
     } catch (error, s) {
       onError?.call(error, stacktrace: s);
       return null;
     }
   }
 
-  Future<Iterable<Workout>?> _getRemoteHistory(String userId, {int pageSize = 7}) async {
+  Future<Iterable<Workout>?> _getRemoteHistory(String userId, {int pageSize = 10}) async {
     try {
-      final querySnapshot = await _collection //
-          .where('userId', isEqualTo: userId)
-          .where('end', isNull: false)
-          .orderBy('end', descending: true)
-          .withConverter(
-            fromFirestore: _fromFirestore,
-            toFirestore: (workout, _) => workout.toMap(),
-          )
-          .limit(pageSize)
-          .get(_options);
-      return querySnapshot.docs.map((doc) => doc.data());
+      return _remoteService.getWorkouts(lookForExercise, pageSize: pageSize);
     } catch (error, s) {
       onError?.call(error, stacktrace: s);
       return null;
@@ -337,13 +257,13 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> initHistory() async {
     if (userId case String id) {
-      final local = await _service.getWorkoutHistory(id);
+      final local = await _localService.getWorkoutHistory(id);
       if (local case Iterable<Workout> local when local.isNotEmpty) {
         _workouts.addAll(Map.fromEntries(local.map(_entry)));
       } else {
         final workouts = await _getRemoteHistory(id);
         if (workouts != null) {
-          _service.storeWorkoutHistory(workouts, id);
+          _localService.storeWorkoutHistory(workouts, id);
           _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
         }
       }
@@ -358,35 +278,5 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _notifiedOfActiveWorkout = true;
   }
 
-  Workout _fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? _) {
-    return Workout.fromJson(fromFirestoreMap(snapshot.data()!), lookForExercise);
-  }
-
   Workout? lookup(String id) => _workouts[id];
-}
-
-// how many weeks of workouts the chart will display
-const _maxWorkoutBars = 8;
-
-extension on String {
-  DateTime? mondayOf() {
-    try {
-      return getMonday(DateTime.parse(this));
-    } on FormatException {
-      return null;
-    }
-  }
-
-  String? mondayKey() {
-    return switch (mondayOf()) {
-      DateTime dt => sanitizeId(dt),
-      null => null,
-    };
-  }
-}
-
-extension _E<K, V> on Map<K, V> {
-  Map<K, V> take(int count) {
-    return Map.fromEntries(entries.take(count));
-  }
 }

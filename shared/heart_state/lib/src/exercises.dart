@@ -1,21 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
-  final bool isCached;
-  final _db = FirebaseFirestore.instance;
-  final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
+  final RemoteExerciseService _remoteService;
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _filters = <ExerciseFilter>{};
 
   Exercises({
-    this.isCached = true,
     this.onError,
+    required RemoteExerciseService remoteService,
     required ExerciseService service,
-  }) : _service = service;
+  })  : _service = service,
+        _remoteService = remoteService;
 
   bool isInitialized = false;
 
@@ -57,22 +56,16 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
         _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
         isInitialized = true;
         notifyListeners();
+        return;
       }
 
       if (localSync == null) return;
       if (lastSync == null) return;
       if (localSync.isAfter(lastSync)) return;
 
-      final options = GetOptions(source: isCached ? Source.cache : Source.serverAndCache);
-      final all = await _db //
-          .collection('exercises')
-          .withConverter<Exercise>(
-            fromFirestore: _fromFirestore,
-            toFirestore: (exercise, _) => exercise.toMap(),
-          )
-          .get(options);
+      final all = await _remoteService.getExercises();
 
-      _exercises.addAll(Map.fromEntries(all.docs.map(_snapshot)));
+      _exercises.addAll(Map.fromEntries(all.map((each) => MapEntry(each.name, each))));
       _service.storeExercises(_exercises.values);
       isInitialized = true;
       notifyListeners();
@@ -165,15 +158,6 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
     return null;
   }
-}
-
-MapEntry<ExerciseId, Exercise> _snapshot(QueryDocumentSnapshot<Exercise> snapshot) {
-  final exercise = snapshot.data();
-  return MapEntry(exercise.name, exercise);
-}
-
-Exercise _fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? _) {
-  return Exercise.fromJson(snapshot.data()!);
 }
 
 const _exerciseHistoryLimit = 30;

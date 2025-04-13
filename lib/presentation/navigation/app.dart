@@ -7,7 +7,6 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/headers.dart';
-import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart_api/heart_api.dart';
@@ -36,7 +35,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Exercises>(
           create: (_) => Exercises(
             onError: reportToSentry,
-            isCached: false,
+            remoteService: api,
             service: db,
           ),
         ),
@@ -49,6 +48,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
             service: db,
+            remoteService: api,
             lookForExercise: Exercises.of(context).lookup,
             onError: (error, {stacktrace}) {
               Logger('Workouts')
@@ -67,6 +67,8 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Templates>(
           create: (context) => Templates(
             service: db,
+            remoteService: api,
+            configService: config,
             onError: reportToSentry,
             lookForExercise: Exercises.of(context).lookup,
           ),
@@ -127,7 +129,7 @@ class _App extends StatefulWidget {
   State<_App> createState() => _AppState();
 }
 
-class _AppState extends State<_App> with AfterLayoutMixin<_App> {
+class _AppState extends State<_App> {
   @override
   Widget build(BuildContext context) {
     final light = switch (widget.theme.color) {
@@ -193,11 +195,6 @@ class _AppState extends State<_App> with AfterLayoutMixin<_App> {
         ],
       ),
     );
-  }
-
-  @override
-  void afterFirstLayout(BuildContext context) {
-    _initApp(context);
   }
 }
 

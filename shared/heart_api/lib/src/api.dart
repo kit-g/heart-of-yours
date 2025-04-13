@@ -3,7 +3,15 @@ import 'dart:typed_data';
 import 'package:heart_models/heart_models.dart';
 import 'package:network_utils/network_utils.dart';
 
-final class Api with Requests implements AccountService, FeedbackService, HeaderAuthenticatedService {
+final class Api
+    with Requests
+    implements
+        AccountService,
+        FeedbackService,
+        HeaderAuthenticatedService,
+        RemoteExerciseService,
+        RemoteTemplateService,
+        RemoteWorkoutService {
   @override
   late String gateway;
 
@@ -22,6 +30,23 @@ final class Api with Requests implements AccountService, FeedbackService, Header
   @override
   void authenticate(Map<String, String> headers) {
     instance.defaultHeaders = headers;
+  }
+
+  @override
+  bool get isAuthenticated {
+    return switch (defaultHeaders) {
+      {'Authorization': String token} => switch (token.split(' ')) {
+          ['Bearer', String token] when token.isNotEmpty => true,
+          _ => false,
+        },
+      _ => false,
+    };
+  }
+
+  @override
+  Future<User> registerAccount(User user) async {
+    final (json, _) = await post(_Router.accounts, body: user.toMap());
+    return User.fromJson(json);
   }
 
   @override
@@ -103,9 +128,75 @@ final class Api with Requests implements AccountService, FeedbackService, Header
     }
     return false;
   }
+
+  @override
+  Future<bool> deleteWorkout(String workoutId) async {
+    final (_, code) = await delete('${_Router.workouts}/$workoutId');
+    return code == 204;
+  }
+
+  @override
+  Future<bool> saveWorkout(Workout workout) async {
+    final (_, code) = await post(
+      _Router.workouts,
+      body: workout.toMap(),
+    );
+    return code == 201;
+  }
+
+  @override
+  Future<Iterable<Workout>?> getWorkouts(ExerciseLookup lookForExercise, {int? pageSize, String? since}) async {
+    final (json, code) = await get(
+      _Router.workouts,
+      query: {
+        if (pageSize != null) 'pageSize': pageSize.toString(),
+        if (since != null) 'since': since,
+      },
+    );
+    return switch (json) {
+      {'workouts': List l} => l.map((e) => Workout.fromJson(e, lookForExercise)),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<Iterable<Exercise>> getExercises() async {
+    final (json, code) = await get(_Router.exercises);
+    return switch (json) {
+      {'exercises': List l} => l.map((e) => Exercise.fromJson(e)),
+      _ => [],
+    };
+  }
+
+  @override
+  Future<bool> deleteTemplate(String templateId) async {
+    final (_, code) = await delete('${_Router.templates}/$templateId');
+    return code == 204;
+  }
+
+  @override
+  Future<Iterable<Template>?> getTemplates(ExerciseLookup lookForExercise) async {
+    final (json, _) = await get(_Router.templates);
+    return switch (json) {
+      {'templates': List l} => l.map((e) => Template.fromJson(e, lookForExercise)),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<bool> saveTemplate(Template template) async {
+    final (_, code) = await post(
+      _Router.templates,
+      body: template.toMap(),
+    );
+    return code == 201;
+  }
 }
 
 abstract final class _Router {
   static const accounts = 'api/accounts';
+  static const exercises = 'api/exercises';
   static const feedback = 'api/feedback';
+  static const templates = 'api/templates';
+  static const workouts = 'api/workouts';
 }
