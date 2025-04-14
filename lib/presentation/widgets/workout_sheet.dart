@@ -10,7 +10,10 @@ Future<void> showWorkoutSheet(
   BuildContext context, {
   DraggableScrollableController? controller,
 }) {
+  final theme = Theme.of(context);
+
   return showModalBottomSheet(
+    backgroundColor: theme.scaffoldBackgroundColor,
     context: context,
     isScrollControlled: true,
     builder: (context) {
@@ -22,7 +25,6 @@ Future<void> showWorkoutSheet(
           expand: false,
           controller: controller,
           builder: (_, innerController) {
-            final theme = Theme.of(context);
             final workouts = Workouts.watch(context);
             if (workouts.activeWorkout == null) {
               return const SizedBox.shrink();
@@ -50,7 +52,7 @@ Future<void> showWorkoutSheet(
                 pinned: true,
                 delegate: FixedHeightHeaderDelegate(
                   height: 40,
-                  backgroundColor: theme.colorScheme.surfaceContainerLow,
+                  backgroundColor: theme.scaffoldBackgroundColor,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(12),
                     topLeft: Radius.circular(12),

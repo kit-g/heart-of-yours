@@ -149,6 +149,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
             ),
             onPressed: () {
               Navigator.of(context, rootNavigator: true).pop();
+              Navigator.of(context).maybePop();
               Workouts.of(context).cancelActiveWorkout();
               onFinish?.call();
             },
