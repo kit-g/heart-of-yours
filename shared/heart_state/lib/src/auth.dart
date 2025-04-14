@@ -209,7 +209,6 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<User?> _registerUser(User? user) async {
     if (user == null) return user;
-    print(user);
     if (!_service.isAuthenticated) return user;
     return _service.registerAccount(user);
   }
