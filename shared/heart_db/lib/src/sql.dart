@@ -367,14 +367,14 @@ WHERE workouts.user_id = ?
 const getWeightHistory = """
 SELECT
     MAX(sets.weight) AS "value",
-    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+    sets.id AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+GROUP BY sets.id
 ORDER BY "when" DESC
 LIMIT ?
 ;
@@ -383,14 +383,14 @@ LIMIT ?
 const getRepsHistory = """
 SELECT
     MAX(sets.reps) AS "value",
-    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+    sets.id AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+GROUP BY sets.id 
 ORDER BY "when" DESC
 LIMIT ?
 ;
@@ -399,14 +399,14 @@ LIMIT ?
 const getDurationHistory = """
 SELECT
     MAX(sets.duration) AS "value",
-    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+    sets.id AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+GROUP BY sets.id 
 ORDER BY "when" DESC
 LIMIT ?
 ;
@@ -415,14 +415,14 @@ LIMIT ?
 const getDistanceHistory = """
 SELECT
     MAX(sets.distance) AS "value",
-    substr(sets.id, 1, instr(sets.id, '_') - 1) AS "when"  
+    sets.id AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY substr(sets.id, 1, instr(sets.id, '_') - 1)  
+GROUP BY sets.id
 ORDER BY "when" DESC
 LIMIT ?
 ;

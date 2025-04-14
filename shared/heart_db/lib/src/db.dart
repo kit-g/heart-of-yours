@@ -520,7 +520,7 @@ final class LocalDatabase
         return rows.map(
           (row) {
             return switch (row) {
-              {'value': num value, 'when': String id} => (value, DateTime.parse(deSanitizeId(id))),
+              {'value': num value, 'when': String id} => (value, DateTime.parse(id)),
               _ => throw ArgumentError('_getMetric: $row'),
             };
           },
