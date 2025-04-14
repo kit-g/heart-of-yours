@@ -130,7 +130,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       ),
     ).then(
       (cred) async {
-        return onEnter?.call(await cred?.user?.getIdToken());
+        onEnter?.call(await cred?.user?.getIdToken());
+        _user = await _registerUser(_user);
       },
     );
   }
@@ -208,6 +209,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<User?> _registerUser(User? user) async {
     if (user == null) return user;
+    print(user);
     if (!_service.isAuthenticated) return user;
     return _service.registerAccount(user);
   }
