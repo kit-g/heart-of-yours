@@ -41,9 +41,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       (user) async {
         _user = _cast(user);
         onUserChange?.call(_user);
-        _user = await _registerUser(_user);
         notifyListeners();
-        onEnter?.call(await user?.getIdToken());
+        await onEnter?.call(await user?.getIdToken());
+        _user = await _registerUser(_user);
       },
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
