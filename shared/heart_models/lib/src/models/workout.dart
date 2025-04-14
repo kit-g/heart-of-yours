@@ -60,7 +60,7 @@ abstract interface class HasExercises {
 abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements HasExercises, Model {
   abstract String? name;
 
-  DateTime? get end;
+  abstract DateTime? end;
 
   Iterable<WorkoutExercise> get sets;
 
@@ -255,7 +255,6 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   final DateTime start;
 
   final String? _id;
-  DateTime? _end;
 
   @override
   String? name;
@@ -265,10 +264,9 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     this.name,
     String? id,
     List<WorkoutExercise>? exercises,
-    DateTime? end,
+    this.end,
   })  : _sets = exercises ?? <WorkoutExercise>[],
-        _id = id,
-        _end = end;
+        _id = id;
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Workout(
@@ -281,14 +279,14 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   }
 
   @override
-  DateTime? get end => _end;
+  DateTime? end;
 
   @override
   String get id => _id ?? super.id;
 
   @override
   void finish(DateTime end) {
-    _end = end;
+    this.end = end;
   }
 
   @override
