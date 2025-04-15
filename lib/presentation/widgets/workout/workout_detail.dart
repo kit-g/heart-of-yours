@@ -325,8 +325,12 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       (_) {
         Future.delayed(
           const Duration(milliseconds: 100),
-          // ignore: use_build_context_synchronously
-          () => Exercises.of(context).unselectAll(),
+          () {
+            // ignore: use_build_context_synchronously
+            Exercises.of(context)
+              ..unselectAll()
+              ..clearFilters();
+          },
         );
       },
     );
