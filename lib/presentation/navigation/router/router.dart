@@ -312,7 +312,6 @@ abstract final class HeartRouter {
       }
 
       if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
-        Workouts.of(context).notifyOfActiveWorkout();
         return _workoutPath;
       }
 

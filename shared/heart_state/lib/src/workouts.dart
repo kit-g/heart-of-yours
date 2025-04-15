@@ -19,8 +19,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   })  : _localService = service,
         _remoteService = remoteService;
 
-  // CollectionReference<Map<String, dynamic>> get _collection => _db.collection(_collectionId);
-
   @override
   void onSignOut() {
     _workouts.clear();
@@ -276,7 +274,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   static MapEntry<WorkoutId, Workout> _entry(Workout w) => MapEntry(w.id, w);
 
   void notifyOfActiveWorkout() {
-    _notifiedOfActiveWorkout = true;
+    if (!_notifiedOfActiveWorkout) {
+      _notifiedOfActiveWorkout = true;
+    }
   }
 
   Workout? lookup(String id) => _workouts[id];
