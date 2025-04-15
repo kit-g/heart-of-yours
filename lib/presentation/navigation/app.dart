@@ -234,10 +234,12 @@ Future<void> _initApp(BuildContext context, String? sessionToken, String? userId
   final previous = PreviousExercises.of(context);
   final config = RemoteConfig.of(context);
 
-  await Future.wait([
-    config.init(),
-    prefs.init(),
-  ]);
+  await Future.wait(
+    [
+      config.init(),
+      prefs.init(locale: View.of(context).platformDispatcher.locale),
+    ],
+  );
 
   theme
     ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))

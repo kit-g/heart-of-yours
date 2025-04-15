@@ -30,17 +30,22 @@ class Preferences with ChangeNotifier {
     return Provider.of<Preferences>(context, listen: true);
   }
 
-  Future<void> init({
-    MeasurementUnit defaultWeightUnit = MeasurementUnit.metric,
-    MeasurementUnit defaultDistanceUnit = MeasurementUnit.metric,
-  }) async {
+  Future<void> init({Locale? locale}) async {
     _prefs = await SharedPreferences.getInstance();
     _isInitialized = true;
+    final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(
-      defaultWeightUnit: defaultWeightUnit,
-      defaultDistanceUnit: defaultWeightUnit,
+      defaultWeightUnit: unit,
+      defaultDistanceUnit: unit,
     );
     notifyListeners();
+  }
+
+  MeasurementUnit defaultUnit(String? countryCode) {
+    if (_imperialCountries.contains(countryCode)) {
+      return MeasurementUnit.imperial;
+    }
+    return MeasurementUnit.metric;
   }
 
   Future<bool>? setBaseColor(String? userId, String? hex) {
@@ -119,3 +124,9 @@ class Preferences with ChangeNotifier {
     };
   }
 }
+
+const _imperialCountries = {
+  'US', // USA
+  'LR', // Liberia
+  'MM', // Myanmar
+};
