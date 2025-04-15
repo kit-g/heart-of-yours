@@ -12,7 +12,7 @@ class WorkoutPage extends StatefulWidget {
   State<WorkoutPage> createState() => _WorkoutPageState();
 }
 
-class _WorkoutPageState extends State<WorkoutPage> {
+class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
   final _workoutNameController = TextEditingController();
   final _workoutNameFocusNode = FocusNode();
 
@@ -171,5 +171,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void afterFirstLayout(BuildContext context) {
+    Workouts.of(context).notifyOfActiveWorkout();
   }
 }
