@@ -13,7 +13,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final _firebase = fb.FirebaseAuth.instance;
   final void Function(User?)? onUserChange;
   final AccountService _service;
-  final Future<void> Function(String?)? onEnter;
+  final Future<void> Function(String?, String?)? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   User? _user;
@@ -42,7 +42,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         _user = _cast(user);
         onUserChange?.call(_user);
         notifyListeners();
-        await onEnter?.call(await user?.getIdToken());
+        await onEnter?.call(await user?.getIdToken(), user?.uid);
         _user = await _registerUser(_user);
       },
       onError: (error, stacktrace) {
@@ -130,7 +130,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       ),
     ).then(
       (cred) async {
-        onEnter?.call(await cred?.user?.getIdToken());
+        onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
         _user = await _registerUser(_user);
       },
     );
@@ -158,7 +158,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       cred?.user?.sendEmailVerification();
     }
 
-    return onEnter?.call(await cred?.user?.getIdToken());
+    return onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
   }
 
   Future<void> updateName(String? name) async {

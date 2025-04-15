@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math' show pow, sqrt;
 
 import 'package:flutter/material.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
-class AppTheme with ChangeNotifier {
+class AppTheme with ChangeNotifier implements SignOutStateSentry {
   ThemeMode _mode;
 
   Color? _color;
@@ -69,6 +71,12 @@ class AppTheme with ChangeNotifier {
       Color seed => _coloredEmoji(seed),
       null => '💜',
     };
+  }
+
+  @override
+  FutureOr<void> onSignOut() {
+    color = null;
+    _mode = ThemeMode.system;
   }
 }
 
