@@ -90,7 +90,7 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             service: api,
-            onEnter: (session) => _initApp(context, session),
+            onEnter: (session, userId) => _initApp(context, session, userId),
             onUserChange: (user) {
               HeartRouter.refresh();
               Exercises.of(context).userId = user?.id;
@@ -198,7 +198,7 @@ class _AppState extends State<_App> {
   }
 }
 
-Future<void> _initApp(BuildContext context, [String? sessionToken]) async {
+Future<void> _initApp(BuildContext context, String? sessionToken, String? userId) async {
   initNotifications(
     platform: Theme.of(context).platform,
     onExerciseNotification: (exerciseId) {
@@ -240,7 +240,7 @@ Future<void> _initApp(BuildContext context, [String? sessionToken]) async {
   ]);
 
   theme
-    ..color = AppTheme.colorFromHex(prefs.getBaseColor())
+    ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))
     ..toMode(prefs.getThemeMode());
 
   if (!isInitialized) {

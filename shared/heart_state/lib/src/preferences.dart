@@ -8,7 +8,7 @@ const _themeMode = 'themeMode';
 const _weightUnit = 'weightUnit';
 const _distanceUnit = 'distanceUnit';
 
-class Preferences with ChangeNotifier implements SignOutStateSentry {
+class Preferences with ChangeNotifier {
   SharedPreferences? _prefs;
   bool _isInitialized = false;
 
@@ -21,11 +21,6 @@ class Preferences with ChangeNotifier implements SignOutStateSentry {
   MeasurementUnit get weightUnit => _weight;
 
   MeasurementUnit get distanceUnit => _distance;
-
-  @override
-  void onSignOut() {
-    _prefs?.clear();
-  }
 
   static Preferences of(BuildContext context) {
     return Provider.of<Preferences>(context, listen: false);
@@ -48,15 +43,18 @@ class Preferences with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  Future<bool>? setBaseColor(String? hex) {
+  Future<bool>? setBaseColor(String? userId, String? hex) {
+    if (userId == null) return null;
+    final key = '$_baseColor-$userId';
     if (hex == null) {
-      return _prefs?.remove(_baseColor);
+      return _prefs?.remove(key);
     }
-    return _prefs?.setString(_baseColor, hex);
+    return _prefs?.setString(key, hex);
   }
 
-  String? getBaseColor() {
-    return _prefs?.getString(_baseColor);
+  String? getBaseColor(String? userId) {
+    if (userId == null) return null;
+    return _prefs?.getString('$_baseColor-$userId');
   }
 
   Future<bool>? setThemeMode(ThemeMode? mode) {

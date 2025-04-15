@@ -36,8 +36,9 @@ class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker>
                 if (theme.color != null)
                   TextButton(
                     onPressed: () {
+                      final auth = Auth.of(context);
                       theme.color = null;
-                      Preferences.of(context).setBaseColor(null);
+                      Preferences.of(context).setBaseColor(auth.user?.id, null);
                     },
                     child: Text(reset),
                   ),
@@ -94,8 +95,9 @@ class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker>
             TextButton(
               onPressed: () {
                 buzz();
+                final auth = Auth.of(context);
                 AppTheme.of(context).color = _color;
-                Preferences.of(context).setBaseColor(_color?.toHexString());
+                Preferences.of(context).setBaseColor(auth.user?.id, _color?.toHexString());
                 Navigator.of(context).pop();
               },
               child: Padding(
@@ -104,7 +106,7 @@ class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker>
               ),
             ),
           ],
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0,vertical: 8),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
         );
       },
     );
