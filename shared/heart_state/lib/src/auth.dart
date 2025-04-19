@@ -44,7 +44,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         notifyListeners();
         if (user case fb.User user) {
           await onEnter?.call(await user.getIdToken(), user.uid);
-          _user = await _registerUser(_user);
+          try {
+            _user = await _registerUser(_user);
+          } on AccountDeleted {
+            _logout();
+          }
         }
       },
       onError: (error, stacktrace) {

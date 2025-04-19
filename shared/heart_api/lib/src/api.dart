@@ -45,8 +45,12 @@ final class Api
 
   @override
   Future<User> registerAccount(User user) async {
-    final (json, _) = await post(_Router.accounts, body: user.toMap());
-    return User.fromJson(json);
+    final (json, code) = await post(_Router.accounts, body: user.toMap());
+    return switch ((code, json)) {
+      (200, Map json) => User.fromJson(json),
+      (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
+      _ => throw json, // error
+    };
   }
 
   @override
