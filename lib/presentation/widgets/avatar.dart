@@ -91,15 +91,20 @@ class Avatar extends StatelessWidget {
       width: radius * 2,
       padding: const EdgeInsets.all(2),
       child: switch ((remote, local)) {
-        (null, null) => CircleAvatar(
-            child: Icon(Icons.person_rounded, size: radius),
-          ),
-        (String? remote, Uint8List? local) => ClipOval(
+        (_, Uint8List local) => ClipOval(
             child: AppImage(
-              url: remote,
               bytes: local,
               fit: BoxFit.cover,
             ),
+          ),
+        (String remote, _) when remote.startsWith('https') => ClipOval(
+            child: AppImage(
+              url: remote,
+              fit: BoxFit.cover,
+            ),
+          ),
+        _ => CircleAvatar(
+            child: Icon(Icons.person_rounded, size: radius),
           ),
       },
     );
