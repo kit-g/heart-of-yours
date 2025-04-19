@@ -1,4 +1,4 @@
-package vin.muffin.heart
+package me.heart
 
 import io.flutter.embedding.android.FlutterActivity
 
