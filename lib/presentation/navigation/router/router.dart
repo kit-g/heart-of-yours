@@ -31,7 +31,10 @@ RouteBase _profileRoute() {
         onAccount: context.goToAccountManagement,
         onAvatar: () {
           final user = Auth.of(context).user;
-          if (user?.localAvatar != null || user?.remoteAvatar != null) {
+          if (user?.localAvatar != null) {
+            return context.goToAvatar();
+          }
+          if (user?.remoteAvatar case String avatar when avatar.startsWith('https')) {
             return context.goToAvatar();
           }
 
