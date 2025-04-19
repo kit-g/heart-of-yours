@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "vin.muffin.heart"
+    namespace = "me.heart"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -24,7 +24,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "vin.muffin.heart"
+        applicationId = "me.heart.android"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdkVersion 23
@@ -63,5 +63,5 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
