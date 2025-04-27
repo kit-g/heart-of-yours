@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,33 +21,35 @@ Future<LocalFile?> capturePhoto() async {
 }
 
 Future<LocalImage?> cropImage(BuildContext context, LocalFile file, String header) async {
-  final ThemeData(:appBarTheme, :scaffoldBackgroundColor, :colorScheme) = Theme.of(context);
+  final ThemeData(:appBarTheme, :scaffoldBackgroundColor, :colorScheme, :platform) = Theme.of(context);
 
   final cropped = await _cropper.cropImage(
     sourcePath: file.$2,
     uiSettings: [
-      AndroidUiSettings(
-        toolbarTitle: header,
-        toolbarColor: colorScheme.surface,
-        toolbarWidgetColor: colorScheme.onSurface,
-        backgroundColor: scaffoldBackgroundColor,
-        cropFrameColor: colorScheme.tertiaryContainer,
-        cropGridColor: colorScheme.tertiary,
-        cropStyle: CropStyle.rectangle,
-        dimmedLayerColor: colorScheme.primaryContainer.withValues(alpha: .3),
-        aspectRatioPresets: const [
-          CropAspectRatioPreset.original,
-          CropAspectRatioPreset.square,
-        ],
-      ),
-      IOSUiSettings(
-        title: header,
-        aspectRatioPresets: const [
-          CropAspectRatioPreset.original,
-          CropAspectRatioPreset.square,
-        ],
-      ),
-      WebUiSettings(context: context),
+      if (platform == TargetPlatform.android)
+        AndroidUiSettings(
+          toolbarTitle: header,
+          toolbarColor: colorScheme.surface,
+          toolbarWidgetColor: colorScheme.onSurface,
+          backgroundColor: scaffoldBackgroundColor,
+          cropFrameColor: colorScheme.tertiaryContainer,
+          cropGridColor: colorScheme.tertiary,
+          cropStyle: CropStyle.rectangle,
+          dimmedLayerColor: colorScheme.primaryContainer.withValues(alpha: .3),
+          aspectRatioPresets: const [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+          ],
+        ),
+      if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS)
+        IOSUiSettings(
+          title: header,
+          aspectRatioPresets: const [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+          ],
+        ),
+      if (kIsWeb) WebUiSettings(context: context),
     ],
   );
   return switch (cropped) {
