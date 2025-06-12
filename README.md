@@ -9,9 +9,9 @@ data. It is also a
 showcase of a real-live serverless Flutter project.
 
 <div style="display: flex; justify-content: space-around; align-items: center; gap: 10px;">
-  <img src="assets/screenshots/exercises.png" alt="Exercises" style="width: 30%;">
-  <img src="assets/screenshots/workout.png" alt="History" style="width: 30%;">
   <img src="assets/screenshots/timer.png" alt="Workout" style="width: 30%;">
+  <img src="assets/screenshots/charts.png" alt="Exercises" style="width: 30%;">
+  <img src="assets/screenshots/congrats.png" alt="History" style="width: 30%;">
 </div>
 
 ## Prerequisites
