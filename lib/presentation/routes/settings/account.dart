@@ -445,18 +445,20 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     final ThemeData(:colorScheme, :platform) = Theme.of(context);
 
     var pop = Navigator.of(context).pop;
+    var supportsTakingPhoto = platform == TargetPlatform.iOS || platform == TargetPlatform.android;
 
     return showBottomMenu<void>(
       context,
       [
-        BottomMenuAction(
-          title: capturePhoto,
-          onPressed: () {
-            pop();
-            _uploadAvatar(context, () => captureAndCropPhoto(context, L.of(context).cropAvatar));
-          },
-          icon: const Icon(Icons.camera_alt_rounded),
-        ),
+        if (supportsTakingPhoto)
+          BottomMenuAction(
+            title: capturePhoto,
+            onPressed: () {
+              pop();
+              _uploadAvatar(context, () => captureAndCropPhoto(context, L.of(context).cropAvatar));
+            },
+            icon: const Icon(Icons.camera_alt_rounded),
+          ),
         BottomMenuAction(
           title: chooseFromGallery,
           onPressed: () {
