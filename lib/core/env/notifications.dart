@@ -23,13 +23,17 @@ Future<void> initNotifications({
   await requestNotificationPermission(platform);
   await _plugin.initialize(
     const InitializationSettings(
-      iOS: DarwinInitializationSettings(
-        requestSoundPermission: true,
-        requestBadgePermission: true,
-        requestAlertPermission: true,
-      ),
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-    ),
+        iOS: DarwinInitializationSettings(
+          requestSoundPermission: true,
+          requestBadgePermission: true,
+          requestAlertPermission: true,
+        ),
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        macOS: DarwinInitializationSettings(
+          requestSoundPermission: true,
+          requestBadgePermission: true,
+          requestAlertPermission: true,
+        )),
     onDidReceiveNotificationResponse: (notification) async {
       switch (notification) {
         case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
@@ -93,6 +97,7 @@ Future<int> _showNotification({
               (null, null) => null,
             },
           ),
+          macOS: DarwinNotificationDetails(subtitle: subtitle),
         ),
       )
       .then<int>(
@@ -154,6 +159,11 @@ Future<bool> hasNotificationsPermission(TargetPlatform platform) async {
     case TargetPlatform.iOS:
       final options = await _plugin //
           .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.checkPermissions();
+      return options?.isEnabled ?? false;
+    case TargetPlatform.macOS:
+      final options = await _plugin //
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
           ?.checkPermissions();
       return options?.isEnabled ?? false;
     default:
