@@ -9,7 +9,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class Auth with ChangeNotifier implements SignOutStateSentry {
-  final _googleSignIn = GoogleSignIn(scopes: ['profile', 'email']);
+  final _googleSignIn = GoogleSignIn.instance;
   final _firebase = fb.FirebaseAuth.instance;
   final void Function(User?)? onUserChange;
   final AccountService _service;
@@ -67,17 +67,24 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> loginWithGoogle() async {
     try {
-      var googleAccount = await _googleSignIn.signIn();
-      final auth = await googleAccount?.authentication;
-      if (auth case GoogleSignInAuthentication(:String? accessToken, :String? idToken)) {
-        final cred = fb.GoogleAuthProvider.credential(
-          accessToken: accessToken,
-          idToken: idToken,
-        );
+      await _googleSignIn.initialize();
+      final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
+      if (account.authentication case GoogleSignInAuthentication(:String? idToken)) {
+        final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
         return _loginWithCredential(cred);
       }
     } catch (e, s) {
+      print('error');
+      print(e);
+      print(s);
       onError?.call(e, stacktrace: s);
+
+      try {
+        await _googleSignIn.initialize();
+        await _googleSignIn.signOut();
+      } catch (e, s) {
+        onError?.call(e, stacktrace: s);
+      }
     }
   }
 
@@ -125,6 +132,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           },
         );
       },
+    ).catchError(
+      (e, s) => onError?.call(e, stacktrace: s),
     );
   }
 

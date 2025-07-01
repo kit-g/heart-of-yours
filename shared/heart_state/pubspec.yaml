@@ -12,7 +12,7 @@ dependencies:
   firebase_core: ^3.12.1
   flutter:
     sdk: flutter
-  google_sign_in: ^6.2.2
+  google_sign_in: ^7.1.0
   heart_models:
     path: '../heart_models'
   provider: ^6.1.2
