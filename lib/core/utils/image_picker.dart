@@ -41,7 +41,7 @@ Future<LocalImage?> cropImage(BuildContext context, LocalFile file, String heade
             CropAspectRatioPreset.square,
           ],
         ),
-      if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS)
+      if (platform == TargetPlatform.iOS)
         IOSUiSettings(
           title: header,
           aspectRatioPresets: const [
@@ -58,22 +58,33 @@ Future<LocalImage?> cropImage(BuildContext context, LocalFile file, String heade
   };
 }
 
-Future<LocalImage?> pickAndCropGalleryImage(BuildContext context, String copy) async {
+Future<LocalImage?> pickAndCropGalleryImage(BuildContext context, String copy) {
   return pickGalleryImage().then<LocalImage?>(
     (image) {
       if (image == null) return null;
       if (!context.mounted) return null;
-      return cropImage(context, image, copy);
+      return switch (Theme.of(context).platform) {
+        TargetPlatform.android => cropImage(context, image, copy),
+        TargetPlatform.iOS => cropImage(context, image, copy),
+        TargetPlatform.macOS => image.$1,
+        _ => null,
+      };
     },
   );
 }
 
-Future<LocalImage?> captureAndCropPhoto(BuildContext context, String copy) async {
+Future<LocalImage?> captureAndCropPhoto(BuildContext context, String copy) {
   return capturePhoto().then<LocalImage?>(
     (image) {
       if (image == null) return null;
       if (!context.mounted) return null;
-      return cropImage(context, image, copy);
+
+      return switch (Theme.of(context).platform) {
+        TargetPlatform.android => cropImage(context, image, copy),
+        TargetPlatform.iOS => cropImage(context, image, copy),
+        TargetPlatform.macOS => image.$1,
+        _ => null,
+      };
     },
   );
 }
