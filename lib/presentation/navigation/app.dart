@@ -120,6 +120,7 @@ class HeartApp extends StatelessWidget {
               Timers.of(context).userId = user?.id;
               Workouts.of(context).userId = user?.id;
             },
+            onError: reportToSentry,
             firebase: firebaseAuth,
           ),
         ),
