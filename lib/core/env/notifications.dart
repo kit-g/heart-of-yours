@@ -23,17 +23,18 @@ Future<void> initNotifications({
   await requestNotificationPermission(platform);
   await _plugin.initialize(
     const InitializationSettings(
-        iOS: DarwinInitializationSettings(
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          requestAlertPermission: true,
-        ),
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        macOS: DarwinInitializationSettings(
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          requestAlertPermission: true,
-        )),
+      iOS: DarwinInitializationSettings(
+        requestSoundPermission: true,
+        requestBadgePermission: true,
+        requestAlertPermission: true,
+      ),
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      macOS: DarwinInitializationSettings(
+        requestSoundPermission: true,
+        requestBadgePermission: true,
+        requestAlertPermission: true,
+      ),
+    ),
     onDidReceiveNotificationResponse: (notification) async {
       switch (notification) {
         case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
