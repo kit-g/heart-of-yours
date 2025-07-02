@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/image.dart';
+import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';

@@ -11,6 +11,7 @@ import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
+import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -124,35 +125,59 @@ RouteBase _historyRoute() {
 }
 
 RouteBase _exercisesRoute() {
-  return GoRoute(
-    path: _exercisesPath,
-    builder: (context, _) {
-      return ExercisesPage(
-        onExercise: (exercise) {
-          context.goToExerciseDetail(exercise.name);
-        },
-      );
+  final navigatorKey = GlobalKey<NavigatorState>();
+
+  return ShellRoute(
+    navigatorKey: navigatorKey,
+    builder: (context, state, detail) {
+      final selectedExerciseId = state.pathParameters['exerciseId'];
+
+      return switch (LayoutProvider.of(context)) {
+        LayoutSize.compact => detail,
+        LayoutSize.wide => ExercisesPage(
+            selectedId: selectedExerciseId,
+            detail: switch (selectedExerciseId) {
+              null => null,
+              _ => detail,
+            },
+            onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
+          ),
+      };
     },
-    name: _exercisesName,
     routes: [
       GoRoute(
-        path: ':exerciseId',
-        builder: (context, state) {
-          final exerciseId = state.pathParameters['exerciseId']!;
-          final exercise = Exercises.of(context).lookup(exerciseId);
-          return ExerciseDetailPage(
-            exercise: exercise!,
-            onTapWorkout: (workoutId) {
-              return Workouts.of(context).fetchWorkout(workoutId).then(
-                (_) {
-                  if (!context.mounted) return;
-                  context.goToWorkoutEditor(workoutId);
+        path: _exercisesPath,
+        name: _exercisesName,
+        builder: (context, _) {
+          return switch (LayoutProvider.of(context)) {
+            LayoutSize.wide => const SizedBox.shrink(), // already rendered by the builder
+            LayoutSize.compact => ExercisesPage(
+                onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
+              ),
+          };
+        },
+        routes: [
+          GoRoute(
+            path: ':exerciseId',
+            name: _exerciseDetailName,
+            builder: (context, state) {
+              final exerciseId = state.pathParameters['exerciseId']!;
+              final exercise = Exercises.of(context).lookup(exerciseId);
+
+              return ExerciseDetailPage(
+                exercise: exercise!,
+                onTapWorkout: (workoutId) {
+                  return Workouts.of(context).fetchWorkout(workoutId).then(
+                    (_) {
+                      if (!context.mounted) return;
+                      context.goToWorkoutEditor(workoutId);
+                    },
+                  );
                 },
               );
             },
-          );
-        },
-        name: _exerciseDetailName,
+          ),
+        ],
       ),
     ],
   );

@@ -2,10 +2,14 @@ part of 'exercises.dart';
 
 class ExercisesPage extends StatefulWidget {
   final void Function(Exercise) onExercise;
+  final String? selectedId;
+  final Widget? detail;
 
   const ExercisesPage({
     super.key,
     required this.onExercise,
+    this.selectedId,
+    this.detail,
   });
 
   @override
@@ -28,25 +32,46 @@ class _ExercisesPageState extends State<ExercisesPage> {
   Widget build(BuildContext context) {
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     final exercises = Exercises.watch(context);
+    final layout = LayoutProvider.of(context);
+    final listview = ExercisePicker(
+      appBar: SliverAppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: backgroundColor,
+        pinned: true,
+        expandedHeight: 80.0,
+        flexibleSpace: FlexibleSpaceBar(
+          title: Text(L.of(context).exercises),
+          centerTitle: true,
+        ),
+      ),
+      exercises: exercises,
+      searchController: _searchController,
+      focusNode: _focusNode,
+      backgroundColor: backgroundColor,
+      onExerciseSelected: widget.onExercise,
+    );
+
     return Scaffold(
       body: SafeArea(
-        child: ExercisePicker(
-          appBar: SliverAppBar(
-            scrolledUnderElevation: 0,
-            backgroundColor: backgroundColor,
-            pinned: true,
-            expandedHeight: 80.0,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(L.of(context).exercises),
-              centerTitle: true,
-            ),
+        child: switch (layout) {
+          LayoutSize.compact => listview,
+          LayoutSize.wide => Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: listview,
+              ),
+              const VerticalDivider(width: 1),
+              switch (widget.detail) {
+                null => const SizedBox.shrink(),
+                Widget detail => Expanded(
+                  flex: 3,
+                  child: detail,
+                ),
+              },
+            ],
           ),
-          exercises: exercises,
-          searchController: _searchController,
-          focusNode: _focusNode,
-          backgroundColor: backgroundColor,
-          onExerciseSelected: widget.onExercise,
-        ),
+        },
       ),
       floatingActionButton: WorkoutTimerFloatingButton(
         scrollableController: Scrolls.of(context).exercisesDraggableController,
