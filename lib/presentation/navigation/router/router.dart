@@ -11,6 +11,7 @@ import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
+import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -120,71 +121,88 @@ RouteBase _historyRoute() {
 }
 
 RouteBase _exercisesRoute() {
-  return GoRoute(
-    path: _exercisesPath,
-    pageBuilder: (context, state) {
-      final child = ExercisesPage(
-        onExercise: (exercise) {
-          context.goToExerciseDetail(exercise.name);
-        },
-        onShowArchived: context.goToExerciseArchive,
-      );
-      return switch (Theme.of(context).platform) {
-        TargetPlatform.macOS || TargetPlatform.iOS => CupertinoPage(
-          key: state.pageKey,
-          child: child,
-        ),
-        _ => MaterialPage(
-          key: state.pageKey,
-          child: child,
-        ),
+  final navigatorKey = GlobalKey<NavigatorState>();
+
+  return ShellRoute(
+    navigatorKey: navigatorKey,
+    builder: (context, state, detail) {
+      final selectedExerciseId = state.pathParameters['exerciseId'];
+
+      return switch (LayoutProvider.of(context)) {
+        LayoutSize.compact => detail,
+        LayoutSize.wide => ExercisesPage(
+            selectedId: selectedExerciseId,
+            detail: switch (selectedExerciseId) {
+              null => null,
+              _ => detail,
+            },
+            onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
+          onShowArchived: context.goToExerciseArchive,
+
+          ),
       };
     },
-    name: _exercisesName,
     routes: [
       GoRoute(
-        path: 'archived',
+        path: _exercisesPath,
+        name: _exercisesName,
         builder: (context, _) {
-          return ExerciseArchive(
-            onExercise: (exercise) {
-              context.goToExerciseDetail(exercise.name);
-            },
-          );
+          return switch (LayoutProvider.of(context)) {
+            LayoutSize.wide => const SizedBox.shrink(), // already rendered by the builder
+            LayoutSize.compact => ExercisesPage(
+                onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
+              onShowArchived: context.goToExerciseArchive,
+
+              ),
+          };
         },
-        name: _exerciseArchive,
         routes: [
           GoRoute(
-            path: ':exerciseId',
-            builder: (context, state) {
-              final exerciseId = state.pathParameters['exerciseId']!;
-              final exercise = Exercises.of(context).lookup(exerciseId);
-              return ExerciseDetailPage(
-                exercise: exercise!,
-                onTapWorkout: (_) async {},
-              );
-            },
-            name: _exerciseArchivedDetailName,
-          ),
-        ],
-      ),
-      GoRoute(
-        path: ':exerciseId',
-        builder: (context, state) {
-          final exerciseId = state.pathParameters['exerciseId']!;
-          final exercise = Exercises.of(context).lookup(exerciseId);
-          return ExerciseDetailPage(
-            exercise: exercise!,
-            onTapWorkout: (workoutId) {
-              return Workouts.of(context).fetchWorkout(workoutId).then(
-                (_) {
-                  if (!context.mounted) return;
-                  context.goToWorkoutEditor(workoutId);
+            path: 'archived',
+            builder: (context, _) {
+              return ExerciseArchive(
+                onExercise: (exercise) {
+                  context.goToExerciseDetail(exercise.name);
                 },
               );
             },
-          );
-        },
-        name: _exerciseDetailName,
+            name: _exerciseArchive,
+            routes: [
+              GoRoute(
+                path: ':exerciseId',
+                builder: (context, state) {
+                  final exerciseId = state.pathParameters['exerciseId']!;
+                  final exercise = Exercises.of(context).lookup(exerciseId);
+                  return ExerciseDetailPage(
+                    exercise: exercise!,
+                    onTapWorkout: (_) async {},
+                  );
+                },
+                name: _exerciseArchivedDetailName,
+              ),
+            ],
+          ),
+          GoRoute(
+            path: ':exerciseId',
+            name: _exerciseDetailName,
+            builder: (context, state) {
+              final exerciseId = state.pathParameters['exerciseId']!;
+              final exercise = Exercises.of(context).lookup(exerciseId);
+
+              return ExerciseDetailPage(
+                exercise: exercise!,
+                onTapWorkout: (workoutId) {
+                  return Workouts.of(context).fetchWorkout(workoutId).then(
+                    (_) {
+                      if (!context.mounted) return;
+                      context.goToWorkoutEditor(workoutId);
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     ],
   );
