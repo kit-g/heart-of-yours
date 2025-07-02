@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -16,20 +17,13 @@ class AppFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:profile, :workout, :history, :exercises) = L.of(context);
-    return Scaffold(
-      body: shell,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.shifting,
-        currentIndex: shell.currentIndex,
-        enableFeedback: true,
-        onTap: (index) => _onTap(context, index),
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person_rounded),
-            label: profile,
-          ),
-          BottomNavigationBarItem(
-            icon: Selector<Workouts, bool>(
+
+    final destinations = [
+      (Icons.person_rounded, profile, () => null),
+      (
+        Icons.fitness_center_rounded,
+        workout,
+        () => Selector<Workouts, bool>(
               selector: (_, provider) => provider.hasActiveWorkout,
               builder: (_, hasActiveWorkout, __) {
                 return switch (hasActiveWorkout) {
@@ -38,18 +32,59 @@ class AppFrame extends StatelessWidget {
                 };
               },
             ),
-            label: workout,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.timeline_rounded),
-            label: history,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.list_rounded),
-            label: exercises,
-          ),
-        ],
       ),
+      (Icons.timeline_rounded, history, () => null),
+      (Icons.list_rounded, exercises, () => null),
+    ];
+
+    return LayoutProvider(
+      currentStack: shell.currentIndex,
+      builder: (context, layout, stackIndex) {
+        switch (layout) {
+          case LayoutSize.compact:
+            return Scaffold(
+              body: shell,
+              bottomNavigationBar: BottomNavigationBar(
+                type: BottomNavigationBarType.shifting,
+                currentIndex: shell.currentIndex,
+                onTap: (index) => _onTap(context, index),
+                items: destinations.map((d) {
+                  return BottomNavigationBarItem(
+                    icon: switch (d.$3) {
+                      Widget Function() builder => builder(),
+                      _ => Icon(d.$1),
+                    },
+                    label: d.$2,
+                  );
+                }).toList(),
+              ),
+            );
+
+          case LayoutSize.wide:
+            return Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: shell.currentIndex,
+                  onDestinationSelected: (index) => _onTap(context, index),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: destinations.map(
+                    (d) {
+                      return NavigationRailDestination(
+                        icon: switch (d.$3) {
+                          Widget Function() builder => builder(),
+                          _ => Icon(d.$1),
+                        },
+                        label: Text(d.$2),
+                      );
+                    },
+                  ).toList(),
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: shell),
+              ],
+            );
+        }
+      },
     );
   }
 
