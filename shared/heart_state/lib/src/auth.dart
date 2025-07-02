@@ -74,9 +74,6 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         return _loginWithCredential(cred);
       }
     } catch (e, s) {
-      print('error');
-      print(e);
-      print(s);
       onError?.call(e, stacktrace: s);
 
       try {
