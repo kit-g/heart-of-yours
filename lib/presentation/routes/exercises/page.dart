@@ -2,11 +2,15 @@ part of 'exercises.dart';
 
 class ExercisesPage extends StatefulWidget {
   final void Function(Exercise) onExercise;
+  final String? selectedId;
+  final Widget? detail;
   final VoidCallback onShowArchived;
 
   const ExercisesPage({
     super.key,
     required this.onExercise,
+    this.selectedId,
+    this.detail,
     required this.onShowArchived,
   });
 
@@ -31,48 +35,69 @@ class _ExercisesPageState extends State<ExercisesPage> {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :platform) = Theme.of(context);
     final exercises = Exercises.watch(context);
     final L(:newExercise, exercises: exCopy, :exerciseOptions) = L.of(context);
+    final layout = LayoutProvider.of(context);
+    final listview = ExercisePicker(
+      appBar: SliverAppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: backgroundColor,
+        pinned: true,
+        expandedHeight: 80.0,
+        flexibleSpace: FlexibleSpaceBar(
+          title: Text(L.of(context).exercises),
+          centerTitle: true,
+        ),
+        actions: [
+          if (exercises.archived.isNotEmpty)
+            IconButton(
+              tooltip: exerciseOptions,
+              onPressed: () {
+                _onExerciseOptions(context, onShowArchived: widget.onShowArchived);
+              },
+              icon: Icon(
+                switch (platform) {
+                  TargetPlatform.iOS => Icons.more_horiz_rounded,
+                  TargetPlatform.macOS => Icons.more_horiz_rounded,
+                  _ => Icons.more_vert_rounded,
+                },
+              ),
+            ),
+          IconButton(
+            tooltip: newExercise,
+            onPressed: () {
+              showNewExerciseDialog(context);
+            },
+            icon: const Icon(Icons.add_circle_outline_rounded),
+          ),
+        ],
+      ),
+      exercises: exercises,
+      searchController: _searchController,
+      focusNode: _focusNode,
+      backgroundColor: backgroundColor,
+      onExerciseSelected: widget.onExercise,
+    );
+
     return Scaffold(
       body: SafeArea(
-        child: ExercisePicker(
-          appBar: SliverAppBar(
-            scrolledUnderElevation: 0,
-            backgroundColor: backgroundColor,
-            pinned: true,
-            expandedHeight: 80.0,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(exCopy),
-              centerTitle: true,
-            ),
-            actions: [
-              if (exercises.archived.isNotEmpty)
-                IconButton(
-                  tooltip: exerciseOptions,
-                  onPressed: () {
-                    _onExerciseOptions(context, onShowArchived: widget.onShowArchived);
-                  },
-                  icon: Icon(
-                    switch (platform) {
-                      TargetPlatform.iOS => Icons.more_horiz_rounded,
-                      TargetPlatform.macOS => Icons.more_horiz_rounded,
-                      _ => Icons.more_vert_rounded,
-                    },
-                  ),
-                ),
-              IconButton(
-                tooltip: newExercise,
-                onPressed: () {
-                  showNewExerciseDialog(context);
-                },
-                icon: const Icon(Icons.add_circle_outline_rounded),
+        child: switch (layout) {
+          LayoutSize.compact => listview,
+          LayoutSize.wide => Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: listview,
               ),
+              const VerticalDivider(width: 1),
+              switch (widget.detail) {
+                null => const SizedBox.shrink(),
+                Widget detail => Expanded(
+                  flex: 3,
+                  child: detail,
+                ),
+              },
             ],
           ),
-          exercises: exercises,
-          searchController: _searchController,
-          focusNode: _focusNode,
-          backgroundColor: backgroundColor,
-          onExerciseSelected: widget.onExercise,
-        ),
+        },
       ),
       floatingActionButton: WorkoutTimerFloatingButton(
         scrollableController: Scrolls.of(context).exercisesDraggableController,
