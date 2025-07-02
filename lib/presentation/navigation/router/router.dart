@@ -16,6 +16,7 @@ import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/split_scaffold.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart/presentation/widgets/app_frame.dart';
+import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart_state/heart_state.dart';
 
 part 'animation.dart';
@@ -241,7 +242,7 @@ RouteBase _exercisesRoute() {
               return ExerciseDetailPage(
                 exercise: exercise!,
                 onTapWorkout: (workoutId) {
-                  return Workouts.of(context).fetchWorkout(workoutId).then<void>(
+                  return Workouts.of(context).fetchWorkout(workoutId).then(
                     (_) {
                       if (!context.mounted) return;
                       context.goToWorkoutEditor(workoutId);
@@ -249,23 +250,6 @@ RouteBase _exercisesRoute() {
                   );
                 },
               );
-            },
-            redirect: (context, state) {
-              final exercises = Exercises.of(context);
-              // cold start from deep link
-              if (!exercises.isInitialized) {
-                return state.namedLocation(
-                  _exercisesName,
-                  queryParameters: {
-                    ...state.uri.queryParameters,
-                    'from': Uri.encodeComponent(state.uri.toString()),
-                  },
-                );
-              }
-              return switch (state.pathParameters['exerciseId']) {
-                String id when exercises.lookup(id) != null => null,
-                _ => _exercisesPath,
-              };
             },
           ),
         ],
