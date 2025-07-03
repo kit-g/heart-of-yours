@@ -82,21 +82,21 @@ class _ExercisesPageState extends State<ExercisesPage> {
         child: switch (layout) {
           LayoutSize.compact => listview,
           LayoutSize.wide => Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: listview,
-              ),
-              const VerticalDivider(width: 1),
-              switch (widget.detail) {
-                null => const SizedBox.shrink(),
-                Widget detail => Expanded(
-                  flex: 3,
-                  child: detail,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: listview,
                 ),
-              },
-            ],
-          ),
+                const VerticalDivider(width: 1),
+                switch (widget.detail) {
+                  null => const SizedBox.shrink(),
+                  Widget detail => Expanded(
+                      flex: 3,
+                      child: detail,
+                    ),
+                },
+              ],
+            ),
         },
       ),
       floatingActionButton: WorkoutTimerFloatingButton(
