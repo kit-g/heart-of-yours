@@ -4,12 +4,18 @@ class HistoryPage extends StatefulWidget {
   final VoidCallback onNewWorkout;
   final void Function(Workout)? onSaveAsTemplate;
   final void Function(Workout)? onEditWorkout;
+  final void Function(Workout)? onTapWorkout;
+  final void Function(Workout)? onDeleteWorkout;
+  final Widget? detail;
 
   const HistoryPage({
     super.key,
     required this.onNewWorkout,
     required this.onSaveAsTemplate,
     required this.onEditWorkout,
+    this.onTapWorkout,
+    this.onDeleteWorkout,
+    this.detail,
   });
 
   @override
@@ -22,44 +28,67 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     final workouts = Workouts.watch(context);
     final history = workouts.history.toList()..sort();
+    final layout = LayoutProvider.of(context);
+    final listview = CustomScrollView(
+      physics: const ClampingScrollPhysics(),
+      controller: Scrolls.of(context).historyScrollController,
+      slivers: [
+        SliverAppBar(
+          scrolledUnderElevation: 0,
+          backgroundColor: backgroundColor,
+          pinned: true,
+          expandedHeight: 80.0,
+          flexibleSpace: FlexibleSpaceBar(
+            title: Text(L.of(context).history),
+            centerTitle: true,
+          ),
+        ),
+        if (history.isEmpty)
+          const SliverFillRemaining(
+            child: _EmptyState(),
+          )
+        else
+          SliverList.builder(
+            itemCount: history.length,
+            itemBuilder: (_, index) {
+              return WorkoutItem(
+                workout: history[history.length - index - 1],
+                onStartNewWorkout: widget.onNewWorkout,
+                onSaveAsTemplate: widget.onSaveAsTemplate,
+                onEditWorkout: widget.onEditWorkout,
+                onTap: widget.onTapWorkout,
+                onDeleteWorkout: widget.onDeleteWorkout,
+              );
+            },
+          )
+      ],
+    );
+
     return SafeArea(
       child: Scaffold(
         body: switch (workouts.historyInitialized) {
           false => const Center(
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          true => CustomScrollView(
-              physics: const ClampingScrollPhysics(),
-              controller: Scrolls.of(context).historyScrollController,
-              slivers: [
-                SliverAppBar(
-                  scrolledUnderElevation: 0,
-                  backgroundColor: backgroundColor,
-                  pinned: true,
-                  expandedHeight: 80.0,
-                  flexibleSpace: FlexibleSpaceBar(
-                    title: Text(L.of(context).history),
-                    centerTitle: true,
-                  ),
-                ),
-                if (history.isEmpty)
-                  const SliverFillRemaining(
-                    child: _EmptyState(),
-                  )
-                else
-                  SliverList.builder(
-                    itemCount: history.length,
-                    itemBuilder: (_, index) {
-                      return WorkoutItem(
-                        workout: history[history.length - index - 1],
-                        onStartNewWorkout: widget.onNewWorkout,
-                        onSaveAsTemplate: widget.onSaveAsTemplate,
-                        onEditWorkout: widget.onEditWorkout,
-                      );
+          true => switch (layout) {
+              LayoutSize.compact => listview,
+              LayoutSize.wide => Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: listview,
+                    ),
+                    const VerticalDivider(width: 1),
+                    switch (widget.detail) {
+                      null => const SizedBox.shrink(),
+                      Widget detail => Expanded(
+                          flex: 3,
+                          child: detail,
+                        ),
                     },
-                  ),
-              ],
-            ),
+                  ],
+                ),
+            },
         },
         floatingActionButton: WorkoutTimerFloatingButton(
           scrollableController: Scrolls.of(context).historyDraggableController,

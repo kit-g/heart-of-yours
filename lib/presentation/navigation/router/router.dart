@@ -85,36 +85,76 @@ RouteBase _workoutRoute() {
 }
 
 RouteBase _historyRoute() {
-  return GoRoute(
-    path: _historyPath,
-    builder: (context, _) {
-      return HistoryPage(
-        onNewWorkout: context.goToWorkouts,
-        onSaveAsTemplate: (workout) {
-          Templates.of(context).workoutToTemplate(workout);
-          context.goToTemplateEditor(newTemplate: true);
-        },
-        onEditWorkout: (workout) {
-          context.goToWorkoutEditor(workout.id);
-        },
-      );
+  final navigatorKey = GlobalKey<NavigatorState>();
+
+  return ShellRoute(
+    navigatorKey: navigatorKey,
+    builder: (context, state, child) {
+      final workoutId = state.pathParameters['workoutId'];
+
+      return switch (LayoutProvider.of(context)) {
+        LayoutSize.compact => child,
+        LayoutSize.wide => HistoryPage(
+            onNewWorkout: context.goToWorkouts,
+            onSaveAsTemplate: (workout) {
+              Templates.of(context).workoutToTemplate(workout);
+              context.goToTemplateEditor(newTemplate: true);
+            },
+            onEditWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onTapWorkout: (workout) {
+              context.goToWorkoutEditor(workout.id);
+            },
+            onDeleteWorkout: (_) {
+              context.goToHistory();
+            },
+            detail: switch (workoutId) {
+              String() => child,
+              null => null,
+            },
+          ),
+      };
     },
-    name: _historyName,
     routes: [
       GoRoute(
-        path: _historyEditPath,
+        path: _historyPath,
         builder: (context, state) {
-          try {
-            final workoutId = state.uri.queryParameters['workoutId'];
-            final workout = Workouts.of(context).lookup(workoutId!);
-            return WorkoutEditor(
-              copy: workout!.copy(sameId: true)..completeAllSets(),
-            );
-          } catch (e) {
-            throw GoException(e.toString());
-          }
+          return switch (LayoutProvider.of(context)) {
+            LayoutSize.wide => const SizedBox.shrink(), // already rendered by the builder
+            LayoutSize.compact => HistoryPage(
+                onNewWorkout: context.goToWorkouts,
+                onSaveAsTemplate: (workout) {
+                  Templates.of(context).workoutToTemplate(workout);
+                  context.goToTemplateEditor(newTemplate: true);
+                },
+                onEditWorkout: (workout) {
+                  context.goToWorkoutEditor(workout.id);
+                },
+                onTapWorkout: (workout) {
+                  context.goToWorkoutEditor(workout.id);
+                },
+              )
+          };
         },
-        name: _historyEditName,
+        name: _historyName,
+        routes: [
+          GoRoute(
+            path: ':workoutId',
+            builder: (context, state) {
+              try {
+                final workoutId = state.pathParameters['workoutId'];
+                final workout = Workouts.of(context).lookup(workoutId!);
+                return WorkoutEditor(
+                  copy: workout!.copy(sameId: true)..completeAllSets(),
+                );
+              } catch (e) {
+                throw GoException(e.toString());
+              }
+            },
+            name: _historyEditName,
+          )
+        ],
       ),
     ],
   );
