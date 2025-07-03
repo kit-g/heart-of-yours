@@ -111,7 +111,7 @@ RouteBase _historyRoute() {
               context.goToHistory();
             },
             detail: switch (workoutId) {
-              String() => child,
+              String() => child, // workout selected
               null => null,
             },
           ),
