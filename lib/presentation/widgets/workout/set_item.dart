@@ -273,7 +273,15 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
                     MeasurementUnit.metric => (weight * 100).roundToDouble() / 100,
                   };
                   final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(2);
-                  _weightController.text = rounded;
+
+                  // cannot update during build
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) {
+                      if (_weightController.text != rounded) {
+                        _weightController.text = rounded;
+                      }
+                    },
+                  );
                 }
 
                 return _TextFieldButton(
