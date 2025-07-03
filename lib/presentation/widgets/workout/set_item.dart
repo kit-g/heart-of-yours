@@ -348,7 +348,15 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
                     MeasurementUnit.metric => distance,
                   };
                   final rounded = distance % 1 == 0 ? distance.toInt().toString() : distance.toStringAsFixed(1);
-                  _distanceController.text = rounded;
+
+                  // cannot update during build
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) {
+                      if (_distanceController.text != rounded) {
+                        _distanceController.text = rounded;
+                      }
+                    },
+                  );
                 }
                 return _TextFieldButton(
                   set: set,
