@@ -16,7 +16,6 @@ const _signUpName = 'signUp';
 const _historyName = 'history';
 const _historyPath = '/$_historyName';
 const _historyEditName = 'edit';
-const _historyEditPath = _historyEditName;
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
 const _exerciseDetailName = 'exerciseDetail';
