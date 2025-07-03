@@ -56,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
             onPressed: widget.onSettings,
             icon: const Icon(Icons.settings_rounded),
           ),
+          // macos renders things differently
           if (platform == TargetPlatform.macOS) const SizedBox(width: 8),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
