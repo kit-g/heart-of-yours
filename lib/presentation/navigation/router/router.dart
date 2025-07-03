@@ -114,7 +114,7 @@ RouteBase _historyRoute() {
               context.goToHistory();
             },
             detail: switch (workoutId) {
-              String() => child, // workout selected
+              String() => child,
               null => null,
             },
           ),
@@ -147,8 +147,8 @@ RouteBase _historyRoute() {
             path: ':workoutId',
             builder: (context, state) {
               try {
-                final workoutId = state.pathParameters['workoutId']!;
-                final workout = Workouts.of(context).lookup(workoutId);
+                final workoutId = state.pathParameters['workoutId'];
+                final workout = Workouts.of(context).lookup(workoutId!);
                 return WorkoutEditor(
                   copy: workout!.copy(sameId: true)..completeAllSets(),
                 );
@@ -157,13 +157,7 @@ RouteBase _historyRoute() {
               }
             },
             name: _historyEditName,
-            redirect: (context, state) {
-              return switch (state.pathParameters['workoutId']) {
-                String id when Workouts.of(context).lookup(id) != null => null,
-                _ => _historyPath,
-              };
-            },
-          ),
+          )
         ],
       ),
     ],
