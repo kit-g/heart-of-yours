@@ -20,7 +20,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   @override
   Widget build(BuildContext context) {
     final L(:logOut, :settings, :workoutsPerWeekTitle, :workoutsPerWeekBody) = L.of(context);
-    final ThemeData(:textTheme) = Theme.of(context);
+    final ThemeData(:textTheme, :platform) = Theme.of(context);
 
     final auth = Auth.watch(context);
     final user = auth.user;
@@ -56,13 +56,17 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
             onPressed: widget.onSettings,
             icon: const Icon(Icons.settings_rounded),
           ),
-          IconButton.outlined(
-            tooltip: logOut,
-            onPressed: () {
-              AppTheme.of(context).onSignOut();
-              clearState(context);
-            },
-            icon: const Icon(Icons.logout_rounded),
+          if (platform == TargetPlatform.macOS) const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: IconButton.outlined(
+              tooltip: logOut,
+              onPressed: () {
+                AppTheme.of(context).onSignOut();
+                clearState(context);
+              },
+              icon: const Icon(Icons.logout_rounded),
+            ),
           ),
         ],
       ),
