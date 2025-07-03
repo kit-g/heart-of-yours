@@ -66,17 +66,15 @@ class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker>
         return AlertDialog(
           titlePadding: EdgeInsets.zero,
           contentPadding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: switch (MediaQuery.orientationOf(context)) {
-              Orientation.portrait => const BorderRadius.vertical(
-                  top: Radius.circular(500),
-                  bottom: Radius.circular(100),
-                ),
-              Orientation.landscape => const BorderRadius.horizontal(right: Radius.circular(500)),
-            },
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(500),
+              bottom: Radius.circular(100),
+            ),
           ),
           content: SingleChildScrollView(
             child: HueRingPicker(
+              portraitOnly: true,
               pickerColor: AppTheme.of(context).color ?? Theme.of(context).colorScheme.primary,
               onColorChanged: (color) => _color = color,
             ),
