@@ -49,11 +49,13 @@ android {
             dimension "default"
             applicationIdSuffix ".dev"
             resValue "string", "app_name", "Heart dev"
+            manifestPlaceholders.deepLink = "dev.app.heart-of.me"
         }
         prod {
             dimension "default"
             applicationIdSuffix ""
             resValue "string", "app_name", "Heart"
+            manifestPlaceholders.deepLink = "app.heart-of.me"
         }
     }
 
