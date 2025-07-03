@@ -107,40 +107,45 @@ class AppFrame extends StatelessWidget {
       // switch to that navigation stack unless already there
       return shell.goBranch(index);
     } else {
-      // custom callbacks based on the exact location
-      switch (index) {
-        // profile stack
-        case 0:
-          while (context.canPop()) {
-            context.pop();
-          }
-
-          if (!context.canPop()) {
-            return Scrolls.of(context).scrollProfileToTop();
-          }
-        // workout stack
-        case 1:
-          return Scrolls.of(context).scrollWorkoutToTop();
-        // history stack
-        case 2:
-          if (GoRouterState.of(context).matchedLocation == '/history/edit') {
-            return Scrolls.of(context).scrollEditableWorkoutToTop();
-          }
-
-          if (!context.canPop()) {
-            return Scrolls.of(context).resetHistoryStack();
-          }
-        // exercises stack
-        case 3:
-          if (!context.canPop()) {
-            return Scrolls.of(context).resetExerciseStack();
-          } else {
-            while (context.canPop()) {
-              context.pop();
-            }
-          }
-      }
+      _customCallbacks(context, index);
     }
+  }
+}
+
+Future<void> _customCallbacks(BuildContext context, int index) async {
+  // custom callbacks based on the exact location
+  switch (index) {
+    // profile stack
+    case 0:
+      while (context.canPop()) {
+        context.pop();
+      }
+
+      if (!context.canPop()) {
+        return Scrolls.of(context).scrollProfileToTop();
+      }
+    // workout stack
+    case 1:
+      return Scrolls.of(context).scrollWorkoutToTop();
+    // history stack
+    case 2:
+      // workout detail, brittle
+      if (GoRouterState.of(context).matchedLocation.startsWith('/history/')) {
+        return Scrolls.of(context).scrollEditableWorkoutToTop();
+      }
+
+      if (!context.canPop()) {
+        return Scrolls.of(context).resetHistoryStack();
+      }
+    // exercises stack
+    case 3:
+      if (!context.canPop()) {
+        return Scrolls.of(context).resetExerciseStack();
+      } else {
+        while (context.canPop()) {
+          context.pop();
+        }
+      }
   }
 }
 
@@ -168,16 +173,16 @@ class _KeyMap extends StatelessWidget {
       child: Actions(
         actions: <Type, Action<Intent>>{
           _NextTabIntent: CallbackAction<_NextTabIntent>(
-            onInvoke: (intent) => _changeTab(shell, (shell.currentIndex + 1) % 4),
+            onInvoke: (_) => _changeTab(context, shell, (shell.currentIndex + 1) % 4),
           ),
           _PreviousTabIntent: CallbackAction<_PreviousTabIntent>(
-            onInvoke: (intent) => _changeTab(shell, (shell.currentIndex - 1 + 4) % 4),
+            onInvoke: (_) => _changeTab(context, shell, (shell.currentIndex - 1 + 4) % 4),
           ),
           _TabIntent: CallbackAction<_TabIntent>(
-            onInvoke: (intent) => _changeTab(shell, intent.index),
+            onInvoke: (intent) => _changeTab(context, shell, intent.index),
           ),
           _NewWorkoutIntent: CallbackAction<_NewWorkoutIntent>(
-            onInvoke: (intent) {
+            onInvoke: (_) {
               shell.goBranch(1);
               final name = L.of(context).defaultWorkoutName();
               return Workouts.of(context).startWorkout(name: name);
@@ -189,9 +194,11 @@ class _KeyMap extends StatelessWidget {
     );
   }
 
-  void _changeTab(StatefulNavigationShell shell, int index) {
+  void _changeTab(BuildContext context, StatefulNavigationShell shell, int index) {
     if (index != shell.currentIndex) {
       shell.goBranch(index);
+    } else {
+      _customCallbacks(context, index);
     }
   }
 }
