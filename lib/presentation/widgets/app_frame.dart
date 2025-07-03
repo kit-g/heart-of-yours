@@ -49,46 +49,52 @@ class AppFrame extends StatelessWidget {
       builder: (context, layout, stackIndex) {
         switch (layout) {
           case LayoutSize.compact:
-            return Scaffold(
-              body: shell,
-              bottomNavigationBar: BottomNavigationBar(
-                type: BottomNavigationBarType.shifting,
-                currentIndex: shell.currentIndex,
-                onTap: (index) => _onTap(context, index),
-                items: destinations.map((d) {
-                  return BottomNavigationBarItem(
-                    icon: switch (d.$3) {
-                      Widget Function() builder => builder(),
-                      _ => Icon(d.$1),
-                    },
-                    label: d.$2,
-                  );
-                }).toList(),
+            return _KeyMap(
+              shell: shell,
+              child: Scaffold(
+                body: shell,
+                bottomNavigationBar: BottomNavigationBar(
+                  type: BottomNavigationBarType.shifting,
+                  currentIndex: shell.currentIndex,
+                  onTap: (index) => _onTap(context, index),
+                  items: destinations.map((d) {
+                    return BottomNavigationBarItem(
+                      icon: switch (d.$3) {
+                        Widget Function() builder => builder(),
+                        _ => Icon(d.$1),
+                      },
+                      label: d.$2,
+                    );
+                  }).toList(),
+                ),
               ),
             );
 
           case LayoutSize.wide:
-            return Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: shell.currentIndex,
-                  onDestinationSelected: (index) => _onTap(context, index),
-                  labelType: NavigationRailLabelType.all,
-                  destinations: destinations.map(
-                    (d) {
-                      return NavigationRailDestination(
-                        icon: switch (d.$3) {
-                          Widget Function() builder => builder(),
-                          _ => Icon(d.$1),
-                        },
-                        label: Text(d.$2),
-                      );
-                    },
-                  ).toList(),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(child: shell),
-              ],
+            return _KeyMap(
+              shell: shell,
+              child: Row(
+                children: [
+                  NavigationRail(
+                    selectedIndex: shell.currentIndex,
+                    onDestinationSelected: (index) => _onTap(context, index),
+                    labelType: NavigationRailLabelType.all,
+                    destinations: destinations.map(
+                      (d) {
+                        return NavigationRailDestination(
+                          icon: switch (d.$3) {
+                            Widget Function() builder => builder(),
+                            _ => Icon(d.$1),
+                          },
+                          label: Text(d.$2),
+                        );
+                      },
+                    ).toList(),
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(child: shell),
+                ],
+              ),
             );
         }
       },
@@ -136,4 +142,68 @@ class AppFrame extends StatelessWidget {
       }
     }
   }
+}
+
+class _KeyMap extends StatelessWidget {
+  final Widget child;
+  final StatefulNavigationShell shell;
+
+  const _KeyMap({
+    required this.child,
+    required this.shell,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: {
+        LogicalKeySet(LogicalKeyboardKey.bracketRight): _NextTabIntent(),
+        LogicalKeySet(LogicalKeyboardKey.bracketLeft): _PreviousTabIntent(),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit1): const _TabIntent(0),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit2): const _TabIntent(1),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit3): const _TabIntent(2),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit4): const _TabIntent(3),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyN): _NewWorkoutIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _NextTabIntent: CallbackAction<_NextTabIntent>(
+            onInvoke: (intent) => _changeTab(shell, (shell.currentIndex + 1) % 4),
+          ),
+          _PreviousTabIntent: CallbackAction<_PreviousTabIntent>(
+            onInvoke: (intent) => _changeTab(shell, (shell.currentIndex - 1 + 4) % 4),
+          ),
+          _TabIntent: CallbackAction<_TabIntent>(
+            onInvoke: (intent) => _changeTab(shell, intent.index),
+          ),
+          _NewWorkoutIntent: CallbackAction<_NewWorkoutIntent>(
+            onInvoke: (intent) {
+              shell.goBranch(1);
+              final name = L.of(context).defaultWorkoutName();
+              return Workouts.of(context).startWorkout(name: name);
+            },
+          ),
+        },
+        child: child,
+      ),
+    );
+  }
+
+  void _changeTab(StatefulNavigationShell shell, int index) {
+    if (index != shell.currentIndex) {
+      shell.goBranch(index);
+    }
+  }
+}
+
+class _NextTabIntent extends Intent {}
+
+class _PreviousTabIntent extends Intent {}
+
+class _NewWorkoutIntent extends Intent {}
+
+class _TabIntent extends Intent {
+  final int index;
+
+  const _TabIntent(this.index);
 }
