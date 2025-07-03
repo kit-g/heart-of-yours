@@ -21,7 +21,7 @@ class _TextFieldButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final ThemeData(:colorScheme, :textTheme, :platform) = Theme.of(context);
 
     return Focus(
       focusNode: focusNode,
@@ -85,7 +85,12 @@ class _TextFieldButton extends StatelessWidget {
                           },
                           textAlign: TextAlign.center,
                           cursorHeight: 16,
-                          textAlignVertical: TextAlignVertical.center,
+                          textAlignVertical: switch (platform) {
+                            // rendered weird on macos
+                            TargetPlatform.macOS => TextAlignVertical.top,
+                            // rendered fine, duh
+                            _ => TextAlignVertical.center,
+                          },
                           maxLines: 1,
                           minLines: 1,
                           cursorColor: switch ((hasError, set.isCompleted)) {
@@ -99,6 +104,7 @@ class _TextFieldButton extends StatelessWidget {
                           onEditingComplete: () {},
                           onTap: () => _selectAllText(controller),
                           onTapOutside: (_) => focusNode.unfocus(),
+
                         ),
                       ),
                     ),
