@@ -7,6 +7,7 @@ class WorkoutItem extends StatelessWidget {
   final VoidCallback? onStartNewWorkout;
   final void Function(Workout)? onSaveAsTemplate;
   final void Function(Workout)? onEditWorkout;
+  final void Function(Workout)? onDeleteWorkout;
 
   const WorkoutItem({
     super.key,
@@ -16,6 +17,7 @@ class WorkoutItem extends StatelessWidget {
     this.onStartNewWorkout,
     this.onSaveAsTemplate,
     this.onEditWorkout,
+    this.onDeleteWorkout,
   });
 
   @override
@@ -204,7 +206,7 @@ class WorkoutItem extends StatelessWidget {
   Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
     switch (option) {
       case _WorkoutOption.delete:
-        return Workouts.of(context).deleteWorkout(workout.id);
+        return Workouts.of(context).deleteWorkout(workout.id).then((_) => onDeleteWorkout?.call(workout));
       case _WorkoutOption.repeat:
         final workouts = Workouts.of(context);
 

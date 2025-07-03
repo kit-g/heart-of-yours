@@ -39,8 +39,12 @@ extension on BuildContext {
     return goNamed(_avatarName);
   }
 
+  void goToHistory() {
+    return goNamed(_historyName);
+  }
+
   void goToWorkoutEditor(String workoutId) {
-    return goNamed(_historyEditName, queryParameters: {'workoutId': workoutId});
+    return go('$_historyPath/$workoutId');
   }
 
   void goToExerciseDetail(String exerciseId) {

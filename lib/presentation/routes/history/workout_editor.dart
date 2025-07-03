@@ -12,7 +12,7 @@ class WorkoutEditor extends StatefulWidget {
 class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEditor> {
   final _focusNode = FocusNode();
   final _controller = TextEditingController();
-  late final _WorkoutNotifier _notifier;
+  late _WorkoutNotifier _notifier;
 
   Workout get workout => _notifier.workout;
 
@@ -24,9 +24,20 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   }
 
   @override
+  void didUpdateWidget(covariant WorkoutEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // navigated to a different workout
+    if (widget.copy.id != oldWidget.copy.id) {
+      _notifier = _WorkoutNotifier(widget.copy);
+    }
+  }
+
+  @override
   void dispose() {
     _focusNode.dispose();
     _controller.dispose();
+    _notifier.dispose();
 
     super.dispose();
   }
