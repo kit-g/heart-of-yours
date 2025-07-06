@@ -4,9 +4,9 @@ import 'dart:ui';
 import 'package:heart/core/env/config.dart';
 
 Map<String, String> headers({
-  required AppConfig config,
   String? sessionToken,
   String? appVersion,
+  bool isWeb = false,
 }) {
   return {
     if (sessionToken != null) 'Authorization': 'Bearer $sessionToken',
@@ -14,28 +14,32 @@ Map<String, String> headers({
     'Accept': 'application/json',
     'Accept-Language': PlatformDispatcher.instance.locale.toLanguageTag(),
     'X-Timezone': DateTime.now().timeZoneName,
-    ..._common(config, appVersion),
+    ..._common(appVersion, isWeb: isWeb),
   };
 }
 
-Map<String, String> imageHeaders({required AppConfig config, String? appVersion}) {
+Map<String, String> imageHeaders({String? appVersion, required bool isWeb}) {
   return {
     'Accept': 'image/avif,image/webp,image/png,image/jpeg,image/gif',
-    'Accept-Encoding': 'gzip, br, deflate',
+    if (!isWeb) 'Accept-Encoding': 'gzip, br, deflate',
     'Cache-Control': 'public, max-age=31536000, immutable',
-    ..._common(config, appVersion),
+    ..._common(appVersion, isWeb: isWeb),
   };
 }
 
-Map<String, String> _common(AppConfig config, String? appVersion) {
+Map<String, String> _common(String? appVersion, {bool isWeb = false}) {
   final version = appVersion ?? 'Unknown version';
   return {
-    'Referer': config.appLink,
-    'User-Agent': _userAgent(config, version),
+    if (!isWeb) 'Referer': AppConfig.appLink,
+    if (!isWeb) 'User-Agent': _userAgent(version),
     if (appVersion != null) 'X-App-Version': appVersion,
   };
 }
 
-String _userAgent(AppConfig config, String version) {
-  return '${config.appName}/$version (Flutter; ${Platform.operatingSystem}; +${config.appLink})';
+String _userAgent(String version) {
+  try {
+    return '${AppConfig.appName}/$version (Flutter; ${Platform.operatingSystem}; +${AppConfig.appLink})';
+  } catch (e) {
+    return '${AppConfig.appName}/$version (Flutter; web; +${AppConfig.appLink})';
+  }
 }
