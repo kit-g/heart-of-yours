@@ -12,13 +12,25 @@ class LocalDatabase
 
   LocalDatabase._(this._db);
 
-  static Future<LocalDatabase> init({int version = 1, Database? other}) async {
+  static Future<LocalDatabase> init({int version = 1, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     var path = await getDatabasesPath();
     // await deleteDatabase(path);
 
     const name = 'heart.db';
+
+    final path = switch (isWeb) {
+      true => 'heart',
+      false => await getDatabasesPath(),
+    };
+
+    if (isWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+    }
+
+    // await deleteDatabase(path);
+
     _logger.info('Local database at $path/$name');
     final db = await openDatabase(
       join(path, name),
