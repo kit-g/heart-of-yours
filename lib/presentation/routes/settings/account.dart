@@ -401,6 +401,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                 config: AppConfig.of(context),
                 sessionToken: token,
                 appVersion: AppInfo.of(context).fullVersion,
+                isWeb: kIsWeb,
               ),
             );
           }
