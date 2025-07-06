@@ -394,6 +394,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               headers(
                 sessionToken: token,
                 appVersion: AppInfo.of(context).fullVersion,
+                isWeb: kIsWeb,
               ),
             );
           }
