@@ -1,4 +1,5 @@
 import 'package:feedback/feedback.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:heart/core/env/config.dart';
@@ -225,7 +226,7 @@ Future<void> _initApp(BuildContext context, String? sessionToken, String? userId
         appVersion: info.fullVersion,
       );
 
-      AppImage.headers = imageHeaders(appVersion: info.version);
+      AppImage.headers = imageHeaders(appVersion: info.version, isWeb: kIsWeb);
     },
   );
 
@@ -285,6 +286,7 @@ Future<void> _initApi({String? sessionToken, String? appVersion}) async {
     headers(
       sessionToken: sessionToken,
       appVersion: appVersion,
+      isWeb: kIsWeb,
     ),
   );
 }
