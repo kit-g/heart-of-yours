@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class AppImage extends StatelessWidget {
@@ -26,6 +25,31 @@ class AppImage extends StatelessWidget {
       (_, Uint8List bytes) => Image.memory(
           bytes,
           fit: fit,
+          errorBuilder: (context, error, _) {
+            return errorWidget?.call(context, error) ?? const SizedBox.shrink();
+          },
+        ),
+      // something is off with CachedNetworkImage, gifs and Flutter 3.29+, it seems
+      (String url, _) when kIsWeb && url.endsWith('.gif') => Image.network(
+          url,
+          headers: _headers,
+          webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+          fit: fit,
+          loadingBuilder: (context, child, progress) {
+            return switch (progress) {
+              ImageChunkEvent(:var expectedTotalBytes, :var cumulativeBytesLoaded) => progressIndicatorBuilder?.call(
+                    context,
+                    url,
+                    DownloadProgress(
+                      url,
+                      expectedTotalBytes,
+                      cumulativeBytesLoaded,
+                    ),
+                  ) ??
+                  const SizedBox.shrink(),
+              _ => child,
+            };
+          },
           errorBuilder: (context, error, _) {
             return errorWidget?.call(context, error) ?? const SizedBox.shrink();
           },
