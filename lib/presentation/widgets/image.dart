@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class AppImage extends StatelessWidget {
@@ -18,29 +17,53 @@ class AppImage extends StatelessWidget {
     this.fit,
     this.progressIndicatorBuilder,
     this.errorWidget,
-  }) : assert(url != null || bytes != null, 'Must pass either url or bytes'),
-       assert(url == null || bytes == null, 'Cannot pass both url and bytes');
+  });
 
   @override
   Widget build(BuildContext context) {
     return switch ((url, bytes)) {
       (_, Uint8List bytes) => Image.memory(
-        bytes,
-        fit: fit,
-        errorBuilder: (context, error, _) {
-          return errorWidget?.call(context, error) ?? const SizedBox.shrink();
-        },
-      ),
+          bytes,
+          fit: fit,
+          errorBuilder: (context, error, _) {
+            return errorWidget?.call(context, error) ?? const SizedBox.shrink();
+          },
+        ),
+      // something is off with CachedNetworkImage, gifs and Flutter 3.29+, it seems
+      (String url, _) when kIsWeb && url.endsWith('.gif') => Image.network(
+          url,
+          headers: _headers,
+          webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+          fit: fit,
+          loadingBuilder: (context, child, progress) {
+            return switch (progress) {
+              ImageChunkEvent(:var expectedTotalBytes, :var cumulativeBytesLoaded) => progressIndicatorBuilder?.call(
+                    context,
+                    url,
+                    DownloadProgress(
+                      url,
+                      expectedTotalBytes,
+                      cumulativeBytesLoaded,
+                    ),
+                  ) ??
+                  const SizedBox.shrink(),
+              _ => child,
+            };
+          },
+          errorBuilder: (context, error, _) {
+            return errorWidget?.call(context, error) ?? const SizedBox.shrink();
+          },
+        ),
       (String url, _) when url.startsWith('https') => CachedNetworkImage(
-        fadeInDuration: const Duration(milliseconds: 200),
-        httpHeaders: _headers,
-        imageUrl: url,
-        fit: fit,
-        progressIndicatorBuilder: progressIndicatorBuilder,
-        errorWidget: (context, _, error) {
-          return errorWidget?.call(context, error) ?? const SizedBox.shrink();
-        },
-      ),
+          fadeInDuration: const Duration(milliseconds: 200),
+          httpHeaders: _headers,
+          imageUrl: url,
+          fit: fit,
+          progressIndicatorBuilder: progressIndicatorBuilder,
+          errorWidget: (context, _, error) {
+            return errorWidget?.call(context, error) ?? const SizedBox.shrink();
+          },
+        ),
       _ => const SizedBox.shrink(),
     };
   }
