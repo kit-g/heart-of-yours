@@ -1,4 +1,6 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -103,8 +105,8 @@ ThemeData theme(ColorScheme colorScheme) {
 }
 
 TextTheme _textTheme({Color? primaryColor, Color? secondaryColor}) {
-  final regular = Platform.isMacOS ? FontWeight.w200 : FontWeight.w400;
-  final bold = Platform.isMacOS ? FontWeight.w500 : FontWeight.w700;
+  final regular = !kIsWeb && Platform.isMacOS ? FontWeight.w200 : FontWeight.w400;
+  final bold = !kIsWeb && Platform.isMacOS ? FontWeight.w500 : FontWeight.w700;
 
   return TextTheme(
     displayLarge: TextStyle(fontSize: 96.0, fontWeight: FontWeight.w300, letterSpacing: -1.5, color: primaryColor),
