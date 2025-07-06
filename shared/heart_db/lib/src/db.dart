@@ -4,11 +4,20 @@ final class LocalDatabase
     implements TimersService, ExerciseService, PreviousExerciseService, StatsService, TemplateService, WorkoutService {
   static late final Database _db;
 
-  static Future<void> init([int version = 1]) async {
-    var path = await getDatabasesPath();
+  static Future<void> init({int version = 1, bool isWeb = false}) async {
+    const name = 'heart.db';
+
+    final path = switch (isWeb) {
+      true => 'heart',
+      false => await getDatabasesPath(),
+    };
+
+    if (isWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+    }
+
     // await deleteDatabase(path);
 
-    const name = 'heart.db';
     _logger.info('Local database at $path/$name');
     await openDatabase(
       join(path, name),
