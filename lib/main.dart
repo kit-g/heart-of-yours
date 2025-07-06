@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
@@ -13,7 +14,7 @@ Future<void> main() {
 
   return Future.wait([
     initializeFirebase(),
-    LocalDatabase.init(),
+    LocalDatabase.init(isWeb: kIsWeb),
   ]).then(
     (_) {
       return initSentry(_runner);
