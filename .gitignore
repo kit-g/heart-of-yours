@@ -57,3 +57,6 @@ pubspec.lock
 
 # test mocks
 *.mocks.dart
+
+/web/sqflite_sw.js
+/web/sqlite3.wasm

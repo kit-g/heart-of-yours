@@ -6,6 +6,9 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   macos:
     generate: true
+  web:
+    generate: true
+    image_path: "assets/icons/launcher_dev_macos.png"
 
 # to generate: dart run flutter_launcher_icons
 # https://www.figma.com/community/file/1040708197994685442
