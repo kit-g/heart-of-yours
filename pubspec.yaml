@@ -29,6 +29,8 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   flutter_local_notifications: ^19.5.0
   flutter_svg: ^2.2.3
+  flutter_web_plugins:
+    sdk: flutter
   go_router: ^14.8.1
   heart_api:
   heart_charts:
