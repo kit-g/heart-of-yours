@@ -8,9 +8,12 @@ import 'package:heart/core/utils/firebase.dart';
 import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart_db/heart_db.dart';
 
+import 'core/url/strategy.dart';
+
 Future<void> main() {
   WidgetsFlutterBinding.ensureInitialized();
   initLogging(AppConfig.logLevel);
+  setUrlStrategy();
 
   return Future.wait([
     initializeFirebase(),
