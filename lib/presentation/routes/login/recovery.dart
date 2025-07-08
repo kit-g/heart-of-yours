@@ -3,11 +3,13 @@ part of 'login.dart';
 class RecoveryPage extends StatefulWidget {
   final void Function(String) onLinkSent;
   final String? address;
+  final bool isWideScreen;
 
   const RecoveryPage({
     super.key,
     required this.onLinkSent,
     this.address,
+    this.isWideScreen = false,
   });
 
   @override
@@ -46,6 +48,14 @@ class _RecoveryPageState extends State<RecoveryPage>
     return Scaffold(
       appBar: AppBar(
         title: Text(forgotPassword),
+        leading: switch (widget.isWideScreen) {
+          false => null,
+          true => BackButton(
+              onPressed: () {
+                widget.onLinkSent(_emailController.text.trim());
+              },
+            ),
+        },
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
