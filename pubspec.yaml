@@ -21,6 +21,8 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   flutter_localizations:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   go_router: ^14.8.1
   heart_api:
     path: 'shared/heart_api'
