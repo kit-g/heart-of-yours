@@ -58,7 +58,10 @@ class _Form extends StatelessWidget {
                     children: [
                       TextFormField(
                         controller: emailController,
-                        decoration: InputDecoration(hintText: email),
+                        decoration: InputDecoration(
+                          hintText: email,
+                          prefixIcon: const Icon(Icons.email_outlined),
+                        ),
                         keyboardType: TextInputType.emailAddress,
                         validator: validator,
                         autocorrect: false,
@@ -72,7 +75,10 @@ class _Form extends StatelessWidget {
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: nameController,
-                          decoration: InputDecoration(hintText: nameOptional),
+                          decoration: InputDecoration(
+                            hintText: nameOptional,
+                            prefixIcon: const Icon(Icons.person_outline),
+                          ),
                           keyboardType: TextInputType.name,
                           autocorrect: false,
                           maxLines: 1,
@@ -86,6 +92,7 @@ class _Form extends StatelessWidget {
                         maxLines: 1,
                         decoration: InputDecoration(
                           hintText: password,
+                          prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
                             tooltip: hide ? showPassword : hidePassword,
                             padding: EdgeInsets.zero,
