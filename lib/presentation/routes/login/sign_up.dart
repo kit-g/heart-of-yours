@@ -105,13 +105,15 @@ class _SignUpPageState extends State<SignUpPage>
                                       left: 24,
                                       child: Icon(CustomIcons.google),
                                     ),
-                                    OutlinedButton(
-                                      onPressed: () => run(Auth.of(context).loginWithGoogle),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(signUpWithGoogle),
-                                        ],
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: () => run(Auth.of(context).loginWithGoogle),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(signUpWithGoogle),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -135,13 +137,17 @@ class _SignUpPageState extends State<SignUpPage>
                                                 left: 24,
                                                 child: Icon(CustomIcons.appstore),
                                               ),
-                                              OutlinedButton(
-                                                onPressed: () => run(Auth.of(context).loginWithApple),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(signUpWithApple),
-                                                  ],
+                                              Expanded(
+                                                child: OutlinedButton(
+                                                  onPressed: () => run(Auth.of(context).loginWithApple),
+                                                  child: Expanded(
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Text(signUpWithApple),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ],
