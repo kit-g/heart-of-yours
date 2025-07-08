@@ -114,11 +114,13 @@ class _LoginPageState extends State<LoginPage>
                                     ),
                                     OutlinedButton(
                                       onPressed: () => run(Auth.of(context).loginWithGoogle),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(logInWithGoogle),
-                                        ],
+                                      child: Expanded(
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(logInWithGoogle),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -143,11 +145,13 @@ class _LoginPageState extends State<LoginPage>
                                               ),
                                               OutlinedButton(
                                                 onPressed: () => run(Auth.of(context).loginWithApple),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(logInWithApple),
-                                                  ],
+                                                child: Expanded(
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text(logInWithApple),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ],
