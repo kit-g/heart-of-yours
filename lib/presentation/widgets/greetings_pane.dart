@@ -13,10 +13,17 @@ class GreetingsPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:primaryColor, :textTheme, :colorScheme) = Theme.of(context);
+    final ThemeData(:primaryColor, :textTheme, :colorScheme, :brightness) = Theme.of(context);
 
+    final fontColor = switch (brightness) {
+      Brightness.dark => colorScheme.onPrimaryContainer,
+      Brightness.light => colorScheme.onPrimary,
+    };
     return Container(
-      color: primaryColor,
+      color: switch (brightness) {
+        Brightness.dark => colorScheme.primaryContainer,
+        Brightness.light => colorScheme.primary,
+      },
       child: Stack(
         children: [
           Positioned(
@@ -37,15 +44,16 @@ class GreetingsPane extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: textTheme.displaySmall?.copyWith(color: colorScheme.onPrimary, fontFamily: 'Daydream'),
+                    style: textTheme.displaySmall?.copyWith(
+                      color: fontColor,
+                      fontFamily: 'Daydream',
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     body,
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onPrimary,
-                    ),
+                    style: textTheme.bodyLarge?.copyWith(color: fontColor),
                     textAlign: TextAlign.center,
                   ),
                 ],
