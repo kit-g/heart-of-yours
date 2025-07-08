@@ -1,0 +1,3 @@
+void setUrlStrategy() {
+  // do nothing
+}
