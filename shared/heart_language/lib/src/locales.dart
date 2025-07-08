@@ -167,6 +167,54 @@ class L {
     );
   }
 
+  String get logInTitle {
+    return Intl.message(
+      'Welcome Back',
+      name: 'logInTitle',
+      desc: 'Login page copy',
+    );
+  }
+
+  String get logInBody {
+    return Intl.message(
+      'You’ve already started something important. \nLet’s keep going.',
+      name: 'logInBody',
+      desc: 'Login page copy',
+    );
+  }
+
+  String get signUpTitle {
+    return Intl.message(
+      'Begin with Heart',
+      name: 'signUpTitle',
+      desc: 'Sign up page copy',
+    );
+  }
+
+  String get signUpBody {
+    return Intl.message(
+      'Every journey starts with one decision. \nThis one’s yours.',
+      name: 'signUpBody',
+      desc: 'Sign up page copy',
+    );
+  }
+
+  String get recoverTitle {
+    return Intl.message(
+      'Still with You',
+      name: 'recoverTitle',
+      desc: 'Recover page copy',
+    );
+  }
+
+  String get recoverBody {
+    return Intl.message(
+      'Your journey isn’t lost. \nJust a moment of pause — we’ll reset together.',
+      name: 'recoverBody',
+      desc: 'Recover page copy',
+    );
+  }
+
   String get logInWithGoogle {
     return Intl.message(
       'Log in with Google',
