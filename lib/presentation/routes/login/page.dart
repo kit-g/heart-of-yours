@@ -133,6 +133,8 @@ class _LoginPageState extends State<LoginPage>
                                       ),
                                     ],
                                   ),
+                                  if (Theme.of(context).platform case TargetPlatform.macOS) const SizedBox(height: 8),
+
                                   FutureBuilder<bool>(
                                     future: _isAppleSignNnAvailable,
                                     builder: (_, snapshot) {
@@ -143,24 +145,26 @@ class _LoginPageState extends State<LoginPage>
                                         child: switch (hasAppleSignIn) {
                                           false => const SizedBox.shrink(),
                                           true => Stack(
-                                            children: [
-                                              const Positioned(
-                                                top: 0,
-                                                bottom: 0,
-                                                left: 24,
-                                                child: Icon(CustomIcons.appstore),
-                                              ),
-                                              OutlinedButton(
-                                                onPressed: () => run(Auth.of(context).loginWithApple),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(logInWithApple),
-                                                  ],
+                                              children: [
+                                                const Positioned(
+                                                  top: 0,
+                                                  bottom: 0,
+                                                  left: 24,
+                                                  child: Icon(CustomIcons.appstore),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
+                                                OutlinedButton(
+                                                  onPressed: () => run(Auth.of(context).loginWithApple),
+                                                  child: Expanded(
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Text(logInWithApple),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                         },
                                       );
                                     },
