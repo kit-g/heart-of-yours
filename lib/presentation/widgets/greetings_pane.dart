@@ -44,16 +44,15 @@ class GreetingsPane extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: textTheme.displaySmall?.copyWith(
-                      color: fontColor,
-                      fontFamily: 'Daydream',
-                    ),
+                    style: textTheme.displaySmall?.copyWith(color: colorScheme.onPrimary, fontFamily: 'Daydream'),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     body,
-                    style: textTheme.bodyLarge?.copyWith(color: fontColor),
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onPrimary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
