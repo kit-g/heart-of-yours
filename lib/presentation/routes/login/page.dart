@@ -77,8 +77,8 @@ class _LoginPageState extends State<LoginPage>
                               child: switch (loading) {
                                 false => child!,
                                 true => const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
+                                  child: CircularProgressIndicator(),
+                                ),
                               },
                             );
                           },
@@ -104,24 +104,8 @@ class _LoginPageState extends State<LoginPage>
                                   padding: const EdgeInsets.all(8.0),
                                   child: Text(orConnector),
                                 ),
-                                Stack(
-                                  children: [
-                                    const Positioned(
-                                      top: 0,
-                                      bottom: 0,
-                                      left: 24,
-                                      child: Icon(CustomIcons.google),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: () => run(Auth.of(context).loginWithGoogle),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(logInWithGoogle),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                GoogleSignInButton(
+                                  onPressed: () => run(Auth.of(context).loginWithGoogle),
                                 ),
                                 if (Theme.of(context).platform case TargetPlatform.macOS) const SizedBox(height: 8),
                                 FutureBuilder<bool>(
@@ -134,24 +118,24 @@ class _LoginPageState extends State<LoginPage>
                                       child: switch (hasAppleSignIn) {
                                         false => const SizedBox.shrink(),
                                         true => Stack(
-                                            children: [
-                                              const Positioned(
-                                                top: 0,
-                                                bottom: 0,
-                                                left: 24,
-                                                child: Icon(CustomIcons.appstore),
+                                          children: [
+                                            const Positioned(
+                                              top: 0,
+                                              bottom: 0,
+                                              left: 24,
+                                              child: Icon(CustomIcons.appstore),
+                                            ),
+                                            OutlinedButton(
+                                              onPressed: () => run(Auth.of(context).loginWithApple),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Text(logInWithApple),
+                                                ],
                                               ),
-                                              OutlinedButton(
-                                                onPressed: () => run(Auth.of(context).loginWithApple),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(logInWithApple),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
+                                        ),
                                       },
                                     );
                                   },
@@ -163,7 +147,7 @@ class _LoginPageState extends State<LoginPage>
                                 TextButton(
                                   onPressed: () {
                                     buzz();
-                                    widget.onSignUp(_emailController.text);
+                                    widget.onSignUp(_emailController.text.trim());
                                   },
                                   child: Padding(
                                     padding: const EdgeInsets.all(8.0),
