@@ -15,6 +15,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final AccountService _service;
   final Future<void> Function(String?, String?)? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final bool isWeb;
 
   User? _user;
 
@@ -35,26 +36,44 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.onUserChange,
     this.onError,
     this.onEnter,
+    required this.isWeb,
     required AccountService service,
   }) : _service = service {
-    _firebase.userChanges().listen(
-      (user) async {
-        _user = _cast(user);
-        onUserChange?.call(_user);
-        notifyListeners();
-        if (user case fb.User user) {
-          await onEnter?.call(await user.getIdToken(), user.uid);
-          try {
-            _user = await _registerUser(_user);
-          } on AccountDeleted {
-            _logout();
+    // such is the way with Google sign-in
+    // on the web - Firebase does not pick it up
+    if (isWeb) {
+      _googleSignIn.authenticationEvents.listen(
+        (event) async {
+          switch (event) {
+            case GoogleSignInAuthenticationEventSignIn(user: GoogleSignInAccount account):
+              await _loginWithGoogle(account);
+              await onEnter?.call(account.authentication.idToken, user?.id);
+            case GoogleSignInAuthenticationEventSignOut():
+              _user = null;
+              notifyListeners();
           }
-        }
-      },
-      onError: (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-      },
-    );
+        },
+      );
+    } else {
+      _firebase.userChanges().listen(
+        (user) async {
+          _user = _cast(user);
+          onUserChange?.call(_user);
+          notifyListeners();
+          if (user case fb.User user) {
+            await onEnter?.call(await user.getIdToken(), user.uid);
+            try {
+              _user = await _registerUser(_user);
+            } on AccountDeleted {
+              _logout();
+            }
+          }
+        },
+        onError: (error, stacktrace) {
+          onError?.call(error, stacktrace: stacktrace);
+        },
+      );
+    }
   }
 
   static Auth of(BuildContext context) {
@@ -65,13 +84,23 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     return Provider.of<Auth>(context, listen: true);
   }
 
+  Future<void> initGoogleSignIn() {
+    return _googleSignIn.initialize();
+  }
+
+  Future<void> _loginWithGoogle(GoogleSignInAccount user) async {
+    if (user.authentication case GoogleSignInAuthentication(:String? idToken)) {
+      final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
+      return _loginWithCredential(cred);
+    }
+  }
+
   Future<void> loginWithGoogle() async {
     try {
       await _googleSignIn.initialize();
-      final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
-      if (account.authentication case GoogleSignInAuthentication(:String? idToken)) {
-        final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
-        return _loginWithCredential(cred);
+      if (_googleSignIn.supportsAuthenticate()) {
+        final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
+        return _loginWithGoogle(account);
       }
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
@@ -199,6 +228,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> _logout() async {
+    await _googleSignIn.initialize();
     await _googleSignIn.signOut();
     await _firebase.signOut();
   }
