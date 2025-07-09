@@ -32,6 +32,7 @@ dependencies:
   flutter_web_plugins:
     sdk: flutter
   go_router: ^14.8.1
+  google_sign_in_web: 1.0.0 # required for the sign-in button on the web
   heart_api:
   heart_charts:
   heart_db:
