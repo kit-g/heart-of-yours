@@ -90,6 +90,7 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
+            isWeb: kIsWeb,
             service: api,
             onEnter: (session, userId) => _initApp(context, session, userId),
             onUserChange: (user) {
@@ -101,7 +102,12 @@ class HeartApp extends StatelessWidget {
               Timers.of(context).userId = user?.id;
               Workouts.of(context).userId = user?.id;
             },
-            onError: reportToSentry,
+            onError: (error, {stacktrace}) {
+              Logger('Auth')
+                ..shout('${error.runtimeType}: $error')
+                ..shout(stacktrace);
+              reportToSentry(error, stacktrace: stacktrace);
+            },
           ),
         ),
         ChangeNotifierProvider<Alarms>(
