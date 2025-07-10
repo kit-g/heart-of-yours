@@ -25,3 +25,4 @@ const _accountManagementPath = 'account';
 const _accountManagementName = _accountManagementPath;
 const _restoreAccountName = 'restoreAccount';
 const _restoreAccountPath = '/$_restoreAccountName';
+const _applePath = '/apple';
