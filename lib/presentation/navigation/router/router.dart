@@ -1,5 +1,6 @@
 library;
 
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
+import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart/presentation/widgets/greetings_pane.dart';
 import 'package:heart/presentation/widgets/greetings_pane.dart';
@@ -200,7 +202,7 @@ RouteBase _historyRoute() {
               }
             },
             name: _historyEditName,
-          )
+          ),
         ],
       ),
     ],
@@ -510,6 +512,14 @@ final class HeartRouter {
           _workoutDoneRoute(),
           _restoreAccountRoute(),
           _avatarRoute(),
+          if (kIsWeb)
+            // Apple sign-in redirect
+            GoRoute(
+              path: _applePath,
+              builder: (context, state) {
+                return const Scaffold();
+              },
+            ),
         ],
         redirect: _redirect,
         onException: (_, state, router) {
@@ -524,6 +534,9 @@ final class HeartRouter {
       case ['', _loginName, String part]:
         // there might be a query in path, see _loginRoute
         return state.namedLocation(part, queryParameters: state.uri.queryParameters);
+    // Apple sign-in redirect, handled by Auth class
+      case ['', _applePath]:
+        return null;
     }
 
     final auth = Auth.of(context);
@@ -552,15 +565,15 @@ final class HeartRouter {
       return link?.path;
     }
 
-      // deep link from cold start
-      if (state.uri.queryParameters case {'from': String from}) {
-        final link = Uri.tryParse(Uri.decodeComponent(from));
-        return link?.path;
-      }
+          // deep link from cold start
+          if (state.uri.queryParameters case {'from': String from}) {
+            final link = Uri.tryParse(Uri.decodeComponent(from));
+            return link?.path;
+          }
 
-      return null;
-    },
-  );
+          return null;
+        },
+      );
 
   static HeartRouter of(BuildContext context) {
     return Provider.of<HeartRouter>(context, listen: false);
