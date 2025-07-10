@@ -14,7 +14,7 @@ Level _getLevel(String v) {
 
 void _log(LogRecord record) {
   // ignore: avoid_print
-  print('${record.level.name}: ${record.time}: ${record.message}');
+  print('[${record.loggerName}]: ${record.level.name} - ${record.message}');
 }
 
 typedef LogInit = void Function(String level);
