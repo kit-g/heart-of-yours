@@ -18,6 +18,8 @@ class AppConfig {
 
   static const accountDeletionDeadline = String.fromEnvironment('ACCOUNT_DELETION_DEADLINE');
   static const api = String.fromEnvironment('API');
+  static const appleServiceId = String.fromEnvironment('APPLE_SERVICE_ID');
+  static const appleSignInRedirect = String.fromEnvironment('APPLE_SIGN_IN_REDIRECT');
   static const _appLink = String.fromEnvironment('APP_LINK');
   static const appName = String.fromEnvironment('APP_NAME');
   static final env = Env.fromString(const String.fromEnvironment('ENV').trim());

@@ -16,6 +16,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final Future<void> Function(String?, String?)? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final bool isWeb;
+  final String appleServiceId;
+  final String appleSignInRedirect;
 
   User? _user;
 
@@ -38,6 +40,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.onEnter,
     required this.isWeb,
     required AccountService service,
+    required this.appleServiceId,
+    required this.appleSignInRedirect,
   }) : _service = service {
     // such is the way with Google sign-in
     // on the web - Firebase does not pick it up
@@ -54,26 +58,26 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           }
         },
       );
-    } else {
-      _firebase.userChanges().listen(
-        (user) async {
-          _user = _cast(user);
-          onUserChange?.call(_user);
-          notifyListeners();
-          if (user case fb.User user) {
-            await onEnter?.call(await user.getIdToken(), user.uid);
-            try {
-              _user = await _registerUser(_user);
-            } on AccountDeleted {
-              _logout();
-            }
-          }
-        },
-        onError: (error, stacktrace) {
-          onError?.call(error, stacktrace: stacktrace);
-        },
-      );
     }
+
+    _firebase.userChanges().listen(
+      (user) async {
+        _user = _cast(user);
+        onUserChange?.call(_user);
+        notifyListeners();
+        if (user case fb.User user) {
+          await onEnter?.call(await user.getIdToken(), user.uid);
+          try {
+            _user = await _registerUser(_user);
+          } on AccountDeleted {
+            _logout();
+          }
+        }
+      },
+      onError: (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+      },
+    );
   }
 
   static Auth of(BuildContext context) {
@@ -121,6 +125,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        webAuthenticationOptions: WebAuthenticationOptions(
+          clientId: appleServiceId,
+          redirectUri: Uri.parse(appleSignInRedirect),
+        ),
       );
 
       final oAuth = fb.OAuthProvider('apple.com');
@@ -141,6 +149,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         appleEmail: credential.email,
         appleName: name,
       );
+    } on SignInWithAppleCredentialsException catch (e) {
+      if (e.message.contains('popup_closed_by_user')) {
+        return;
+      }
     } catch (e, s) {
       return onError?.call(e, stacktrace: s);
     }
