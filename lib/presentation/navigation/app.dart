@@ -112,6 +112,8 @@ class HeartApp extends StatelessWidget {
                 ..shout(stacktrace);
               reportToSentry(error, stacktrace: stacktrace);
             },
+            appleServiceId: AppConfig.appleServiceId,
+            appleSignInRedirect: AppConfig.appleSignInRedirect,
           ),
         ),
         ChangeNotifierProvider<Alarms>(
@@ -146,31 +148,31 @@ class _AppState extends State<_App> {
   Widget build(BuildContext context) {
     final light = switch (widget.theme.color) {
       Color color => theme(
-          ColorScheme.fromSeed(
-            seedColor: color,
-            brightness: Brightness.light,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: color,
+          brightness: Brightness.light,
         ),
+      ),
       null => theme(
-          ColorScheme.fromSeed(
-            seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
-            brightness: Brightness.light,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
+          brightness: Brightness.light,
         ),
+      ),
     };
     final dark = switch (widget.theme.color) {
       Color color => theme(
-          ColorScheme.fromSeed(
-            seedColor: color,
-            brightness: Brightness.dark,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: color,
+          brightness: Brightness.dark,
         ),
+      ),
       null => theme(
-          ColorScheme.fromSeed(
-            seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
-            brightness: Brightness.dark,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
+          brightness: Brightness.dark,
         ),
+      ),
     };
     return BetterFeedback(
       themeMode: widget.theme.mode,
