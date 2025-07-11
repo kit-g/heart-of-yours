@@ -242,8 +242,49 @@ void main() {
           expect(workoutExercise.isStarted, isTrue);
         },
       );
+
+      test(
+        'isCompleted returns true when all sets are completed',
+        () {
+          final workoutExercise = WorkoutExercise(starter: starterSet..isCompleted = true);
+          expect(workoutExercise.isCompleted, isTrue);
+
+          final incompleteSet = setFactory();
+          workoutExercise.add(incompleteSet);
+          expect(workoutExercise.isCompleted, isFalse);
+        },
+      );
+
+      test(
+        'compareTo orders by set order when available',
+        () {
+          final first = WorkoutExercise(starter: starterSet)..order = 1;
+          final second = WorkoutExercise(starter: starterSet)..order = 2;
+          final unordered = WorkoutExercise(starter: starterSet);
+
+          expect(first.compareTo(second) < 0, isTrue);
+          expect(second.compareTo(first) > 0, isTrue);
+
+          // When one or both don't have an order, falls back to timestamp comparison
+          expect(first.compareTo(unordered) != 0, isTrue);
+        },
+      );
+
+      test(
+        'toMap returns correct structure for WorkoutExercise',
+        () {
+          final workoutExercise = WorkoutExercise(starter: starterSet..isCompleted = true);
+          final map = workoutExercise.toMap();
+
+          expect(map['id'], equals(workoutExercise.id));
+          expect(map['exercise'], equals(mockExercise.name));
+          expect(map['sets'], isA<Map>());
+          expect(map['sets'][starterSet.id], isNotNull);
+        },
+      );
     },
   );
+
   group(
     'Workout Tests',
     () {
@@ -435,6 +476,153 @@ void main() {
 
           expect(summary.id, equals(workout.id));
           expect(summary.name, equals(workout.name));
+        },
+      );
+
+      test(
+        'copy creates a new instance with new timestamps',
+        () {
+          workout.append(workoutExercise);
+          final copy = workout.copy();
+
+          expect(copy.id, isNot(equals(workout.id)));
+          expect(copy.name, equals(workout.name));
+          expect(copy.sets.length, equals(workout.sets.length));
+
+          final originalExercise = workout.first;
+          final copiedExercise = copy.first;
+
+          expect(copiedExercise.id, isNot(equals(originalExercise.id)));
+        },
+      );
+
+      test(
+        'copy with sameId keeps the same id',
+        () {
+          workout.append(workoutExercise);
+          final copy = workout.copy(sameId: true);
+
+          expect(copy.id, equals(workout.id));
+        },
+      );
+
+      test(
+        'completeAllSets marks all sets as completed',
+        () {
+          workout.append(workoutExercise);
+          final incompleteSet = setFactory();
+          workoutExercise.add(incompleteSet);
+
+          expect(workout.isValid, isFalse);
+
+          workout.completeAllSets();
+
+          expect(workout.isValid, isTrue);
+          for (var exercise in workout) {
+            for (var set in exercise) {
+              expect(set.isCompleted, isTrue);
+            }
+          }
+        },
+      );
+
+      test(
+        'fromJson creates a workout from JSON data',
+        () {
+          when(mockExercise.name).thenReturn('Bench Press');
+
+          final startTime = DateTime.parse('2025-01-21T12:00:00Z');
+          final json = {
+            'id': 'workout-123',
+            'name': 'Test Workout',
+            'start': startTime,
+            'end': startTime.add(const Duration(hours: 1)),
+            'exercises': {
+              '2025-01-21T12:00:00Z': {
+                'id': '2025-01-21T12:00:00Z',
+                'exercise': 'Bench Press',
+                'order': 0,
+                'sets': {
+                  '2025-01-21T12:00:00Z': {
+                    'id': '2025-01-21T12:00:00Z',
+                    'reps': 10,
+                    'weight': 100.0,
+                    'completed': true,
+                  }
+                }
+              }
+            }
+          };
+
+          lookup(String name) => name == 'Bench Press' ? mockExercise : null;
+          final workout = Workout.fromJson(json, lookup);
+
+          expect(workout.id, equals('workout-123'));
+          expect(workout.name, equals('Test Workout'));
+          expect(workout.sets.length, equals(1));
+          expect(workout.isCompleted, isTrue);
+        },
+      );
+
+      test(
+        'toString returns workout name or date format',
+        () {
+          final namedWorkout = Workout(name: 'Named Workout');
+          expect(namedWorkout.toString(), equals('Named Workout'));
+
+          final unnamedWorkout = Workout(name: null);
+          expect(unnamedWorkout.toString(), startsWith('Workout on'));
+        },
+      );
+
+      test(
+        'fromRows creates a workout from database rows',
+        () {
+          final rows = [
+            {
+              'workoutId': '2025-01-21T12:40:00Z',
+              'workoutName': 'Test Workout',
+              'start': '2025-01-21T12:00:00Z',
+              'end': '2025-01-21T14:00:00Z',
+              'workoutExerciseId': '2025-01-21T12:30:00Z',
+              'setId': '2025-01-21T12:30:00Z',
+              'name': 'Bench Press',
+              'category': Category.weightedBodyWeight.value,
+              'target': Target.chest.value,
+              'reps': 10,
+              'weight': 100.0,
+              'completed': 1,
+            }
+          ];
+
+          final workout = Workout.fromRows(rows);
+
+          expect(workout.id, equals('2025-01-21T12:40:00Z'));
+          expect(workout.name, equals('Test Workout'));
+          expect(workout.sets.length, equals(1));
+          expect(workout.isCompleted, isTrue);
+        },
+      );
+
+      // Test for empty workout creation from rows
+      test(
+        'fromRows creates an empty workout from a single row',
+        () {
+          final rows = [
+            {
+              'workoutId': 'workout-123',
+              'name': 'Empty Workout',
+              'start': '2025-01-21T12:00:00Z',
+              'workoutExerciseId': null,
+            }
+          ];
+
+          final workout = Workout.fromRows(rows);
+
+          expect(workout.id, isNot('workout-123')); // Gets a new ID since it's empty
+          expect(workout.name, equals('Empty Workout'));
+          expect(workout.sets.length, equals(0));
+          expect(workout.isCompleted, isFalse);
         },
       );
     },
