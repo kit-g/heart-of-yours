@@ -10,4 +10,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   test: any
   mockito: ^5.4.2
-  build_runner: ^2.4.14
+  build_runner: ^2.4.6
+
+dependency_overrides:
+  analyzer: ^6.11.0
