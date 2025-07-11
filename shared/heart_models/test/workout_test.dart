@@ -278,8 +278,8 @@ void main() {
 
           expect(map['id'], equals(workoutExercise.id));
           expect(map['exercise'], equals(mockExercise.name));
-          expect(map['sets'], isA<Map>());
-          expect(map['sets'][starterSet.id], isNotNull);
+          expect(map['sets'], isA<List>());
+          expect(map['sets'][0]['id'], starterSet.id);
         },
       );
     },
@@ -531,12 +531,11 @@ void main() {
         () {
           when(mockExercise.name).thenReturn('Bench Press');
 
-          final startTime = DateTime.parse('2025-01-21T12:00:00Z');
           final json = {
             'id': 'workout-123',
             'name': 'Test Workout',
-            'start': startTime,
-            'end': startTime.add(const Duration(hours: 1)),
+            'start': '2025-01-21T12:00:00Z',
+            'end': '2025-01-21T14:00:00Z',
             'exercises': {
               '2025-01-21T12:00:00Z': {
                 'id': '2025-01-21T12:00:00Z',
