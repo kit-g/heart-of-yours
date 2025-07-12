@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:http/http.dart' as http;
 import 'package:heart_models/heart_models.dart';
 import 'package:network_utils/network_utils.dart';
 
@@ -22,10 +23,14 @@ final class Api
 
   Api._();
 
-  factory Api({required String gateway}) {
+  factory Api({required String gateway, http.Client? client}) {
     instance.gateway = gateway;
+    instance.client = client;
     return instance;
   }
+
+  @override
+  http.Client? client;
 
   @override
   void authenticate(Map<String, String> headers) {
@@ -45,7 +50,7 @@ final class Api
 
   @override
   Future<User> registerAccount(User user) async {
-    final (json, code) = await post(_Router.accounts, body: user.toMap());
+    final (json, code) = await post(Router.accounts, body: user.toMap());
     return switch ((code, json)) {
       (200, Map json) => User.fromJson(json),
       (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
@@ -55,7 +60,7 @@ final class Api
 
   @override
   Future<String?> deleteAccount({required String accountId}) async {
-    final (json, code) = await delete('${_Router.accounts}/$accountId');
+    final (json, code) = await delete('${Router.accounts}/$accountId');
     return switch (code) {
       < 400 => null,
       _ => throw json, // error
@@ -65,7 +70,7 @@ final class Api
   @override
   Future<PreSignedUrl?> getAvatarUploadLink(String userId, {String? imageMimeType}) async {
     final (json, code) = await get(
-      '${_Router.accounts}/$userId',
+      '${Router.accounts}/$userId',
       query: {
         'action': 'uploadAvatar',
         if (imageMimeType != null) 'mimeType': imageMimeType,
@@ -92,7 +97,7 @@ final class Api
   @override
   Future<bool> removeAvatar(String userId) async {
     final (_, code) = await put(
-      '${_Router.accounts}/$userId',
+      '${Router.accounts}/$userId',
       body: {'action': 'removeAvatar'},
     );
     return 200 <= code && code < 300;
@@ -101,7 +106,7 @@ final class Api
   @override
   Future<String?> undoAccountDeletion(String accountId) {
     return put(
-      '${_Router.accounts}/$accountId',
+      '${Router.accounts}/$accountId',
       body: {'action': 'undoAccountDeletion'},
     ).then(
       (response) {
@@ -116,7 +121,7 @@ final class Api
 
   @override
   Future<bool> submitFeedback({String? feedback, Uint8List? screenshot}) async {
-    final (json, code) = await post(_Router.feedback, body: {'message': feedback});
+    final (json, code) = await post(Router.feedback, body: {'message': feedback});
 
     final link = switch (json) {
       {'url': String url, 'fields': Map fields} => (
@@ -135,14 +140,14 @@ final class Api
 
   @override
   Future<bool> deleteWorkout(String workoutId) async {
-    final (_, code) = await delete('${_Router.workouts}/$workoutId');
+    final (_, code) = await delete('${Router.workouts}/$workoutId');
     return code == 204;
   }
 
   @override
   Future<bool> saveWorkout(Workout workout) async {
     final (_, code) = await post(
-      _Router.workouts,
+      Router.workouts,
       body: workout.toMap(),
     );
     return code == 201;
@@ -151,7 +156,7 @@ final class Api
   @override
   Future<Iterable<Workout>?> getWorkouts(ExerciseLookup lookForExercise, {int? pageSize, String? since}) async {
     final (json, code) = await get(
-      _Router.workouts,
+      Router.workouts,
       query: {
         if (pageSize != null) 'pageSize': pageSize.toString(),
         if (since != null) 'since': since,
@@ -165,7 +170,7 @@ final class Api
 
   @override
   Future<Iterable<Exercise>> getExercises() async {
-    final (json, code) = await get(_Router.exercises);
+    final (json, code) = await get(Router.exercises);
     return switch (json) {
       {'exercises': List l} => l.map((e) => Exercise.fromJson(e)),
       _ => [],
@@ -174,13 +179,13 @@ final class Api
 
   @override
   Future<bool> deleteTemplate(String templateId) async {
-    final (_, code) = await delete('${_Router.templates}/$templateId');
+    final (_, code) = await delete('${Router.templates}/$templateId');
     return code == 204;
   }
 
   @override
   Future<Iterable<Template>?> getTemplates(ExerciseLookup lookForExercise) async {
-    final (json, _) = await get(_Router.templates);
+    final (json, _) = await get(Router.templates);
     return switch (json) {
       {'templates': List l} => l.map((e) => Template.fromJson(e, lookForExercise)),
       _ => null,
@@ -190,14 +195,14 @@ final class Api
   @override
   Future<bool> saveTemplate(Template template) async {
     final (_, code) = await post(
-      _Router.templates,
+      Router.templates,
       body: template.toMap(),
     );
     return code == 201;
   }
 }
 
-abstract final class _Router {
+abstract final class Router {
   static const accounts = 'api/accounts';
   static const exercises = 'api/exercises';
   static const feedback = 'api/feedback';
