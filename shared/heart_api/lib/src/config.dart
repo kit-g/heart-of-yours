@@ -1,4 +1,5 @@
 import 'package:heart_models/heart_models.dart';
+import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
 
 final class ConfigApi with Requests implements RemoteConfigService, HeaderAuthenticatedService {
@@ -39,4 +40,7 @@ final class ConfigApi with Requests implements RemoteConfigService, HeaderAuthen
       _ => [],
     };
   }
+
+  @override
+  http.Client? get client => null;
 }
