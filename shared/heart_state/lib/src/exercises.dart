@@ -59,9 +59,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
         return;
       }
 
-      if (localSync == null) return;
       if (lastSync == null) return;
-      if (localSync.isAfter(lastSync)) return;
+      if (localSync?.isAfter(lastSync) ?? false) return;
 
       final all = await _remoteService.getExercises();
 
