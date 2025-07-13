@@ -228,4 +228,9 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
         return duration?.toDouble();
     }
   }
+
+  @override
+  String toString() {
+    return '$exercise $id';
+  }
 }
