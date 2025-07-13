@@ -24,9 +24,12 @@ class AppConfig {
   static const logLevel = String.fromEnvironment('LOG_LEVEL');
   static const _mediaLink = String.fromEnvironment('MEDIA_LINK');
   static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
+  static const _testUserCredentials = String.fromEnvironment('TEST_USER_CREDENTIALS', defaultValue: '');
   static const themeColorHex = String.fromEnvironment('DEFAULT_THEME_COLOR');
 
   static bool get isProd => env == Env.prod;
+
+  static bool get isDev => env == Env.dev;
 
   static String get appLink => Uri.https(_appLink).toString();
 
@@ -35,4 +38,14 @@ class AppConfig {
   static String get avatarLink => Uri.https(_mediaLink, 'avatars').toString();
 
   static String get configLink => Uri.https(_mediaLink, 'config').toString();
+
+  static String get testUserEmail => switch (_testUserCredentials.split(':')) {
+    [String username, String _] => username,
+    _ => '',
+  };
+
+  static String get testUserPassword => switch (_testUserCredentials.split(':')) {
+    [String _, String password] => password,
+    _ => '',
+  };
 }
