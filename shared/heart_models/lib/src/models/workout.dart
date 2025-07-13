@@ -70,6 +70,14 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
     );
   }
 
+  factory Workout.fromExercises(Iterable<WorkoutExercise> exercises, {String? name}) {
+    return _Workout(
+      start: DateTime.timestamp(),
+      name: name,
+      exercises: exercises.toList(),
+    );
+  }
+
   factory Workout.fromJson(Map json, ExerciseLookup lookForExercise) = _Workout.fromJson;
 
   /// the total metric (e.g., weight)
@@ -117,9 +125,9 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
     DateTime? start,
     required Exercise exercise,
     List<ExerciseSet>? sets,
-  })  : _exercise = exercise,
-        start = start ?? DateTime.timestamp(),
-        _sets = sets ?? [] {
+  }) : _exercise = exercise,
+       start = start ?? DateTime.timestamp(),
+       _sets = sets ?? [] {
     if (starter != null) {
       _sets.add(starter);
     }
@@ -165,7 +173,7 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
       'sets': [
         for (var each in where((each) => each.isCompleted)) each.toMap(),
-      ]
+      ],
     };
   }
 
@@ -209,8 +217,8 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     String? id,
     List<WorkoutExercise>? exercises,
     this.end,
-  })  : _sets = exercises ?? <WorkoutExercise>[],
-        _id = id;
+  }) : _sets = exercises ?? <WorkoutExercise>[],
+       _id = id;
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Workout(
@@ -336,9 +344,9 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     return switch (exercise._nextIncomplete(last)) {
       ExerciseSet set => (exercise, set),
       _ => switch (_nextIncomplete(exercise)) {
-          WorkoutExercise next => (next, next.first),
-          _ => null,
-        }
+        WorkoutExercise next => (next, next.first),
+        _ => null,
+      },
     };
   }
 
