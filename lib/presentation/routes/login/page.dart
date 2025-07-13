@@ -28,6 +28,11 @@ class _LoginPageState extends State<LoginPage>
   void initState() {
     super.initState();
 
+    if (kDebugMode && AppConfig.isDev) {
+      _emailController.text = AppConfig.testUserEmail;
+      _passwordController.text = AppConfig.testUserPassword;
+    }
+
     _isAppleSignNnAvailable = Auth.isAppleSignInAvailable();
   }
 

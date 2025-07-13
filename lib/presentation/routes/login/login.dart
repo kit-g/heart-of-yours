@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/icons.dart';
 import 'package:heart/core/utils/misc.dart';
