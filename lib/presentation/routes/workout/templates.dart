@@ -74,7 +74,6 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                       Workouts.of(context).startWorkout(template: template.toWorkout());
                     },
                     onTap: (template) {
-
                       _showStartWorkoutDialog(context, template);
                     },
                   );
@@ -131,7 +130,9 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
       :cancel,
       :deleteThis,
       :deleted,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
     return showBrandedDialog(
       context,
       title: Text(

@@ -89,8 +89,7 @@ class _Template with Iterable<WorkoutExercise> implements Template {
 
   @override
   Workout toWorkout() {
-    final workout = Workout(name: name);
-
+    final exercises = <WorkoutExercise>[];
     for (final each in this) {
       if (each.isNotEmpty) {
         final exercise = WorkoutExercise(starter: each.first.copy());
@@ -100,11 +99,11 @@ class _Template with Iterable<WorkoutExercise> implements Template {
           exercise.add(set.copy(start: start));
         }
 
-        workout.append(exercise);
+        exercises.add(exercise);
       }
     }
 
-    return workout;
+    return Workout.fromExercises(exercises, name: name);
   }
 
   @override
@@ -115,7 +114,7 @@ class _Template with Iterable<WorkoutExercise> implements Template {
       'order': order,
       'exercises': [
         for (var exercise in this) exercise.toFullMap(),
-      ]
+      ],
     };
   }
 
@@ -155,7 +154,7 @@ extension on WorkoutExercise {
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
       'sets': [
         for (var each in this) each.toMap(),
-      ]
+      ],
     };
   }
 }
