@@ -60,7 +60,7 @@ final class Api
 
   @override
   Future<String?> deleteAccount({required String accountId}) async {
-    final (json, code) = await delete('${Router.accounts}/$accountId');
+    final (json, code) = await delete(Router.accounts);
     return switch (code) {
       < 400 => null,
       _ => throw json, // error
