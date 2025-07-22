@@ -32,10 +32,16 @@ class AppFrame extends StatelessWidget {
             icon: Selector<Workouts, bool>(
               selector: (_, provider) => provider.hasActiveWorkout,
               builder: (_, hasActiveWorkout, __) {
-                return switch (hasActiveWorkout) {
-                  true => const Icon(Icons.fitness_center_rounded),
-                  false => const Icon(Icons.add_circle_outline_rounded),
-                };
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: Icon(
+                    hasActiveWorkout ? Icons.fitness_center_rounded : Icons.add_circle_outline_rounded,
+                    key: ValueKey(hasActiveWorkout),
+                  ),
+                );
               },
             ),
             label: workout,
