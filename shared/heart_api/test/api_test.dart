@@ -86,7 +86,7 @@ void main() {
       _response(
         client: client,
         method: 'DELETE',
-        path: '${Router.accounts}/42',
+        path: Router.accounts,
         statusCode: 404,
         body: {'error': 'Not Found'},
       );
