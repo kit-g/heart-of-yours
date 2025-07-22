@@ -80,6 +80,16 @@ WorkoutExercise wExercise({String id = '2025-04-06T18:48:51_445393Z', List<Exerc
   return ex;
 }
 
+ExerciseSet set({Exercise? ex, double? weight, int? reps, int? duration, double? distance, bool? isCompleted}) {
+  return ExerciseSet(
+    ex ?? exercise(),
+    weight: weight ?? 50,
+    reps: reps ?? 10,
+    duration: duration ?? 60,
+    distance: distance ?? 1,
+  )..isCompleted = isCompleted ?? true;
+}
+
 extension CaseUtils on String {
   String toSnake() {
     return replaceAllMapped(RegExp(r'(.)([A-Z])'), (Match m) => '${m[1]}_${m[2]}').toLowerCase();
