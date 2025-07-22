@@ -28,12 +28,13 @@ jobs:
       - name: Generate code
         run: |
           cd shared/heart_models
+          flutter pub get
           dart run build_runner build --delete-conflicting-outputs
-          cd ../..
-          cd shared/heart_api
+          cd ../heart_api
+          flutter pub get
           dart run build_runner build --delete-conflicting-outputs
-          cd ../..
-          cd shared/heart_db
+          cd ../heart_db
+          flutter pub get
           dart run build_runner build --delete-conflicting-outputs
           cd ../..
 
