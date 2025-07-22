@@ -301,7 +301,11 @@ final class LocalDatabase
         final renamed = rows.map((row) => row.toCamel());
         return Workout.fromRows(renamed);
       },
-    );
+    ).catchError((error) {
+      print('error.runtimeType');
+      print(error.runtimeType);
+      throw ArgumentError();
+    });
   }
 
   @override
