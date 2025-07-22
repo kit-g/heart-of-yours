@@ -69,15 +69,19 @@ Workout workout({
   return w;
 }
 
-WorkoutExercise wExercise({String id = '2025-04-06T18:48:51_445393Z', List<ExerciseSet> sets = const []}) {
-  final ex = WorkoutExercise(
-    starter: ExerciseSet(exercise(name: 'Push Up')),
+WorkoutExercise wExercise({
+  Exercise? ex,
+  String id = '2025-04-06T18:48:51_445393Z',
+  List<ExerciseSet> sets = const [],
+}) {
+  final we = WorkoutExercise(
+    starter: ExerciseSet(ex ?? exercise(name: 'Push Up')),
   );
 
   for (var each in sets) {
-    ex.add(each);
+    we.add(each);
   }
-  return ex;
+  return we;
 }
 
 ExerciseSet set({Exercise? ex, double? weight, int? reps, int? duration, double? distance, bool? isCompleted}) {
