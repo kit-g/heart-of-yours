@@ -30,6 +30,9 @@ jobs:
           cd ../..
           cd shared/heart_api
           dart run build_runner build --delete-conflicting-outputs
+          cd ../cd 
+          shared/heart_db
+          dart run build_runner build --delete-conflicting-outputs
           cd ../
 
       - name: Run tests in models
@@ -37,6 +40,9 @@ jobs:
 
       - name: Run tests in api
         run: flutter test shared/heart_api
+
+      - name: Run tests in db
+        run: flutter test shared/heart_db
 
       - name: Run app tests
         run: flutter test
