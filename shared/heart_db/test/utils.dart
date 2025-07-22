@@ -1,0 +1,87 @@
+import 'package:heart_models/heart_models.dart';
+
+Exercise exercise({
+  String name = 'Push Up',
+  String target = 'Chest',
+}) {
+  return Exercise.fromJson({
+    'name': name,
+    'category': 'Weighted Body Weight',
+    'target': target,
+    'asset': 'https://dev.media.heart-of.me/exercises/$name/asset.gif',
+    'assetWidth': 1080,
+    'assetHeight': 1080,
+    'thumbnail': 'https://dev.media.heart-of.me/exercises/$name/thumbnail.jpg',
+    'thumbnailWidth': 200,
+    'thumbnailHeight': 200,
+    'instructions': null,
+    'userId': null,
+  });
+}
+
+ExerciseAct exerciseAct({
+  String workoutId = '2025-04-06T18:49:51_445393Z',
+  String? workoutName = 'Morning Push',
+  DateTime? start,
+  Exercise? ex,
+  List<Map<String, dynamic>>? sets,
+}) {
+  ex ??= exercise();
+
+  final rows = sets ??
+      [
+        {
+          'workoutId': workoutId,
+          'exerciseId': '2025-04-06T18:48:51_445393Z',
+          'id': '2025-04-06T18:48:51_445393Z',
+          'weight': 10,
+          'reps': 12,
+          'completed': 1,
+        },
+        {
+          'workoutId': workoutId,
+          'exerciseId': '2025-04-06T18:48:51_445393Z',
+          'id': '2025-04-06T19:48:51_445393Z',
+          'weight': 10,
+          'reps': 10,
+          'completed': 0,
+        },
+      ];
+
+  return ExerciseAct.fromRows(ex, rows);
+}
+
+Workout workout({
+  String id = '2025-04-06T18:48:51_445393Z',
+  List<WorkoutExercise> exercises = const [],
+  bool finished = false,
+}) {
+  final w = Workout(name: 'Morning');
+
+  for (var each in exercises) {
+    w.append(each);
+  }
+
+  if (finished) {
+    w.finish(DateTime.now());
+  }
+
+  return w;
+}
+
+WorkoutExercise wExercise({String id = '2025-04-06T18:48:51_445393Z', List<ExerciseSet> sets = const []}) {
+  final ex = WorkoutExercise(
+    starter: ExerciseSet(exercise(name: 'Push Up')),
+  );
+
+  for (var each in sets) {
+    ex.add(each);
+  }
+  return ex;
+}
+
+extension CaseUtils on String {
+  String toSnake() {
+    return replaceAllMapped(RegExp(r'(.)([A-Z])'), (Match m) => '${m[1]}_${m[2]}').toLowerCase();
+  }
+}

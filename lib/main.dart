@@ -15,16 +15,17 @@ Future<void> main() {
     initializeFirebase(),
     LocalDatabase.init(),
   ]).then(
-    (_) {
-      return initSentry(_runner);
+    (initialized) {
+      final [_, db] = initialized;
+      return initSentry(() => _runner(db as LocalDatabase));
     },
   );
 }
 
-Future<void> _runner() {
+Future<void> _runner(LocalDatabase db) {
   return SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then<void>(
     (_) {
-      runApp(const HeartApp());
+      runApp(HeartApp(db: db));
     },
   );
 }

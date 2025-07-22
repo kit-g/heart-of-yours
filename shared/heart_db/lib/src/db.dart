@@ -2,28 +2,34 @@ part of '../heart_db.dart';
 
 final class LocalDatabase
     implements TimersService, ExerciseService, PreviousExerciseService, StatsService, TemplateService, WorkoutService {
-  static late final Database _db;
+  final Database _db;
 
-  static Future<void> init([int version = 1]) async {
+  LocalDatabase._(this._db);
+
+  static Future<LocalDatabase> init({int version = 1, Database? other}) async {
+    if (other != null) return LocalDatabase._(other);
+
     var path = await getDatabasesPath();
     // await deleteDatabase(path);
 
     const name = 'heart.db';
     _logger.info('Local database at $path/$name');
-    await openDatabase(
+    final db = await openDatabase(
       join(path, name),
       version: version,
       onUpgrade: _migrate,
       onConfigure: (db) async {
-        _db = db;
+        // _db = db;
         await db.execute('PRAGMA foreign_keys = ON');
       },
     );
+
+    return LocalDatabase._(db);
   }
 
   static FutureOr<void> _migrate(Database db, int oldVersion, int newVersion) async {
     _logger.info('Migrating local database from version $oldVersion to $newVersion');
-    _db.transaction(
+    db.transaction(
       (txn) async {
         txn
           ..execute(sql.exercises)

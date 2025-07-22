@@ -19,11 +19,15 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'router/router.dart';
 
 class HeartApp extends StatelessWidget {
-  const HeartApp({super.key});
+  final LocalDatabase db;
+
+  const HeartApp({
+    super.key,
+    required this.db,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final db = LocalDatabase();
     final api = Api(gateway: AppConfig.api);
     final config = ConfigApi(gateway: AppConfig.mediaLink);
 
