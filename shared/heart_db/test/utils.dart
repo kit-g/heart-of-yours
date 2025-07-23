@@ -52,11 +52,11 @@ ExerciseAct exerciseAct({
 }
 
 Workout workout({
-  String id = '2025-04-06T18:48:51_445393Z',
   List<WorkoutExercise> exercises = const [],
   bool finished = false,
+  String? name,
 }) {
-  final w = Workout(name: 'Morning');
+  final w = Workout(name: name ?? 'Morning');
 
   for (var each in exercises) {
     w.append(each);
@@ -71,7 +71,6 @@ Workout workout({
 
 WorkoutExercise wExercise({
   Exercise? ex,
-  String id = '2025-04-06T18:48:51_445393Z',
   List<ExerciseSet> sets = const [],
 }) {
   final we = WorkoutExercise(
@@ -92,6 +91,10 @@ ExerciseSet set({Exercise? ex, double? weight, int? reps, int? duration, double?
     duration: duration ?? 60,
     distance: distance ?? 1,
   )..isCompleted = isCompleted ?? true;
+}
+
+Template template({String? id, Workout? w, int order = 0}) {
+  return Template.fromWorkout(id ?? '0', w ?? workout(), order);
 }
 
 extension CaseUtils on String {
