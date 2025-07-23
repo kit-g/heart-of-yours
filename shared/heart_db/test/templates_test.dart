@@ -15,7 +15,6 @@ void main() {
   final db = MockDatabase();
   final txn = MockTransaction();
   final batch = MockBatch();
-  final ex = exercise();
 
   setUp(
     () async {
@@ -43,25 +42,31 @@ void main() {
       const sampleQuery = sql.getSampleTemplates;
       const userQuery = sql.getTemplates;
 
-      test('returns empty list when query yields no rows (user templates)', () async {
-        const userId = 'user-1';
+      test(
+        'returns empty list when query yields no rows (user templates)',
+        () async {
+          const userId = 'user-1';
 
-        when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => []);
+          when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => []);
 
-        final result = await local.getTemplates(userId);
+          final result = await local.getTemplates(userId);
 
-        expect(result, isEmpty);
-        verify(db.rawQuery(userQuery, [userId])).called(1);
-      });
+          expect(result, isEmpty);
+          verify(db.rawQuery(userQuery, [userId])).called(1);
+        },
+      );
 
-      test('returns empty list when query yields no rows (sample templates)', () async {
-        when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => []);
+      test(
+        'returns empty list when query yields no rows (sample templates)',
+        () async {
+          when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => []);
 
-        final result = await local.getTemplates(null);
+          final result = await local.getTemplates(null);
 
-        expect(result, isEmpty);
-        verify(db.rawQuery(sampleQuery, null)).called(1);
-      });
+          expect(result, isEmpty);
+          verify(db.rawQuery(sampleQuery, null)).called(1);
+        },
+      );
 
       test(
         'groups templates by templateId and parses correctly (user templates)',
