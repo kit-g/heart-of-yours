@@ -573,57 +573,6 @@ void main() {
           expect(unnamedWorkout.toString(), startsWith('Workout on'));
         },
       );
-
-      test(
-        'fromRows creates a workout from database rows',
-        () {
-          final rows = [
-            {
-              'workoutId': '2025-01-21T12:40:00Z',
-              'workoutName': 'Test Workout',
-              'start': '2025-01-21T12:00:00Z',
-              'end': '2025-01-21T14:00:00Z',
-              'workoutExerciseId': '2025-01-21T12:30:00Z',
-              'setId': '2025-01-21T12:30:00Z',
-              'name': 'Bench Press',
-              'category': Category.weightedBodyWeight.value,
-              'target': Target.chest.value,
-              'reps': 10,
-              'weight': 100.0,
-              'completed': 1,
-            }
-          ];
-
-          final workout = Workout.fromRows(rows);
-
-          expect(workout.id, equals('2025-01-21T12:40:00Z'));
-          expect(workout.name, equals('Test Workout'));
-          expect(workout.sets.length, equals(1));
-          expect(workout.isCompleted, isTrue);
-        },
-      );
-
-      // Test for empty workout creation from rows
-      test(
-        'fromRows creates an empty workout from a single row',
-        () {
-          final rows = [
-            {
-              'workoutId': 'workout-123',
-              'name': 'Empty Workout',
-              'start': '2025-01-21T12:00:00Z',
-              'workoutExerciseId': null,
-            }
-          ];
-
-          final workout = Workout.fromRows(rows);
-
-          expect(workout.id, isNot('workout-123')); // Gets a new ID since it's empty
-          expect(workout.name, equals('Empty Workout'));
-          expect(workout.sets.length, equals(0));
-          expect(workout.isCompleted, isFalse);
-        },
-      );
     },
   );
 }

@@ -23,13 +23,13 @@ abstract interface class WorkoutService {
 
   Future<void> markSetAsIncomplete(ExerciseSet set);
 
-  Future<Workout?> getActiveWorkout(String? userId);
+  Future<Workout?> getActiveWorkout(String? userId, ExerciseLookup lookup);
 
-  Future<Workout?> getWorkout(String? userId, String workoutId);
+  Future<Workout?> getWorkout(String? userId, String workoutId, ExerciseLookup lookup);
 
   Future<void> storeWorkoutHistory(Iterable<Workout> history, String userId);
 
-  Future<Iterable<Workout>?> getWorkoutHistory(String userId);
+  Future<Iterable<Workout>?> getWorkoutHistory(String userId, ExerciseLookup lookup);
 
   Future<void> renameWorkout({required String workoutId, required String name});
 }

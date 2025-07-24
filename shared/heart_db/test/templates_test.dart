@@ -49,7 +49,7 @@ void main() {
 
           when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => []);
 
-          final result = await local.getTemplates(userId);
+          final result = await local.getTemplates(userId, (_) => exercise());
 
           expect(result, isEmpty);
           verify(db.rawQuery(userQuery, [userId])).called(1);
@@ -61,7 +61,7 @@ void main() {
         () async {
           when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => []);
 
-          final result = await local.getTemplates(null);
+          final result = await local.getTemplates(null, (_) => exercise());
 
           expect(result, isEmpty);
           verify(db.rawQuery(sampleQuery, null)).called(1);
@@ -111,7 +111,7 @@ void main() {
 
           when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => rows);
 
-          final result = await local.getTemplates(userId);
+          final result = await local.getTemplates(userId, (_) => exercise());
 
           expect(result, hasLength(2));
 
@@ -144,7 +144,7 @@ void main() {
 
           when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => rows);
 
-          final result = await local.getTemplates(null);
+          final result = await local.getTemplates(null, (_) => exercise());
 
           expect(result, hasLength(1));
           expect(result.first.name, equals('Full Body'));

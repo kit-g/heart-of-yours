@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_db/src/sql.dart' as sql;
@@ -653,79 +655,66 @@ void main() {
   group(
     'getActiveWorkout',
     () {
-      test('returns null if no active workout is found', () async {
-        when(db.rawQuery(any, any)).thenAnswer((_) async => []);
+      test(
+        'returns null if no active workout is found',
+        () async {
+          when(db.rawQuery(any, any)).thenAnswer((_) async => []);
 
-        final result = await local.getActiveWorkout('user-1');
+          final result = await local.getActiveWorkout('user-1', (_) => exercise());
 
-        expect(result, isNull);
-        verify(db.rawQuery(sql.activeWorkout, ['user-1'])).called(1);
-      });
+          expect(result, isNull);
+          verify(db.rawQuery(sql.activeWorkout, ['user-1'])).called(1);
+        },
+      );
 
-      test('parses and returns a Workout from non-empty rows', () async {
-        final sets = [
-          set(weight: 20, reps: 10),
-          set(weight: 25, reps: 8),
-        ];
-        final we = wExercise(sets: sets);
-        final w = workout(exercises: [we], finished: false);
+      test(
+        'parses and returns a Workout from a single-row response',
+        () async {
+          final sets = [
+            set(weight: 20, reps: 10),
+            set(weight: 25, reps: 8),
+          ];
+          final we = wExercise(sets: sets);
+          final w = workout(exercises: [we], finished: false);
 
-        // simulate what the DB might return, using toRow plus metadata fields
-        final rows = [
-          {
-            'workout_id': w.id,
+          // simulate optimized DB row — 1 row representing full workout via join
+          final row = {
+            'id': w.id,
             'start': w.start.toIso8601String(),
             'end': null,
-            'workout_name': w.name,
-            'workout_exercise_id': we.id,
-            'exercise_order': 0,
-            'set_id': sets[0].id,
-            'completed': sets[0].isCompleted ? 1 : 0,
-            'weight': sets[0].weight,
-            'reps': sets[0].reps,
-            'duration': null,
-            'distance': null,
-            'name': we.exercise.name,
-            'category': we.exercise.category.value,
-            'target': we.exercise.target.value,
-          },
-          {
-            'workout_id': w.id,
-            'start': w.start.toIso8601String(),
-            'end': null,
-            'workout_name': w.name,
-            'workout_exercise_id': we.id,
-            'exercise_order': 0,
-            'set_id': sets[1].id,
-            'completed': sets[1].isCompleted ? 1 : 0,
-            'weight': sets[1].weight,
-            'reps': sets[1].reps,
-            'duration': null,
-            'distance': null,
-            'name': we.exercise.name,
-            'category': we.exercise.category.value,
-            'target': we.exercise.target.value,
-          }
-        ];
+            'name': w.name,
+            'exercises': jsonEncode([
+              {
+                'id': we.id,
+                'exercise': we.exercise.name,
+                'order': 0,
+                'sets': sets.map((s) => s.toMap()).toList(),
+              }
+            ]),
+          };
 
-        when(db.rawQuery(any, any)).thenAnswer((_) async => rows);
+          when(db.rawQuery(sql.activeWorkout, ['user-1'])).thenAnswer((_) async => [row]);
 
-        final result = await local.getActiveWorkout('user-1');
+          final result = await local.getActiveWorkout('user-1', (id) => we.exercise);
 
-        expect(result, isNotNull);
-        expect(result?.toList().length, equals(1));
-        expect(result?.toList().first.sets.length, equals(2));
-        expect(result?.name, equals(w.name));
+          expect(result, isNotNull);
+          expect(result?.name, equals(w.name));
+          expect(result?.toList().length, equals(1));
+          expect(result?.toList().first.sets.length, equals(2));
+          expect(result?.toList().first.exercise.name, equals('Push Up'));
+          expect(result?.toList().first.sets.first.weight, equals(20));
+          expect(result?.toList().first.sets.first.reps, equals(10));
 
-        verify(db.rawQuery(sql.activeWorkout, ['user-1'])).called(1);
-      });
+          verify(db.rawQuery(sql.activeWorkout, ['user-1'])).called(1);
+        },
+      );
 
       test(
         'returns null if no active workout is found',
         () async {
           when(db.rawQuery(any, any)).thenAnswer((_) async => []);
 
-          final result = await local.getActiveWorkout('user-1');
+          final result = await local.getActiveWorkout('user-1', (_) => exercise());
 
           expect(result, isNull);
         },
@@ -741,7 +730,7 @@ void main() {
         () async {
           when(db.rawQuery(any, any)).thenAnswer((_) async => []);
 
-          final result = await local.getWorkout('user-1', 'w123');
+          final result = await local.getWorkout('user-1', 'w123', (_) => exercise());
 
           expect(result, isNull);
         },
@@ -854,70 +843,68 @@ void main() {
     'getWorkoutHistory',
     () {
       test(
-        'getWorkoutHistory returns grouped workout list',
+        'getWorkoutHistory returns parsed workout list from serialized rows',
         () async {
           const userId = 'user-1';
+          const exerciseName = 'Push Up';
 
           final workoutId1 = DateTime(2024).toIso8601String();
           final workoutId2 = DateTime(2025).toIso8601String();
 
-          const exerciseName = 'Push Up';
+          final sets1 = [
+            set(weight: 20.0, reps: 10),
+          ];
+          final sets2 = [
+            set(weight: 25.0, reps: 8),
+          ];
 
-          // Simulate rows returned from SQL query
           final rows = [
-            // Workout 1 - Set 1
             {
-              'workout_id': workoutId1,
-              'start': DateTime(2024).toIso8601String(),
-              'end': DateTime(2024).toIso8601String(),
-              'workout_name': 'AM Session',
-              'workoutExerciseId':  DateTime(2024).toIso8601String(),
-              'exerciseOrder': 0,
-              'id': DateTime(2024).toIso8601String(),
-              'completed': 1,
-              'weight': 20.0,
-              'reps': 10,
-              'duration': null,
-              'distance': null,
-              'name': exerciseName,
-              'category': 'Weighted Body Weight',
-              'target': 'Chest',
+              'id': workoutId1,
+              'start': workoutId1,
+              'end': workoutId1,
+              'name': 'AM Session',
+              'exercises': jsonEncode([
+                {
+                  'exercise': exerciseName,
+                  'id': DateTime.now().toIso8601String(),
+                  'order': 0,
+                  'sets': sets1.map((s) => s.toMap()).toList(),
+                }
+              ]),
             },
-            // Workout 2 - Set 1
             {
-              'workout_id': workoutId2,
-              'start': DateTime(2024).toIso8601String(),
-              'end': DateTime(2024).toIso8601String(),
-              'workout_name': 'PM Session',
-              'workoutExerciseId': DateTime(2024).toIso8601String(),
-              'exerciseOrder': 0,
-              'id': DateTime(2024).toIso8601String(),
-              'completed': 1,
-              'weight': 25.0,
-              'reps': 8,
-              'duration': null,
-              'distance': null,
-              'name': exerciseName,
-              'category': 'Weighted Body Weight',
-              'target': 'Chest',
+              'id': workoutId2,
+              'start': workoutId1,
+              'end': workoutId1,
+              'name': 'PM Session',
+              'exercises': jsonEncode([
+                {
+                  'exercise': exerciseName,
+                  'id': DateTime.now().toIso8601String(),
+                  'order': 0,
+                  'sets': sets2.map((s) => s.toMap()).toList(),
+                }
+              ]),
             },
           ];
 
           when(db.rawQuery(sql.history, [userId])).thenAnswer((_) async => rows);
 
-          final result = await local.getWorkoutHistory(userId);
+          final result = await local.getWorkoutHistory(userId, (_) => exercise(name: exerciseName));
 
           expect(result, isNotNull);
           expect(result, hasLength(2));
 
           final list = result!.toList();
 
-          // First workout
-          expect(list[0].id, isNotEmpty);
-          expect(list[0].toList(), isNotEmpty);
-          expect(list[0].toList().first.exercise.name, equals(exerciseName));
+          expect(list[0].id, equals(workoutId1));
+          expect(list[0].name, equals('AM Session'));
+          expect(list[0].toList(), hasLength(1));
+          expect(list[0].toList().first.sets.first.weight, equals(20.0));
 
-          // Second workout
+          expect(list[1].id, equals(workoutId2));
+          expect(list[1].name, equals('PM Session'));
           expect(list[1].toList().first.sets.first.weight, equals(25.0));
 
           verify(db.rawQuery(sql.history, [userId])).called(1);
