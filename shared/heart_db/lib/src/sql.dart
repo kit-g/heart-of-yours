@@ -254,42 +254,62 @@ WHERE completed = 0
 """;
 
 const getTemplates = """
-SELECT 
-    templates.name as template_name,
-    order_in_parent,
-    created_at,
-    te.id ,
-    template_id,
-    description,
-    e.name,
-    category,
-    target
-FROM templates
-INNER JOIN main.template_exercises te
-    ON templates.id = te.template_id
-INNER JOIN main.exercises e
-    ON te.exercise_id = e.name
-WHERE templates.user_id = ?
+WITH
+  _templates AS (
+    SELECT *
+    FROM templates
+    WHERE user_id = ?
+)
+, _ex AS (
+    SELECT *
+    FROM template_exercises
+    WHERE template_id IN (SELECT id FROM _templates)
+)
+SELECT
+    id,
+    name,
+    order_in_parent AS "order",
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', _ex.id,
+                'sets', json(_ex.description)
+            )
+        )
+        FROM _ex
+        WHERE _ex.template_id = _templates.id
+    ) AS exercises
+FROM _templates
 ;
 """;
 
 const getSampleTemplates = """
-SELECT 
-    templates.name as template_name,
-    order_in_parent,
-    created_at,
-    te.id ,
-    template_id,
-    description,
-    e.name,
-    category,
-    target
-FROM templates
-INNER JOIN main.template_exercises te
-    ON templates.id = te.template_id
-INNER JOIN main.exercises e
-    ON te.exercise_id = e.name
-WHERE templates.user_id IS NULL
+WITH
+  _templates AS (
+    SELECT *
+    FROM templates
+    WHERE user_id IS NULL
+)
+, _ex AS (
+    SELECT *
+    FROM template_exercises
+    WHERE template_id IN (SELECT id FROM _templates)
+)
+SELECT
+    id,
+    name,
+    order_in_parent AS "order",
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', _ex.id,
+                'sets', json(_ex.description)
+            )
+        )
+        FROM _ex
+        WHERE _ex.template_id = _templates.id
+    ) AS exercises
+FROM _templates
 ;
 """;
 

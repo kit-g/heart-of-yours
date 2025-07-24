@@ -399,7 +399,6 @@ extension on Iterable<Completes> {
 }
 
 List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLookup lookForExercise) {
-  print(collection);
   WorkoutExercise? parse(dynamic each) {
     final exercise = lookForExercise(each['exercise']);
     if (exercise == null) return null;
