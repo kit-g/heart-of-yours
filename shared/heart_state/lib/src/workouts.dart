@@ -94,7 +94,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> fetchWorkout(String workoutId) async {
     if (userId case String userId) {
-      final workout = await _localService.getWorkout(userId, workoutId);
+      final workout = await _localService.getWorkout(userId, workoutId, lookForExercise);
       if (workout != null) {
         _workouts[workoutId] = workout;
         notifyListeners();
@@ -238,7 +238,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Workout?> _getActiveWorkout(String userId) async {
     try {
-      return _localService.getActiveWorkout(userId);
+      return _localService.getActiveWorkout(userId, lookForExercise);
     } catch (error, s) {
       onError?.call(error, stacktrace: s);
       return null;
@@ -256,7 +256,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> initHistory() async {
     if (userId case String id) {
-      final local = await _localService.getWorkoutHistory(id);
+      final local = await _localService.getWorkoutHistory(id, lookForExercise);
       if (local case Iterable<Workout> local when local.isNotEmpty) {
         _workouts.addAll(Map.fromEntries(local.map(_entry)));
       } else {
