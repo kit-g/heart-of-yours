@@ -427,22 +427,14 @@ final class LocalDatabase
   }
 
   @override
-  Future<Iterable<Template>> getTemplates(String? userId) async {
+  Future<Iterable<Template>> getTemplates(String? userId, ExerciseLookup lookup) async {
     final query = userId == null ? sql.getSampleTemplates : sql.getTemplates;
     final args = userId == null ? null : [userId];
     final rows = (await _db.rawQuery(query, args)).map((row) => row.toCamel());
-    if (rows.isEmpty) return [];
-
-    final grouped = rows.fold<Map<String, List<Map<String, dynamic>>>>(
-      {},
-      (acc, row) {
-        final templateId = row['templateId'].toString();
-        acc.putIfAbsent(templateId, () => []).add(row);
-        return acc;
-      },
-    );
-
-    return grouped.entries.map((entry) => Template.fromRows(entry.value));
+    return switch (rows) {
+      [Map row] => [Template.fromJson(row, lookup)],
+      _ => [],
+    };
   }
 
   @override

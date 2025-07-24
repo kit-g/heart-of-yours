@@ -50,7 +50,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   Future<void> init() async {
     _initSampleTemplates(lookForExercise);
     if (userId == null) return;
-    final local = await _service.getTemplates(userId!);
+    final local = await _service.getTemplates(userId!, lookForExercise);
 
     if (local.isNotEmpty) {
       _templates.addAll(local);
@@ -129,7 +129,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   bool get allowsNewTemplate => length < _maxTemplates;
 
   Future<void> _initSampleTemplates(ExerciseLookup lookForExercise) async {
-    final local = await _service.getTemplates(null);
+    final local = await _service.getTemplates(null, lookForExercise);
     if (local.isNotEmpty) {
       return _samples.addAll(local);
     }
