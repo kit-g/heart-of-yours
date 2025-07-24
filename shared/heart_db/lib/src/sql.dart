@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS template_exercises
 """;
 
 const activeWorkout = """
-WITH _workout AS (
+WITH
+  _workout AS (
     SELECT *
     FROM workouts
     WHERE "end" IS NULL
@@ -87,62 +88,55 @@ WITH _workout AS (
     ORDER BY start DESC
     LIMIT 1
 )
-SELECT
-    _workout.id AS workout_id,
-    _workout.start,
-    _workout."end",
-    _workout.name AS workout_name,
-    workout_exercises.id as workout_exercise_id,
-    workout_exercises.exercise_order,
-    sets.id AS set_id,
-    sets.completed,
-    sets.weight,
-    sets.reps,
-    sets.duration,
-    sets.distance,
-    e.name,
-    target,
-    category
-FROM workout_exercises
-INNER JOIN _workout
-    ON _workout.id = workout_exercises.workout_id
-INNER JOIN sets
-    ON workout_exercises.id = sets.exercise_id
-INNER JOIN exercises e
-    ON e.name = workout_exercises.exercise_id
-
-UNION ALL
-
-SELECT
-    _workout.id AS workout_id,
-    _workout.start,
-    _workout."end",
-    _workout.name AS workout_name,
-    NULL AS workout_exercise_id,
-    NULL AS exercise_order,
-    NULL AS set_id,
-    NULL AS completed,
-    NULL AS weight,
-    NULL AS reps,
-    NULL AS duration,
-    NULL AS distance,
-    NULL AS name,
-    NULL AS category,
-    NULL AS target
-FROM _workout
-WHERE NOT exists (
-    SELECT 1
+, _ex AS (
+    SELECT workout_exercises.*
     FROM workout_exercises
-    INNER JOIN sets
-        ON workout_exercises.id = sets.exercise_id
-    INNER JOIN exercises e
-        ON e.name = workout_exercises.exercise_id
-    WHERE workout_exercises.workout_id = _workout.id
-);
+    INNER JOIN _workout ON _workout.id = workout_exercises.workout_id
+
+)
+, _sets AS (
+    SELECT *
+    FROM sets
+    WHERE exercise_id IN (SELECT id FROM _ex)
+)
+SELECT
+    _workout.id AS id,
+    _workout.start,
+    _workout."end",
+    _workout.name,
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', _ex.id,
+                'order', _ex.exercise_order,
+                'exercise', _ex.exercise_id,
+                'sets', (
+                    SELECT json_group_array(
+                        json_object(
+                            'id', _sets.id,
+                            'weight', _sets.weight,
+                            'reps', _sets.reps,
+                            'duration', _sets.duration,
+                            'distance', _sets.distance,
+                            'completed', _sets.completed
+                        )
+                    )
+                    FROM _sets
+                    WHERE exercise_id = _ex.id
+                )
+            )
+        )
+        FROM _ex
+        WHERE workout_id = _workout.id
+    )
+AS exercises
+FROM _workout
+;
 """;
 
 const getWorkout = """
-WITH _workout AS (
+WITH
+  _workout AS (
     SELECT *
     FROM workouts
     WHERE id = ?
@@ -150,91 +144,102 @@ WITH _workout AS (
     ORDER BY start DESC
     LIMIT 1
 )
-SELECT
-    _workout.id AS workout_id,
-    _workout.start,
-    _workout."end",
-    _workout.name AS workout_name,
-    workout_exercises.id as workout_exercise_id,
-    workout_exercises.exercise_order,
-    sets.id AS set_id,
-    sets.completed,
-    sets.weight,
-    sets.reps,
-    sets.duration,
-    sets.distance,
-    e.name,
-    target,
-    category
-FROM workout_exercises
-INNER JOIN _workout
-    ON _workout.id = workout_exercises.workout_id
-INNER JOIN sets
-    ON workout_exercises.id = sets.exercise_id
-INNER JOIN exercises e
-    ON e.name = workout_exercises.exercise_id
-
-UNION ALL
-
-SELECT
-    _workout.id AS workout_id,
-    _workout.start,
-    _workout."end",
-    _workout.name AS workout_name,
-    NULL AS workout_exercise_id,
-    NULL AS exercise_order,
-    NULL AS set_id,
-    NULL AS completed,
-    NULL AS weight,
-    NULL AS reps,
-    NULL AS duration,
-    NULL AS distance,
-    NULL AS name,
-    NULL AS category,
-    NULL AS target
-FROM _workout
-WHERE NOT exists (
-    SELECT 1
+, _ex AS (
+    SELECT workout_exercises.*
     FROM workout_exercises
-    INNER JOIN sets
-        ON workout_exercises.id = sets.exercise_id
-    INNER JOIN exercises e
-        ON e.name = workout_exercises.exercise_id
-    WHERE workout_exercises.workout_id = _workout.id
-);
+    INNER JOIN _workout ON _workout.id = workout_exercises.workout_id
+
+)
+, _sets AS (
+    SELECT *
+    FROM sets
+    WHERE exercise_id IN (SELECT id FROM _ex)
+)
+SELECT
+    _workout.id AS id,
+    _workout.start,
+    _workout."end",
+    _workout.name,
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', _ex.id,
+                'order', _ex.exercise_order,
+                'exercise', _ex.exercise_id,
+                'sets', (
+                    SELECT json_group_array(
+                        json_object(
+                            'id', _sets.id,
+                            'weight', _sets.weight,
+                            'reps', _sets.reps,
+                            'duration', _sets.duration,
+                            'distance', _sets.distance,
+                            'completed', _sets.completed
+                        )
+                    )
+                    FROM _sets
+                    WHERE exercise_id = _ex.id
+                )
+            )
+        )
+        FROM _ex
+        WHERE workout_id = _workout.id
+    )
+AS exercises
+FROM _workout
+;
 """;
 
 const history = """
-WITH _workout AS (
+WITH
+  _workouts AS (
     SELECT *
     FROM workouts
     WHERE "end" IS NOT NULL
       AND user_id = ?
 )
+, _ex AS (
+    SELECT *
+    FROM workout_exercises
+    WHERE workout_id IN (SELECT id FROM _workouts)
+)
+, _sets AS (
+    SELECT *
+    FROM sets
+    WHERE exercise_id IN (SELECT id FROM _ex)
+)
 SELECT
-    _workout.id AS workout_id,
-    _workout.start,
-    _workout."end",
-    _workout.name AS workout_name,
-    workout_exercises.id as workout_exercise_id,
-    workout_exercises.exercise_order,
-    sets.id AS set_id,
-    sets.completed,
-    sets.weight,
-    sets.reps,
-    sets.duration,
-    sets.distance,
-    e.name,
-    target,
-    category
-FROM workout_exercises
-INNER JOIN _workout
-    ON _workout.id = workout_exercises.workout_id
-INNER JOIN sets
-    ON workout_exercises.id = sets.exercise_id
-INNER JOIN exercises e
-    ON e.name = workout_exercises.exercise_id
-    ;
+    _workouts.id AS id,
+    _workouts.start,
+    _workouts."end",
+    _workouts.name,
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', _ex.id,
+                'order', _ex.exercise_order,
+                'exercise', _ex.exercise_id,
+                'sets', (
+                    SELECT json_group_array(
+                        json_object(
+                            'id', _sets.id,
+                            'weight', _sets.weight,
+                            'reps', _sets.reps,
+                            'duration', _sets.duration,
+                            'distance', _sets.distance,
+                            'completed', _sets.completed
+                        )
+                    )
+                    FROM _sets
+                    WHERE exercise_id = _ex.id
+                )
+            )
+        )
+        FROM _ex
+        WHERE workout_id = _workouts.id
+        )
+    AS exercises
+FROM _workouts;
 """;
 
 const removeUnfinished = """
@@ -249,42 +254,62 @@ WHERE completed = 0
 """;
 
 const getTemplates = """
-SELECT 
-    templates.name as template_name,
-    order_in_parent,
-    created_at,
-    te.id ,
-    template_id,
-    description,
-    e.name,
-    category,
-    target
-FROM templates
-INNER JOIN main.template_exercises te
-    ON templates.id = te.template_id
-INNER JOIN main.exercises e
-    ON te.exercise_id = e.name
-WHERE templates.user_id = ?
+WITH
+  _templates AS (
+    SELECT *
+    FROM templates
+    WHERE user_id = ?
+)
+, _ex AS (
+    SELECT *
+    FROM template_exercises
+    WHERE template_id IN (SELECT id FROM _templates)
+)
+SELECT
+    id,
+    name,
+    order_in_parent AS "order",
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', _ex.id,
+                'sets', json(_ex.description)
+            )
+        )
+        FROM _ex
+        WHERE _ex.template_id = _templates.id
+    ) AS exercises
+FROM _templates
 ;
 """;
 
 const getSampleTemplates = """
-SELECT 
-    templates.name as template_name,
-    order_in_parent,
-    created_at,
-    te.id ,
-    template_id,
-    description,
-    e.name,
-    category,
-    target
-FROM templates
-INNER JOIN main.template_exercises te
-    ON templates.id = te.template_id
-INNER JOIN main.exercises e
-    ON te.exercise_id = e.name
-WHERE templates.user_id IS NULL
+WITH
+  _templates AS (
+    SELECT *
+    FROM templates
+    WHERE user_id IS NULL
+)
+, _ex AS (
+    SELECT *
+    FROM template_exercises
+    WHERE template_id IN (SELECT id FROM _templates)
+)
+SELECT
+    id,
+    name,
+    order_in_parent AS "order",
+    (
+        SELECT json_group_array(
+            json_object(
+                'id', _ex.id,
+                'sets', json(_ex.description)
+            )
+        )
+        FROM _ex
+        WHERE _ex.template_id = _templates.id
+    ) AS exercises
+FROM _templates
 ;
 """;
 
