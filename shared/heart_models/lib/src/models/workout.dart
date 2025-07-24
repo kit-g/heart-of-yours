@@ -5,7 +5,6 @@ import 'exercise_set.dart';
 import 'misc.dart';
 import 'stats.dart';
 import 'ts_for_id.dart';
-import 'utils.dart';
 
 /// A collection of sets of the same exercise performed during a single workout
 /// E.g., squats 4x10
@@ -72,61 +71,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   }
 
   factory Workout.fromJson(Map json, ExerciseLookup lookForExercise) = _Workout.fromJson;
-
-  factory Workout.fromRows(Iterable<Map<String, dynamic>> rows) {
-    if (rows.isEmpty) {
-      throw ArgumentError('Rows cannot be empty');
-    }
-
-    if (rows.length == 1 && rows.first['workoutExerciseId'] == null) {
-      return _Workout(
-        start: DateTime.parse(rows.first['start']),
-        name: rows.first['name'],
-      );
-    }
-
-    final firstRow = rows.first;
-    final workoutId = firstRow['workoutId'] as String;
-
-    final exercisesById = rows.fold<Map<String, List<Map<String, Object?>>>>(
-      {},
-      (accumulator, row) {
-        final workoutExerciseId = row['workoutExerciseId'] as String;
-        (accumulator[workoutExerciseId] ??= []).add(row);
-        return accumulator;
-      },
-    );
-
-    final exercises = exercisesById.entries.map(
-      (entry) {
-        final exercise = Exercise.fromJson(entry.value.first);
-        final order = entry.value.first['exerciseOrder'] as int?;
-        final sets = entry.value.map(
-          (row) {
-            return ExerciseSet.fromJson(exercise, row);
-          },
-        ).toList();
-
-        return _WorkoutExercise._(
-          exercise: exercise,
-          start: DateTime.parse(deSanitizeId(entry.key)),
-          sets: sets,
-        )..order = order;
-      },
-    ).toList()
-      ..sort();
-
-    return _Workout(
-      start: DateTime.parse(firstRow['start'] as String),
-      name: firstRow['workoutName'] as String?,
-      id: workoutId,
-      exercises: exercises,
-      end: switch (firstRow['end']) {
-        String s => DateTime.tryParse(s),
-        _ => null,
-      },
-    );
-  }
 
   /// the total metric (e.g., weight)
   /// in all sets of this exercise
@@ -455,6 +399,7 @@ extension on Iterable<Completes> {
 }
 
 List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLookup lookForExercise) {
+  print(collection);
   WorkoutExercise? parse(dynamic each) {
     final exercise = lookForExercise(each['exercise']);
     if (exercise == null) return null;

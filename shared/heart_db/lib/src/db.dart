@@ -286,20 +286,22 @@ final class LocalDatabase
   }
 
   @override
-  Future<Workout?> getActiveWorkout(String? userId) async {
+  Future<Workout?> getActiveWorkout(String? userId, ExerciseLookup lookup) async {
     final rows = await _db.rawQuery(sql.activeWorkout, [userId]);
-    if (rows.isEmpty) return null;
-    final renamed = rows.map((row) => row.toCamel());
-    return Workout.fromRows(renamed);
+    return switch (rows) {
+      [Map row] => Workout.fromJson(_parseWorkout(row), lookup),
+      _ => null,
+    };
   }
 
   @override
-  Future<Workout?> getWorkout(String? userId, String workoutId) {
+  Future<Workout?> getWorkout(String? userId, String workoutId, ExerciseLookup lookup) {
     return _db.rawQuery(sql.getWorkout, [workoutId, userId]).then<Workout?>(
       (rows) {
-        if (rows.isEmpty) return null;
-        final renamed = rows.map((row) => row.toCamel());
-        return Workout.fromRows(renamed);
+        return switch (rows) {
+          [Map row] => Workout.fromJson(_parseWorkout(row), lookup),
+          _ => null,
+        };
       },
     );
   }
@@ -320,17 +322,9 @@ final class LocalDatabase
   }
 
   @override
-  Future<Iterable<Workout>?> getWorkoutHistory(String userId) async {
+  Future<Iterable<Workout>?> getWorkoutHistory(String userId, ExerciseLookup lookup) async {
     final rows = await _db.rawQuery(sql.history, [userId]);
-    final mapped = rows.fold<Map<String, List<Map<String, Object?>>>>(
-      {},
-      (accumulator, row) {
-        final workoutExerciseId = row['workout_id'] as String;
-        (accumulator[workoutExerciseId] ??= []).add(row.toCamel());
-        return accumulator;
-      },
-    );
-    return mapped.values.map((each) => Workout.fromRows(each));
+    return rows.map(_parseWorkout).map((each) => Workout.fromJson(each, lookup));
   }
 
   static void _storeWorkout(Batch batch, Workout workout, String userId) {
@@ -560,4 +554,16 @@ Future<int> _getMaxValue(DatabaseExecutor db, String table, String column) async
     [{'max_value': num v}] => v.toInt(),
     _ => 0,
   };
+}
+
+Map _parseWorkout(Map m) {
+  return m.map(
+    (key, value) {
+      return switch (key) {
+        'exercises' => MapEntry(key, jsonDecode(value)),
+        'end' => MapEntry(key, value ?? ''),
+        _ => MapEntry(key, value),
+      };
+    },
+  );
 }
