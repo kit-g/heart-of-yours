@@ -37,11 +37,7 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
   bool get isStarted;
 
   static List<WorkoutExercise> fromCollection(Map json, ExerciseLookup lookForExercise) {
-    return switch (json['exercises']) {
-      String s => _exercisesFromCollection(jsonDecode(s), lookForExercise),
-      Map m => _exercisesFromCollection(m, lookForExercise),
-      _ => throw ArgumentError(json),
-    };
+    return _exercisesFromCollection(json['exercises'], lookForExercise);
   }
 }
 
@@ -421,6 +417,7 @@ List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLooku
       sets: switch (each['sets']) {
         List sets => sets.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
         Map sets => sets.values.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
+        null => [],
         _ => null,
       },
     )..order = each['order'];
@@ -429,6 +426,7 @@ List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLooku
   return switch (collection) {
     List l => l.map(parse).nonNulls.toList()..sort(),
     Map m => m.values.map(parse).nonNulls.toList()..sort(),
+    String s => _exercisesFromCollection(jsonDecode(s), lookForExercise),
     _ => <WorkoutExercise>[],
   };
 }
