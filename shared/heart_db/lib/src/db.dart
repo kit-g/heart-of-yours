@@ -289,7 +289,7 @@ final class LocalDatabase
   Future<Workout?> getActiveWorkout(String? userId, ExerciseLookup lookup) async {
     final rows = await _db.rawQuery(sql.activeWorkout, [userId]);
     return switch (rows) {
-      [Map row] => Workout.fromJson(_parseWorkout(row), lookup),
+      [Map row] => Workout.fromJson(row.toWorkout(), lookup),
       _ => null,
     };
   }
@@ -299,7 +299,7 @@ final class LocalDatabase
     return _db.rawQuery(sql.getWorkout, [workoutId, userId]).then<Workout?>(
       (rows) {
         return switch (rows) {
-          [Map row] => Workout.fromJson(_parseWorkout(row), lookup),
+          [Map row] => Workout.fromJson(row.toWorkout(), lookup),
           _ => null,
         };
       },
@@ -324,7 +324,7 @@ final class LocalDatabase
   @override
   Future<Iterable<Workout>?> getWorkoutHistory(String userId, ExerciseLookup lookup) async {
     final rows = await _db.rawQuery(sql.history, [userId]);
-    return rows.map(_parseWorkout).map((each) => Workout.fromJson(each, lookup));
+    return rows.map((each) => Workout.fromJson(each.toWorkout(), lookup));
   }
 
   static void _storeWorkout(Batch batch, Workout workout, String userId) {
@@ -398,18 +398,19 @@ final class LocalDatabase
     return _db.transaction(
       (txn) {
         txn
-          ..update(_templates, {'name': template.name}, where: 'id = ?', whereArgs: [int.parse(template.id)])
-          ..delete(_templatesExercises, where: 'template_id = ?', whereArgs: [int.parse(template.id)]);
+          ..update(_templates, {'name': template.name}, where: 'id = ?', whereArgs: [template.id])
+          ..delete(_templatesExercises, where: 'template_id = ?', whereArgs: [template.id]);
 
         final batch = txn.batch();
 
-        for (var exercise in template) {
+        for (var (index, exercise) in template.indexed) {
           var desc = exercise.map((set) => set.toMap()).toList();
-
+          final ts = DateTime.timestamp();
           batch.insert(
             _templatesExercises,
             {
-              'template_id': int.parse(template.id),
+              'id': ts.subtract(Duration(milliseconds: 2 * index)).toIso8601String(),
+              'template_id': template.id,
               'exercise_id': exercise.exercise.name,
               'description': jsonEncode(desc),
             },
@@ -423,7 +424,7 @@ final class LocalDatabase
 
   @override
   Future<void> deleteTemplate(String templateId) {
-    return _db.delete(_templates, where: 'id = ?', whereArgs: [int.parse(templateId)]);
+    return _db.delete(_templates, where: 'id = ?', whereArgs: [templateId]);
   }
 
   @override
@@ -431,20 +432,25 @@ final class LocalDatabase
     final query = userId == null ? sql.getSampleTemplates : sql.getTemplates;
     final args = userId == null ? null : [userId];
     final rows = (await _db.rawQuery(query, args)).map((row) => row.toCamel());
-    return switch (rows) {
-      [Map row] => [Template.fromJson(row, lookup)],
-      _ => [],
-    };
+    return rows.map((row) => Template.fromJson(row, lookup));
   }
 
   @override
   Future<Template> startTemplate({int? order, String? userId}) async {
+    final id = DateTime.timestamp().toIso8601String();
     return _db.transaction(
       (txn) async {
         final newOrder = order ?? (await _getMaxValue(txn, _templates, 'order_in_parent') + 1);
-        return txn.insert(_templates, {'user_id': userId, 'order_in_parent': newOrder}).then<Template>(
-          (id) {
-            return Template.empty(id: id.toString(), order: newOrder);
+        return txn.insert(
+          _templates,
+          {
+            'id': id,
+            'user_id': userId,
+            'order_in_parent': newOrder,
+          },
+        ).then<Template>(
+          (_) {
+            return Template.empty(id: id, order: newOrder);
           },
         );
       },
@@ -467,12 +473,15 @@ final class LocalDatabase
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
 
-          for (final exercise in template) {
+          final ts = DateTime.timestamp();
+
+          for (final (index, exercise) in template.indexed) {
             var desc = exercise.map((set) => set.toMap()).toList();
 
             batch.insert(
               _templatesExercises,
               {
+                'id': ts.add(Duration(milliseconds: 2 * index)).toIso8601String(),
                 'template_id': int.parse(template.id),
                 'exercise_id': exercise.exercise.name,
                 'description': jsonEncode(desc),
@@ -548,14 +557,16 @@ Future<int> _getMaxValue(DatabaseExecutor db, String table, String column) async
   };
 }
 
-Map _parseWorkout(Map m) {
-  return m.map(
-    (key, value) {
-      return switch (key) {
-        'exercises' => MapEntry(key, jsonDecode(value)),
-        'end' => MapEntry(key, value ?? ''),
-        _ => MapEntry(key, value),
-      };
-    },
-  );
+extension on Map {
+  Map toWorkout() {
+    return map(
+      (key, value) {
+        return switch (key) {
+          'exercises' => MapEntry(key, jsonDecode(value)),
+          'end' => MapEntry(key, value ?? ''),
+          _ => MapEntry(key, value),
+        };
+      },
+    );
+  }
 }

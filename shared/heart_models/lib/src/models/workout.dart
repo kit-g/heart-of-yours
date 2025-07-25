@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'exercise.dart';
@@ -36,7 +37,11 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
   bool get isStarted;
 
   static List<WorkoutExercise> fromCollection(Map json, ExerciseLookup lookForExercise) {
-    return _exercisesFromCollection(json['exercises'], lookForExercise);
+    return switch (json['exercises']) {
+      String s => _exercisesFromCollection(jsonDecode(s), lookForExercise),
+      Map m => _exercisesFromCollection(m, lookForExercise),
+      _ => throw ArgumentError(json),
+    };
   }
 }
 
@@ -407,6 +412,7 @@ List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLooku
       start: DateTime.parse(each['id']),
       sets: switch (each['sets']) {
         List sets => sets.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
+        Map sets => sets.values.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
         _ => null,
       },
     )..order = each['order'];
