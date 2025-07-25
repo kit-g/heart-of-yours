@@ -69,57 +69,38 @@ void main() {
       );
 
       test(
-        'groups templates by templateId and parses correctly (user templates)',
+        'parses single-row template correctly (user template)',
         () async {
           const userId = 'user-1';
+          final we = wExercise();
 
-          final rows = [
-            {
-              'template_id': 1,
-              'template_name': 'Chest Day',
-              'order_in_parent': 0,
-              'created_at': '2025-07-21T10:00:00Z',
-              'id': 101,
-              'name': 'Push Up',
-              'category': 'Weighted Body Weight',
-              'target': 'Chest',
-              'description': jsonEncode([wExercise().toMap()]),
-            },
-            {
-              'template_id': 1,
-              'template_name': 'Chest Day',
-              'order_in_parent': 1,
-              'created_at': '2025-07-21T10:00:00Z',
-              'id': 102,
-              'name': 'Bench Press',
-              'category': 'Weighted Body Weight',
-              'target': 'Chest',
-              'description': jsonEncode([wExercise().toMap()]),
-            },
-            {
-              'template_id': 2,
-              'template_name': 'Leg Day',
-              'order_in_parent': 0,
-              'created_at': '2025-07-20T08:00:00Z',
-              'id': 201,
-              'name': 'Squat',
-              'category': 'Weighted Body Weight',
-              'target': 'Legs',
-              'description': jsonEncode([wExercise().toMap()]),
-            },
-          ];
+          final row = {
+            'id': 1,
+            'name': 'Chest Day',
+            'order': 0,
+            'created_at': '2025-07-21T10:00:00Z',
+            'exercises': jsonEncode(
+              we.map(
+                (e) {
+                  return {
+                    ...e.toMap(),
+                    'exercise': 'Push Up',
+                  };
+                },
+              ).toList(),
+            )
+          };
 
-          when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => rows);
+          when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => [row]);
 
-          final result = await local.getTemplates(userId, (_) => exercise());
+          final result = await local.getTemplates(userId, (_) => we.exercise);
 
-          expect(result, hasLength(2));
+          expect(result, hasLength(1));
 
-          final chestDay = result.firstWhere((t) => t.name == 'Chest Day');
-          final legDay = result.firstWhere((t) => t.name == 'Leg Day');
-
-          expect(chestDay.toList(), hasLength(2));
-          expect(legDay.toList().first.exercise.name, equals('Squat'));
+          final template = result.first;
+          expect(template.name, equals('Chest Day'));
+          expect(template, hasLength(1));
+          expect(template.first.exercise.name, equals('Push Up'));
 
           verify(db.rawQuery(userQuery, [userId])).called(1);
         },
@@ -128,27 +109,32 @@ void main() {
       test(
         'groups templates by templateId and parses correctly (sample templates)',
         () async {
-          final rows = [
-            {
-              'template_id': 10,
-              'template_name': 'Full Body',
-              'order_in_parent': 0,
-              'created_at': '2025-06-01T09:00:00Z',
-              'id': 1001,
-              'name': 'Burpee',
-              'category': 'Cardio',
-              'target': 'Cardio',
-              'description': jsonEncode([wExercise().toMap()]),
-            },
-          ];
+          final we = wExercise();
 
-          when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => rows);
+          final row = {
+            'id': 1,
+            'name': 'Full Body',
+            'order': 0,
+            'created_at': '2025-07-21T10:00:00Z',
+            'exercises': jsonEncode(
+              we.map(
+                (e) {
+                  return {
+                    ...e.toMap(),
+                    'exercise': 'Push Up',
+                  };
+                },
+              ).toList(),
+            )
+          };
+
+          when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => [row]);
 
           final result = await local.getTemplates(null, (_) => exercise());
 
           expect(result, hasLength(1));
           expect(result.first.name, equals('Full Body'));
-          expect(result.first.toList().first.exercise.name, equals('Burpee'));
+          expect(result.first.first.exercise.name, equals('Push Up'));
 
           verify(db.rawQuery(sampleQuery, null)).called(1);
         },
@@ -164,21 +150,25 @@ void main() {
         () async {
           const userId = 'user-1';
           const order = 5;
-          const insertedId = 123;
+          final insertedId = DateTime.timestamp().toIso8601String();
 
           when(
             txn.insert(
               'templates',
-              {
-                'user_id': userId,
-                'order_in_parent': order,
-              },
+              argThat(
+                allOf(
+                  containsPair('user_id', userId),
+                  containsPair('order_in_parent', order),
+                  contains('id'),
+                ),
+              ),
+              conflictAlgorithm: ConflictAlgorithm.replace,
             ),
-          ).thenAnswer((_) async => insertedId);
+          ).thenAnswer((_) async => 1);
 
           final result = await local.startTemplate(order: order, userId: userId);
 
-          expect(result.id, insertedId.toString());
+          expect(result.id.substring(0, 19), insertedId.substring(0, 19));
           expect(result.order, order);
           expect(result.name, isNull);
           expect(result, isEmpty);
@@ -186,10 +176,14 @@ void main() {
           verify(
             txn.insert(
               'templates',
-              {
-                'user_id': userId,
-                'order_in_parent': order,
-              },
+              argThat(
+                allOf(
+                  containsPair('user_id', userId),
+                  containsPair('order_in_parent', order),
+                  contains('id'),
+                ),
+              ),
+              conflictAlgorithm: anyNamed('conflictAlgorithm'),
             ),
           ).called(1);
         },

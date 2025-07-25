@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS sets
 const templates = """
 CREATE TABLE IF NOT EXISTS templates
 (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id              TEXT NOT NULL PRIMARY KEY,
     name            TEXT,
     user_id         TEXT,
     order_in_parent INTEGER,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS templates
 const templatesExercises = """
 CREATE TABLE IF NOT EXISTS template_exercises
 (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    id          TEXT    NOT NULL PRIMARY KEY,
     template_id INTEGER NOT NULL REFERENCES templates ON DELETE CASCADE,
     exercise_id TEXT    NOT NULL REFERENCES exercises ON DELETE CASCADE,
     description TEXT
@@ -273,7 +273,8 @@ SELECT
         SELECT json_group_array(
             json_object(
                 'id', _ex.id,
-                'sets', json(_ex.description)
+                'sets', json(_ex.description),
+                'exercise', _ex.exercise_id
             )
         )
         FROM _ex
@@ -303,7 +304,8 @@ SELECT
         SELECT json_group_array(
             json_object(
                 'id', _ex.id,
-                'sets', json(_ex.description)
+                'sets', json(_ex.description),
+                'exercise', _ex.exercise_id
             )
         )
         FROM _ex
