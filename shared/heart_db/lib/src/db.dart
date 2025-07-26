@@ -557,16 +557,3 @@ Future<int> _getMaxValue(DatabaseExecutor db, String table, String column) async
   };
 }
 
-extension on Map {
-  Map toWorkout() {
-    return map(
-      (key, value) {
-        return switch (key) {
-          'exercises' => MapEntry(key, jsonDecode(value)),
-          'end' => MapEntry(key, value ?? ''),
-          _ => MapEntry(key, value),
-        };
-      },
-    );
-  }
-}
