@@ -133,8 +133,6 @@ class _LoginPageState extends State<LoginPage>
                                       ),
                                     ],
                                   ),
-                                  if (Theme.of(context).platform case TargetPlatform.macOS) const SizedBox(height: 8),
-
                                   FutureBuilder<bool>(
                                     future: _isAppleSignNnAvailable,
                                     builder: (_, snapshot) {
@@ -154,13 +152,11 @@ class _LoginPageState extends State<LoginPage>
                                                 ),
                                                 OutlinedButton(
                                                   onPressed: () => run(Auth.of(context).loginWithApple),
-                                                  child: Expanded(
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.center,
-                                                      children: [
-                                                        Text(logInWithApple),
-                                                      ],
-                                                    ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text(logInWithApple),
+                                                    ],
                                                   ),
                                                 ),
                                               ],
