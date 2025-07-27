@@ -55,127 +55,138 @@ class _LoginPageState extends State<LoginPage>
       body: SafeArea(
         child: LayoutBuilder(
           builder: (_, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: IntrinsicHeight(
-                  child: Column(
-                    children: [
-                      const Expanded(
-                        flex: 2,
-                        child: Logo(),
-                      ),
-                      Expanded(
-                        flex: 5,
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: loader,
-                          builder: (_, loading, child) {
-                            return AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: switch (loading) {
-                                false => child!,
-                                true => const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
-                              },
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 60.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                _Form(
-                                  formKey: _formKey,
-                                  emailController: _emailController,
-                                  passwordController: _passwordController,
-                                  onAction: _logInWithEmail,
-                                  obscurityController: _passwordObscurityController,
-                                  error: error,
-                                  onPasswordRecovery: () {
-                                    widget.onPasswordRecovery(_emailController.text.trim());
-                                  },
-                                  needsName: false,
-                                  actionButtonCopy: logIn,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(orConnector),
-                                ),
-                                Stack(
-                                  children: [
-                                    const Positioned(
-                                      top: 0,
-                                      bottom: 0,
-                                      left: 24,
-                                      child: Icon(CustomIcons.google),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: () => run(Auth.of(context).loginWithGoogle),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(logInWithGoogle),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                FutureBuilder<bool>(
-                                  future: _isAppleSignNnAvailable,
-                                  builder: (_, snapshot) {
-                                    final AsyncSnapshot(:hasData, :hasError, data: available) = snapshot;
-                                    bool hasAppleSignIn = _isApple(context) && !hasError && hasData && available!;
-                                    return AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 100),
-                                      child: switch (hasAppleSignIn) {
-                                        false => const SizedBox.shrink(),
-                                        true => Stack(
-                                            children: [
-                                              const Positioned(
-                                                top: 0,
-                                                bottom: 0,
-                                                left: 24,
-                                                child: Icon(CustomIcons.appstore),
-                                              ),
-                                              OutlinedButton(
-                                                onPressed: () => run(Auth.of(context).loginWithApple),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(logInWithApple),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                      },
-                                    );
-                                  },
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(orConnector),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    buzz();
-                                    widget.onSignUp(_emailController.text);
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(signUp),
+            return Selector<Auth, bool>(
+              selector: (_, auth) => auth.isInitialized,
+              builder: (context, isInitialized, child) {
+                if (!isInitialized) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                return child!;
+              },
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        const Expanded(
+                          flex: 2,
+                          child: Logo(),
+                        ),
+                        Expanded(
+                          flex: 5,
+                          child: ValueListenableBuilder<bool>(
+                            valueListenable: loader,
+                            builder: (_, loading, child) {
+                              return AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: switch (loading) {
+                                  false => child!,
+                                  true => const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                },
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 60.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  _Form(
+                                    formKey: _formKey,
+                                    emailController: _emailController,
+                                    passwordController: _passwordController,
+                                    onAction: _logInWithEmail,
+                                    obscurityController: _passwordObscurityController,
+                                    error: error,
+                                    onPasswordRecovery: () {
+                                      widget.onPasswordRecovery(_emailController.text.trim());
+                                    },
+                                    needsName: false,
+                                    actionButtonCopy: logIn,
                                   ),
-                                ),
-                                const SizedBox(height: 24),
-                              ],
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(orConnector),
+                                  ),
+                                  Stack(
+                                    children: [
+                                      const Positioned(
+                                        top: 0,
+                                        bottom: 0,
+                                        left: 24,
+                                        child: Icon(CustomIcons.google),
+                                      ),
+                                      OutlinedButton(
+                                        onPressed: () => run(Auth.of(context).loginWithGoogle),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(logInWithGoogle),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  FutureBuilder<bool>(
+                                    future: _isAppleSignNnAvailable,
+                                    builder: (_, snapshot) {
+                                      final AsyncSnapshot(:hasData, :hasError, data: available) = snapshot;
+                                      bool hasAppleSignIn = _isApple(context) && !hasError && hasData && available!;
+                                      return AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 100),
+                                        child: switch (hasAppleSignIn) {
+                                          false => const SizedBox.shrink(),
+                                          true => Stack(
+                                              children: [
+                                                const Positioned(
+                                                  top: 0,
+                                                  bottom: 0,
+                                                  left: 24,
+                                                  child: Icon(CustomIcons.appstore),
+                                                ),
+                                                OutlinedButton(
+                                                  onPressed: () => run(Auth.of(context).loginWithApple),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text(logInWithApple),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                        },
+                                      );
+                                    },
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(orConnector),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      buzz();
+                                      widget.onSignUp(_emailController.text);
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(signUp),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
