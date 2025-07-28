@@ -50,6 +50,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
             _logout();
           }
         }
+
+        isInitialized = true;
       },
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
