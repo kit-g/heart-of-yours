@@ -203,9 +203,9 @@ final class Api
 }
 
 abstract final class Router {
-  static const accounts = 'api/accounts';
-  static const exercises = 'api/exercises';
-  static const feedback = 'api/feedback';
-  static const templates = 'api/templates';
-  static const workouts = 'api/workouts';
+  static const accounts = 'v1/accounts';
+  static const exercises = 'v1/exercises';
+  static const feedback = 'v1/feedback';
+  static const templates = 'v1/templates';
+  static const workouts = 'v1/workouts';
 }
