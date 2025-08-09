@@ -570,8 +570,15 @@ final class HeartRouter {
       return link?.path;
     }
 
-    return null;
-  }
+      // deep link from cold start
+      if (state.uri.queryParameters case {'from': String from}) {
+        final link = Uri.tryParse(Uri.decodeComponent(from));
+        return link?.path;
+      }
+
+      return null;
+    },
+  );
 
   static HeartRouter of(BuildContext context) {
     return Provider.of<HeartRouter>(context, listen: false);
