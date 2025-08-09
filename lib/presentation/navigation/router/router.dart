@@ -147,8 +147,8 @@ RouteBase _historyRoute() {
             path: ':workoutId',
             builder: (context, state) {
               try {
-                final workoutId = state.pathParameters['workoutId'];
-                final workout = Workouts.of(context).lookup(workoutId!);
+                final workoutId = state.pathParameters['workoutId']!;
+                final workout = Workouts.of(context).lookup(workoutId);
                 return WorkoutEditor(
                   copy: workout!.copy(sameId: true)..completeAllSets(),
                 );
@@ -157,7 +157,13 @@ RouteBase _historyRoute() {
               }
             },
             name: _historyEditName,
-          )
+            redirect: (context, state) {
+              return switch (state.pathParameters['workoutId']) {
+                String id when Workouts.of(context).lookup(id) != null => null,
+                _ => _historyPath,
+              };
+            },
+          ),
         ],
       ),
     ],
@@ -207,7 +213,7 @@ RouteBase _exercisesRoute() {
               return ExerciseDetailPage(
                 exercise: exercise!,
                 onTapWorkout: (workoutId) {
-                  return Workouts.of(context).fetchWorkout(workoutId).then(
+                  return Workouts.of(context).fetchWorkout(workoutId).then<void>(
                     (_) {
                       if (!context.mounted) return;
                       context.goToWorkoutEditor(workoutId);
@@ -215,6 +221,23 @@ RouteBase _exercisesRoute() {
                   );
                 },
               );
+            },
+            redirect: (context, state) {
+              final exercises = Exercises.of(context);
+              // cold start from deep link
+              if (!exercises.isInitialized) {
+                return state.namedLocation(
+                  _exercisesName,
+                  queryParameters: {
+                    ...state.uri.queryParameters,
+                    'from': Uri.encodeComponent(state.uri.toString()),
+                  },
+                );
+              }
+              return switch (state.pathParameters['exerciseId']) {
+                String id when exercises.lookup(id) != null => null,
+                _ => _exercisesPath,
+              };
             },
           ),
         ],
@@ -303,7 +326,12 @@ RouteBase _loginRoute() {
     name: _loginName,
     redirect: (context, state) {
       final isLoggedIn = Auth.of(context).isLoggedIn;
-      if (isLoggedIn) return _profilePath;
+      if (isLoggedIn) {
+        return state.namedLocation(
+          _profileName,
+          queryParameters: state.uri.queryParameters,
+        );
+      }
       return null;
     },
     routes: [
@@ -437,10 +465,13 @@ final class HeartRouter {
 
           final isLoggedIn = auth.isLoggedIn;
 
-          if (!isLoggedIn) {
-            // same as RecoveryPage
-            return state.namedLocation(_loginName, queryParameters: state.uri.queryParameters);
-          }
+      if (!isLoggedIn) {
+        // same as RecoveryPage
+        final from = Uri.encodeComponent(state.uri.toString());
+        final query = Map<String, String>.from(state.uri.queryParameters);
+        query['from'] ??= from;
+        return state.namedLocation(_loginName, queryParameters: query);
+      }
 
           if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
             return _workoutPath;
@@ -450,9 +481,15 @@ final class HeartRouter {
             return _restoreAccountPath;
           }
 
-          return null;
-        },
-      );
+      // deep link from cold start
+      if (state.uri.queryParameters case {'from': String from}) {
+        final link = Uri.tryParse(Uri.decodeComponent(from));
+        return link?.path;
+      }
+
+      return null;
+    },
+  );
 
   static HeartRouter of(BuildContext context) {
     return Provider.of<HeartRouter>(context, listen: false);
