@@ -192,8 +192,8 @@ RouteBase _historyRoute() {
             path: ':workoutId',
             builder: (context, state) {
               try {
-                final workoutId = state.pathParameters['workoutId'];
-                final workout = Workouts.of(context).lookup(workoutId!);
+                final workoutId = state.pathParameters['workoutId']!;
+                final workout = Workouts.of(context).lookup(workoutId);
                 return WorkoutEditor(
                   copy: workout!.copy(sameId: true)..completeAllSets(),
                 );
@@ -202,6 +202,12 @@ RouteBase _historyRoute() {
               }
             },
             name: _historyEditName,
+            redirect: (context, state) {
+              return switch (state.pathParameters['workoutId']) {
+                String id when Workouts.of(context).lookup(id) != null => null,
+                _ => _historyPath,
+              };
+            },
           ),
         ],
       ),
@@ -287,7 +293,7 @@ RouteBase _exercisesRoute() {
               return ExerciseDetailPage(
                 exercise: exercise!,
                 onTapWorkout: (workoutId) {
-                  return Workouts.of(context).fetchWorkout(workoutId).then(
+                  return Workouts.of(context).fetchWorkout(workoutId).then<void>(
                     (_) {
                       if (!context.mounted) return;
                       context.goToWorkoutEditor(workoutId);
@@ -295,6 +301,23 @@ RouteBase _exercisesRoute() {
                   );
                 },
               );
+            },
+            redirect: (context, state) {
+              final exercises = Exercises.of(context);
+              // cold start from deep link
+              if (!exercises.isInitialized) {
+                return state.namedLocation(
+                  _exercisesName,
+                  queryParameters: {
+                    ...state.uri.queryParameters,
+                    'from': Uri.encodeComponent(state.uri.toString()),
+                  },
+                );
+              }
+              return switch (state.pathParameters['exerciseId']) {
+                String id when exercises.lookup(id) != null => null,
+                _ => _exercisesPath,
+              };
             },
           ),
         ],
