@@ -56,6 +56,8 @@ android {
             resValue "string", "app_name", "Heart"
         }
     }
+
+    ndkVersion = "27.0.12077973"
 }
 
 flutter {
