@@ -21,8 +21,6 @@ final class LocalDatabase
       databaseFactory = databaseFactoryFfiWeb;
     }
 
-    // await deleteDatabase(path);
-
     _logger.info('Local database at $path/$name');
     final db = await openDatabase(
       join(path, name),
@@ -492,7 +490,7 @@ final class LocalDatabase
               _templatesExercises,
               {
                 'id': ts.add(Duration(milliseconds: 2 * index)).toIso8601String(),
-                'template_id': int.parse(template.id),
+                'template_id': template.id,
                 'exercise_id': exercise.exercise.name,
                 'description': jsonEncode(desc),
               },
