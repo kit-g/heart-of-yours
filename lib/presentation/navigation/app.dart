@@ -113,7 +113,7 @@ class HeartApp extends StatelessWidget {
           create: (_) => Scrolls(),
         ),
       ],
-      builder: (__, _) {
+      builder: (_, _) {
         return Consumer<AppTheme>(
           builder: (__, theme, _) {
             return _App(theme: theme);
