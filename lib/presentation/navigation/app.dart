@@ -8,6 +8,7 @@ import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
@@ -16,7 +17,6 @@ import 'package:heart_state/heart_state.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import 'router/router.dart';
 
 class HeartApp extends StatelessWidget {
   final LocalDatabase db;
