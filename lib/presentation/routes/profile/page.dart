@@ -93,7 +93,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                           style: textTheme.bodyLarge,
                         ),
                       ],
-                    )
+                    ),
                   ],
                 )
               else

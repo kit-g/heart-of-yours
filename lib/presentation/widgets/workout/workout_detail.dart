@@ -243,13 +243,13 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                         ),
                       ),
                       const SizedBox(height: 8),
-                    ]
+                    ],
                   ],
                 ),
               );
             },
           ),
-        )
+        ),
       ],
     );
   }
@@ -298,7 +298,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                           },
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
                 height: 40,

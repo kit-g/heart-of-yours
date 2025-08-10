@@ -57,7 +57,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                         onEditWorkout: widget.onEditWorkout,
                       );
                     },
-                  )
+                  ),
               ],
             ),
         },

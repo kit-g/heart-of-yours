@@ -86,7 +86,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
                     size: 18,
                   ),
                 ),
-                const SizedBox()
+                const SizedBox(),
               ],
             ),
             Text(
