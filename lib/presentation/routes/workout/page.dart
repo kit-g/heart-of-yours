@@ -53,7 +53,7 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
                   // workouts.startExercise changes this iterable
                   // so we need a copy to avoid
                   // concurrent modification
-                  for (var each in exercises.toList()) {
+                  for (final each in exercises.toList()) {
                     await Future.delayed(
                       // for different IDs
                       const Duration(milliseconds: 2),
