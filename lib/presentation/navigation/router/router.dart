@@ -11,10 +11,10 @@ import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
+import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import '../../widgets/app_frame.dart';
 
 part 'constants.dart';
 
