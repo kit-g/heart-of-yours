@@ -99,7 +99,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
                           Text(
                             '${exercise.length}x',
                             style: style,
-                          )
+                          ),
                         ],
                       );
                     },
@@ -108,10 +108,10 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
                     Text(
                       '...',
                       style: textTheme.bodyMedium?.copyWith(color: colorScheme.outline),
-                    )
+                    ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -91,7 +91,7 @@ class _Card extends StatelessWidget {
                       Text(
                         DateFormat('yMMMd').format(start),
                         style: textTheme.bodySmall,
-                      )
+                      ),
                   ],
                 ),
               Row(
@@ -105,7 +105,7 @@ class _Card extends StatelessWidget {
                     Text(
                       DateFormat('EEEE, h:mm a').format(start.toLocal()),
                       style: textTheme.bodySmall,
-                    )
+                    ),
                 ],
               ),
               ...act.indexed.map(
@@ -124,7 +124,7 @@ class _Card extends StatelessWidget {
                     ),
                   );
                 },
-              )
+              ),
             ],
           ),
         ),

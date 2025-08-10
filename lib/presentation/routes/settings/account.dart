@@ -171,7 +171,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                             },
                           ),
                         ],
-                      )
+                      ),
                     ],
                   );
                 },
@@ -247,7 +247,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                   deleteAccount,
                   style: textTheme.bodyLarge?.copyWith(color: colorScheme.error),
                 ),
-              )
+              ),
             ],
           );
         },
@@ -308,7 +308,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               },
             ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -376,7 +376,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               },
             ),
           ],
-        )
+        ),
       ],
     );
   }

@@ -35,7 +35,7 @@ class AvatarPage extends StatelessWidget {
               icon: const Icon(
                 Icons.edit_rounded,
               ),
-            )
+            ),
           ],
         ),
         body: Center(

@@ -118,7 +118,7 @@ RouteBase _historyRoute() {
           }
         },
         name: _historyEditName,
-      )
+      ),
     ],
   );
 }
@@ -208,7 +208,7 @@ RouteBase _loginRoute() {
             transitionsBuilder: _pageTransition,
           );
         },
-      )
+      ),
     ],
   );
 }

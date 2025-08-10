@@ -78,7 +78,7 @@ Future<void> showWorkoutSheet(
                                 },
                                 backgroundColor: theme.colorScheme.primaryContainer,
                                 child: Text(L.of(context).finish),
-                              )
+                              ),
                           ],
                         ),
                       ),

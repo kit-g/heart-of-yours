@@ -72,7 +72,7 @@ class WorkoutItem extends StatelessWidget {
                       },
                     )
                   else
-                    const SizedBox.shrink()
+                    const SizedBox.shrink(),
                 ],
               ),
               Text(
@@ -88,7 +88,7 @@ class WorkoutItem extends StatelessWidget {
                           Icons.access_time_rounded,
                           size: 18,
                         ),
-                        Text(workout.duration?.formatted(context) ?? '-')
+                        Text(workout.duration?.formatted(context) ?? '-'),
                       ],
                     ),
                   ),
@@ -135,7 +135,7 @@ class WorkoutItem extends StatelessWidget {
                           ),
                           style: textTheme.titleSmall,
                         ),
-                      )
+                      ),
                     ],
                   );
                 },
@@ -312,7 +312,7 @@ class WorkoutItem extends StatelessWidget {
               },
             ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -367,7 +367,7 @@ class WorkoutItem extends StatelessWidget {
               },
             ),
           ],
-        )
+        ),
       ],
     );
   }

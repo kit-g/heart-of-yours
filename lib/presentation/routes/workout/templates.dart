@@ -79,7 +79,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                     },
                   );
                 },
-              )
+              ),
             ],
           ),
         ),
@@ -115,7 +115,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                     options: const [_TemplateOption.startWorkout],
                   );
                 },
-              )
+              ),
             ],
           ),
         ),
@@ -175,7 +175,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
               },
             ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -219,7 +219,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                         ],
                       );
                     },
-                  )
+                  ),
                 ],
               ),
             ),
@@ -269,7 +269,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
               },
             ),
           ],
-        )
+        ),
       ],
     );
   }

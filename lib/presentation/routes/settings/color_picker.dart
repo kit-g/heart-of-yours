@@ -48,7 +48,7 @@ class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker>
                     Icons.color_lens_rounded,
                     color: theme.color,
                   ),
-                )
+                ),
               ],
             );
           },
