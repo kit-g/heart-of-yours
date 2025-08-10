@@ -27,7 +27,7 @@ Map<String, String> imageHeaders({String? appVersion}) {
 }
 
 Map<String, String> _common(String? appVersion) {
-  final version = appVersion ?? "Unknown version";
+  final version = appVersion ?? 'Unknown version';
   return {
     'Referer': AppConfig.appLink,
     'User-Agent': _userAgent(version),

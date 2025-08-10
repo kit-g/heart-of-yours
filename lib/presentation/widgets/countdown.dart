@@ -240,7 +240,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
   }
 
   String _format(int duration) {
-    return "${_pad(duration ~/ 60)}:${_pad(duration % 60)}";
+    return '${_pad(duration ~/ 60)}:${_pad(duration % 60)}';
   }
 
   static String _pad(int t) {

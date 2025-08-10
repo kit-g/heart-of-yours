@@ -627,15 +627,15 @@ extension on int {
   /// 3723.toDuration();   // "1:02:03"
   /// ```
   String toDuration() {
-    if (this < 60) return "00:${_pad(this)}";
+    if (this < 60) return '00:${_pad(this)}';
     final minutes = (this ~/ 60) % 60;
     final hours = this ~/ 3600;
     final seconds = this % 60;
 
     if (hours > 0) {
-      return "$hours:${_pad(minutes)}:${_pad(seconds)}";
+      return '$hours:${_pad(minutes)}:${_pad(seconds)}';
     }
-    return "$minutes:${_pad(seconds)}";
+    return '$minutes:${_pad(seconds)}';
   }
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
