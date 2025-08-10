@@ -116,7 +116,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
                 onAddExercises: (exercises) async {
-                  for (var each in exercises.toList()) {
+                  for (final each in exercises.toList()) {
                     await Future.delayed(
                       // for different IDs
                       const Duration(milliseconds: 2),

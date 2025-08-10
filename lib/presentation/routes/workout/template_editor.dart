@@ -98,7 +98,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
             onRemoveExercise: templates.removeExercise,
             needsCancelWorkoutButton: false,
             onAddExercises: (exercises) async {
-              for (var each in exercises) {
+              for (final each in exercises) {
                 await templates.add(each);
               }
             },
