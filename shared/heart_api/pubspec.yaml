@@ -16,11 +16,10 @@ dependencies:
       url: "https://github.com/kit-g/dart-network-utils.git"
       ref: "0e1fa2e748581d7d76c5f48c21decb8090ffe8d9"
 
+resolution: workspace
+
 dev_dependencies:
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   test: any
   mockito: ^5.4.2
   build_runner: ^2.4.6
-
-dependency_overrides:
-  analyzer: ^6.11.0

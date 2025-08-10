@@ -8,6 +8,14 @@ environment:
   sdk: "^3.6.0"
   flutter: 3.27.1
 
+workspace:
+  - "shared/heart_api"
+  - "shared/heart_db"
+  - "shared/heart_charts"
+  - "shared/heart_language"
+  - "shared/heart_models"
+  - "shared/heart_state"
+
 dependencies:
   app_settings: ^5.1.1
   cached_network_image: ^3.4.1
@@ -23,17 +31,11 @@ dependencies:
     sdk: flutter
   go_router: ^14.8.1
   heart_api:
-    path: 'shared/heart_api'
   heart_charts:
-    path: 'shared/heart_charts'
   heart_db:
-    path: 'shared/heart_db'
   heart_language:
-    path: 'shared/heart_language'
   heart_models:
-    path: 'shared/heart_models'
   heart_state:
-    path: 'shared/heart_state'
   image_cropper: ^9.1.0
   image_picker: ^1.1.2
   intl: any
@@ -47,9 +49,12 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
   mockito: ^5.4.2
   test: any
+
+dependency_overrides:
+  analyzer: ^6.11.0
 
 flutter:
   uses-material-design: true
