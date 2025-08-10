@@ -5,3 +5,5 @@ linter:
     require_trailing_commas: true
     prefer_const_constructors: true
     prefer_final_in_for_each: true
+    unnecessary_underscores: false
+
