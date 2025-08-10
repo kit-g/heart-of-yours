@@ -122,7 +122,7 @@ class _RecoveryPageState extends State<RecoveryPage>
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

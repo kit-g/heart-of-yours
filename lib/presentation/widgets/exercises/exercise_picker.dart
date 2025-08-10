@@ -117,7 +117,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                                   ),
                                 );
                               },
-                            )
+                            ),
                           ],
                         );
                       },
@@ -170,7 +170,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                                   ),
                                 );
                               },
-                            )
+                            ),
                           ],
                         );
                       },
@@ -220,7 +220,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                           ),
                         );
                       },
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -260,7 +260,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                 );
               },
             ),
-        }
+        },
       ],
     );
   }

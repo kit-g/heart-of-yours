@@ -127,7 +127,7 @@ class _Record extends StatelessWidget {
               ],
             );
           },
-        )
+        ),
       ],
     );
   }

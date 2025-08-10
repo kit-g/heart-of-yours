@@ -183,7 +183,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               },
             ),
           ],
-        )
+        ),
       ],
     );
   }

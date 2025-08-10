@@ -158,7 +158,7 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
                             },
                             backgroundColor: colorScheme.primaryContainer,
                             child: Text(finish),
-                          )
+                          ),
                         ],
                       ),
                       height: 48,

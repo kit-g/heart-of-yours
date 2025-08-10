@@ -209,7 +209,7 @@ Future<T?> showBottomMenu<T>(BuildContext context, List<BottomMenuAction> action
                       ),
                     );
                   },
-                )
+                ),
               ],
             ),
           ],

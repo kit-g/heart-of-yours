@@ -58,7 +58,7 @@ class _EmptyBadge extends StatelessWidget {
             bottom: 0,
             right: 0,
             child: Text(target.icon),
-          )
+          ),
         ],
       ),
     );
