@@ -27,8 +27,6 @@ class LocalDatabase
       databaseFactory = databaseFactoryFfiWeb;
     }
 
-    // await deleteDatabase(path);
-
     _logger.info('Local database at $path/$name');
     final db = await openDatabase(
       join(path, name),
