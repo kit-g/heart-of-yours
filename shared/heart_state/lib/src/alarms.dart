@@ -6,6 +6,10 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 class Alarms with ChangeNotifier implements SignOutStateSentry {
+  Alarms({Duration tick = const Duration(seconds: 1)}) : _tick = tick;
+
+  final Duration _tick;
+
   @override
   void onSignOut() {
     stopActiveExerciseTimer();
@@ -44,7 +48,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     _activeExercise = (
       remains: ValueNotifier<int>(duration),
       timer: Timer.periodic(
-        const Duration(seconds: 1),
+        _tick,
         (timer) {
           if ((_activeExercise?.remains.value ?? 0) > 0) {
             _activeExercise?.remains.value--;
