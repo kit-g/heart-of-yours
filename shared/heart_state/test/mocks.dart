@@ -5,10 +5,17 @@ import 'package:mockito/annotations.dart';
   [
     MockSpec<Exercise>(),
     MockSpec<TimersService>(),
+    MockSpec<AccountService>(),
     MockSpec<StatsService>(),
     MockSpec<TemplateService>(),
+    MockSpec<Template>(),
+    MockSpec<Workout>(),
     MockSpec<RemoteTemplateService>(),
     MockSpec<RemoteConfigService>(),
+    MockSpec<WorkoutService>(),
+    MockSpec<RemoteWorkoutService>(),
+    MockSpec<RemoteExerciseService>(),
+    MockSpec<ExerciseService>(),
   ],
 )
 void main() {
