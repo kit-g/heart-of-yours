@@ -16,8 +16,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   final Future<void> Function(String?, String?)? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final bool isWeb;
-  final String appleServiceId;
-  final String appleSignInRedirect;
+  final String? appleServiceId;
+  final String? appleSignInRedirect;
 
   User? _user;
 
@@ -35,18 +35,18 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Auth({
+    required AccountService service,
     this.onUserChange,
     this.onError,
     this.onEnter,
-    required this.isWeb,
-    required AccountService service,
-    required this.appleServiceId,
-    required this.appleSignInRedirect,
+    this.isWeb = false,
+    this.appleServiceId,
+    this.appleSignInRedirect,
     fb.FirebaseAuth? firebase,
     GoogleSignIn? googleSignIn,
   })  : _service = service,
         _firebase = firebase ?? fb.FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(scopes: ['profile', 'email']) {
+        _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
     // such is the way with Google sign-in
     // on the web - Firebase does not pick it up
     if (isWeb) {
@@ -124,10 +124,13 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
-        webAuthenticationOptions: WebAuthenticationOptions(
-          clientId: appleServiceId,
-          redirectUri: Uri.parse(appleSignInRedirect),
-        ),
+        webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
+          (String clientId, String redirect) => WebAuthenticationOptions(
+              clientId: clientId,
+              redirectUri: Uri.parse(redirect),
+            ),
+          _ => null,
+        },
       );
 
       final oAuth = fb.OAuthProvider('apple.com');
