@@ -28,4 +28,3 @@ dev_dependencies:
   mockito: ^5.5.0
   build_runner: 2.6.0
   firebase_auth_mocks: ^0.15.0
-  google_sign_in_mocks: ^0.3.0
