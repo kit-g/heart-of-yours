@@ -47,6 +47,8 @@ The project has the following general structure.
     └── presentation
 ├── pubspec.yaml
 ├── shared
+    ├── heart_api
+    ├── heart_charts
     ├── heart_db
     ├── heart_language
     ├── heart_models
@@ -55,12 +57,15 @@ The project has the following general structure.
     └── ...
 ```
 
-This is a slightly modified MVVM-architecture where the data layer is moved to its own package (or
-three, rather - `heart_models`, `heart_db` and `heart_state`), plus the same happened to the app's
-copy (`heart_language`). In this specific app, there are no services (or service abstractions) since
-its backend is in Firebase and the Firestore connection is private to the `heart_state` package and
-is not exposed to the app. In fact, the app has no direct dependency on Firebase and this is how
-separation of concerns is achieved.
+This is a slightly modified MVVM-style architecture where the domain and data layers live in dedicated packages:
+- Domain models and service contracts: `shared/heart_models`
+- Local persistence (SQLite): `shared/heart_db`
+- App state and business workflows (Provider): `shared/heart_state`
+- Localization strings and delegates: `shared/heart_language`
+- HTTP client for the backend: `shared/heart_api`
+- Reusable charts for UI: `shared/heart_charts`
+
+In this app, the UI depends on `heart_state` and the domain interfaces from `heart_models`. Concrete I/O lives behind those interfaces (`heart_db` for local storage and `heart_api` for remote HTTP). The app aims to avoid tight coupling to transport details; Firebase usage (if any) is encapsulated within state modules and not directly imported by UI code, preserving separation of concerns.
 
 ## To set up
 
@@ -118,16 +123,43 @@ the Flutter team. All business logic is localized in the `heart_state` package, 
 exposes `provider` to the
 app.
 
+## Packages
+
+Each shared package has its own README with details and quick starts:
+- [heart_models](shared/heart_models/README.md): domain models and service interfaces
+- [heart_db](shared/heart_db/README.md): local persistence (SQLite via sqflite)
+- [heart_state](shared/heart_state/README.md): Provider-based state and business workflows
+- [heart_language](shared/heart_language/README.md): localization strings and delegates
+- [heart_api](shared/heart_api/README.md): HTTP client for the Heart backend
+- [heart_charts](shared/heart_charts/README.md): reusable chart widgets
+
 ## To test
 
-We'll test every package separately:
+We test the app and each package separately. From the repo root:
 
-```shell
-# locally, from root
-cd shared/heart_models
-dart run build_runner build --delete-conflicting-outputs
-flutter test
-```
+- Get dependencies once:
+  ```shell
+  flutter pub get
+  ```
+
+- Run tests for a specific package (some packages require code generation first):
+  ```shell
+  # heart_models (requires build_runner)
+  dart run build_runner build --delete-conflicting-outputs
+  flutter test shared/heart_models
+
+  # heart_api (if it uses generated code)
+  dart run build_runner build --delete-conflicting-outputs
+  flutter test shared/heart_api
+
+  # heart_db
+  flutter test shared/heart_db
+  ```
+
+- Run the app tests:
+  ```shell
+  flutter test
+  ```
 
 ## CI
 
