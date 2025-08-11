@@ -26,6 +26,7 @@ class AppConfig {
   static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
   static const _testUserCredentials = String.fromEnvironment('TEST_USER_CREDENTIALS', defaultValue: '');
   static const themeColorHex = String.fromEnvironment('DEFAULT_THEME_COLOR');
+  static const maxTemplates = int.fromEnvironment('MAX_TEMPLATES', defaultValue: 6);
 
   static bool get isProd => env == Env.prod;
 

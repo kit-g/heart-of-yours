@@ -12,6 +12,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   final RemoteConfigService _configService;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final ExerciseLookup lookForExercise;
+  final int? maxTemplates;
 
   Templates({
     required RemoteTemplateService remoteService,
@@ -19,6 +20,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     required RemoteConfigService configService,
     required this.lookForExercise,
     this.onError,
+    this.maxTemplates,
   })  : _service = service,
         _configService = configService,
         _remoteService = remoteService;
@@ -126,7 +128,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     );
   }
 
-  bool get allowsNewTemplate => length < _maxTemplates;
+  bool get allowsNewTemplate => length < (maxTemplates ?? _maxTemplates);
 
   Future<void> _initSampleTemplates(ExerciseLookup lookForExercise) async {
     final local = await _service.getTemplates(null, lookForExercise);
