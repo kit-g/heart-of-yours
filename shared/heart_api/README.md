@@ -1,4 +1,4 @@
-## heart [api]()
+## Heart API
 
 A thin, testable HTTP client for the Heart app backend. It provides a single entry point to Heart services (accounts, exercises, workouts, templates, feedback) and a small companion client for remote configuration. The package focuses on:
 - A clear, typed boundary using models from heart_models.
