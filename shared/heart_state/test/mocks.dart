@@ -6,6 +6,9 @@ import 'package:mockito/annotations.dart';
     MockSpec<Exercise>(),
     MockSpec<TimersService>(),
     MockSpec<StatsService>(),
+    MockSpec<TemplateService>(),
+    MockSpec<RemoteTemplateService>(),
+    MockSpec<RemoteConfigService>(),
   ],
 )
 void main() {
