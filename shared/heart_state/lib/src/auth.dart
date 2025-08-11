@@ -9,8 +9,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class Auth with ChangeNotifier implements SignOutStateSentry {
-  final _googleSignIn = GoogleSignIn(scopes: ['profile', 'email']);
-  final _firebase = fb.FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn;
+  final fb.FirebaseAuth _firebase;
   final void Function(User?)? onUserChange;
   final AccountService _service;
   final Future<void> Function(String?, String?)? onEnter;
@@ -36,7 +36,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.onError,
     this.onEnter,
     required AccountService service,
-  }) : _service = service {
+    fb.FirebaseAuth? firebase,
+    GoogleSignIn? googleSignIn,
+  })  : _service = service,
+        _firebase = firebase ?? fb.FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn(scopes: ['profile', 'email']) {
     _firebase.userChanges().listen(
       (user) async {
         _user = _cast(user);
