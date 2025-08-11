@@ -4,18 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heart_models/heart_models.dart' show User;
 import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'test_utils.dart';
-
-class _FakeGoogle extends GoogleSignIn {
-  @override
-  Future<GoogleSignInAccount?> signOut() async => null;
-}
 
 void main() {
   late MockAccountService account;
@@ -78,6 +72,7 @@ void main() {
       final sut = Auth(
         service: account,
         firebase: firebase,
+        isWeb: false,
         onEnter: (t, u) async {
           onEnterToken = t;
           onEnterUid = u;
@@ -141,7 +136,7 @@ void main() {
     test('updateAvatar: when user present but no upload link, sets local avatar, notifies once and returns false',
         () async {
       final firebase = MockFirebaseAuth();
-      final sut = Auth(service: account, firebase: firebase);
+      final sut = Auth(service: account, firebase: firebase, googleSignIn: MockGoogleSignIn());
 
       // sign in and wait for delivery before attaching probe
       await firebase.signInWithCredential(
@@ -174,9 +169,12 @@ void main() {
   group('onSignOut', () {
     test('completes without throwing', () async {
       final firebase = MockFirebaseAuth();
-      final sut = Auth(service: account, firebase: firebase, googleSignIn: _FakeGoogle());
+      final google = MockGoogleSignIn();
+      final sut = Auth(service: account, firebase: firebase, googleSignIn: google);
 
       await sut.onSignOut();
+
+      verify(google.signOut()).called(1);
     });
   });
 }
