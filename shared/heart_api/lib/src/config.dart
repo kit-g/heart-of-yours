@@ -2,7 +2,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
 
-final class ConfigApi with Requests implements RemoteConfigService, HeaderAuthenticatedService {
+class ConfigApi with Requests implements RemoteConfigService, HeaderAuthenticatedService {
   @override
   late String gateway;
 
