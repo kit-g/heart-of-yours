@@ -1,4 +1,5 @@
 import 'package:feedback/feedback.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:heart/core/env/config.dart';
@@ -22,7 +23,9 @@ class HeartApp extends StatelessWidget {
   final Api api;
   final ConfigApi config;
   final LocalDatabase db;
+  final HeartRouter router;
   final bool? hasLocalNotifications;
+  final FirebaseAuth? firebaseAuth;
 
   const HeartApp({
     super.key,
@@ -30,16 +33,17 @@ class HeartApp extends StatelessWidget {
     required this.api,
     required this.config,
     required this.db,
+    required this.router,
     this.hasLocalNotifications = true,
+    this.firebaseAuth,
   });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AppConfig>(
-          create: (_) => appConfig,
-        ),
+        Provider<AppConfig>.value(value: appConfig),
+        Provider<HeartRouter>.value(value: router),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
         ),
@@ -108,7 +112,7 @@ class HeartApp extends StatelessWidget {
               hasLocalNotifications: hasLocalNotifications,
             ),
             onUserChange: (user) {
-              HeartRouter.refresh();
+              router.refresh();
               Exercises.of(context).userId = user?.id;
               PreviousExercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
@@ -116,6 +120,7 @@ class HeartApp extends StatelessWidget {
               Timers.of(context).userId = user?.id;
               Workouts.of(context).userId = user?.id;
             },
+            firebase: firebaseAuth,
           ),
         ),
         ChangeNotifierProvider<Alarms>(
@@ -131,6 +136,7 @@ class HeartApp extends StatelessWidget {
             return _App(
               theme: theme,
               config: appConfig,
+              router: router,
             );
           },
         );
@@ -142,10 +148,12 @@ class HeartApp extends StatelessWidget {
 class _App extends StatefulWidget {
   final AppTheme theme;
   final AppConfig config;
+  final HeartRouter router;
 
   const _App({
     required this.theme,
     required this.config,
+    required this.router,
   });
 
   @override
@@ -189,7 +197,7 @@ class _AppState extends State<_App> {
       darkTheme: dark,
       themeMode: widget.theme.mode,
       debugShowCheckedModeBanner: false,
-      routerConfig: HeartRouter.config,
+      routerConfig: widget.router.config,
       supportedLocales: const [
         Locale('en', 'CA'),
         Locale('fr', 'CA'),
@@ -240,7 +248,7 @@ Future<void> _initApp(
         // exercises with a timer emit a local notification
         // when tapped on, it will:
         // - redirect the user to the workout page
-        HeartRouter.goToExercise(exerciseId);
+        HeartRouter.of(context).goToExercise(exerciseId);
         // - trigger a slight animation highlighting the exercise
         Workouts.of(context).pointAt(exerciseId);
       },
@@ -271,6 +279,7 @@ Future<void> _initApp(
   final timers = Timers.of(context);
   final previous = PreviousExercises.of(context);
   final config = RemoteConfig.of(context);
+  final router = HeartRouter.of(context);
 
   await Future.wait(
     [
@@ -288,7 +297,7 @@ Future<void> _initApp(
       (_) {
         // since workouts initialization looks up exercises
         // in `Exercises`, we must chain these calls this way
-        workouts.init().then<void>((_) => HeartRouter.refresh());
+        workouts.init().then<void>((_) => router.refresh());
         templates.init();
         timers.init();
         previous.init();
