@@ -40,6 +40,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return DragTarget<WorkoutExercise>(
+      key: ValueKey<String>('_WorkoutExerciseItem.${exercise.id}'),
       onWillAcceptWithDetails: (details) {
         // only fire when the drag is dropped on any other exercise
         return exercise != details.data;
