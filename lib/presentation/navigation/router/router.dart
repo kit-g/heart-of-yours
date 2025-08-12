@@ -1,6 +1,5 @@
 library;
 
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -13,8 +12,6 @@ import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart_state/heart_state.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
-
 
 part 'constants.dart';
 
@@ -261,76 +258,82 @@ RouteBase _avatarRoute() {
   );
 }
 
-abstract final class HeartRouter {
-  static final config = GoRouter(
-    debugLogDiagnostics: false,
-    initialLocation: _profilePath,
-    observers: [
-      SentryNavigatorObserver(),
-      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-    ],
-    routes: [
-      StatefulShellRoute.indexedStack(
-        pageBuilder: (_, state, shell) {
-          return NoTransitionPage<void>(
-            key: state.pageKey,
-            child: AppFrame(shell: shell),
-          );
-        },
-        branches: [
-          StatefulShellBranch(
-            routes: [_profileRoute()],
+final class HeartRouter {
+  final List<NavigatorObserver>? observers;
+
+  final GoRouter config;
+
+  HeartRouter({this.observers})
+    : config = GoRouter(
+        debugLogDiagnostics: false,
+        initialLocation: _profilePath,
+        observers: [...?observers],
+        routes: [
+          StatefulShellRoute.indexedStack(
+            pageBuilder: (_, state, shell) {
+              return NoTransitionPage<void>(
+                key: state.pageKey,
+                child: AppFrame(shell: shell),
+              );
+            },
+            branches: [
+              StatefulShellBranch(
+                routes: [_profileRoute()],
+              ),
+              StatefulShellBranch(
+                routes: [_workoutRoute()],
+              ),
+              StatefulShellBranch(
+                routes: [_historyRoute()],
+              ),
+              StatefulShellBranch(
+                routes: [_exercisesRoute()],
+              ),
+            ],
           ),
-          StatefulShellBranch(
-            routes: [_workoutRoute()],
-          ),
-          StatefulShellBranch(
-            routes: [_historyRoute()],
-          ),
-          StatefulShellBranch(
-            routes: [_exercisesRoute()],
-          ),
+          _loginRoute(),
+          _workoutDoneRoute(),
+          _restoreAccountRoute(),
+          _avatarRoute(),
         ],
-      ),
-      _loginRoute(),
-      _workoutDoneRoute(),
-      _restoreAccountRoute(),
-      _avatarRoute(),
-    ],
-    redirect: (context, state) {
-      switch (state.fullPath?.split('/')) {
-        // login sub-routes
-        case ['', _loginName, String part]:
-          // there might be a query in path, see _loginRoute
-          return state.namedLocation(part, queryParameters: state.uri.queryParameters);
-      }
+        redirect: (context, state) {
+          switch (state.fullPath?.split('/')) {
+            // login sub-routes
+            case ['', _loginName, String part]:
+              // there might be a query in path, see _loginRoute
+              return state.namedLocation(part, queryParameters: state.uri.queryParameters);
+          }
 
-      final auth = Auth.of(context);
+          final auth = Auth.of(context);
 
-      final isLoggedIn = auth.isLoggedIn;
+          final isLoggedIn = auth.isLoggedIn;
 
-      if (!isLoggedIn) {
-        // same as RecoveryPage
-        return state.namedLocation(_loginName, queryParameters: state.uri.queryParameters);
-      }
+          if (!isLoggedIn) {
+            // same as RecoveryPage
+            return state.namedLocation(_loginName, queryParameters: state.uri.queryParameters);
+          }
 
-      if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
-        return _workoutPath;
-      }
+          if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
+            return _workoutPath;
+          }
 
-      if (auth.user?.scheduledForDeletionAt != null) {
-        return _restoreAccountPath;
-      }
+          if (auth.user?.scheduledForDeletionAt != null) {
+            return _restoreAccountPath;
+          }
 
-      return null;
-    },
-  );
+          return null;
+        },
+      );
 
-  static void refresh() {
+  static HeartRouter of(BuildContext context) {
+    return Provider.of<HeartRouter>(context, listen: false);
+  }
+
+  void refresh() {
     return config.refresh();
   }
 
-  static void goToExercise(String exerciseId) {
+  void goToExercise(String exerciseId) {
     return config.goNamed(
       'workout',
       queryParameters: {'exerciseId': exerciseId},
