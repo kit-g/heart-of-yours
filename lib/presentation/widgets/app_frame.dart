@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -25,10 +26,12 @@ class AppFrame extends StatelessWidget {
         onTap: (index) => _onTap(context, index),
         items: [
           BottomNavigationBarItem(
+            key: AppKeys.profileStack,
             icon: const Icon(Icons.person_rounded),
             label: profile,
           ),
           BottomNavigationBarItem(
+            key: AppKeys.workoutStack,
             icon: Selector<Workouts, bool>(
               selector: (_, provider) => provider.hasActiveWorkout,
               builder: (_, hasActiveWorkout, __) {
@@ -47,10 +50,12 @@ class AppFrame extends StatelessWidget {
             label: workout,
           ),
           BottomNavigationBarItem(
+            key: AppKeys.historyStack,
             icon: const Icon(Icons.timeline_rounded),
             label: history,
           ),
           BottomNavigationBarItem(
+            key: AppKeys.exercisesStack,
             icon: const Icon(Icons.list_rounded),
             label: exercises,
           ),
