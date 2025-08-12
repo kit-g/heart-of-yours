@@ -1,11 +1,16 @@
+import 'package:flutter/material.dart';
+import 'package:heart_state/heart_state.dart';
+
 enum Env {
   dev,
+  test,
   prod;
 
   factory Env.fromString(String? v) {
     return switch (v) {
       'dev' || 'd' || 'development' => dev,
       'prod' || 'p' || 'production' => prod,
+      't' || 'test' || 'testing' => test,
       _ => throw UnimplementedError('Valid environments are: ${Env.values}'),
     };
   }
@@ -14,38 +19,104 @@ enum Env {
 /// App config is fetched from the environment
 /// implying that it is run/built with `--dart-define(-from-file)`
 class AppConfig {
-  const AppConfig._();
+  const AppConfig._({
+    required this.accountDeletionDeadline,
+    this.allowsFeedbackFeature = true,
+    required this.api,
+    required this.appName,
+    required this.env,
+    required this.logLevel,
+    required this.maxTemplates,
+    required this.sentryDsn,
+    required this.themeColorHex,
+    required String appLink,
+    required String mediaLink,
+    required String testUserCredentials,
+  }) : _appLink = appLink,
+       _mediaLink = mediaLink,
+       _testUserCredentials = testUserCredentials;
 
-  static const accountDeletionDeadline = String.fromEnvironment('ACCOUNT_DELETION_DEADLINE');
-  static const api = String.fromEnvironment('API');
-  static const _appLink = String.fromEnvironment('APP_LINK');
-  static const appName = String.fromEnvironment('APP_NAME');
-  static final env = Env.fromString(const String.fromEnvironment('ENV').trim());
-  static const logLevel = String.fromEnvironment('LOG_LEVEL');
-  static const _mediaLink = String.fromEnvironment('MEDIA_LINK');
-  static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
-  static const _testUserCredentials = String.fromEnvironment('TEST_USER_CREDENTIALS', defaultValue: '');
-  static const themeColorHex = String.fromEnvironment('DEFAULT_THEME_COLOR');
-  static const maxTemplates = int.fromEnvironment('MAX_TEMPLATES', defaultValue: 6);
+  final String accountDeletionDeadline;
+  final String api;
+  final String appName;
+  final Env env;
+  final String logLevel;
+  final int maxTemplates;
+  final String sentryDsn;
+  final String themeColorHex;
+  final String _appLink;
+  final String _mediaLink;
+  final String _testUserCredentials;
+  final bool allowsFeedbackFeature;
 
-  static bool get isProd => env == Env.prod;
+  factory AppConfig.fromDartDefine() {
+    return AppConfig._(
+      accountDeletionDeadline: const String.fromEnvironment('ACCOUNT_DELETION_DEADLINE'),
+      api: const String.fromEnvironment('API'),
+      appName: const String.fromEnvironment('APP_NAME'),
+      env: Env.fromString(const String.fromEnvironment('ENV').trim()),
+      logLevel: const String.fromEnvironment('LOG_LEVEL'),
+      maxTemplates: const int.fromEnvironment('MAX_TEMPLATES', defaultValue: 6),
+      sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
+      themeColorHex: const String.fromEnvironment('DEFAULT_THEME_COLOR'),
+      appLink: const String.fromEnvironment('APP_LINK'),
+      mediaLink: const String.fromEnvironment('MEDIA_LINK'),
+      testUserCredentials: const String.fromEnvironment('TEST_USER_CREDENTIALS', defaultValue: ''),
+    );
+  }
 
-  static bool get isDev => env == Env.dev;
+  factory AppConfig.test({
+    String accountDeletionDeadline = '2',
+    String api = '',
+    String appName = 'Heart',
+    Env env = Env.dev,
+    String logLevel = 'ALL',
+    int maxTemplates = 6,
+    String sentryDsn = '',
+    String themeColorHex = '',
+    String appLink = '',
+    String mediaLink = '',
+    String testUserCredentials = '',
+    bool allowsFeedbackFeature = false,
+  }) {
+    return AppConfig._(
+      accountDeletionDeadline: accountDeletionDeadline,
+      api: api,
+      appName: appName,
+      env: env,
+      logLevel: logLevel,
+      maxTemplates: maxTemplates,
+      sentryDsn: sentryDsn,
+      themeColorHex: themeColorHex,
+      appLink: appLink,
+      mediaLink: mediaLink,
+      testUserCredentials: testUserCredentials,
+      allowsFeedbackFeature: allowsFeedbackFeature,
+    );
+  }
 
-  static String get appLink => Uri.https(_appLink).toString();
+  static AppConfig of(BuildContext context) {
+    return Provider.of<AppConfig>(context, listen: false);
+  }
 
-  static String get mediaLink => _mediaLink;
+  bool get isProd => env == Env.prod;
 
-  static String get avatarLink => Uri.https(_mediaLink, 'avatars').toString();
+  bool get isDev => env == Env.dev;
 
-  static String get configLink => Uri.https(_mediaLink, 'config').toString();
+  String get appLink => Uri.https(_appLink).toString();
 
-  static String get testUserEmail => switch (_testUserCredentials.split(':')) {
+  String get mediaLink => _mediaLink;
+
+  String get avatarLink => Uri.https(_mediaLink, 'avatars').toString();
+
+  String get configLink => Uri.https(_mediaLink, 'config').toString();
+
+  String get testUserEmail => switch (_testUserCredentials.split(':')) {
     [String username, String _] => username,
     _ => '',
   };
 
-  static String get testUserPassword => switch (_testUserCredentials.split(':')) {
+  String get testUserPassword => switch (_testUserCredentials.split(':')) {
     [String _, String password] => password,
     _ => '',
   };

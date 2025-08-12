@@ -16,3 +16,5 @@ void _log(LogRecord record) {
   // ignore: avoid_print
   print('${record.level.name}: ${record.time}: ${record.message}');
 }
+
+typedef LogInit = void Function(String level);
