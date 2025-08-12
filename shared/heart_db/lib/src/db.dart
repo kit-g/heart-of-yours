@@ -1,7 +1,13 @@
 part of '../heart_db.dart';
 
-final class LocalDatabase
-    implements TimersService, ExerciseService, PreviousExerciseService, StatsService, TemplateService, WorkoutService {
+class LocalDatabase
+    implements
+        TimersService, //
+        ExerciseService,
+        PreviousExerciseService,
+        StatsService,
+        TemplateService,
+        WorkoutService {
   final Database _db;
 
   LocalDatabase._(this._db);
@@ -19,7 +25,6 @@ final class LocalDatabase
       version: version,
       onUpgrade: _migrate,
       onConfigure: (db) async {
-        // _db = db;
         await db.execute('PRAGMA foreign_keys = ON');
       },
     );
@@ -556,4 +561,3 @@ Future<int> _getMaxValue(DatabaseExecutor db, String table, String column) async
     _ => 0,
   };
 }
-
