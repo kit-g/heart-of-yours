@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:heart_models/heart_models.dart';
 import 'package:network_utils/network_utils.dart';
 
-final class Api
+class Api
     with Requests
     implements
         AccountService,
