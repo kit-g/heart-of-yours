@@ -17,7 +17,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage>
-    with LoadingState<LoginPage>, HasError<LoginPage>, HasHaptic<LoginPage>, AsyncState<LoginPage> {
+    with
+        LoadingState<LoginPage>,
+        HasError<LoginPage>,
+        HasHaptic<LoginPage>,
+        AsyncState<LoginPage>,
+        AfterLayoutMixin<LoginPage> {
   late Future<bool> _isAppleSignNnAvailable;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -27,11 +32,6 @@ class _LoginPageState extends State<LoginPage>
   @override
   void initState() {
     super.initState();
-
-    if (kDebugMode && AppConfig.isDev) {
-      _emailController.text = AppConfig.testUserEmail;
-      _passwordController.text = AppConfig.testUserPassword;
-    }
 
     _isAppleSignNnAvailable = Auth.isAppleSignInAvailable();
   }
@@ -87,8 +87,8 @@ class _LoginPageState extends State<LoginPage>
                                 child: switch (loading) {
                                   false => child!,
                                   true => const Center(
-                                      child: CircularProgressIndicator(),
-                                    )
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 },
                               );
                             },
@@ -143,24 +143,24 @@ class _LoginPageState extends State<LoginPage>
                                         child: switch (hasAppleSignIn) {
                                           false => const SizedBox.shrink(),
                                           true => Stack(
-                                              children: [
-                                                const Positioned(
-                                                  top: 0,
-                                                  bottom: 0,
-                                                  left: 24,
-                                                  child: Icon(CustomIcons.appstore),
+                                            children: [
+                                              const Positioned(
+                                                top: 0,
+                                                bottom: 0,
+                                                left: 24,
+                                                child: Icon(CustomIcons.appstore),
+                                              ),
+                                              OutlinedButton(
+                                                onPressed: () => run(Auth.of(context).loginWithApple),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(logInWithApple),
+                                                  ],
                                                 ),
-                                                OutlinedButton(
-                                                  onPressed: () => run(Auth.of(context).loginWithApple),
-                                                  child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                    children: [
-                                                      Text(logInWithApple),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
+                                          ),
                                         },
                                       );
                                     },
@@ -207,5 +207,14 @@ class _LoginPageState extends State<LoginPage>
         );
       },
     );
+  }
+
+  @override
+  void afterFirstLayout(BuildContext context) {
+    final AppConfig(:isDev, :testUserEmail, :testUserPassword) = AppConfig.of(context);
+    if (kDebugMode && isDev) {
+      _emailController.text = testUserEmail;
+      _passwordController.text = testUserPassword;
+    }
   }
 }

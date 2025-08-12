@@ -273,7 +273,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       content: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Text(
-          deleteAccountBody(AppConfig.accountDeletionDeadline),
+          deleteAccountBody(AppConfig.of(context).accountDeletionDeadline),
           textAlign: TextAlign.center,
         ),
       ),
@@ -392,6 +392,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
           if (token != null) {
             Api.instance.authenticate(
               headers(
+                config: AppConfig.of(context),
                 sessionToken: token,
                 appVersion: AppInfo.of(context).fullVersion,
               ),
@@ -412,6 +413,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
 
   Future<void> _uploadAvatar(BuildContext context, Future<LocalImage?> Function() getImage) async {
     final auth = Auth.of(context);
+    final config = AppConfig.of(context);
     buzz();
 
     _avatarController.value = .001;
@@ -419,7 +421,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     if (image != null) {
       await auth.updateAvatar(
         image,
-        AppConfig.avatarLink,
+        config.avatarLink,
         onProgress: (bytes, totalBytes) {
           final progress = bytes / totalBytes;
           _avatarController.value = totalBytes > 0 ? (bytes / totalBytes) : null;

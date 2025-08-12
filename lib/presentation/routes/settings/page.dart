@@ -167,7 +167,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                   showAboutDialog(
                     context: context,
                     applicationVersion: info.fullVersion,
-                    applicationName: AppConfig.appName,
+                    applicationName: AppConfig.of(context).appName,
                   );
                 },
               ),
