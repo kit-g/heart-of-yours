@@ -362,6 +362,7 @@ class NewWorkoutHeader extends StatelessWidget {
       delegate: FixedHeightHeaderDelegate(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         child: PrimaryButton.wide(
+          key: WorkoutDetailKeys.startNewWorkout,
           onPressed: () => _startWorkout(context),
           child: Center(
             child: Text(L.of(context).startNewWorkout),

@@ -38,6 +38,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     final preferences = Preferences.watch(context);
 
     return CustomScrollView(
+      key: AppKeys.exercisePicker,
       physics: const ClampingScrollPhysics(),
       controller: Scrolls.of(context).exercisesScrollController,
       slivers: [
