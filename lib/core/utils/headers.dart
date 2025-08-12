@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:heart/core/env/config.dart';
 
 Map<String, String> headers({
+  required AppConfig config,
   String? sessionToken,
   String? appVersion,
 }) {
@@ -13,28 +14,28 @@ Map<String, String> headers({
     'Accept': 'application/json',
     'Accept-Language': PlatformDispatcher.instance.locale.toLanguageTag(),
     'X-Timezone': DateTime.now().timeZoneName,
-    ..._common(appVersion),
+    ..._common(config, appVersion),
   };
 }
 
-Map<String, String> imageHeaders({String? appVersion}) {
+Map<String, String> imageHeaders({required AppConfig config, String? appVersion}) {
   return {
     'Accept': 'image/avif,image/webp,image/png,image/jpeg,image/gif',
     'Accept-Encoding': 'gzip, br, deflate',
     'Cache-Control': 'public, max-age=31536000, immutable',
-    ..._common(appVersion),
+    ..._common(config, appVersion),
   };
 }
 
-Map<String, String> _common(String? appVersion) {
+Map<String, String> _common(AppConfig config, String? appVersion) {
   final version = appVersion ?? 'Unknown version';
   return {
-    'Referer': AppConfig.appLink,
-    'User-Agent': _userAgent(version),
+    'Referer': config.appLink,
+    'User-Agent': _userAgent(config, version),
     if (appVersion != null) 'X-App-Version': appVersion,
   };
 }
 
-String _userAgent(String version) {
-  return '${AppConfig.appName}/$version (Flutter; ${Platform.operatingSystem}; +${AppConfig.appLink})';
+String _userAgent(AppConfig config, String version) {
+  return '${config.appName}/$version (Flutter; ${Platform.operatingSystem}; +${config.appLink})';
 }
