@@ -99,6 +99,7 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           WorkoutTimer(
+                            key: WorkoutDetailKeys.timer,
                             start: active.start,
                             initValue: active.elapsed(),
                             style: textTheme.titleSmall,
@@ -145,6 +146,7 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
                             },
                           ),
                           PrimaryButton.shrunk(
+                            key: WorkoutDetailKeys.finishWorkout,
                             onPressed: () {
                               showFinishWorkoutDialog(
                                 context,
