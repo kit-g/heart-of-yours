@@ -17,22 +17,29 @@ import 'package:heart_state/heart_state.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-
 class HeartApp extends StatelessWidget {
+  final AppConfig appConfig;
+  final Api api;
+  final ConfigApi config;
   final LocalDatabase db;
+  final bool? hasLocalNotifications;
 
   const HeartApp({
     super.key,
+    required this.appConfig,
+    required this.api,
+    required this.config,
     required this.db,
+    this.hasLocalNotifications = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final api = Api(gateway: AppConfig.api);
-    final config = ConfigApi(gateway: AppConfig.mediaLink);
-
     return MultiProvider(
       providers: [
+        Provider<AppConfig>(
+          create: (_) => appConfig,
+        ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
         ),
@@ -94,7 +101,12 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             service: api,
-            onEnter: (session, userId) => _initApp(context, session, userId),
+            onEnter: (session, userId) => _initApp(
+              context,
+              session,
+              userId,
+              hasLocalNotifications: hasLocalNotifications,
+            ),
             onUserChange: (user) {
               HeartRouter.refresh();
               Exercises.of(context).userId = user?.id;
@@ -116,7 +128,10 @@ class HeartApp extends StatelessWidget {
       builder: (_, _) {
         return Consumer<AppTheme>(
           builder: (__, theme, _) {
-            return _App(theme: theme);
+            return _App(
+              theme: theme,
+              config: appConfig,
+            );
           },
         );
       },
@@ -126,8 +141,12 @@ class HeartApp extends StatelessWidget {
 
 class _App extends StatefulWidget {
   final AppTheme theme;
+  final AppConfig config;
 
-  const _App({required this.theme});
+  const _App({
+    required this.theme,
+    required this.config,
+  });
 
   @override
   State<_App> createState() => _AppState();
@@ -138,93 +157,108 @@ class _AppState extends State<_App> {
   Widget build(BuildContext context) {
     final light = switch (widget.theme.color) {
       Color color => theme(
-          ColorScheme.fromSeed(
-            seedColor: color,
-            brightness: Brightness.light,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: color,
+          brightness: Brightness.light,
         ),
+      ),
       null => theme(
-          ColorScheme.fromSeed(
-            seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
-            brightness: Brightness.light,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: AppTheme.colorFromHex(widget.config.themeColorHex) ?? Colors.white,
+          brightness: Brightness.light,
         ),
+      ),
     };
     final dark = switch (widget.theme.color) {
       Color color => theme(
-          ColorScheme.fromSeed(
-            seedColor: color,
-            brightness: Brightness.dark,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: color,
+          brightness: Brightness.dark,
         ),
+      ),
       null => theme(
-          ColorScheme.fromSeed(
-            seedColor: AppTheme.colorFromHex(AppConfig.themeColorHex) ?? Colors.white,
-            brightness: Brightness.dark,
-          ),
+        ColorScheme.fromSeed(
+          seedColor: AppTheme.colorFromHex(widget.config.themeColorHex) ?? Colors.white,
+          brightness: Brightness.dark,
         ),
+      ),
     };
-    return BetterFeedback(
+
+    final app = MaterialApp.router(
+      theme: light,
+      darkTheme: dark,
       themeMode: widget.theme.mode,
-      theme: FeedbackThemeData(
-        sheetIsDraggable: false,
-        feedbackSheetColor: light.colorScheme.surface,
-        bottomSheetDescriptionStyle: light.textTheme.titleMedium!,
-        colorScheme: light.colorScheme,
-        bottomSheetTextInputStyle: light.textTheme.bodyMedium!,
-        activeFeedbackModeColor: light.colorScheme.primary,
-      ),
-      darkTheme: FeedbackThemeData(
-        feedbackSheetColor: dark.colorScheme.surface,
-        bottomSheetDescriptionStyle: dark.textTheme.titleMedium!,
-        colorScheme: dark.colorScheme,
-        bottomSheetTextInputStyle: dark.textTheme.bodyMedium!,
-        activeFeedbackModeColor: dark.colorScheme.primary,
-      ),
-      child: MaterialApp.router(
-        theme: light,
-        darkTheme: dark,
-        themeMode: widget.theme.mode,
-        debugShowCheckedModeBanner: false,
-        routerConfig: HeartRouter.config,
-        supportedLocales: const [
-          Locale('en', 'CA'),
-          Locale('fr', 'CA'),
-        ],
-        localizationsDelegates: const [
-          LocsDelegate(),
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-      ),
+      debugShowCheckedModeBanner: false,
+      routerConfig: HeartRouter.config,
+      supportedLocales: const [
+        Locale('en', 'CA'),
+        Locale('fr', 'CA'),
+      ],
+      localizationsDelegates: const [
+        LocsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
+
+    return switch (widget.config.allowsFeedbackFeature) {
+      false => app,
+      true => BetterFeedback(
+        themeMode: widget.theme.mode,
+        theme: FeedbackThemeData(
+          sheetIsDraggable: false,
+          feedbackSheetColor: light.colorScheme.surface,
+          bottomSheetDescriptionStyle: light.textTheme.titleMedium!,
+          colorScheme: light.colorScheme,
+          bottomSheetTextInputStyle: light.textTheme.bodyMedium!,
+          activeFeedbackModeColor: light.colorScheme.primary,
+        ),
+        darkTheme: FeedbackThemeData(
+          feedbackSheetColor: dark.colorScheme.surface,
+          bottomSheetDescriptionStyle: dark.textTheme.titleMedium!,
+          colorScheme: dark.colorScheme,
+          bottomSheetTextInputStyle: dark.textTheme.bodyMedium!,
+          activeFeedbackModeColor: dark.colorScheme.primary,
+        ),
+        child: app,
+      ),
+    };
   }
 }
 
-Future<void> _initApp(BuildContext context, String? sessionToken, String? userId) async {
-  initNotifications(
-    platform: Theme.of(context).platform,
-    onExerciseNotification: (exerciseId) {
-      // exercises with a timer emit a local notification
-      // when tapped on, it will:
-      // - redirect the user to the workout page
-      HeartRouter.goToExercise(exerciseId);
-      // - trigger a slight animation highlighting the exercise
-      Workouts.of(context).pointAt(exerciseId);
-    },
-    onUnknownNotification: reportToSentry,
-  );
+Future<void> _initApp(
+  BuildContext context,
+  String? sessionToken,
+  String? userId, {
+  bool? hasLocalNotifications,
+}) async {
+  if (hasLocalNotifications ?? false) {
+    initNotifications(
+      platform: Theme.of(context).platform,
+      onExerciseNotification: (exerciseId) {
+        // exercises with a timer emit a local notification
+        // when tapped on, it will:
+        // - redirect the user to the workout page
+        HeartRouter.goToExercise(exerciseId);
+        // - trigger a slight animation highlighting the exercise
+        Workouts.of(context).pointAt(exerciseId);
+      },
+      onUnknownNotification: reportToSentry,
+    );
+  }
 
   final info = AppInfo.of(context);
+  final appConfig = AppConfig.of(context);
   _initAppInfo(context).then(
     (_) {
       _initApi(
+        config: appConfig,
         sessionToken: sessionToken,
         appVersion: info.fullVersion,
       );
 
-      AppImage.headers = imageHeaders(appVersion: info.version);
+      AppImage.headers = imageHeaders(config: appConfig, appVersion: info.version);
     },
   );
 
@@ -279,9 +313,10 @@ Future<void> _initAppInfo(BuildContext context) {
   );
 }
 
-Future<void> _initApi({String? sessionToken, String? appVersion}) async {
+Future<void> _initApi({required AppConfig config, String? sessionToken, String? appVersion}) async {
   Api.instance.authenticate(
     headers(
+      config: config,
       sessionToken: sessionToken,
       appVersion: appVersion,
     ),
