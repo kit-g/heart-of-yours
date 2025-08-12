@@ -19,10 +19,11 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
-
 part 'exercise_item.dart';
 
 part 'feedback.dart';
+
+part 'keys.dart';
 
 part 'set_item.dart';
 
@@ -95,13 +96,17 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       set: setCopy,
       :previous,
       :restTimer,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     final ThemeData(
       scaffoldBackgroundColor: backgroundColor,
       :colorScheme,
       :textTheme,
-    ) = Theme.of(context);
+    ) = Theme.of(
+      context,
+    );
 
     return CustomScrollView(
       controller: widget.controller,
@@ -217,6 +222,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                       onPressed: () {
                         _showExerciseDialog(context);
                       },
+                      key: WorkoutDetailKeys.addExercises,
                       child: Center(
                         child: Text(addExercises),
                       ),
@@ -224,6 +230,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                     const SizedBox(height: 8),
                     if (widget.needsCancelWorkoutButton) ...[
                       PrimaryButton.wide(
+                        key: WorkoutDetailKeys.cancelWorkout,
                         onPressed: () {
                           showCancelWorkoutDialog(
                             context,
@@ -258,7 +265,9 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
     final ThemeData(
       colorScheme: ColorScheme(surfaceContainerLow: color),
       :textTheme,
-    ) = Theme.of(context);
+    ) = Theme.of(
+      context,
+    );
     final L(:add) = L.of(context);
     return showDialog(
       context: context,

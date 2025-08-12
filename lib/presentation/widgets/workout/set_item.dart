@@ -147,7 +147,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         widget.onRemoveSet(exercise, set);
       },
       onUpdate: _onSwipe,
-      key: ValueKey<String>(set.id),
+      key: ValueKey<String>('_ExerciseSetItem.${set.id}'),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
         child: Row(
