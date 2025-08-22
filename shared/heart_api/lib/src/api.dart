@@ -69,9 +69,9 @@ final class Api
 
   @override
   Future<PreSignedUrl?> getAvatarUploadLink(String userId, {String? imageMimeType}) async {
-    final (json, code) = await get(
+    final (json, code) = await put(
       '${Router.accounts}/$userId',
-      query: {
+      body: {
         'action': 'uploadAvatar',
         if (imageMimeType != null) 'mimeType': imageMimeType,
       },
