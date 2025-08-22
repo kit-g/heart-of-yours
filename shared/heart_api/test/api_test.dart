@@ -97,14 +97,13 @@ void main() {
     test('getAvatarUploadLink returns PreSignedUrl on valid json', () async {
       _response(
         client: client,
-        method: 'GET',
+        method: 'PUT',
         path: '${Router.accounts}/42',
         statusCode: 200,
         body: {
           'url': 'https://bucket.example.com/upload',
           'fields': {'key': 'value'}
         },
-        query: {'action': 'uploadAvatar'},
       );
 
       final result = await api.getAvatarUploadLink('42');
@@ -116,11 +115,10 @@ void main() {
     test('getAvatarUploadLink returns null on invalid json', () async {
       _response(
         client: client,
-        method: 'GET',
+        method: 'PUT',
         path: '${Router.accounts}/42',
         statusCode: 200,
         body: {'message': 'bad response'},
-        query: {'action': 'uploadAvatar'},
       );
 
       final result = await api.getAvatarUploadLink('42');
