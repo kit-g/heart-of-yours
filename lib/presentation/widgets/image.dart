@@ -18,28 +18,29 @@ class AppImage extends StatelessWidget {
     this.fit,
     this.progressIndicatorBuilder,
     this.errorWidget,
-  });
+  }) : assert(url != null || bytes != null, 'Must pass either url or bytes'),
+       assert(url == null || bytes == null, 'Cannot pass both url and bytes');
 
   @override
   Widget build(BuildContext context) {
     return switch ((url, bytes)) {
       (_, Uint8List bytes) => Image.memory(
-          bytes,
-          fit: fit,
-          errorBuilder: (context, error, _) {
-            return errorWidget?.call(context, error) ?? const SizedBox.shrink();
-          },
-        ),
+        bytes,
+        fit: fit,
+        errorBuilder: (context, error, _) {
+          return errorWidget?.call(context, error) ?? const SizedBox.shrink();
+        },
+      ),
       (String url, _) when url.startsWith('https') => CachedNetworkImage(
-          fadeInDuration: const Duration(milliseconds: 200),
-          httpHeaders: _headers,
-          imageUrl: url,
-          fit: fit,
-          progressIndicatorBuilder: progressIndicatorBuilder,
-          errorWidget: (context, _, error) {
-            return errorWidget?.call(context, error) ?? const SizedBox.shrink();
-          },
-        ),
+        fadeInDuration: const Duration(milliseconds: 200),
+        httpHeaders: _headers,
+        imageUrl: url,
+        fit: fit,
+        progressIndicatorBuilder: progressIndicatorBuilder,
+        errorWidget: (context, _, error) {
+          return errorWidget?.call(context, error) ?? const SizedBox.shrink();
+        },
+      ),
       _ => const SizedBox.shrink(),
     };
   }
