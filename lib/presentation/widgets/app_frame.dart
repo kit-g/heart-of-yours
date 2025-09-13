@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
-import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -20,28 +20,46 @@ class AppFrame extends StatelessWidget {
     final L(:profile, :workout, :history, :exercises) = L.of(context);
 
     final destinations = [
-      (Icons.person_rounded, profile, () => null),
       (
-        Icons.fitness_center_rounded,
+        profile,
+        () => const Icon(
+          Icons.person_rounded,
+          key: AppKeys.profileStack,
+        ),
+      ),
+      (
         workout,
         () => Selector<Workouts, bool>(
-              selector: (_, provider) => provider.hasActiveWorkout,
-              builder: (_, hasActiveWorkout, __) {
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(scale: animation, child: child);
-                  },
-                  child: Icon(
-                    hasActiveWorkout ? Icons.fitness_center_rounded : Icons.add_circle_outline_rounded,
-                    key: ValueKey(hasActiveWorkout),
-                  ),
-                );
+          selector: (_, provider) => provider.hasActiveWorkout,
+          builder: (_, hasActiveWorkout, __) {
+            return AnimatedSwitcher(
+              key: AppKeys.workoutStack,
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(scale: animation, child: child);
               },
-            ),
+              child: Icon(
+                hasActiveWorkout ? Icons.fitness_center_rounded : Icons.add_circle_outline_rounded,
+                key: ValueKey(hasActiveWorkout),
+              ),
+            );
+          },
+        ),
       ),
-      (Icons.timeline_rounded, history, () => null),
-      (Icons.list_rounded, exercises, () => null),
+      (
+        history,
+        () => const Icon(
+          Icons.timeline_rounded,
+          key: AppKeys.historyStack,
+        ),
+      ),
+      (
+        exercises,
+        () => const Icon(
+          Icons.list_rounded,
+          key: AppKeys.exercisesStack,
+        ),
+      ),
     ];
 
     return LayoutProvider(
@@ -59,11 +77,8 @@ class AppFrame extends StatelessWidget {
                   onTap: (index) => _onTap(context, index),
                   items: destinations.map((d) {
                     return BottomNavigationBarItem(
-                      icon: switch (d.$3) {
-                        Widget Function() builder => builder(),
-                        _ => Icon(d.$1),
-                      },
-                      label: d.$2,
+                      icon: d.$2(),
+                      label: d.$1,
                     );
                   }).toList(),
                 ),
@@ -82,11 +97,8 @@ class AppFrame extends StatelessWidget {
                     destinations: destinations.map(
                       (d) {
                         return NavigationRailDestination(
-                          icon: switch (d.$3) {
-                            Widget Function() builder => builder(),
-                            _ => Icon(d.$1),
-                          },
-                          label: Text(d.$2),
+                          icon: d.$2(),
+                          label: Text(d.$1),
                         );
                       },
                     ).toList(),
