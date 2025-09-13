@@ -7,5 +7,5 @@ abstract final class AppKeys {
   static const workoutStack = Key('AppFrame.workoutStack');
   static const historyStack = Key('AppFrame.historyStack');
   static const exercisesStack = Key('AppFrame.exercisesStack');
-  static const exercisePicker = Key('App=.exercisePicker');
+  static const exercisePicker = Key('AppFrame.exercisePicker');
 }
