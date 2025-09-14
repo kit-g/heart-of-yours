@@ -89,7 +89,7 @@ enum Target implements ExerciseFilter {
   String toString() => value;
 }
 
-abstract interface class Exercise implements Searchable, Model {
+abstract interface class Exercise implements Searchable, Model, Comparable<Exercise> {
   String get name;
 
   Category get category;
@@ -104,9 +104,38 @@ abstract interface class Exercise implements Searchable, Model {
 
   bool get hasInfo;
 
+  bool get isMine;
+
+  bool get isArchived;
+
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
 
+  factory Exercise({
+    required String name,
+    required Category category,
+    required Target target,
+    String? instructions,
+  }) {
+    assert(name.isNotEmpty, 'Cannot have an empty name');
+    return _Exercise(
+      name: name,
+      category: category,
+      target: target,
+      instructions: instructions,
+    );
+  }
+
   bool fits(Iterable<ExerciseFilter> filters);
+
+  Exercise copyWith({
+    Category? category,
+    Target? target,
+    Asset? asset,
+    Asset? thumbnail,
+    bool? isMine,
+    String? instructions,
+    bool? isArchived,
+  });
 }
 
 class _Exercise implements Exercise {
@@ -122,6 +151,10 @@ class _Exercise implements Exercise {
   final Asset? thumbnail;
   @override
   final String? instructions;
+  @override
+  final bool isMine;
+  @override
+  final bool isArchived;
 
   const _Exercise({
     required this.name,
@@ -130,6 +163,8 @@ class _Exercise implements Exercise {
     this.asset,
     this.thumbnail,
     this.instructions,
+    this.isMine = false,
+    this.isArchived = false,
   });
 
   factory _Exercise.fromJson(Map json) {
@@ -152,6 +187,8 @@ class _Exercise implements Exercise {
         _ => null,
       },
       instructions: json['instructions'],
+      isMine: json['own'] ?? false,
+      isArchived: json['archived'] ?? false,
     );
   }
 
@@ -210,6 +247,33 @@ class _Exercise implements Exercise {
 
   @override
   bool get hasInfo => [asset, instructions, thumbnail].any((attr) => attr != null);
+
+  @override
+  int compareTo(Exercise other) {
+    return name.toLowerCase().compareTo(other.name.toLowerCase());
+  }
+
+  @override
+  Exercise copyWith({
+    Category? category,
+    Target? target,
+    Asset? asset,
+    Asset? thumbnail,
+    bool? isMine,
+    String? instructions,
+    bool? isArchived,
+  }) {
+    return _Exercise(
+      name: name,
+      category: category ?? this.category,
+      target: target ?? this.target,
+      asset: asset ?? this.asset,
+      thumbnail: thumbnail ?? this.thumbnail,
+      isMine: isMine ?? this.isMine,
+      instructions: instructions ?? this.instructions,
+      isArchived: isArchived ?? this.isArchived,
+    );
+  }
 }
 
 typedef ExerciseId = String;
