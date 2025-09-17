@@ -58,7 +58,7 @@ Workout workout({
 }) {
   final w = Workout(name: name ?? 'Morning');
 
-  for (var each in exercises) {
+  for (final each in exercises) {
     w.append(each);
   }
 
@@ -77,7 +77,7 @@ WorkoutExercise wExercise({
     starter: ExerciseSet(ex ?? exercise(name: 'Push Up')),
   );
 
-  for (var each in sets) {
+  for (final each in sets) {
     we.add(each);
   }
   return we;

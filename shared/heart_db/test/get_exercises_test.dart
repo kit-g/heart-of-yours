@@ -50,7 +50,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => [
-          {'table_name': exercisesTable, 'synced_at': now.toIso8601String()}
+          {'table_name': exercisesTable, 'synced_at': now.toIso8601String()},
         ],
       );
 
@@ -107,8 +107,8 @@ void main() {
 
       when(txn.query('exercises')).thenAnswer((_) async => [row]);
       when(txn.query(syncsTable, where: anyNamed('where'), whereArgs: anyNamed('whereArgs'))).thenAnswer((_) async => [
-            {'table_name': exercisesTable, 'synced_at': 'not-a-date'}
-          ]);
+            {'table_name': exercisesTable, 'synced_at': 'not-a-date'},
+          ],);
 
       final (syncedAt, exercises) = await local.getExercises();
 
