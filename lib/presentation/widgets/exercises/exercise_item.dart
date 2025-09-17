@@ -1,20 +1,15 @@
 part of 'exercises.dart';
 
-class _ExerciseItem extends StatelessWidget {
+class ExerciseItem extends StatelessWidget {
   final Exercise exercise;
   final Preferences preferences;
-  final String pushCopy;
-  final String pullCopy;
-  final String staticCopy;
   final void Function(Exercise)? onExerciseSelected;
   final bool selected;
 
-  const _ExerciseItem({
+  const ExerciseItem({
+    super.key,
     required this.exercise,
     required this.preferences,
-    required this.pushCopy,
-    required this.pullCopy,
-    required this.staticCopy,
     required this.selected,
     this.onExerciseSelected,
   });
@@ -69,24 +64,24 @@ class _ExerciseItem extends StatelessWidget {
                   child: switch (selected) {
                     true => const Align(
                       alignment: Alignment.centerRight,
-                        child: Icon(Icons.check_circle_rounded),
-                      ),
+                      child: Icon(Icons.check_circle_rounded),
+                    ),
                     false => Selector<PreviousExercises, Map<String, dynamic>?>(
-                        selector: (_, provider) => provider.last(exercise.name),
-                        builder: (_, metric, __) {
-                          return switch (metric) {
-                            Map<String, dynamic> m => Align(
-                                alignment: Alignment.centerRight,
-                                child: PreviousSet(
-                                  previousValue: m,
-                                  prefs: preferences,
-                                  exercise: exercise,
-                                ),
-                              ),
-                            null => const SizedBox.shrink(),
-                          };
-                        },
-                      )
+                      selector: (_, provider) => provider.last(exercise.name),
+                      builder: (_, metric, __) {
+                        return switch (metric) {
+                          Map<String, dynamic> m => Align(
+                            alignment: Alignment.centerRight,
+                            child: PreviousSet(
+                              previousValue: m,
+                              prefs: preferences,
+                              exercise: exercise,
+                            ),
+                          ),
+                          null => const SizedBox.shrink(),
+                        };
+                      },
+                    ),
                   },
                 ),
               ),
