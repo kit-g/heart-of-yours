@@ -26,9 +26,6 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     final L(
       exercises: appBarTitle,
       :search,
-      :pullExercise,
-      :pushExercise,
-      :staticExercise,
       :target,
       :category,
       :removeFilter,
@@ -241,12 +238,9 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                   itemCount: found.length,
                   itemBuilder: (_, index) {
                     final exercise = found[index];
-                    return _ExerciseItem(
+                    return ExerciseItem(
                       exercise: exercise,
-                      pushCopy: pushExercise,
                       preferences: preferences,
-                      pullCopy: pullExercise,
-                      staticCopy: staticExercise,
                       onExerciseSelected: onExerciseSelected,
                       selected: exercises.hasSelected(exercise),
                     );
