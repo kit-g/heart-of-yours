@@ -18,7 +18,7 @@ extension on Map<String, dynamic> {
   /// expecting it to be in snake_case initially
   Map<String, dynamic> toCamel() {
     return {
-      for (var MapEntry(:key, :value) in entries) key.toCamel(): value,
+      for (final MapEntry(:key, :value) in entries) key.toCamel(): value,
     };
   }
 }

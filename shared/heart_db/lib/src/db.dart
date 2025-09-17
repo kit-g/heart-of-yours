@@ -75,9 +75,9 @@ class LocalDatabase
     return _db.transaction(
       (txn) {
         final batch = txn.batch();
-        for (var each in exercises) {
+        for (final each in exercises) {
           var row = {
-            for (var MapEntry(:key, :value) in each.toMap().entries) key.toSnake(): value,
+            for (final MapEntry(:key, :value) in each.toMap().entries) key.toSnake(): value,
           };
           batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.replace);
         }
@@ -236,7 +236,7 @@ class LocalDatabase
 
         final batch = txn.batch();
 
-        for (var each in exercise) {
+        for (final each in exercise) {
           final row = {
             'exercise_id': exercise.id,
             'id': each.id,
@@ -317,7 +317,7 @@ class LocalDatabase
       (txn) async {
         final batch = txn.batch();
 
-        for (var each in history) {
+        for (final each in history) {
           _storeWorkout(batch, each, userId);
         }
 
@@ -343,7 +343,7 @@ class LocalDatabase
     };
     batch.insert(_workouts, row, conflictAlgorithm: ConflictAlgorithm.replace);
 
-    for (var each in workout.indexed) {
+    for (final each in workout.indexed) {
       var (order, exercise) = each;
       final exerciseRow = {
         'workout_id': workoutId,
@@ -354,7 +354,7 @@ class LocalDatabase
 
       batch.insert(_workoutExercises, exerciseRow, conflictAlgorithm: ConflictAlgorithm.replace);
 
-      for (var set in exercise) {
+      for (final set in exercise) {
         final setRow = {
           'exercise_id': exercise.id,
           ...set.toRow(),
@@ -408,7 +408,7 @@ class LocalDatabase
 
         final batch = txn.batch();
 
-        for (var (index, exercise) in template.indexed) {
+        for (final (index, exercise) in template.indexed) {
           var desc = exercise.map((set) => set.toMap()).toList();
           final ts = DateTime.timestamp();
           batch.insert(
