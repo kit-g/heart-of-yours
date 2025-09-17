@@ -88,7 +88,7 @@ void main() {
                   };
                 },
               ).toList(),
-            )
+            ),
           };
 
           when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => [row]);
@@ -125,7 +125,7 @@ void main() {
                   };
                 },
               ).toList(),
-            )
+            ),
           };
 
           when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => [row]);
@@ -199,7 +199,7 @@ void main() {
 
           when(txn.rawQuery('SELECT MAX(order_in_parent) AS max_value FROM templates')).thenAnswer(
             (_) async => [
-              {'max': maxOrder}
+              {'max': maxOrder},
             ],
           );
 
@@ -242,7 +242,7 @@ void main() {
             txn.rawQuery('SELECT MAX(order_in_parent) AS max FROM templates'),
           ).thenAnswer(
             (_) async => [
-              {'max': null}
+              {'max': null},
             ],
           );
           when(txn.insert(any, any)).thenAnswer((_) async => insertedId);

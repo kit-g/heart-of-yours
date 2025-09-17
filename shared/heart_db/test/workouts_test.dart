@@ -827,7 +827,7 @@ void main() {
           when(batch.commit()).thenThrow(Exception('Commit failed'));
 
           final workouts = [
-            workout(exercises: [wExercise()])
+            workout(exercises: [wExercise()]),
           ];
 
           expect(
