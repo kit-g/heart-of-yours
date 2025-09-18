@@ -1,5 +1,6 @@
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -13,11 +14,9 @@ import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart_state/heart_state.dart';
 
-part 'constants.dart';
-
-part 'extension.dart';
-
 part 'animation.dart';
+part 'constants.dart';
+part 'extension.dart';
 
 RouteBase _profileRoute() {
   return GoRoute(
@@ -123,15 +122,51 @@ RouteBase _historyRoute() {
 RouteBase _exercisesRoute() {
   return GoRoute(
     path: _exercisesPath,
-    builder: (context, _) {
-      return ExercisesPage(
+    pageBuilder: (context, state) {
+      final child = ExercisesPage(
         onExercise: (exercise) {
           context.goToExerciseDetail(exercise.name);
         },
+        onShowArchived: context.goToExerciseArchive,
       );
+      return switch (Theme.of(context).platform) {
+        TargetPlatform.macOS || TargetPlatform.iOS => CupertinoPage(
+          key: state.pageKey,
+          child: child,
+        ),
+        _ => MaterialPage(
+          key: state.pageKey,
+          child: child,
+        ),
+      };
     },
     name: _exercisesName,
     routes: [
+      GoRoute(
+        path: 'archived',
+        builder: (context, _) {
+          return ExerciseArchive(
+            onExercise: (exercise) {
+              context.goToExerciseDetail(exercise.name);
+            },
+          );
+        },
+        name: _exerciseArchive,
+        routes: [
+          GoRoute(
+            path: ':exerciseId',
+            builder: (context, state) {
+              final exerciseId = state.pathParameters['exerciseId']!;
+              final exercise = Exercises.of(context).lookup(exerciseId);
+              return ExerciseDetailPage(
+                exercise: exercise!,
+                onTapWorkout: (_) async {},
+              );
+            },
+            name: _exerciseArchivedDetailName,
+          ),
+        ],
+      ),
       GoRoute(
         path: ':exerciseId',
         builder: (context, state) {
@@ -267,7 +302,7 @@ final class HeartRouter {
     : config = GoRouter(
         debugLogDiagnostics: false,
         initialLocation: _profilePath,
-        observers: [...?observers],
+        observers: observers,
         routes: [
           StatefulShellRoute.indexedStack(
             pageBuilder: (_, state, shell) {
