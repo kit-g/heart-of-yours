@@ -36,8 +36,14 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(widget.exercise.name),
+        actions: [
+          if (widget.exercise.isMine)
+            IconButton(
+              onPressed: () => _onExerciseMenu(context, widget.exercise),
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
+        ],
+        title: widget.exercise.archivedAppBarTitle(context),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: ValueListenableBuilder<_ExerciseSection?>(

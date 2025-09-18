@@ -35,8 +35,15 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(widget.exercise.name),
+        automaticallyImplyLeading: true,
+        title: widget.exercise.archivedAppBarTitle(context),
+        actions: [
+          if (widget.exercise.isMine)
+            IconButton(
+              onPressed: () => _onExerciseMenu(context, widget.exercise),
+              icon: const Icon(Icons.more_horiz_rounded),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: ValueListenableBuilder<_ExerciseSection?>(
