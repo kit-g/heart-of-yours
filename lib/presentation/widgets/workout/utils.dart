@@ -21,10 +21,7 @@ void _selectAllText(TextEditingController controller) {
   );
 }
 
-enum _ExerciseOption {
-  autoRestTimer,
-  remove;
-}
+enum _ExerciseOption { autoRestTimer, remove }
 
 Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {VoidCallback? onFinish}) async {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
@@ -39,8 +36,9 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     :finishWorkoutWarningBody,
     :readyToFinish,
     :notReadyToFinish,
-  ) = L.of(context);
-
+  ) = L.of(
+    context,
+  );
   final actions = [
     Column(
       spacing: 8,
@@ -113,7 +111,9 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
     :cancelWorkoutTitle,
     :cancelWorkout,
     :resumeWorkout,
-  ) = L.of(context);
+  ) = L.of(
+    context,
+  );
   return showBrandedDialog(
     context,
     title: Text(cancelWorkoutTitle),
@@ -159,7 +159,6 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
     ],
   );
 }
-
 
 Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   context.goToWorkoutDone(workouts.activeWorkout?.id);
