@@ -135,6 +135,22 @@ class L {
     );
   }
 
+  String get archive {
+    return Intl.message(
+      'Archive',
+      name: 'archive',
+      desc: 'CTA, verb',
+    );
+  }
+
+  String get unarchive {
+    return Intl.message(
+      'Unarchive',
+      name: 'unarchive',
+      desc: 'CTA, verb',
+    );
+  }
+
   String get password {
     return Intl.message(
       'Password',
@@ -231,30 +247,6 @@ class L {
     );
   }
 
-  String get pushExercise {
-    return Intl.message(
-      'Push exercise',
-      name: 'pushExercise',
-      desc: 'Indicates that the exercise is a push exercise',
-    );
-  }
-
-  String get pullExercise {
-    return Intl.message(
-      'Pull exercise',
-      name: 'pullExercise',
-      desc: 'Indicates that the exercise is a pull exercise',
-    );
-  }
-
-  String get staticExercise {
-    return Intl.message(
-      'Static exercise',
-      name: 'staticExercise',
-      desc: 'Indicates that the exercise is a static exercise',
-    );
-  }
-
   String get startNewWorkout {
     return Intl.message(
       'Start a new workout',
@@ -316,6 +308,71 @@ class L {
       'Add set',
       name: 'addSet',
       desc: 'Button text',
+    );
+  }
+
+  String get newExercise {
+    return Intl.message(
+      'New exercise',
+      name: 'newExercise',
+      desc: 'Button tooltip',
+    );
+  }
+
+  String get createNewExercise {
+    return Intl.message(
+      'Create new exercise',
+      name: 'createNewExercise',
+      desc: 'Dialog header',
+    );
+  }
+
+  String get exerciseOptions {
+    return Intl.message(
+      'Exercise options',
+      name: 'exerciseOptions',
+      desc: 'Button tooltip',
+    );
+  }
+
+  String get showArchived {
+    return Intl.message(
+      'Show archived',
+      name: 'showArchived',
+      desc: 'Menu button, as in "Show archived exercises',
+    );
+  }
+
+  String get archivedExercises {
+    return Intl.message(
+      'Archived exercises',
+      name: 'archivedExercises',
+      desc: 'App bar',
+    );
+  }
+
+  String archiveConfirmTitle(String exerciseName) {
+    return Intl.message(
+      'Archive $exerciseName?',
+      name: 'archiveConfirmTitle',
+      desc: 'Dialog title, e.g., "Archive Push ups?"',
+      args: [exerciseName],
+    );
+  }
+
+  String get archiveConfirmBody {
+    return Intl.message(
+      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won’t affect any of your past workouts — your history stays intact.',
+      name: 'archiveConfirm',
+      desc: 'Dialog body',
+    );
+  }
+
+  String get exerciseArchived {
+    return Intl.message(
+      'This exercise is archived \nand won’t appear in your main library anymore.',
+      name: 'exerciseArchived',
+      desc: 'Tooltip over archived icon',
     );
   }
 
@@ -1135,7 +1192,7 @@ class L {
 
   String get noConnectivity {
     return Intl.message(
-      "Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!",
+      'Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!',
       name: 'noConnectivity',
       desc: 'Error message',
     );
@@ -1167,7 +1224,7 @@ class L {
 
   String get recoveryLinkMessageSent {
     return Intl.message(
-      "💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).",
+      '💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).',
       name: 'recoveryLinkMessageSent',
       desc: 'Password recovery flow',
     );
