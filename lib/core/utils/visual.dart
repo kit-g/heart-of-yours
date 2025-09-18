@@ -160,7 +160,7 @@ class BottomMenuAction {
   final VoidCallback? onPressed;
   final bool isDestructive;
 
-  BottomMenuAction({
+  const BottomMenuAction({
     required this.title,
     this.icon,
     this.onPressed,
