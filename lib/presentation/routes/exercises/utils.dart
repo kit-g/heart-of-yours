@@ -4,7 +4,7 @@ enum _ExerciseSection {
   about,
   history,
   charts,
-  records;
+  records,
 }
 
 extension on Exercise {
@@ -53,23 +53,23 @@ class _Page extends StatelessWidget {
       child: switch (section) {
         _ExerciseSection.about => _About(exercise: exercise),
         _ExerciseSection.charts => _Charts(
-            exercise: exercise,
-            weightHistoryLookup: Exercises.of(context).getWeightHistory,
-            repsHistoryLookup: Exercises.of(context).getRepsHistory,
-            distanceHistoryLookup: Exercises.of(context).getDistanceHistory,
-            durationHistoryLookup: Exercises.of(context).getDurationHistory,
-          ),
+          exercise: exercise,
+          weightHistoryLookup: Exercises.of(context).getWeightHistory,
+          repsHistoryLookup: Exercises.of(context).getRepsHistory,
+          distanceHistoryLookup: Exercises.of(context).getDistanceHistory,
+          durationHistoryLookup: Exercises.of(context).getDurationHistory,
+        ),
         _ExerciseSection.records => _Records(
-            exercise: exercise,
-            recordsLookup: Exercises.of(context).getExerciseRecords,
-          ),
+          exercise: exercise,
+          recordsLookup: Exercises.of(context).getExerciseRecords,
+        ),
         _ExerciseSection.history => _History(
-            exercise: exercise,
-            historyLookup: (exercise, {pageSize, anchor}) {
-              return Exercises.of(context).getExerciseHistory(exercise, pageSize: pageSize, anchor: anchor);
-            },
-            onTapWorkout: onTapWorkout,
-          ),
+          exercise: exercise,
+          historyLookup: (exercise, {pageSize, anchor}) {
+            return Exercises.of(context).getExerciseHistory(exercise, pageSize: pageSize, anchor: anchor);
+          },
+          onTapWorkout: onTapWorkout,
+        ),
       },
     );
   }
@@ -119,4 +119,151 @@ String? _beautify(double y) {
     return null; // drop values that aren’t full minutes after 10 min
   }
   return Duration(seconds: rounded).formatted();
+}
+
+Future<void> _onExerciseMenu(BuildContext context, Exercise exercise) {
+  final L(:archive, :unarchive) = L.of(context);
+  return showBottomMenu(
+    context,
+    [
+      if (exercise.isArchived)
+        BottomMenuAction(
+          title: unarchive,
+          onPressed: () => _onUnarchive(context, exercise),
+          icon: const Icon(Icons.restore_outlined),
+        )
+      else
+        BottomMenuAction(
+          title: archive,
+          onPressed: () => _onArchive(context, exercise),
+          icon: const Icon(Icons.archive_rounded),
+        ),
+    ],
+  );
+}
+
+Future<void> _onArchive(BuildContext context, Exercise exercise) async {
+  final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+  final L(:archiveConfirmTitle, :archiveConfirmBody, :archive, :cancel) = L.of(context);
+  return showBrandedDialog(
+    context,
+    title: Text(
+      archiveConfirmTitle(exercise.name),
+      textAlign: TextAlign.center,
+    ),
+    content: Text(
+      archiveConfirmBody,
+      textAlign: TextAlign.center,
+    ),
+    icon: Icon(
+      Icons.error_outline_rounded,
+      color: colorScheme.onErrorContainer,
+    ),
+    actions: [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            child: Center(
+              child: Text(cancel),
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              Navigator.of(context).pop();
+            },
+          ),
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.errorContainer,
+            child: Center(
+              child: Text(
+                archive,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+              ),
+            ),
+            onPressed: () {
+              _onConfirmArchive(context, exercise);
+            },
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+Future<void> _onConfirmArchive(BuildContext context, Exercise exercise) async {
+  // close the dialog
+  Navigator.of(context, rootNavigator: true).pop();
+  Navigator.of(context)
+    ..pop()
+    ..pop();
+  // state
+  await Exercises.of(context).archive(exercise);
+}
+
+Future<void> _onExerciseOptions(BuildContext context, {required VoidCallback onShowArchived}) async {
+  return showBottomMenu(
+    context,
+    [
+      BottomMenuAction(
+        title: L.of(context).showArchived,
+        icon: const Icon(Icons.archive_outlined),
+        onPressed: () {
+          Navigator.of(context).pop();
+          onShowArchived();
+        },
+      ),
+    ],
+  );
+}
+
+Future<void> _onUnarchive(BuildContext context, Exercise exercise) async {
+  final exercises = Exercises.of(context);
+  final navigator = Navigator.of(context);
+  // state
+  await exercises.unarchive(exercise);
+
+  // pop
+  if (exercises.archived.isEmpty) {
+    // go to the very top if nothing is left in the archive
+    navigator
+      // out of dialog
+      ..pop()
+      // out of detail page
+      ..pop()
+      // out of archive
+      ..pop();
+  } else {
+    navigator
+      ..pop()
+      ..pop();
+  }
+}
+
+extension on Exercise {
+  Widget archivedAppBarTitle(BuildContext context) {
+    return switch (isArchived) {
+      true => RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: name,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            TextSpan(
+              text: '  ',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            WidgetSpan(
+              child: Tooltip(
+                message: L.of(context).exerciseArchived,
+                child: const Icon(Icons.archive_outlined),
+              ),
+            ),
+          ],
+        ),
+      ),
+      false => Text(name),
+    };
+  }
 }
