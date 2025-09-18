@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 /// Flat coloured (or transparent by default) button with an ink well
 class InkButton extends StatelessWidget {
   final Widget child;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final ShapeBorder? inkShape;
   final Color? backgroundColor;
   final BoxBorder? border;
@@ -28,8 +28,8 @@ class InkButton extends StatelessWidget {
     this.border,
     this.splashFactory,
   }) : inkShape = const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        );
+         borderRadius: BorderRadius.all(Radius.circular(8)),
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +37,29 @@ class InkButton extends StatelessWidget {
       RoundedRectangleBorder border => border.borderRadius,
       _ => null,
     };
+
+    final theme = Theme.of(context);
+    final disabledForeground = theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    final disabledBackground = theme.colorScheme.onSurface.withValues(alpha: 0.12);
+
+    final contentChild = switch (onPressed) {
+      null => IconTheme.merge(
+        data: IconThemeData(color: disabledForeground),
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: disabledForeground),
+          child: child,
+        ),
+      ),
+      _ => child,
+    };
+
     return Material(
       borderRadius: borderRadius,
-      color: backgroundColor,
+      color: switch (onPressed) {
+        null => disabledBackground,
+        _ => backgroundColor,
+      },
+
       child: Container(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
@@ -50,7 +70,7 @@ class InkButton extends StatelessWidget {
           customBorder: inkShape,
           onTap: onPressed,
           splashFactory: splashFactory,
-          child: child,
+          child: contentChild,
         ),
       ),
     );
@@ -61,7 +81,7 @@ const _defaultMargin = EdgeInsets.symmetric(horizontal: 8.0, vertical: 6);
 
 class PrimaryButton extends StatelessWidget {
   final Widget child;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool wide;
   final EdgeInsets margin;
   final Color? backgroundColor;
@@ -97,7 +117,7 @@ class PrimaryButton extends StatelessWidget {
       width: wide ? double.infinity : null,
       child: InkButton.rounded(
         border: border,
-        onPressed: _onPressed,
+        onPressed: onPressed == null ? null : _onPressed,
         backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.tertiaryContainer,
         child: Padding(
           padding: margin,
@@ -111,6 +131,6 @@ class PrimaryButton extends StatelessWidget {
     if (enableFeedback) {
       HapticFeedback.mediumImpact();
     }
-    onPressed();
+    onPressed?.call();
   }
 }
