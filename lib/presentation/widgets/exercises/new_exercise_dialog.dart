@@ -126,6 +126,7 @@ Future<void> showNewExerciseDialog(BuildContext context) {
                                       return InputChip(
                                         selected: each == selected,
                                         onSelected: (selected) {
+                                          HapticFeedback.mediumImpact();
                                           target.value = selected ? each : null;
                                         },
                                         label: Text(each.value),
@@ -155,6 +156,7 @@ Future<void> showNewExerciseDialog(BuildContext context) {
                                       return InputChip(
                                         selected: each == selected,
                                         onSelected: (selected) {
+                                          HapticFeedback.mediumImpact();
                                           category.value = selected ? each : null;
                                         },
                                         label: Text(each.value),
