@@ -43,7 +43,11 @@ extension on BuildContext {
     return goNamed(_historyEditName, queryParameters: {'workoutId': workoutId});
   }
 
-  void goToExerciseDetail(String exerciseId) {
-    return go('$_exercisesPath/$exerciseId');
+  Future<Object?> goToExerciseDetail(String exerciseId) {
+    return push('$_exercisesPath/$exerciseId');
+  }
+
+  void goToExerciseArchive() {
+    return goNamed(_exerciseArchive);
   }
 }
