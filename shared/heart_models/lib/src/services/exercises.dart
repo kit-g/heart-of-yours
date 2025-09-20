@@ -21,4 +21,10 @@ abstract interface class ExerciseService {
 
 abstract interface class RemoteExerciseService {
   Future<Iterable<Exercise>> getExercises();
+
+  Future<Iterable<Exercise>> getOwnExercises();
+
+  Future<Exercise> makeExercise(Exercise exercise);
+
+  Future<Exercise> editExercise(Exercise exercise);
 }
