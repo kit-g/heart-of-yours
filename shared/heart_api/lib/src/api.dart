@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:http/http.dart' as http;
 import 'package:heart_models/heart_models.dart';
+import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
 
 class Api
@@ -41,9 +41,9 @@ class Api
   bool get isAuthenticated {
     return switch (defaultHeaders) {
       {'Authorization': String token} => switch (token.split(' ')) {
-          ['Bearer', String token] when token.isNotEmpty => true,
-          _ => false,
-        },
+        ['Bearer', String token] when token.isNotEmpty => true,
+        _ => false,
+      },
       _ => false,
     };
   }
@@ -78,9 +78,9 @@ class Api
     );
     return switch (json) {
       {'url': String url, 'fields': Map fields} => (
-          fields: Map.castFrom<dynamic, dynamic, String, String>(fields),
-          url: url,
-        ),
+        fields: Map.castFrom<dynamic, dynamic, String, String>(fields),
+        url: url,
+      ),
       _ => null,
     };
   }
@@ -125,9 +125,9 @@ class Api
 
     final link = switch (json) {
       {'url': String url, 'fields': Map fields} => (
-          fields: Map.castFrom<dynamic, dynamic, String, String>(fields),
-          url: url,
-        ),
+        fields: Map.castFrom<dynamic, dynamic, String, String>(fields),
+        url: url,
+      ),
       _ => null,
     };
 
@@ -146,10 +146,7 @@ class Api
 
   @override
   Future<bool> saveWorkout(Workout workout) async {
-    final (_, code) = await post(
-      Router.workouts,
-      body: workout.toMap(),
-    );
+    final (_, code) = await post(Router.workouts, body: workout.toMap());
     return code == 201;
   }
 
@@ -178,6 +175,47 @@ class Api
   }
 
   @override
+  Future<Iterable<Exercise>> getOwnExercises() async {
+    final (json, code) = await get(Router.exercises, query: {'owned': 'true'});
+    return switch (json) {
+      {'exercises': List l} => l.map((e) => Exercise.fromJson(e)),
+      _ => [],
+    };
+  }
+
+  @override
+  Future<Exercise> makeExercise(Exercise exercise) async {
+    final (json, code) = await post(
+      Router.exercises,
+      body: {
+        'category': exercise.category.value,
+        'target': exercise.target.value,
+      },
+    );
+    return switch (code) {
+      200 => Exercise.fromJson(json),
+      _ => throw ArgumentError(json),
+    };
+  }
+
+  @override
+  Future<Exercise> editExercise(Exercise exercise) async {
+    final (json, code) = await put(
+      '${Router.exercises}/${exercise.name}',
+      body: {
+        'category': exercise.category.value,
+        'target': exercise.target.value,
+        'instructions': ?exercise.instructions,
+        'archived': exercise.isArchived,
+      },
+    );
+    return switch (code) {
+      200 => Exercise.fromJson(json),
+      _ => throw ArgumentError(json),
+    };
+  }
+
+  @override
   Future<bool> deleteTemplate(String templateId) async {
     final (_, code) = await delete('${Router.templates}/$templateId');
     return code == 204;
@@ -194,10 +232,7 @@ class Api
 
   @override
   Future<bool> saveTemplate(Template template) async {
-    final (_, code) = await post(
-      Router.templates,
-      body: template.toMap(),
-    );
+    final (_, code) = await post(Router.templates, body: template.toMap());
     return code == 201;
   }
 }
