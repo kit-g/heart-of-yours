@@ -122,10 +122,16 @@ String? _beautify(double y) {
 }
 
 Future<void> _onExerciseMenu(BuildContext context, Exercise exercise) {
-  final L(:archive, :unarchive) = L.of(context);
+  final L(:archive, :unarchive, :edit) = L.of(context);
   return showBottomMenu(
     context,
     [
+      if (exercise.isMine)
+        BottomMenuAction(
+          title: edit,
+          onPressed: () => showNewExerciseDialog(context, editable: exercise),
+          icon: const Icon(Icons.edit_rounded),
+        ),
       if (exercise.isArchived)
         BottomMenuAction(
           title: unarchive,
