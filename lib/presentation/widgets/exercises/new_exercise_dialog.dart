@@ -9,11 +9,11 @@ import 'package:heart_state/heart_state.dart';
 // letters, digits and whitespace
 final _formatter = FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]'));
 
-Future<void> showNewExerciseDialog(BuildContext context) {
+Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
   final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
   final L(:createNewExercise, :save, :name, category: categoryCopy, target: targetCopy) = L.of(context);
-  final category = ValueNotifier<Category?>(null);
-  final target = ValueNotifier<Target?>(null);
+  final category = ValueNotifier<Category?>(editable?.category);
+  final target = ValueNotifier<Target?>(editable?.target);
   final loading = ValueNotifier(false);
   final nameController = TextEditingController();
   return showDialog(
@@ -54,7 +54,10 @@ Future<void> showNewExerciseDialog(BuildContext context) {
                                     return ValueListenableBuilder<TextEditingValue>(
                                       valueListenable: nameController,
                                       builder: (_, n, _) {
-                                        final enough = t != null && c != null && n.text.isNotEmpty;
+                                        final enough = switch (editable) {
+                                          Exercise e => t != null && c != null && e.category != c,
+                                          null => t != null && c != null && n.text.isNotEmpty,
+                                        };
                                         return PrimaryButton.shrunk(
                                           onPressed: switch ((enough, l)) {
                                             (_, true) => null,
@@ -62,20 +65,24 @@ Future<void> showNewExerciseDialog(BuildContext context) {
                                             (true, false) => () async {
                                               if (c != null && t != null) {
                                                 final messenger = ScaffoldMessenger.of(context);
-                                                final state = Navigator.of(context, rootNavigator: true);
+                                                final root = Navigator.of(context, rootNavigator: true);
                                                 try {
                                                   loading.value = true;
-                                                  final n = nameController.text.trim();
-                                                  final exercise = Exercise(name: n, category: c, target: t);
-                                                  await Exercises.of(context).makeExercise(exercise);
+                                                  if (editable == null) {
+                                                    final n = nameController.text.trim();
+                                                    final exercise = Exercise(name: n, category: c, target: t);
+                                                    await Exercises.of(context).makeExercise(exercise);
+                                                  } else {
+                                                    final edited = editable.copyWith(category: c);
+                                                    await Exercises.of(context).editExercise(edited);
+                                                  }
                                                   loading.value = false;
-                                                  state.pop();
                                                 } on ArgumentError catch (e) {
                                                   messenger.snack('${e.message}');
                                                 } catch (e) {
                                                   messenger.snack('$e');
                                                 } finally {
-                                                  state.pop();
+                                                  root.pop();
                                                   loading.value = false;
                                                 }
                                               }
@@ -104,10 +111,19 @@ Future<void> showNewExerciseDialog(BuildContext context) {
                           name,
                           style: textTheme.titleMedium,
                         ),
-                        TextField(
-                          controller: nameController,
-                          inputFormatters: [_formatter],
-                        ),
+                        if (editable == null)
+                          TextField(
+                            controller: nameController,
+                            inputFormatters: [_formatter],
+                          )
+                        else
+                          Center(
+                            child: Text(
+                              editable.name,
+                              style: textTheme.titleLarge,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         Text(
                           targetCopy,
                           style: textTheme.titleMedium,
@@ -124,6 +140,7 @@ Future<void> showNewExerciseDialog(BuildContext context) {
                                   ...Target.values.map(
                                     (each) {
                                       return InputChip(
+                                        isEnabled: editable == null, // new exercise
                                         selected: each == selected,
                                         onSelected: (selected) {
                                           HapticFeedback.mediumImpact();
@@ -154,6 +171,10 @@ Future<void> showNewExerciseDialog(BuildContext context) {
                                   ...Category.values.map(
                                     (each) {
                                       return InputChip(
+                                        isEnabled: switch (editable) {
+                                          null => true,
+                                          Exercise() => selected?.canSwitchTo(each) ?? true,
+                                        },
                                         selected: each == selected,
                                         onSelected: (selected) {
                                           HapticFeedback.mediumImpact();
