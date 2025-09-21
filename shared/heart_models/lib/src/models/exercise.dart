@@ -35,6 +35,14 @@ enum Category implements ExerciseFilter {
 
   @override
   String toString() => value;
+
+  bool get _isWeightCategory {
+    return [weightedBodyWeight, machine, dumbbell, barbell].any((each) => each == this);
+  }
+
+  bool canSwitchTo(Category other) {
+    return _isWeightCategory && other._isWeightCategory;
+  }
 }
 
 enum Target implements ExerciseFilter {
