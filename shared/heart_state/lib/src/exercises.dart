@@ -162,6 +162,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     notifyListeners();
   }
 
+  Future<void> editExercise(Exercise exercise) async {
+    await _remoteService.editExercise(exercise);
+    _exercises[exercise.name] = exercise;
+    notifyListeners();
+  }
+
   Future<void> archive(Exercise exercise) async {
     final archived = exercise.copyWith(isArchived: true);
     _exercises[exercise.name] = archived;
