@@ -188,6 +188,7 @@ class Api
     final (json, code) = await post(
       Router.exercises,
       body: {
+        'name': exercise.name,
         'category': exercise.category.value,
         'target': exercise.target.value,
       },
