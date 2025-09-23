@@ -77,7 +77,13 @@ void main() {
   group('init()', () {
     test('uses local exercises when available, sets initialized and notifies once', () async {
       final e1 = ex('Squat');
-      when(local.getExercises()).thenAnswer((_) async => (DateTime(2024, 1, 1), <Exercise>[e1]));
+      when(
+        local.getExercises(
+          userId: anyNamed('userId'),
+        ),
+      ).thenAnswer(
+        (_) async => (DateTime(2024, 1, 1), <Exercise>[e1]),
+      );
 
       final probe = ListenerProbe()..attach(sut);
       await sut.init();
@@ -100,7 +106,11 @@ void main() {
     });
 
     test('does nothing when localSync is after lastSync (no remote call)', () async {
-      when(local.getExercises()).thenAnswer((_) async => (DateTime(2025, 1, 1), <Exercise>[]));
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer(
+        (_) async => (DateTime(2025, 1, 1), <Exercise>[]),
+      );
 
       final probe = ListenerProbe()..attach(sut);
       await sut.init(lastSync: DateTime(2024, 12, 31));
@@ -111,21 +121,30 @@ void main() {
       verifyNever(local.storeExercises(any));
     });
 
-    test('fetches remote, stores locally, sets initialized and notifies once', () async {
-      when(local.getExercises()).thenAnswer((_) async => (null, <Exercise>[]));
+    test('fetches remote (ex + own), stores locally with userId, sets initialized and notifies once', () async {
       final e1 = ex('Deadlift');
       final e2 = ex('Overhead Press');
+      final e3 = ex('My Curl');
+
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
+
       when(remote.getExercises()).thenAnswer((_) async => <Exercise>[e1, e2]);
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[e3]);
 
       final probe = ListenerProbe()..attach(sut);
+
       await sut.init(lastSync: DateTime(2020, 1, 1));
 
       expect(sut.isInitialized, isTrue);
       expect(sut.lookup(e1.name), e1);
       expect(sut.lookup(e2.name), e2);
+      expect(sut.lookup(e3.name), e3);
       expect(probe.notifications, 1);
+
+      verify(local.getExercises(userId: anyNamed('userId'))).called(1);
       verify(remote.getExercises()).called(1);
-      verify(local.storeExercises(any)).called(1);
+      verify(remote.getOwnExercises()).called(1);
+      verify(local.storeExercises(any, userId: anyNamed('userId'))).called(1);
     });
 
     test('routes errors to onError and does not throw', () async {
@@ -142,7 +161,9 @@ void main() {
   group('search()', () {
     test('matches words in name ignoring order/case', () async {
       final e = ex('Incline Bench Press');
-      when(local.getExercises()).thenAnswer((_) async => (null, <Exercise>[e]));
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer((_) async => (null, <Exercise>[e]));
       await sut.init(lastSync: DateTime(2000));
 
       expect(sut.search('bench').toList(), contains(e));
@@ -162,7 +183,11 @@ void main() {
         'instructions': null,
       });
 
-      when(local.getExercises()).thenAnswer((_) async => (null, <Exercise>[a, b]));
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer(
+        (_) async => (null, <Exercise>[a, b]),
+      );
       await sut.init(lastSync: DateTime(2000));
 
       sut.addFilter(Category.weightedBodyWeight);
@@ -174,6 +199,131 @@ void main() {
       // without filters flag, both would match by name query (if query matches)
       final all = sut.search('press', filters: false).toList();
       expect(all, [a]);
+    });
+  });
+
+  group('search() ownership filter (isMine)', () {
+    test(
+      'when isMine=false (default), returns both own and non-own (if they match query)',
+      () async {
+        final own =
+            Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest).copyWith(isMine: true);
+        final publicEx = Exercise(name: 'Bench Press Wide', category: Category.barbell, target: Target.chest);
+        when(
+          local.getExercises(
+            userId: anyNamed('userId'),
+          ),
+        ).thenAnswer(
+          (_) async => (null, <Exercise>[own, publicEx]),
+        );
+        await sut.init(lastSync: DateTime(2000));
+
+        final result = sut.search('bench').toList();
+        expect(result, containsAll([own, publicEx]));
+      },
+    );
+
+    test('when isMine=true, returns only exercises where isMine == true', () async {
+      final own =
+          Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest).copyWith(isMine: true);
+      final publicEx = Exercise(name: 'Bench Press Wide', category: Category.barbell, target: Target.chest);
+      when(
+        local.getExercises(
+          userId: anyNamed('userId'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          null,
+          <Exercise>[own, publicEx],
+        ),
+      );
+      await sut.init(lastSync: DateTime(2000));
+
+      final result = sut.search('bench', isMine: true).toList();
+      expect(result, [own]);
+    });
+
+    test('isMine=true still respects query and filters', () async {
+      final ownChest =
+          Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest).copyWith(isMine: true);
+      final ownBack = Exercise(name: 'Row', category: Category.barbell, target: Target.back).copyWith(isMine: true);
+      final publicChest = Exercise(name: 'Incline Bench Press', category: Category.barbell, target: Target.chest);
+
+      when(
+        local.getExercises(
+          userId: anyNamed('userId'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          null,
+          <Exercise>[ownChest, ownBack, publicChest],
+        ),
+      );
+      await sut.init(lastSync: DateTime(2000));
+
+      // query narrows to "bench"
+      final q = sut.search('bench', isMine: true).toList();
+      expect(q, [ownChest], reason: 'Only own + matching query');
+
+      // with filters=true, also enforce category/target filters
+      sut.clearFilters();
+      sut.addFilter(Category.barbell);
+      sut.addFilter(Target.chest);
+
+      final qf = sut.search('bench', filters: true, isMine: true).toList();
+      expect(qf, [ownChest]);
+
+      // if filters exclude chest, nothing should pass even if own
+      sut.clearFilters();
+      sut.addFilter(Target.back);
+      final excluded = sut.search('bench', filters: true, isMine: true).toList();
+      expect(excluded, isEmpty);
+    });
+
+    test('archived are excluded regardless of isMine', () async {
+      final ownArchived = Exercise(
+        name: 'Bench Press',
+        category: Category.barbell,
+        target: Target.chest,
+      ).copyWith(isMine: true, isArchived: true);
+
+      final ownActive = Exercise(
+        name: 'Bench Press Narrow',
+        category: Category.barbell,
+        target: Target.chest,
+      ).copyWith(isMine: true);
+
+      when(
+        local.getExercises(
+          userId: anyNamed('userId'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          null,
+          <Exercise>[ownArchived, ownActive],
+        ),
+      );
+
+      await sut.init(lastSync: DateTime(2000));
+
+      final result = sut.search('bench', isMine: true).toList();
+      expect(result, [ownActive]);
+    });
+
+    test('isMine=true with empty query still filters by ownership', () async {
+      final own = Exercise(name: 'A', category: Category.cardio, target: Target.cardio).copyWith(isMine: true);
+      final publicEx = Exercise(name: 'B', category: Category.cardio, target: Target.cardio);
+      when(
+        local.getExercises(
+          userId: anyNamed('userId'),
+        ),
+      ).thenAnswer(
+        (_) async => (null, <Exercise>[own, publicEx]),
+      );
+      await sut.init(lastSync: DateTime(2000));
+
+      final result = sut.search('', isMine: true).toList();
+      expect(result, [own]);
     });
   });
 
@@ -262,7 +412,11 @@ void main() {
 
   group('misc', () {
     test('iterator, index operator, and sign-out does not notify', () async {
-      when(local.getExercises()).thenAnswer((_) async => (null, <Exercise>[ex('A'), ex('B')]));
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer(
+        (_) async => (null, <Exercise>[ex('A'), ex('B')]),
+      );
       await sut.init(lastSync: DateTime(2000));
 
       // iterator and []
