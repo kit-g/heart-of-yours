@@ -195,8 +195,16 @@ class _Exercise implements Exercise {
         _ => null,
       },
       instructions: json['instructions'],
-      isMine: json['own'] ?? false,
-      isArchived: json['archived'] ?? false,
+      isMine: switch (json['own']) {
+        bool mine => mine, // API
+        1 => true, // local
+        _ => false, // local
+      },
+      isArchived: switch (json['archived']) {
+        bool archived => archived, // API
+        1 => true, // local
+        _ => false, // local
+      },
     );
   }
 
@@ -216,7 +224,9 @@ class _Exercise implements Exercise {
         'thumbnail': thumbnail.link,
         'thumbnailHeight': thumbnail.height,
         'thumbnailWidth': thumbnail.width,
-      }
+      },
+      'own': isMine ? 1 : 0,
+      'archived': isArchived ? 1 : 0,
     };
   }
 
