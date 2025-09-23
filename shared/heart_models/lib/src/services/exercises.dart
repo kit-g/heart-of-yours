@@ -2,9 +2,9 @@ import '../models/act.dart';
 import '../models/exercise.dart';
 
 abstract interface class ExerciseService {
-  Future<(DateTime?, Iterable<Exercise>)> getExercises();
+  Future<(DateTime?, Iterable<Exercise>)> getExercises({String? userId});
 
-  Future<void> storeExercises(Iterable<Exercise> exercises);
+  Future<void> storeExercises(Iterable<Exercise> exercises, {String? userId});
 
   Future<Iterable<ExerciseAct>> getExerciseHistory(String userId, Exercise exercise, {int? pageSize, String? anchor});
 
