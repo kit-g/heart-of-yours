@@ -50,6 +50,18 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   Future<void> init({DateTime? lastSync}) async {
     try {
+      final (localSync, local) = await _service.getExercises(userId: userId);
+
+      if (local.isNotEmpty) {
+        _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
+        isInitialized = true;
+        notifyListeners();
+        return;
+      }
+
+      if (lastSync == null) return;
+      if (localSync?.isAfter(lastSync) ?? false) return;
+
       final [ex, own] = await Future.wait<Iterable<Exercise>>([
         _remoteService.getExercises(),
         _remoteService.getOwnExercises(),
@@ -57,7 +69,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
       final all = [...ex, ...own]..sort();
       _exercises.addAll(Map.fromEntries(all.map((each) => MapEntry(each.name, each))));
-      _service.storeExercises(_exercises.values);
+      _service.storeExercises(_exercises.values, userId: userId);
       isInitialized = true;
       notifyListeners();
     } catch (e, s) {
@@ -65,10 +77,13 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
   }
 
-  Iterable<Exercise> search(String query, {bool filters = false}) {
+  Iterable<Exercise> search(String query, {bool filters = false, bool isMine = false}) {
     bool fitsSearch(Exercise exercise) {
       if (exercise.isArchived) return false;
-      return exercise.contains(query) && (filters ? exercise.fits(_filters) : true);
+      final matchesQuery = exercise.contains(query);
+      final matchesFilters = !filters || exercise.fits(_filters);
+      final matchesOwnership = !isMine || exercise.isMine;
+      return matchesQuery && matchesFilters && matchesOwnership;
     }
 
     return _exercises.values.where(fitsSearch);
@@ -172,6 +187,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     final archived = exercise.copyWith(isArchived: true);
     _exercises[exercise.name] = archived;
     final remote = await _remoteService.editExercise(archived);
+    _service.storeExercises([remote], userId: userId);
     _exercises[exercise.name] = remote;
     notifyListeners();
   }
@@ -180,6 +196,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     final unarchived = exercise.copyWith(isArchived: false);
     _exercises[exercise.name] = unarchived;
     final remote = await _remoteService.editExercise(unarchived);
+    _service.storeExercises([remote], userId: userId);
     _exercises[exercise.name] = remote;
     notifyListeners();
   }
