@@ -35,7 +35,7 @@ DateTime getMonday(DateTime date) {
     int count => count,
   };
 
-  final monday =  switch (date.subtract(Duration(days: daysToSubtract)).isAtSameMomentAs(date)) {
+  final monday = switch (date.subtract(Duration(days: daysToSubtract)).isAtSameMomentAs(date)) {
     true => date, // If the given date is Monday, return it,
     false => date.subtract(Duration(days: daysToSubtract)),
   };
