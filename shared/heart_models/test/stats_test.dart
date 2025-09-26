@@ -2,7 +2,6 @@ import 'package:heart_models/heart_models.dart';
 import 'package:mockito/annotations.dart';
 import 'package:test/test.dart';
 
-
 @GenerateMocks([WorkoutSummary])
 void main() {
   group(
