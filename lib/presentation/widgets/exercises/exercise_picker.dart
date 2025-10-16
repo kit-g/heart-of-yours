@@ -179,15 +179,21 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     ),
                   ),
                 ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: _showingMine,
-                  builder: (_, selected, _) {
-                    return ChoiceChip(
-                      selectedColor: colorScheme.tertiaryContainer,
-                      label: Text(mine),
-                      selected: selected,
-                      onSelected: (v) => _showingMine.value = v,
-                    );
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: switch (exercises.hasOwn) {
+                    false => const SizedBox.shrink(),
+                    true => ValueListenableBuilder<bool>(
+                      valueListenable: _showingMine,
+                      builder: (_, selected, _) {
+                        return ChoiceChip(
+                          selectedColor: colorScheme.tertiaryContainer,
+                          label: Text(mine),
+                          selected: selected,
+                          onSelected: (v) => _showingMine.value = v,
+                        );
+                      },
+                    ),
                   },
                 ),
               ],
