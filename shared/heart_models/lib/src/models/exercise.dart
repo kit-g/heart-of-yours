@@ -123,6 +123,7 @@ abstract interface class Exercise implements Searchable, Model, Comparable<Exerc
     required Category category,
     required Target target,
     String? instructions,
+    bool? isMine,
   }) {
     assert(name.isNotEmpty, 'Cannot have an empty name');
     return _Exercise(
@@ -130,6 +131,7 @@ abstract interface class Exercise implements Searchable, Model, Comparable<Exerc
       category: category,
       target: target,
       instructions: instructions,
+      isMine: isMine ?? false,
     );
   }
 
