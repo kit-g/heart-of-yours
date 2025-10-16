@@ -1550,6 +1550,14 @@ class L {
       desc: 'Image picker menu',
     );
   }
+
+  String get mine {
+    return Intl.message(
+      'Mine',
+      name: 'mine',
+      desc: 'Possessive pronoun, as in "My exercises"',
+    );
+  }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
