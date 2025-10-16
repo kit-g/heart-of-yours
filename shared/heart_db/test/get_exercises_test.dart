@@ -40,7 +40,17 @@ void main() {
       final rawExercise = exercise(name: 'Push Up');
       final rawRow = rawExercise.toMap().map((k, v) => MapEntry(k.toSnake(), v));
 
-      when(txn.query('exercises')).thenAnswer((_) async => [rawRow]);
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer(
+        (_) async {
+          return [rawRow];
+        },
+      );
 
       when(
         txn.query(
@@ -68,7 +78,14 @@ void main() {
       final ex = exercise(name: 'Squat');
       final row = ex.toMap().map((k, v) => MapEntry(k.toSnake(), v));
 
-      when(txn.query('exercises')).thenAnswer((_) async => [row]);
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => [row]);
+
       when(
         txn.query(
           syncsTable,
@@ -88,9 +105,21 @@ void main() {
   test(
     'should return empty exercise list if table is empty',
     () async {
-      when(txn.query('exercises')).thenAnswer((_) async => []);
-      when(txn.query(syncsTable, where: anyNamed('where'), whereArgs: anyNamed('whereArgs')))
-          .thenAnswer((_) async => []);
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(
+        txn.query(
+          syncsTable,
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => []);
 
       final (syncedAt, exercises) = await local.getExercises();
 
@@ -105,10 +134,19 @@ void main() {
       final ex = exercise(name: 'Lunge');
       final row = ex.toMap().map((k, v) => MapEntry(k.toSnake(), v));
 
-      when(txn.query('exercises')).thenAnswer((_) async => [row]);
-      when(txn.query(syncsTable, where: anyNamed('where'), whereArgs: anyNamed('whereArgs'))).thenAnswer((_) async => [
-            {'table_name': exercisesTable, 'synced_at': 'not-a-date'},
-          ],);
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => [row]);
+
+      when(txn.query(syncsTable, where: anyNamed('where'), whereArgs: anyNamed('whereArgs'))).thenAnswer(
+        (_) async => [
+          {'table_name': exercisesTable, 'synced_at': 'not-a-date'},
+        ],
+      );
 
       final (syncedAt, exercises) = await local.getExercises();
 
@@ -120,7 +158,13 @@ void main() {
   test(
     'should throw if database query throws',
     () async {
-      when(txn.query(any)).thenThrow(Exception('DB failed'));
+      when(
+        txn.query(
+          any,
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenThrow(Exception('DB failed'));
 
       expect(() => local.getExercises(), throwsException);
     },
