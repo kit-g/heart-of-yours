@@ -50,10 +50,15 @@ class LocalDatabase
   }
 
   @override
-  Future<(DateTime?, Iterable<Exercise>)> getExercises() async {
+  Future<(DateTime?, Iterable<Exercise>)> getExercises({String? userId}) async {
     return _db.transaction<(DateTime?, Iterable<Exercise>)>(
       (txn) async {
-        final rows = await txn.query('exercises');
+        final rows = await txn.query(
+          'exercises',
+          where: 'user_id IS NULL OR user_id = ?',
+          whereArgs: [userId],
+        );
+
         final exercises = rows.map(
           (row) {
             return Exercise.fromJson(row.toCamel());
@@ -71,7 +76,7 @@ class LocalDatabase
   }
 
   @override
-  Future<void> storeExercises(Iterable<Exercise> exercises) async {
+  Future<void> storeExercises(Iterable<Exercise> exercises, {String? userId}) async {
     return _db.transaction(
       (txn) {
         final batch = txn.batch();
@@ -79,6 +84,7 @@ class LocalDatabase
           var row = {
             for (final MapEntry(:key, :value) in each.toMap().entries) key.toSnake(): value,
           };
+          if (each.isMine) row['user_id'] = userId;
           batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.replace);
         }
 
@@ -487,7 +493,7 @@ class LocalDatabase
               _templatesExercises,
               {
                 'id': ts.add(Duration(milliseconds: 2 * index)).toIso8601String(),
-                'template_id': int.parse(template.id),
+                'template_id': template.id,
                 'exercise_id': exercise.exercise.name,
                 'description': jsonEncode(desc),
               },
