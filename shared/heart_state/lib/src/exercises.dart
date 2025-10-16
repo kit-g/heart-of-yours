@@ -56,15 +56,15 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     try {
       final (localSync, local) = await _service.getExercises(userId: userId);
 
-      // if (local.isNotEmpty) {
-      //   _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
-      //   isInitialized = true;
-      //   notifyListeners();
-      //   return;
-      // }
+      if (local.isNotEmpty) {
+        _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
+        isInitialized = true;
+        notifyListeners();
+        return;
+      }
 
-      // if (lastSync == null) return;
-      // if (localSync?.isAfter(lastSync) ?? false) return;
+      if (lastSync == null) return;
+      if (localSync?.isAfter(lastSync) ?? false) return;
 
       final [ex, own] = await Future.wait<Iterable<Exercise>>([
         _remoteService.getExercises(),
