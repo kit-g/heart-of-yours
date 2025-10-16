@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS workouts
     start   TEXT NOT NULL,
     "end"   TEXT,
     user_id TEXT NOT NULL,
-    name    TEXT
+    name    TEXT,
+    CHECK (length(name) > 0)
 );
 """;
 
@@ -22,7 +23,17 @@ CREATE TABLE IF NOT EXISTS exercises
     thumbnail_width  INT,
     thumbnail_height INT,
     instructions     TEXT,
-    user_id          TEXT
+    user_id          TEXT,
+    own              INT  NOT NULL DEFAULT 0,
+    archived         INT  NOT NULL DEFAULT 0,
+    CHECK (own IN (0, 1)),
+    CHECK (archived IN (0, 1)),
+    CHECK (own = 1 OR user_id IS NULL),
+    CHECK (length(name) > 0),
+    CHECK (asset_width IS NULL OR asset_width > 0),
+    CHECK (asset_height IS NULL OR asset_height > 0),
+    CHECK (thumbnail_width IS NULL OR thumbnail_width > 0),
+    CHECK (thumbnail_height IS NULL OR thumbnail_height > 0)
 );
 """;
 
@@ -50,10 +61,14 @@ CREATE TABLE IF NOT EXISTS sets
     exercise_id TEXT    NOT NULL REFERENCES workout_exercises (id) ON DELETE CASCADE,
     id          TEXT    NOT NULL PRIMARY KEY,
     completed   INTEGER NOT NULL DEFAULT 0,
-    weight      REAL,  -- kgs
+    weight      REAL, -- kgs
     reps        INT,
-    duration    REAL,  -- seconds
-    distance    REAL   -- kilometers
+    duration    REAL, -- seconds
+    distance    REAL, -- kilometers,
+    CHECK (weight >= 0),
+    CHECK (reps >= 0),
+    CHECK (duration >= 0),
+    CHECK (distance >= 0)
 );
 """;
 
@@ -468,7 +483,7 @@ WITH _recent AS (
     WHERE s.completed = 1
       AND w.user_id = ?
     GROUP BY we.exercise_id
-    HAVING MAX(w.start)
+    HAVING max(w.start)
 )
 SELECT
     _recent.exercise_id AS "exerciseId",
