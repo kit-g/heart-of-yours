@@ -114,7 +114,7 @@ void main() {
       expect(e.isMine, isFalse);
       expect(e.isArchived, isFalse);
 
-      expect(e.toMap(), baseJson);
+      expect(e.toMap(), {...baseJson, 'own': 0, 'archived': 0});
     });
 
     test('fromJson accepts remote-shaped asset/thumbnail', () {

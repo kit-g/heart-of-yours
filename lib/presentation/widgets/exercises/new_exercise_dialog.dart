@@ -70,7 +70,12 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                                   loading.value = true;
                                                   if (editable == null) {
                                                     final n = nameController.text.trim();
-                                                    final exercise = Exercise(name: n, category: c, target: t);
+                                                    final exercise = Exercise(
+                                                      name: n,
+                                                      category: c,
+                                                      target: t,
+                                                      isMine: true,
+                                                    );
                                                     await Exercises.of(context).makeExercise(exercise);
                                                   } else {
                                                     final edited = editable.copyWith(category: c);
