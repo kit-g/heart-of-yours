@@ -38,6 +38,10 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   Iterable<ExerciseFilter> get targets => _filters.whereType<Target>();
 
+  bool get hasOwn {
+    return isInitialized && _exercises.values.any((ex) => ex.isMine && !ex.isArchived);
+  }
+
   Exercise operator [](int index) => _exercises.values.toList()[index];
 
   static Exercises of(BuildContext context) {
@@ -52,15 +56,15 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     try {
       final (localSync, local) = await _service.getExercises(userId: userId);
 
-      if (local.isNotEmpty) {
-        _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
-        isInitialized = true;
-        notifyListeners();
-        return;
-      }
+      // if (local.isNotEmpty) {
+      //   _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
+      //   isInitialized = true;
+      //   notifyListeners();
+      //   return;
+      // }
 
-      if (lastSync == null) return;
-      if (localSync?.isAfter(lastSync) ?? false) return;
+      // if (lastSync == null) return;
+      // if (localSync?.isAfter(lastSync) ?? false) return;
 
       final [ex, own] = await Future.wait<Iterable<Exercise>>([
         _remoteService.getExercises(),
@@ -171,15 +175,21 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return null;
   }
 
+  Future<void> _storeLocalExercise(Exercise exercise) {
+    return _service.storeExercises([exercise.copyWith(isMine: true)], userId: userId);
+  }
+
   Future<void> makeExercise(Exercise exercise) async {
     await _remoteService.makeExercise(exercise);
     _exercises[exercise.name] = exercise;
+    await _storeLocalExercise(exercise);
     notifyListeners();
   }
 
   Future<void> editExercise(Exercise exercise) async {
     await _remoteService.editExercise(exercise);
     _exercises[exercise.name] = exercise;
+    await _storeLocalExercise(exercise);
     notifyListeners();
   }
 
