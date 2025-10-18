@@ -7,7 +7,6 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   final FocusNode focusNode;
   final Color? backgroundColor;
   final void Function(Exercise)? onExerciseSelected;
-  final _showingMine = ValueNotifier(false);
 
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
@@ -183,16 +182,11 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                   duration: const Duration(milliseconds: 200),
                   child: switch (exercises.hasOwn) {
                     false => const SizedBox.shrink(),
-                    true => ValueListenableBuilder<bool>(
-                      valueListenable: _showingMine,
-                      builder: (_, selected, _) {
-                        return ChoiceChip(
-                          selectedColor: colorScheme.tertiaryContainer,
-                          label: Text(mine),
-                          selected: selected,
-                          onSelected: (v) => _showingMine.value = v,
-                        );
-                      },
+                    true => ChoiceChip(
+                      selectedColor: colorScheme.tertiaryContainer,
+                      label: Text(mine),
+                      selected: exercises.showingMine,
+                      onSelected: (v) => exercises.showingMine = v,
                     ),
                   },
                 ),
@@ -251,31 +245,27 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ),
-          true => ValueListenableBuilder<bool>(
-            valueListenable: _showingMine,
-            builder: (_, mine, _) {
-              return ValueListenableBuilder(
-                valueListenable: searchController,
-                builder: (__, value, _) {
-                  final found = exercises.search(value.text, filters: true, isMine: mine).toList();
-                  return SliverList.separated(
-                    itemCount: found.length,
-                    itemBuilder: (_, index) {
-                      final exercise = found[index];
-                      return ExerciseItem(
-                        exercise: exercise,
-                        preferences: preferences,
-                        onExerciseSelected: onExerciseSelected,
-                        selected: exercises.hasSelected(exercise),
-                      );
-                    },
-                    separatorBuilder: (_, _) {
-                      return const Divider(
-                        height: 0,
-                        indent: 16,
-                        endIndent: 16,
-                      );
-                    },
+          true => ValueListenableBuilder<TextEditingValue>(
+            valueListenable: searchController,
+            builder: (__, value, _) {
+              final mine = exercises.showingMine;
+              final found = exercises.search(value.text, filters: true, isMine: mine).toList();
+              return SliverList.separated(
+                itemCount: found.length,
+                itemBuilder: (_, index) {
+                  final exercise = found[index];
+                  return ExerciseItem(
+                    exercise: exercise,
+                    preferences: preferences,
+                    onExerciseSelected: onExerciseSelected,
+                    selected: exercises.hasSelected(exercise),
+                  );
+                },
+                separatorBuilder: (_, _) {
+                  return const Divider(
+                    height: 0,
+                    indent: 16,
+                    endIndent: 16,
                   );
                 },
               );
