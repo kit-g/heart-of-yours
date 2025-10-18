@@ -257,15 +257,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> initHistory() async {
     if (userId case String id) {
       final local = await _localService.getWorkoutHistory(id, lookForExercise);
-      if (local case Iterable<Workout> local when local.isNotEmpty) {
-        _workouts.addAll(Map.fromEntries(local.map(_entry)));
-      } else {
-        final workouts = await _getRemoteHistory(id);
-        if (workouts != null) {
-          _localService.storeWorkoutHistory(workouts, id);
-          _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
-        }
+
+      _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
+
+      final workouts = await _getRemoteHistory(id);
+
+      if (workouts != null) {
+        _localService.storeWorkoutHistory(workouts, id);
+        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
       }
+
       historyInitialized = true;
       notifyListeners();
     }
