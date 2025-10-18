@@ -56,7 +56,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
     if (local.isNotEmpty) {
       _templates.addAll(local);
-      return notifyListeners();
+      notifyListeners();
     }
 
     final remote = await _remoteService.getTemplates(lookForExercise) ?? [];
@@ -133,7 +133,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   Future<void> _initSampleTemplates(ExerciseLookup lookForExercise) async {
     final local = await _service.getTemplates(null, lookForExercise);
     if (local.isNotEmpty) {
-      return _samples.addAll(local);
+      _samples.addAll(local);
     }
 
     final remote = await _configService.getSampleTemplates(lookForExercise);
