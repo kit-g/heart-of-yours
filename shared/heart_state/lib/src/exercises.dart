@@ -13,6 +13,15 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   bool isInitialized = false;
   String? userId;
 
+  bool _showingMine = false;
+
+  bool get showingMine => _showingMine;
+
+  set showingMine(bool value) {
+    _showingMine = value;
+    notifyListeners();
+  }
+
   Exercises({
     this.onError,
     required RemoteExerciseService remoteService,
