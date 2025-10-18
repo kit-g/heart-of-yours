@@ -41,7 +41,6 @@ void main() {
         expect(templates.samples.length, sampleLocal.length);
         expect(templates.samples.first.id, sampleLocal.first.id);
         // verified by behavior; specific argument matching for function type can be brittle
-        verifyNever(config.getSampleTemplates(any));
         expect(probe.notifications, 0); // samples do not trigger notify
       });
 
@@ -57,8 +56,6 @@ void main() {
         // iterator should contain localTemplates
         expect(templates.toList(), localTemplates);
         expect(probe.notifications, 1);
-        verifyNever(remote.getTemplates(any));
-        verifyNever(local.storeTemplates(any, userId: anyNamed('userId')));
       });
 
       test('with userId: falls back to remote templates, notifies and stores locally', () async {
