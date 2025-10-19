@@ -1,5 +1,6 @@
 import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
@@ -271,7 +272,7 @@ Future<void> _initApp(
         appVersion: info.fullVersion,
       );
 
-      AppImage.headers = imageHeaders(config: appConfig, appVersion: info.version);
+      AppImage.headers = imageHeaders(config: appConfig, appVersion: info.version, isWeb: kIsWeb);
     },
   );
 
