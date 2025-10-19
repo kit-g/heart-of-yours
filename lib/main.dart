@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
@@ -28,7 +29,7 @@ typedef AppRunner =
 Future<void> bootstrap({
   required AppConfig appConfig,
   Future<void> Function() initFirebase = initializeFirebase,
-  Future<LocalDatabase> Function() initDb = LocalDatabase.init,
+  Future<LocalDatabase> Function({bool isWeb}) initDb = LocalDatabase.init,
   SentryInit? initSentry = initSentry,
   AppRunner appRunner = _runner,
   LogInit? initLogging = initLogging,
@@ -43,7 +44,7 @@ Future<void> bootstrap({
 
   return Future.wait<void>([
     initFirebase(),
-    initDb(),
+    initDb(isWeb: kIsWeb),
   ]).then<void>(
     (initialized) {
       final [_, db] = initialized;
