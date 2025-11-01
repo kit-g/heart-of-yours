@@ -190,14 +190,14 @@ feedbackReceived,Confirmation snack message,"Your feedback was received, thank y
 toFeedback,Action button on a dialog,To feedback!,To feedback!,К отзыву!
 dangerZone,Settings header,Danger zone,Danger zone,Опасная зона
 deleteAccount,Settings item,Delete account,Delete account,Удалить аккаунт
-deleteAccountTitle,Delete account dialog,Are you sure you want to delete your account?,Are you sure you want to delete your account?,Are you sure you want to delete your account?
-deleteAccountBody,Delete account dialog,"Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted."
-deleteAccountCancelMessage,Delete account dialog,"Oh no, I like it here!","Oh no, I like it here!","Oh no, I like it here!"
-deleteAccountConfirmMessage,Delete account dialog,"Yep, go on without me!","Yep, go on without me!","Yep, go on without me!"
-confirmDeleteAccountTitle,Delete account dialog,Confirm your account deletion,Confirm your account deletion,Confirm your account deletion
-confirmDeleteAccountCancelMessage,Delete account dialog,"Changed my mind, cancel","Changed my mind, cancel","Changed my mind, cancel"
-confirmDeleteAccountOkMessage,Delete account dialog,Farewell!,Farewell!,Farewell!
-accountDeleted,Delete account page,Account deleted,Account deleted,Account deleted
+deleteAccountTitle,Delete account dialog,Are you sure you want to delete your account?,Are you sure you want to delete your account?,"Вы уверены, что хотите удалить свой аккаунт?"
+deleteAccountBody,Delete account dialog,"Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Ваш аккаунт запланирован на удаление через {deadline} дней. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда."
+deleteAccountCancelMessage,Delete account dialog,"Oh no, I like it here!","Oh no, I like it here!","О нет, мне здесь нравится!"
+deleteAccountConfirmMessage,Delete account dialog,"Yep, go on without me!","Yep, go on without me!","Да, продолжайте без меня!"
+confirmDeleteAccountTitle,Delete account dialog,Confirm your account deletion,Confirm your account deletion,Подтвердите удаление аккаунта
+confirmDeleteAccountCancelMessage,Delete account dialog,"Changed my mind, cancel","Changed my mind, cancel","Передумал, отмена"
+confirmDeleteAccountOkMessage,Delete account dialog,Farewell!,Farewell!,Прощайте!
+accountDeleted,Delete account page,Account deleted,Account deleted,Аккаунт удален
 accountDeletedBody,Delete account page,"Your account has been scheduled for deletion on {date}.
 
 If you change your mind, you can restore your account anytime before this date.
