@@ -201,7 +201,7 @@ class _AppState extends State<_App> {
       routerConfig: widget.router.config,
       supportedLocales: const [
         Locale('en', 'CA'),
-        Locale('fr', 'CA'),
+        Locale('ru', 'RU'),
       ],
       localizationsDelegates: const [
         LocsDelegate(),
