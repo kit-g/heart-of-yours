@@ -1,0 +1,783 @@
+{
+  "@@locale": "en_CA",
+  "appearance": "Appearance",
+  "@appearance": {
+    "description": "Label"
+  },
+  "units": "Units",
+  "@units": {
+    "description": "Label"
+  },
+  "motto": "Every beat counts.",
+  "@motto": {
+    "description": "App's motto"
+  },
+  "toLightMode": "Light",
+  "@toLightMode": {
+    "description": "tooltip"
+  },
+  "toDarkMode": "Dark",
+  "@toDarkMode": {
+    "description": "tooltip"
+  },
+  "toSystemMode": "System",
+  "@toSystemMode": {
+    "description": "tooltip"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Generic label"
+  },
+  "yourEmail": "Your email",
+  "@yourEmail": {
+    "description": "Generic label"
+  },
+  "cropAvatar": "Crop avatar",
+  "@cropAvatar": {
+    "description": "Label in the image cropper"
+  },
+  "nameOptional": "Name (optional)",
+  "@nameOptional": {
+    "description": "Field hint"
+  },
+  "name": "Name",
+  "@name": {
+    "description": "Field hint"
+  },
+  "saveName": "Save name",
+  "@saveName": {
+    "description": "Hint"
+  },
+  "changeName": "Change name",
+  "@changeName": {
+    "description": "Hint"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Generic label"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Generic label"
+  },
+  "archive": "Archive",
+  "@archive": {
+    "description": "CTA, verb"
+  },
+  "unarchive": "Unarchive",
+  "@unarchive": {
+    "description": "CTA, verb"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "Generic label"
+  },
+  "logIn": "Log in",
+  "@logIn": {
+    "description": "Generic label"
+  },
+  "logInTitle": "Welcome Back",
+  "@logInTitle": {
+    "description": "Login page copy"
+  },
+  "logInBody": "You've already started something important. \nLet's keep going.",
+  "@logInBody": {
+    "description": "Login page copy"
+  },
+  "signUpTitle": "Begin with Heart",
+  "@signUpTitle": {
+    "description": "Sign up page copy"
+  },
+  "signUpBody": "Every journey starts with one decision. \nThis one's yours.",
+  "@signUpBody": {
+    "description": "Sign up page copy"
+  },
+  "recoverTitle": "Still with You",
+  "@recoverTitle": {
+    "description": "Recover page copy"
+  },
+  "recoverBody": "Your journey isn't lost. \nJust a moment of pause — we'll reset together.",
+  "@recoverBody": {
+    "description": "Recover page copy"
+  },
+  "logInWithGoogle": "Log in with Google",
+  "@logInWithGoogle": {
+    "description": "Button label"
+  },
+  "signUpWithGoogle": "Sign up with Google",
+  "@signUpWithGoogle": {
+    "description": "Button label"
+  },
+  "logInWithApple": "Log in with Apple",
+  "@logInWithApple": {
+    "description": "Button label"
+  },
+  "signUpWithApple": "Sign up with Apple",
+  "@signUpWithApple": {
+    "description": "Button label"
+  },
+  "logOut": "Log out",
+  "@logOut": {
+    "description": "Generic label"
+  },
+  "profile": "Profile",
+  "@profile": {
+    "description": "Generic label, e.g. bottom nav bar"
+  },
+  "workout": "Workout",
+  "@workout": {
+    "description": "Generic label, e.g. bottom nav bar"
+  },
+  "history": "History",
+  "@history": {
+    "description": "Generic label, e.g. bottom nav bar"
+  },
+  "exercises": "Exercises",
+  "@exercises": {
+    "description": "Generic label, e.g. bottom nav bar"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Generic label, e.g. bin the search bar"
+  },
+  "startNewWorkout": "Start a new workout",
+  "@startNewWorkout": {
+    "description": "Button label"
+  },
+  "cancelCurrentWorkoutTitle": "Cancel current workout?",
+  "@cancelCurrentWorkoutTitle": {
+    "description": "Button label"
+  },
+  "cancelCurrentWorkoutBody": "You have a workout in progress. Do you want to cancel it and start a new one?",
+  "@cancelCurrentWorkoutBody": {
+    "description": "Button label"
+  },
+  "startNewWorkoutFromTemplate": "Start a new workout from this template?",
+  "@startNewWorkoutFromTemplate": {
+    "description": "Alert dialog"
+  },
+  "startWorkout": "Start workout",
+  "@startWorkout": {
+    "description": "App bar title"
+  },
+  "cancelWorkout": "Cancel workout",
+  "@cancelWorkout": {
+    "description": "Button text"
+  },
+  "addExercises": "Add exercises",
+  "@addExercises": {
+    "description": "Button text"
+  },
+  "addSet": "Add set",
+  "@addSet": {
+    "description": "Button text"
+  },
+  "newExercise": "New exercise",
+  "@newExercise": {
+    "description": "Button tooltip"
+  },
+  "createNewExercise": "Create new exercise",
+  "@createNewExercise": {
+    "description": "Dialog header"
+  },
+  "exerciseOptions": "Exercise options",
+  "@exerciseOptions": {
+    "description": "Button tooltip"
+  },
+  "showArchived": "Show archived",
+  "@showArchived": {
+    "description": "Menu button, as in \"Show archived exercises"
+  },
+  "archivedExercises": "Archived exercises",
+  "@archivedExercises": {
+    "description": "App bar"
+  },
+  "archiveConfirmTitle": "Archive {exerciseName}?",
+  "@archiveConfirmTitle": {
+    "description": "Dialog title, e.g., \"Archive Push ups?\""
+  },
+  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won't affect any of your past workouts — your history stays intact.",
+  "@archiveConfirmBody": {
+    "description": "Dialog body"
+  },
+  "exerciseArchived": "This exercise is archived \nand won't appear in your main library anymore.",
+  "@exerciseArchived": {
+    "description": "Tooltip over archived icon"
+  },
+  "deleteSet": "Delete set",
+  "@deleteSet": {
+    "description": "Button text"
+  },
+  "set": "Set",
+  "@set": {
+    "description": "Workout table, column header"
+  },
+  "sets": "Sets",
+  "@sets": {
+    "description": "Card header"
+  },
+  "previous": "Previous",
+  "@previous": {
+    "description": "Workout table, column header, as in \"previous exercise\""
+  },
+  "reps": "Reps",
+  "@reps": {
+    "description": "Workout table, column header"
+  },
+  "time": "Time",
+  "@time": {
+    "description": "Workout table, column header"
+  },
+  "kg": "kg",
+  "@kg": {
+    "description": "Generic label, kilograms"
+  },
+  "mile": "mile",
+  "@mile": {
+    "description": "Generic label, miles"
+  },
+  "km": "km",
+  "@km": {
+    "description": "Generic label, km"
+  },
+  "milesPlural": "miles",
+  "@milesPlural": {
+    "description": "Generic label, miles"
+  },
+  "miles": "{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}",
+  "@miles": {
+    "description": "Generic label, miles"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "Generic label"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Generic label"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Generic label"
+  },
+  "repeat": "Repeat",
+  "@repeat": {
+    "description": "Generic label"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Generic label"
+  },
+  "share": "Share",
+  "@share": {
+    "description": "Generic label"
+  },
+  "okBang": "Ok!",
+  "@okBang": {
+    "description": "Generic label"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Generic label, \"cancel\" button"
+  },
+  "finish": "Finish",
+  "@finish": {
+    "description": "Generic label, \"finish workout\" button"
+  },
+  "reset": "Reset",
+  "@reset": {
+    "description": "Generic label, \"Reset\" button"
+  },
+  "h": "h",
+  "@h": {
+    "description": "Abbreviation for hours"
+  },
+  "min": "min",
+  "@min": {
+    "description": "Abbreviation for minutes"
+  },
+  "lbs": "lbs",
+  "@lbs": {
+    "description": "Generic label, pounds"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Generic label, verb"
+  },
+  "lb": "{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}",
+  "@lb": {
+    "description": "Generic label, pounds"
+  },
+  "saveAsTemplate": "Save as template",
+  "@saveAsTemplate": {
+    "description": "Workout set option, \"save this workout as a template\""
+  },
+  "addNote": "Add a note",
+  "@addNote": {
+    "description": "Exercise set option, \"add a note to this set\""
+  },
+  "replaceExercise": "Replace exercise",
+  "@replaceExercise": {
+    "description": "Exercise set option"
+  },
+  "weightUnit": "Weight",
+  "@weightUnit": {
+    "description": "Exercise set option, \"choose weight unit for this set\""
+  },
+  "distanceUnit": "Distance",
+  "@distanceUnit": {
+    "description": "Exercise set option, \"choose distance unit for this set\""
+  },
+  "duration": "Duration",
+  "@duration": {
+    "description": "Duration label"
+  },
+  "imperial": "Imperial",
+  "@imperial": {
+    "description": "Measurement unit setting"
+  },
+  "metric": "Metric",
+  "@metric": {
+    "description": "Measurement unit setting"
+  },
+  "restTimer": "Rest timer",
+  "@restTimer": {
+    "description": "Exercise set option, \"Set the rest timer for this exercise\""
+  },
+  "cancelTimer": "Cancel timer",
+  "@cancelTimer": {
+    "description": "Button text"
+  },
+  "removeExercise": "Remove exercise",
+  "@removeExercise": {
+    "description": "Exercise set option, \"Remove this exercise from workout\""
+  },
+  "morningWorkout": "Morning Workout",
+  "@morningWorkout": {
+    "description": "Default workout name"
+  },
+  "eveningWorkout": "Evening Workout",
+  "@eveningWorkout": {
+    "description": "Default workout name"
+  },
+  "nightWorkout": "Night Workout",
+  "@nightWorkout": {
+    "description": "Default workout name"
+  },
+  "afternoonWorkout": "Afternoon Workout",
+  "@afternoonWorkout": {
+    "description": "Default workout name"
+  },
+  "emptyHistoryTitle": "Your completed workouts will be here",
+  "@emptyHistoryTitle": {
+    "description": "emptyHistoryTitle"
+  },
+  "emptyHistoryBody": "Go get them done!",
+  "@emptyHistoryBody": {
+    "description": "emptyHistoryBody"
+  },
+  "customThemeColorSetting": "Custom theme color",
+  "@customThemeColorSetting": {
+    "description": "Setting item name"
+  },
+  "customThemeColorSettingSubtitle": "Used to generate a new theme",
+  "@customThemeColorSettingSubtitle": {
+    "description": "Setting item subtitle"
+  },
+  "aboutApp": "About app",
+  "@aboutApp": {
+    "description": "Setting item title"
+  },
+  "congratulations": "Congratulations!",
+  "@congratulations": {
+    "description": "Workout complete screen, title"
+  },
+  "congratulationsBody": "Your workout is complete!",
+  "@congratulationsBody": {
+    "description": "Workout complete screen, body"
+  },
+  "finishWorkoutTitle": "Finish Workout?",
+  "@finishWorkoutTitle": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "finishWorkoutWarningTitle": "Complete Your Workout?",
+  "@finishWorkoutWarningTitle": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "finishWorkoutWarningBody": "Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.",
+  "@finishWorkoutWarningBody": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "finishWorkoutBody": "Ready to finish this workout?",
+  "@finishWorkoutBody": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "cancelWorkoutBody": "All progress made so far will be lost.",
+  "@cancelWorkoutBody": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "cancelWorkoutTitle": "Do you want to cancel this workout?",
+  "@cancelWorkoutTitle": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "readyToFinish": "Yes, I'm done!",
+  "@readyToFinish": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "keepCurrentAccount": "No, keep current workout",
+  "@keepCurrentAccount": {
+    "description": "Workout start confirmation dialog"
+  },
+  "cancelAndStartNewWorkout": "Yes, cancel that one and start a new workout",
+  "@cancelAndStartNewWorkout": {
+    "description": "Workout start confirmation dialog"
+  },
+  "resumeWorkout": "No, resume workout",
+  "@resumeWorkout": {
+    "description": "Workout cancellation confirmation dialog"
+  },
+  "deleteThis": "Yes, delete this",
+  "@deleteThis": {
+    "description": "Generic label"
+  },
+  "deleted": "Deleted",
+  "@deleted": {
+    "description": "Generic label"
+  },
+  "notReadyToFinish": "No, one more set!",
+  "@notReadyToFinish": {
+    "description": "Workout completion confirmation dialog"
+  },
+  "deleteTemplateTitle": "Do you want to delete this workout template?",
+  "@deleteTemplateTitle": {
+    "description": "Template deletion confirmation dialog"
+  },
+  "deleteTemplateBody": "This cannot be undone",
+  "@deleteTemplateBody": {
+    "description": "Template deletion confirmation dialog"
+  },
+  "quitEditing": "Quit editing?",
+  "@quitEditing": {
+    "description": "Template deletion confirmation dialog"
+  },
+  "changesWillBeLost": "All changes will be lost",
+  "@changesWillBeLost": {
+    "description": "Template deletion confirmation dialog"
+  },
+  "quitPage": "Quit this page",
+  "@quitPage": {
+    "description": "Template deletion confirmation dialog"
+  },
+  "stayHere": "Stay here",
+  "@stayHere": {
+    "description": "Template deletion confirmation dialog"
+  },
+  "notificationSettings": "Notification settings",
+  "@notificationSettings": {
+    "description": "Settings item"
+  },
+  "selected": "Selected {count}",
+  "@selected": {
+    "description": "Selected 4 exercises"
+  },
+  "forExercise": "for {exercise}",
+  "@forExercise": {
+    "description": "As in Rest timer for bicep curl"
+  },
+  "restTimerSubtitle": "Adjust duration via the +/- buttons.",
+  "@restTimerSubtitle": {
+    "description": "Rest timer"
+  },
+  "addSeconds": "+10s",
+  "@addSeconds": {
+    "description": "Rest timer"
+  },
+  "subtractSeconds": "-10s",
+  "@subtractSeconds": {
+    "description": "Rest timer"
+  },
+  "restComplete": "Rest complete!",
+  "@restComplete": {
+    "description": "Rest notification banner"
+  },
+  "workoutsPerWeek": "Workouts per week",
+  "@workoutsPerWeek": {
+    "description": "Chart label"
+  },
+  "workoutsPerWeekTitle": "Your workouts will be presented here",
+  "@workoutsPerWeekTitle": {
+    "description": "Chart label"
+  },
+  "workoutsPerWeekBody": "Go get them done!",
+  "@workoutsPerWeekBody": {
+    "description": "Chart label"
+  },
+  "category": "Category",
+  "@category": {
+    "description": "Label button that allows to choose Exercise category"
+  },
+  "target": "Target",
+  "@target": {
+    "description": "Label button that allows to choose Exercise target muscle group"
+  },
+  "removeFilter": "Remove filter",
+  "@removeFilter": {
+    "description": "Tooltip on the button that removes exercise filter"
+  },
+  "restCompleteBody": "Next: {exercise}",
+  "@restCompleteBody": {
+    "description": "Rest notification banner"
+  },
+  "weightedSetRepresentation": "{weight} x {reps}",
+  "@weightedSetRepresentation": {
+    "description": "Rest notification banner"
+  },
+  "templates": "Templates",
+  "@templates": {
+    "description": "Workout templates section header"
+  },
+  "exampleTemplates": "Example templates",
+  "@exampleTemplates": {
+    "description": "Workout templates section header"
+  },
+  "template": "Template",
+  "@template": {
+    "description": "A single workout template"
+  },
+  "newTemplate": "New Template",
+  "@newTemplate": {
+    "description": "New template form header"
+  },
+  "editTemplate": "Edit Template",
+  "@editTemplate": {
+    "description": "Edit template form header"
+  },
+  "editWorkout": "Edit Workout",
+  "@editWorkout": {
+    "description": "Edit workout form header"
+  },
+  "templateName": "Template name",
+  "@templateName": {
+    "description": "Edit template text field hint"
+  },
+  "workoutName": "Workout name",
+  "@workoutName": {
+    "description": "Edit workout text field hint"
+  },
+  "cannotBeEmpty": "Cannot be empty",
+  "@cannotBeEmpty": {
+    "description": "Form validation message"
+  },
+  "showPassword": "Show password",
+  "@showPassword": {
+    "description": "Tooltip message"
+  },
+  "hidePassword": "Hide password",
+  "@hidePassword": {
+    "description": "Tooltip message"
+  },
+  "yourPassword": "Your password",
+  "@yourPassword": {
+    "description": "Tooltip message"
+  },
+  "resetPassword": "Reset password",
+  "@resetPassword": {
+    "description": "Button"
+  },
+  "resetPasswordBody": "We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌",
+  "@resetPasswordBody": {
+    "description": "Button"
+  },
+  "orConnector": "- or -",
+  "@orConnector": {
+    "description": "Connects two widgets, this OR that"
+  },
+  "invalidCredentials": "Well, that didn't work! Double-check your details, eh?",
+  "@invalidCredentials": {
+    "description": "Login error message"
+  },
+  "weakPassword": "Almost there! Try a stronger password to keep your account safe.",
+  "@weakPassword": {
+    "description": "Login error message"
+  },
+  "forgotPassword": "Forgot password?",
+  "@forgotPassword": {
+    "description": "Login button"
+  },
+  "noConnectivity": "Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!",
+  "@noConnectivity": {
+    "description": "Error message"
+  },
+  "signUp": "Sign up",
+  "@signUp": {
+    "description": "Generic label"
+  },
+  "sendResetLink": "Send Reset Link",
+  "@sendResetLink": {
+    "description": "Password recovery flow"
+  },
+  "recoveryLinkMessage": "If an account exists for this email, you'll receive a reset link shortly. Check your inbox and spam folder.",
+  "@recoveryLinkMessage": {
+    "description": "Password recovery flow"
+  },
+  "recoveryLinkMessageSent": "💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).",
+  "@recoveryLinkMessageSent": {
+    "description": "Password recovery flow"
+  },
+  "emailExistsTitle": "Email already exists",
+  "@emailExistsTitle": {
+    "description": "Email exists dialog"
+  },
+  "emailExistsOkButton": "Yes, sign me in!",
+  "@emailExistsOkButton": {
+    "description": "Email exists dialog"
+  },
+  "emailExistsCancelButton": "No, I got this",
+  "@emailExistsCancelButton": {
+    "description": "Email exists dialog"
+  },
+  "emailExistsBody": "An account with {address} already exists. Would you like to log in instead?",
+  "@emailExistsBody": {
+    "description": "Email exists dialog"
+  },
+  "sendResetLinkBody": "Enter you email and we'll help you reset your password",
+  "@sendResetLinkBody": {
+    "description": "Password recovery flow"
+  },
+  "userDisabled": "This account is disabled",
+  "@userDisabled": {
+    "description": "Login error message"
+  },
+  "unknownError": "Unknown error occurred",
+  "@unknownError": {
+    "description": "Login error message"
+  },
+  "accountControl": "Account control",
+  "@accountControl": {
+    "description": "Settings item"
+  },
+  "leaveFeedback": "Leave feedback",
+  "@leaveFeedback": {
+    "description": "Settings item"
+  },
+  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
+  "@leaveFeedbackBody": {
+    "description": "Settings item"
+  },
+  "feedbackReceived": "Your feedback was received, thank you!",
+  "@feedbackReceived": {
+    "description": "Confirmation snack message"
+  },
+  "toFeedback": "To feedback!",
+  "@toFeedback": {
+    "description": "Action button on a dialog"
+  },
+  "dangerZone": "Danger zone",
+  "@dangerZone": {
+    "description": "Settings header"
+  },
+  "deleteAccount": "Delete account",
+  "@deleteAccount": {
+    "description": "Settings item"
+  },
+  "deleteAccountTitle": "Are you sure you want to delete your account?",
+  "@deleteAccountTitle": {
+    "description": "Delete account dialog"
+  },
+  "deleteAccountBody": "Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.",
+  "@deleteAccountBody": {
+    "description": "Delete account dialog"
+  },
+  "deleteAccountCancelMessage": "Oh no, I like it here!",
+  "@deleteAccountCancelMessage": {
+    "description": "Delete account dialog"
+  },
+  "deleteAccountConfirmMessage": "Yep, go on without me!",
+  "@deleteAccountConfirmMessage": {
+    "description": "Delete account dialog"
+  },
+  "confirmDeleteAccountTitle": "Confirm your account deletion",
+  "@confirmDeleteAccountTitle": {
+    "description": "Delete account dialog"
+  },
+  "confirmDeleteAccountCancelMessage": "Changed my mind, cancel",
+  "@confirmDeleteAccountCancelMessage": {
+    "description": "Delete account dialog"
+  },
+  "confirmDeleteAccountOkMessage": "Farewell!",
+  "@confirmDeleteAccountOkMessage": {
+    "description": "Delete account dialog"
+  },
+  "accountDeleted": "Account deleted",
+  "@accountDeleted": {
+    "description": "Delete account page"
+  },
+  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.",
+  "@accountDeletedBody": {
+    "description": "Delete account page"
+  },
+  "accountDeletedAction": "🔥🏆 Undo the Goodbye 🥇🔥",
+  "@accountDeletedAction": {
+    "description": "Delete account page"
+  },
+  "about": "About",
+  "@about": {
+    "description": "Generic label"
+  },
+  "records": "Records",
+  "@records": {
+    "description": "Generic label"
+  },
+  "charts": "Charts",
+  "@charts": {
+    "description": "Generic label"
+  },
+  "emptyExerciseHistoryTitle": "Ghost Reps Detected 👻",
+  "@emptyExerciseHistoryTitle": {
+    "description": "Exercise history empty state"
+  },
+  "emptyExerciseHistoryBody": "Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!",
+  "@emptyExerciseHistoryBody": {
+    "description": "Exercise history empty state"
+  },
+  "errorExerciseHistoryTitle": "Oops! Someone Skipped the Data Day 🤷‍♀️",
+  "@errorExerciseHistoryTitle": {
+    "description": "Exercise history empty state"
+  },
+  "errorExerciseHistoryBody": "Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!",
+  "@errorExerciseHistoryBody": {
+    "description": "Exercise history empty state"
+  },
+  "personalRecords": "Personal records",
+  "@personalRecords": {
+    "description": "Records screen, title"
+  },
+  "maxDuration": "Max duration",
+  "@maxDuration": {
+    "description": "Records screen, metric name"
+  },
+  "maxDistance": "Max distance",
+  "@maxDistance": {
+    "description": "Records screen, metric name"
+  },
+  "maxWeight": "Max weight",
+  "@maxWeight": {
+    "description": "Records screen, metric name"
+  },
+  "maxReps": "Max reps",
+  "@maxReps": {
+    "description": "Records screen, metric name"
+  },
+  "capturePhoto": "Take a new photo",
+  "@capturePhoto": {
+    "description": "Image picker menu"
+  },
+  "chooseFromGallery": "Choose from library",
+  "@chooseFromGallery": {
+    "description": "Image picker menu"
+  },
+  "removeCurrentPhoto": "Remove current photo",
+  "@removeCurrentPhoto": {
+    "description": "Image picker menu"
+  }
+}
