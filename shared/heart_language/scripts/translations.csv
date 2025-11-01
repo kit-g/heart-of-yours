@@ -1,0 +1,230 @@
+id,description,en_CA,en,ru_RU
+appearance,Label,Appearance,Appearance,Внешний вид
+units,Label,Units,Units,Единицы измерения
+motto,App's motto,Every beat counts.,Every beat counts.,Каждый удар имеет значение.
+toLightMode,tooltip,Light,Light,Светлая
+toDarkMode,tooltip,Dark,Dark,Темная
+toSystemMode,tooltip,System,System,Системная
+email,Generic label,Email,Email,Эл. почта
+yourEmail,Generic label,Your email,Your email,Ваш email
+cropAvatar,Label in the image cropper,Crop avatar,Crop avatar,Обрезать аватар
+nameOptional,Field hint,Name (optional),Name (optional),Имя (необязательно)
+name,Field hint,Name,Name,Имя
+saveName,Hint,Save name,Save name,Сохранить имя
+changeName,Hint,Change name,Change name,Изменить имя 
+save,Generic label,Save,Save,Сохранить
+settings,Generic label,Settings,Settings,Настройки
+archive,"CTA, verb",Archive,Archive,Архивировать
+unarchive,"CTA, verb",Unarchive,Unarchive,Разархивировать
+password,Generic label,Password,Password,Пароль
+logIn,Generic label,Log in,Log in,Войти
+logInTitle,Login page copy,Welcome Back,Welcome Back,С возвращением
+logInBody,Login page copy,"You've already started something important. 
+Let's keep going.","You've already started something important. 
+Let's keep going.","Вы уже начали что-то важное.
+Давайте продолжим."
+signUpTitle,Sign up page copy,Begin with Heart,Begin with Heart,Начните с Heart
+signUpBody,Sign up page copy,"Every journey starts with one decision. 
+This one's yours.","Every journey starts with one decision. 
+This one's yours.","Каждое путешествие начинается с одного решения.
+Это ваше решение."
+recoverTitle,Recover page copy,Still with You,Still with You,Все еще с вами
+recoverBody,Recover page copy,"Your journey isn't lost. 
+Just a moment of pause — we'll reset together.","Your journey isn't lost. 
+Just a moment of pause — we'll reset together.","Ваш путь не потерян.
+Просто небольшая пауза — давайте начнем заново."
+logInWithGoogle,Button label,Log in with Google,Log in with Google,Войти через Google
+signUpWithGoogle,Button label,Sign up with Google,Sign up with Google,Зарегистрироваться через Google
+logInWithApple,Button label,Log in with Apple,Log in with Apple,Войти через Apple
+signUpWithApple,Button label,Sign up with Apple,Sign up with Apple,Зарегистрироваться через Apple 
+logOut,Generic label,Log out,Log out,Выйти
+profile,"Generic label, e.g. bottom nav bar",Profile,Profile,Профиль
+workout,"Generic label, e.g. bottom nav bar",Workout,Workout,Тренировка
+history,"Generic label, e.g. bottom nav bar",History,History,История
+exercises,"Generic label, e.g. bottom nav bar",Exercises,Exercises,Упражнения
+search,"Generic label, e.g. bin the search bar",Search,Search,Поиск
+startNewWorkout,Button label,Start a new workout,Start a new workout,Начать новую тренировку
+cancelCurrentWorkoutTitle,Button label,Cancel current workout?,Cancel current workout?,Отменить текущую тренировку?
+cancelCurrentWorkoutBody,Button label,You have a workout in progress. Do you want to cancel it and start a new one?,You have a workout in progress. Do you want to cancel it and start a new one?,У вас есть незавершенная тренировка. Хотите отменить её и начать новую?
+startNewWorkoutFromTemplate,Alert dialog,Start a new workout from this template?,Start a new workout from this template?,Начать новую тренировку по этому шаблону?
+startWorkout,App bar title,Start workout,Start workout,Начать тренировку
+cancelWorkout,Button text,Cancel workout,Cancel workout,Отменить тренировку
+addExercises,Button text,Add exercises,Add exercises,Добавить упражнения
+addSet,Button text,Add set,Add set,Добавить подход
+newExercise,Button tooltip,New exercise,New exercise,Новое упражнение
+createNewExercise,Dialog header,Create new exercise,Create new exercise,Создать новое упражнение
+exerciseOptions,Button tooltip,Exercise options,Exercise options,Настройки упражнения
+showArchived,"Menu button, as in ""Show archived exercises",Show archived,Show archived,Показать архивные
+archivedExercises,App bar,Archived exercises,Archived exercises,Архивные упражнения
+archiveConfirmTitle,"Dialog title, e.g., ""Archive Push ups?""",Archive {exerciseName}?,Archive {exerciseName}?,Архивировать {exerciseName}?
+archiveConfirmBody,Dialog body,"This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).
+ Archiving won't affect any of your past workouts — your history stays intact.","This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).
+ Archiving won't affect any of your past workouts — your history stays intact.","Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).
+ Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений."
+exerciseArchived,Tooltip over archived icon,"This exercise is archived 
+and won't appear in your main library anymore.","This exercise is archived 
+and won't appear in your main library anymore.","Это упражнение находится в архиве
+и больше не будет отображаться в основной библиотеке."
+deleteSet,Button text,Delete set,Delete set,Удалить подход
+set,"Workout table, column header",Set,Set,Подход
+sets,Card header,Sets,Sets,Подходы
+previous,"Workout table, column header, as in ""previous exercise""",Previous,Previous,Предыдущий
+reps,"Workout table, column header",Reps,Reps,Повторения
+time,"Workout table, column header",Time,Time,Время
+kg,"Generic label, kilograms",kg,kg,кг
+mile,"Generic label, miles",mile,mile,миля
+km,"Generic label, km",km,km,км 
+milesPlural,"Generic label, miles",miles,miles,мили
+miles,"Generic label, miles","{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}","{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}","{howMany,plural, =1{{howMany} миля}other{{howMany} мили}}"
+ok,Generic label,OK,OK,OK
+edit,Generic label,Edit,Edit,Изменить
+delete,Generic label,Delete,Delete,Удалить
+repeat,Generic label,Repeat,Repeat,Повторить
+add,Generic label,Add,Add,Добавить
+share,Generic label,Share,Share,Поделиться
+okBang,Generic label,Ok!,Ok!,Ок!
+cancel,"Generic label, ""cancel"" button",Cancel,Cancel,Отмена
+finish,"Generic label, ""finish workout"" button",Finish,Finish,Завершить
+reset,"Generic label, ""Reset"" button",Reset,Reset,Сбросить
+h,Abbreviation for hours,h,h,ч
+min,Abbreviation for minutes,min,min,мин
+lbs,"Generic label, pounds",lbs,lbs,фнт
+skip,"Generic label, verb",Skip,Skip,Пропустить
+lb,"Generic label, pounds","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} фнт}other{{howMany} фнт}}"
+saveAsTemplate,"Workout set option, ""save this workout as a template""",Save as template,Save as template,Сохранить как шаблон
+addNote,"Exercise set option, ""add a note to this set""",Add a note,Add a note,Добавить заметку
+replaceExercise,Exercise set option,Replace exercise,Replace exercise,Заменить упражнение
+weightUnit,"Exercise set option, ""choose weight unit for this set""",Weight,Weight,Вес
+distanceUnit,"Exercise set option, ""choose distance unit for this set""",Distance,Distance,Расстояние
+duration,Duration label,Duration,Duration,Длительность
+imperial,Measurement unit setting,Imperial,Imperial,Имперская
+metric,Measurement unit setting,Metric,Metric,Метрическая
+restTimer,"Exercise set option, ""Set the rest timer for this exercise""",Rest timer,Rest timer,Таймер отдыха
+cancelTimer,Button text,Cancel timer,Cancel timer,Отменить таймер
+removeExercise,"Exercise set option, ""Remove this exercise from workout""",Remove exercise,Remove exercise,Удалить упражнение
+morningWorkout,Default workout name,Morning Workout,Morning Workout,Утренняя тренировка
+eveningWorkout,Default workout name,Evening Workout,Evening Workout,Вечерняя тренировка
+nightWorkout,Default workout name,Night Workout,Night Workout,Ночная тренировка
+afternoonWorkout,Default workout name,Afternoon Workout,Afternoon Workout,Дневная тренировка
+emptyHistoryTitle,emptyHistoryTitle,Your completed workouts will be here,Your completed workouts will be here,Здесь будут ваши завершенные тренировки
+emptyHistoryBody,emptyHistoryBody,Go get them done!,Go get them done!,Вперед за тренировками!
+customThemeColorSetting,Setting item name,Custom theme color,Custom theme color,Пользовательский цвет темы
+customThemeColorSettingSubtitle,Setting item subtitle,Used to generate a new theme,Used to generate a new theme,Используется для создания новой темы
+aboutApp,Setting item title,About app,About app,О приложении
+congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!
+congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!
+finishWorkoutTitle,Workout completion confirmation dialog,Finish Workout?,Finish Workout?,Завершить тренировку?
+finishWorkoutWarningTitle,Workout completion confirmation dialog,Complete Your Workout?,Complete Your Workout?,Завершить тренировку?
+finishWorkoutWarningBody,Workout completion confirmation dialog,"Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Все пустые или недействительные подходы будут отброшены, а все правильные подходы будут отмечены как выполненные."
+finishWorkoutBody,Workout completion confirmation dialog,Ready to finish this workout?,Ready to finish this workout?,Готовы завершить эту тренировку?
+cancelWorkoutBody,Workout completion confirmation dialog,All progress made so far will be lost.,All progress made so far will be lost.,Весь достигнутый прогресс будет потерян.
+cancelWorkoutTitle,Workout completion confirmation dialog,Do you want to cancel this workout?,Do you want to cancel this workout?,Хотите отменить эту тренировку?
+readyToFinish,Workout completion confirmation dialog,"Yes, I'm done!","Yes, I'm done!","Да, я закончил!"
+keepCurrentAccount,Workout start confirmation dialog,"No, keep current workout","No, keep current workout","Нет, продолжить текущую тренировку"
+cancelAndStartNewWorkout,Workout start confirmation dialog,"Yes, cancel that one and start a new workout","Yes, cancel that one and start a new workout","Да, отменить ту и начать новую тренировку"
+resumeWorkout,Workout cancellation confirmation dialog,"No, resume workout","No, resume workout","Нет, продолжить тренировку"
+deleteThis,Generic label,"Yes, delete this","Yes, delete this","Да, удалить"
+deleted,Generic label,Deleted,Deleted,Удалено
+notReadyToFinish,Workout completion confirmation dialog,"No, one more set!","No, one more set!","Нет, ещё один подход!"
+deleteTemplateTitle,Template deletion confirmation dialog,Do you want to delete this workout template?,Do you want to delete this workout template?,Хотите удалить этот шаблон тренировки?
+deleteTemplateBody,Template deletion confirmation dialog,This cannot be undone,This cannot be undone,Это действие нельзя отменить
+quitEditing,Template deletion confirmation dialog,Quit editing?,Quit editing?,Выйти из редактирования?
+changesWillBeLost,Template deletion confirmation dialog,All changes will be lost,All changes will be lost,Все изменения будут потеряны
+quitPage,Template deletion confirmation dialog,Quit this page,Quit this page,Покинуть страницу
+stayHere,Template deletion confirmation dialog,Stay here,Stay here,Остаться здесь
+notificationSettings,Settings item,Notification settings,Notification settings,Настройки уведомлений
+selected,Selected 4 exercises,Selected {count},Selected {count},Выбрано {count}
+forExercise,As in Rest timer for bicep curl,for {exercise},for {exercise},для {exercise}
+restTimerSubtitle,Rest timer,Adjust duration via the +/- buttons.,Adjust duration via the +/- buttons.,Настройте длительность с помощью кнопок +/-.
+addSeconds,Rest timer,+10s,+10s,+10с
+subtractSeconds,Rest timer,-10s,-10s,-10с
+restComplete,Rest notification banner,Rest complete!,Rest complete!,Отдых завершен!
+workoutsPerWeek,Chart label,Workouts per week,Workouts per week,Workouts per week
+workoutsPerWeekTitle,Chart label,Your workouts will be presented here,Your workouts will be presented here,Your workouts will be presented here
+workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Go get them done!
+category,Label button that allows to choose Exercise category,Category,Category,Category
+target,Label button that allows to choose Exercise target muscle group,Target,Target,Target
+removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Remove filter
+restCompleteBody,Rest notification banner,Next: {exercise},Next: {exercise},Next: {exercise}
+weightedSetRepresentation,Rest notification banner,{weight} x {reps},{weight} x {reps},{weight} x {reps}
+templates,Workout templates section header,Templates,Templates,Templates
+exampleTemplates,Workout templates section header,Example templates,Example templates,Example templates
+template,A single workout template,Template,Template,Template
+newTemplate,New template form header,New Template,New Template,New Template
+editTemplate,Edit template form header,Edit Template,Edit Template,Edit Template
+editWorkout,Edit workout form header,Edit Workout,Edit Workout,Edit Workout
+templateName,Edit template text field hint,Template name,Template name,Template name
+workoutName,Edit workout text field hint,Workout name,Workout name,Workout name
+cannotBeEmpty,Form validation message,Cannot be empty,Cannot be empty,Cannot be empty
+showPassword,Tooltip message,Show password,Show password,Show password
+hidePassword,Tooltip message,Hide password,Hide password,Hide password
+yourPassword,Tooltip message,Your password,Your password,Your password
+resetPassword,Button,Reset password,Reset password,Reset password
+resetPasswordBody,Button,"We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌"
+orConnector,"Connects two widgets, this OR that",- or -,- or -,- or -
+invalidCredentials,Login error message,"Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?"
+weakPassword,Login error message,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.
+forgotPassword,Login button,Forgot password?,Forgot password?,Forgot password?
+noConnectivity,Error message,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!
+signUp,Generic label,Sign up,Sign up,Sign up
+sendResetLink,Password recovery flow,Send Reset Link,Send Reset Link,Send Reset Link
+recoveryLinkMessage,Password recovery flow,"If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.","If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.","If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder."
+recoveryLinkMessageSent,Password recovery flow,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).
+emailExistsTitle,Email exists dialog,Email already exists,Email already exists,Email already exists
+emailExistsOkButton,Email exists dialog,"Yes, sign me in!","Yes, sign me in!","Yes, sign me in!"
+emailExistsCancelButton,Email exists dialog,"No, I got this","No, I got this","No, I got this"
+emailExistsBody,Email exists dialog,An account with {address} already exists. Would you like to log in instead?,An account with {address} already exists. Would you like to log in instead?,An account with {address} already exists. Would you like to log in instead?
+sendResetLinkBody,Password recovery flow,Enter you email and we'll help you reset your password,Enter you email and we'll help you reset your password,Enter you email and we'll help you reset your password
+userDisabled,Login error message,This account is disabled,This account is disabled,This account is disabled
+unknownError,Login error message,Unknown error occurred,Unknown error occurred,Unknown error occurred
+accountControl,Settings item,Account control,Account control,Account control
+leaveFeedback,Settings item,Leave feedback,Leave feedback,Leave feedback
+leaveFeedbackBody,Settings item,"Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
+
+We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
+
+We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
+
+We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}"
+feedbackReceived,Confirmation snack message,"Your feedback was received, thank you!","Your feedback was received, thank you!","Your feedback was received, thank you!"
+toFeedback,Action button on a dialog,To feedback!,To feedback!,To feedback!
+dangerZone,Settings header,Danger zone,Danger zone,Danger zone
+deleteAccount,Settings item,Delete account,Delete account,Delete account
+deleteAccountTitle,Delete account dialog,Are you sure you want to delete your account?,Are you sure you want to delete your account?,Are you sure you want to delete your account?
+deleteAccountBody,Delete account dialog,"Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted."
+deleteAccountCancelMessage,Delete account dialog,"Oh no, I like it here!","Oh no, I like it here!","Oh no, I like it here!"
+deleteAccountConfirmMessage,Delete account dialog,"Yep, go on without me!","Yep, go on without me!","Yep, go on without me!"
+confirmDeleteAccountTitle,Delete account dialog,Confirm your account deletion,Confirm your account deletion,Confirm your account deletion
+confirmDeleteAccountCancelMessage,Delete account dialog,"Changed my mind, cancel","Changed my mind, cancel","Changed my mind, cancel"
+confirmDeleteAccountOkMessage,Delete account dialog,Farewell!,Farewell!,Farewell!
+accountDeleted,Delete account page,Account deleted,Account deleted,Account deleted
+accountDeletedBody,Delete account page,"Your account has been scheduled for deletion on {date}.
+
+If you change your mind, you can restore your account anytime before this date.
+
+Simply click the button below to cancel the deletion and keep your account safe.","Your account has been scheduled for deletion on {date}.
+
+If you change your mind, you can restore your account anytime before this date.
+
+Simply click the button below to cancel the deletion and keep your account safe.","Your account has been scheduled for deletion on {date}.
+
+If you change your mind, you can restore your account anytime before this date.
+
+Simply click the button below to cancel the deletion and keep your account safe."
+accountDeletedAction,Delete account page,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥
+about,Generic label,About,About,About
+records,Generic label,Records,Records,Records
+charts,Generic label,Charts,Charts,Charts
+emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,Ghost Reps Detected 👻,Ghost Reps Detected 👻
+emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!
+errorExerciseHistoryTitle,Exercise history empty state,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️
+errorExerciseHistoryBody,Exercise history empty state,"Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!"
+personalRecords,"Records screen, title",Personal records,Personal records,Personal records
+maxDuration,"Records screen, metric name",Max duration,Max duration,Max duration
+maxDistance,"Records screen, metric name",Max distance,Max distance,Max distance
+maxWeight,"Records screen, metric name",Max weight,Max weight,Max weight
+maxReps,"Records screen, metric name",Max reps,Max reps,Max reps
+capturePhoto,Image picker menu,Take a new photo,Take a new photo,Take a new photo
+chooseFromGallery,Image picker menu,Choose from library,Choose from library,Choose from library
+removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Remove current photo
+mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Mine
