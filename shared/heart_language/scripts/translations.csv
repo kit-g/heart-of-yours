@@ -183,13 +183,13 @@ leaveFeedbackBody,Settings item,"Snap a screenshot, doodle your feelings, and dr
 
 We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
 
-We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
+We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.
 
-We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}"
-feedbackReceived,Confirmation snack message,"Your feedback was received, thank you!","Your feedback was received, thank you!","Your feedback was received, thank you!"
-toFeedback,Action button on a dialog,To feedback!,To feedback!,To feedback!
-dangerZone,Settings header,Danger zone,Danger zone,Danger zone
-deleteAccount,Settings item,Delete account,Delete account,Delete account
+Мы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. {emoji}"
+feedbackReceived,Confirmation snack message,"Your feedback was received, thank you!","Your feedback was received, thank you!","Ваш отзыв получен, спасибо!"
+toFeedback,Action button on a dialog,To feedback!,To feedback!,К отзыву!
+dangerZone,Settings header,Danger zone,Danger zone,Опасная зона
+deleteAccount,Settings item,Delete account,Delete account,Удалить аккаунт
 deleteAccountTitle,Delete account dialog,Are you sure you want to delete your account?,Are you sure you want to delete your account?,Are you sure you want to delete your account?
 deleteAccountBody,Delete account dialog,"Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted."
 deleteAccountCancelMessage,Delete account dialog,"Oh no, I like it here!","Oh no, I like it here!","Oh no, I like it here!"
