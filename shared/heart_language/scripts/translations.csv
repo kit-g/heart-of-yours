@@ -161,24 +161,24 @@ hidePassword,Tooltip message,Hide password,Hide password,Скрыть парол
 yourPassword,Tooltip message,Your password,Your password,Ваш пароль
 resetPassword,Button,Reset password,Reset password,Сбросить пароль
 resetPasswordBody,Button,"We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌"
-orConnector,"Connects two widgets, this OR that",- or -,- or -,- or -
-invalidCredentials,Login error message,"Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?"
-weakPassword,Login error message,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.
-forgotPassword,Login button,Forgot password?,Forgot password?,Forgot password?
-noConnectivity,Error message,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!
-signUp,Generic label,Sign up,Sign up,Sign up
-sendResetLink,Password recovery flow,Send Reset Link,Send Reset Link,Send Reset Link
-recoveryLinkMessage,Password recovery flow,"If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.","If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.","If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder."
-recoveryLinkMessageSent,Password recovery flow,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).
-emailExistsTitle,Email exists dialog,Email already exists,Email already exists,Email already exists
-emailExistsOkButton,Email exists dialog,"Yes, sign me in!","Yes, sign me in!","Yes, sign me in!"
-emailExistsCancelButton,Email exists dialog,"No, I got this","No, I got this","No, I got this"
-emailExistsBody,Email exists dialog,An account with {address} already exists. Would you like to log in instead?,An account with {address} already exists. Would you like to log in instead?,An account with {address} already exists. Would you like to log in instead?
-sendResetLinkBody,Password recovery flow,Enter you email and we'll help you reset your password,Enter you email and we'll help you reset your password,Enter you email and we'll help you reset your password
-userDisabled,Login error message,This account is disabled,This account is disabled,This account is disabled
-unknownError,Login error message,Unknown error occurred,Unknown error occurred,Unknown error occurred
-accountControl,Settings item,Account control,Account control,Account control
-leaveFeedback,Settings item,Leave feedback,Leave feedback,Leave feedback
+orConnector,"Connects two widgets, this OR that",- or -,- or -,- или -
+invalidCredentials,Login error message,"Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?","Что-то пошло не так! Проверьте ваши данные еще раз!"
+weakPassword,Login error message,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.,Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.
+forgotPassword,Login button,Forgot password?,Forgot password?,Забыли пароль?
+noConnectivity,Error message,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!
+signUp,Generic label,Sign up,Sign up,Регистрация
+sendResetLink,Password recovery flow,Send Reset Link,Send Reset Link,Отправить ссылку для сброса
+recoveryLinkMessage,Password recovery flow,"If an account exists for this email, you'll receive a reset link shortly. Check your inbox and spam folder.","If an account exists for this email, you'll receive a reset link shortly. Check your inbox and spam folder.","Если аккаунт с этим email существует, вы получите ссылку для сброса. Проверьте папку входящих и спам."
+recoveryLinkMessageSent,Password recovery flow,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Письмо для настройки пароля уже в пути! Проверьте входящие (или папку спам — оно любит там прятаться).
+emailExistsTitle,Email exists dialog,Email already exists,Email already exists,Email уже существует
+emailExistsOkButton,Email exists dialog,"Yes, sign me in!","Yes, sign me in!","Да, войти!"
+emailExistsCancelButton,Email exists dialog,"No, I got this","No, I got this","Нет, я разберусь"
+emailExistsBody,Email exists dialog,An account with {address} already exists. Would you like to log in instead?,An account with {address} already exists. Would you like to log in instead?,Аккаунт с {address} уже существует. Хотите войти?
+sendResetLinkBody,Password recovery flow,Enter you email and we'll help you reset your password,Enter you email and we'll help you reset your password,Введите ваш email и мы поможем сбросить пароль
+userDisabled,Login error message,This account is disabled,This account is disabled,Этот аккаунт отключен
+unknownError,Login error message,Unknown error occurred,Unknown error occurred,Произошла неизвестная ошибка
+accountControl,Settings item,Account control,Account control,Управление аккаунтом
+leaveFeedback,Settings item,Leave feedback,Leave feedback,Оставить отзыв
 leaveFeedbackBody,Settings item,"Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
 
 We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
