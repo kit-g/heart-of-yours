@@ -1,7 +1,7 @@
 id,description,en_CA,en,ru_RU
 appearance,Label,Appearance,Appearance,Внешний вид
 units,Label,Units,Units,Единицы измерения
-motto,App's motto,Every beat counts.,Every beat counts.,Каждый удар имеет значение.
+motto,App's motto,Every beat counts.,Every beat counts.,Every beat counts.
 toLightMode,tooltip,Light,Light,Светлая
 toDarkMode,tooltip,Dark,Dark,Темная
 toSystemMode,tooltip,System,System,Системная
@@ -18,16 +18,16 @@ archive,"CTA, verb",Archive,Archive,Архивировать
 unarchive,"CTA, verb",Unarchive,Unarchive,Разархивировать
 password,Generic label,Password,Password,Пароль
 logIn,Generic label,Log in,Log in,Войти
-logInTitle,Login page copy,Welcome Back,Welcome Back,С возвращением
+logInTitle,Login page copy,Welcome Back,Welcome Back,С возвращением!
 logInBody,Login page copy,"You've already started something important. 
 Let's keep going.","You've already started something important. 
 Let's keep going.","Вы уже начали что-то важное.
-Давайте продолжим."
+Давайте продолжим!"
 signUpTitle,Sign up page copy,Begin with Heart,Begin with Heart,Начните с Heart
 signUpBody,Sign up page copy,"Every journey starts with one decision. 
 This one's yours.","Every journey starts with one decision. 
 This one's yours.","Каждое путешествие начинается с одного решения.
-Это ваше решение."
+Это — ваше."
 recoverTitle,Recover page copy,Still with You,Still with You,Все еще с вами
 recoverBody,Recover page copy,"Your journey isn't lost. 
 Just a moment of pause — we'll reset together.","Your journey isn't lost. 
@@ -115,7 +115,7 @@ congratulations,"Workout complete screen, title",Congratulations!,Congratulation
 congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!
 finishWorkoutTitle,Workout completion confirmation dialog,Finish Workout?,Finish Workout?,Завершить тренировку?
 finishWorkoutWarningTitle,Workout completion confirmation dialog,Complete Your Workout?,Complete Your Workout?,Завершить тренировку?
-finishWorkoutWarningBody,Workout completion confirmation dialog,"Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Все пустые или недействительные подходы будут отброшены, а все правильные подходы будут отмечены как выполненные."
+finishWorkoutWarningBody,Workout completion confirmation dialog,"Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные."
 finishWorkoutBody,Workout completion confirmation dialog,Ready to finish this workout?,Ready to finish this workout?,Готовы завершить эту тренировку?
 cancelWorkoutBody,Workout completion confirmation dialog,All progress made so far will be lost.,All progress made so far will be lost.,Весь достигнутый прогресс будет потерян.
 cancelWorkoutTitle,Workout completion confirmation dialog,Do you want to cancel this workout?,Do you want to cancel this workout?,Хотите отменить эту тренировку?
@@ -160,7 +160,7 @@ showPassword,Tooltip message,Show password,Show password,Показать пар
 hidePassword,Tooltip message,Hide password,Hide password,Скрыть пароль
 yourPassword,Tooltip message,Your password,Your password,Ваш пароль
 resetPassword,Button,Reset password,Reset password,Сбросить пароль
-resetPasswordBody,Button,"We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌"
+resetPasswordBody,Button,"We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","Мы отправим ссылку для сброса пароля на ваш email быстрее, чем вы успеете сказать ""забыл пароль"". Назад пути нет — если только вы не отмените, конечно. 😌"
 orConnector,"Connects two widgets, this OR that",- or -,- or -,- или -
 invalidCredentials,Login error message,"Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?","Что-то пошло не так! Проверьте ваши данные еще раз!"
 weakPassword,Login error message,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.,Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.
