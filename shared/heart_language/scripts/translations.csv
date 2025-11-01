@@ -206,25 +206,24 @@ Simply click the button below to cancel the deletion and keep your account safe.
 
 If you change your mind, you can restore your account anytime before this date.
 
-Simply click the button below to cancel the deletion and keep your account safe.","Your account has been scheduled for deletion on {date}.
+Simply click the button below to cancel the deletion and keep your account safe.","Ваш аккаунт запланирован на удаление {date}.
 
-If you change your mind, you can restore your account anytime before this date.
+Если вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.
 
-Simply click the button below to cancel the deletion and keep your account safe."
-accountDeletedAction,Delete account page,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥
-about,Generic label,About,About,About
-records,Generic label,Records,Records,Records
-charts,Generic label,Charts,Charts,Charts
-emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,Ghost Reps Detected 👻,Ghost Reps Detected 👻
-emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!
-errorExerciseHistoryTitle,Exercise history empty state,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️
-errorExerciseHistoryBody,Exercise history empty state,"Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!"
-personalRecords,"Records screen, title",Personal records,Personal records,Personal records
-maxDuration,"Records screen, metric name",Max duration,Max duration,Max duration
-maxDistance,"Records screen, metric name",Max distance,Max distance,Max distance
-maxWeight,"Records screen, metric name",Max weight,Max weight,Max weight
-maxReps,"Records screen, metric name",Max reps,Max reps,Max reps
-capturePhoto,Image picker menu,Take a new photo,Take a new photo,Take a new photo
-chooseFromGallery,Image picker menu,Choose from library,Choose from library,Choose from library
-removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Remove current photo
-mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Mine
+Просто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт."
+accountDeletedAction,Delete account page,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Отменить удаление 🥇🔥
+about,Generic label,About,About,О приложении
+records,Generic label,Records,Records,Рекорды
+charts,Generic label,Charts,Charts,Графики
+emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,Ghost Reps Detected 👻,Обнаружены призрачные повторения 👻
+emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!
+errorExerciseHistoryTitle,Exercise history empty state,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️,Упс! Кто-то пропустил день данных 🤷‍♀️
+errorExerciseHistoryBody,Exercise history empty state,"Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Похоже, приложение споткнулось о свои шнурки. Попробуйте снова, и мы обещаем завязать их крепче в следующий раз!"
+personalRecords,"Records screen, title",Personal records,Personal records,Личные рекорды
+maxDuration,"Records screen, metric name",Max duration,Max duration,Макс. длительность
+maxDistance,"Records screen, metric name",Max distance,Max distance,Макс. дистанция
+maxWeight,"Records screen, metric name",Max weight,Max weight,Макс. вес
+maxReps,"Records screen, metric name",Max reps,Max reps,Макс. повторений
+capturePhoto,Image picker menu,Take a new photo,Take a new photo,Сделать новое фото
+chooseFromGallery,Image picker menu,Choose from library,Choose from library,Выбрать из галереи
+removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Удалить текущее фото
