@@ -162,7 +162,7 @@ class L {
   String get logIn {
     return Intl.message(
       'Log in',
-      name: 'login',
+      name: 'logIn',
       desc: 'Generic label',
     );
   }
@@ -411,7 +411,7 @@ class L {
   String get archiveConfirmBody {
     return Intl.message(
       'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won’t affect any of your past workouts — your history stays intact.',
-      name: 'archiveConfirm',
+      name: 'archiveConfirmBody',
       desc: 'Dialog body',
     );
   }
@@ -499,7 +499,7 @@ class L {
   String get milesPlural {
     return Intl.message(
       'miles',
-      name: 'milePlural',
+      name: 'milesPlural',
       desc: 'Generic label, miles',
     );
   }
@@ -511,6 +511,7 @@ class L {
       other: '$howMany miles',
       name: 'miles',
       desc: 'Generic label, miles',
+      args: [howMany],
     );
   }
 
@@ -598,7 +599,7 @@ class L {
     return Intl.message(
       'h',
       name: 'h',
-      desc: 'Abbreviation for "hours"',
+      desc: 'Abbreviation for hours',
     );
   }
 
@@ -606,7 +607,7 @@ class L {
     return Intl.message(
       'min',
       name: 'min',
-      desc: 'Abbreviation for "minutes"',
+      desc: 'Abbreviation for minutes',
     );
   }
 
@@ -631,8 +632,9 @@ class L {
       howMany,
       one: '$howMany lb',
       other: '$howMany lbs',
-      name: 'lbs',
+      name: 'lb',
       desc: 'Generic label, pounds',
+      args: [howMany],
     );
   }
 
@@ -977,6 +979,7 @@ class L {
       'Selected $count',
       name: 'selected',
       desc: 'Selected 4 exercises',
+      args: [count],
     );
   }
 
@@ -984,7 +987,8 @@ class L {
     return Intl.message(
       'for $exercise',
       name: 'forExercise',
-      desc: 'As in "Rest timer for bicep curl"',
+      desc: 'As in Rest timer for bicep curl',
+      args: [exercise],
     );
   }
 
@@ -1082,6 +1086,7 @@ class L {
       'Next: $exercise',
       name: 'restCompleteBody',
       desc: 'Rest notification banner',
+      args: [exercise],
     );
   }
 
@@ -1225,7 +1230,7 @@ class L {
   String get weakPassword {
     return Intl.message(
       'Almost there! Try a stronger password to keep your account safe.',
-      name: 'invalidCredentials',
+      name: 'weakPassword',
       desc: 'Login error message',
     );
   }
@@ -1356,8 +1361,9 @@ class L {
       'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\n\n'
       'We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. '
       'So thanks. Seriously. $emoji',
-      name: 'leaveFeedback',
+      name: 'leaveFeedbackBody',
       desc: 'Settings item',
+      args: [emoji],
     );
   }
 
@@ -1613,7 +1619,7 @@ class LocsDelegate extends LocalizationsDelegate<L> {
 
   @override
   bool isSupported(Locale locale) {
-    return ['en', 'fr'].contains(locale.languageCode);
+    return ['en', 'ru'].contains(locale.languageCode);
   }
 
   @override
@@ -1624,8 +1630,8 @@ class LocsDelegate extends LocalizationsDelegate<L> {
 }
 
 // generate arb files from string resources
-// flutter pub pub run intl_translation:extract_to_arb --output-dir=lib/l10n lib/locale/locales.dart
+// dart run intl_translation:extract_to_arb --output-dir=lib/l10n --output-file=intl_en.arb lib/src/locales.dart
 
 // generate code for string lookup from arb files
 // locale is inferred from @@locale in arb
-// flutter pub pub run intl_translation:generate_from_arb --output-dir=lib/l10n --no-use-deferred-loading lib/l10n/intl_en.arb lib/l10n/intl_fr.arb lib/locale/locales.dart
+// dart run intl_translation:generate_from_arb --output-dir=lib/l10n --no-use-deferred-loading lib/l10n/intl_en_CA.arb lib/l10n/intl_ru_RU.arb lib/src/locales.dart
