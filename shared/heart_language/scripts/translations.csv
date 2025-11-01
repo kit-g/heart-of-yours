@@ -140,26 +140,26 @@ addSeconds,Rest timer,+10s,+10s,+10с
 subtractSeconds,Rest timer,-10s,-10s,-10с
 restComplete,Rest notification banner,Rest complete!,Rest complete!,Отдых завершен!
 workoutsPerWeek,Chart label,Workouts per week,Workouts per week,Workouts per week
-workoutsPerWeekTitle,Chart label,Your workouts will be presented here,Your workouts will be presented here,Your workouts will be presented here
-workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Go get them done!
-category,Label button that allows to choose Exercise category,Category,Category,Category
-target,Label button that allows to choose Exercise target muscle group,Target,Target,Target
-removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Remove filter
-restCompleteBody,Rest notification banner,Next: {exercise},Next: {exercise},Next: {exercise}
+workoutsPerWeekTitle,Chart label,Your workouts will be presented here,Your workouts will be presented here,Ваши тренировки будут отображаться здесь
+workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Вперед за тренировками!
+category,Label button that allows to choose Exercise category,Category,Category,Категория
+target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель
+removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Удалить фильтр
+restCompleteBody,Rest notification banner,Next: {exercise},Next: {exercise},Следующее: {exercise}
 weightedSetRepresentation,Rest notification banner,{weight} x {reps},{weight} x {reps},{weight} x {reps}
-templates,Workout templates section header,Templates,Templates,Templates
-exampleTemplates,Workout templates section header,Example templates,Example templates,Example templates
-template,A single workout template,Template,Template,Template
-newTemplate,New template form header,New Template,New Template,New Template
-editTemplate,Edit template form header,Edit Template,Edit Template,Edit Template
-editWorkout,Edit workout form header,Edit Workout,Edit Workout,Edit Workout
-templateName,Edit template text field hint,Template name,Template name,Template name
-workoutName,Edit workout text field hint,Workout name,Workout name,Workout name
-cannotBeEmpty,Form validation message,Cannot be empty,Cannot be empty,Cannot be empty
-showPassword,Tooltip message,Show password,Show password,Show password
-hidePassword,Tooltip message,Hide password,Hide password,Hide password
-yourPassword,Tooltip message,Your password,Your password,Your password
-resetPassword,Button,Reset password,Reset password,Reset password
+templates,Workout templates section header,Templates,Templates,Шаблоны
+exampleTemplates,Workout templates section header,Example templates,Example templates,Примеры шаблонов
+template,A single workout template,Template,Template,Шаблон
+newTemplate,New template form header,New Template,New Template,Новый шаблон
+editTemplate,Edit template form header,Edit Template,Edit Template,Редактировать шаблон
+editWorkout,Edit workout form header,Edit Workout,Edit Workout,Редактировать тренировку
+templateName,Edit template text field hint,Template name,Template name,Название шаблона
+workoutName,Edit workout text field hint,Workout name,Workout name,Название тренировки
+cannotBeEmpty,Form validation message,Cannot be empty,Cannot be empty,Не может быть пустым
+showPassword,Tooltip message,Show password,Show password,Показать пароль
+hidePassword,Tooltip message,Hide password,Hide password,Скрыть пароль
+yourPassword,Tooltip message,Your password,Your password,Ваш пароль
+resetPassword,Button,Reset password,Reset password,Сбросить пароль
 resetPasswordBody,Button,"We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌"
 orConnector,"Connects two widgets, this OR that",- or -,- or -,- or -
 invalidCredentials,Login error message,"Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?"
