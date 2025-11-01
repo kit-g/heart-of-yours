@@ -7,6 +7,7 @@ const _widerBorderRadius = BorderRadius.all(_widerRadius);
 const _widerRoundedBorder = RoundedRectangleBorder(borderRadius: _widerBorderRadius);
 
 const _font = 'Lato';
+const _fontFallbacks = ['Noto Sans'];
 
 ThemeData theme(ColorScheme colorScheme) {
   final textTheme = _textTheme(primaryColor: colorScheme.onSurface, secondaryColor: colorScheme.outline);
@@ -15,6 +16,7 @@ ThemeData theme(ColorScheme colorScheme) {
     brightness: colorScheme.brightness,
     colorScheme: colorScheme,
     fontFamily: _font,
+    fontFamilyFallback: _fontFallbacks,
     textTheme: textTheme,
     scaffoldBackgroundColor: colorScheme.surface,
     canvasColor: colorScheme.surface,
