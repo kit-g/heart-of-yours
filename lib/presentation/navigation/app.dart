@@ -198,7 +198,9 @@ class _AppState extends State<_App> {
       themeMode: widget.theme.mode,
       debugShowCheckedModeBanner: false,
       routerConfig: widget.router.config,
-      supportedLocales: L.supportedLocales,
+      // until data is localized
+      supportedLocales: [const Locale('en')],
+      // supportedLocales: L.supportedLocales,
       localizationsDelegates: L.localizationsDelegates,
     );
 
