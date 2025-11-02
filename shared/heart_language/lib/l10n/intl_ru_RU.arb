@@ -1200,5 +1200,11 @@
     "description": "Possessive pronoun, as in \"My exercises\"",
     "type": "text",
     "placeholders": {}
+  },
+  "newStr": "Выбрать из галереи",
+  "@newStr": {
+    "description": "New desc",
+    "type": "text",
+    "placeholders": {}
   }
 }
