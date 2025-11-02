@@ -1272,12 +1272,6 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Mine'**
   String get mine;
-
-  /// New desc
-  ///
-  /// In en, this message translates to:
-  /// **'new string'**
-  String get newStr;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
