@@ -75,15 +75,13 @@ class LRu extends L {
   String get signUpTitle => 'Начните с Heart';
 
   @override
-  String get signUpBody =>
-      'Каждое путешествие начинается с одного решения.\r\nЭто — ваше.';
+  String get signUpBody => 'Каждое путешествие начинается с одного решения.\r\nЭто — ваше.';
 
   @override
   String get recoverTitle => 'Все еще с вами';
 
   @override
-  String get recoverBody =>
-      'Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.';
+  String get recoverBody => 'Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.';
 
   @override
   String get logInWithGoogle => 'Войти через Google';
@@ -122,12 +120,10 @@ class LRu extends L {
   String get cancelCurrentWorkoutTitle => 'Отменить текущую тренировку?';
 
   @override
-  String get cancelCurrentWorkoutBody =>
-      'У вас есть незавершенная тренировка. Хотите отменить её и начать новую?';
+  String get cancelCurrentWorkoutBody => 'У вас есть незавершенная тренировка. Хотите отменить её и начать новую?';
 
   @override
-  String get startNewWorkoutFromTemplate =>
-      'Начать новую тренировку по этому шаблону?';
+  String get startNewWorkoutFromTemplate => 'Начать новую тренировку по этому шаблону?';
 
   @override
   String get startWorkout => 'Начать тренировку';
@@ -318,8 +314,7 @@ class LRu extends L {
   String get customThemeColorSetting => 'Пользовательский цвет темы';
 
   @override
-  String get customThemeColorSettingSubtitle =>
-      'Используется для создания новой темы';
+  String get customThemeColorSettingSubtitle => 'Используется для создания новой темы';
 
   @override
   String get aboutApp => 'О приложении';
@@ -356,8 +351,7 @@ class LRu extends L {
   String get keepCurrentAccount => 'Нет, продолжить текущую тренировку';
 
   @override
-  String get cancelAndStartNewWorkout =>
-      'Да, отменить ту и начать новую тренировку';
+  String get cancelAndStartNewWorkout => 'Да, отменить ту и начать новую тренировку';
 
   @override
   String get resumeWorkout => 'Нет, продолжить тренировку';
@@ -403,8 +397,7 @@ class LRu extends L {
   }
 
   @override
-  String get restTimerSubtitle =>
-      'Настройте длительность с помощью кнопок +/-.';
+  String get restTimerSubtitle => 'Настройте длительность с помощью кнопок +/-.';
 
   @override
   String get addSeconds => '+10с';
@@ -490,19 +483,16 @@ class LRu extends L {
   String get orConnector => '- или -';
 
   @override
-  String get invalidCredentials =>
-      'Что-то пошло не так! Проверьте ваши данные еще раз!';
+  String get invalidCredentials => 'Что-то пошло не так! Проверьте ваши данные еще раз!';
 
   @override
-  String get weakPassword =>
-      'Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.';
+  String get weakPassword => 'Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.';
 
   @override
   String get forgotPassword => 'Забыли пароль?';
 
   @override
-  String get noConnectivity =>
-      'Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!';
+  String get noConnectivity => 'Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!';
 
   @override
   String get signUp => 'Регистрация';
@@ -533,8 +523,7 @@ class LRu extends L {
   }
 
   @override
-  String get sendResetLinkBody =>
-      'Введите ваш email и мы поможем сбросить пароль';
+  String get sendResetLinkBody => 'Введите ваш email и мы поможем сбросить пароль';
 
   @override
   String get userDisabled => 'Этот аккаунт отключен';
@@ -566,8 +555,7 @@ class LRu extends L {
   String get deleteAccount => 'Удалить аккаунт';
 
   @override
-  String get deleteAccountTitle =>
-      'Вы уверены, что хотите удалить свой аккаунт?';
+  String get deleteAccountTitle => 'Вы уверены, что хотите удалить свой аккаунт?';
 
   @override
   String deleteAccountBody(Object deadline) {
@@ -617,8 +605,7 @@ class LRu extends L {
       'Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!';
 
   @override
-  String get errorExerciseHistoryTitle =>
-      'Упс! Кто-то пропустил день данных 🤷‍♀️';
+  String get errorExerciseHistoryTitle => 'Упс! Кто-то пропустил день данных 🤷‍♀️';
 
   @override
   String get errorExerciseHistoryBody =>
@@ -650,6 +637,9 @@ class LRu extends L {
 
   @override
   String get mine => 'Mine';
+
+  @override
+  String get newStr => 'new string';
 }
 
 /// The translations for Russian, as used in Russian Federation (`ru_RU`).
@@ -723,15 +713,13 @@ class LRuRu extends LRu {
   String get signUpTitle => 'Начните с Heart';
 
   @override
-  String get signUpBody =>
-      'Каждое путешествие начинается с одного решения.\r\nЭто — ваше.';
+  String get signUpBody => 'Каждое путешествие начинается с одного решения.\r\nЭто — ваше.';
 
   @override
   String get recoverTitle => 'Все еще с вами';
 
   @override
-  String get recoverBody =>
-      'Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.';
+  String get recoverBody => 'Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.';
 
   @override
   String get logInWithGoogle => 'Войти через Google';
@@ -770,12 +758,10 @@ class LRuRu extends LRu {
   String get cancelCurrentWorkoutTitle => 'Отменить текущую тренировку?';
 
   @override
-  String get cancelCurrentWorkoutBody =>
-      'У вас есть незавершенная тренировка. Хотите отменить её и начать новую?';
+  String get cancelCurrentWorkoutBody => 'У вас есть незавершенная тренировка. Хотите отменить её и начать новую?';
 
   @override
-  String get startNewWorkoutFromTemplate =>
-      'Начать новую тренировку по этому шаблону?';
+  String get startNewWorkoutFromTemplate => 'Начать новую тренировку по этому шаблону?';
 
   @override
   String get startWorkout => 'Начать тренировку';
@@ -966,8 +952,7 @@ class LRuRu extends LRu {
   String get customThemeColorSetting => 'Пользовательский цвет темы';
 
   @override
-  String get customThemeColorSettingSubtitle =>
-      'Используется для создания новой темы';
+  String get customThemeColorSettingSubtitle => 'Используется для создания новой темы';
 
   @override
   String get aboutApp => 'О приложении';
@@ -1004,8 +989,7 @@ class LRuRu extends LRu {
   String get keepCurrentAccount => 'Нет, продолжить текущую тренировку';
 
   @override
-  String get cancelAndStartNewWorkout =>
-      'Да, отменить ту и начать новую тренировку';
+  String get cancelAndStartNewWorkout => 'Да, отменить ту и начать новую тренировку';
 
   @override
   String get resumeWorkout => 'Нет, продолжить тренировку';
@@ -1051,8 +1035,7 @@ class LRuRu extends LRu {
   }
 
   @override
-  String get restTimerSubtitle =>
-      'Настройте длительность с помощью кнопок +/-.';
+  String get restTimerSubtitle => 'Настройте длительность с помощью кнопок +/-.';
 
   @override
   String get addSeconds => '+10с';
@@ -1138,19 +1121,16 @@ class LRuRu extends LRu {
   String get orConnector => '- или -';
 
   @override
-  String get invalidCredentials =>
-      'Что-то пошло не так! Проверьте ваши данные еще раз!';
+  String get invalidCredentials => 'Что-то пошло не так! Проверьте ваши данные еще раз!';
 
   @override
-  String get weakPassword =>
-      'Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.';
+  String get weakPassword => 'Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.';
 
   @override
   String get forgotPassword => 'Забыли пароль?';
 
   @override
-  String get noConnectivity =>
-      'Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!';
+  String get noConnectivity => 'Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!';
 
   @override
   String get signUp => 'Регистрация';
@@ -1181,8 +1161,7 @@ class LRuRu extends LRu {
   }
 
   @override
-  String get sendResetLinkBody =>
-      'Введите ваш email и мы поможем сбросить пароль';
+  String get sendResetLinkBody => 'Введите ваш email и мы поможем сбросить пароль';
 
   @override
   String get userDisabled => 'Этот аккаунт отключен';
@@ -1214,8 +1193,7 @@ class LRuRu extends LRu {
   String get deleteAccount => 'Удалить аккаунт';
 
   @override
-  String get deleteAccountTitle =>
-      'Вы уверены, что хотите удалить свой аккаунт?';
+  String get deleteAccountTitle => 'Вы уверены, что хотите удалить свой аккаунт?';
 
   @override
   String deleteAccountBody(Object deadline) {
@@ -1265,8 +1243,7 @@ class LRuRu extends LRu {
       'Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!';
 
   @override
-  String get errorExerciseHistoryTitle =>
-      'Упс! Кто-то пропустил день данных 🤷‍♀️';
+  String get errorExerciseHistoryTitle => 'Упс! Кто-то пропустил день данных 🤷‍♀️';
 
   @override
   String get errorExerciseHistoryBody =>
@@ -1298,4 +1275,7 @@ class LRuRu extends LRu {
 
   @override
   String get mine => 'Мои';
+
+  @override
+  String get newStr => 'Выбрать из галереи';
 }
