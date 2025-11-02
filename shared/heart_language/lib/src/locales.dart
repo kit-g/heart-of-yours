@@ -1612,14 +1612,6 @@ class L {
       desc: 'Possessive pronoun, as in "My exercises"',
     );
   }
-  //
-  // String get newStringRes {
-  //   return Intl.message(
-  //     'New string',
-  //     name: 'newStringRes',
-  //     desc: 'New desc',
-  //   );
-  // }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
