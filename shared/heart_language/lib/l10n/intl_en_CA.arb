@@ -1,5 +1,5 @@
 {
-  "@@last_modified": "2025-11-02T13:39:55.263327",
+  "@@locale": "en_CA",
   "appearance": "Appearance",
   "@appearance": {
     "description": "Label",
@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "You've already started something important. \nLet's keep going.",
+  "logInBody": "You've already started something important. \r\nLet's keep going.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Every journey starts with one decision. \nThis one's yours.",
+  "signUpBody": "Every journey starts with one decision. \r\nThis one's yours.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Your journey isn't lost. \nJust a moment of pause — we'll reset together.",
+  "recoverBody": "Your journey isn't lost. \r\nJust a moment of pause — we'll reset together.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -296,13 +296,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won't affect any of your past workouts — your history stays intact.",
+  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won't affect any of your past workouts — your history stays intact.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "This exercise is archived \nand won't appear in your main library anymore.",
+  "exerciseArchived": "This exercise is archived \r\nand won't appear in your main library anymore.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -1009,7 +1009,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
+  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\r\n\r\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1091,7 +1091,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.",
+  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\r\n\r\nIf you change your mind, you can restore your account anytime before this date.\r\n\r\nSimply click the button below to cancel the deletion and keep your account safe.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
