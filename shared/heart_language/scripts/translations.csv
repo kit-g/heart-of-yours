@@ -1,4 +1,4 @@
-id,description,en,en_CA,ru_RU
+id,description,en,en_CA,ru
 appearance,Label,Appearance,Appearance,Внешний вид
 units,Label,Units,Units,Единицы измерения
 motto,App's motto,Every beat counts.,Every beat counts.,Every beat counts.
@@ -228,4 +228,3 @@ capturePhoto,Image picker menu,Take a new photo,Take a new photo,Сделать 
 chooseFromGallery,Image picker menu,Choose from library,Choose from library,Выбрать из галереи
 removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Удалить текущее фото
 mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Мои
-newStr,New desc,new string,new translated string,Выбрать из галереи

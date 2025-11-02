@@ -636,10 +636,7 @@ class LRu extends L {
   String get removeCurrentPhoto => 'Удалить текущее фото';
 
   @override
-  String get mine => 'Mine';
-
-  @override
-  String get newStr => 'new string';
+  String get mine => 'Мои';
 }
 
 /// The translations for Russian, as used in Russian Federation (`ru_RU`).
@@ -1275,7 +1272,4 @@ class LRuRu extends LRu {
 
   @override
   String get mine => 'Мои';
-
-  @override
-  String get newStr => 'Выбрать из галереи';
 }

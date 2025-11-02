@@ -637,9 +637,6 @@ class LEn extends L {
 
   @override
   String get mine => 'Mine';
-
-  @override
-  String get newStr => 'new string';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1275,7 +1272,4 @@ class LEnCa extends LEn {
 
   @override
   String get mine => 'Mine';
-
-  @override
-  String get newStr => 'new translated string';
 }
