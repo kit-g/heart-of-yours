@@ -21,7 +21,7 @@ class MessageLookup extends MessageLookupByLibrary {
   @override
   String get localeName => 'ru_RU';
 
-  static m0(date) => "Ваш аккаунт запланирован на удаление ${date}.\n\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\n\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.";
+  static m0(date) => "Ваш аккаунт запланирован на удаление ${date}.\r\n\r\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\r\n\r\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.";
 
   static m1(exerciseName) => "Архивировать ${exerciseName}?";
 
@@ -33,7 +33,7 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static m5(howMany) => "${Intl.plural(howMany, one: '${howMany} фнт', other: '${howMany} фнт')}";
 
-  static m6(emoji) => "Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\n\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. ${emoji}";
+  static m6(emoji) => "Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\r\n\r\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. ${emoji}";
 
   static m7(howMany) => "${Intl.plural(howMany, one: '${howMany} миля', other: '${howMany} мили')}";
 
@@ -61,7 +61,7 @@ class MessageLookup extends MessageLookupByLibrary {
     'afternoonWorkout': MessageLookupByLibrary.simpleMessage('Дневная тренировка'),
     'appearance': MessageLookupByLibrary.simpleMessage('Внешний вид'),
     'archive': MessageLookupByLibrary.simpleMessage('Архивировать'),
-    'archiveConfirmBody': MessageLookupByLibrary.simpleMessage('Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.'),
+    'archiveConfirmBody': MessageLookupByLibrary.simpleMessage('Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\r\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.'),
     'archiveConfirmTitle': m1,
     'archivedExercises': MessageLookupByLibrary.simpleMessage('Архивные упражнения'),
     'cancel': MessageLookupByLibrary.simpleMessage('Отмена'),
@@ -75,7 +75,7 @@ class MessageLookup extends MessageLookupByLibrary {
     'cannotBeEmpty': MessageLookupByLibrary.simpleMessage('Не может быть пустым'),
     'capturePhoto': MessageLookupByLibrary.simpleMessage('Сделать новое фото'),
     'category': MessageLookupByLibrary.simpleMessage('Категория'),
-    'changeName': MessageLookupByLibrary.simpleMessage('Изменить имя '),
+    'changeName': MessageLookupByLibrary.simpleMessage('Изменить имя'),
     'changesWillBeLost': MessageLookupByLibrary.simpleMessage('Все изменения будут потеряны'),
     'charts': MessageLookupByLibrary.simpleMessage('Графики'),
     'chooseFromGallery': MessageLookupByLibrary.simpleMessage('Выбрать из галереи'),
@@ -118,7 +118,7 @@ class MessageLookup extends MessageLookupByLibrary {
     'errorExerciseHistoryTitle': MessageLookupByLibrary.simpleMessage('Упс! Кто-то пропустил день данных 🤷‍♀️'),
     'eveningWorkout': MessageLookupByLibrary.simpleMessage('Вечерняя тренировка'),
     'exampleTemplates': MessageLookupByLibrary.simpleMessage('Примеры шаблонов'),
-    'exerciseArchived': MessageLookupByLibrary.simpleMessage('Это упражнение находится в архиве\nи больше не будет отображаться в основной библиотеке.'),
+    'exerciseArchived': MessageLookupByLibrary.simpleMessage('Это упражнение находится в архиве\r\nи больше не будет отображаться в основной библиотеке.'),
     'exerciseOptions': MessageLookupByLibrary.simpleMessage('Настройки упражнения'),
     'exercises': MessageLookupByLibrary.simpleMessage('Упражнения'),
     'feedbackReceived': MessageLookupByLibrary.simpleMessage('Ваш отзыв получен, спасибо!'),
@@ -136,13 +136,13 @@ class MessageLookup extends MessageLookupByLibrary {
     'invalidCredentials': MessageLookupByLibrary.simpleMessage('Что-то пошло не так! Проверьте ваши данные еще раз!'),
     'keepCurrentAccount': MessageLookupByLibrary.simpleMessage('Нет, продолжить текущую тренировку'),
     'kg': MessageLookupByLibrary.simpleMessage('кг'),
-    'km': MessageLookupByLibrary.simpleMessage('км '),
+    'km': MessageLookupByLibrary.simpleMessage('км'),
     'lb': m5,
     'lbs': MessageLookupByLibrary.simpleMessage('фнт'),
     'leaveFeedback': MessageLookupByLibrary.simpleMessage('Оставить отзыв'),
     'leaveFeedbackBody': m6,
     'logIn': MessageLookupByLibrary.simpleMessage('Войти'),
-    'logInBody': MessageLookupByLibrary.simpleMessage('Вы уже начали что-то важное.\nДавайте продолжим!'),
+    'logInBody': MessageLookupByLibrary.simpleMessage('Вы уже начали что-то важное.\r\nДавайте продолжим!'),
     'logInTitle': MessageLookupByLibrary.simpleMessage('С возвращением!'),
     'logInWithApple': MessageLookupByLibrary.simpleMessage('Войти через Apple'),
     'logInWithGoogle': MessageLookupByLibrary.simpleMessage('Войти через Google'),
@@ -177,7 +177,7 @@ class MessageLookup extends MessageLookupByLibrary {
     'quitPage': MessageLookupByLibrary.simpleMessage('Покинуть страницу'),
     'readyToFinish': MessageLookupByLibrary.simpleMessage('Да, я закончил!'),
     'records': MessageLookupByLibrary.simpleMessage('Рекорды'),
-    'recoverBody': MessageLookupByLibrary.simpleMessage('Ваш путь не потерян.\nПросто небольшая пауза — давайте начнем заново.'),
+    'recoverBody': MessageLookupByLibrary.simpleMessage('Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.'),
     'recoverTitle': MessageLookupByLibrary.simpleMessage('Все еще с вами'),
     'recoveryLinkMessage': MessageLookupByLibrary.simpleMessage('Если аккаунт с этим email существует, вы получите ссылку для сброса. Проверьте папку входящих и спам.'),
     'recoveryLinkMessageSent': MessageLookupByLibrary.simpleMessage('💌Письмо для настройки пароля уже в пути! Проверьте входящие (или папку спам — оно любит там прятаться).'),
@@ -209,9 +209,9 @@ class MessageLookup extends MessageLookupByLibrary {
     'showArchived': MessageLookupByLibrary.simpleMessage('Показать архивные'),
     'showPassword': MessageLookupByLibrary.simpleMessage('Показать пароль'),
     'signUp': MessageLookupByLibrary.simpleMessage('Регистрация'),
-    'signUpBody': MessageLookupByLibrary.simpleMessage('Каждое путешествие начинается с одного решения.\nЭто — ваше.'),
+    'signUpBody': MessageLookupByLibrary.simpleMessage('Каждое путешествие начинается с одного решения.\r\nЭто — ваше.'),
     'signUpTitle': MessageLookupByLibrary.simpleMessage('Начните с Heart'),
-    'signUpWithApple': MessageLookupByLibrary.simpleMessage('Зарегистрироваться через Apple '),
+    'signUpWithApple': MessageLookupByLibrary.simpleMessage('Зарегистрироваться через Apple'),
     'signUpWithGoogle': MessageLookupByLibrary.simpleMessage('Зарегистрироваться через Google'),
     'skip': MessageLookupByLibrary.simpleMessage('Пропустить'),
     'startNewWorkout': MessageLookupByLibrary.simpleMessage('Начать новую тренировку'),

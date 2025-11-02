@@ -156,6 +156,7 @@ class MessageLookup extends MessageLookupByLibrary {
     'miles': m7,
     'milesPlural': MessageLookupByLibrary.simpleMessage('miles'),
     'min': MessageLookupByLibrary.simpleMessage('min'),
+    'mine': MessageLookupByLibrary.simpleMessage('Mine'),
     'morningWorkout': MessageLookupByLibrary.simpleMessage('Morning Workout'),
     'motto': MessageLookupByLibrary.simpleMessage('Every beat counts.'),
     'name': MessageLookupByLibrary.simpleMessage('Name'),
