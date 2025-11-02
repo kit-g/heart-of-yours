@@ -228,3 +228,4 @@ capturePhoto,Image picker menu,Take a new photo,Take a new photo,Сделать 
 chooseFromGallery,Image picker menu,Choose from library,Choose from library,Выбрать из галереи
 removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Удалить текущее фото
 mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Мои
+newStr,New desc,new string,new translated string,Выбрать из галереи

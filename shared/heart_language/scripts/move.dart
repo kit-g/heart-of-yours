@@ -1,3 +1,4 @@
+
 // ignore_for_file: depend_on_referenced_packages
 // ignore_for_file: avoid_print
 // generated
@@ -191,6 +192,53 @@ void runImport(ArgResults args) {
   }
 
   print('--- Import Complete ---');
+
+  // Run flutter gen-l10n
+  print('\n--- Running flutter gen-l10n ---');
+  final genResult = Process.runSync('flutter', ['gen-l10n']);
+  print(genResult.stdout);
+  if (genResult.stderr.toString().isNotEmpty) {
+    print('stderr: ${genResult.stderr}');
+  }
+  if (genResult.exitCode != 0) {
+    print('Warning: flutter gen-l10n exited with code ${genResult.exitCode}');
+  } else {
+    print('✓ flutter gen-l10n completed successfully');
+  }
+
+  // Format generated Dart files in lib/l10n (only .dart files)
+  print('\n--- Formatting generated Dart files ---');
+  final l10nDirectory = Directory(l10nDir);
+  if (l10nDirectory.existsSync()) {
+    final dartFiles = l10nDirectory
+        .listSync()
+        .where((entity) => entity is File && entity.path.endsWith('.dart'))
+        .map((entity) => entity.path)
+        .toList();
+
+    if (dartFiles.isNotEmpty) {
+      print('Formatting ${dartFiles.length} Dart files with line length 120...');
+      final dartFormatResult = Process.runSync(
+        'dart',
+        ['format', '--line-length', '120', ...dartFiles],
+      );
+      print(dartFormatResult.stdout);
+      if (dartFormatResult.stderr.toString().isNotEmpty) {
+        print('stderr: ${dartFormatResult.stderr}');
+      }
+      if (dartFormatResult.exitCode != 0) {
+        print('Warning: dart format exited with code ${dartFormatResult.exitCode}');
+      } else {
+        print('✓ Dart formatting complete');
+      }
+    } else {
+      print('No Dart files found to format');
+    }
+  } else {
+    print('Warning: Directory $l10nDir does not exist');
+  }
+
+  print('\n--- All Done! ---');
 }
 
 Map<String, dynamic> loadJsonFile(String filePath) {
