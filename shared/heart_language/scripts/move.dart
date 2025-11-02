@@ -14,10 +14,16 @@ void main(List<String> arguments) {
     ..addCommand('import');
 
   parser.commands['export']!
-    ..addOption('source-arb',
-        defaultsTo: 'lib/l10n/intl_en_CA.arb', help: 'Path to the source ARB file to export from.')
-    ..addOption('csv-file',
-        defaultsTo: 'scripts/translations.csv', help: 'Path to the master CSV file to create or update.');
+    ..addOption(
+      'source-arb',
+      defaultsTo: 'lib/l10n/intl_en_CA.arb',
+      help: 'Path to the source ARB file to export from.',
+    )
+    ..addOption(
+      'csv-file',
+      defaultsTo: 'scripts/translations.csv',
+      help: 'Path to the master CSV file to create or update.',
+    );
 
   parser.commands['import']!
     ..addOption('csv-file', defaultsTo: 'scripts/translations.csv', help: 'Path to the master CSV file to import from.')

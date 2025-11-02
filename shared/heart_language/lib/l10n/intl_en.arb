@@ -570,7 +570,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "customThemeColorSetting": "Custom theme colour",
+  "customThemeColorSetting": "Custom theme color",
   "@customThemeColorSetting": {
     "description": "Setting item name",
     "type": "text",

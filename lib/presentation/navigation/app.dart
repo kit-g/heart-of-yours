@@ -1,7 +1,6 @@
 import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -199,16 +198,8 @@ class _AppState extends State<_App> {
       themeMode: widget.theme.mode,
       debugShowCheckedModeBanner: false,
       routerConfig: widget.router.config,
-      supportedLocales: const [
-        Locale('en', 'CA'),
-        Locale('ru', 'RU'),
-      ],
-      localizationsDelegates: const [
-        LocsDelegate(),
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      supportedLocales: L.supportedLocales,
+      localizationsDelegates: L.localizationsDelegates,
     );
 
     return switch (widget.config.allowsFeedbackFeature) {
