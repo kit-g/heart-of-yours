@@ -177,7 +177,7 @@ class L {
 
   String get logInBody {
     return Intl.message(
-      'You’ve already started something important. \nLet’s keep going.',
+      'You\'ve already started something important. \nLet\'s keep going.',
       name: 'logInBody',
       desc: 'Login page copy',
     );
@@ -193,7 +193,7 @@ class L {
 
   String get signUpBody {
     return Intl.message(
-      'Every journey starts with one decision. \nThis one’s yours.',
+      'Every journey starts with one decision. \nThis one\'s yours.',
       name: 'signUpBody',
       desc: 'Sign up page copy',
     );
@@ -209,7 +209,7 @@ class L {
 
   String get recoverBody {
     return Intl.message(
-      'Your journey isn’t lost. \nJust a moment of pause — we’ll reset together.',
+      'Your journey isn\'t lost. \nJust a moment of pause — we\'ll reset together.',
       name: 'recoverBody',
       desc: 'Recover page copy',
     );
@@ -410,7 +410,7 @@ class L {
 
   String get archiveConfirmBody {
     return Intl.message(
-      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won’t affect any of your past workouts — your history stays intact.',
+      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won\'t affect any of your past workouts — your history stays intact.',
       name: 'archiveConfirmBody',
       desc: 'Dialog body',
     );
@@ -418,7 +418,7 @@ class L {
 
   String get exerciseArchived {
     return Intl.message(
-      'This exercise is archived \nand won’t appear in your main library anymore.',
+      'This exercise is archived \nand won\'t appear in your main library anymore.',
       name: 'exerciseArchived',
       desc: 'Tooltip over archived icon',
     );
@@ -1269,7 +1269,7 @@ class L {
 
   String get recoveryLinkMessage {
     return Intl.message(
-      'If an account exists for this email, you’ll receive a reset link shortly. Check your inbox and spam folder.',
+      'If an account exists for this email, you\'ll receive a reset link shortly. Check your inbox and spam folder.',
       name: 'recoveryLinkMessage',
       desc: 'Password recovery flow',
     );
@@ -1612,6 +1612,14 @@ class L {
       desc: 'Possessive pronoun, as in "My exercises"',
     );
   }
+  //
+  // String get newStringRes {
+  //   return Intl.message(
+  //     'New string',
+  //     name: 'newStringRes',
+  //     desc: 'New desc',
+  //   );
+  // }
 }
 
 class LocsDelegate extends LocalizationsDelegate<L> {
