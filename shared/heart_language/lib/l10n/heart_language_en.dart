@@ -69,22 +69,19 @@ class LEn extends L {
   String get logInTitle => 'Welcome Back';
 
   @override
-  String get logInBody =>
-      'You\'ve already started something important. \nLet\'s keep going.';
+  String get logInBody => 'You\'ve already started something important. \nLet\'s keep going.';
 
   @override
   String get signUpTitle => 'Begin with Heart';
 
   @override
-  String get signUpBody =>
-      'Every journey starts with one decision. \nThis one\'s yours.';
+  String get signUpBody => 'Every journey starts with one decision. \nThis one\'s yours.';
 
   @override
   String get recoverTitle => 'Still with You';
 
   @override
-  String get recoverBody =>
-      'Your journey isn\'t lost. \nJust a moment of pause — we\'ll reset together.';
+  String get recoverBody => 'Your journey isn\'t lost. \nJust a moment of pause — we\'ll reset together.';
 
   @override
   String get logInWithGoogle => 'Log in with Google';
@@ -127,8 +124,7 @@ class LEn extends L {
       'You have a workout in progress. Do you want to cancel it and start a new one?';
 
   @override
-  String get startNewWorkoutFromTemplate =>
-      'Start a new workout from this template?';
+  String get startNewWorkoutFromTemplate => 'Start a new workout from this template?';
 
   @override
   String get startWorkout => 'Start workout';
@@ -167,8 +163,7 @@ class LEn extends L {
       'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won\'t affect any of your past workouts — your history stays intact.';
 
   @override
-  String get exerciseArchived =>
-      'This exercise is archived \nand won\'t appear in your main library anymore.';
+  String get exerciseArchived => 'This exercise is archived \nand won\'t appear in your main library anymore.';
 
   @override
   String get deleteSet => 'Delete set';
@@ -356,8 +351,7 @@ class LEn extends L {
   String get keepCurrentAccount => 'No, keep current workout';
 
   @override
-  String get cancelAndStartNewWorkout =>
-      'Yes, cancel that one and start a new workout';
+  String get cancelAndStartNewWorkout => 'Yes, cancel that one and start a new workout';
 
   @override
   String get resumeWorkout => 'No, resume workout';
@@ -372,8 +366,7 @@ class LEn extends L {
   String get notReadyToFinish => 'No, one more set!';
 
   @override
-  String get deleteTemplateTitle =>
-      'Do you want to delete this workout template?';
+  String get deleteTemplateTitle => 'Do you want to delete this workout template?';
 
   @override
   String get deleteTemplateBody => 'This cannot be undone';
@@ -490,19 +483,16 @@ class LEn extends L {
   String get orConnector => '- or -';
 
   @override
-  String get invalidCredentials =>
-      'Well, that didn\'t work! Double-check your details, eh?';
+  String get invalidCredentials => 'Well, that didn\'t work! Double-check your details, eh?';
 
   @override
-  String get weakPassword =>
-      'Almost there! Try a stronger password to keep your account safe.';
+  String get weakPassword => 'Almost there! Try a stronger password to keep your account safe.';
 
   @override
   String get forgotPassword => 'Forgot password?';
 
   @override
-  String get noConnectivity =>
-      'Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!';
+  String get noConnectivity => 'Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!';
 
   @override
   String get signUp => 'Sign up';
@@ -533,8 +523,7 @@ class LEn extends L {
   }
 
   @override
-  String get sendResetLinkBody =>
-      'Enter you email and we\'ll help you reset your password';
+  String get sendResetLinkBody => 'Enter you email and we\'ll help you reset your password';
 
   @override
   String get userDisabled => 'This account is disabled';
@@ -566,8 +555,7 @@ class LEn extends L {
   String get deleteAccount => 'Delete account';
 
   @override
-  String get deleteAccountTitle =>
-      'Are you sure you want to delete your account?';
+  String get deleteAccountTitle => 'Are you sure you want to delete your account?';
 
   @override
   String deleteAccountBody(Object deadline) {
@@ -617,8 +605,7 @@ class LEn extends L {
       'Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!';
 
   @override
-  String get errorExerciseHistoryTitle =>
-      'Oops! Someone Skipped the Data Day 🤷‍♀️';
+  String get errorExerciseHistoryTitle => 'Oops! Someone Skipped the Data Day 🤷‍♀️';
 
   @override
   String get errorExerciseHistoryBody =>
@@ -717,22 +704,19 @@ class LEnCa extends LEn {
   String get logInTitle => 'Welcome Back';
 
   @override
-  String get logInBody =>
-      'You\'ve already started something important. \nLet\'s keep going.';
+  String get logInBody => 'You\'ve already started something important. \r\nLet\'s keep going.';
 
   @override
   String get signUpTitle => 'Begin with Heart';
 
   @override
-  String get signUpBody =>
-      'Every journey starts with one decision. \nThis one\'s yours.';
+  String get signUpBody => 'Every journey starts with one decision. \r\nThis one\'s yours.';
 
   @override
   String get recoverTitle => 'Still with You';
 
   @override
-  String get recoverBody =>
-      'Your journey isn\'t lost. \nJust a moment of pause — we\'ll reset together.';
+  String get recoverBody => 'Your journey isn\'t lost. \r\nJust a moment of pause — we\'ll reset together.';
 
   @override
   String get logInWithGoogle => 'Log in with Google';
@@ -775,8 +759,7 @@ class LEnCa extends LEn {
       'You have a workout in progress. Do you want to cancel it and start a new one?';
 
   @override
-  String get startNewWorkoutFromTemplate =>
-      'Start a new workout from this template?';
+  String get startNewWorkoutFromTemplate => 'Start a new workout from this template?';
 
   @override
   String get startWorkout => 'Start workout';
@@ -812,11 +795,10 @@ class LEnCa extends LEn {
 
   @override
   String get archiveConfirmBody =>
-      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won\'t affect any of your past workouts — your history stays intact.';
+      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won\'t affect any of your past workouts — your history stays intact.';
 
   @override
-  String get exerciseArchived =>
-      'This exercise is archived \nand won\'t appear in your main library anymore.';
+  String get exerciseArchived => 'This exercise is archived \r\nand won\'t appear in your main library anymore.';
 
   @override
   String get deleteSet => 'Delete set';
@@ -1004,8 +986,7 @@ class LEnCa extends LEn {
   String get keepCurrentAccount => 'No, keep current workout';
 
   @override
-  String get cancelAndStartNewWorkout =>
-      'Yes, cancel that one and start a new workout';
+  String get cancelAndStartNewWorkout => 'Yes, cancel that one and start a new workout';
 
   @override
   String get resumeWorkout => 'No, resume workout';
@@ -1020,8 +1001,7 @@ class LEnCa extends LEn {
   String get notReadyToFinish => 'No, one more set!';
 
   @override
-  String get deleteTemplateTitle =>
-      'Do you want to delete this workout template?';
+  String get deleteTemplateTitle => 'Do you want to delete this workout template?';
 
   @override
   String get deleteTemplateBody => 'This cannot be undone';
@@ -1138,19 +1118,16 @@ class LEnCa extends LEn {
   String get orConnector => '- or -';
 
   @override
-  String get invalidCredentials =>
-      'Well, that didn\'t work! Double-check your details, eh?';
+  String get invalidCredentials => 'Well, that didn\'t work! Double-check your details, eh?';
 
   @override
-  String get weakPassword =>
-      'Almost there! Try a stronger password to keep your account safe.';
+  String get weakPassword => 'Almost there! Try a stronger password to keep your account safe.';
 
   @override
   String get forgotPassword => 'Forgot password?';
 
   @override
-  String get noConnectivity =>
-      'Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!';
+  String get noConnectivity => 'Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!';
 
   @override
   String get signUp => 'Sign up';
@@ -1181,8 +1158,7 @@ class LEnCa extends LEn {
   }
 
   @override
-  String get sendResetLinkBody =>
-      'Enter you email and we\'ll help you reset your password';
+  String get sendResetLinkBody => 'Enter you email and we\'ll help you reset your password';
 
   @override
   String get userDisabled => 'This account is disabled';
@@ -1198,7 +1174,7 @@ class LEnCa extends LEn {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
+    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\r\n\r\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
   }
 
   @override
@@ -1214,8 +1190,7 @@ class LEnCa extends LEn {
   String get deleteAccount => 'Delete account';
 
   @override
-  String get deleteAccountTitle =>
-      'Are you sure you want to delete your account?';
+  String get deleteAccountTitle => 'Are you sure you want to delete your account?';
 
   @override
   String deleteAccountBody(Object deadline) {
@@ -1242,7 +1217,7 @@ class LEnCa extends LEn {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'Your account has been scheduled for deletion on $date.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.';
+    return 'Your account has been scheduled for deletion on $date.\r\n\r\nIf you change your mind, you can restore your account anytime before this date.\r\n\r\nSimply click the button below to cancel the deletion and keep your account safe.';
   }
 
   @override
@@ -1265,8 +1240,7 @@ class LEnCa extends LEn {
       'Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!';
 
   @override
-  String get errorExerciseHistoryTitle =>
-      'Oops! Someone Skipped the Data Day 🤷‍♀️';
+  String get errorExerciseHistoryTitle => 'Oops! Someone Skipped the Data Day 🤷‍♀️';
 
   @override
   String get errorExerciseHistoryBody =>

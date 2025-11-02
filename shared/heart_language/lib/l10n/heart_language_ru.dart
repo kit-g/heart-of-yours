@@ -1295,4 +1295,7 @@ class LRuRu extends LRu {
 
   @override
   String get removeCurrentPhoto => 'Удалить текущее фото';
+
+  @override
+  String get mine => 'Мои';
 }

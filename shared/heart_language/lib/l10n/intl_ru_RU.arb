@@ -2,786 +2,1203 @@
   "@@locale": "ru_RU",
   "appearance": "Внешний вид",
   "@appearance": {
-    "description": "Label"
+    "description": "Label",
+    "type": "text",
+    "placeholders": {}
   },
   "units": "Единицы измерения",
   "@units": {
-    "description": "Label"
+    "description": "Label",
+    "type": "text",
+    "placeholders": {}
   },
   "motto": "Every beat counts.",
   "@motto": {
-    "description": "App's motto"
+    "description": "App's motto",
+    "type": "text",
+    "placeholders": {}
   },
   "toLightMode": "Светлая",
   "@toLightMode": {
-    "description": "tooltip"
+    "description": "tooltip",
+    "type": "text",
+    "placeholders": {}
   },
   "toDarkMode": "Темная",
   "@toDarkMode": {
-    "description": "tooltip"
+    "description": "tooltip",
+    "type": "text",
+    "placeholders": {}
   },
   "toSystemMode": "Системная",
   "@toSystemMode": {
-    "description": "tooltip"
+    "description": "tooltip",
+    "type": "text",
+    "placeholders": {}
   },
   "email": "Эл. почта",
   "@email": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "yourEmail": "Ваш email",
   "@yourEmail": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "cropAvatar": "Обрезать аватар",
   "@cropAvatar": {
-    "description": "Label in the image cropper"
+    "description": "Label in the image cropper",
+    "type": "text",
+    "placeholders": {}
   },
   "nameOptional": "Имя (необязательно)",
   "@nameOptional": {
-    "description": "Field hint"
+    "description": "Field hint",
+    "type": "text",
+    "placeholders": {}
   },
   "name": "Имя",
   "@name": {
-    "description": "Field hint"
+    "description": "Field hint",
+    "type": "text",
+    "placeholders": {}
   },
   "saveName": "Сохранить имя",
   "@saveName": {
-    "description": "Hint"
+    "description": "Hint",
+    "type": "text",
+    "placeholders": {}
   },
   "changeName": "Изменить имя",
   "@changeName": {
-    "description": "Hint"
+    "description": "Hint",
+    "type": "text",
+    "placeholders": {}
   },
   "save": "Сохранить",
   "@save": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "settings": "Настройки",
   "@settings": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "archive": "Архивировать",
   "@archive": {
-    "description": "CTA, verb"
+    "description": "CTA, verb",
+    "type": "text",
+    "placeholders": {}
   },
   "unarchive": "Разархивировать",
   "@unarchive": {
-    "description": "CTA, verb"
+    "description": "CTA, verb",
+    "type": "text",
+    "placeholders": {}
   },
   "password": "Пароль",
   "@password": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "logIn": "Войти",
   "@logIn": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "logInTitle": "С возвращением!",
   "@logInTitle": {
-    "description": "Login page copy"
+    "description": "Login page copy",
+    "type": "text",
+    "placeholders": {}
   },
   "logInBody": "Вы уже начали что-то важное.\r\nДавайте продолжим!",
   "@logInBody": {
-    "description": "Login page copy"
+    "description": "Login page copy",
+    "type": "text",
+    "placeholders": {}
   },
   "signUpTitle": "Начните с Heart",
   "@signUpTitle": {
-    "description": "Sign up page copy"
+    "description": "Sign up page copy",
+    "type": "text",
+    "placeholders": {}
   },
   "signUpBody": "Каждое путешествие начинается с одного решения.\r\nЭто — ваше.",
   "@signUpBody": {
-    "description": "Sign up page copy"
+    "description": "Sign up page copy",
+    "type": "text",
+    "placeholders": {}
   },
   "recoverTitle": "Все еще с вами",
   "@recoverTitle": {
-    "description": "Recover page copy"
+    "description": "Recover page copy",
+    "type": "text",
+    "placeholders": {}
   },
   "recoverBody": "Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.",
   "@recoverBody": {
-    "description": "Recover page copy"
+    "description": "Recover page copy",
+    "type": "text",
+    "placeholders": {}
   },
   "logInWithGoogle": "Войти через Google",
   "@logInWithGoogle": {
-    "description": "Button label"
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
   },
   "signUpWithGoogle": "Зарегистрироваться через Google",
   "@signUpWithGoogle": {
-    "description": "Button label"
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
   },
   "logInWithApple": "Войти через Apple",
   "@logInWithApple": {
-    "description": "Button label"
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
   },
   "signUpWithApple": "Зарегистрироваться через Apple",
   "@signUpWithApple": {
-    "description": "Button label"
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
   },
   "logOut": "Выйти",
   "@logOut": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "profile": "Профиль",
   "@profile": {
-    "description": "Generic label, e.g. bottom nav bar"
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
   },
   "workout": "Тренировка",
   "@workout": {
-    "description": "Generic label, e.g. bottom nav bar"
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
   },
   "history": "История",
   "@history": {
-    "description": "Generic label, e.g. bottom nav bar"
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
   },
   "exercises": "Упражнения",
   "@exercises": {
-    "description": "Generic label, e.g. bottom nav bar"
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
   },
   "search": "Поиск",
   "@search": {
-    "description": "Generic label, e.g. bin the search bar"
+    "description": "Generic label, e.g. bin the search bar",
+    "type": "text",
+    "placeholders": {}
   },
   "startNewWorkout": "Начать новую тренировку",
   "@startNewWorkout": {
-    "description": "Button label"
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
   },
   "cancelCurrentWorkoutTitle": "Отменить текущую тренировку?",
   "@cancelCurrentWorkoutTitle": {
-    "description": "Button label"
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
   },
   "cancelCurrentWorkoutBody": "У вас есть незавершенная тренировка. Хотите отменить её и начать новую?",
   "@cancelCurrentWorkoutBody": {
-    "description": "Button label"
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
   },
   "startNewWorkoutFromTemplate": "Начать новую тренировку по этому шаблону?",
   "@startNewWorkoutFromTemplate": {
-    "description": "Alert dialog"
+    "description": "Alert dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "startWorkout": "Начать тренировку",
   "@startWorkout": {
-    "description": "App bar title"
+    "description": "App bar title",
+    "type": "text",
+    "placeholders": {}
   },
   "cancelWorkout": "Отменить тренировку",
   "@cancelWorkout": {
-    "description": "Button text"
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
   },
   "addExercises": "Добавить упражнения",
   "@addExercises": {
-    "description": "Button text"
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
   },
   "addSet": "Добавить подход",
   "@addSet": {
-    "description": "Button text"
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
   },
   "newExercise": "Новое упражнение",
   "@newExercise": {
-    "description": "Button tooltip"
+    "description": "Button tooltip",
+    "type": "text",
+    "placeholders": {}
   },
   "createNewExercise": "Создать новое упражнение",
   "@createNewExercise": {
-    "description": "Dialog header"
+    "description": "Dialog header",
+    "type": "text",
+    "placeholders": {}
   },
   "exerciseOptions": "Настройки упражнения",
   "@exerciseOptions": {
-    "description": "Button tooltip"
+    "description": "Button tooltip",
+    "type": "text",
+    "placeholders": {}
   },
   "showArchived": "Показать архивные",
   "@showArchived": {
-    "description": "Menu button, as in \"Show archived exercises"
+    "description": "Menu button, as in \"Show archived exercises",
+    "type": "text",
+    "placeholders": {}
   },
   "archivedExercises": "Архивные упражнения",
   "@archivedExercises": {
-    "description": "App bar"
+    "description": "App bar",
+    "type": "text",
+    "placeholders": {}
   },
   "archiveConfirmTitle": "Архивировать {exerciseName}?",
   "@archiveConfirmTitle": {
-    "description": "Dialog title, e.g., \"Archive Push ups?\""
+    "description": "Dialog title, e.g., \"Archive Push ups?\"",
+    "type": "text",
+    "placeholders": {
+      "exerciseName": {}
+    }
   },
   "archiveConfirmBody": "Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\r\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.",
   "@archiveConfirmBody": {
-    "description": "Dialog body"
+    "description": "Dialog body",
+    "type": "text",
+    "placeholders": {}
   },
   "exerciseArchived": "Это упражнение находится в архиве\r\nи больше не будет отображаться в основной библиотеке.",
   "@exerciseArchived": {
-    "description": "Tooltip over archived icon"
+    "description": "Tooltip over archived icon",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteSet": "Удалить подход",
   "@deleteSet": {
-    "description": "Button text"
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
   },
   "set": "Подход",
   "@set": {
-    "description": "Workout table, column header"
+    "description": "Workout table, column header",
+    "type": "text",
+    "placeholders": {}
   },
   "sets": "Подходы",
   "@sets": {
-    "description": "Card header"
+    "description": "Card header",
+    "type": "text",
+    "placeholders": {}
   },
   "previous": "Предыдущий",
   "@previous": {
-    "description": "Workout table, column header, as in \"previous exercise\""
+    "description": "Workout table, column header, as in \"previous exercise\"",
+    "type": "text",
+    "placeholders": {}
   },
   "reps": "Повторения",
   "@reps": {
-    "description": "Workout table, column header"
+    "description": "Workout table, column header",
+    "type": "text",
+    "placeholders": {}
   },
   "time": "Время",
   "@time": {
-    "description": "Workout table, column header"
+    "description": "Workout table, column header",
+    "type": "text",
+    "placeholders": {}
   },
   "kg": "кг",
   "@kg": {
-    "description": "Generic label, kilograms"
+    "description": "Generic label, kilograms",
+    "type": "text",
+    "placeholders": {}
   },
   "mile": "миля",
   "@mile": {
-    "description": "Generic label, miles"
+    "description": "Generic label, miles",
+    "type": "text",
+    "placeholders": {}
   },
   "km": "км",
   "@km": {
-    "description": "Generic label, km"
+    "description": "Generic label, km",
+    "type": "text",
+    "placeholders": {}
   },
   "milesPlural": "мили",
   "@milesPlural": {
-    "description": "Generic label, miles"
+    "description": "Generic label, miles",
+    "type": "text",
+    "placeholders": {}
   },
   "miles": "{howMany,plural, =1{{howMany} миля}other{{howMany} мили}}",
   "@miles": {
-    "description": "Generic label, miles"
+    "description": "Generic label, miles",
+    "type": "text",
+    "placeholders": {
+      "howMany": {}
+    }
   },
   "ok": "OK",
   "@ok": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "edit": "Изменить",
   "@edit": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "delete": "Удалить",
   "@delete": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "repeat": "Повторить",
   "@repeat": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "add": "Добавить",
   "@add": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "share": "Поделиться",
   "@share": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "okBang": "Ок!",
   "@okBang": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "cancel": "Отмена",
   "@cancel": {
-    "description": "Generic label, \"cancel\" button"
+    "description": "Generic label, \"cancel\" button",
+    "type": "text",
+    "placeholders": {}
   },
   "finish": "Завершить",
   "@finish": {
-    "description": "Generic label, \"finish workout\" button"
+    "description": "Generic label, \"finish workout\" button",
+    "type": "text",
+    "placeholders": {}
   },
   "reset": "Сбросить",
   "@reset": {
-    "description": "Generic label, \"Reset\" button"
+    "description": "Generic label, \"Reset\" button",
+    "type": "text",
+    "placeholders": {}
   },
   "h": "ч",
   "@h": {
-    "description": "Abbreviation for hours"
+    "description": "Abbreviation for hours",
+    "type": "text",
+    "placeholders": {}
   },
   "min": "мин",
   "@min": {
-    "description": "Abbreviation for minutes"
+    "description": "Abbreviation for minutes",
+    "type": "text",
+    "placeholders": {}
   },
   "lbs": "фнт",
   "@lbs": {
-    "description": "Generic label, pounds"
+    "description": "Generic label, pounds",
+    "type": "text",
+    "placeholders": {}
   },
   "skip": "Пропустить",
   "@skip": {
-    "description": "Generic label, verb"
+    "description": "Generic label, verb",
+    "type": "text",
+    "placeholders": {}
   },
   "lb": "{howMany,plural, =1{{howMany} фнт}other{{howMany} фнт}}",
   "@lb": {
-    "description": "Generic label, pounds"
+    "description": "Generic label, pounds",
+    "type": "text",
+    "placeholders": {
+      "howMany": {}
+    }
   },
   "saveAsTemplate": "Сохранить как шаблон",
   "@saveAsTemplate": {
-    "description": "Workout set option, \"save this workout as a template\""
+    "description": "Workout set option, \"save this workout as a template\"",
+    "type": "text",
+    "placeholders": {}
   },
   "addNote": "Добавить заметку",
   "@addNote": {
-    "description": "Exercise set option, \"add a note to this set\""
+    "description": "Exercise set option, \"add a note to this set\"",
+    "type": "text",
+    "placeholders": {}
   },
   "replaceExercise": "Заменить упражнение",
   "@replaceExercise": {
-    "description": "Exercise set option"
+    "description": "Exercise set option",
+    "type": "text",
+    "placeholders": {}
   },
   "weightUnit": "Вес",
   "@weightUnit": {
-    "description": "Exercise set option, \"choose weight unit for this set\""
+    "description": "Exercise set option, \"choose weight unit for this set\"",
+    "type": "text",
+    "placeholders": {}
   },
   "distanceUnit": "Расстояние",
   "@distanceUnit": {
-    "description": "Exercise set option, \"choose distance unit for this set\""
+    "description": "Exercise set option, \"choose distance unit for this set\"",
+    "type": "text",
+    "placeholders": {}
   },
   "duration": "Длительность",
   "@duration": {
-    "description": "Duration label"
+    "description": "Duration label",
+    "type": "text",
+    "placeholders": {}
   },
   "imperial": "Имперская",
   "@imperial": {
-    "description": "Measurement unit setting"
+    "description": "Measurement unit setting",
+    "type": "text",
+    "placeholders": {}
   },
   "metric": "Метрическая",
   "@metric": {
-    "description": "Measurement unit setting"
+    "description": "Measurement unit setting",
+    "type": "text",
+    "placeholders": {}
   },
   "restTimer": "Таймер отдыха",
   "@restTimer": {
-    "description": "Exercise set option, \"Set the rest timer for this exercise\""
+    "description": "Exercise set option, \"Set the rest timer for this exercise\"",
+    "type": "text",
+    "placeholders": {}
   },
   "cancelTimer": "Отменить таймер",
   "@cancelTimer": {
-    "description": "Button text"
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
   },
   "removeExercise": "Удалить упражнение",
   "@removeExercise": {
-    "description": "Exercise set option, \"Remove this exercise from workout\""
+    "description": "Exercise set option, \"Remove this exercise from workout\"",
+    "type": "text",
+    "placeholders": {}
   },
   "morningWorkout": "Утренняя тренировка",
   "@morningWorkout": {
-    "description": "Default workout name"
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {}
   },
   "eveningWorkout": "Вечерняя тренировка",
   "@eveningWorkout": {
-    "description": "Default workout name"
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {}
   },
   "nightWorkout": "Ночная тренировка",
   "@nightWorkout": {
-    "description": "Default workout name"
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {}
   },
   "afternoonWorkout": "Дневная тренировка",
   "@afternoonWorkout": {
-    "description": "Default workout name"
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {}
   },
   "emptyHistoryTitle": "Здесь будут ваши завершенные тренировки",
   "@emptyHistoryTitle": {
-    "description": "emptyHistoryTitle"
+    "description": "emptyHistoryTitle",
+    "type": "text",
+    "placeholders": {}
   },
   "emptyHistoryBody": "Вперед за тренировками!",
   "@emptyHistoryBody": {
-    "description": "emptyHistoryBody"
+    "description": "emptyHistoryBody",
+    "type": "text",
+    "placeholders": {}
   },
   "customThemeColorSetting": "Пользовательский цвет темы",
   "@customThemeColorSetting": {
-    "description": "Setting item name"
+    "description": "Setting item name",
+    "type": "text",
+    "placeholders": {}
   },
   "customThemeColorSettingSubtitle": "Используется для создания новой темы",
   "@customThemeColorSettingSubtitle": {
-    "description": "Setting item subtitle"
+    "description": "Setting item subtitle",
+    "type": "text",
+    "placeholders": {}
   },
   "aboutApp": "О приложении",
   "@aboutApp": {
-    "description": "Setting item title"
+    "description": "Setting item title",
+    "type": "text",
+    "placeholders": {}
   },
   "congratulations": "Поздравляем!",
   "@congratulations": {
-    "description": "Workout complete screen, title"
+    "description": "Workout complete screen, title",
+    "type": "text",
+    "placeholders": {}
   },
   "congratulationsBody": "Ваша тренировка завершена!",
   "@congratulationsBody": {
-    "description": "Workout complete screen, body"
+    "description": "Workout complete screen, body",
+    "type": "text",
+    "placeholders": {}
   },
   "finishWorkoutTitle": "Завершить тренировку?",
   "@finishWorkoutTitle": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "finishWorkoutWarningTitle": "Завершить тренировку?",
   "@finishWorkoutWarningTitle": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "finishWorkoutWarningBody": "Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные.",
   "@finishWorkoutWarningBody": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "finishWorkoutBody": "Готовы завершить эту тренировку?",
   "@finishWorkoutBody": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "cancelWorkoutBody": "Весь достигнутый прогресс будет потерян.",
   "@cancelWorkoutBody": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "cancelWorkoutTitle": "Хотите отменить эту тренировку?",
   "@cancelWorkoutTitle": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "readyToFinish": "Да, я закончил!",
   "@readyToFinish": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "keepCurrentAccount": "Нет, продолжить текущую тренировку",
   "@keepCurrentAccount": {
-    "description": "Workout start confirmation dialog"
+    "description": "Workout start confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "cancelAndStartNewWorkout": "Да, отменить ту и начать новую тренировку",
   "@cancelAndStartNewWorkout": {
-    "description": "Workout start confirmation dialog"
+    "description": "Workout start confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "resumeWorkout": "Нет, продолжить тренировку",
   "@resumeWorkout": {
-    "description": "Workout cancellation confirmation dialog"
+    "description": "Workout cancellation confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteThis": "Да, удалить",
   "@deleteThis": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "deleted": "Удалено",
   "@deleted": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "notReadyToFinish": "Нет, ещё один подход!",
   "@notReadyToFinish": {
-    "description": "Workout completion confirmation dialog"
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteTemplateTitle": "Хотите удалить этот шаблон тренировки?",
   "@deleteTemplateTitle": {
-    "description": "Template deletion confirmation dialog"
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteTemplateBody": "Это действие нельзя отменить",
   "@deleteTemplateBody": {
-    "description": "Template deletion confirmation dialog"
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "quitEditing": "Выйти из редактирования?",
   "@quitEditing": {
-    "description": "Template deletion confirmation dialog"
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "changesWillBeLost": "Все изменения будут потеряны",
   "@changesWillBeLost": {
-    "description": "Template deletion confirmation dialog"
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "quitPage": "Покинуть страницу",
   "@quitPage": {
-    "description": "Template deletion confirmation dialog"
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "stayHere": "Остаться здесь",
   "@stayHere": {
-    "description": "Template deletion confirmation dialog"
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "notificationSettings": "Настройки уведомлений",
   "@notificationSettings": {
-    "description": "Settings item"
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
   },
   "selected": "Выбрано {count}",
   "@selected": {
-    "description": "Selected 4 exercises"
+    "description": "Selected 4 exercises",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
   },
   "forExercise": "для {exercise}",
   "@forExercise": {
-    "description": "As in Rest timer for bicep curl"
+    "description": "As in Rest timer for bicep curl",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      }
+    }
   },
   "restTimerSubtitle": "Настройте длительность с помощью кнопок +/-.",
   "@restTimerSubtitle": {
-    "description": "Rest timer"
+    "description": "Rest timer",
+    "type": "text",
+    "placeholders": {}
   },
   "addSeconds": "+10с",
   "@addSeconds": {
-    "description": "Rest timer"
+    "description": "Rest timer",
+    "type": "text",
+    "placeholders": {}
   },
   "subtractSeconds": "-10с",
   "@subtractSeconds": {
-    "description": "Rest timer"
+    "description": "Rest timer",
+    "type": "text",
+    "placeholders": {}
   },
   "restComplete": "Отдых завершен!",
   "@restComplete": {
-    "description": "Rest notification banner"
+    "description": "Rest notification banner",
+    "type": "text",
+    "placeholders": {}
   },
   "workoutsPerWeek": "Workouts per week",
   "@workoutsPerWeek": {
-    "description": "Chart label"
+    "description": "Chart label",
+    "type": "text",
+    "placeholders": {}
   },
   "workoutsPerWeekTitle": "Ваши тренировки будут отображаться здесь",
   "@workoutsPerWeekTitle": {
-    "description": "Chart label"
+    "description": "Chart label",
+    "type": "text",
+    "placeholders": {}
   },
   "workoutsPerWeekBody": "Вперед за тренировками!",
   "@workoutsPerWeekBody": {
-    "description": "Chart label"
+    "description": "Chart label",
+    "type": "text",
+    "placeholders": {}
   },
   "category": "Категория",
   "@category": {
-    "description": "Label button that allows to choose Exercise category"
+    "description": "Label button that allows to choose Exercise category",
+    "type": "text",
+    "placeholders": {}
   },
   "target": "Цель",
   "@target": {
-    "description": "Label button that allows to choose Exercise target muscle group"
+    "description": "Label button that allows to choose Exercise target muscle group",
+    "type": "text",
+    "placeholders": {}
   },
   "removeFilter": "Удалить фильтр",
   "@removeFilter": {
-    "description": "Tooltip on the button that removes exercise filter"
+    "description": "Tooltip on the button that removes exercise filter",
+    "type": "text",
+    "placeholders": {}
   },
   "restCompleteBody": "Следующее: {exercise}",
   "@restCompleteBody": {
-    "description": "Rest notification banner"
+    "description": "Rest notification banner",
+    "type": "text",
+    "placeholders": {
+      "exercise": {}
+    }
   },
   "weightedSetRepresentation": "{weight} x {reps}",
   "@weightedSetRepresentation": {
-    "description": "Rest notification banner"
+    "description": "Rest notification banner",
+    "type": "text",
+    "placeholders": {
+      "weight": {},
+      "reps": {}
+    }
   },
   "templates": "Шаблоны",
   "@templates": {
-    "description": "Workout templates section header"
+    "description": "Workout templates section header",
+    "type": "text",
+    "placeholders": {}
   },
   "exampleTemplates": "Примеры шаблонов",
   "@exampleTemplates": {
-    "description": "Workout templates section header"
+    "description": "Workout templates section header",
+    "type": "text",
+    "placeholders": {}
   },
   "template": "Шаблон",
   "@template": {
-    "description": "A single workout template"
+    "description": "A single workout template",
+    "type": "text",
+    "placeholders": {}
   },
   "newTemplate": "Новый шаблон",
   "@newTemplate": {
-    "description": "New template form header"
+    "description": "New template form header",
+    "type": "text",
+    "placeholders": {}
   },
   "editTemplate": "Редактировать шаблон",
   "@editTemplate": {
-    "description": "Edit template form header"
+    "description": "Edit template form header",
+    "type": "text",
+    "placeholders": {}
   },
   "editWorkout": "Редактировать тренировку",
   "@editWorkout": {
-    "description": "Edit workout form header"
+    "description": "Edit workout form header",
+    "type": "text",
+    "placeholders": {}
   },
   "templateName": "Название шаблона",
   "@templateName": {
-    "description": "Edit template text field hint"
+    "description": "Edit template text field hint",
+    "type": "text",
+    "placeholders": {}
   },
   "workoutName": "Название тренировки",
   "@workoutName": {
-    "description": "Edit workout text field hint"
+    "description": "Edit workout text field hint",
+    "type": "text",
+    "placeholders": {}
   },
   "cannotBeEmpty": "Не может быть пустым",
   "@cannotBeEmpty": {
-    "description": "Form validation message"
+    "description": "Form validation message",
+    "type": "text",
+    "placeholders": {}
   },
   "showPassword": "Показать пароль",
   "@showPassword": {
-    "description": "Tooltip message"
+    "description": "Tooltip message",
+    "type": "text",
+    "placeholders": {}
   },
   "hidePassword": "Скрыть пароль",
   "@hidePassword": {
-    "description": "Tooltip message"
+    "description": "Tooltip message",
+    "type": "text",
+    "placeholders": {}
   },
   "yourPassword": "Ваш пароль",
   "@yourPassword": {
-    "description": "Tooltip message"
+    "description": "Tooltip message",
+    "type": "text",
+    "placeholders": {}
   },
   "resetPassword": "Сбросить пароль",
   "@resetPassword": {
-    "description": "Button"
+    "description": "Button",
+    "type": "text",
+    "placeholders": {}
   },
   "resetPasswordBody": "Мы отправим ссылку для сброса пароля на ваш email быстрее, чем вы успеете сказать \"забыл пароль\". Назад пути нет — если только вы не отмените, конечно. 😌",
   "@resetPasswordBody": {
-    "description": "Button"
+    "description": "Button",
+    "type": "text",
+    "placeholders": {}
   },
   "orConnector": "- или -",
   "@orConnector": {
-    "description": "Connects two widgets, this OR that"
+    "description": "Connects two widgets, this OR that",
+    "type": "text",
+    "placeholders": {}
   },
   "invalidCredentials": "Что-то пошло не так! Проверьте ваши данные еще раз!",
   "@invalidCredentials": {
-    "description": "Login error message"
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
   },
   "weakPassword": "Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.",
   "@weakPassword": {
-    "description": "Login error message"
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
   },
   "forgotPassword": "Забыли пароль?",
   "@forgotPassword": {
-    "description": "Login button"
+    "description": "Login button",
+    "type": "text",
+    "placeholders": {}
   },
   "noConnectivity": "Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!",
   "@noConnectivity": {
-    "description": "Error message"
+    "description": "Error message",
+    "type": "text",
+    "placeholders": {}
   },
   "signUp": "Регистрация",
   "@signUp": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "sendResetLink": "Отправить ссылку для сброса",
   "@sendResetLink": {
-    "description": "Password recovery flow"
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
   },
   "recoveryLinkMessage": "Если аккаунт с этим email существует, вы получите ссылку для сброса. Проверьте папку входящих и спам.",
   "@recoveryLinkMessage": {
-    "description": "Password recovery flow"
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
   },
   "recoveryLinkMessageSent": "💌Письмо для настройки пароля уже в пути! Проверьте входящие (или папку спам — оно любит там прятаться).",
   "@recoveryLinkMessageSent": {
-    "description": "Password recovery flow"
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
   },
   "emailExistsTitle": "Email уже существует",
   "@emailExistsTitle": {
-    "description": "Email exists dialog"
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "emailExistsOkButton": "Да, войти!",
   "@emailExistsOkButton": {
-    "description": "Email exists dialog"
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "emailExistsCancelButton": "Нет, я разберусь",
   "@emailExistsCancelButton": {
-    "description": "Email exists dialog"
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "emailExistsBody": "Аккаунт с {address} уже существует. Хотите войти?",
   "@emailExistsBody": {
-    "description": "Email exists dialog"
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {
+      "address": {}
+    }
   },
   "sendResetLinkBody": "Введите ваш email и мы поможем сбросить пароль",
   "@sendResetLinkBody": {
-    "description": "Password recovery flow"
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
   },
   "userDisabled": "Этот аккаунт отключен",
   "@userDisabled": {
-    "description": "Login error message"
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
   },
   "unknownError": "Произошла неизвестная ошибка",
   "@unknownError": {
-    "description": "Login error message"
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
   },
   "accountControl": "Управление аккаунтом",
   "@accountControl": {
-    "description": "Settings item"
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
   },
   "leaveFeedback": "Оставить отзыв",
   "@leaveFeedback": {
-    "description": "Settings item"
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
   },
   "leaveFeedbackBody": "Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\r\n\r\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. {emoji}",
   "@leaveFeedbackBody": {
-    "description": "Settings item"
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {
+      "emoji": {}
+    }
   },
   "feedbackReceived": "Ваш отзыв получен, спасибо!",
   "@feedbackReceived": {
-    "description": "Confirmation snack message"
+    "description": "Confirmation snack message",
+    "type": "text",
+    "placeholders": {}
   },
   "toFeedback": "К отзыву!",
   "@toFeedback": {
-    "description": "Action button on a dialog"
+    "description": "Action button on a dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "dangerZone": "Опасная зона",
   "@dangerZone": {
-    "description": "Settings header"
+    "description": "Settings header",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteAccount": "Удалить аккаунт",
   "@deleteAccount": {
-    "description": "Settings item"
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteAccountTitle": "Вы уверены, что хотите удалить свой аккаунт?",
   "@deleteAccountTitle": {
-    "description": "Delete account dialog"
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteAccountBody": "Ваш аккаунт запланирован на удаление через {deadline} дней. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда.",
   "@deleteAccountBody": {
-    "description": "Delete account dialog"
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {
+      "deadline": {}
+    }
   },
   "deleteAccountCancelMessage": "О нет, мне здесь нравится!",
   "@deleteAccountCancelMessage": {
-    "description": "Delete account dialog"
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "deleteAccountConfirmMessage": "Да, продолжайте без меня!",
   "@deleteAccountConfirmMessage": {
-    "description": "Delete account dialog"
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "confirmDeleteAccountTitle": "Подтвердите удаление аккаунта",
   "@confirmDeleteAccountTitle": {
-    "description": "Delete account dialog"
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "confirmDeleteAccountCancelMessage": "Передумал, отмена",
   "@confirmDeleteAccountCancelMessage": {
-    "description": "Delete account dialog"
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "confirmDeleteAccountOkMessage": "Прощайте!",
   "@confirmDeleteAccountOkMessage": {
-    "description": "Delete account dialog"
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
   },
   "accountDeleted": "Аккаунт удален",
   "@accountDeleted": {
-    "description": "Delete account page"
+    "description": "Delete account page",
+    "type": "text",
+    "placeholders": {}
   },
   "accountDeletedBody": "Ваш аккаунт запланирован на удаление {date}.\r\n\r\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\r\n\r\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.",
   "@accountDeletedBody": {
-    "description": "Delete account page"
+    "description": "Delete account page",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
   },
   "accountDeletedAction": "🔥🏆 Отменить удаление 🥇🔥",
   "@accountDeletedAction": {
-    "description": "Delete account page"
+    "description": "Delete account page",
+    "type": "text",
+    "placeholders": {}
   },
   "about": "О приложении",
   "@about": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "records": "Рекорды",
   "@records": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "charts": "Графики",
   "@charts": {
-    "description": "Generic label"
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
   },
   "emptyExerciseHistoryTitle": "Обнаружены призрачные повторения 👻",
   "@emptyExerciseHistoryTitle": {
-    "description": "Exercise history empty state"
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
   },
   "emptyExerciseHistoryBody": "Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!",
   "@emptyExerciseHistoryBody": {
-    "description": "Exercise history empty state"
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
   },
   "errorExerciseHistoryTitle": "Упс! Кто-то пропустил день данных 🤷‍♀️",
   "@errorExerciseHistoryTitle": {
-    "description": "Exercise history empty state"
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
   },
   "errorExerciseHistoryBody": "Похоже, приложение споткнулось о свои шнурки. Попробуйте снова, и мы обещаем завязать их крепче в следующий раз!",
   "@errorExerciseHistoryBody": {
-    "description": "Exercise history empty state"
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
   },
   "personalRecords": "Личные рекорды",
   "@personalRecords": {
-    "description": "Records screen, title"
+    "description": "Records screen, title",
+    "type": "text",
+    "placeholders": {}
   },
   "maxDuration": "Макс. длительность",
   "@maxDuration": {
-    "description": "Records screen, metric name"
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
   },
   "maxDistance": "Макс. дистанция",
   "@maxDistance": {
-    "description": "Records screen, metric name"
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
   },
   "maxWeight": "Макс. вес",
   "@maxWeight": {
-    "description": "Records screen, metric name"
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
   },
   "maxReps": "Макс. повторений",
   "@maxReps": {
-    "description": "Records screen, metric name"
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
   },
   "capturePhoto": "Сделать новое фото",
   "@capturePhoto": {
-    "description": "Image picker menu"
+    "description": "Image picker menu",
+    "type": "text",
+    "placeholders": {}
   },
   "chooseFromGallery": "Выбрать из галереи",
   "@chooseFromGallery": {
-    "description": "Image picker menu"
+    "description": "Image picker menu",
+    "type": "text",
+    "placeholders": {}
   },
   "removeCurrentPhoto": "Удалить текущее фото",
   "@removeCurrentPhoto": {
-    "description": "Image picker menu"
+    "description": "Image picker menu",
+    "type": "text",
+    "placeholders": {}
   },
-  "newStringRes": "Удалить текущее фото",
-  "@newStringRes": {
-    "description": "New desc"
+  "mine": "Мои",
+  "@mine": {
+    "description": "Possessive pronoun, as in \"My exercises\"",
+    "type": "text",
+    "placeholders": {}
   }
 }
