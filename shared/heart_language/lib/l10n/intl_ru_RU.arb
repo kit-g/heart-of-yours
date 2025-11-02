@@ -48,7 +48,7 @@
   "@saveName": {
     "description": "Hint"
   },
-  "changeName": "Изменить имя ",
+  "changeName": "Изменить имя",
   "@changeName": {
     "description": "Hint"
   },
@@ -112,7 +112,7 @@
   "@logInWithApple": {
     "description": "Button label"
   },
-  "signUpWithApple": "Зарегистрироваться через Apple ",
+  "signUpWithApple": "Зарегистрироваться через Apple",
   "@signUpWithApple": {
     "description": "Button label"
   },
@@ -236,7 +236,7 @@
   "@mile": {
     "description": "Generic label, miles"
   },
-  "km": "км ",
+  "km": "км",
   "@km": {
     "description": "Generic label, km"
   },
