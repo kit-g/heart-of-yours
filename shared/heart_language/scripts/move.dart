@@ -16,7 +16,7 @@ void main(List<String> arguments) {
   parser.commands['export']!
     ..addOption(
       'source-arb',
-      defaultsTo: 'lib/l10n/intl_en_CA.arb',
+      defaultsTo: 'lib/l10n/intl_en.arb',
       help: 'Path to the source ARB file to export from.',
     )
     ..addOption(
@@ -138,6 +138,11 @@ void runImport(ArgResults args) {
     exit(1);
   }
 
+  // Load the source ARB to get all metadata
+  final sourceArbPath = '$l10nDir/intl_$sourceLang.arb';
+  print('Loading source ARB for metadata: $sourceArbPath');
+  final sourceArb = loadJsonFile(sourceArbPath);
+
   // Identify target language columns
   final sourceLangLower = sourceLang.toLowerCase();
   final langCols = headers.where((h) => !['id', 'description', sourceLangLower].contains(h.toLowerCase())).toList();
@@ -161,8 +166,17 @@ void runImport(ArgResults args) {
       // Only add the string if a translation exists for this language
       if (translatedText != null && translatedText.isNotEmpty) {
         targetArbData[key!] = translatedText;
-        // Also add the metadata (description) for context
-        targetArbData['@$key'] = {'description': row['description'] ?? ''};
+
+        // Preserve all metadata from source ARB
+        final sourceMetadata = sourceArb['@$key'];
+        if (sourceMetadata is Map<String, dynamic>) {
+          // Copy all metadata fields from source
+          targetArbData['@$key'] = Map<String, dynamic>.from(sourceMetadata);
+        } else {
+          // Fallback to just description if source metadata not found
+          targetArbData['@$key'] = {'description': row['description'] ?? ''};
+        }
+
         stringsImported++;
       }
     }
