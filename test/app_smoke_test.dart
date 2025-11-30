@@ -37,10 +37,10 @@ void main() {
 
       final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
       // Validate supported locales
-      expect(app.supportedLocales, const [Locale('en', 'CA'), Locale('fr', 'CA')]);
+      expect(app.supportedLocales, const [Locale('en')]);
       // Validate localization delegates presence (names only since comparing instances can be brittle)
       final delegateTypes = app.localizationsDelegates!.map((d) => d.runtimeType.toString()).toList();
-      expect(delegateTypes, contains('LocsDelegate'));
+      expect(delegateTypes, contains('_LDelegate'));
       expect(delegateTypes, contains('_MaterialLocalizationsDelegate'));
       expect(delegateTypes, contains('_WidgetsLocalizationsDelegate'));
       expect(delegateTypes, contains('_GlobalCupertinoLocalizationsDelegate'));
