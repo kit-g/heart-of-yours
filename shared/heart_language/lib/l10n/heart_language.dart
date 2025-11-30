@@ -90,12 +90,7 @@ abstract class L {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
-    Locale('en', 'CA'),
-    Locale('ru'),
-    Locale('ru', 'RU')
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('en', 'CA'), Locale('ru')];
 
   /// Label
   ///
@@ -1297,14 +1292,6 @@ L lookupL(Locale locale) {
         switch (locale.countryCode) {
           case 'CA':
             return LEnCa();
-        }
-        break;
-      }
-    case 'ru':
-      {
-        switch (locale.countryCode) {
-          case 'RU':
-            return LRuRu();
         }
         break;
       }
