@@ -378,9 +378,13 @@ class LocalDatabase
   }
 
   @override
-  Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack = 8}) {
+  Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack = 8, String? userId}) {
     final cutoff = getMonday(DateTime.timestamp()).subtract(Duration(days: 7 * (weeksBack ?? 0))).toIso8601String();
-    return _db.query(_workouts, where: 'start > ? AND end IS NOT NULL', whereArgs: [cutoff]).then(
+    return _db.query(
+      _workouts,
+      where: 'start > ? AND end IS NOT NULL AND user_id = ?',
+      whereArgs: [cutoff, userId],
+    ).then(
       (rows) {
         if (rows.isEmpty) return WorkoutAggregation.empty();
         return WorkoutAggregation.fromRows(rows);

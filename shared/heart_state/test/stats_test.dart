@@ -10,7 +10,7 @@ class RecordingStatsService implements StatsService {
   int weeklyCountToReturn = 0;
 
   @override
-  Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack}) async {
+  Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack, String? userId}) async {
     return workoutSummary;
   }
 
