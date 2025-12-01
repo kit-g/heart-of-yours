@@ -29,7 +29,7 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> init() async {
-    final local = await _service.getWorkoutSummary();
+    final local = await _service.getWorkoutSummary(userId: userId);
     if (local.isNotEmpty) {
       workouts = local;
       notifyListeners();
