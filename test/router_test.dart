@@ -1,11 +1,11 @@
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/routes/exercises/exercises.dart';
+import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
-import 'package:heart/presentation/routes/history/history.dart';
-import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
@@ -27,7 +27,12 @@ void main() {
       harness = const TestAppHarness();
 
       // Stats.init is invoked by ProfilePage's after-first-layout path; stub DB calls used by Stats
-      when(db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'))).thenAnswer((_) async => WorkoutAggregation.empty());
+      when(
+        db.getWorkoutSummary(
+          weeksBack: anyNamed('weeksBack'),
+          userId: anyNamed('userId'),
+        ),
+      ).thenAnswer((_) async => WorkoutAggregation.empty());
       when(db.getWeeklyWorkoutCount(any)).thenAnswer((_) async => 0);
     });
 
