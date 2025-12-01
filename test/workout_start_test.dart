@@ -22,8 +22,12 @@ void main() {
       harness = const TestAppHarness();
 
       // Stubs to prevent crashes during initial profile render
-      when(db.getWorkoutSummary(weeksBack: anyNamed('weeksBack')))
-          .thenAnswer((_) async => WorkoutAggregation.empty());
+      when(
+        db.getWorkoutSummary(
+          weeksBack: anyNamed('weeksBack'),
+          userId: anyNamed('userId'),
+        ),
+      ).thenAnswer((_) async => WorkoutAggregation.empty());
       when(db.getWeeklyWorkoutCount(any)).thenAnswer((_) async => 0);
 
       // Workouts.startWorkout will call local service startWorkout(workout, userId)
