@@ -44,7 +44,9 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       :resetPasswordBody,
       :cancel,
       :ok,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     return Scaffold(
@@ -142,7 +144,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                             },
                           ),
                           PrimaryButton.wide(
-                            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                            backgroundColor: colorScheme.primaryContainer,
                             child: Center(
                               child: Text(
                                 ok,
@@ -210,17 +212,17 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                         trailing: switch (_nameFocusNode.hasFocus) {
                           false => null,
                           true => IconButton(
-                              tooltip: saveName,
-                              icon: const Icon(Icons.check_circle_rounded),
-                              onPressed: switch (shouldSave) {
-                                true => () {
-                                    buzz();
-                                    auth.updateName(current);
-                                    _nameFocusNode.unfocus();
-                                  },
-                                false => null,
+                            tooltip: saveName,
+                            icon: const Icon(Icons.check_circle_rounded),
+                            onPressed: switch (shouldSave) {
+                              true => () {
+                                buzz();
+                                auth.updateName(current);
+                                _nameFocusNode.unfocus();
                               },
-                            ),
+                              false => null,
+                            },
+                          ),
                         },
                       );
                     },
@@ -262,7 +264,9 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       :deleteAccountBody,
       :deleteAccountCancelMessage,
       :deleteAccountConfirmMessage,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     return showBrandedDialog(
       context,
@@ -322,7 +326,9 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       :showPassword,
       confirmDeleteAccountCancelMessage: cancel,
       confirmDeleteAccountOkMessage: ok,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     return showBrandedDialog(
       context,
