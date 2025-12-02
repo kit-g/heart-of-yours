@@ -43,9 +43,9 @@ class Preferences with ChangeNotifier {
 
   MeasurementUnit defaultUnit(String? countryCode) {
     if (_imperialCountries.contains(countryCode)) {
-      return MeasurementUnit.imperial;
+      return .imperial;
     }
-    return MeasurementUnit.metric;
+    return .metric;
   }
 
   Future<bool>? setBaseColor(String? userId, String? hex) {
