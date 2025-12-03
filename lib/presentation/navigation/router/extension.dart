@@ -54,4 +54,8 @@ extension on BuildContext {
   void goToExerciseArchive() {
     return goNamed(_exerciseArchive);
   }
+
+  void goToActiveWorkout() {
+    push(_activeWorkoutPath);
+  }
 }

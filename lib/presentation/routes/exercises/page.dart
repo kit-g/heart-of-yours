@@ -5,6 +5,7 @@ class ExercisesPage extends StatefulWidget {
   final String? selectedId;
   final Widget? detail;
   final VoidCallback onShowArchived;
+  final VoidCallback onOpenActiveWorkout;
 
   const ExercisesPage({
     super.key,
@@ -12,6 +13,7 @@ class ExercisesPage extends StatefulWidget {
     this.selectedId,
     this.detail,
     required this.onShowArchived,
+    required this.onOpenActiveWorkout,
   });
 
   @override
@@ -55,8 +57,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
               },
               icon: Icon(
                 switch (platform) {
-                  TargetPlatform.iOS => Icons.more_horiz_rounded,
-                  TargetPlatform.macOS => Icons.more_horiz_rounded,
+                  .iOS => Icons.more_horiz_rounded,
+                  .macOS => Icons.more_horiz_rounded,
                   _ => Icons.more_vert_rounded,
                 },
               ),
@@ -80,27 +82,27 @@ class _ExercisesPageState extends State<ExercisesPage> {
     return Scaffold(
       body: SafeArea(
         child: switch (layout) {
-          LayoutSize.compact => listview,
-          LayoutSize.wide => Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: listview,
+          .compact => listview,
+          .wide => Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: listview,
+              ),
+              const VerticalDivider(width: 1),
+              switch (widget.detail) {
+                null => const SizedBox.shrink(),
+                Widget detail => Expanded(
+                  flex: 3,
+                  child: detail,
                 ),
-                const VerticalDivider(width: 1),
-                switch (widget.detail) {
-                  null => const SizedBox.shrink(),
-                  Widget detail => Expanded(
-                      flex: 3,
-                      child: detail,
-                    ),
-                },
-              ],
-            ),
+              },
+            ],
+          ),
         },
       ),
       floatingActionButton: WorkoutTimerFloatingButton(
-        scrollableController: Scrolls.of(context).exercisesDraggableController,
+        onPressed: widget.onOpenActiveWorkout,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
