@@ -70,13 +70,54 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                     children: [
                       Selector<Timers, int?>(
                         selector: (_, provider) => provider[exercise.exercise.name],
-                        builder: (_, seconds, __) {
-                          if (seconds == null) return const SizedBox.shrink();
-                          return IconButton(
-                            visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
-                            icon: const Icon(Icons.timer_outlined),
-                            onPressed: () {
-                              _selectRestTime(context, initialValue: seconds);
+                        builder: (_, timer, __) {
+                          return Selector<Alarms, (ValueNotifier<int>?, num?)>(
+                            selector: (_, provider) => (provider.remainsInActiveExercise, provider.activeExerciseTotal),
+                            builder: (_, alarm, __) {
+                              return switch ((timer, alarm)) {
+                                (int timer, _) => AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Stack(
+                                    alignment: .center,
+                                    children: [
+                                      if (alarm case (ValueNotifier<int> counter, num total))
+                                        SizedBox(
+                                          height: 32,
+                                          width: 32,
+                                          child: ValueListenableBuilder<int>(
+                                            valueListenable: counter,
+                                            builder: (_, remains, __) {
+                                              return CustomPaint(
+                                                painter: CircularTimerPainter(
+                                                  progress: remains / total,
+                                                  strokeColor: colorScheme.primary,
+                                                  backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                                                  strokeWidth: 3,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      IconButton(
+                                        visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
+                                        icon: const Icon(Icons.timer_outlined),
+                                        onPressed: () {
+                                          // behaves differently
+                                          switch (alarm) {
+                                            // no current countdown, show rest time picker
+                                            case (null, null):
+                                              _selectRestTime(context, initialValue: timer);
+                                            // active countdown, show it
+                                            case (ValueNotifier<int> remains, _):
+                                              showCountdownDialog(context, remains.value);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                (_, _) => const SizedBox.shrink(),
+                              };
                             },
                           );
                         },
