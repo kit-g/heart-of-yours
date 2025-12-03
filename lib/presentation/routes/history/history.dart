@@ -14,10 +14,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 
-part 'workout_editor.dart';
-
-part 'workout_item.dart';
-
 part 'page.dart';
-
 part 'utils.dart';
+part 'workout_editor.dart';
+part 'workout_item.dart';

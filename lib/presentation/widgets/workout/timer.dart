@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:heart/presentation/widgets/workout_sheet.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -77,11 +76,11 @@ class _WorkoutTimerState extends State<WorkoutTimer> {
 }
 
 class WorkoutTimerFloatingButton extends StatelessWidget {
-  final DraggableScrollableController? scrollableController;
+  final VoidCallback? onPressed;
 
   const WorkoutTimerFloatingButton({
     super.key,
-    this.scrollableController,
+    this.onPressed,
   });
 
   @override
@@ -92,9 +91,7 @@ class WorkoutTimerFloatingButton extends StatelessWidget {
         if (active == null) return const SizedBox.shrink();
         return FloatingActionButton.extended(
           heroTag: null,
-          onPressed: () {
-            showWorkoutSheet(context, controller: scrollableController);
-          },
+          onPressed: onPressed,
           label: Row(
             spacing: 6,
             children: [
