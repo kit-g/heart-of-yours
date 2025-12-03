@@ -120,87 +120,87 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
               child: switch (draggedExercise) {
                 WorkoutExercise e when e != exercise => header,
                 null => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 8,
-                      children: [
-                        LongPressDraggable<WorkoutExercise>(
-                          delay: const Duration(milliseconds: 200),
-                          data: exercise,
-                          onDragStarted: onDragStarted,
-                          onDragEnd: (_) => onDragEnded(),
-                          onDragCompleted: onDragEnded,
-                          onDraggableCanceled: (_, __) => onDragEnded(),
-                          feedback: _Feedback(
-                            exercise: exercise.exercise.name,
-                            textTheme: textTheme,
-                          ),
-                          maxSimultaneousDrags: 1,
-                          child: header,
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 8,
+                    children: [
+                      LongPressDraggable<WorkoutExercise>(
+                        delay: const Duration(milliseconds: 200),
+                        data: exercise,
+                        onDragStarted: onDragStarted,
+                        onDragEnd: (_) => onDragEnded(),
+                        onDragCompleted: onDragEnded,
+                        onDraggableCanceled: (_, __) => onDragEnded(),
+                        feedback: _Feedback(
+                          exercise: exercise.exercise.name,
+                          textTheme: textTheme,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: _fixedColumnWidth,
-                                child: Center(child: Text(firstColumnCopy)),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Center(child: Text(secondColumnCopy)),
-                              ),
-                              ..._buttonsHeader(context),
-                              SizedBox(
-                                width: _fixedColumnWidth,
-                                child: Center(
-                                  child: Icon(
-                                    allowCompleting ? Icons.done : Icons.lock_outline_rounded,
-                                    size: 18,
-                                  ),
+                        maxSimultaneousDrags: 1,
+                        child: header,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: _fixedColumnWidth,
+                              child: Center(child: Text(firstColumnCopy)),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Center(child: Text(secondColumnCopy)),
+                            ),
+                            ..._buttonsHeader(context),
+                            SizedBox(
+                              width: _fixedColumnWidth,
+                              child: Center(
+                                child: Icon(
+                                  allowCompleting ? Icons.done : Icons.lock_outline_rounded,
+                                  size: 18,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        ...exercise.indexed.map(
-                          (set) {
-                            return _ExerciseSetItem(
-                              index: set.$1 + 1,
-                              set: set.$2,
-                              exercise: exercise,
-                              onRemoveSet: onRemoveSet,
-                              isLocked: !allowCompleting,
-                              onSetDone: onSetDone,
-                              previousValue: previous.at(exercise.exercise.name, set.$1),
-                            );
-                          },
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: PrimaryButton.wide(
-                            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
-                            margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
-                            child: Center(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                spacing: 8,
-                                children: [
-                                  const Icon(
-                                    Icons.add,
-                                    size: 18,
-                                  ),
-                                  Text(copy),
-                                ],
-                              ),
                             ),
-                            onPressed: () => onAddSet(exercise),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      ...exercise.indexed.map(
+                        (set) {
+                          return _ExerciseSetItem(
+                            index: set.$1 + 1,
+                            set: set.$2,
+                            exercise: exercise,
+                            onRemoveSet: onRemoveSet,
+                            isLocked: !allowCompleting,
+                            onSetDone: onSetDone,
+                            previousValue: previous.at(exercise.exercise.name, set.$1),
+                          );
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: PrimaryButton.wide(
+                          backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              spacing: 8,
+                              children: [
+                                const Icon(
+                                  Icons.add,
+                                  size: 18,
+                                ),
+                                Text(copy),
+                              ],
+                            ),
+                          ),
+                          onPressed: () => onAddSet(exercise),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
                 _ => const SizedBox.shrink(),
               },
             );
@@ -346,10 +346,14 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       initialValue: initialValue,
       subtitle: L.of(context).forExercise(name),
     );
-    if (restInSeconds == null) {
-      return timers.remove(name);
-    } else {
-      return timers.setRestTimer(name, restInSeconds);
+
+    switch (restInSeconds) {
+      case 0: // special Cancel signal
+        timers.remove(name);
+      case int seconds when seconds > 0:
+        timers.setRestTimer(name, seconds);
+      default:
+      // may return null on dialog dismiss, then no-op
     }
   }
 }
