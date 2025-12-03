@@ -70,6 +70,9 @@ RouteBase _workoutRoute() {
     builder: (context, _) {
       return WorkoutPage(
         goToTemplateEditor: context.goToTemplateEditor,
+        onOpenActiveWorkout: () {
+          context.goToActiveWorkout();
+        },
       );
     },
     name: _workoutName,
@@ -112,6 +115,9 @@ RouteBase _historyRoute() {
           onDeleteWorkout: (_) {
             context.goToHistory();
           },
+          onOpenActiveWorkout: () {
+            context.goToActiveWorkout();
+          },
           detail: switch (workoutId) {
             String() => child, // workout selected
             null => null,
@@ -136,6 +142,9 @@ RouteBase _historyRoute() {
               },
               onTapWorkout: (workout) {
                 context.goToWorkoutEditor(workout.id);
+              },
+              onOpenActiveWorkout: () {
+                context.goToActiveWorkout();
               },
             ),
           };
@@ -178,14 +187,17 @@ RouteBase _exercisesRoute() {
       final selectedExerciseId = state.pathParameters['exerciseId'];
 
       return switch (LayoutProvider.of(context)) {
-        LayoutSize.compact => detail,
-        LayoutSize.wide => ExercisesPage(
+        .compact => detail,
+        .wide => ExercisesPage(
           selectedId: selectedExerciseId,
           detail: switch (selectedExerciseId) {
             null => null,
             _ => detail,
           },
           onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
+          onOpenActiveWorkout: () {
+            context.goToActiveWorkout();
+          },
           onShowArchived: context.goToExerciseArchive,
         ),
       };
@@ -196,10 +208,13 @@ RouteBase _exercisesRoute() {
         name: _exercisesName,
         builder: (context, _) {
           return switch (LayoutProvider.of(context)) {
-            LayoutSize.wide => const SizedBox.shrink(), // already rendered by the builder
-            LayoutSize.compact => ExercisesPage(
+            .wide => const SizedBox.shrink(), // already rendered by the builder
+            .compact => ExercisesPage(
               onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
               onShowArchived: context.goToExerciseArchive,
+              onOpenActiveWorkout: () {
+                context.goToActiveWorkout();
+              },
             ),
           };
         },
@@ -283,7 +298,7 @@ RouteBase _loginRoute() {
       return switch (layout) {
         // login page and password recovery page will communicate through the query parameter
         // this will enable us to preserve the content of the email field.
-        LayoutSize.compact => LoginPage(
+        .compact => LoginPage(
           onPasswordRecovery: (address) {
             context.goToPasswordRecoveryPage(address: address);
           },
@@ -292,7 +307,7 @@ RouteBase _loginRoute() {
           },
           address: state.uri.queryParameters['address'],
         ),
-        LayoutSize.wide => ValueListenableBuilder<_AuthPages>(
+        .wide => ValueListenableBuilder<_AuthPages>(
           valueListenable: currentPage,
           builder: (_, page, __) {
             return LayoutProvider(
@@ -301,43 +316,43 @@ RouteBase _loginRoute() {
                 return SplitPaneScaffold(
                   reverse: page.isLogin,
                   leftPane: switch (page) {
-                    _AuthPages.signUp => SignUpPage(
+                    .signUp => SignUpPage(
                       address: currentAddress.value,
                       onLogin: (address) {
-                        currentPage.value = _AuthPages.login;
+                        currentPage.value = .login;
                         currentAddress.value = address;
                       },
                     ),
-                    _AuthPages.login => LoginPage(
+                    .login => LoginPage(
                       onPasswordRecovery: (address) {
-                        currentPage.value = _AuthPages.recovery;
+                        currentPage.value = .recovery;
                         currentAddress.value = address;
                       },
                       onSignUp: (address) {
-                        currentPage.value = _AuthPages.signUp;
+                        currentPage.value = .signUp;
                         currentAddress.value = address;
                       },
                       address: currentAddress.value,
                     ),
-                    _AuthPages.recovery => RecoveryPage(
+                    .recovery => RecoveryPage(
                       address: currentAddress.value,
                       onLinkSent: (address) {
-                        currentPage.value = _AuthPages.login;
+                        currentPage.value = .login;
                         currentAddress.value = address;
                       },
-                      isWideScreen: layout == LayoutSize.wide,
+                      isWideScreen: layout == .wide,
                     ),
                   },
                   rightPane: switch (page) {
-                    _AuthPages.signUp => GreetingsPane(
+                    .signUp => GreetingsPane(
                       title: L.of(context).signUpTitle,
                       body: L.of(context).signUpBody,
                     ),
-                    _AuthPages.login => GreetingsPane(
+                    .login => GreetingsPane(
                       title: L.of(context).logInTitle,
                       body: L.of(context).logInBody,
                     ),
-                    _AuthPages.recovery => GreetingsPane(
+                    .recovery => GreetingsPane(
                       title: L.of(context).recoverTitle,
                       body: L.of(context).recoverBody,
                     ),

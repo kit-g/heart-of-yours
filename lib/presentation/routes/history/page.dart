@@ -6,6 +6,7 @@ class HistoryPage extends StatefulWidget {
   final void Function(Workout)? onEditWorkout;
   final void Function(Workout)? onTapWorkout;
   final void Function(Workout)? onDeleteWorkout;
+  final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
 
   const HistoryPage({
@@ -15,6 +16,7 @@ class HistoryPage extends StatefulWidget {
     required this.onEditWorkout,
     this.onTapWorkout,
     this.onDeleteWorkout,
+    required this.onOpenActiveWorkout,
     this.detail,
   });
 
@@ -60,7 +62,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                 onDeleteWorkout: widget.onDeleteWorkout,
               );
             },
-          )
+          ),
       ],
     );
 
@@ -68,31 +70,29 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
       child: Scaffold(
         body: switch (workouts.historyInitialized) {
           false => const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
           true => switch (layout) {
-              LayoutSize.compact => listview,
-              LayoutSize.wide => Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: listview,
-                    ),
-                    const VerticalDivider(width: 1),
-                    switch (widget.detail) {
-                      null => const SizedBox.shrink(),
-                      Widget detail => Expanded(
-                          flex: 3,
-                          child: detail,
-                        ),
-                    },
-                  ],
+            .compact => listview,
+            .wide => Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: listview,
                 ),
-            },
+                const VerticalDivider(width: 1),
+                switch (widget.detail) {
+                  null => const SizedBox.shrink(),
+                  Widget detail => Expanded(
+                    flex: 3,
+                    child: detail,
+                  ),
+                },
+              ],
+            ),
+          },
         },
-        floatingActionButton: WorkoutTimerFloatingButton(
-          scrollableController: Scrolls.of(context).historyDraggableController,
-        ),
+        floatingActionButton: WorkoutTimerFloatingButton(onPressed: widget.onOpenActiveWorkout),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
