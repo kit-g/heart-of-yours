@@ -180,7 +180,7 @@ class _CancelButton extends StatelessWidget {
         ),
         onPressed: () {
           HapticFeedback.heavyImpact();
-          Navigator.pop(context, null);
+          Navigator.pop(context, 0);
         },
       ),
     );
