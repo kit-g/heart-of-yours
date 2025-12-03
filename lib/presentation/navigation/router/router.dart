@@ -1,6 +1,5 @@
 library;
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -15,8 +14,11 @@ import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart/presentation/widgets/greetings_pane.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/split_scaffold.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
+
+import 'modal_route.dart';
 
 part 'animation.dart';
 part 'constants.dart';
@@ -87,6 +89,28 @@ RouteBase _workoutRoute() {
         name: _templateEditorName,
       ),
     ],
+  );
+}
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+RouteBase _activeWorkoutRoute() {
+  return GoRoute(
+    path: _activeWorkoutPath,
+    parentNavigatorKey: _rootNavigatorKey,
+    pageBuilder: (context, state) {
+      return ModalSheetPage(
+        builder: (context) {
+          final workouts = Workouts.watch(context);
+
+          if (workouts.activeWorkout == null) {
+            return const SizedBox.shrink();
+          }
+
+          return ActiveWorkoutSheet(workouts: workouts);
+        },
+      );
+    },
   );
 }
 
@@ -463,6 +487,7 @@ final class HeartRouter {
 
   HeartRouter({this.observers})
     : config = GoRouter(
+        navigatorKey: _rootNavigatorKey,
         debugLogDiagnostics: false,
         initialLocation: _profilePath,
         observers: observers,
@@ -489,6 +514,7 @@ final class HeartRouter {
               ),
             ],
           ),
+          _activeWorkoutRoute(),
           _loginRoute(),
           _workoutDoneRoute(),
           _restoreAccountRoute(),
