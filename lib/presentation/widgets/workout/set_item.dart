@@ -98,7 +98,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         :onError,
       ),
       :scaffoldBackgroundColor,
-    ) = Theme.of(context);
+    ) = Theme.of(
+      context,
+    );
     final L(:deleteSet) = L.of(context);
     final color = set.isCompleted ? tertiaryContainer : outlineVariant.withValues(alpha: .5);
 
@@ -169,45 +171,45 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
               child: Center(
                 child: switch (widget.previousValue) {
                   Map<String, dynamic> m => PrimaryButton.shrunk(
-                      backgroundColor: scaffoldBackgroundColor,
-                      margin: const EdgeInsets.all(4),
-                      child: PreviousSet(
-                        previousValue: m,
-                        exercise: exercise.exercise,
-                        prefs: prefs,
-                      ),
-                      onPressed: () {
-                        buzz();
-                        switch (exercise.exercise.category) {
-                          case Category.weightedBodyWeight:
-                          case Category.assistedBodyWeight:
-                          case Category.machine:
-                          case Category.dumbbell:
-                          case Category.barbell:
-                            switch (m) {
-                              case {'weight': num weight, 'reps': int reps}:
-                                _weightController.text = prefs.weight(weight);
-                                _repsController.text = '$reps';
-                            }
-                          case Category.repsOnly:
-                            switch (m) {
-                              case {'reps': int reps}:
-                                _repsController.text = '$reps';
-                            }
-                          case Category.cardio:
-                            switch (m) {
-                              case {'duration': num duration, 'distance': num distance}:
-                                _durationController.text = duration.toInt().toDuration();
-                                _distanceController.text = prefs.distance(distance);
-                            }
-                          case Category.duration:
-                            switch (m) {
-                              case {'duration': num duration}:
-                                _durationController.text = duration.toInt().toDuration();
-                            }
-                        }
-                      },
+                    backgroundColor: scaffoldBackgroundColor,
+                    margin: const EdgeInsets.all(4),
+                    child: PreviousSet(
+                      previousValue: m,
+                      exercise: exercise.exercise,
+                      prefs: prefs,
                     ),
+                    onPressed: () {
+                      buzz();
+                      switch (exercise.exercise.category) {
+                        case Category.weightedBodyWeight:
+                        case Category.assistedBodyWeight:
+                        case Category.machine:
+                        case Category.dumbbell:
+                        case Category.barbell:
+                          switch (m) {
+                            case {'weight': num weight, 'reps': int reps}:
+                              _weightController.text = prefs.weight(weight);
+                              _repsController.text = '$reps';
+                          }
+                        case Category.repsOnly:
+                          switch (m) {
+                            case {'reps': int reps}:
+                              _repsController.text = '$reps';
+                          }
+                        case Category.cardio:
+                          switch (m) {
+                            case {'duration': num duration, 'distance': num distance}:
+                              _durationController.text = duration.toInt().toDuration();
+                              _distanceController.text = prefs.distance(distance);
+                          }
+                        case Category.duration:
+                          switch (m) {
+                            case {'duration': num duration}:
+                              _durationController.text = duration.toInt().toDuration();
+                          }
+                      }
+                    },
+                  ),
                   null => const Text(_emptyValue),
                 },
               ),
@@ -599,28 +601,29 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
   int _parseDuration() {
     return switch (_durationController.text.split(':').toList()) {
-      [String s] => parse(s),
-      [String m, String s] => parse(m) * 60 + parse(s),
-      [String h, String m, String s] => parse(h) * 3600 + parse(m) * 60 + parse(s),
+      [String s] => _parse(s),
+      [String m, String s] => _parse(m) * 60 + _parse(s),
+      [String h, String m, String s] => _parse(h) * 3600 + _parse(m) * 60 + _parse(s),
       _ => throw const FormatException(),
     };
   }
 
-  static int parse(String v) => int.tryParse(v) ?? 0;
+  static int _parse(String v) => int.tryParse(v) ?? 0;
 
   void _setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
     if (!context.mounted) return;
-    final Preferences(:weightUnit, :distanceUnit) = Preferences.of(context);
+    final Preferences(:weightValue, :distanceValue) = Preferences.of(context);
+
     set.setMeasurements(
       duration: duration,
-      weight: switch (weightUnit) {
-        MeasurementUnit.imperial => weight?.asKilograms,
-        MeasurementUnit.metric => weight,
+      weight: switch (weight) {
+        double w => weightValue(w),
+        null => null,
       },
       reps: reps,
-      distance: switch (distanceUnit) {
-        MeasurementUnit.imperial => distance?.asKilometers,
-        MeasurementUnit.metric => distance,
+      distance: switch (distance) {
+        double d => distanceValue(d),
+        null => null,
       },
     );
   }
