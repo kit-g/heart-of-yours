@@ -8,27 +8,24 @@ import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
-import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+import 'timer.dart';
+
 part 'exercise_item.dart';
-
 part 'feedback.dart';
-
 part 'keys.dart';
-
 part 'set_item.dart';
-
 part 'text_field_button.dart';
-
 part 'utils.dart';
 
 class WorkoutDetail extends StatefulWidget {
@@ -249,7 +246,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 60),
                     ],
                   ],
                 ),
@@ -379,5 +376,131 @@ class NewWorkoutHeader extends StatelessWidget {
     if (!hasActiveWorkout) {
       startWorkout(name: L.of(context).defaultWorkoutName());
     }
+  }
+}
+
+class ActiveWorkoutSheet extends StatefulWidget {
+  final Workouts workouts;
+  final double closingThreshold;
+
+  const ActiveWorkoutSheet({
+    super.key,
+    required this.workouts,
+    this.closingThreshold = .25,
+  });
+
+  @override
+  State<ActiveWorkoutSheet> createState() => _ActiveWorkoutSheetState();
+}
+
+class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
+  final _sheetController = DraggableScrollableController();
+  bool _isClosing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sheetController.addListener(_onSheetChanged);
+  }
+
+  @override
+  void dispose() {
+    _sheetController.removeListener(_onSheetChanged);
+    _sheetController.dispose();
+    super.dispose();
+  }
+
+  void _onSheetChanged() {
+    // when dragged to minimum size, dismiss the route
+    if (_sheetController.size <= widget.closingThreshold && !_isClosing) {
+      _isClosing = true;
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :scaffoldBackgroundColor, :textTheme) = Theme.of(context);
+    final workouts = widget.workouts;
+    final active = workouts.activeWorkout!;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 1.0,
+      minChildSize: 0.2,
+      maxChildSize: 1.0,
+      snap: true,
+      snapSizes: const [0.5, 1.0],
+      controller: _sheetController,
+      expand: false,
+      builder: (context, scrollController) {
+        return WorkoutDetail(
+          controller: scrollController,
+          exercises: active,
+          onDragExercise: workouts.append,
+          onSwapExercise: workouts.swap,
+          allowsCompletingSet: true,
+          onAddSet: workouts.addSet,
+          onRemoveSet: workouts.removeSet,
+          onRemoveExercise: workouts.removeExercise,
+          onAddExercises: (exercises) async {
+            final workouts = Workouts.of(context);
+            for (final each in exercises.toList()) {
+              await Future.delayed(
+                const Duration(milliseconds: 2),
+                () => workouts.startExercise(each),
+              );
+            }
+          },
+          appBar: SliverPersistentHeader(
+            pinned: true,
+            delegate: FixedHeightHeaderDelegate(
+              height: 40,
+              backgroundColor: scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(12),
+                topLeft: Radius.circular(12),
+              ),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: 40,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (workouts.activeWorkout?.start case DateTime start)
+                          WorkoutTimer(
+                            start: start,
+                            style: textTheme.titleSmall,
+                            initValue: workouts.activeWorkout?.elapsed(),
+                          ),
+                        if (workouts.hasActiveWorkout)
+                          PrimaryButton.shrunk(
+                            onPressed: () {
+                              showFinishWorkoutDialog(context, workouts);
+                            },
+                            backgroundColor: colorScheme.primaryContainer,
+                            child: Text(L.of(context).finish),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (workouts.activeWorkout?.name case String name)
+                    SizedBox(
+                      height: 40,
+                      child: Center(
+                        child: Text(
+                          name,
+                          style: textTheme.titleSmall,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
