@@ -47,6 +47,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   final _hasCrossedDismissThreshold = ValueNotifier<bool>(false);
   bool _hasBuzzedOnDismiss = false;
 
+  late L l;
+  late Workouts workouts;
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +60,14 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     _repsController.addListener(_repsListener);
     _distanceController.addListener(_distanceListener);
     _durationController.addListener(_durationListener);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    l = L.of(context);
+    workouts = Workouts.of(context);
   }
 
   @override
@@ -486,8 +497,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   }
 
   Future<void> _onCountdown(BuildContext context) {
-    final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :lb) = L.of(context);
-    final workouts = Workouts.of(context);
+    final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :lb) = l;
     final body = switch (workouts.nextIncomplete?.$2) {
       ExerciseSet(:double weight, :int reps) => weightedSetRepresentation(lb(weight.toInt()), reps),
       _ => null,
