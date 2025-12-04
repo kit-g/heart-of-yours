@@ -25,7 +25,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :cancel,
       :toFeedback,
       :leaveFeedbackBody,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     final ThemeData(
       :textTheme,
@@ -37,14 +39,16 @@ class SettingsPage extends StatelessWidget with HasHaptic {
         :onPrimaryContainer,
         :primary,
       ),
-    ) = Theme.of(context);
+    ) = Theme.of(
+      context,
+    );
 
     final heart = AppTheme.of(context).heart();
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarIconBrightness: switch (brightness) {
-          Brightness.dark => Brightness.light,
-          Brightness.light => Brightness.dark,
+          .dark => .light,
+          .light => .dark,
         },
         statusBarBrightness: brightness,
       ),
