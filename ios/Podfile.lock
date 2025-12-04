@@ -272,7 +272,7 @@ SPEC CHECKSUMS:
   FirebaseCoreInternal: dedc28e569a4be85f38f3d6af1070a2e12018d55
   FirebaseInstallations: d4c7c958f99c8860d7fcece786314ae790e2f988
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_local_notifications: df98d66e515e1ca797af436137b4459b160ad8c9
+  flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
   google_sign_in_ios: 7411fab6948df90490dc4620ecbcabdc3ca04017
   GoogleAdsOnDeviceConversion: 2be6297a4f048459e0ae17fad9bfd2844e10cf64
   GoogleAppMeasurement: 8f6ab04ad6ae493b53fcf56bd26323fb2f1384f3
