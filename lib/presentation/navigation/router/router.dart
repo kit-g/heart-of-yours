@@ -129,7 +129,7 @@ RouteBase _historyRoute() {
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
         LayoutSize.wide => HistoryPage(
-          onNewWorkout: context.goToWorkouts,
+          onNewWorkout: context.goToActiveWorkout,
           onSaveAsTemplate: (workout) {
             Templates.of(context).workoutToTemplate(workout);
             context.goToTemplateEditor(newTemplate: true);
@@ -161,7 +161,7 @@ RouteBase _historyRoute() {
           return switch (LayoutProvider.of(context)) {
             LayoutSize.wide => const SizedBox.shrink(), // already rendered by the builder
             LayoutSize.compact => HistoryPage(
-              onNewWorkout: context.goToWorkouts,
+              onNewWorkout: context.goToActiveWorkout,
               onSaveAsTemplate: (workout) {
                 Templates.of(context).workoutToTemplate(workout);
                 context.goToTemplateEditor(newTemplate: true);
