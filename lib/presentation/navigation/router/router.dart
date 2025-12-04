@@ -582,6 +582,10 @@ final class HeartRouter {
       queryParameters: {'exerciseId': exerciseId},
     );
   }
+
+  Future<void> goToActiveWorkout() {
+    return config.push(_activeWorkoutPath);
+  }
 }
 
 // tracks state pf the desktop auth flow
