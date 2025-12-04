@@ -235,6 +235,7 @@ Future<void> _initApp(
   String? userId, {
   bool? hasLocalNotifications,
 }) async {
+  final workouts = Workouts.of(context);
   if (hasLocalNotifications ?? false) {
     initNotifications(
       platform: Theme.of(context).platform,
@@ -242,9 +243,19 @@ Future<void> _initApp(
         // exercises with a timer emit a local notification
         // when tapped on, it will:
         // - redirect the user to the workout page
-        HeartRouter.of(context).goToExercise(exerciseId);
-        // - trigger a slight animation highlighting the exercise
-        Workouts.of(context).pointAt(exerciseId);
+        final HeartRouter(:goToActiveWorkout, :config) = HeartRouter.of(context);
+
+        if (config.state.path != '/activeWorkout') {
+          goToActiveWorkout();
+          Future.delayed(const Duration(milliseconds: 300)).then(
+            (_) {
+              // - trigger a slight animation highlighting the exercise
+              workouts.pointAt(exerciseId);
+            },
+          );
+        } else {
+          workouts.pointAt(exerciseId);
+        }
       },
       onUnknownNotification: reportToSentry,
     );
@@ -264,8 +275,7 @@ Future<void> _initApp(
     },
   );
 
-  var Exercises(:isInitialized, :init) = Exercises.of(context);
-  final workouts = Workouts.of(context);
+  final Exercises(:isInitialized, :init) = Exercises.of(context);
 
   final templates = Templates.of(context);
   final prefs = Preferences.of(context);
