@@ -3,6 +3,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/presentation/routes/done/done.dart';
@@ -75,6 +76,7 @@ RouteBase _workoutRoute() {
       return WorkoutPage(
         goToTemplateEditor: context.goToTemplateEditor,
         onOpenActiveWorkout: () {
+          HapticFeedback.mediumImpact();
           context.goToActiveWorkout();
         },
       );
@@ -142,6 +144,7 @@ RouteBase _historyRoute() {
             context.goToHistory();
           },
           onOpenActiveWorkout: () {
+            HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
           },
           detail: switch (workoutId) {
@@ -170,6 +173,7 @@ RouteBase _historyRoute() {
                 context.goToWorkoutEditor(workout.id);
               },
               onOpenActiveWorkout: () {
+                HapticFeedback.mediumImpact();
                 context.goToActiveWorkout();
               },
             ),
@@ -222,6 +226,7 @@ RouteBase _exercisesRoute() {
           },
           onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
           onOpenActiveWorkout: () {
+            HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
           },
           onShowArchived: context.goToExerciseArchive,
@@ -239,6 +244,7 @@ RouteBase _exercisesRoute() {
               onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
               onShowArchived: context.goToExerciseArchive,
               onOpenActiveWorkout: () {
+                HapticFeedback.mediumImpact();
                 context.goToActiveWorkout();
               },
             ),
