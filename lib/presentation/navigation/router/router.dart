@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -520,43 +522,45 @@ final class HeartRouter {
           _restoreAccountRoute(),
           _avatarRoute(),
         ],
-        redirect: (context, state) {
-          switch (state.fullPath?.split('/')) {
-            // login sub-routes
-            case ['', _loginName, String part]:
-              // there might be a query in path, see _loginRoute
-              return state.namedLocation(part, queryParameters: state.uri.queryParameters);
-          }
-
-          final auth = Auth.of(context);
-
-          final isLoggedIn = auth.isLoggedIn;
-
-          if (!isLoggedIn) {
-            // same as RecoveryPage
-            final from = Uri.encodeComponent(state.uri.toString());
-            final query = Map<String, String>.from(state.uri.queryParameters);
-            query['from'] ??= from;
-            return state.namedLocation(_loginName, queryParameters: query);
-          }
-
-          if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
-            return _workoutPath;
-          }
-
-          if (auth.user?.scheduledForDeletionAt != null) {
-            return _restoreAccountPath;
-          }
-
-          // deep link from cold start
-          if (state.uri.queryParameters case {'from': String from}) {
-            final link = Uri.tryParse(Uri.decodeComponent(from));
-            return link?.path;
-          }
-
-          return null;
-        },
+        redirect: _redirect,
       );
+
+  static FutureOr<String?> _redirect(BuildContext context, GoRouterState state) {
+    switch (state.fullPath?.split('/')) {
+      // login sub-routes
+      case ['', _loginName, String part]:
+        // there might be a query in path, see _loginRoute
+        return state.namedLocation(part, queryParameters: state.uri.queryParameters);
+    }
+
+    final auth = Auth.of(context);
+
+    final isLoggedIn = auth.isLoggedIn;
+
+    if (!isLoggedIn) {
+      // same as RecoveryPage
+      final from = Uri.encodeComponent(state.uri.toString());
+      final query = Map<String, String>.from(state.uri.queryParameters);
+      query['from'] ??= from;
+      return state.namedLocation(_loginName, queryParameters: query);
+    }
+
+    if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
+      return _workoutPath;
+    }
+
+    if (auth.user?.scheduledForDeletionAt != null) {
+      return _restoreAccountPath;
+    }
+
+    // deep link from cold start
+    if (state.uri.queryParameters case {'from': String from}) {
+      final link = Uri.tryParse(Uri.decodeComponent(from));
+      return link?.path;
+    }
+
+    return null;
+  }
 
   static HeartRouter of(BuildContext context) {
     return Provider.of<HeartRouter>(context, listen: false);
