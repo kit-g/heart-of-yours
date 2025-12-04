@@ -99,5 +99,8 @@ Future<void> _runner({
 }
 
 Future<void> main() {
-  return bootstrap(appConfig: AppConfig.fromDartDefine());
+  return bootstrap(
+    appConfig: AppConfig.fromDartDefine(),
+    hasLocalNotifications: true,
+  );
 }
