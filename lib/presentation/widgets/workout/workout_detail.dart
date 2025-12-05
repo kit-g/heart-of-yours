@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart/core/utils/assets.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -15,12 +16,14 @@ import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
+import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
 import 'timer.dart';
 
+part 'empty_state.dart';
 part 'exercise_item.dart';
 part 'feedback.dart';
 part 'keys.dart';
@@ -116,88 +119,10 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             child: SizedBox(height: 16),
           ),
         ...?widget.slivers,
-        SliverList.builder(
-          itemCount: exercises.length + 1,
-          itemBuilder: (_, index) {
-            if (index == exercises.length) {
-              return ValueListenableBuilder<WorkoutExercise?>(
-                valueListenable: _currentlyHoveredExercise,
-                builder: (_, hoveredOver, __) {
-                  return ValueListenableBuilder<WorkoutExercise?>(
-                    valueListenable: _beingDragged,
-                    builder: (_, dragged, __) {
-                      return DragTarget<WorkoutExercise>(
-                        onWillAcceptWithDetails: (_) {
-                          _currentlyHoveredExercise.value = null;
-                          return true;
-                        },
-                        onLeave: (_) {
-                          _currentlyHoveredExercise.value = null;
-                        },
-                        onAcceptWithDetails: (details) {
-                          widget.onDragExercise(details.data);
-                        },
-                        builder: (_, __, ___) {
-                          return Column(
-                            children: [
-                              if (hoveredOver == null && dragged != null) _divider,
-                              const SizedBox(height: 12),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              );
-            }
-
-            var sets = exercises.toList();
-            var set = sets[index];
-            return ValueListenableBuilder<WorkoutExercise?>(
-              valueListenable: _currentlyHoveredExercise,
-              builder: (_, hoveredOver, __) {
-                return Column(
-                  children: [
-                    if (hoveredOver == set) _divider,
-                    Selector<Workouts, bool>(
-                      builder: (_, isPointedAt, __) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 500),
-                          color: isPointedAt ? colorScheme.primary : Colors.transparent,
-                          child: _WorkoutExerciseItem(
-                            index: index,
-                            exercise: set,
-                            copy: addSet,
-                            firstColumnCopy: setCopy,
-                            secondColumnCopy: previous,
-                            dragState: _beingDragged,
-                            currentlyHoveredItem: _currentlyHoveredExercise,
-                            onAddSet: widget.onAddSet,
-                            onRemoveSet: widget.onRemoveSet,
-                            onSetDone: widget.onSetDone,
-                            onRemoveExercise: widget.onRemoveExercise,
-                            onSwapExercise: widget.onSwapExercise,
-                            onDragStarted: () {
-                              _beingDragged.value = set;
-                            },
-                            onDragEnded: () {
-                              buzz();
-                              _beingDragged.value = null;
-                              _currentlyHoveredExercise.value = null;
-                            },
-                            allowCompleting: widget.allowsCompletingSet,
-                          ),
-                        );
-                      },
-                      selector: (_, provider) => provider.pointedAtExercise == set.id,
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        ),
+        switch (exercises.isEmpty) {
+          true => const _EmptyState(size: 320),
+          false => _exerciseList(colorScheme, addSet, setCopy, previous),
+        },
         SliverToBoxAdapter(
           child: DragTarget<WorkoutExercise>(
             onWillAcceptWithDetails: (_) {
@@ -255,6 +180,91 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
           ),
         ),
       ],
+    );
+  }
+
+  SliverList _exerciseList(ColorScheme colorScheme, String addSet, String setCopy, String previous) {
+    return SliverList.builder(
+      itemCount: exercises.length + 1,
+      itemBuilder: (_, index) {
+        if (index == exercises.length) {
+          return ValueListenableBuilder<WorkoutExercise?>(
+            valueListenable: _currentlyHoveredExercise,
+            builder: (_, hoveredOver, __) {
+              return ValueListenableBuilder<WorkoutExercise?>(
+                valueListenable: _beingDragged,
+                builder: (_, dragged, __) {
+                  return DragTarget<WorkoutExercise>(
+                    onWillAcceptWithDetails: (_) {
+                      _currentlyHoveredExercise.value = null;
+                      return true;
+                    },
+                    onLeave: (_) {
+                      _currentlyHoveredExercise.value = null;
+                    },
+                    onAcceptWithDetails: (details) {
+                      widget.onDragExercise(details.data);
+                    },
+                    builder: (_, __, ___) {
+                      return Column(
+                        children: [
+                          if (hoveredOver == null && dragged != null) _divider,
+                          const SizedBox(height: 12),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          );
+        }
+
+        var sets = exercises.toList();
+        var set = sets[index];
+        return ValueListenableBuilder<WorkoutExercise?>(
+          valueListenable: _currentlyHoveredExercise,
+          builder: (_, hoveredOver, __) {
+            return Column(
+              children: [
+                if (hoveredOver == set) _divider,
+                Selector<Workouts, bool>(
+                  builder: (_, isPointedAt, __) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      color: isPointedAt ? colorScheme.primary : Colors.transparent,
+                      child: _WorkoutExerciseItem(
+                        index: index,
+                        exercise: set,
+                        copy: addSet,
+                        firstColumnCopy: setCopy,
+                        secondColumnCopy: previous,
+                        dragState: _beingDragged,
+                        currentlyHoveredItem: _currentlyHoveredExercise,
+                        onAddSet: widget.onAddSet,
+                        onRemoveSet: widget.onRemoveSet,
+                        onSetDone: widget.onSetDone,
+                        onRemoveExercise: widget.onRemoveExercise,
+                        onSwapExercise: widget.onSwapExercise,
+                        onDragStarted: () {
+                          _beingDragged.value = set;
+                        },
+                        onDragEnded: () {
+                          buzz();
+                          _beingDragged.value = null;
+                          _currentlyHoveredExercise.value = null;
+                        },
+                        allowCompleting: widget.allowsCompletingSet,
+                      ),
+                    );
+                  },
+                  selector: (_, provider) => provider.pointedAtExercise == set.id,
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
