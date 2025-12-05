@@ -1,14 +1,12 @@
 part of 'workout.dart';
 
-/// Layout of the workout page before a workout begins.
-///
 /// Allows to start a new workout
 /// or choose from a set of workout templates or create new ones
-class _NoActiveWorkoutLayout extends StatelessWidget {
+class _TemplatesLayout extends StatelessWidget {
   final void Function({bool? newTemplate}) goToTemplateEditor;
   final VoidCallback onNewWorkout;
 
-  const _NoActiveWorkoutLayout({
+  const _TemplatesLayout({
     required this.goToTemplateEditor,
     required this.onNewWorkout,
   });

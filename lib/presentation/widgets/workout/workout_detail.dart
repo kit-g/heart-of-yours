@@ -413,6 +413,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
   final _sheetController = DraggableScrollableController();
   bool _isClosing = false;
 
+  final _workoutNameController = TextEditingController();
+  final _workoutNameFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -423,6 +426,10 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
   void dispose() {
     _sheetController.removeListener(_onSheetChanged);
     _sheetController.dispose();
+
+    _workoutNameController.dispose();
+    _workoutNameFocusNode.dispose();
+
     super.dispose();
   }
 
@@ -431,6 +438,19 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     if (_sheetController.size <= widget.closingThreshold && !_isClosing) {
       _isClosing = true;
       Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final workouts = Workouts.of(context);
+
+    if (workouts.activeWorkout?.name case String name when name.isNotEmpty) {
+      if (name != _workoutNameController.text) {
+        _workoutNameController.text = name;
+      }
     }
   }
 
@@ -501,16 +521,37 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                       ],
                     ),
                   ),
-                  if (workouts.activeWorkout?.name case String name)
-                    SizedBox(
-                      height: 40,
-                      child: Center(
-                        child: Text(
-                          name,
+                  SizedBox(
+                    height: 40,
+                    child: Center(
+                      child: SizedBox(
+                        width: 180,
+                        child: TextField(
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(18),
+                          ],
+                          focusNode: _workoutNameFocusNode,
+                          textCapitalization: TextCapitalization.words,
+                          textAlign: TextAlign.center,
+                          controller: _workoutNameController,
                           style: textTheme.titleSmall,
+                          decoration: const InputDecoration.collapsed(hintText: ''),
+                          onEditingComplete: () {
+                            final text = _workoutNameController.text.trim();
+                            final name = switch (text.isEmpty) {
+                              true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
+                              false => text.trim(),
+                            };
+                            workouts.renameWorkout(name);
+                            _workoutNameFocusNode.unfocus();
+                          },
+                          onTapOutside: (_) {
+                            _workoutNameFocusNode.unfocus();
+                          },
                         ),
                       ),
                     ),
+                  ),
                 ],
               ),
             ),
