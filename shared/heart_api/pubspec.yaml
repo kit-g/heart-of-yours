@@ -21,5 +21,5 @@ resolution: workspace
 dev_dependencies:
   flutter_lints: ^6.0.0
   test: any
-  mockito: ^5.5.0
-  build_runner: 2.6.0
+  mockito: ^5.6.1
+  build_runner: ^2.10.4
