@@ -506,12 +506,14 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                       children: [
                         if (workouts.activeWorkout?.start case DateTime start)
                           WorkoutTimer(
+                            key: WorkoutDetailKeys.timer,
                             start: start,
                             style: textTheme.titleSmall,
                             initValue: workouts.activeWorkout?.elapsed(),
                           ),
                         if (workouts.hasActiveWorkout)
                           PrimaryButton.shrunk(
+                            key: WorkoutDetailKeys.finishWorkout,
                             onPressed: () {
                               showFinishWorkoutDialog(context, workouts);
                             },
