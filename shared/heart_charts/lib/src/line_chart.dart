@@ -135,7 +135,7 @@ class _HistoryChartState extends State<HistoryChart> {
                   },
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (touchedSpot) => Colors.pink,
-                    tooltipRoundedRadius: 8,
+                    tooltipBorderRadius: BorderRadius.circular(8),
                     getTooltipItems: (lineBarsSpot) {
                       return lineBarsSpot.map(
                         (spot) {
