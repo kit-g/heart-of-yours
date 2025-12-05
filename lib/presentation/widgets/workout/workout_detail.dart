@@ -350,7 +350,12 @@ const _divider = Divider(
 );
 
 class NewWorkoutHeader extends StatelessWidget {
-  const NewWorkoutHeader({super.key});
+  final VoidCallback openWorkoutSheet;
+
+  const NewWorkoutHeader({
+    super.key,
+    required this.openWorkoutSheet,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -362,7 +367,16 @@ class NewWorkoutHeader extends StatelessWidget {
           key: WorkoutDetailKeys.startNewWorkout,
           onPressed: () => _startWorkout(context),
           child: Center(
-            child: Text(L.of(context).startNewWorkout),
+            child: Selector<Workouts, bool>(
+              selector: (_, provider) => provider.hasActiveWorkout,
+              builder: (_, hasActiveWorkout, _) {
+                if (hasActiveWorkout) {
+                  return Text(L.of(context).goToWorkout);
+                } else {
+                  return Text(L.of(context).startNewWorkout);
+                }
+              },
+            ),
           ),
         ),
         height: 40,
@@ -376,6 +390,8 @@ class NewWorkoutHeader extends StatelessWidget {
     if (!hasActiveWorkout) {
       startWorkout(name: L.of(context).defaultWorkoutName());
     }
+
+    openWorkoutSheet();
   }
 }
 
