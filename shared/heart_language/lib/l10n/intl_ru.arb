@@ -1200,5 +1200,11 @@
     "description": "Possessive pronoun, as in \"My exercises\"",
     "type": "text",
     "placeholders": {}
+  },
+  "goToWorkout": "К тренировке",
+  "@goToWorkout": {
+    "description": "Label for button that pulls up active workout UI.",
+    "type": "text",
+    "placeholders": {}
   }
 }
