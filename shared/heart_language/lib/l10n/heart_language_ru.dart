@@ -637,4 +637,7 @@ class LRu extends L {
 
   @override
   String get mine => 'Мои';
+
+  @override
+  String get goToWorkout => 'К тренировке';
 }

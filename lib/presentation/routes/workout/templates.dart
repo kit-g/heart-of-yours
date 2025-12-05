@@ -6,8 +6,12 @@ part of 'workout.dart';
 /// or choose from a set of workout templates or create new ones
 class _NoActiveWorkoutLayout extends StatelessWidget {
   final void Function({bool? newTemplate}) goToTemplateEditor;
+  final VoidCallback onNewWorkout;
 
-  const _NoActiveWorkoutLayout({required this.goToTemplateEditor});
+  const _NoActiveWorkoutLayout({
+    required this.goToTemplateEditor,
+    required this.onNewWorkout,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +30,7 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
             title: Text(startWorkout),
           ),
         ),
-        const NewWorkoutHeader(),
+        NewWorkoutHeader(openWorkoutSheet: onNewWorkout),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -74,7 +78,6 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
                       Workouts.of(context).startWorkout(template: template.toWorkout());
                     },
                     onTap: (template) {
-
                       _showStartWorkoutDialog(context, template);
                     },
                   );
@@ -131,7 +134,9 @@ class _NoActiveWorkoutLayout extends StatelessWidget {
       :cancel,
       :deleteThis,
       :deleted,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
     return showBrandedDialog(
       context,
       title: Text(
