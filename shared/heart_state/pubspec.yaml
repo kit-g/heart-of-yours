@@ -12,12 +12,12 @@ dependencies:
   firebase_core: 4.2.1
   flutter:
     sdk: flutter
-  google_sign_in: ^7.1.0
+  google_sign_in: ^7.2.0
   heart_models:
     path: '../heart_models'
   provider: ^6.1.2
   shared_preferences: ^2.3.2
-  sign_in_with_apple: ^6.1.4
+  sign_in_with_apple: ^7.0.1
 
 resolution: workspace
 
