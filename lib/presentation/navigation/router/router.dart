@@ -490,10 +490,11 @@ RouteBase _avatarRoute() {
 
 final class HeartRouter {
   final List<NavigatorObserver>? observers;
+  final void Function(dynamic error)? onError;
 
   final GoRouter config;
 
-  HeartRouter({this.observers})
+  HeartRouter({this.observers, this.onError})
     : config = GoRouter(
         navigatorKey: _rootNavigatorKey,
         debugLogDiagnostics: false,
@@ -529,6 +530,10 @@ final class HeartRouter {
           _avatarRoute(),
         ],
         redirect: _redirect,
+        onException: (_, state, router) {
+          router.go(_profilePath);
+          onError?.call('Router.onException: ${state.uri}');
+        },
       );
 
   static FutureOr<String?> _redirect(BuildContext context, GoRouterState state) {
