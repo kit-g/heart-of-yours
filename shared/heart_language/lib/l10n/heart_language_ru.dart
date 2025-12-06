@@ -640,4 +640,7 @@ class LRu extends L {
 
   @override
   String get goToWorkout => 'К тренировке';
+
+  @override
+  String get setTimer => 'Установить таймер';
 }

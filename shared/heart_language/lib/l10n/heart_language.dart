@@ -1268,11 +1268,17 @@ abstract class L {
   /// **'Mine'**
   String get mine;
 
-  /// Label for button that pulls up active workout UI.
+  /// Label for button that pulls up active workout UI
   ///
   /// In en, this message translates to:
   /// **'Go to Workout'**
   String get goToWorkout;
+
+  /// Label for button that adds a rest timer to an exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Set timer'**
+  String get setTimer;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -1203,7 +1203,13 @@
   },
   "goToWorkout": "К тренировке",
   "@goToWorkout": {
-    "description": "Label for button that pulls up active workout UI.",
+    "description": "Label for button that pulls up active workout UI",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTimer": "Установить таймер",
+  "@setTimer": {
+    "description": "Label for button that adds a rest timer to an exercise",
     "type": "text",
     "placeholders": {}
   }
