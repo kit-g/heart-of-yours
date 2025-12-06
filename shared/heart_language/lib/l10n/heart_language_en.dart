@@ -640,6 +640,9 @@ class LEn extends L {
 
   @override
   String get goToWorkout => 'Go to Workout';
+
+  @override
+  String get setTimer => 'Set timer';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1278,4 +1281,7 @@ class LEnCa extends LEn {
 
   @override
   String get goToWorkout => 'Go to Workout';
+
+  @override
+  String get setTimer => 'Set timer';
 }

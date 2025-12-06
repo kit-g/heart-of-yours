@@ -19,6 +19,7 @@ Future<int?> showDurationPicker(BuildContext context, {int? initialValue, String
 Future<int?> _cupertinoDialog(BuildContext context, {int? initialValue, String? subtitle}) {
   final L(:restTimer) = L.of(context);
   final ThemeData(:textTheme) = Theme.of(context);
+  final selected = ValueNotifier<int?>(initialValue);
 
   return showAdaptiveDialog(
     barrierDismissible: true,
@@ -49,9 +50,7 @@ Future<int?> _cupertinoDialog(BuildContext context, {int? initialValue, String? 
                   child: CupertinoPicker(
                     scrollController: _controller(initialValue),
                     itemExtent: 40,
-                    onSelectedItemChanged: (_) {
-                      //
-                    },
+                    onSelectedItemChanged: (v) => selected.value = v,
                     children: List<Widget>.generate(
                       120,
                       (index) => _Item(duration: _duration(index)),
@@ -59,6 +58,10 @@ Future<int?> _cupertinoDialog(BuildContext context, {int? initialValue, String? 
                   ),
                 ),
                 const _CancelButton(),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: _OkButton(currentValue: selected),
+                ),
               ],
             ),
           ],
@@ -72,7 +75,9 @@ Future<int?> _defaultDialog(BuildContext context, {int? initialValue, String? su
   final L(:restTimer) = L.of(context);
   final ThemeData(:textTheme) = Theme.of(context);
 
-  return showAdaptiveDialog(
+  final selected = ValueNotifier<int?>(initialValue);
+
+  return showAdaptiveDialog<int?>(
     barrierDismissible: true,
     context: context,
     builder: (context) {
@@ -112,6 +117,10 @@ Future<int?> _defaultDialog(BuildContext context, {int? initialValue, String? su
                   ),
                 ),
                 const _CancelButton(),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: _OkButton(currentValue: selected),
+                ),
               ],
             ),
           ],
@@ -161,6 +170,37 @@ FixedExtentScrollController _controller(int? initialValue) {
   );
 }
 
+class _Button extends StatelessWidget {
+  final String copy;
+  final Color? color;
+  final TextStyle? style;
+  final VoidCallback onPressed;
+
+  const _Button({
+    required this.copy,
+    required this.color,
+    required this.style,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16),
+      child: PrimaryButton.wide(
+        backgroundColor: color,
+        onPressed: onPressed,
+        child: Center(
+          child: Text(
+            copy,
+            style: style,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CancelButton extends StatelessWidget {
   const _CancelButton();
 
@@ -168,21 +208,35 @@ class _CancelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
-      child: PrimaryButton.wide(
-        backgroundColor: colorScheme.error,
-        child: Center(
-          child: Text(
-            L.of(context).cancelTimer,
-            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
-          ),
-        ),
-        onPressed: () {
-          HapticFeedback.heavyImpact();
-          Navigator.pop(context, 0);
-        },
-      ),
+    return _Button(
+      copy: L.of(context).cancelTimer,
+      color: colorScheme.error,
+      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
+      onPressed: () {
+        HapticFeedback.heavyImpact();
+        Navigator.pop(context, 0);
+      },
+    );
+  }
+}
+
+class _OkButton extends StatelessWidget {
+  final ValueNotifier<int?> currentValue;
+
+  const _OkButton({required this.currentValue});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+
+    return _Button(
+      copy: L.of(context).setTimer,
+      color: colorScheme.primaryContainer,
+      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
+      onPressed: () {
+        HapticFeedback.heavyImpact();
+        Navigator.pop(context, (currentValue.value ?? 0) * 5 + 5);
+      },
     );
   }
 }

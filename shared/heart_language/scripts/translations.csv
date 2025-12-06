@@ -228,4 +228,5 @@ capturePhoto,Image picker menu,Take a new photo,Take a new photo,Сделать 
 chooseFromGallery,Image picker menu,Choose from library,Choose from library,Выбрать из галереи
 removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Удалить текущее фото
 mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Мои
-goToWorkout,Label for button that pulls up active workout UI.,Go to Workout,Go to Workout,К тренировке
+goToWorkout,Label for button that pulls up active workout UI,Go to Workout,Go to Workout,К тренировке
+setTimer,Label for button that adds a rest timer to an exercise,Set timer,Set timer,Установить таймер
