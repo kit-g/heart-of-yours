@@ -2,14 +2,14 @@ part of 'login.dart';
 
 String _errorCopy(L l, AuthExceptionReason reason) {
   return switch (reason) {
-    AuthExceptionReason.invalidEmail => l.invalidCredentials,
-    AuthExceptionReason.wrongPassword => l.invalidCredentials,
-    AuthExceptionReason.userNotFound => l.invalidCredentials,
-    AuthExceptionReason.userDisabled => l.userDisabled,
-    AuthExceptionReason.unknown => l.unknownError,
-    AuthExceptionReason.emailInUse => l.unknownError,
-    AuthExceptionReason.weakPassword => l.weakPassword,
-    AuthExceptionReason.networkRequestFailed => l.noConnectivity,
+    .invalidEmail => l.invalidCredentials,
+    .wrongPassword => l.invalidCredentials,
+    .userNotFound => l.invalidCredentials,
+    .userDisabled => l.userDisabled,
+    .unknown => l.unknownError,
+    .emailInUse => l.unknownError,
+    .weakPassword => l.weakPassword,
+    .networkRequestFailed => l.noConnectivity,
   };
 }
 
@@ -32,7 +32,7 @@ mixin AsyncState<T extends StatefulWidget> on State<T>, LoadingState<T>, HasErro
       await callback();
     } on AuthException catch (e) {
       switch (e.reason) {
-        case AuthExceptionReason.emailInUse:
+        case .emailInUse:
           return onEmailExists?.call();
         default:
           error.value = _errorCopy(l, e.reason);
