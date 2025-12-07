@@ -23,9 +23,16 @@ class Api
 
   Api._();
 
-  factory Api({required String gateway, http.Client? client}) {
+  factory Api({
+    required String gateway,
+    http.Client? client,
+    Response Function(Json)? onUnauthorized,
+    Response Function(Json)? onUpgradeRequired,
+  }) {
     instance.gateway = gateway;
     instance.client = client;
+    instance.onUnauthorized = onUnauthorized;
+    instance.onUpgradeRequired = onUpgradeRequired;
     return instance;
   }
 
@@ -54,6 +61,7 @@ class Api
     return switch ((code, json)) {
       (200, Map json) => User.fromJson(json),
       (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
+      (426, _) => throw UpgradeRequired(),
       _ => throw json, // error
     };
   }
@@ -63,6 +71,7 @@ class Api
     final (json, code) = await delete(Router.accounts);
     return switch (code) {
       < 400 => null,
+      426 => throw UpgradeRequired(),
       _ => throw json, // error
     };
   }

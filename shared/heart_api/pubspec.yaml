@@ -14,7 +14,7 @@ dependencies:
   network_utils:
     git:
       url: "https://github.com/kit-g/dart-network-utils.git"
-      ref: "0e1fa2e748581d7d76c5f48c21decb8090ffe8d9"
+      ref: "main"
 
 resolution: workspace
 
