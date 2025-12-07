@@ -1,5 +1,24 @@
 part of '../heart_db.dart';
 
+const _migrations = <int, List<String>>{
+  1: [
+    sql.exercises,
+    sql.syncs,
+    sql.workouts,
+    sql.workoutExercises,
+    sql.sets,
+    sql.templates,
+    sql.templatesExercises,
+    sql.exerciseDetails,
+    sql.workoutExerciseIndex1,
+    sql.workoutExerciseIndex2,
+    sql.setsIndex,
+    sql.detailsIndex,
+    sql.templatesExercisesIndex1,
+    sql.templatesExercisesIndex2,
+  ],
+};
+
 class LocalDatabase
     implements
         TimersService, //
@@ -43,28 +62,17 @@ class LocalDatabase
   static FutureOr<void> _migrate(Database db, int oldVersion, int newVersion) async {
     _logger.info('Migrating local database from version $oldVersion to $newVersion');
 
+    bool unmigrated(MapEntry<int, List<String>> e) {
+      return e.key > oldVersion && e.key <= newVersion;
+    }
+
+    final migrations = _migrations.entries.where(unmigrated).expand((e) => e.value);
+
     return db.transaction(
       (txn) async {
         try {
-          const migration1 = [
-            sql.exercises,
-            sql.syncs,
-            sql.workouts,
-            sql.workoutExercises,
-            sql.sets,
-            sql.templates,
-            sql.templatesExercises,
-            sql.exerciseDetails,
-            sql.workoutExerciseIndex1,
-            sql.workoutExerciseIndex2,
-            sql.setsIndex,
-            sql.detailsIndex,
-            sql.templatesExercisesIndex1,
-            sql.templatesExercisesIndex2,
-          ];
-
-          for (final each in migration1) {
-            await txn.execute(each);
+          for (final sql in migrations) {
+            await txn.execute(sql);
           }
         } catch (error, stacktrace) {
           _logger.severe('Error migrating local db from version $oldVersion to $newVersion: $error, $stacktrace');
