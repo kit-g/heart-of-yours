@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
@@ -13,6 +14,7 @@ import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
+import 'package:heart/presentation/routes/settings/upgrade_app.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/app_frame.dart';
 import 'package:heart/presentation/widgets/greetings_pane.dart';
@@ -489,6 +491,14 @@ RouteBase _avatarRoute() {
   );
 }
 
+RouteBase _upgradeRequiredRoute() {
+  return GoRoute(
+    path: _upgradeAppPath,
+    builder: (context, _) => const UpgradeRequiredPage(),
+    name: _upgradeAppName,
+  );
+}
+
 final class HeartRouter {
   final List<NavigatorObserver>? observers;
   final void Function(dynamic error)? onError;
@@ -524,6 +534,7 @@ final class HeartRouter {
               ),
             ],
           ),
+          _upgradeRequiredRoute(),
           _activeWorkoutRoute(),
           _loginRoute(),
           _workoutDoneRoute(),
@@ -546,6 +557,21 @@ final class HeartRouter {
       );
 
   static FutureOr<String?> _redirect(BuildContext context, GoRouterState state) {
+    final upgradeRequired = AppVersionSentry.instance.upgradeRequired;
+
+    // app version to low, show dedicated UX
+    if (state.fullPath == _upgradeAppPath) {
+      // stay on upgrade page if still required
+      if (upgradeRequired) return null;
+      // otherwise, go to profile
+      return _profilePath;
+    }
+
+    // redirect to upgrade page if required
+    if (upgradeRequired) {
+      return _upgradeAppPath;
+    }
+
     switch (state.fullPath?.split('/')) {
       // login sub-routes
       case ['', _loginName, String part]:

@@ -29,3 +29,5 @@ const _restoreAccountName = 'restoreAccount';
 const _restoreAccountPath = '/$_restoreAccountName';
 const _applePath = '/apple';
 const _activeWorkoutPath = '/activeWorkout'; // a notifications redirect in app.dart relies on this
+const _upgradeAppName = 'upgradeApp';
+const _upgradeAppPath = '/$_upgradeAppName';
