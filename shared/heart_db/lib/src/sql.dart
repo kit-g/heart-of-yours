@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS workout_exercises
 );
 """;
 
+const workoutExerciseIndex1 = """
+CREATE INDEX IF NOT EXISTS exercise_idx ON workout_exercises (exercise_id);
+""";
+
+const workoutExerciseIndex2 = """
+CREATE INDEX IF NOT EXISTS workout_idx ON workout_exercises (workout_id);
+""";
+
 const sets = """
 CREATE TABLE IF NOT EXISTS sets
 (
@@ -70,6 +78,10 @@ CREATE TABLE IF NOT EXISTS sets
     CHECK (duration >= 0),
     CHECK (distance >= 0)
 );
+""";
+
+const setsIndex = """
+CREATE INDEX IF NOT EXISTS exercise_idx ON sets (exercise_id);
 """;
 
 const templates = """
@@ -91,6 +103,14 @@ CREATE TABLE IF NOT EXISTS template_exercises
     exercise_id TEXT    NOT NULL REFERENCES exercises ON DELETE CASCADE,
     description TEXT
 );
+""";
+
+const templatesExercisesIndex1 = """
+CREATE INDEX IF NOT EXISTS exercise_idx ON template_exercises (exercise_id);
+""";
+
+const templatesExercisesIndex2 = """
+CREATE INDEX IF NOT EXISTS template_idx ON template_exercises (template_id);
 """;
 
 const activeWorkout = """
@@ -338,6 +358,10 @@ CREATE TABLE IF NOT EXISTS exercise_details
     rest_timer    INTEGER,
     PRIMARY KEY (exercise_name, user_id)
 );
+""";
+
+const detailsIndex = """
+CREATE INDEX IF NOT EXISTS exercise_name_idx ON exercise_details (exercise_name);
 """;
 
 const getExerciseHistory = """
