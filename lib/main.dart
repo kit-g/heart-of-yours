@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/logging.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -79,6 +80,20 @@ Future<void> _runner({
 }) {
   return setOrientations([DeviceOrientation.portraitUp]).then<void>(
     (_) {
+      final router = HeartRouter(
+        observers: [
+          SentryNavigatorObserver(),
+          FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+        ],
+        onError: reportToSentry,
+      );
+
+      api.onUpgradeRequired = (j) {
+        AppVersionSentry.instance.requireUpgrade();
+        router.refresh();
+        return (j, 426);
+      };
+
       return runApp(
         HeartApp(
           db: db,
@@ -87,13 +102,7 @@ Future<void> _runner({
           hasLocalNotifications: hasLocalNotifications,
           appConfig: appConfig,
           firebaseAuth: firebase,
-          router: HeartRouter(
-            observers: [
-              SentryNavigatorObserver(),
-              FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-            ],
-            onError: reportToSentry,
-          ),
+          router: router,
         ),
       );
     },

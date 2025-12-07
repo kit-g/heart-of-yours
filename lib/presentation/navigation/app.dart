@@ -122,6 +122,7 @@ class HeartApp extends StatelessWidget {
             },
             onError: reportToSentry,
             firebase: firebaseAuth,
+            isWeb: kIsWeb,
           ),
         ),
         ChangeNotifierProvider<Alarms>(
@@ -333,6 +334,7 @@ Future<void> _initApi({required AppConfig config, String? sessionToken, String? 
       config: config,
       sessionToken: sessionToken,
       appVersion: appVersion,
+      isWeb: kIsWeb,
     ),
   );
 }
