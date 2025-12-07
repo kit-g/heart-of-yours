@@ -1279,6 +1279,24 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Set timer'**
   String get setTimer;
+
+  /// Force update screen, title
+  ///
+  /// In en, this message translates to:
+  /// **'Oops. That one’s on us'**
+  String get updateRequiredTitle;
+
+  /// Force update screen, body
+  ///
+  /// In en, this message translates to:
+  /// **'There’s an important update waiting — one that keeps your app working as it should.\n\nYou’ll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.'**
+  String get updateRequiredBody;
+
+  /// Force update screen, CTA
+  ///
+  /// In en, this message translates to:
+  /// **'Update on the {storeName}'**
+  String updateRequiredCta(String storeName);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

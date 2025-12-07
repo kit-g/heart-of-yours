@@ -643,4 +643,16 @@ class LRu extends L {
 
   @override
   String get setTimer => 'Установить таймер';
+
+  @override
+  String get updateRequiredTitle => 'Упс. Это наша вина';
+
+  @override
+  String get updateRequiredBody =>
+      'Доступно важное обновление — оно необходимо для правильной работы приложения.\r\n\r\nВам нужно установить его, чтобы продолжить.\r\nСпасибо за терпение — и извините за прерывание.';
+
+  @override
+  String updateRequiredCta(String storeName) {
+    return 'Обновить в $storeName';
+  }
 }

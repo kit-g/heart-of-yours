@@ -643,6 +643,18 @@ class LEn extends L {
 
   @override
   String get setTimer => 'Set timer';
+
+  @override
+  String get updateRequiredTitle => 'Oops. That one’s on us';
+
+  @override
+  String get updateRequiredBody =>
+      'There’s an important update waiting — one that keeps your app working as it should.\n\nYou’ll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.';
+
+  @override
+  String updateRequiredCta(String storeName) {
+    return 'Update on the $storeName';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1284,4 +1296,16 @@ class LEnCa extends LEn {
 
   @override
   String get setTimer => 'Set timer';
+
+  @override
+  String get updateRequiredTitle => 'Oops. That one\'s on us';
+
+  @override
+  String get updateRequiredBody =>
+      'There\'s an important update waiting — one that keeps your app working as it should.\r\n\r\nYou\'ll need to install it before continuing.\r\nThanks for your patience — and sorry for the interruption.';
+
+  @override
+  String updateRequiredCta(String storeName) {
+    return 'Update on the $storeName';
+  }
 }

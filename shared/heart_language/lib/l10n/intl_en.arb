@@ -1212,5 +1212,28 @@
     "description": "Label for button that adds a rest timer to an exercise",
     "type": "text",
     "placeholders": {}
+  },
+  "updateRequiredTitle": "Oops. That one’s on us",
+  "@updateRequiredTitle": {
+    "description": "Force update screen, title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "updateRequiredBody": "There’s an important update waiting — one that keeps your app working as it should.\n\nYou’ll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.",
+  "@updateRequiredBody": {
+    "description": "Force update screen, body",
+    "type": "text",
+    "placeholders": {}
+  },
+  "updateRequiredCta": "Update on the {storeName}",
+  "@updateRequiredCta": {
+    "description": "Force update screen, CTA",
+    "type": "text",
+    "placeholders": {
+      "storeName": {
+        "type": "String",
+        "example": "App Store"
+      }
+    }
   }
 }
