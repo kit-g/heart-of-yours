@@ -42,23 +42,34 @@ class LocalDatabase
 
   static FutureOr<void> _migrate(Database db, int oldVersion, int newVersion) async {
     _logger.info('Migrating local database from version $oldVersion to $newVersion');
-    db.transaction(
+
+    return db.transaction(
       (txn) async {
-        txn
-          ..execute(sql.exercises)
-          ..execute(sql.syncs)
-          ..execute(sql.workouts)
-          ..execute(sql.workoutExercises)
-          ..execute(sql.sets)
-          ..execute(sql.templates)
-          ..execute(sql.templatesExercises)
-          ..execute(sql.exerciseDetails)
-          ..execute(sql.workoutExerciseIndex1)
-          ..execute(sql.workoutExerciseIndex2)
-          ..execute(sql.setsIndex)
-          ..execute(sql.detailsIndex)
-          ..execute(sql.templatesExercisesIndex1)
-          ..execute(sql.templatesExercisesIndex2);
+        try {
+          const migration1 = [
+            sql.exercises,
+            sql.syncs,
+            sql.workouts,
+            sql.workoutExercises,
+            sql.sets,
+            sql.templates,
+            sql.templatesExercises,
+            sql.exerciseDetails,
+            sql.workoutExerciseIndex1,
+            sql.workoutExerciseIndex2,
+            sql.setsIndex,
+            sql.detailsIndex,
+            sql.templatesExercisesIndex1,
+            sql.templatesExercisesIndex2,
+          ];
+
+          for (final each in migration1) {
+            await txn.execute(each);
+          }
+        } catch (error, stacktrace) {
+          _logger.severe('Error migrating local db from version $oldVersion to $newVersion: $error, $stacktrace');
+          rethrow;
+        }
       },
     );
   }
