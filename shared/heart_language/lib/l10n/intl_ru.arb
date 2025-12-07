@@ -1212,5 +1212,28 @@
     "description": "Label for button that adds a rest timer to an exercise",
     "type": "text",
     "placeholders": {}
+  },
+  "updateRequiredTitle": "Упс. Это наша вина",
+  "@updateRequiredTitle": {
+    "description": "Force update screen, title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "updateRequiredBody": "Доступно важное обновление — оно необходимо для правильной работы приложения.\r\n\r\nВам нужно установить его, чтобы продолжить.\r\nСпасибо за терпение — и извините за прерывание.",
+  "@updateRequiredBody": {
+    "description": "Force update screen, body",
+    "type": "text",
+    "placeholders": {}
+  },
+  "updateRequiredCta": "Обновить в {storeName}",
+  "@updateRequiredCta": {
+    "description": "Force update screen, CTA",
+    "type": "text",
+    "placeholders": {
+      "storeName": {
+        "type": "String",
+        "example": "App Store"
+      }
+    }
   }
 }
