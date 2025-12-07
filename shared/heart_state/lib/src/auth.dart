@@ -44,9 +44,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.appleSignInRedirect,
     fb.FirebaseAuth? firebase,
     GoogleSignIn? googleSignIn,
-  })  : _service = service,
-        _firebase = firebase ?? fb.FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
+  }) : _service = service,
+       _firebase = firebase ?? fb.FirebaseAuth.instance,
+       _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
     // such is the way with Google sign-in
     // on the web - Firebase does not pick it up
     if (isWeb) {
@@ -126,9 +126,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         ],
         webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
           (String clientId, String redirect) => WebAuthenticationOptions(
-              clientId: clientId,
-              redirectUri: Uri.parse(redirect),
-            ),
+            clientId: clientId,
+            redirectUri: Uri.parse(redirect),
+          ),
           _ => null,
         },
       );
@@ -262,9 +262,14 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<User?> _registerUser(User? user) async {
-    if (user == null) return user;
-    if (!_service.isAuthenticated) return user;
-    return _service.registerAccount(user);
+    try {
+      if (user == null) return user;
+      if (!_service.isAuthenticated) return user;
+      return await _service.registerAccount(user);
+    } on UpgradeRequired catch (e) {
+      onError?.call(e);
+      return null;
+    }
   }
 
   Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
@@ -279,8 +284,12 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           final cred = fb.EmailAuthProvider.credential(email: email, password: password);
           final authenticated = await _firebase.currentUser?.reauthenticateWithCredential(cred);
           onAuthenticate(await authenticated?.user?.getIdToken());
-          await _service.deleteAccount(accountId: accountId);
-          await _logout();
+          try {
+            await _service.deleteAccount(accountId: accountId);
+            await _logout();
+          } on UpgradeRequired catch (e) {
+            onError?.call(e);
+          }
       }
     }
 
@@ -362,7 +371,8 @@ enum AuthExceptionReason {
   emailInUse,
   weakPassword,
   networkRequestFailed,
-  unknown;
+  unknown
+  ;
 
   factory AuthExceptionReason.fromCode(String code) {
     return switch (code) {
