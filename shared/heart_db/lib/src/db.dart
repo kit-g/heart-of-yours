@@ -52,7 +52,13 @@ class LocalDatabase
           ..execute(sql.sets)
           ..execute(sql.templates)
           ..execute(sql.templatesExercises)
-          ..execute(sql.exerciseDetails);
+          ..execute(sql.exerciseDetails)
+          ..execute(sql.workoutExerciseIndex1)
+          ..execute(sql.workoutExerciseIndex2)
+          ..execute(sql.setsIndex)
+          ..execute(sql.detailsIndex)
+          ..execute(sql.templatesExercisesIndex1)
+          ..execute(sql.templatesExercisesIndex2);
       },
     );
   }
