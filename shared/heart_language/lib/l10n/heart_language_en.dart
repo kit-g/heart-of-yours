@@ -655,6 +655,12 @@ class LEn extends L {
   String updateRequiredCta(String storeName) {
     return 'Update on the $storeName';
   }
+
+  @override
+  String get addPhoto => 'Add photo';
+
+  @override
+  String get editWorkoutName => 'Edit workout name';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1308,4 +1314,10 @@ class LEnCa extends LEn {
   String updateRequiredCta(String storeName) {
     return 'Update on the $storeName';
   }
+
+  @override
+  String get addPhoto => 'Add photo';
+
+  @override
+  String get editWorkoutName => 'Edit workout name';
 }

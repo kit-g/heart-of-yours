@@ -655,4 +655,10 @@ class LRu extends L {
   String updateRequiredCta(String storeName) {
     return 'Обновить в $storeName';
   }
+
+  @override
+  String get addPhoto => 'Добавить фото';
+
+  @override
+  String get editWorkoutName => 'Изменить название тренировки';
 }
