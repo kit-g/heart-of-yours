@@ -1297,6 +1297,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Update on the {storeName}'**
   String updateRequiredCta(String storeName);
+
+  /// menu item that allows to add photo to a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get addPhoto;
+
+  /// menu item that allows to edit workout name
+  ///
+  /// In en, this message translates to:
+  /// **'Edit workout name'**
+  String get editWorkoutName;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
