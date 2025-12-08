@@ -241,4 +241,6 @@ Thanks for your patience — and sorry for the interruption.","Доступно 
 
 Вам нужно установить его, чтобы продолжить.
 Спасибо за терпение — и извините за прерывание."
-updateRequiredCta,"Force update screen, CTA",Update on the {storeName},Update on the {storeName},Обновить в {storeName},
+updateRequiredCta,"Force update screen, CTA",Update on the {storeName},Update on the {storeName},Обновить в {storeName}
+addPhoto,menu item that allows to add photo to a workout,Add photo,Add photo,Добавить фото
+editWorkoutName,menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки
