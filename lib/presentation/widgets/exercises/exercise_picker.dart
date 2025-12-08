@@ -92,7 +92,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                       onPressed: () async {
                         return showMenu(
                           context: context,
-                          position: _position(_targetKey),
+                          position: _targetKey.position(),
                           items: <PopupMenuEntry<ExerciseFilter>>[
                             ...Target.values.map(
                               (category) {
@@ -154,7 +154,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                       onPressed: () async {
                         return showMenu(
                           context: context,
-                          position: _position(_categoryKey),
+                          position: _categoryKey.position(),
                           items: <PopupMenuEntry<ExerciseFilter>>[
                             ...Category.values.map(
                               (category) {
@@ -273,18 +273,6 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
           ),
         },
       ],
-    );
-  }
-
-  RelativeRect _position(GlobalKey key) {
-    final RenderBox renderBox = key.currentContext!.findRenderObject() as RenderBox;
-    final Offset offset = renderBox.localToGlobal(Offset.zero);
-    final Size size = renderBox.size;
-    return RelativeRect.fromLTRB(
-      offset.dx,
-      offset.dy + size.height, // top (below the button)
-      offset.dx + size.width,
-      offset.dy + size.height, // bottom (same as top for a dropdown effect)
     );
   }
 }
