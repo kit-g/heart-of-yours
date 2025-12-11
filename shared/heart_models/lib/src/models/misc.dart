@@ -48,3 +48,11 @@ abstract interface class HeaderAuthenticatedService {
 
   bool get isAuthenticated;
 }
+
+abstract interface class FileUploadService {
+  Future<bool> uploadFile(
+    ({String url, Map<String, String> fields}) cred,
+    (String field, List<int> value, {String? filename, String? contentType}) file, {
+    final void Function(int bytes, int totalBytes)? onProgress,
+  });
+}
