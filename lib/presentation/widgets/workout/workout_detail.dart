@@ -1,10 +1,13 @@
 library;
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/utils/assets.dart';
+import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -15,6 +18,8 @@ import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
+import 'package:heart/presentation/widgets/image.dart';
+import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
@@ -31,6 +36,8 @@ part 'set_item.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
 
+enum _WorkoutOption { editImage, editName }
+
 class WorkoutDetail extends StatefulWidget {
   final Iterable<WorkoutExercise> exercises;
   final Widget? appBar;
@@ -45,6 +52,8 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
+  final Uint8List? localImage;
+  final String? remoteImage;
 
   const WorkoutDetail({
     super.key,
@@ -61,6 +70,8 @@ class WorkoutDetail extends StatefulWidget {
     required this.onAddExercises,
     this.needsCancelWorkoutButton = true,
     required this.allowsCompletingSet,
+    this.localImage,
+    this.remoteImage,
   });
 
   @override
@@ -119,6 +130,35 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             child: SizedBox(height: 16),
           ),
         ...?widget.slivers,
+        SliverToBoxAdapter(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SizeTransition(
+                  sizeFactor: animation,
+                  axisAlignment: -1,
+                  child: child,
+                ),
+              );
+            },
+            child: switch (widget.localImage != null || widget.remoteImage != null) {
+              false => const SizedBox.shrink(),
+              true => Padding(
+                padding: const EdgeInsets.only(top: 8.0, left: 16, right: 16),
+                child: ClipRRect(
+                  key: ValueKey(widget.localImage ?? widget.remoteImage),
+                  borderRadius: BorderRadiusGeometry.circular(8),
+                  child: AppImage(
+                    url: widget.remoteImage,
+                    bytes: widget.localImage,
+                  ),
+                ),
+              ),
+            },
+          ),
+        ),
         switch (exercises.isEmpty) {
           true => const _EmptyState(size: 320),
           false => _exerciseList(colorScheme, addSet, setCopy, previous),
@@ -423,6 +463,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
   final _sheetController = DraggableScrollableController();
   bool _isClosing = false;
 
+  final _optionsButtonKey = GlobalKey();
   final _workoutNameController = TextEditingController();
   final _workoutNameFocusNode = FocusNode();
 
@@ -466,9 +507,11 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:colorScheme, :scaffoldBackgroundColor, :textTheme) = Theme.of(context);
+    final ThemeData(:colorScheme, :scaffoldBackgroundColor, :textTheme, :platform) = Theme.of(context);
+    final l = L.of(context);
     final workouts = widget.workouts;
     final active = workouts.activeWorkout!;
+    final hasImage = active.localImage != null || active.remoteImage != null;
 
     return DraggableScrollableSheet(
       initialChildSize: 1.0,
@@ -482,6 +525,8 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
         return WorkoutDetail(
           controller: scrollController,
           exercises: active,
+          remoteImage: active.remoteImage,
+          localImage: active.localImage,
           onDragExercise: workouts.append,
           onSwapExercise: workouts.swap,
           allowsCompletingSet: true,
@@ -515,11 +560,49 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if (workouts.activeWorkout?.start case DateTime start)
-                          WorkoutTimer(
-                            key: WorkoutDetailKeys.timer,
-                            start: start,
-                            style: textTheme.titleSmall,
-                            initValue: workouts.activeWorkout?.elapsed(),
+                          Row(
+                            spacing: 4,
+                            children: [
+                              Container(
+                                key: _optionsButtonKey,
+                                child: PrimaryButton.shrunk(
+                                  key: WorkoutDetailKeys.options,
+                                  child: Icon(
+                                    switch (platform) {
+                                      .iOS || .macOS => Icons.more_horiz_rounded,
+                                      _ => Icons.more_vert_rounded,
+                                    },
+                                  ),
+                                  onPressed: () {
+                                    showMenu<_WorkoutOption>(
+                                      context: context,
+                                      position: _optionsButtonKey.position(),
+                                      items: _WorkoutOption.values.map(
+                                        (option) {
+                                          return PopupMenuItem<_WorkoutOption>(
+                                            value: option,
+                                            onTap: _workoutOptionCallback(context, option, hasImage),
+                                            child: Row(
+                                              spacing: 6,
+                                              children: [
+                                                Icon(_workoutOptionIcon(option)),
+                                                Text(_workoutOptionCopy(l, option, hasImage)),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ).toList(),
+                                    );
+                                  },
+                                ),
+                              ),
+                              WorkoutTimer(
+                                key: WorkoutDetailKeys.timer,
+                                start: start,
+                                style: textTheme.titleSmall,
+                                initValue: workouts.activeWorkout?.elapsed(),
+                              ),
+                            ],
                           ),
                         if (workouts.hasActiveWorkout)
                           PrimaryButton.shrunk(
@@ -571,5 +654,74 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
         );
       },
     );
+  }
+
+  String _workoutOptionCopy(L l, _WorkoutOption option, bool hasImage) {
+    return switch (option) {
+      .editImage => hasImage ? l.removePhoto : l.addPhoto,
+      .editName => l.editWorkoutName,
+    };
+  }
+
+  IconData _workoutOptionIcon(_WorkoutOption option) {
+    return switch (option) {
+      .editImage => Icons.photo_camera,
+      .editName => Icons.edit_rounded,
+    };
+  }
+
+  FutureOr<void> Function() _workoutOptionCallback(BuildContext context, _WorkoutOption option, bool hasImage) {
+    final ThemeData(:colorScheme, :platform) = Theme.of(context);
+    final L(:capturePhoto, :chooseFromGallery, :cancel, :cropImage) = L.of(context);
+
+    final pop = Navigator.of(context).pop;
+    final supportsTakingPhoto = platform == .iOS || platform == .android;
+
+    Future<void> addPhoto() {
+      return showBottomMenu<void>(
+        context,
+        [
+          if (supportsTakingPhoto)
+            BottomMenuAction(
+              title: capturePhoto,
+              onPressed: () {
+                pop();
+                _attachImage(context, () => captureAndCropPhoto(context, cropImage));
+              },
+              icon: const Icon(Icons.camera_alt_rounded),
+            ),
+          BottomMenuAction(
+            title: chooseFromGallery,
+            onPressed: () {
+              pop();
+              _attachImage(context, () => pickAndCropGalleryImage(context, cropImage));
+            },
+            icon: const Icon(Icons.photo_library_rounded),
+          ),
+          BottomMenuAction(
+            title: cancel,
+            onPressed: pop,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      );
+    }
+
+    void removePhoto() {}
+
+    return switch (option) {
+      .editImage => hasImage ? removePhoto : addPhoto,
+      .editName => () {
+        _workoutNameFocusNode.requestFocus();
+      },
+    };
+  }
+
+  Future<void> _attachImage(BuildContext context, Future<LocalImage?> Function() getImage) async {
+    final workouts = Workouts.of(context);
+    final localImage = await getImage();
+    if (localImage != null) {
+      workouts.attachImageToActiveWorkout(localImage);
+    }
   }
 }
