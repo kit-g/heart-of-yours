@@ -160,6 +160,27 @@ class Api
   }
 
   @override
+  Future<(PreSignedUrl?, String?)> getWorkoutUploadLink(
+    String workoutId, {
+    String? imageMimeType,
+  }) async {
+    final (json, _) = await put(
+      '${Router.workouts}/$workoutId',
+      body: {'mimeType': ?imageMimeType},
+    );
+    return switch (json) {
+      {'url': String url, 'fields': Map fields} => (
+        (
+          fields: Map.castFrom<dynamic, dynamic, String, String>(fields),
+          url: url,
+        ),
+        json['destinationUrl']?.toString(),
+      ),
+      _ => (null, null),
+    };
+  }
+
+  @override
   Future<bool> saveWorkout(Workout workout) async {
     final (_, code) = await post(Router.workouts, body: workout.toMap());
     return code == 201;
