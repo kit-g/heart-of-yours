@@ -230,10 +230,10 @@ removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,�
 mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Мои
 goToWorkout,Label for button that pulls up active workout UI,Go to Workout,Go to Workout,К тренировке
 setTimer,Label for button that adds a rest timer to an exercise,Set timer,Set timer,Установить таймер
-updateRequiredTitle,"Force update screen, title",Oops. That one's on us,Oops. That one's on us,Упс. Это наша вина
-updateRequiredBody,"Force update screen, body","There's an important update waiting — one that keeps your app working as it should.
+updateRequiredTitle,"Force update screen, title",Oops. That one’s on us,Oops. That one's on us,Упс. Это наша вина
+updateRequiredBody,"Force update screen, body","There’s an important update waiting — one that keeps your app working as it should.
 
-You'll need to install it before continuing.
+You’ll need to install it before continuing.
 Thanks for your patience — and sorry for the interruption.","There's an important update waiting — one that keeps your app working as it should.
 
 You'll need to install it before continuing.
@@ -242,6 +242,7 @@ Thanks for your patience — and sorry for the interruption.","Доступно 
 Вам нужно установить его, чтобы продолжить.
 Спасибо за терпение — и извините за прерывание."
 updateRequiredCta,"Force update screen, CTA",Update on the {storeName},Update on the {storeName},Обновить в {storeName}
-addPhoto,menu item that allows to add photo to a workout,Add photo,Add photo,Добавить фото
-editWorkoutName,menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки
+addPhoto,Menu item that allows to add photo to a workout,Add photo,Add photo,Добавить фото
+editWorkoutName,Menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки
 cropImage,Label in the image cropper,Crop image,Crop image,Обрезать изображение
+removePhoto,Menu item that allows to remove photo from a workout,Remove photo,Remove photo,Удалить фото
