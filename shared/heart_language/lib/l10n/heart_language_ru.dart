@@ -661,4 +661,7 @@ class LRu extends L {
 
   @override
   String get editWorkoutName => 'Изменить название тренировки';
+
+  @override
+  String get cropImage => 'Обрезать изображение';
 }

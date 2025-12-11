@@ -1309,6 +1309,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Edit workout name'**
   String get editWorkoutName;
+
+  /// Label in the image cropper
+  ///
+  /// In en, this message translates to:
+  /// **'Crop image'**
+  String get cropImage;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

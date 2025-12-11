@@ -244,3 +244,4 @@ Thanks for your patience — and sorry for the interruption.","Доступно 
 updateRequiredCta,"Force update screen, CTA",Update on the {storeName},Update on the {storeName},Обновить в {storeName}
 addPhoto,menu item that allows to add photo to a workout,Add photo,Add photo,Добавить фото
 editWorkoutName,menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки
+cropImage,Label in the image cropper,Crop image,Crop image,Обрезать изображение
