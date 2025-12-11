@@ -8,3 +8,6 @@ linter:
     unnecessary_underscores: false
     avoid_positional_boolean_parameters: true
     avoid_dynamic_calls: true
+
+formatter:
+  trailing_commas: preserve
