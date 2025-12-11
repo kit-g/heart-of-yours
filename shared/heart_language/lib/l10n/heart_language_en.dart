@@ -664,6 +664,9 @@ class LEn extends L {
 
   @override
   String get cropImage => 'Crop image';
+
+  @override
+  String get removePhoto => 'Remove photo';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1326,4 +1329,7 @@ class LEnCa extends LEn {
 
   @override
   String get cropImage => 'Crop image';
+
+  @override
+  String get removePhoto => 'Remove photo';
 }
