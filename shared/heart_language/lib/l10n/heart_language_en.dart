@@ -661,6 +661,9 @@ class LEn extends L {
 
   @override
   String get editWorkoutName => 'Edit workout name';
+
+  @override
+  String get cropImage => 'Crop image';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1320,4 +1323,7 @@ class LEnCa extends LEn {
 
   @override
   String get editWorkoutName => 'Edit workout name';
+
+  @override
+  String get cropImage => 'Crop image';
 }
