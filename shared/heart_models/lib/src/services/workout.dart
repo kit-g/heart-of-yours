@@ -34,10 +34,15 @@ abstract interface class WorkoutService {
   Future<void> renameWorkout({required String workoutId, required String name});
 }
 
-abstract interface class RemoteWorkoutService {
+abstract interface class RemoteWorkoutService implements FileUploadService {
   Future<Iterable<Workout>?> getWorkouts(ExerciseLookup lookForExercise, {int? pageSize, String? since});
 
   Future<bool> saveWorkout(Workout workout);
 
   Future<bool> deleteWorkout(String workoutId);
+
+  Future<(({String url, Map<String, String> fields})?, String?)> getWorkoutUploadLink(
+    String workoutId, {
+    String? imageMimeType,
+  });
 }
