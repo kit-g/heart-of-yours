@@ -406,39 +406,45 @@ class LocalDatabase
   }
 
   @override
-  Future<void> renameWorkout({required String workoutId, required String name}) {
-    return _db.update(_workouts, {'name': name}, where: 'id = ?', whereArgs: [workoutId]);
+  Future<void> updateWorkout({required String workoutId, String? name, String? image}) {
+    final row = {'name': ?name, 'image': ?image};
+    assert(row.isNotEmpty, 'Provide at least one attribute');
+    return _db.update(_workouts, row, where: 'id = ?', whereArgs: [workoutId]);
   }
 
   @override
   Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack = 8, String? userId}) {
     final cutoff = getMonday(DateTime.timestamp()).subtract(Duration(days: 7 * (weeksBack ?? 0))).toIso8601String();
-    return _db.query(
-      _workouts,
-      where: 'start > ? AND end IS NOT NULL AND user_id = ?',
-      whereArgs: [cutoff, userId],
-    ).then(
-      (rows) {
-        if (rows.isEmpty) return WorkoutAggregation.empty();
-        return WorkoutAggregation.fromRows(rows);
-      },
-    );
+    return _db
+        .query(
+          _workouts,
+          where: 'start > ? AND end IS NOT NULL AND user_id = ?',
+          whereArgs: [cutoff, userId],
+        )
+        .then(
+          (rows) {
+            if (rows.isEmpty) return WorkoutAggregation.empty();
+            return WorkoutAggregation.fromRows(rows);
+          },
+        );
   }
 
   @override
   Future<int> getWeeklyWorkoutCount(DateTime d) {
     final monday = getMonday(d);
-    return _db.rawQuery('SELECT count(*) AS c FROM workouts WHERE start > ? AND end < ?', [
-      monday.toIso8601String(),
-      (monday.add(const Duration(days: 7)).toIso8601String()),
-    ]).then(
-      (rows) {
-        return switch (rows) {
-          [{'c': num count}] => count.toInt(),
-          _ => 0,
-        };
-      },
-    );
+    return _db
+        .rawQuery('SELECT count(*) AS c FROM workouts WHERE start > ? AND end < ?', [
+          monday.toIso8601String(),
+          (monday.add(const Duration(days: 7)).toIso8601String()),
+        ])
+        .then(
+          (rows) {
+            return switch (rows) {
+              [{'c': num count}] => count.toInt(),
+              _ => 0,
+            };
+          },
+        );
   }
 
   @override
@@ -489,18 +495,20 @@ class LocalDatabase
     return _db.transaction(
       (txn) async {
         final newOrder = order ?? (await _getMaxValue(txn, _templates, 'order_in_parent') + 1);
-        return txn.insert(
-          _templates,
-          {
-            'id': id,
-            'user_id': userId,
-            'order_in_parent': newOrder,
-          },
-        ).then<Template>(
-          (_) {
-            return Template.empty(id: id, order: newOrder);
-          },
-        );
+        return txn
+            .insert(
+              _templates,
+              {
+                'id': id,
+                'user_id': userId,
+                'order_in_parent': newOrder,
+              },
+            )
+            .then<Template>(
+              (_) {
+                return Template.empty(id: id, order: newOrder);
+              },
+            );
       },
     );
   }
