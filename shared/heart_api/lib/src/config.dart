@@ -24,6 +24,11 @@ class ConfigApi with Requests implements RemoteConfigService, HeaderAuthenticate
   }
 
   @override
+  void reauthenticate(String sessionToken) {
+    // not needed
+  }
+
+  @override
   Future<Map> getRemoteConfig() async {
     final (json, _) = await get('/config');
     return json;

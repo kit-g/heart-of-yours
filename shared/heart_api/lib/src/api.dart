@@ -29,10 +29,11 @@ class Api
     Response Function(Json)? onUnauthorized,
     Response Function(Json)? onUpgradeRequired,
   }) {
-    instance.gateway = gateway;
-    instance.client = client;
-    instance.onUnauthorized = onUnauthorized;
-    instance.onUpgradeRequired = onUpgradeRequired;
+    instance
+      ..gateway = gateway
+      ..client = client
+      ..onUnauthorized = onUnauthorized
+      ..onUpgradeRequired = onUpgradeRequired;
     return instance;
   }
 
@@ -42,6 +43,11 @@ class Api
   @override
   void authenticate(Map<String, String> headers) {
     instance.defaultHeaders = headers;
+  }
+
+  @override
+  void reauthenticate(String sessionToken) {
+    instance.defaultHeaders?['Authorization'] = sessionToken;
   }
 
   @override
@@ -95,7 +101,7 @@ class Api
   }
 
   @override
-  Future<bool> uploadAvatar(
+  Future<bool> uploadFile(
     PreSignedUrl cred,
     (String field, List<int> value, {String? filename, String? contentType}) file, {
     final void Function(int bytes, int totalBytes)? onProgress,
