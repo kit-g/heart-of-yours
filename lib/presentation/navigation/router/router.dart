@@ -127,6 +127,11 @@ final class HeartRouter {
     }
 
     if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
+      Future.delayed(const Duration(milliseconds: 50)).then(
+        (_) {
+          _rootNavigatorKey.currentContext?.goToActiveWorkout();
+        },
+      );
       return _workoutPath;
     }
 
