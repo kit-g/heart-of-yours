@@ -36,7 +36,7 @@ void main() {
     when(local.getWorkoutHistory(any, any)).thenAnswer((_) async => <Workout>[]);
     when(local.storeWorkoutHistory(any, any)).thenAnswer((_) async {});
     when(local.deleteWorkout(any)).thenAnswer((_) async {});
-    when(local.renameWorkout(workoutId: anyNamed('workoutId'), name: anyNamed('name'))).thenAnswer((_) async {});
+    when(local.updateWorkout(workoutId: anyNamed('workoutId'), name: anyNamed('name'))).thenAnswer((_) async {});
 
     when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => <Workout>[]);
     when(remote.saveWorkout(any)).thenAnswer((_) async => true);
@@ -285,7 +285,7 @@ void main() {
 
       expect(sut.activeWorkout!.name, 'New');
       expect(probe.notifications, 1);
-      verify(local.renameWorkout(workoutId: id, name: 'New')).called(1);
+      verify(local.updateWorkout(workoutId: id, name: 'New')).called(1);
     });
   });
 

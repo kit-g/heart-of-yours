@@ -154,7 +154,7 @@ void main() {
       expect(ok, isFalse);
       expect(probe.notifications, 1); // local avatar set triggers one notify
       verify(account.getAvatarUploadLink(any, imageMimeType: 'image/png')).called(1);
-      verifyNever(account.uploadAvatar(any, any, onProgress: anyNamed('onProgress')));
+      verifyNever(account.uploadFile(any, any, onProgress: anyNamed('onProgress')));
     });
 
     test('deleteAccountDeletionSchedule: no-op when user is null (no service calls)', () async {
