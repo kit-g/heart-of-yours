@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'exercise.dart';
 import 'exercise_set.dart';
@@ -64,6 +65,10 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   Iterable<WorkoutExercise> get sets;
 
+  abstract Uint8List? localImage;
+
+  abstract String? remoteImage;
+
   factory Workout({String? name}) {
     return _Workout(
       start: DateTime.timestamp(),
@@ -126,9 +131,9 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
     DateTime? start,
     required Exercise exercise,
     List<ExerciseSet>? sets,
-  }) : _exercise = exercise,
-       start = start ?? DateTime.timestamp(),
-       _sets = sets ?? [] {
+  })  : _exercise = exercise,
+        start = start ?? DateTime.timestamp(),
+        _sets = sets ?? [] {
     if (starter != null) {
       _sets.add(starter);
     }
@@ -212,14 +217,21 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   @override
   String? name;
 
+  @override
+  Uint8List? localImage;
+
+  @override
+  String? remoteImage;
+
   _Workout({
     required this.start,
     this.name,
     String? id,
     List<WorkoutExercise>? exercises,
     this.end,
-  }) : _sets = exercises ?? <WorkoutExercise>[],
-       _id = id;
+    this.remoteImage,
+  })  : _sets = exercises ?? <WorkoutExercise>[],
+        _id = id;
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Workout(
@@ -228,6 +240,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       id: json['id'],
       end: DateTime.tryParse(json['end'] ?? ''),
       exercises: _exercisesFromCollection(json['exercises'], lookForExercise),
+      remoteImage: json['image'],
     );
   }
 
@@ -261,6 +274,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       'name': name,
       'start': start.toIso8601String(),
       'end': end?.toIso8601String(),
+      'image': ?remoteImage,
       'exercises': [
         for (var each in l)
           if (each.isNotEmpty)
@@ -345,9 +359,9 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     return switch (exercise._nextIncomplete(last)) {
       ExerciseSet set => (exercise, set),
       _ => switch (_nextIncomplete(exercise)) {
-        WorkoutExercise next => (next, next.first),
-        _ => null,
-      },
+          WorkoutExercise next => (next, next.first),
+          _ => null,
+        },
     };
   }
 
