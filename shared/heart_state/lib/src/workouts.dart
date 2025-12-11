@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
@@ -16,8 +18,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     required WorkoutService service,
     required RemoteWorkoutService remoteService,
     this.onError,
-  })  : _localService = service,
-        _remoteService = remoteService;
+  }) : _localService = service,
+       _remoteService = remoteService;
 
   @override
   void onSignOut() {
@@ -231,7 +233,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void>? renameWorkout(String name) async {
     activeWorkout?.name = name;
     if (activeWorkout case Workout workout) {
-      _localService.renameWorkout(workoutId: workout.id, name: name);
+      _localService.updateWorkout(workoutId: workout.id, name: name);
     }
     notifyListeners();
   }
@@ -281,4 +283,24 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Workout? lookup(String id) => _workouts[id];
+
+  Future<void> attachImageToWorkout(String workoutId, (Uint8List, {String? mimeType, String? name}) image) async {
+    final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workoutId);
+    if (cred != null) {
+      final upload = ('file', image.$1, contentType: image.mimeType, filename: image.name);
+      final uploaded = await _remoteService.uploadFile(cred, upload);
+      if (uploaded) {
+        await _localService.updateWorkout(workoutId: workoutId, image: destinationUrl);
+        _workouts[workoutId]?.localImage = image.$1;
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> attachImageToActiveWorkout((Uint8List, {String? mimeType, String? name}) image) async {
+    if (activeWorkout case Workout workout) {
+      _remoteService.saveWorkout(workout);
+      attachImageToWorkout(workout.id, image);
+    }
+  }
 }
