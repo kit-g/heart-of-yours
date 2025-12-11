@@ -1247,5 +1247,11 @@
     "description": "menu item that allows to edit workout name",
     "type": "text",
     "placeholders": {}
+  },
+  "cropImage": "Crop image",
+  "@cropImage": {
+    "description": "Label in the image cropper",
+    "type": "text",
+    "placeholders": {}
   }
 }
