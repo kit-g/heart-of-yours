@@ -226,7 +226,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       start: DateTime.parse(json['start']),
       name: json['name'],
       id: json['id'],
-      end: DateTime.tryParse(json['end']),
+      end: DateTime.tryParse(json['end'] ?? ''),
       exercises: _exercisesFromCollection(json['exercises'], lookForExercise),
     );
   }
