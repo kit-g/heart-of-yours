@@ -329,7 +329,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         if (uploadLink != null) {
           // push the image to the bucket
           final avatar = ('file', localImage.$1, contentType: localImage.mimeType, filename: localImage.name);
-          final success = await _service.uploadAvatar(uploadLink, avatar, onProgress: onProgress);
+          final success = await _service.uploadFile(uploadLink, avatar, onProgress: onProgress);
           if (success) {
             // if it succeeds, store the URL in the database
             // and notify Firebase about it
