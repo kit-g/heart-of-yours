@@ -1,5 +1,6 @@
 import '../models/exercise.dart';
 import '../models/exercise_set.dart';
+import '../models/misc.dart';
 import '../models/workout.dart';
 
 abstract interface class WorkoutService {
@@ -31,7 +32,7 @@ abstract interface class WorkoutService {
 
   Future<Iterable<Workout>?> getWorkoutHistory(String userId, ExerciseLookup lookup);
 
-  Future<void> renameWorkout({required String workoutId, required String name});
+  Future<void> updateWorkout({required String workoutId, String? name, String? image});
 }
 
 abstract interface class RemoteWorkoutService implements FileUploadService {
