@@ -664,4 +664,7 @@ class LRu extends L {
 
   @override
   String get cropImage => 'Обрезать изображение';
+
+  @override
+  String get removePhoto => 'Удалить фото';
 }

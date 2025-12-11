@@ -1298,13 +1298,13 @@ abstract class L {
   /// **'Update on the {storeName}'**
   String updateRequiredCta(String storeName);
 
-  /// menu item that allows to add photo to a workout
+  /// Menu item that allows to add photo to a workout
   ///
   /// In en, this message translates to:
   /// **'Add photo'**
   String get addPhoto;
 
-  /// menu item that allows to edit workout name
+  /// Menu item that allows to edit workout name
   ///
   /// In en, this message translates to:
   /// **'Edit workout name'**
@@ -1315,6 +1315,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Crop image'**
   String get cropImage;
+
+  /// Menu item that allows to remove photo from a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get removePhoto;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -1238,19 +1238,25 @@
   },
   "addPhoto": "Add photo",
   "@addPhoto": {
-    "description": "menu item that allows to add photo to a workout",
+    "description": "Menu item that allows to add photo to a workout",
     "type": "text",
     "placeholders": {}
   },
   "editWorkoutName": "Edit workout name",
   "@editWorkoutName": {
-    "description": "menu item that allows to edit workout name",
+    "description": "Menu item that allows to edit workout name",
     "type": "text",
     "placeholders": {}
   },
   "cropImage": "Crop image",
   "@cropImage": {
     "description": "Label in the image cropper",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removePhoto": "Remove photo",
+  "@removePhoto": {
+    "description": "Menu item that allows to remove photo from a workout",
     "type": "text",
     "placeholders": {}
   }
