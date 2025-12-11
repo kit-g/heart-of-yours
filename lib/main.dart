@@ -88,11 +88,19 @@ Future<void> _runner({
         onError: reportToSentry,
       );
 
-      api.onUpgradeRequired = (j) {
-        AppVersionSentry.instance.requireUpgrade();
-        router.refresh();
-        return (j, 426);
-      };
+      api
+        ..onUpgradeRequired = (j) {
+          AppVersionSentry.instance.requireUpgrade();
+          router.refresh();
+          return (j, 426);
+        }
+        ..onReauthenticate = () async {
+          final token = await firebase?.currentUser?.getIdToken(true);
+          if (token != null) {
+            api.reauthenticate(token);
+          }
+          return token != null;
+        };
 
       return runApp(
         HeartApp(
