@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS workouts
     "end"   TEXT,
     user_id TEXT NOT NULL,
     name    TEXT,
+    image   TEXT,
     CHECK (length(name) > 0)
 );
 """;
@@ -139,6 +140,7 @@ SELECT
     _workout.start,
     _workout."end",
     _workout.name,
+    _workout.image,
     (
         SELECT json_group_array(
             json_object(
@@ -195,6 +197,7 @@ SELECT
     _workout.start,
     _workout."end",
     _workout.name,
+    _workout.image,
     (
         SELECT json_group_array(
             json_object(
@@ -248,6 +251,7 @@ SELECT
     _workouts.start,
     _workouts."end",
     _workouts.name,
+    _workouts.image,
     (
         SELECT json_group_array(
             json_object(
