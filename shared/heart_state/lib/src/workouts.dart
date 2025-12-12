@@ -303,4 +303,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       attachImageToWorkout(workout.id, image);
     }
   }
+
+  Future<void> detachImageFromWorkout(String workoutId) async {
+    final detached = await _remoteService.deleteWorkoutImage(workoutId);
+    if (detached) {
+      _workouts[workoutId]
+        ?..remoteImage = null
+        ..localImage = null;
+      await _localService.updateWorkout(workoutId: workoutId, image: null);
+      notifyListeners();
+    }
+  }
+
+  Future<void> detachImageFromActiveWorkout() async {
+    if (activeWorkout case Workout workout) {
+      detachImageFromWorkout(workout.id);
+    }
+  }
 }

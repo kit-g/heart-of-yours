@@ -407,7 +407,7 @@ class LocalDatabase
 
   @override
   Future<void> updateWorkout({required String workoutId, String? name, String? image}) {
-    final row = {'name': ?name, 'image': ?image};
+    final row = {'name': name, 'image': image};
     assert(row.isNotEmpty, 'Provide at least one attribute');
     return _db.update(_workouts, row, where: 'id = ?', whereArgs: [workoutId]);
   }
