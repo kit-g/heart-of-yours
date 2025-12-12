@@ -165,7 +165,7 @@ class Api
     String? imageMimeType,
   }) async {
     final (json, _) = await put(
-      '${Router.workouts}/$workoutId',
+      Router.workoutImages(workoutId),
       body: {'mimeType': ?imageMimeType},
     );
     return switch (json) {
@@ -178,6 +178,12 @@ class Api
       ),
       _ => (null, null),
     };
+  }
+
+  @override
+  Future<bool> deleteWorkoutImage(String workoutId) async {
+    final (_, code) = await delete(Router.workoutImages(workoutId));
+    return code == 204;
   }
 
   @override
@@ -280,4 +286,8 @@ abstract final class Router {
   static const feedback = 'v1/feedback';
   static const templates = 'v1/templates';
   static const workouts = 'v1/workouts';
+
+  static String workoutImages(String workoutId) {
+    return '$workouts/$workoutId/images';
+  }
 }

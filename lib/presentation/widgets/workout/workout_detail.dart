@@ -707,7 +707,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       );
     }
 
-    void removePhoto() {}
+    void removePhoto() {
+      Workouts.of(context).detachImageFromActiveWorkout();
+    }
 
     return switch (option) {
       .editImage => hasImage ? removePhoto : addPhoto,
