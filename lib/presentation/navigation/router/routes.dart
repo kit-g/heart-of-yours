@@ -94,7 +94,10 @@ RouteBase _activeWorkoutRoute() {
             return const SizedBox.shrink();
           }
 
-          return ActiveWorkoutSheet(workouts: workouts);
+          return ActiveWorkoutSheet(
+            workouts: workouts,
+            onTapImage: context.goToGallery,
+          );
         },
       );
     },
@@ -476,5 +479,34 @@ RouteBase _upgradeRequiredRoute() {
     path: _upgradeAppPath,
     builder: (context, _) => const UpgradeRequiredPage(),
     name: _upgradeAppName,
+  );
+}
+
+RouteBase _galleryRoute() {
+  return GoRoute(
+    parentNavigatorKey: _rootNavigatorKey,
+    path: _galleryPath,
+    pageBuilder: (context, state) {
+      final extra = state.extra as ({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes});
+      final (:workoutId, :imageId, :imageLink, :imageBytes) = extra;
+      return CustomTransitionPage(
+        key: state.pageKey,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(curved),
+              child: child,
+            ),
+          );
+        },
+        child: GalleryPage(
+          remote: imageLink,
+          bytes: imageBytes,
+        ),
+      );
+    },
+    name: _galleryName,
   );
 }

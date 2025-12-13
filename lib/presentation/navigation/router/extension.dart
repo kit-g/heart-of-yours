@@ -55,7 +55,14 @@ extension on BuildContext {
     return goNamed(_exerciseArchive);
   }
 
-  void goToActiveWorkout() {
-    push(_activeWorkoutPath);
+  Future<void> goToActiveWorkout() {
+    return push(_activeWorkoutPath);
+  }
+
+  Future<void> goToGallery({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes}) {
+    return push(
+      _galleryPath,
+      extra: (workoutId: workoutId, imageId: imageId, imageLink: imageLink, imageBytes: imageBytes),
+    );
   }
 }
