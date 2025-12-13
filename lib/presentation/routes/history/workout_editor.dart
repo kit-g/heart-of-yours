@@ -2,8 +2,13 @@ part of 'history.dart';
 
 class WorkoutEditor extends StatefulWidget {
   final Workout copy;
+  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
 
-  const WorkoutEditor({super.key, required this.copy});
+  const WorkoutEditor({
+    super.key,
+    required this.copy,
+    this.onTapImage,
+  });
 
   @override
   State<WorkoutEditor> createState() => _WorkoutEditorState();
@@ -80,15 +85,15 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                           backgroundColor: colorScheme.secondaryContainer,
                           onPressed: switch (enabled) {
                             true => () {
-                                _showFinishWorkoutDialog(
-                                  context,
-                                  workout,
-                                  onFinish: () {
-                                    Workouts.of(context).saveWorkout(_notifier.workout);
-                                    Navigator.of(context).pop();
-                                  },
-                                );
-                              },
+                              _showFinishWorkoutDialog(
+                                context,
+                                workout,
+                                onFinish: () {
+                                  Workouts.of(context).saveWorkout(_notifier.workout);
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            },
                             false => buzz,
                           },
                           child: Text(save),
@@ -126,6 +131,8 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onRemoveSet: _notifier.removeSet,
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
+                remoteImage: workout.remoteImage,
+                onTapImage: widget.onTapImage,
                 onAddExercises: (exercises) async {
                   for (final each in exercises.toList()) {
                     await Future.delayed(
@@ -151,7 +158,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       :changesWillBeLost,
       :stayHere,
       :quitPage,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     return showBrandedDialog(
       context,
@@ -206,7 +215,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       :finishWorkoutWarningBody,
       :readyToFinish,
       :notReadyToFinish,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     final actions = [
       Column(
