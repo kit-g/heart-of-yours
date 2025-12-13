@@ -72,6 +72,7 @@ final class HeartRouter {
           _workoutDoneRoute(),
           _restoreAccountRoute(),
           _avatarRoute(),
+          _galleryRoute(),
           if (kIsWeb)
             // Apple sign-in redirect
             GoRoute(
