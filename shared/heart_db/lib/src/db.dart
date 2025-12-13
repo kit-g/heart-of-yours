@@ -372,13 +372,14 @@ class LocalDatabase
   }
 
   static void _storeWorkout(Batch batch, Workout workout, String userId) {
-    final Workout(id: workoutId, :start, :name, :end) = workout;
+    final Workout(id: workoutId, :start, :name, :end, :remoteImage) = workout;
     final row = {
       'id': workoutId,
       'start': start.toIso8601String(),
       'user_id': userId,
-      if (name != null) 'name': name,
-      if (end != null) 'end': end.toIso8601String(),
+      'name': ?name,
+      'end': ?end?.toIso8601String(),
+      'image': ?remoteImage,
     };
     batch.insert(_workouts, row, conflictAlgorithm: ConflictAlgorithm.replace);
 
