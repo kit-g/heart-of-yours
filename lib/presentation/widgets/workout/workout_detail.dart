@@ -54,6 +54,8 @@ class WorkoutDetail extends StatefulWidget {
   final bool allowsCompletingSet;
   final Uint8List? localImage;
   final String? remoteImage;
+  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
+  final String? workoutId;
 
   const WorkoutDetail({
     super.key,
@@ -72,6 +74,8 @@ class WorkoutDetail extends StatefulWidget {
     required this.allowsCompletingSet,
     this.localImage,
     this.remoteImage,
+    this.onTapImage,
+    this.workoutId,
   });
 
   @override
@@ -150,9 +154,18 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                 child: ClipRRect(
                   key: ValueKey(widget.localImage ?? widget.remoteImage),
                   borderRadius: BorderRadiusGeometry.circular(8),
-                  child: AppImage(
-                    url: widget.remoteImage,
-                    bytes: widget.localImage,
+                  child: GestureDetector(
+                    onTap: () {
+                      widget.onTapImage?.call(
+                        workoutId: widget.workoutId,
+                        imageBytes: widget.localImage,
+                        imageLink: widget.remoteImage,
+                      );
+                    },
+                    child: AppImage(
+                      url: widget.remoteImage,
+                      bytes: widget.localImage,
+                    ),
                   ),
                 ),
               ),
@@ -448,11 +461,13 @@ class NewWorkoutHeader extends StatelessWidget {
 class ActiveWorkoutSheet extends StatefulWidget {
   final Workouts workouts;
   final double closingThreshold;
+  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
 
   const ActiveWorkoutSheet({
     super.key,
     required this.workouts,
     this.closingThreshold = .25,
+    this.onTapImage,
   });
 
   @override
@@ -527,6 +542,8 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
           exercises: active,
           remoteImage: active.remoteImage,
           localImage: active.localImage,
+          onTapImage: widget.onTapImage,
+          workoutId: active.id,
           onDragExercise: workouts.append,
           onSwapExercise: workouts.swap,
           allowsCompletingSet: true,
