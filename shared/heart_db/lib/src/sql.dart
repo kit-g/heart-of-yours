@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS workouts
     "end"   TEXT,
     user_id TEXT NOT NULL,
     name    TEXT,
-    image   TEXT,
-    CHECK (length(name) > 0)
+    image   TEXT
 );
 """;
 
