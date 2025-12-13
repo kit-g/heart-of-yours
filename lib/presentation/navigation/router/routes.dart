@@ -162,6 +162,7 @@ RouteBase _historyRoute() {
                 HapticFeedback.mediumImpact();
                 context.goToActiveWorkout();
               },
+              onTapImage: context.goToGallery,
             ),
           };
         },
@@ -175,6 +176,7 @@ RouteBase _historyRoute() {
                 final workout = Workouts.of(context).lookup(workoutId);
                 return WorkoutEditor(
                   copy: workout!.copy(sameId: true)..completeAllSets(),
+                  onTapImage: context.goToGallery,
                 );
               } catch (e) {
                 throw GoException(e.toString());

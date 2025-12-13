@@ -8,6 +8,7 @@ class HistoryPage extends StatefulWidget {
   final void Function(Workout)? onDeleteWorkout;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
+  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
 
   const HistoryPage({
     super.key,
@@ -18,6 +19,7 @@ class HistoryPage extends StatefulWidget {
     this.onDeleteWorkout,
     required this.onOpenActiveWorkout,
     this.detail,
+    this.onTapImage,
   });
 
   @override
@@ -60,6 +62,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                 onEditWorkout: widget.onEditWorkout,
                 onTap: widget.onTapWorkout,
                 onDeleteWorkout: widget.onDeleteWorkout,
+                onTapImageIcon: widget.onTapImage,
               );
             },
           ),
