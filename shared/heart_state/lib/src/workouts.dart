@@ -299,8 +299,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> attachImageToActiveWorkout((Uint8List, {String? mimeType, String? name}) image) async {
     if (activeWorkout case Workout workout) {
-      _remoteService.saveWorkout(workout);
-      attachImageToWorkout(workout.id, image);
+      final saved = await _remoteService.saveWorkout(workout);
+      if (saved) {
+        attachImageToWorkout(workout.id, image);
+      }
     }
   }
 
