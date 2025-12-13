@@ -8,6 +8,7 @@ class WorkoutItem extends StatelessWidget {
   final void Function(Workout)? onSaveAsTemplate;
   final void Function(Workout)? onEditWorkout;
   final void Function(Workout)? onDeleteWorkout;
+  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImageIcon;
 
   const WorkoutItem({
     super.key,
@@ -18,6 +19,7 @@ class WorkoutItem extends StatelessWidget {
     this.onSaveAsTemplate,
     this.onEditWorkout,
     this.onDeleteWorkout,
+    this.onTapImageIcon,
   });
 
   @override
@@ -43,38 +45,50 @@ class WorkoutItem extends StatelessWidget {
                     workout.name ?? '?',
                     style: textTheme.titleMedium,
                   ),
-                  if (showsMenuButton)
-                    PopupMenuButton<_WorkoutOption>(
-                      style: const ButtonStyle(
-                        visualDensity: VisualDensity(vertical: -3, horizontal: -3),
-                      ),
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.more_horiz),
-                      onSelected: (option) => _onTapOption(context, option, workout),
-                      itemBuilder: (context) {
-                        return _WorkoutOption.values.map(
-                          (option) {
-                            final (:copy, :style, :icon) = _item(context, option);
-                            return PopupMenuItem<_WorkoutOption>(
-                              height: 40,
-                              value: option,
-                              child: Row(
-                                spacing: 4,
-                                children: [
-                                  icon,
-                                  Text(
-                                    copy,
-                                    style: style,
-                                  ),
-                                ],
-                              ),
+                  Row(
+                    children: [
+                      if (workout.remoteImage case String link)
+                        FeedbackButton(
+                          onPressed: () {
+                            onTapImageIcon?.call(
+                              workoutId: workout.id,
+                              imageLink: link,
                             );
                           },
-                        ).toList();
-                      },
-                    )
-                  else
-                    const SizedBox.shrink(),
+                          child: const Icon(Icons.image_rounded),
+                        ),
+                      if (showsMenuButton)
+                        PopupMenuButton<_WorkoutOption>(
+                          style: const ButtonStyle(
+                            visualDensity: VisualDensity(vertical: -3, horizontal: -3),
+                          ),
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.more_horiz),
+                          onSelected: (option) => _onTapOption(context, option, workout),
+                          itemBuilder: (context) {
+                            return _WorkoutOption.values.map(
+                              (option) {
+                                final (:copy, :style, :icon) = _item(context, option);
+                                return PopupMenuItem<_WorkoutOption>(
+                                  height: 40,
+                                  value: option,
+                                  child: Row(
+                                    spacing: 4,
+                                    children: [
+                                      icon,
+                                      Text(
+                                        copy,
+                                        style: style,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ).toList();
+                          },
+                        ),
+                    ],
+                  ),
                 ],
               ),
               Text(
@@ -161,39 +175,37 @@ class WorkoutItem extends StatelessWidget {
   ) {
     final l = L.of(context);
     switch (set?.category) {
-      case Category.weightedBodyWeight:
-      case Category.assistedBodyWeight:
-      case Category.machine:
-      case Category.dumbbell:
-      case Category.barbell:
+      case .weightedBodyWeight:
+      case .assistedBodyWeight:
+      case .machine:
+      case .dumbbell:
+      case .barbell:
         return switch ((set?.weight, weightUnit)) {
           // if weight is 0: 15x
           (double weight, _) when weight <= 0 => '${set?.reps ?? 0}x',
           (null, _) => '${set?.reps ?? 0}x',
           // e.g. 11 lbs x 15 reps
-          (double weight, MeasurementUnit.imperial) when weight > 0 =>
-            '${l.lb(weight.asPounds.toInt())} x ${set?.reps ?? 0}',
+          (double weight, .imperial) when weight > 0 => '${l.lb(weight.asPounds.toInt())} x ${set?.reps ?? 0}',
           // e.g. 11 kg x 15 reps
-          (double weight, MeasurementUnit.metric) when weight > 0 => '${rounded(weight)} ${l.kg} x ${set?.reps ?? 0}',
+          (double weight, .metric) when weight > 0 => '${rounded(weight)} ${l.kg} x ${set?.reps ?? 0}',
           (_, _) => '',
         };
-      case Category.cardio:
+      case .cardio:
         return switch ((set?.distance, set?.duration)) {
           (double distance, int seconds) => switch (distanceUnit) {
-              // e.g. 11 miles / 10 min
-              MeasurementUnit.imperial =>
-                '${rounded(distance.asMiles)} ${l.milesPlural} / ${seconds.formatted(context)}',
-              // e.g. 11 km / 10 min
-              MeasurementUnit.metric => '${rounded(distance)} ${l.km} / ${seconds.formatted(context)}',
-            },
+            // e.g. 11 miles / 10 min
+            .imperial => '${rounded(distance.asMiles)} ${l.milesPlural} / ${seconds.formatted(context)}',
+            // e.g. 11 km / 10 min
+            .metric => '${rounded(distance)} ${l.km} / ${seconds.formatted(context)}',
+          },
           _ => '',
         };
-      case Category.repsOnly:
+      case .repsOnly:
         return switch (set?.reps) {
           int reps => '${reps}x',
           _ => '',
         };
-      case Category.duration:
+      case .duration:
         return switch (set?.duration) {
           int seconds => Duration(seconds: seconds).formatted(context),
           _ => '',
@@ -226,26 +238,26 @@ class WorkoutItem extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return switch (option) {
-      _WorkoutOption.edit => (
-          copy: L.of(context).edit,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.edit_rounded, size: 16),
-        ),
-      _WorkoutOption.saveAsTemplate => (
-          copy: L.of(context).saveAsTemplate,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.add_rounded, size: 16),
-        ),
-      _WorkoutOption.repeat => (
-          copy: L.of(context).repeat,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.fitness_center_rounded, size: 16),
-        ),
-      _WorkoutOption.delete => (
-          copy: L.of(context).delete,
-          style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
-          icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
-        ),
+      .edit => (
+        copy: L.of(context).edit,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.edit_rounded, size: 16),
+      ),
+      .saveAsTemplate => (
+        copy: L.of(context).saveAsTemplate,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.add_rounded, size: 16),
+      ),
+      .repeat => (
+        copy: L.of(context).repeat,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.fitness_center_rounded, size: 16),
+      ),
+      .delete => (
+        copy: L.of(context).delete,
+        style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
+        icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
+      ),
       // _WorkoutOption.share => (
       //     copy: L.of(context).share,
       //     style: textTheme.titleSmall,
@@ -261,7 +273,9 @@ class WorkoutItem extends StatelessWidget {
       :cancelCurrentWorkoutBody,
       :keepCurrentAccount,
       :cancelAndStartNewWorkout,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
     return showBrandedDialog(
       context,
       title: Text(
@@ -326,7 +340,9 @@ class WorkoutItem extends StatelessWidget {
       :cancelCurrentWorkoutBody,
       :cancel,
       :startWorkout,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
     return showBrandedDialog(
       context,
       title: Text(
@@ -386,7 +402,7 @@ enum _WorkoutOption {
   edit,
   saveAsTemplate,
   repeat,
-  delete;
+  delete,
 }
 
 String rounded(num? v) {
