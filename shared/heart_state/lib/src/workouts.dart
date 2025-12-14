@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final WorkoutService _localService;
   final RemoteWorkoutService _remoteService;
+  final _progress = <WorkoutImage>[];
 
   Workouts({
     required this.lookForExercise,
@@ -54,6 +56,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   bool get hasUnNotifiedActiveWorkout => hasActiveWorkout && !_notifiedOfActiveWorkout;
 
   Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
+
+  List<WorkoutImage> get images => UnmodifiableListView(_progress);
 
   (WorkoutExercise exercise, ExerciseSet set)? _latestMarkedSet;
 
@@ -262,15 +266,22 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
       _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
 
-      final workouts = await _getRemoteHistory(id);
+      final futures = await Future.wait([
+        _getRemoteHistory(id),
+        _remoteService.getWorkoutGallery(),
+      ]);
 
-      if (workouts != null) {
-        _localService.storeWorkoutHistory(workouts, id);
-        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+      if (futures case [Iterable<Workout>? workouts, ProgressGalleryResponse response]) {
+        if (workouts != null) {
+          _localService.storeWorkoutHistory(workouts, id);
+          _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+        }
+
+        _progress.addAll(response.images);
+
+        historyInitialized = true;
+        notifyListeners();
       }
-
-      historyInitialized = true;
-      notifyListeners();
     }
   }
 
@@ -284,7 +295,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Workout? lookup(String id) => _workouts[id];
 
-  Future<void> attachImageToWorkout(String workoutId, (Uint8List, {String? mimeType, String? name}) image) async {
+  Future<bool> attachImageToWorkout(String workoutId, (Uint8List, {String? mimeType, String? name}) image) async {
     final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workoutId);
     if (cred != null) {
       final upload = ('file', image.$1, contentType: image.mimeType, filename: image.name);
@@ -292,9 +303,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (uploaded) {
         await _localService.updateWorkout(workoutId: workoutId, image: destinationUrl);
         _workouts[workoutId]?.localImage = image.$1;
+        notifyListeners();
+        return true;
       }
     }
-    notifyListeners();
+
+    return false;
   }
 
   Future<void> attachImageToActiveWorkout((Uint8List, {String? mimeType, String? name}) image) async {
