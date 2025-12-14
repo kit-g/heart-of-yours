@@ -22,11 +22,11 @@ Future<LocalFile?> capturePhoto() async {
 
 Future<LocalImage?> cropImage(BuildContext context, LocalFile file, String header) async {
   final ThemeData(:appBarTheme, :scaffoldBackgroundColor, :colorScheme, :platform) = Theme.of(context);
-
+  final aspectRatioPresets = const <CropAspectRatioPreset>[.original, .square];
   final cropped = await _cropper.cropImage(
     sourcePath: file.$2,
     uiSettings: [
-      if (platform == TargetPlatform.android)
+      if (platform == .android)
         AndroidUiSettings(
           toolbarTitle: header,
           toolbarColor: colorScheme.surface,
@@ -36,18 +36,12 @@ Future<LocalImage?> cropImage(BuildContext context, LocalFile file, String heade
           cropGridColor: colorScheme.tertiary,
           cropStyle: CropStyle.rectangle,
           dimmedLayerColor: colorScheme.primaryContainer.withValues(alpha: .3),
-          aspectRatioPresets: const [
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.square,
-          ],
+          aspectRatioPresets: aspectRatioPresets,
         ),
-      if (platform == TargetPlatform.iOS)
+      if (platform == .iOS)
         IOSUiSettings(
           title: header,
-          aspectRatioPresets: const [
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.square,
-          ],
+          aspectRatioPresets: aspectRatioPresets,
         ),
       if (kIsWeb) WebUiSettings(context: context),
     ],
@@ -64,9 +58,9 @@ Future<LocalImage?> pickAndCropGalleryImage(BuildContext context, String copy) {
       if (image == null) return null;
       if (!context.mounted) return null;
       return switch (Theme.of(context).platform) {
-        TargetPlatform.android => cropImage(context, image, copy),
-        TargetPlatform.iOS => cropImage(context, image, copy),
-        TargetPlatform.macOS => image.$1,
+        .android => cropImage(context, image, copy),
+        .iOS => cropImage(context, image, copy),
+        .macOS => image.$1,
         _ => null,
       };
     },
@@ -80,9 +74,9 @@ Future<LocalImage?> captureAndCropPhoto(BuildContext context, String copy) {
       if (!context.mounted) return null;
 
       return switch (Theme.of(context).platform) {
-        TargetPlatform.android => cropImage(context, image, copy),
-        TargetPlatform.iOS => cropImage(context, image, copy),
-        TargetPlatform.macOS => image.$1,
+        .android => cropImage(context, image, copy),
+        .iOS => cropImage(context, image, copy),
+        .macOS => image.$1,
         _ => null,
       };
     },
@@ -101,5 +95,12 @@ extension on XFile? {
       XFile f => (await f.toLocalImage(mimeType: lookupMimeType(f.path)), f.path),
       _ => null,
     };
+  }
+}
+
+extension SupportsPhoto on BuildContext {
+  bool supportsTakingPhoto() {
+    final platform = Theme.of(this).platform;
+    return <TargetPlatform>[.iOS, .android].contains(platform);
   }
 }
