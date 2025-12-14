@@ -451,8 +451,8 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     final L(:capturePhoto, :chooseFromGallery, :removeCurrentPhoto, :cancel) = L.of(context);
     final ThemeData(:colorScheme, :platform) = Theme.of(context);
 
-    var pop = Navigator.of(context).pop;
-    var supportsTakingPhoto = platform == TargetPlatform.iOS || platform == TargetPlatform.android;
+    final pop = Navigator.of(context).pop;
+    final supportsTakingPhoto = context.supportsTakingPhoto();
 
     return showBottomMenu<void>(
       context,
