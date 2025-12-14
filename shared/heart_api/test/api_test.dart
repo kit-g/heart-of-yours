@@ -1,10 +1,11 @@
+import 'dart:convert';
+
 import 'package:heart_api/src/api.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:http/http.dart' as http;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 @GenerateNiceMocks(
   [
@@ -102,7 +103,7 @@ void main() {
         statusCode: 200,
         body: {
           'url': 'https://bucket.example.com/upload',
-          'fields': {'key': 'value'}
+          'fields': {'key': 'value'},
         },
       );
 
@@ -349,6 +350,126 @@ void main() {
       expect(result, isNull);
     });
   });
+
+  group('workout images', () {
+    test('getWorkoutUploadLink returns (PreSignedUrl, destinationUrl) on valid json', () async {
+      _response(
+        client: client,
+        method: 'PUT',
+        path: Router.workoutImages('w1'),
+        statusCode: 200,
+        body: {
+          'url': 'https://bucket.example.com/upload',
+          'fields': {'key': 'value'},
+          'destinationUrl': 'https://cdn.example.com/w1.jpg',
+        },
+      );
+
+      final (cred, destinationUrl) = await api.getWorkoutUploadLink('w1');
+
+      expect(cred, isNotNull);
+      expect(cred!.url, contains('bucket'));
+      expect(cred.fields, containsPair('key', 'value'));
+      expect(destinationUrl, equals('https://cdn.example.com/w1.jpg'));
+    });
+
+    test('getWorkoutUploadLink returns (null, null) on invalid json shape', () async {
+      _response(
+        client: client,
+        method: 'PUT',
+        path: Router.workoutImages('w1'),
+        statusCode: 200,
+        body: {'message': 'nope'},
+      );
+
+      final (cred, destinationUrl) = await api.getWorkoutUploadLink('w1');
+
+      expect(cred, isNull);
+      expect(destinationUrl, isNull);
+    });
+
+    test('getWorkoutUploadLink coerces destinationUrl to String when not a String', () async {
+      _response(
+        client: client,
+        method: 'PUT',
+        path: Router.workoutImages('w1'),
+        statusCode: 200,
+        body: {
+          'url': 'https://bucket.example.com/upload',
+          'fields': {'key': 'value'},
+          'destinationUrl': 12345,
+        },
+      );
+
+      final (_, destinationUrl) = await api.getWorkoutUploadLink('w1');
+      expect(destinationUrl, equals('12345'));
+    });
+
+    test('deleteWorkoutImage returns true when code is 204', () async {
+      _response(
+        client: client,
+        method: 'DELETE',
+        path: Router.workoutImages('w1'),
+        statusCode: 204,
+        body: {},
+      );
+
+      final result = await api.deleteWorkoutImage('w1');
+      expect(result, isTrue);
+    });
+
+    test('deleteWorkoutImage returns false when code is not 204', () async {
+      _response(
+        client: client,
+        method: 'DELETE',
+        path: Router.workoutImages('w1'),
+        statusCode: 404,
+        body: {'error': 'not found'},
+      );
+
+      final result = await api.deleteWorkoutImage('w1');
+      expect(result, isFalse);
+    });
+
+    test('getWorkoutGallery parses images and cursor (cursor passed as query)', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: '${Router.workouts}/images',
+        statusCode: 200,
+        body: {
+          'images': [
+            {'workoutId': 'w1', 'photoId': 'p1', 'image': 'https://img.example.com/1.jpg'},
+            {'workoutId': 'w2', 'photoId': 'p2', 'image': 'https://img.example.com/2.jpg'},
+          ],
+          'cursor': 'next-cursor',
+        },
+        query: {'cursor': 'c1'},
+      );
+
+      final result = await api.getWorkoutGallery(cursor: 'c1');
+
+      expect(result.cursor, equals('next-cursor'));
+      expect(result.images.length, equals(2));
+      expect(result.images.first.workoutId, equals('w1'));
+      expect(result.images.first.imageId, equals('p1'));
+      expect(result.images.first.link, contains('https://img.example.com/1.jpg'));
+    });
+
+    test('getWorkoutGallery returns empty images when response is malformed', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: '${Router.workouts}/images',
+        statusCode: 200,
+        body: {'unexpected': true},
+        query: {},
+      );
+
+      final result = await api.getWorkoutGallery();
+      expect(result.images, isEmpty);
+    });
+  });
 }
 
 void _response({
@@ -372,13 +493,23 @@ void _response({
 
   return switch (method.toUpperCase()) {
     'GET' => when(client.get(uri, headers: anyNamed('headers'))).thenAnswer((_) async => response),
-    'POST' =>
-      when(client.post(uri, headers: anyNamed('headers'), body: anyNamed('body'))).thenAnswer((_) async => response),
-    'PUT' =>
-      when(client.put(uri, headers: anyNamed('headers'), body: anyNamed('body'))).thenAnswer((_) async => response),
+    'POST' => when(
+      client.post(
+        uri,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      ),
+    ).thenAnswer((_) async => response),
+    'PUT' => when(
+      client.put(
+        uri,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      ),
+    ).thenAnswer((_) async => response),
     'DELETE' => when(client.delete(uri, headers: anyNamed('headers'))).thenAnswer((_) async => response),
     'HEAD' => when(client.head(uri, headers: anyNamed('headers'))).thenAnswer((_) async => response),
-    _ => throw UnsupportedError('Unsupported HTTP method: $method')
+    _ => throw UnsupportedError('Unsupported HTTP method: $method'),
   };
 }
 
