@@ -278,6 +278,12 @@ class Api
     final (_, code) = await post(Router.templates, body: template.toMap());
     return code == 201;
   }
+
+  @override
+  Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor}) async {
+    final (json, _) = await get('${Router.workouts}/images', query: {'cursor': ?cursor});
+    return ProgressGalleryResponse.fromJson(json);
+  }
 }
 
 abstract final class Router {
