@@ -131,9 +131,9 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
     DateTime? start,
     required Exercise exercise,
     List<ExerciseSet>? sets,
-  })  : _exercise = exercise,
-        start = start ?? DateTime.timestamp(),
-        _sets = sets ?? [] {
+  }) : _exercise = exercise,
+       start = start ?? DateTime.timestamp(),
+       _sets = sets ?? [] {
     if (starter != null) {
       _sets.add(starter);
     }
@@ -230,8 +230,8 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     List<WorkoutExercise>? exercises,
     this.end,
     this.remoteImage,
-  })  : _sets = exercises ?? <WorkoutExercise>[],
-        _id = id;
+  }) : _sets = exercises ?? <WorkoutExercise>[],
+       _id = id;
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Workout(
@@ -359,9 +359,9 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     return switch (exercise._nextIncomplete(last)) {
       ExerciseSet set => (exercise, set),
       _ => switch (_nextIncomplete(exercise)) {
-          WorkoutExercise next => (next, next.first),
-          _ => null,
-        },
+        WorkoutExercise next => (next, next.first),
+        _ => null,
+      },
     };
   }
 
@@ -378,6 +378,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     final workout = _Workout(
       name: name,
       start: sameId ? start : DateTime.timestamp(),
+      remoteImage: remoteImage,
     );
 
     for (final each in this) {
@@ -443,4 +444,67 @@ List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLooku
     String s => _exercisesFromCollection(jsonDecode(s), lookForExercise),
     _ => <WorkoutExercise>[],
   };
+}
+
+abstract interface class WorkoutImage {
+  String get workoutId;
+
+  String get imageId;
+
+  String get link;
+
+  factory WorkoutImage.fromJson(Map json) = _WorkoutImage.fromJson;
+}
+
+class _WorkoutImage implements WorkoutImage {
+  @override
+  final String workoutId;
+  @override
+  final String imageId;
+  @override
+  final String link;
+
+  const _WorkoutImage({
+    required this.workoutId,
+    required this.imageId,
+    required this.link,
+  });
+
+  factory _WorkoutImage.fromJson(Map json) {
+    return _WorkoutImage(
+      workoutId: json['workoutId'],
+      imageId: json['photoId'],
+      link: json['image'],
+    );
+  }
+}
+
+abstract interface class ProgressGalleryResponse {
+  Iterable<WorkoutImage> get images;
+
+  String? get cursor;
+
+  factory ProgressGalleryResponse.fromJson(Map json) = _ProgressGalleryResponse.fromJson;
+}
+
+class _ProgressGalleryResponse implements ProgressGalleryResponse {
+  @override
+  final List<WorkoutImage> images;
+  @override
+  final String? cursor;
+
+  const _ProgressGalleryResponse({
+    required this.images,
+    required this.cursor,
+  });
+
+  factory _ProgressGalleryResponse.fromJson(Map json) {
+    return _ProgressGalleryResponse(
+      images: switch (json) {
+        {'images': List images} => images.map((each) => WorkoutImage.fromJson(each)).toList(),
+        _ => [],
+      },
+      cursor: json['cursor'],
+    );
+  }
 }
