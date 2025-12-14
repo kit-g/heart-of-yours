@@ -32,6 +32,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     final workouts = Workouts.watch(context);
     final history = workouts.history.toList()..sort();
+    final images = workouts.images;
     final layout = LayoutProvider.of(context);
     final listview = CustomScrollView(
       physics: const ClampingScrollPhysics(),
@@ -47,6 +48,37 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
             centerTitle: true,
           ),
         ),
+        if (images.isNotEmpty)
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: .horizontal,
+                itemBuilder: (context, index) {
+                  final image = images[index];
+                  final last = index == images.length - 1;
+                  final first = index == 0;
+                  return GestureDetector(
+                    onTap: () {
+                      widget.onTapImage?.call(
+                        workoutId: image.workoutId,
+                        imageLink: image.link,
+                        imageId: image.imageId,
+                      );
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
+                      child: ClipRRect(
+                        borderRadius: BorderRadiusGeometry.circular(4),
+                        child: AppImage(url: image.link),
+                      ),
+                    ),
+                  );
+                },
+                itemCount: images.length,
+              ),
+            ),
+          ),
         if (history.isEmpty)
           const SliverFillRemaining(
             child: _EmptyState(),
