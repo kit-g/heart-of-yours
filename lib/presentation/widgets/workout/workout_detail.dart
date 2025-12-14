@@ -150,21 +150,35 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             child: switch (widget.localImage != null || widget.remoteImage != null) {
               false => const SizedBox.shrink(),
               true => Padding(
-                padding: const EdgeInsets.only(top: 8.0, left: 16, right: 16),
-                child: ClipRRect(
-                  key: ValueKey(widget.localImage ?? widget.remoteImage),
-                  borderRadius: BorderRadiusGeometry.circular(8),
-                  child: GestureDetector(
-                    onTap: () {
-                      widget.onTapImage?.call(
-                        workoutId: widget.workoutId,
-                        imageBytes: widget.localImage,
-                        imageLink: widget.remoteImage,
-                      );
-                    },
-                    child: AppImage(
-                      url: widget.remoteImage,
-                      bytes: widget.localImage,
+                padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    widget.onTapImage?.call(
+                      workoutId: widget.workoutId,
+                      imageBytes: widget.localImage,
+                      imageLink: widget.remoteImage,
+                    );
+                  },
+                  child: Container(
+                    key: ValueKey(widget.localImage ?? widget.remoteImage),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: AppImage(
+                        url: widget.remoteImage,
+                        bytes: widget.localImage,
+                        fit: .cover,
+                      ),
                     ),
                   ),
                 ),
@@ -688,11 +702,10 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
   }
 
   FutureOr<void> Function() _workoutOptionCallback(BuildContext context, _WorkoutOption option, bool hasImage) {
-    final ThemeData(:colorScheme, :platform) = Theme.of(context);
     final L(:capturePhoto, :chooseFromGallery, :cancel, :cropImage) = L.of(context);
 
     final pop = Navigator.of(context).pop;
-    final supportsTakingPhoto = platform == .iOS || platform == .android;
+    final supportsTakingPhoto = context.supportsTakingPhoto();
 
     Future<void> addPhoto() {
       return showBottomMenu<void>(
