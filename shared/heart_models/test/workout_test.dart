@@ -547,10 +547,10 @@ void main() {
                     'reps': 10,
                     'weight': 100.0,
                     'completed': true,
-                  }
-                }
-              }
-            }
+                  },
+                },
+              },
+            },
           };
 
           lookup(String name) => name == 'Bench Press' ? mockExercise : null;
@@ -571,6 +571,129 @@ void main() {
 
           final unnamedWorkout = Workout(name: null);
           expect(unnamedWorkout.toString(), startsWith('Workout on'));
+        },
+      );
+    },
+  );
+
+  group(
+    'WorkoutImage Tests',
+    () {
+      test(
+        'fromJson maps workoutId/photoId/image correctly',
+        () {
+          final json = <String, dynamic>{
+            'workoutId': 'workout-123',
+            'photoId': 'photo-456',
+            'image': 'https://example.com/image.jpg',
+          };
+
+          final image = WorkoutImage.fromJson(json);
+
+          expect(image.workoutId, equals('workout-123'));
+          expect(image.imageId, equals('photo-456'));
+          expect(image.link, equals('https://example.com/image.jpg'));
+        },
+      );
+
+      test(
+        'fromJson allows extra keys without affecting mapping',
+        () {
+          final json = <String, dynamic>{
+            'workoutId': 'workout-123',
+            'photoId': 'photo-456',
+            'image': 'https://example.com/image.jpg',
+            'extra': {'ignored': true},
+          };
+
+          final image = WorkoutImage.fromJson(json);
+
+          expect(image.workoutId, equals('workout-123'));
+          expect(image.imageId, equals('photo-456'));
+          expect(image.link, equals('https://example.com/image.jpg'));
+        },
+      );
+    },
+  );
+
+  group(
+    'ProgressGalleryResponse Tests',
+    () {
+      test(
+        'fromJson parses images list and cursor',
+        () {
+          final json = <String, dynamic>{
+            'cursor': 'next-cursor',
+            'images': [
+              {
+                'workoutId': 'w1',
+                'photoId': 'p1',
+                'image': 'https://example.com/1.jpg',
+              },
+              {
+                'workoutId': 'w2',
+                'photoId': 'p2',
+                'image': 'https://example.com/2.jpg',
+              },
+            ],
+          };
+
+          final response = ProgressGalleryResponse.fromJson(json);
+
+          expect(response.cursor, equals('next-cursor'));
+          expect(response.images.length, equals(2));
+
+          final first = response.images.first;
+          expect(first.workoutId, equals('w1'));
+          expect(first.imageId, equals('p1'));
+          expect(first.link, equals('https://example.com/1.jpg'));
+
+          final second = response.images.skip(1).first;
+          expect(second.workoutId, equals('w2'));
+          expect(second.imageId, equals('p2'));
+          expect(second.link, equals('https://example.com/2.jpg'));
+        },
+      );
+
+      test(
+        'fromJson returns empty images when images key is missing',
+        () {
+          final json = <String, dynamic>{'cursor': 'c'};
+
+          final response = ProgressGalleryResponse.fromJson(json);
+
+          expect(response.cursor, equals('c'));
+          expect(response.images, isEmpty);
+        },
+      );
+
+      test(
+        'fromJson returns empty images when images is not a List',
+        () {
+          final json = <String, dynamic>{
+            'cursor': 'c',
+            'images': {'not': 'a list'},
+          };
+
+          final response = ProgressGalleryResponse.fromJson(json);
+
+          expect(response.cursor, equals('c'));
+          expect(response.images, isEmpty);
+        },
+      );
+
+      test(
+        'fromJson allows null cursor',
+        () {
+          final json = <String, dynamic>{
+            'cursor': null,
+            'images': [],
+          };
+
+          final response = ProgressGalleryResponse.fromJson(json);
+
+          expect(response.cursor, isNull);
+          expect(response.images, isEmpty);
         },
       );
     },
