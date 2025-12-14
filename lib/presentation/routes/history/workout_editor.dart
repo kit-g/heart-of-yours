@@ -20,6 +20,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   late _WorkoutNotifier _notifier;
 
   Workout get workout => _notifier.workout;
+  final _optionsButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -49,8 +50,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme) = Theme.of(context);
-    final L(:editWorkout, :save, :workoutName) = L.of(context);
+    final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme, :platform) = Theme.of(context);
+    final l = L.of(context);
+    final L(:editWorkout, :save, :workoutName) = l;
 
     if ((_controller.text.isEmpty, workout.name) case (true, String name) when name.isNotEmpty) {
       _controller.text = name;
@@ -59,6 +61,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return ListenableBuilder(
       listenable: _notifier,
       builder: (_, __) {
+        final hasImage = workout.remoteImage != null || workout.remoteImage != null;
         return PopScope(
           canPop: !_notifier.hasChanged,
           onPopInvokedWithResult: (didPop, _) {
@@ -72,6 +75,37 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               backgroundColor: scaffoldBackgroundColor,
               title: Text(editWorkout),
               actions: [
+                PrimaryButton.shrunk(
+                  key: _optionsButtonKey,
+                  child: Icon(
+                    switch (platform) {
+                      .iOS || .macOS => Icons.more_horiz_rounded,
+                      _ => Icons.more_vert_rounded,
+                    },
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    showMenu<_WorkoutEditOption>(
+                      context: context,
+                      position: _optionsButtonKey.position(),
+                      items: _WorkoutEditOption.values.map(
+                        (option) {
+                          return PopupMenuItem<_WorkoutEditOption>(
+                            value: option,
+                            onTap: _workoutOptionCallback(context, option, hasImage, workout.id),
+                            child: Row(
+                              spacing: 6,
+                              children: [
+                                Icon(_workoutOptionIcon(option)),
+                                Text(_workoutOptionCopy(l, option, hasImage)),
+                              ],
+                            ),
+                          );
+                        },
+                      ).toList(),
+                    );
+                  },
+                ),
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _controller,
                   builder: (_, value, __) {
@@ -89,7 +123,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                                 context,
                                 workout,
                                 onFinish: () {
-                                  Workouts.of(context).saveWorkout(_notifier.workout);
+                                  Workouts.of(context).saveWorkout(workout);
                                   Navigator.of(context).pop();
                                 },
                               );
@@ -132,6 +166,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
                 remoteImage: workout.remoteImage,
+                localImage: workout.localImage,
                 onTapImage: widget.onTapImage,
                 onAddExercises: (exercises) async {
                   for (final each in exercises.toList()) {
@@ -261,6 +296,87 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       actions: actions,
     );
   }
+
+  String _workoutOptionCopy(L l, _WorkoutEditOption option, bool hasImage) {
+    return switch (option) {
+      .editImage => hasImage ? l.removePhoto : l.addPhoto,
+      .editName => l.editWorkoutName,
+    };
+  }
+
+  IconData _workoutOptionIcon(_WorkoutEditOption option) {
+    return switch (option) {
+      .editImage => Icons.photo_camera,
+      .editName => Icons.edit_rounded,
+    };
+  }
+
+  void Function() _workoutOptionCallback(
+    BuildContext context,
+    _WorkoutEditOption option,
+    bool hasImage,
+    String workoutId,
+  ) {
+    final L(:capturePhoto, :chooseFromGallery, :cancel, :cropImage) = L.of(context);
+
+    final pop = Navigator.of(context).pop;
+    final supportsTakingPhoto = context.supportsTakingPhoto();
+
+    Future<void> addPhoto() {
+      return showBottomMenu<void>(
+        context,
+        [
+          if (supportsTakingPhoto)
+            BottomMenuAction(
+              title: capturePhoto,
+              onPressed: () {
+                pop();
+                _attachImage(context, () => captureAndCropPhoto(context, cropImage), workoutId);
+              },
+              icon: const Icon(Icons.camera_alt_rounded),
+            ),
+          BottomMenuAction(
+            title: chooseFromGallery,
+            onPressed: () {
+              pop();
+              _attachImage(context, () => pickAndCropGalleryImage(context, cropImage), workoutId);
+            },
+            icon: const Icon(Icons.photo_library_rounded),
+          ),
+          BottomMenuAction(
+            title: cancel,
+            onPressed: pop,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      );
+    }
+
+    void removePhoto() {
+      Workouts.of(context).detachImageFromWorkout(workoutId);
+      _notifier
+        ..localImage = null
+        ..remoteImage = null;
+    }
+
+    return switch (option) {
+      .editImage => hasImage ? removePhoto : addPhoto,
+      .editName => () {
+        _focusNode.requestFocus();
+      },
+    };
+  }
+
+  Future<void> _attachImage(BuildContext context, Future<LocalImage?> Function() getImage, String workoutId) async {
+    final workouts = Workouts.of(context);
+    final localImage = await getImage();
+    if (localImage != null) {
+      final attached = await workouts.attachImageToWorkout(workoutId, localImage);
+      if (attached) {
+        _notifier.localImage = localImage.$1;
+      }
+    }
+  }
 }
 
 class _WorkoutNotifier with ChangeNotifier {
@@ -316,9 +432,21 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
+  set localImage(Uint8List? asset) {
+    workout.localImage = asset;
+    notifyListeners();
+  }
+
+  set remoteImage(String? asset) {
+    workout.remoteImage = asset;
+    notifyListeners();
+  }
+
   @override
   void notifyListeners() {
     _hasChanged = true;
     super.notifyListeners();
   }
 }
+
+enum _WorkoutEditOption { editImage, editName }
