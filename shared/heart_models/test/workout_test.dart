@@ -584,15 +584,17 @@ void main() {
         () {
           final json = <String, dynamic>{
             'workoutId': 'workout-123',
-            'photoId': 'photo-456',
-            'image': 'https://example.com/image.jpg',
+            'id': 'photo-456',
+            'url': 'https://example.com/image.jpg',
+            'key': 'image.jpg',
           };
 
           final image = WorkoutImage.fromJson(json);
 
           expect(image.workoutId, equals('workout-123'));
-          expect(image.imageId, equals('photo-456'));
+          expect(image.id, equals('photo-456'));
           expect(image.link, equals('https://example.com/image.jpg'));
+          expect(image.key, equals('image.jpg'));
         },
       );
 
@@ -601,15 +603,16 @@ void main() {
         () {
           final json = <String, dynamic>{
             'workoutId': 'workout-123',
-            'photoId': 'photo-456',
-            'image': 'https://example.com/image.jpg',
+            'id': 'photo-456',
+            'url': 'https://example.com/image.jpg',
+            'key': 'image.jpg',
             'extra': {'ignored': true},
           };
 
           final image = WorkoutImage.fromJson(json);
 
           expect(image.workoutId, equals('workout-123'));
-          expect(image.imageId, equals('photo-456'));
+          expect(image.id, equals('photo-456'));
           expect(image.link, equals('https://example.com/image.jpg'));
         },
       );
@@ -627,13 +630,15 @@ void main() {
             'images': [
               {
                 'workoutId': 'w1',
-                'photoId': 'p1',
-                'image': 'https://example.com/1.jpg',
+                'id': 'p1',
+                'url': 'https://example.com/1.jpg',
+                'key': '1.jpg',
               },
               {
                 'workoutId': 'w2',
-                'photoId': 'p2',
-                'image': 'https://example.com/2.jpg',
+                'id': 'p2',
+                'url': 'https://example.com/2.jpg',
+                'key': '1.jpg',
               },
             ],
           };
@@ -645,12 +650,12 @@ void main() {
 
           final first = response.images.first;
           expect(first.workoutId, equals('w1'));
-          expect(first.imageId, equals('p1'));
+          expect(first.id, equals('p1'));
           expect(first.link, equals('https://example.com/1.jpg'));
 
           final second = response.images.skip(1).first;
           expect(second.workoutId, equals('w2'));
-          expect(second.imageId, equals('p2'));
+          expect(second.id, equals('p2'));
           expect(second.link, equals('https://example.com/2.jpg'));
         },
       );

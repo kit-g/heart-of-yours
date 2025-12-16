@@ -67,7 +67,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   abstract Uint8List? localImage;
 
-  abstract String? remoteImage;
+  abstract WorkoutImage? remoteImage;
 
   factory Workout({String? name}) {
     return _Workout(
@@ -207,6 +207,60 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   bool get isCompleted => every((set) => set.isCompleted);
 }
 
+abstract interface class WorkoutImage implements Comparable<WorkoutImage>, Storable {
+  String get workoutId;
+
+  String get id;
+
+  String get link;
+
+  String get key;
+
+  factory WorkoutImage.fromJson(Map json) = _WorkoutImage.fromJson;
+}
+
+class _WorkoutImage implements WorkoutImage {
+  @override
+  final String workoutId;
+  @override
+  final String id;
+  @override
+  final String link;
+  @override
+  final String key;
+
+  const _WorkoutImage({
+    required this.workoutId,
+    required this.id,
+    required this.link,
+    required this.key,
+  });
+
+  factory _WorkoutImage.fromJson(Map json) {
+    return _WorkoutImage(
+      workoutId: json['workoutId'],
+      id: json['id'],
+      link: json['url'],
+      key: json['key'],
+    );
+  }
+
+  @override
+  Map<String, dynamic> toRow() {
+    return {
+      'workoutId': workoutId,
+      'id': id,
+      'url': link,
+      'key': key,
+    };
+  }
+
+  @override
+  int compareTo(WorkoutImage other) {
+    return other.id.compareTo(id);
+  }
+}
+
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
   final List<WorkoutExercise> _sets;
   @override
@@ -221,7 +275,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   Uint8List? localImage;
 
   @override
-  String? remoteImage;
+  WorkoutImage? remoteImage;
 
   _Workout({
     required this.start,
@@ -240,7 +294,11 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       id: json['id'],
       end: DateTime.tryParse(json['end'] ?? ''),
       exercises: _exercisesFromCollection(json['exercises'], lookForExercise),
-      remoteImage: json['image'],
+      remoteImage: switch (json) {
+        {'images': List l} when l.isNotEmpty => WorkoutImage.fromJson(l.first),
+        {'image': Map m} => WorkoutImage.fromJson(m), // from SQLite
+        _ => null,
+      },
     );
   }
 
@@ -444,39 +502,6 @@ List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLooku
     String s => _exercisesFromCollection(jsonDecode(s), lookForExercise),
     _ => <WorkoutExercise>[],
   };
-}
-
-abstract interface class WorkoutImage {
-  String get workoutId;
-
-  String get imageId;
-
-  String get link;
-
-  factory WorkoutImage.fromJson(Map json) = _WorkoutImage.fromJson;
-}
-
-class _WorkoutImage implements WorkoutImage {
-  @override
-  final String workoutId;
-  @override
-  final String imageId;
-  @override
-  final String link;
-
-  const _WorkoutImage({
-    required this.workoutId,
-    required this.imageId,
-    required this.link,
-  });
-
-  factory _WorkoutImage.fromJson(Map json) {
-    return _WorkoutImage(
-      workoutId: json['workoutId'],
-      imageId: json['photoId'],
-      link: json['image'],
-    );
-  }
 }
 
 abstract interface class ProgressGalleryResponse {
