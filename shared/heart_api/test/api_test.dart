@@ -412,9 +412,10 @@ void main() {
         path: Router.workoutImages('w1'),
         statusCode: 204,
         body: {},
+        query: {'key': '1'},
       );
 
-      final result = await api.deleteWorkoutImage('w1');
+      final result = await api.deleteWorkoutImage('w1', '1');
       expect(result, isTrue);
     });
 
@@ -424,10 +425,11 @@ void main() {
         method: 'DELETE',
         path: Router.workoutImages('w1'),
         statusCode: 404,
+        query: {'key': '1'},
         body: {'error': 'not found'},
       );
 
-      final result = await api.deleteWorkoutImage('w1');
+      final result = await api.deleteWorkoutImage('w1', '1');
       expect(result, isFalse);
     });
 
@@ -439,8 +441,8 @@ void main() {
         statusCode: 200,
         body: {
           'images': [
-            {'workoutId': 'w1', 'photoId': 'p1', 'image': 'https://img.example.com/1.jpg'},
-            {'workoutId': 'w2', 'photoId': 'p2', 'image': 'https://img.example.com/2.jpg'},
+            {'workoutId': 'w1', 'id': 'p1', 'url': 'https://img.example.com/1.jpg', 'key': '1.jpg'},
+            {'workoutId': 'w2', 'id': 'p2', 'url': 'https://img.example.com/2.jpg', 'key': '2.jpg'},
           ],
           'cursor': 'next-cursor',
         },
@@ -452,7 +454,7 @@ void main() {
       expect(result.cursor, equals('next-cursor'));
       expect(result.images.length, equals(2));
       expect(result.images.first.workoutId, equals('w1'));
-      expect(result.images.first.imageId, equals('p1'));
+      expect(result.images.first.id, equals('p1'));
       expect(result.images.first.link, contains('https://img.example.com/1.jpg'));
     });
 
