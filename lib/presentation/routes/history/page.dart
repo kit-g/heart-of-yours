@@ -63,7 +63,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                       widget.onTapImage?.call(
                         workoutId: image.workoutId,
                         imageLink: image.link,
-                        imageId: image.imageId,
+                        imageId: image.id,
                       );
                     },
                     child: Padding(

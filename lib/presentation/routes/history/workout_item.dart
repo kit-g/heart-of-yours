@@ -47,7 +47,7 @@ class WorkoutItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      if (workout.remoteImage case String link)
+                      if (workout.remoteImage?.link case String link)
                         FeedbackButton(
                           onPressed: () {
                             onTapImageIcon?.call(
