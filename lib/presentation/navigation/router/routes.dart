@@ -489,8 +489,8 @@ RouteBase _galleryRoute() {
     parentNavigatorKey: _rootNavigatorKey,
     path: _galleryPath,
     pageBuilder: (context, state) {
-      final extra = state.extra as ({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes});
-      final (:workoutId, :imageId, :imageLink, :imageBytes) = extra;
+      final extra = state.extra as ({String? workoutId, String? id, String? imageLink, Uint8List? imageBytes});
+      final (:workoutId, :id, :imageLink, :imageBytes) = extra;
       return CustomTransitionPage(
         key: state.pageKey,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
