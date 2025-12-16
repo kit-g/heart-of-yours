@@ -165,7 +165,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onRemoveSet: _notifier.removeSet,
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
-                remoteImage: workout.remoteImage,
+                remoteImage: workout.remoteImage?.link,
                 localImage: workout.localImage,
                 onTapImage: widget.onTapImage,
                 onAddExercises: (exercises) async {
@@ -437,8 +437,8 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
-  set remoteImage(String? asset) {
-    workout.remoteImage = asset;
+  set remoteImage(String? _) {
+    workout.remoteImage = null;
     notifyListeners();
   }
 
