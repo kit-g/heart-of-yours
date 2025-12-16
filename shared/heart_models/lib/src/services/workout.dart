@@ -49,5 +49,5 @@ abstract interface class RemoteWorkoutService implements FileUploadService {
     String? imageMimeType,
   });
 
-  Future<bool> deleteWorkoutImage(String workoutId);
+  Future<bool> deleteWorkoutImage(String workoutId, String imageId);
 }
