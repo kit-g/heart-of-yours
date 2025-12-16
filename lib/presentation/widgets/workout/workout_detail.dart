@@ -202,7 +202,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             onAcceptWithDetails: (details) {
               widget.onDragExercise(details.data);
             },
-            builder: (_, __, ___) {
+            builder: (_, _, _) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Column(
@@ -554,7 +554,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
         return WorkoutDetail(
           controller: scrollController,
           exercises: active,
-          remoteImage: active.remoteImage,
+          remoteImage: active.remoteImage?.link,
           localImage: active.localImage,
           onTapImage: widget.onTapImage,
           workoutId: active.id,
