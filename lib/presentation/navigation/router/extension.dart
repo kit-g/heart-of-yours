@@ -62,7 +62,7 @@ extension on BuildContext {
   Future<void> goToGallery({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes}) {
     return push(
       _galleryPath,
-      extra: (workoutId: workoutId, imageId: imageId, imageLink: imageLink, imageBytes: imageBytes),
+      extra: (workoutId: workoutId, id: imageId, imageLink: imageLink, imageBytes: imageBytes),
     );
   }
 }
