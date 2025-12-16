@@ -181,8 +181,8 @@ class Api
   }
 
   @override
-  Future<bool> deleteWorkoutImage(String workoutId) async {
-    final (_, code) = await delete(Router.workoutImages(workoutId));
+  Future<bool> deleteWorkoutImage(String workoutId, String imageId) async {
+    final (_, code) = await delete(Router.workoutImages(workoutId), query: {'key': imageId});
     return code == 204;
   }
 
