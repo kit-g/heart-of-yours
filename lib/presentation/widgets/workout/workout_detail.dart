@@ -551,134 +551,141 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       controller: _sheetController,
       expand: false,
       builder: (context, scrollController) {
-        return WorkoutDetail(
-          controller: scrollController,
-          exercises: active,
-          remoteImage: active.remoteImage?.link,
-          localImage: active.localImage,
-          onTapImage: widget.onTapImage,
-          workoutId: active.id,
-          onDragExercise: workouts.append,
-          onSwapExercise: workouts.swap,
-          allowsCompletingSet: true,
-          onAddSet: workouts.addSet,
-          onRemoveSet: workouts.removeSet,
-          onRemoveExercise: workouts.removeExercise,
-          onAddExercises: (exercises) async {
-            final workouts = Workouts.of(context);
-            for (final each in exercises.toList()) {
-              await Future.delayed(
-                const Duration(milliseconds: 2),
-                () => workouts.startExercise(each),
-              );
-            }
-          },
-          appBar: SliverPersistentHeader(
-            pinned: true,
-            delegate: FixedHeightHeaderDelegate(
-              height: 40,
-              backgroundColor: scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(12),
-                topLeft: Radius.circular(12),
-              ),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    height: 40,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (workouts.activeWorkout?.start case DateTime start)
-                          Row(
-                            spacing: 4,
-                            children: [
-                              Container(
-                                key: _optionsButtonKey,
-                                child: PrimaryButton.shrunk(
-                                  key: WorkoutDetailKeys.options,
-                                  child: Icon(
-                                    switch (platform) {
-                                      .iOS || .macOS => Icons.more_horiz_rounded,
-                                      _ => Icons.more_vert_rounded,
+        final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(bottom: bottomInset),
+          child: WorkoutDetail(
+            controller: scrollController,
+            exercises: active,
+            remoteImage: active.remoteImage?.link,
+            localImage: active.localImage,
+            onTapImage: widget.onTapImage,
+            workoutId: active.id,
+            onDragExercise: workouts.append,
+            onSwapExercise: workouts.swap,
+            allowsCompletingSet: true,
+            onAddSet: workouts.addSet,
+            onRemoveSet: workouts.removeSet,
+            onRemoveExercise: workouts.removeExercise,
+            onAddExercises: (exercises) async {
+              final workouts = Workouts.of(context);
+              for (final each in exercises.toList()) {
+                await Future.delayed(
+                  const Duration(milliseconds: 2),
+                  () => workouts.startExercise(each),
+                );
+              }
+            },
+            appBar: SliverPersistentHeader(
+              pinned: true,
+              delegate: FixedHeightHeaderDelegate(
+                height: 40,
+                backgroundColor: scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(12),
+                  topLeft: Radius.circular(12),
+                ),
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      height: 40,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (workouts.activeWorkout?.start case DateTime start)
+                            Row(
+                              spacing: 4,
+                              children: [
+                                Container(
+                                  key: _optionsButtonKey,
+                                  child: PrimaryButton.shrunk(
+                                    key: WorkoutDetailKeys.options,
+                                    child: Icon(
+                                      switch (platform) {
+                                        .iOS || .macOS => Icons.more_horiz_rounded,
+                                        _ => Icons.more_vert_rounded,
+                                      },
+                                    ),
+                                    onPressed: () {
+                                      showMenu<_WorkoutOption>(
+                                        context: context,
+                                        position: _optionsButtonKey.position(),
+                                        items: _WorkoutOption.values.map(
+                                          (option) {
+                                            return PopupMenuItem<_WorkoutOption>(
+                                              value: option,
+                                              onTap: _workoutOptionCallback(context, option, hasImage),
+                                              child: Row(
+                                                spacing: 6,
+                                                children: [
+                                                  Icon(_workoutOptionIcon(option)),
+                                                  Text(_workoutOptionCopy(l, option, hasImage)),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ).toList(),
+                                      );
                                     },
                                   ),
-                                  onPressed: () {
-                                    showMenu<_WorkoutOption>(
-                                      context: context,
-                                      position: _optionsButtonKey.position(),
-                                      items: _WorkoutOption.values.map(
-                                        (option) {
-                                          return PopupMenuItem<_WorkoutOption>(
-                                            value: option,
-                                            onTap: _workoutOptionCallback(context, option, hasImage),
-                                            child: Row(
-                                              spacing: 6,
-                                              children: [
-                                                Icon(_workoutOptionIcon(option)),
-                                                Text(_workoutOptionCopy(l, option, hasImage)),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ).toList(),
-                                    );
-                                  },
                                 ),
-                              ),
-                              WorkoutTimer(
-                                key: WorkoutDetailKeys.timer,
-                                start: start,
-                                style: textTheme.titleSmall,
-                                initValue: workouts.activeWorkout?.elapsed(),
-                              ),
-                            ],
-                          ),
-                        if (workouts.hasActiveWorkout)
-                          PrimaryButton.shrunk(
-                            key: WorkoutDetailKeys.finishWorkout,
-                            onPressed: () {
-                              showFinishWorkoutDialog(context, workouts);
-                            },
-                            backgroundColor: colorScheme.primaryContainer,
-                            child: Text(L.of(context).finish),
-                          ),
-                      ],
+                                WorkoutTimer(
+                                  key: WorkoutDetailKeys.timer,
+                                  start: start,
+                                  style: textTheme.titleSmall,
+                                  initValue: workouts.activeWorkout?.elapsed(),
+                                ),
+                              ],
+                            ),
+                          if (workouts.hasActiveWorkout)
+                            PrimaryButton.shrunk(
+                              key: WorkoutDetailKeys.finishWorkout,
+                              onPressed: () {
+                                showFinishWorkoutDialog(context, workouts);
+                              },
+                              backgroundColor: colorScheme.primaryContainer,
+                              child: Text(L.of(context).finish),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    height: 40,
-                    child: Center(
-                      child: SizedBox(
-                        width: 180,
-                        child: TextField(
-                          inputFormatters: [
-                            LengthLimitingTextInputFormatter(18),
-                          ],
-                          focusNode: _workoutNameFocusNode,
-                          textCapitalization: TextCapitalization.words,
-                          textAlign: TextAlign.center,
-                          controller: _workoutNameController,
-                          style: textTheme.titleSmall,
-                          decoration: const InputDecoration.collapsed(hintText: ''),
-                          onEditingComplete: () {
-                            final text = _workoutNameController.text.trim();
-                            final name = switch (text.isEmpty) {
-                              true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
-                              false => text.trim(),
-                            };
-                            workouts.renameWorkout(name);
-                            _workoutNameFocusNode.unfocus();
-                          },
-                          onTapOutside: (_) {
-                            _workoutNameFocusNode.unfocus();
-                          },
+                    SizedBox(
+                      height: 40,
+                      child: Center(
+                        child: SizedBox(
+                          width: 180,
+                          child: TextField(
+                            inputFormatters: [
+                              LengthLimitingTextInputFormatter(18),
+                            ],
+                            focusNode: _workoutNameFocusNode,
+                            textCapitalization: TextCapitalization.words,
+                            textAlign: TextAlign.center,
+                            controller: _workoutNameController,
+                            style: textTheme.titleSmall,
+                            decoration: const InputDecoration.collapsed(hintText: ''),
+                            onEditingComplete: () {
+                              final text = _workoutNameController.text.trim();
+                              final name = switch (text.isEmpty) {
+                                true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
+                                false => text.trim(),
+                              };
+                              workouts.renameWorkout(name);
+                              _workoutNameFocusNode.unfocus();
+                            },
+                            onTapOutside: (_) {
+                              _workoutNameFocusNode.unfocus();
+                            },
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
