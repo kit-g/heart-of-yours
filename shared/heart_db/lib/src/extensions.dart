@@ -29,6 +29,7 @@ extension on Map {
       (key, value) {
         return switch (key) {
           'exercises' => MapEntry(key, jsonDecode(value)),
+          'image' when value != null => MapEntry(key, jsonDecode(value)),
           'end' => MapEntry(key, value ?? ''),
           _ => MapEntry(key, value),
         };
