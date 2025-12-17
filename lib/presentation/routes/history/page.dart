@@ -70,7 +70,10 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                       padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
                       child: ClipRRect(
                         borderRadius: BorderRadiusGeometry.circular(4),
-                        child: AppImage(url: image.link),
+                        child: AppImage(
+                          url: image.link,
+                          bytes: image.bytes,
+                        ),
                       ),
                     ),
                   );

@@ -212,11 +212,24 @@ abstract interface class WorkoutImage implements Comparable<WorkoutImage>, Stora
 
   String get id;
 
-  String get link;
+  String? get link;
+
+  Uint8List? get bytes;
 
   String get key;
 
   factory WorkoutImage.fromJson(Map json) = _WorkoutImage.fromJson;
+
+  factory WorkoutImage.local(String url, String workoutId, Uint8List bytes) {
+    final Uri(:String path) = Uri.parse(url);
+    return _WorkoutImage(
+      workoutId: workoutId,
+      id: path.split('/').last.split('.').first,
+      link: url,
+      key: path,
+      bytes: bytes,
+    );
+  }
 }
 
 class _WorkoutImage implements WorkoutImage {
@@ -228,12 +241,15 @@ class _WorkoutImage implements WorkoutImage {
   final String link;
   @override
   final String key;
+  @override
+  final Uint8List? bytes;
 
   const _WorkoutImage({
     required this.workoutId,
     required this.id,
     required this.link,
     required this.key,
+    this.bytes,
   });
 
   factory _WorkoutImage.fromJson(Map json) {
@@ -258,6 +274,19 @@ class _WorkoutImage implements WorkoutImage {
   @override
   int compareTo(WorkoutImage other) {
     return other.id.compareTo(id);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is WorkoutImage && key == other.key;
+  }
+
+  @override
+  int get hashCode => key.hashCode;
+
+  @override
+  String toString() {
+    return 'Image $id';
   }
 }
 
@@ -284,6 +313,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     List<WorkoutExercise>? exercises,
     this.end,
     this.remoteImage,
+    this.localImage,
   }) : _sets = exercises ?? <WorkoutExercise>[],
        _id = id;
 
@@ -437,6 +467,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       name: name,
       start: sameId ? start : DateTime.timestamp(),
       remoteImage: remoteImage,
+      localImage: localImage,
     );
 
     for (final each in this) {
@@ -505,7 +536,7 @@ List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLooku
 }
 
 abstract interface class ProgressGalleryResponse {
-  Iterable<WorkoutImage> get images;
+  List<WorkoutImage> get images;
 
   String? get cursor;
 
