@@ -305,6 +305,14 @@ void main() {
       // case 1: local present
       final w1 = Workout(name: 'w1');
       when(local.getWorkoutHistory('u1', any)).thenAnswer((_) async => [w1]);
+      when(
+        remote.getWorkoutGallery(cursor: anyNamed('cursor')),
+      ).thenAnswer(
+        (_) async {
+          return ProgressGalleryResponse.fromJson({'images': []});
+        },
+      );
+
       final probe1 = ListenerProbe()..attach(sut);
       await sut.initHistory();
       expect(sut.historyInitialized, isTrue);
