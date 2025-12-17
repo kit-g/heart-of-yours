@@ -491,6 +491,8 @@ RouteBase _galleryRoute() {
     pageBuilder: (context, state) {
       final extra = state.extra as ({String? workoutId, String? id, String? imageLink, Uint8List? imageBytes});
       final (:workoutId, :id, :imageLink, :imageBytes) = extra;
+      final date = DateTime.tryParse(workoutId ?? '');
+      final title = date != null ? DateFormat('EEEE, MMM d, yyyy').format(date) : null;
       return CustomTransitionPage(
         key: state.pageKey,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -506,6 +508,7 @@ RouteBase _galleryRoute() {
         child: GalleryPage(
           remote: imageLink,
           bytes: imageBytes,
+          title: title,
         ),
       );
     },
