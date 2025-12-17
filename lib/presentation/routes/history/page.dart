@@ -26,6 +26,8 @@ class HistoryPage extends StatefulWidget {
   State<HistoryPage> createState() => _HistoryPageState();
 }
 
+const _imageSize = 120.0;
+
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage> {
   @override
   Widget build(BuildContext context) {
@@ -51,7 +53,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         if (images.isNotEmpty)
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 120,
+              height: _imageSize,
               child: ListView.builder(
                 scrollDirection: .horizontal,
                 itemBuilder: (context, index) {
@@ -68,11 +70,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                     },
                     child: Padding(
                       padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
-                      child: ClipRRect(
-                        borderRadius: BorderRadiusGeometry.circular(4),
-                        child: AppImage(
-                          url: image.link,
-                          bytes: image.bytes,
+                      child: SizedBox(
+                        width: _imageSize,
+                        child: ClipRRect(
+                          borderRadius: BorderRadiusGeometry.circular(4),
+                          child: AppImage(
+                            url: image.link,
+                            bytes: image.bytes,
+                            fit: .cover,
+                          ),
                         ),
                       ),
                     ),
