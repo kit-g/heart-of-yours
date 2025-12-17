@@ -47,12 +47,16 @@ class WorkoutItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      if (workout.remoteImage?.link case String link)
+                      if (workout case Workout(
+                        :var remoteImage,
+                        :var localImage,
+                      ) when remoteImage != null || localImage != null)
                         FeedbackButton(
                           onPressed: () {
                             onTapImageIcon?.call(
                               workoutId: workout.id,
-                              imageLink: link,
+                              imageLink: remoteImage?.link,
+                              imageBytes: localImage,
                             );
                           },
                           child: const Icon(Icons.image_rounded),
