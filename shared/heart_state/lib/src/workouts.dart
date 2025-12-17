@@ -13,7 +13,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final WorkoutService _localService;
   final RemoteWorkoutService _remoteService;
-  final _progress = <WorkoutImage>[];
+  final _progress = SplayTreeSet<WorkoutImage>();
 
   Workouts({
     required this.lookForExercise,
@@ -296,13 +296,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Workout? lookup(String id) => _workouts[id];
 
   Future<bool> attachImageToWorkout(String workoutId, (Uint8List, {String? mimeType, String? name}) image) async {
+    // destinationUrl is where the image will be available once saved
     final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workoutId);
     if (cred != null) {
+      // upload file
       final upload = ('file', image.$1, contentType: image.mimeType, filename: image.name);
       final uploaded = await _remoteService.uploadFile(cred, upload);
-      if (uploaded) {
-        await _localService.updateWorkout(workoutId: workoutId, image: destinationUrl);
+      if (uploaded && destinationUrl != null) {
+        // we'll continue working with the local image for now, by parsing the URL for the data we need
+        final local = WorkoutImage.local(destinationUrl, workoutId, image.$1);
+        // save it locally
+        await _localService.updateWorkout(workoutId: workoutId, image: local);
+        // and finally update state - the workouts and the progress gallery
         _workouts[workoutId]?.localImage = image.$1;
+        _progress.add(local);
+
         notifyListeners();
         return true;
       }
@@ -321,11 +329,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> detachImageFromWorkout(String workoutId) async {
-    final detached = await _remoteService.deleteWorkoutImage(workoutId);
+    final image = _workouts[workoutId]?.remoteImage;
+    if (image == null) return;
+    final detached = await _remoteService.deleteWorkoutImage(workoutId, image.key);
     if (detached) {
       _workouts[workoutId]
         ?..remoteImage = null
         ..localImage = null;
+      _progress.removeWhere((each) => each.id == image.id);
       await _localService.updateWorkout(workoutId: workoutId, image: null);
       notifyListeners();
     }
