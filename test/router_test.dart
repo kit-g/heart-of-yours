@@ -20,21 +20,29 @@ void main() {
     late MockConfigApi configApi;
     late TestAppHarness harness;
 
-    setUp(() {
-      db = MockLocalDatabase();
-      api = MockApi();
-      configApi = MockConfigApi();
-      harness = const TestAppHarness();
+    setUp(
+      () {
+        db = MockLocalDatabase();
+        api = MockApi();
+        configApi = MockConfigApi();
+        harness = const TestAppHarness();
 
-      // Stats.init is invoked by ProfilePage's after-first-layout path; stub DB calls used by Stats
-      when(
-        db.getWorkoutSummary(
-          weeksBack: anyNamed('weeksBack'),
-          userId: anyNamed('userId'),
-        ),
-      ).thenAnswer((_) async => WorkoutAggregation.empty());
-      when(db.getWeeklyWorkoutCount(any)).thenAnswer((_) async => 0);
-    });
+        // Stats.init is invoked by ProfilePage's after-first-layout path; stub DB calls used by Stats
+        when(
+          db.getWorkoutSummary(
+            weeksBack: anyNamed('weeksBack'),
+            userId: anyNamed('userId'),
+          ),
+        ).thenAnswer((_) async => WorkoutAggregation.empty());
+        when(db.getWeeklyWorkoutCount(any)).thenAnswer((_) async => 0);
+
+        when(
+          api.getWorkoutGallery(cursor: anyNamed('cursor')),
+        ).thenAnswer(
+          (_) async => ProgressGalleryResponse.fromJson({}),
+        );
+      },
+    );
 
     testWidgets('initial route: signed-out user is redirected to LoginPage', (tester) async {
       final firebase = MockFirebaseAuth(signedIn: false);
