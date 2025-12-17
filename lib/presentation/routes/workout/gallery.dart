@@ -3,11 +3,13 @@ part of 'workout.dart';
 class GalleryPage extends StatelessWidget {
   final String? remote;
   final Uint8List? bytes;
+  final String? title;
 
   const GalleryPage({
     super.key,
     required this.remote,
     required this.bytes,
+    this.title,
   });
 
   @override
@@ -21,6 +23,10 @@ class GalleryPage extends StatelessWidget {
           color: Colors.white,
           icon: const Icon(Icons.close_rounded),
         ),
+        title: switch (title) {
+          String t => Text(t, style: TextStyle(color: Colors.white),),
+          null => null,
+        },
         backgroundColor: Colors.transparent,
       ),
       backgroundColor: Colors.black,
