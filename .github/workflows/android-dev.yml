@@ -35,10 +35,12 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: "Fetch keystore from S3"
+      - name: "Fetch secrets from S3"
         run: |
           aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/dev/android/keystore.jks android/keystore.jks
           aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/dev/android/key.properties android/key.properties
+          aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart
+          aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/dev/android/google-services.json android/app/google-services.json
 
       - name: "Set up Flutter"
         uses: flutter-actions/setup-flutter@v4
