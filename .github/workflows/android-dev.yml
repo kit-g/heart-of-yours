@@ -3,7 +3,7 @@ name: "Deploy Dev to Play Store"
 on:
   workflow_dispatch: { }
   push:
-    branches: [ main ]
+    branches: [ main, android-app ]
     tags:
       - "dev-*"
     paths:
@@ -34,3 +34,30 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
+#      - name: Fetch Keystore from S3
+#        run: aws s3 cp s3://your-bucket-name/keystore.jks android/keystore.jks
+#
+#      - name: Create key.properties
+#        run: |
+#          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > android/key.properties
+#          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+#          echo "keyAlias=dev" >> android/key.properties
+#          echo "storeFile=keystore.jks" >> android/key.properties
+#
+#      - name: Set up Flutter
+#        uses: flutter-actions/setup-flutter@v4
+#        with:
+#          channel: 'stable'
+#          version: 'latest'
+#
+#      - name: Build App Bundle (Dev)
+#        run: flutter build appbundle --release --flavor dev --build-number ${{ github.run_number }}
+#
+#      - name: Upload to Play Store (Internal Testing)
+#        uses: r0adkll/upload-google-play@v1
+#        with:
+#          serviceAccountJsonKeyData: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
+#          packageName: me.heart.android.dev
+#          releaseFiles: build/app/outputs/bundle/devRelease/app-dev-release.aab
+#          track: internal
+#          status: completed
