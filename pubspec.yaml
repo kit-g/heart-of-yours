@@ -2,7 +2,7 @@ name: heart
 description: "Another fitness tracker"
 publish_to: none
 
-version: 1.0.0+1
+version: 1.0.0+1 # build number is managed by the GH action, version should be bumped manually
 
 environment:
   sdk: ">=3.10.0"
