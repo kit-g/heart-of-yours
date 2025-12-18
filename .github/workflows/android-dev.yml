@@ -26,6 +26,7 @@ jobs:
       AWS_REGION: "ca-central-1"
       AWS_ROLE: "arn:aws:iam::583168578067:role/HeartGitHubActionsDeployRole"
       SECRETS_BUCKET: "583168578067-heart-static"
+      APP_ID: "me.heart.android.dev"
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +61,6 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-            
 
       - name: "Build dev app bundle"
         run: flutter build appbundle --release --flavor dev --build-number ${{ github.run_number }}
@@ -69,7 +69,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: "playstore-sa-key.json"
-          packageName: "me.heart.android.dev"
+          packageName: ${{ env.APP_ID }}
           releaseFiles: "build/app/outputs/bundle/devRelease/app-dev-release.aab"
           track: internal
           status: draft
