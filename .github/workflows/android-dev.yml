@@ -6,13 +6,13 @@ on:
     branches: [ main, android-app ]
     tags:
       - "dev-*"
-    paths:
-      - 'lib/**'
-      - 'android/**'
-      - 'pubspec.yaml'
+#    paths:
+#      - 'lib/**'
+#      - 'android/**'
+#      - 'pubspec.yaml'
 
 permissions:
-  id-token: write # Required for OIDC
+  id-token: write
   contents: read
 
 jobs:
