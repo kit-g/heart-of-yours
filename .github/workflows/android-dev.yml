@@ -29,10 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Calculate Build Number
-        # 220 was the last build number before we started using GitHub Actions
-        run: echo "BUILD_NUMBER=$((GITHUB_RUN_NUMBER - 220))" >> $GITHUB_ENV
-
       - name: "Configure AWS Credentials"
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -53,9 +49,9 @@ jobs:
           cache-sdk: true
 
       - name: "Build dev app bundle"
-        run: flutter build appbundle --release --flavor dev --build-number ${{ env.BUILD_NUMBER }}
+        run: flutter build appbundle --release --flavor dev --build-number ${{ github.run_number }}
 
-#      - name: Upload to Play Store (Internal Testing)
+#      - name: "Upload to Internal testing in Play Store"
 #        uses: r0adkll/upload-google-play@v1
 #        with:
 #          serviceAccountJsonKeyData: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
