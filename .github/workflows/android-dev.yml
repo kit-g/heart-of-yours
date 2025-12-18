@@ -3,7 +3,7 @@ name: "Deploy Dev to Play Store"
 on:
   workflow_dispatch: { }
   push:
-    branches: [ main, android-app ]
+    branches: [ main ]
     tags:
       - "dev-*"
     paths:
