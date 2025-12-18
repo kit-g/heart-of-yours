@@ -41,6 +41,7 @@ jobs:
           aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/dev/android/key.properties android/key.properties
           aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/dev/android/google-services.json android/app/google-services.json
           aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/dev/firebase/firebase_options.dart lib/firebase_options.dart
+          aws s3 cp s3://${{ env.SECRETS_BUCKET }}/secrets/dev/android/playstore-sa-key.json playstore-sa-key.json  
 
       - name: "Set up Flutter"
         uses: flutter-actions/setup-flutter@v4
@@ -53,11 +54,11 @@ jobs:
       - name: "Build dev app bundle"
         run: flutter build appbundle --release --flavor dev --build-number ${{ github.run_number }}
 
-#      - name: "Upload to Internal testing in Play Store"
-#        uses: r0adkll/upload-google-play@v1
-#        with:
-#          serviceAccountJsonKeyData: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
-#          packageName: me.heart.android.dev
-#          releaseFiles: build/app/outputs/bundle/devRelease/app-dev-release.aab
-#          track: internal
-#          status: completed
+      - name: "Upload to Internal testing in Play Store"
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: "playstore-sa-key.json"
+          packageName: "me.heart.android.dev"
+          releaseFiles: "build/app/outputs/bundle/devRelease/app-dev-release.aab"
+          track: internal
+          status: completed
