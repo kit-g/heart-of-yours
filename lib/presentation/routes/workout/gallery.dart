@@ -24,7 +24,10 @@ class GalleryPage extends StatelessWidget {
           icon: const Icon(Icons.close_rounded),
         ),
         title: switch (title) {
-          String t => Text(t, style: TextStyle(color: Colors.white),),
+          String t => Text(
+            t,
+            style: const TextStyle(color: Colors.white),
+          ),
           null => null,
         },
         backgroundColor: Colors.transparent,

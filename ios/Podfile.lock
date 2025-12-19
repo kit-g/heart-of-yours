@@ -162,7 +162,7 @@ PODS:
   - PromisesObjC (2.4.0)
   - RecaptchaInterop (101.0.0)
   - Sentry/HybridSDK (8.56.2)
-  - sentry_flutter (9.9.0):
+  - sentry_flutter (9.9.1):
     - Flutter
     - FlutterMacOS
     - Sentry/HybridSDK (= 8.56.2)
@@ -283,7 +283,7 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   Sentry: b53951377b78e21a734f5dc8318e333dbfc682d7
-  sentry_flutter: 5770c2e47270cefab2d79590f8b6360c600943e4
+  sentry_flutter: d44ce25f0ed7b944b885c5d34883092a3e6b2aa9
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   sign_in_with_apple: f3bf75217ea4c2c8b91823f225d70230119b8440
   sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
