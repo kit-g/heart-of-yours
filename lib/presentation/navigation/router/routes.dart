@@ -509,6 +509,10 @@ RouteBase _galleryRoute() {
           remote: imageLink,
           bytes: imageBytes,
           title: title,
+          onTapTitle: switch (workoutId) {
+            String id => () => context.goToWorkoutEditor(id),
+            null => null,
+          },
         ),
       );
     },
