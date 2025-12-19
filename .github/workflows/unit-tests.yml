@@ -7,6 +7,10 @@ on:
   workflow_dispatch: { }
   workflow_call: { } # allows other workflows to call this one
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test_packages:
     name: "Pkg • ${{ matrix.package }}"

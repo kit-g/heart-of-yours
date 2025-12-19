@@ -10,10 +10,15 @@ on:
       - 'lib/**'
       - 'android/**'
       - 'pubspec.yaml'
+      - 'shared/**'
 
 permissions:
   id-token: write
   contents: read
+
+concurrency:
+  group: "android-dev"
+  cancel-in-progress: true
 
 jobs:
   unit-tests:
