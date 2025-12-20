@@ -21,8 +21,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  unit-tests:
+    name: "Unit Tests"
+    uses: ./.github/workflows/unit-tests.yml
+
+  dev:
     uses: ./.github/workflows/google-play-deployment.yml
+    name: "Deploy Dev"
+    needs: [ unit-tests ]
     with:
       app_id: 'me.heart.android.dev'
       aws_region: 'ca-central-1'
