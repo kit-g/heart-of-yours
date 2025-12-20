@@ -275,42 +275,18 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
       case Category.machine:
         return [
           Expanded(
-            child: Selector<Preferences, MeasurementUnit>(
-              selector: (_, provider) => provider.weightUnit,
-              builder: (_, unit, __) {
-                double? weight = set.weight;
-
-                if (weight != null) {
-                  weight = switch (unit) {
-                    MeasurementUnit.imperial => (weight.asPounds * 100).roundToDouble() / 100,
-                    MeasurementUnit.metric => (weight * 100).roundToDouble() / 100,
-                  };
-                  final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(2);
-
-                  // cannot update during build
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) {
-                      if (_weightController.text != rounded) {
-                        _weightController.text = rounded;
-                      }
-                    },
-                  );
-                }
-
-                return _TextFieldButton(
-                  focusNode: _weightFocus,
-                  set: set,
-                  controller: _weightController,
-                  color: color,
-                  errorState: _hasWeightError,
-                  formatters: _floatingPointFormatters,
-                );
-              },
+            child: _TextFieldButton(
+              focusNode: _weightFocus,
+              isSetCompleted: set.isCompleted,
+              controller: _weightController,
+              color: color,
+              errorState: _hasWeightError,
+              formatters: _floatingPointFormatters,
             ),
           ),
           Expanded(
             child: _TextFieldButton(
-              set: set,
+              isSetCompleted: set.isCompleted,
               focusNode: _repsFocus,
               controller: _repsController,
               color: color,
@@ -324,7 +300,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         return [
           Expanded(
             child: _TextFieldButton(
-              set: set,
+              isSetCompleted: set.isCompleted,
               focusNode: _repsFocus,
               controller: _repsController,
               color: color,
@@ -338,7 +314,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
         return [
           Expanded(
             child: _TextFieldButton(
-              set: set,
+              isSetCompleted: set.isCompleted,
               focusNode: _durationFocus,
               controller: _durationController,
               color: color,
@@ -372,7 +348,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
                   );
                 }
                 return _TextFieldButton(
-                  set: set,
+                  isSetCompleted: set.isCompleted,
                   focusNode: _distanceFocus,
                   controller: _distanceController,
                   color: color,
@@ -385,7 +361,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
           ),
           Expanded(
             child: _TextFieldButton(
-              set: set,
+              isSetCompleted: set.isCompleted,
               focusNode: _durationFocus,
               controller: _durationController,
               color: color,
