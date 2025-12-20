@@ -1,0 +1,76 @@
+name: "Google Play Deployment"
+
+on:
+  workflow_call:
+    inputs:
+      aws_region:
+        required: true
+        type: string
+        description: "AWS region where secrets are stored"
+      aws_role:
+        required: true
+        type: string
+        description: "AWS role to assume to get secrets"
+      secrets_bucket:
+        required: true
+        type: string
+        description: "S3 bucket where secrets are stored"
+      environment:
+        required: true
+        type: string
+        description: "App environment"
+      flavor:
+        required: true
+        type: string
+        description: "Flutter flavour"
+      app_id:
+        required: true
+        type: string
+        description: "Google Play app ID"
+      track:
+        required: false
+        type: string
+        description: "Google Play track"
+        default: 'internal'
+
+jobs:
+  unit-tests:
+    uses: ./.github/workflows/unit-tests.yml
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [ unit-tests ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: "Fetch secrets from S3"
+        run: |
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/keystore.jks android/keystore.jks
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/key.properties android/key.properties
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/google-services.json android/app/google-services.json
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/firebase/firebase_options.dart lib/firebase_options.dart
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/playstore-sa-key.json playstore-sa-key.json  
+
+      - name: "Set up Flutter"
+        uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: "Build app bundle"
+        run: flutter build appbundle --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }}
+
+      - name: "Upload to Play Store"
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: "playstore-sa-key.json"
+          packageName: ${{ inputs.app_id }}
+          releaseFiles: "build/app/outputs/bundle/${{ inputs.flavor }}Release/app-${{ inputs.flavor }}-release.aab"
+          track: ${{ inputs.track }}
+          status: draft
