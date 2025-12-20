@@ -239,8 +239,8 @@ class _Exercise implements Exercise {
   bool contains(String query) {
     if (query.isEmpty) return true;
 
-    final queryWords = query.toLowerCase().split(RegExp(r'\s+')).map((w) => w.trim());
-    final nameWords = name.toLowerCase().split(RegExp(r'[\s\(\)]+')).map((w) => w.trim());
+    final queryWords = query.normalized().split(RegExp(r'\s+')).map((w) => w.trim());
+    final nameWords = name.normalized().split(RegExp(r'[\s()]+')).map((w) => w.trim());
 
     return queryWords.every((queryWord) => nameWords.any((nameWord) => nameWord.contains(queryWord)));
   }
@@ -299,3 +299,11 @@ class _Exercise implements Exercise {
 typedef ExerciseId = String;
 typedef ExerciseLookup = Exercise? Function(ExerciseId);
 typedef Asset = ({String link, int? width, int? height});
+
+extension on String {
+  /// Strip dashes and other common symbols to make search more forgiving
+  /// This keeps only letters, numbers, and spaces
+  String normalized() {
+    return toLowerCase().replaceAll(RegExp(r'[^a-z0-9\s]'), '');
+  }
+}

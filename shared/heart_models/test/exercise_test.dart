@@ -186,6 +186,12 @@ void main() {
         target: Target.chest,
       );
 
+      final eWithDash = Exercise(
+        name: 'Iso-Lateral Chest Press (Machine)',
+        category: Category.barbell,
+        target: Target.chest,
+      );
+
       test('empty query returns true', () {
         expect(e.contains(''), isTrue);
       });
@@ -213,6 +219,11 @@ void main() {
       test('non-matching returns false', () {
         expect(e.contains('squat'), isFalse);
         expect(e.contains('dumbbell only'), isFalse);
+      });
+
+      test('non-matching returns false', () {
+        expect(eWithDash.contains('isolateral'), isTrue);
+        expect(eWithDash.contains('press'), isTrue);
       });
     });
 
