@@ -197,10 +197,10 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   Map<String, dynamic> toRow() {
     return {
       'id': id,
-      'reps': reps,
-      'weight': weight,
-      'duration': duration,
-      'distance': distance,
+      'reps': ?reps,
+      'weight': ?weight,
+      'duration': ?duration,
+      'distance': ?distance,
       'completed': isCompleted ? 1 : 0,
     };
   }
