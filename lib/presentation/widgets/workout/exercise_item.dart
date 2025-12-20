@@ -60,7 +60,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
             final header = Padding(
               padding: const EdgeInsets.only(left: 8.0, right: 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: .spaceBetween,
                 children: [
                   Text(
                     exercise.exercise.name,
