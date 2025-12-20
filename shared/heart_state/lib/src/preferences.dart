@@ -107,8 +107,8 @@ class Preferences with ChangeNotifier {
 
   double distanceValue(num value) {
     return switch (distanceUnit) {
-      MeasurementUnit.imperial => value.asMiles,
-      MeasurementUnit.metric => value.toDouble(),
+      .imperial => value.asMiles,
+      .metric => value.toDouble(),
     };
   }
 
@@ -119,8 +119,8 @@ class Preferences with ChangeNotifier {
 
   double weightValue(num value) {
     return switch (weightUnit) {
-      MeasurementUnit.imperial => value.asPounds,
-      MeasurementUnit.metric => value.toDouble(),
+      .imperial => value.asPounds,
+      .metric => value.toDouble(),
     };
   }
 }

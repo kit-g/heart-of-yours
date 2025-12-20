@@ -27,7 +27,8 @@ class _ExerciseSetItem extends StatefulWidget {
   State<_ExerciseSetItem> createState() => _ExerciseSetItemState();
 }
 
-class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_ExerciseSetItem> {
+class _ExerciseSetItemState extends State<_ExerciseSetItem>
+    with HasHaptic<_ExerciseSetItem>, AfterLayoutMixin<_ExerciseSetItem> {
   ExerciseSet get set => widget.set;
 
   WorkoutExercise get exercise => widget.exercise;
@@ -53,8 +54,6 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
   @override
   void initState() {
     super.initState();
-
-    _initTextControllers();
 
     _weightController.addListener(_weightListener);
     _repsController.addListener(_repsListener);
@@ -266,13 +265,18 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     );
   }
 
+  @override
+  void afterFirstLayout(BuildContext context) {
+    _initTextControllers(context);
+  }
+
   List<Widget> _buttons(Color color) {
     switch (set.category) {
-      case Category.weightedBodyWeight:
-      case Category.assistedBodyWeight:
-      case Category.barbell:
-      case Category.dumbbell:
-      case Category.machine:
+      case .weightedBodyWeight:
+      case .assistedBodyWeight:
+      case .barbell:
+      case .dumbbell:
+      case .machine:
         return [
           Expanded(
             child: _TextFieldButton(
@@ -296,7 +300,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
             ),
           ),
         ];
-      case Category.repsOnly:
+      case .repsOnly:
         return [
           Expanded(
             child: _TextFieldButton(
@@ -310,7 +314,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
             ),
           ),
         ];
-      case Category.duration:
+      case .duration:
         return [
           Expanded(
             child: _TextFieldButton(
@@ -324,7 +328,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
             ),
           ),
         ];
-      case Category.cardio:
+      case .cardio:
         return [
           Expanded(
             child: Selector<Preferences, MeasurementUnit>(
@@ -382,29 +386,29 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
     try {
       switch (set.category) {
-        case Category.weightedBodyWeight:
+        case .weightedBodyWeight:
           _setMeasurements(
             weight: double.tryParse(_weightController.text), // we'll allow null for this
             reps: int.parse(_repsController.text),
           );
           _hasWeightError.value = false;
           _hasRepsError.value = false;
-        case Category.assistedBodyWeight:
-        case Category.machine:
-        case Category.dumbbell:
-        case Category.barbell:
+        case .assistedBodyWeight:
+        case .machine:
+        case .dumbbell:
+        case .barbell:
           _setMeasurements(
             weight: double.parse(_weightController.text),
             reps: int.parse(_repsController.text),
           );
           _hasWeightError.value = false;
           _hasRepsError.value = false;
-        case Category.repsOnly:
+        case .repsOnly:
           _setMeasurements(
             reps: int.parse(_repsController.text),
           );
           _hasRepsError.value = false;
-        case Category.cardio:
+        case .cardio:
           final seconds = _parseDuration();
 
           _setMeasurements(
@@ -414,7 +418,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
           _hasDurationError.value = false;
           _hasDistanceError.value = false;
           _durationController.text = seconds.toDuration();
-        case Category.duration:
+        case .duration:
           final seconds = _parseDuration();
           _setMeasurements(duration: seconds);
           _hasDurationError.value = false;
@@ -487,11 +491,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
     );
   }
 
-  void _initTextControllers() {
+  void _initTextControllers(BuildContext context) {
+    final prefs = Preferences.of(context);
     var ExerciseSet(:reps, :weight, :distance, :duration) = set;
 
     if (weight != null) {
-      final rounded = weight % 1 == 0 ? weight.toInt().toString() : weight.toStringAsFixed(1);
+      final rounded = prefs.weight(weight);
       _weightController.text = rounded;
     }
 
@@ -598,18 +603,19 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem> with HasHaptic<_Exer
 
   void _setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
     if (!context.mounted) return;
-    final Preferences(:weightValue, :distanceValue) = Preferences.of(context);
+    final Preferences(:distanceUnit, :weightUnit) = Preferences.of(context);
 
+    // we're storing in metric
     set.setMeasurements(
       duration: duration,
-      weight: switch (weight) {
-        double w => weightValue(w),
-        null => null,
+      weight: switch (weightUnit) {
+        .imperial => weight?.asKilograms,
+        .metric => weight,
       },
       reps: reps,
-      distance: switch (distance) {
-        double d => distanceValue(d),
-        null => null,
+      distance: switch (distanceUnit) {
+        .imperial => distance?.asKilometers,
+        .metric => distance,
       },
     );
   }
