@@ -3,7 +3,7 @@ part of 'workout_detail.dart';
 class _TextFieldButton extends StatelessWidget {
   final FocusNode focusNode;
   final Color? color;
-  final ExerciseSet set;
+  final bool isSetCompleted;
   final TextEditingController controller;
   final TextInputType keyboardType;
   final ValueNotifier<bool> errorState;
@@ -13,10 +13,10 @@ class _TextFieldButton extends StatelessWidget {
     required this.focusNode,
     required this.errorState,
     this.color,
-    required this.set,
+    required this.isSetCompleted,
     required this.controller,
     this.formatters,
-    this.keyboardType = const TextInputType.numberWithOptions(decimal: true),
+    this.keyboardType = const .numberWithOptions(decimal: true),
   });
 
   @override
@@ -28,7 +28,7 @@ class _TextFieldButton extends StatelessWidget {
       child: SizedBox(
         height: _fixedButtonHeight,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+          padding: const .symmetric(horizontal: 2.0),
           child: ListenableBuilder(
             listenable: focusNode,
             builder: (__, _) {
@@ -38,19 +38,19 @@ class _TextFieldButton extends StatelessWidget {
                   return PrimaryButton.shrunk(
                     margin: EdgeInsets.zero,
                     backgroundColor: hasError ? colorScheme.error : color,
-                    border: switch ((hasError, focusNode.hasFocus, set.isCompleted)) {
-                      (true, true, _) => Border.all(
-                          color: colorScheme.onErrorContainer,
-                          width: .5,
-                        ),
-                      (_, true, true) => Border.all(
-                          color: colorScheme.onTertiaryFixed,
-                          width: .5,
-                        ),
-                      (_, true, false) => Border.all(
-                          color: colorScheme.onSurfaceVariant,
-                          width: .5,
-                        ),
+                    border: switch ((hasError, focusNode.hasFocus, isSetCompleted)) {
+                      (true, true, _) => .all(
+                        color: colorScheme.onErrorContainer,
+                        width: .5,
+                      ),
+                      (_, true, true) => .all(
+                        color: colorScheme.onTertiaryFixed,
+                        width: .5,
+                      ),
+                      (_, true, false) => .all(
+                        color: colorScheme.onSurfaceVariant,
+                        width: .5,
+                      ),
                       _ => null,
                     },
                     child: Center(
@@ -83,17 +83,17 @@ class _TextFieldButton extends StatelessWidget {
                             true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
                             false => textTheme.bodyMedium,
                           },
-                          textAlign: TextAlign.center,
+                          textAlign: .center,
                           cursorHeight: 16,
                           textAlignVertical: switch (platform) {
                             // rendered weird on macos
-                            TargetPlatform.macOS => TextAlignVertical.top,
+                            .macOS => .top,
                             // rendered fine, duh
                             _ => TextAlignVertical.center,
                           },
                           maxLines: 1,
                           minLines: 1,
-                          cursorColor: switch ((hasError, set.isCompleted)) {
+                          cursorColor: switch ((hasError, isSetCompleted)) {
                             (true, _) => colorScheme.onError,
                             (false, true) => colorScheme.onTertiaryFixed,
                             (false, false) => colorScheme.onSurfaceVariant,
@@ -104,7 +104,6 @@ class _TextFieldButton extends StatelessWidget {
                           onEditingComplete: () {},
                           onTap: () => _selectAllText(controller),
                           onTapOutside: (_) => focusNode.unfocus(),
-
                         ),
                       ),
                     ),
