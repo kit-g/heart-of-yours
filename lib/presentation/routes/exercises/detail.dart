@@ -13,14 +13,35 @@ class ExerciseDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (Theme.of(context).platform) {
-      TargetPlatform.iOS || TargetPlatform.macOS => _CupertinoExerciseDetailPage(
-          exercise: exercise,
-          onTapWorkout: onTapWorkout,
-        ),
+      .iOS || .macOS => _CupertinoExerciseDetailPage(
+        exercise: exercise,
+        onTapWorkout: onTapWorkout,
+      ),
       _ => _MaterialExerciseDetailPage(
-          exercise: exercise,
-          onTapWorkout: onTapWorkout,
-        ),
+        exercise: exercise,
+        onTapWorkout: onTapWorkout,
+      ),
     };
   }
+}
+
+Future<void> showExerciseDetailDialog(BuildContext context, Exercise exercise) {
+  return showDialog<void>(
+    context: context,
+    useSafeArea: true,
+    barrierDismissible: true,
+    builder: (context) {
+      return Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ExerciseDetailPage(
+          exercise: exercise,
+          onTapWorkout: (_) async {},
+        ),
+      );
+    },
+  );
 }
