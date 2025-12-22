@@ -3,11 +3,13 @@ part of 'exercises.dart';
 class ExerciseDetailPage extends StatelessWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
+  final bool allowOptions;
 
   const ExerciseDetailPage({
     super.key,
     required this.exercise,
     required this.onTapWorkout,
+    this.allowOptions = true,
   });
 
   @override
@@ -16,10 +18,12 @@ class ExerciseDetailPage extends StatelessWidget {
       .iOS || .macOS => _CupertinoExerciseDetailPage(
         exercise: exercise,
         onTapWorkout: onTapWorkout,
+        allowOptions: allowOptions,
       ),
       _ => _MaterialExerciseDetailPage(
         exercise: exercise,
         onTapWorkout: onTapWorkout,
+        allowOptions: allowOptions,
       ),
     };
   }
@@ -40,6 +44,7 @@ Future<void> showExerciseDetailDialog(BuildContext context, Exercise exercise) {
         child: ExerciseDetailPage(
           exercise: exercise,
           onTapWorkout: (_) async {},
+          allowOptions: false,
         ),
       );
     },
