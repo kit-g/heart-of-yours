@@ -64,9 +64,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
               child: Row(
                 mainAxisAlignment: .spaceBetween,
                 children: [
-                  Text(
-                    exercise.exercise.name,
-                    style: textTheme.titleMedium,
+                  GestureDetector(
+                    onTap: () => onTapExercise(exercise.exercise),
+                    child: Text(
+                      exercise.exercise.name,
+                      style: textTheme.titleMedium,
+                    ),
                   ),
                   Row(
                     children: [
