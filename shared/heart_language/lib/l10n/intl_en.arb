@@ -1259,5 +1259,11 @@
     "description": "Menu item that allows to remove photo from a workout",
     "type": "text",
     "placeholders": {}
+  },
+  "aboutExercise": "About exercise",
+  "@aboutExercise": {
+    "description": "Menu item that opens exercise details",
+    "type": "text",
+    "placeholders": {}
   }
 }

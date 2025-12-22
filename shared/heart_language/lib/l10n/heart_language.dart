@@ -1321,6 +1321,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Remove photo'**
   String get removePhoto;
+
+  /// Menu item that opens exercise details
+  ///
+  /// In en, this message translates to:
+  /// **'About exercise'**
+  String get aboutExercise;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

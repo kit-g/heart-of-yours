@@ -246,3 +246,4 @@ addPhoto,Menu item that allows to add photo to a workout,Add photo,Add photo,Д�
 editWorkoutName,Menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки
 cropImage,Label in the image cropper,Crop image,Crop image,Обрезать изображение
 removePhoto,Menu item that allows to remove photo from a workout,Remove photo,Remove photo,Удалить фото
+aboutExercise,Menu item that opens exercise details,About exercise,About exercise,Об упражнении
