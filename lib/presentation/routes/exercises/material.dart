@@ -3,10 +3,12 @@ part of 'exercises.dart';
 class _MaterialExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
+  final bool allowOptions;
 
   const _MaterialExerciseDetailPage({
     required this.exercise,
     required this.onTapWorkout,
+    required this.allowOptions,
   });
 
   @override
@@ -37,11 +39,12 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
     return Scaffold(
       appBar: AppBar(
         actions: [
-          if (widget.exercise.isMine)
-            IconButton(
-              onPressed: () => _onExerciseMenu(context, widget.exercise),
-              icon: const Icon(Icons.more_vert_rounded),
-            ),
+          if (widget.allowOptions)
+            if (widget.exercise.isMine)
+              IconButton(
+                onPressed: () => _onExerciseMenu(context, widget.exercise),
+                icon: const Icon(Icons.more_vert_rounded),
+              ),
         ],
         title: widget.exercise.archivedAppBarTitle(context),
         bottom: PreferredSize(
