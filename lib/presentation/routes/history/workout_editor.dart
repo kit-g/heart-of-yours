@@ -178,6 +178,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                   }
                 },
                 allowsCompletingSet: true,
+                onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
               ),
             ),
           ),

@@ -104,6 +104,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
             },
             allowsCompletingSet: false,
             onSwapExercise: templates.swap,
+            onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
           ),
         ),
       ),
