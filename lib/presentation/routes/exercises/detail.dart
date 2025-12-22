@@ -4,12 +4,14 @@ class ExerciseDetailPage extends StatelessWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
   final bool allowOptions;
+  final Widget? leading;
 
   const ExerciseDetailPage({
     super.key,
     required this.exercise,
     required this.onTapWorkout,
     this.allowOptions = true,
+    this.leading,
   });
 
   @override
@@ -19,11 +21,13 @@ class ExerciseDetailPage extends StatelessWidget {
         exercise: exercise,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
+        leading: leading,
       ),
       _ => _MaterialExerciseDetailPage(
         exercise: exercise,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
+        leading: leading,
       ),
     };
   }
@@ -45,6 +49,10 @@ Future<void> showExerciseDetailDialog(BuildContext context, Exercise exercise) {
           exercise: exercise,
           onTapWorkout: (_) async {},
           allowOptions: false,
+          leading: IconButton(
+            onPressed: Navigator.of(context).pop,
+            icon: const Icon(Icons.close),
+          ),
         ),
       );
     },

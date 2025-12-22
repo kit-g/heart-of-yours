@@ -4,11 +4,13 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
   final bool allowOptions;
+  final Widget? leading;
 
   const _MaterialExerciseDetailPage({
     required this.exercise,
     required this.onTapWorkout,
     required this.allowOptions,
+    this.leading,
   });
 
   @override
@@ -46,6 +48,7 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
                 icon: const Icon(Icons.more_vert_rounded),
               ),
         ],
+        leading: widget.leading,
         title: widget.exercise.archivedAppBarTitle(context),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
