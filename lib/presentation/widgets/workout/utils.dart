@@ -21,7 +21,7 @@ void _selectAllText(TextEditingController controller) {
   );
 }
 
-enum _ExerciseOption { autoRestTimer, remove }
+enum _ExerciseOption { inspectExercise, autoRestTimer, remove }
 
 Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {VoidCallback? onFinish}) async {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
