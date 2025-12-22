@@ -12,6 +12,7 @@ import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
@@ -56,6 +57,7 @@ class WorkoutDetail extends StatefulWidget {
   final String? remoteImage;
   final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
   final String? workoutId;
+  final void Function(Exercise) onTapExercise;
 
   const WorkoutDetail({
     super.key,
@@ -76,6 +78,7 @@ class WorkoutDetail extends StatefulWidget {
     this.remoteImage,
     this.onTapImage,
     this.workoutId,
+    required this.onTapExercise,
   });
 
   @override
@@ -322,6 +325,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                           _currentlyHoveredExercise.value = null;
                         },
                         allowCompleting: widget.allowsCompletingSet,
+                        onTapExercise: widget.onTapExercise,
                       ),
                     );
                   },
@@ -570,6 +574,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             onAddSet: workouts.addSet,
             onRemoveSet: workouts.removeSet,
             onRemoveExercise: workouts.removeExercise,
+            onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
             onAddExercises: (exercises) async {
               final workouts = Workouts.of(context);
               for (final each in exercises.toList()) {
