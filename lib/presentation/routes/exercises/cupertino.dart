@@ -3,10 +3,12 @@ part of 'exercises.dart';
 class _CupertinoExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
+  final bool allowOptions;
 
   const _CupertinoExerciseDetailPage({
     required this.exercise,
     required this.onTapWorkout,
+    required this.allowOptions,
   });
 
   @override
@@ -38,6 +40,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
         automaticallyImplyLeading: true,
         title: widget.exercise.archivedAppBarTitle(context),
         actions: [
+          if (widget.allowOptions)
           if (widget.exercise.isMine)
             IconButton(
               onPressed: () => _onExerciseMenu(context, widget.exercise),
