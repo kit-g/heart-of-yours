@@ -667,4 +667,7 @@ class LRu extends L {
 
   @override
   String get removePhoto => 'Удалить фото';
+
+  @override
+  String get aboutExercise => 'Об упражнении';
 }
