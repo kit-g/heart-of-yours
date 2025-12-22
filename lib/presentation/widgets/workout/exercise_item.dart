@@ -16,6 +16,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final ValueNotifier<WorkoutExercise?> dragState;
   final ValueNotifier<WorkoutExercise?> currentlyHoveredItem;
   final bool allowCompleting;
+  final void Function(Exercise) onTapExercise;
 
   const _WorkoutExerciseItem({
     required this.index,
@@ -33,6 +34,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.dragState,
     required this.currentlyHoveredItem,
     required this.allowCompleting,
+    required this.onTapExercise,
   });
 
   @override
@@ -347,35 +349,39 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
 
   String _exerciseOptionCopy(BuildContext context, _ExerciseOption option) {
     return switch (option) {
-      _ExerciseOption.autoRestTimer => L.of(context).restTimer,
-      _ExerciseOption.remove => L.of(context).removeExercise,
+      .autoRestTimer => L.of(context).restTimer,
+      .remove => L.of(context).removeExercise,
+      .inspectExercise => L.of(context).aboutExercise,
     };
   }
 
   TextStyle? _exerciseOptionStyle(TextTheme theme, ColorScheme scheme, _ExerciseOption option) {
     return switch (option) {
-      _ExerciseOption.remove => theme.titleSmall?.copyWith(color: scheme.error),
+      .remove => theme.titleSmall?.copyWith(color: scheme.error),
       _ => theme.titleSmall,
     };
   }
 
   Widget _exerciseOptionIcon(_ExerciseOption option, ColorScheme scheme) {
     return switch (option) {
-      _ExerciseOption.remove => Icon(Icons.close, color: scheme.error),
-      _ExerciseOption.autoRestTimer => const Icon(Icons.timer_outlined),
+      .remove => Icon(Icons.close, color: scheme.error),
+      .autoRestTimer => const Icon(Icons.timer_outlined),
+      .inspectExercise => const Icon(Icons.info_outline_rounded),
     };
   }
 
   Future<void> _onTapExerciseOption(BuildContext context, _ExerciseOption option) async {
     buzz();
     switch (option) {
-      case _ExerciseOption.remove:
+      case .remove:
         return onRemoveExercise(exercise);
-      case _ExerciseOption.autoRestTimer:
+      case .autoRestTimer:
         return _selectRestTime(
           context,
           initialValue: Timers.of(context)[exercise.exercise.name],
         );
+      case .inspectExercise:
+        return onTapExercise(exercise.exercise);
     }
   }
 
