@@ -102,6 +102,12 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        ChangeNotifierProvider<Charts>(
+          create: (_) => Charts(
+            onError: reportToSentry,
+            service: db,
+          ),
+        ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             service: api,
@@ -114,6 +120,7 @@ class HeartApp extends StatelessWidget {
             onUserChange: (user) {
               router.refresh();
               Exercises.of(context).userId = user?.id;
+              Charts.of(context).userId = user?.id;
               PreviousExercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
@@ -286,6 +293,7 @@ Future<void> _initApp(
   final previous = PreviousExercises.of(context);
   final config = RemoteConfig.of(context);
   final router = HeartRouter.of(context);
+  final charts = Charts.of(context);
 
   await Future.wait(
     [
@@ -307,6 +315,7 @@ Future<void> _initApp(
         templates.init();
         timers.init();
         previous.init();
+        charts.init();
       },
     );
   }
