@@ -1277,5 +1277,17 @@
     "description": "Button that allows to create a new chart",
     "type": "text",
     "placeholders": {}
+  },
+  "emptyChartStateTitle": "Looks a little empty here",
+  "@emptyChartStateTitle": {
+    "description": "Empty state for chart widget",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emptyChartStateBody": "Add your first set to start tracking real progress",
+  "@emptyChartStateBody": {
+    "description": "Empty state for chart widget",
+    "type": "text",
+    "placeholders": {}
   }
 }
