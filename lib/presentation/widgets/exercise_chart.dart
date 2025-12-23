@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 class ExerciseChart extends StatelessWidget {
   final Future<List<(num, DateTime)>?> Function() callback;
   final Widget emptyState;
-  final String label;
+  final String? label;
+  final Widget? customLabel;
   final double Function(num) converter;
   final Widget Function(double y)? getLeftLabel;
   final String Function(double y)? getTooltip;
@@ -15,7 +16,8 @@ class ExerciseChart extends StatelessWidget {
     super.key,
     required this.emptyState,
     required this.callback,
-    required this.label,
+    this.label,
+    this.customLabel,
     required this.converter,
     this.getLeftLabel,
     this.getTooltip,
@@ -45,7 +47,7 @@ class ExerciseChart extends StatelessWidget {
               return SizedBox(
                 height: 300,
                 child: HistoryChart(
-                  bottomAxisLabelStyle: Theme.of(context).textTheme.bodySmall,
+                  bottomAxisLabelStyle: textTheme.bodySmall,
                   series: reversed.indexed.map(
                     (record) {
                       final (index, (metric, _)) = record;
@@ -62,10 +64,11 @@ class ExerciseChart extends StatelessWidget {
                     };
                   },
                   getLeftLabel: getLeftLabel,
-                  topLabel: Text(
-                    label,
-                    style: textTheme.titleMedium,
-                  ),
+                  topLabel: switch ((label, customLabel)) {
+                    (_, Widget l) => l,
+                    (String l, _) => Text(l, style: textTheme.titleMedium),
+                    _ => null,
+                  },
                   getTooltip: (_, y) => getTooltip?.call(y) ?? _double(y),
                 ),
               );
