@@ -124,11 +124,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                       PrimaryButton.shrunk(
                         onPressed: () async {
                           final charts = Charts.of(context);
+                          final scrolls = Scrolls.of(context);
                           final returned = await _showNewChartDialog(context, _searchController, _focus);
                           switch (returned) {
                             case Exercise ex:
                               final preference = ChartPreference.exerciseWeight(ex.name);
-                              charts.addPreference(preference);
+                              await charts.addPreference(preference);
+                              await Future.delayed(const Duration(milliseconds: 100));
+                              scrolls.scrollProfileToBottom();
                           }
                         },
                         child: Row(
@@ -234,4 +237,3 @@ Future<Exercise?> _showExercises(BuildContext context, TextEditingController con
     },
   );
 }
-
