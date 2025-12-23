@@ -4,6 +4,7 @@ export 'package:provider/provider.dart';
 
 export 'src/alarms.dart';
 export 'src/auth.dart';
+export 'src/charts.dart';
 export 'src/clear.dart';
 export 'src/config.dart';
 export 'src/exercises.dart';
