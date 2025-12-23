@@ -645,7 +645,7 @@ class LRu extends L {
   String get setTimer => 'Установить таймер';
 
   @override
-  String get updateRequiredTitle => 'Упс. Это наша вина';
+  String get updateRequiredTitle => 'Упс! Это наша вина';
 
   @override
   String get updateRequiredBody =>
@@ -670,4 +670,10 @@ class LRu extends L {
 
   @override
   String get aboutExercise => 'Об упражнении';
+
+  @override
+  String get myDashboard => 'Моя панель';
+
+  @override
+  String get newChart => 'Новый график';
 }

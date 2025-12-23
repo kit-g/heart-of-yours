@@ -1327,6 +1327,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'About exercise'**
   String get aboutExercise;
+
+  /// Title of the dashboard screen with performance charts
+  ///
+  /// In en, this message translates to:
+  /// **'My Dashboard'**
+  String get myDashboard;
+
+  /// Button that allows to create a new chart
+  ///
+  /// In en, this message translates to:
+  /// **'New chart'**
+  String get newChart;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
