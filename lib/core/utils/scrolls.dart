@@ -32,8 +32,22 @@ class Scrolls {
     }
   }
 
+  static Future<void> _scrollToBottom(ScrollController controller) async {
+    if (controller.hasClients) {
+      return controller.animateTo(
+        controller.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 1000),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   Future<void> scrollProfileToTop() {
     return _scrollToTop(_profileScrollController);
+  }
+
+  Future<void> scrollProfileToBottom() {
+    return _scrollToBottom(_profileScrollController);
   }
 
   Future<void> scrollWorkoutToTop() {
