@@ -1,11 +1,9 @@
 import 'package:heart_models/heart_models.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
-import 'workout_test.mocks.dart';
+import 'mocks.mocks.dart';
 
-@GenerateMocks([Exercise])
 void main() {
   late MockExercise mockExercise;
 
