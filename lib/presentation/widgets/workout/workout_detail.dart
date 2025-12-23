@@ -376,6 +376,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             L.of(context).selected(selected),
                           ),
                         PrimaryButton.shrunk(
+                          key: WorkoutDetailKeys.addExerciseButton,
                           child: Center(
                             child: Text(add),
                           ),
