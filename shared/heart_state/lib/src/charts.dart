@@ -20,7 +20,11 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
   }
 
   @override
-  Iterator<ChartPreference> get iterator => throw UnimplementedError();
+  Iterator<ChartPreference> get iterator => _preferences.iterator;
+
+  ChartPreference operator [](int index) {
+    return _preferences[index];
+  }
 
   static Charts of(BuildContext context) {
     return Provider.of<Charts>(context, listen: false);
