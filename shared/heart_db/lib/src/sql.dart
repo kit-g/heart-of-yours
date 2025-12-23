@@ -113,6 +113,20 @@ const templatesExercisesIndex2 = """
 CREATE INDEX IF NOT EXISTS template_idx ON template_exercises (template_id);
 """;
 
+const charts = """
+CREATE TABLE IF NOT EXISTS charts
+(
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    type    TEXT NOT NULL,
+    data    TEXT 
+);
+""";
+
+const chartsIndex1 = """
+CREATE INDEX IF NOT EXISTS user_idx ON charts (user_id);
+""";
+
 const activeWorkout = """
 WITH
   _workout AS (
