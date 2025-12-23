@@ -18,4 +18,5 @@ import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 
 part 'charts.dart';
+part 'dashboard.dart';
 part 'page.dart';
