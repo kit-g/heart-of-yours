@@ -27,6 +27,8 @@ abstract interface class ChartPreference {
 
   Map<String, dynamic> toRow();
 
+  String? get exerciseName;
+
   ChartPreference copyWith({
     String? id,
     ChartPreferenceType? type,
@@ -92,4 +94,7 @@ class _ChartPreference implements ChartPreference {
       id: id ?? this.id,
     );
   }
+
+  @override
+  String? get exerciseName => data?['exerciseName'];
 }
