@@ -44,4 +44,14 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
       notifyListeners();
     }
   }
+
+  Future<void> removePreference(ChartPreference preference) async {
+    if (userId case String id) {
+      if (preference.id case String preferenceId) {
+        await _service.deleteChartPreference(preferenceId, id);
+        _preferences.removeWhere((each) => each.id == preference.id);
+        notifyListeners();
+      }
+    }
+  }
 }
