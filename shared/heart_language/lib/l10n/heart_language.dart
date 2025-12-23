@@ -1339,6 +1339,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'New chart'**
   String get newChart;
+
+  /// Empty state for chart widget
+  ///
+  /// In en, this message translates to:
+  /// **'Looks a little empty here'**
+  String get emptyChartStateTitle;
+
+  /// Empty state for chart widget
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first set to start tracking real progress'**
+  String get emptyChartStateBody;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

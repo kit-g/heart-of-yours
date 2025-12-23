@@ -676,4 +676,10 @@ class LRu extends L {
 
   @override
   String get newChart => 'Новый график';
+
+  @override
+  String get emptyChartStateTitle => 'Тут немного пусто';
+
+  @override
+  String get emptyChartStateBody => 'Добавьте первый подход чтобы начать отслеживать реальный прогресс';
 }
