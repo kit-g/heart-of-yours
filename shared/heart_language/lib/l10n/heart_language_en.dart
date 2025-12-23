@@ -676,6 +676,12 @@ class LEn extends L {
 
   @override
   String get newChart => 'New chart';
+
+  @override
+  String get emptyChartStateTitle => 'Looks a little empty here';
+
+  @override
+  String get emptyChartStateBody => 'Add your first set to start tracking real progress';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1350,4 +1356,10 @@ class LEnCa extends LEn {
 
   @override
   String get newChart => 'New chart';
+
+  @override
+  String get emptyChartStateTitle => 'Looks a little empty here';
+
+  @override
+  String get emptyChartStateBody => 'Add your first set to start tracking real progress';
 }

@@ -249,3 +249,5 @@ removePhoto,Menu item that allows to remove photo from a workout,Remove photo,Re
 aboutExercise,Menu item that opens exercise details,About exercise,About exercise,Об упражнении
 myDashboard,Title of the dashboard screen with performance charts,My Dashboard,My Dashboard,Моя панель
 newChart,Button that allows to create a new chart,New chart,New chart,Новый график
+emptyChartStateTitle,Empty state for chart widget,Looks a little empty here,Looks a little empty here,Тут немного пусто
+emptyChartStateBody,Empty state for chart widget,Add your first set to start tracking real progress,Add your first set to start tracking real progress,Добавьте первый подход чтобы начать отслеживать реальный прогресс
