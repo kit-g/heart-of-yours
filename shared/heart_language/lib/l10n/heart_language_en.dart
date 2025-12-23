@@ -670,6 +670,12 @@ class LEn extends L {
 
   @override
   String get aboutExercise => 'About exercise';
+
+  @override
+  String get myDashboard => 'My Dashboard';
+
+  @override
+  String get newChart => 'New chart';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1338,4 +1344,10 @@ class LEnCa extends LEn {
 
   @override
   String get aboutExercise => 'About exercise';
+
+  @override
+  String get myDashboard => 'My Dashboard';
+
+  @override
+  String get newChart => 'New chart';
 }

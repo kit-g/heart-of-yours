@@ -1213,7 +1213,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredTitle": "Упс. Это наша вина",
+  "updateRequiredTitle": "Упс! Это наша вина",
   "@updateRequiredTitle": {
     "description": "Force update screen, title",
     "type": "text",
@@ -1263,6 +1263,18 @@
   "aboutExercise": "Об упражнении",
   "@aboutExercise": {
     "description": "Menu item that opens exercise details",
+    "type": "text",
+    "placeholders": {}
+  },
+  "myDashboard": "Моя панель",
+  "@myDashboard": {
+    "description": "Title of the dashboard screen with performance charts",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newChart": "Новый график",
+  "@newChart": {
+    "description": "Button that allows to create a new chart",
     "type": "text",
     "placeholders": {}
   }
