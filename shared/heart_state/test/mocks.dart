@@ -18,6 +18,9 @@ import 'package:mockito/annotations.dart';
     MockSpec<RemoteExerciseService>(),
     MockSpec<ExerciseService>(),
     MockSpec<GoogleSignIn>(),
+    MockSpec<ExerciseHistoryService>(),
+    MockSpec<ChartPreference>(),
+    MockSpec<ChartPreferenceService>(),
   ],
 )
 void main() {
