@@ -25,6 +25,7 @@ class LocalDatabase
     implements
         TimersService, //
         ExerciseService,
+        ExerciseHistoryService,
         PreviousExerciseService,
         StatsService,
         TemplateService,
