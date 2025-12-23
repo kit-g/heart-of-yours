@@ -5,5 +5,5 @@ abstract interface class ChartPreferenceService {
 
   Future<ChartPreference> saveChartPreference(ChartPreference preference, String userId);
 
-  Future<void> deleteChartPreference(String preferenceId);
+  Future<void> deleteChartPreference(String preferenceId, String userId);
 }

@@ -638,8 +638,8 @@ class LocalDatabase
   }
 
   @override
-  Future<void> deleteChartPreference(String preferenceId) {
-    return _db.delete(_charts, where: 'id = ?', whereArgs: [preferenceId]);
+  Future<void> deleteChartPreference(String preferenceId, String userId) {
+    return _db.delete(_charts, where: 'id = ? AND user_id = ?', whereArgs: [preferenceId, userId]);
   }
 }
 
