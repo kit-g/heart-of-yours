@@ -6,30 +6,40 @@ class FeedbackButton extends StatelessWidget {
   final Widget child;
   final VoidCallback? onPressed;
   final ShapeBorder? inkwellBorder;
+  final String? tooltip;
 
   const FeedbackButton({
     super.key,
     required this.child,
     this.onPressed,
-    this.inkwellBorder,
-  });
+    this.tooltip,
+  }) : inkwellBorder = const RoundedRectangleBorder(borderRadius: .all(.circular(4)));
+
+  const FeedbackButton.circular({
+    super.key,
+    required this.child,
+    this.onPressed,
+    this.tooltip,
+  }) : inkwellBorder = const CircleBorder();
 
   @override
   Widget build(BuildContext context) {
+    final inkwell = InkWell(
+      customBorder: inkwellBorder,
+      onTap: onPressed == null ? null : _onPressed,
+      child: child,
+    );
+
     return Material(
       elevation: 0,
       color: Colors.transparent,
-      child: InkWell(
-        customBorder:
-            inkwellBorder ??
-            const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(
-                Radius.circular(4),
-              ),
-            ),
-        onTap: onPressed == null ? null : _onPressed,
-        child: child,
-      ),
+      child: switch (tooltip) {
+        String t => Tooltip(
+          message: t,
+          child: inkwell,
+        ),
+        null => inkwell,
+      },
     );
   }
 
