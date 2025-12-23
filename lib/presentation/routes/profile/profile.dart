@@ -19,4 +19,5 @@ import 'package:intl/intl.dart';
 
 part 'charts.dart';
 part 'dashboard.dart';
+part 'empty_dashboard_widget.dart';
 part 'page.dart';
