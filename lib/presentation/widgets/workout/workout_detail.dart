@@ -389,9 +389,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                   ],
                 ),
                 height: 40,
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(12),
-                ),
+                borderRadius: const .all(.circular(12)),
               ),
             ),
             exercises: exercises,
