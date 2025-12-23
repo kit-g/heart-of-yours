@@ -131,18 +131,19 @@ Future<T?> showBrandedDialog<T>(
   TextStyle? titleTextStyle,
   TextStyle? contentTextStyle,
   List<Widget>? actions,
+  EdgeInsetsGeometry padding = const .only(left: 16, right: 16, bottom: 12),
 }) {
-  final ThemeData(:textTheme) = Theme.of(context);
+  final ThemeData(:textTheme, :scaffoldBackgroundColor) = Theme.of(context);
 
   return showDialog<T>(
     context: context,
     builder: (context) {
       return AlertDialog(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: scaffoldBackgroundColor,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
-        contentPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+        contentPadding: padding,
         icon: icon,
         title: title,
         titleTextStyle: titleTextStyle ?? textTheme.titleMedium,
