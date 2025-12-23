@@ -17,9 +17,20 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<ProfilePage>, HasHaptic<ProfilePage> {
+  final _searchController = TextEditingController();
+  final _focus = FocusNode();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focus.dispose();
+
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final L(:logOut, :settings, :workoutsPerWeekTitle, :workoutsPerWeekBody) = L.of(context);
+    final L(:logOut, :settings, :workoutsPerWeekTitle, :workoutsPerWeekBody, :newChart) = L.of(context);
     final ThemeData(:textTheme, :platform) = Theme.of(context);
 
     final auth = Auth.watch(context);
@@ -57,7 +68,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
             icon: const Icon(Icons.settings_rounded),
           ),
           // macos renders things differently
-          if (platform == TargetPlatform.macOS) const SizedBox(width: 8),
+          if (platform == .macOS) const SizedBox(width: 8),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton.outlined(
@@ -104,7 +115,24 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               else
                 WorkoutsAggregationChart(workouts: workouts),
               const SizedBox(height: 12),
-              const _Ad(),
+              PrimaryButton.shrunk(
+                onPressed: () async {
+                  final charts = Charts.of(context);
+                  final returned = await _showNewChartDialog(context, _searchController, _focus);
+                  switch (returned) {
+                    case Exercise ex:
+                      final preference = ChartPreference.exerciseWeight(ex.name);
+                      charts.addPreference(preference);
+                  }
+                },
+                child: Row(
+                  spacing: 6,
+                  children: [
+                    const Icon(Icons.add_rounded),
+                    Text(newChart),
+                  ],
+                ),
+              ),
             ],
           );
         },
@@ -126,42 +154,72 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     buzz();
     widget.onAvatar();
   }
-}
 
-class _Ad extends StatelessWidget {
-  const _Ad();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-
-    return AspectRatio(
-      aspectRatio: 5 / 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  color: colorScheme.primaryContainer,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
-                  child: Center(
-                    child: Text(
-                      'More charts coming up!',
-                      style: textTheme.titleMedium,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+  Future<dynamic> _showNewChartDialog(BuildContext context, TextEditingController controller, FocusNode focus) {
+    final L(:newChart, :exercises) = L.of(context);
+    return showBrandedDialog<dynamic>(
+      context,
+      title: Text(newChart),
+      padding: .zero,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListTile(
+          onTap: () async {
+            final returned = await _showExercises(context, controller, focus);
+            if (returned != null && context.mounted) {
+              return Navigator.of(context, rootNavigator: true).pop(returned);
+            }
+          },
+          title: Text(exercises),
+          trailing: const Icon(Icons.chevron_right_rounded),
         ),
       ),
     );
   }
+}
+
+Future<Exercise?> _showExercises(BuildContext context, TextEditingController controller, FocusNode focus) {
+  final ThemeData(
+    colorScheme: ColorScheme(surfaceContainerLow: color),
+  ) = Theme.of(
+    context,
+  );
+  return showDialog<Exercise?>(
+    context: context,
+    builder: (context) {
+      final exercises = Exercises.watch(context);
+      return Card(
+        child: ExercisePicker(
+          appBar: SliverPersistentHeader(
+            pinned: true,
+            delegate: FixedHeightHeaderDelegate(
+              backgroundColor: color,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+              height: 40,
+              borderRadius: const .all(.circular(12)),
+            ),
+          ),
+          exercises: exercises,
+          backgroundColor: color,
+          searchController: controller,
+          focusNode: focus,
+          onExerciseSelected: (exercise) {
+            return Navigator.of(context).pop(exercise);
+          },
+        ),
+      );
+    },
+  );
 }
