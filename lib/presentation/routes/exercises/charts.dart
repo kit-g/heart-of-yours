@@ -52,11 +52,11 @@ class _Charts extends StatelessWidget {
     }
 
     switch (exercise.category) {
-      case Category.weightedBodyWeight:
-      case Category.assistedBodyWeight:
-      case Category.barbell:
-      case Category.machine:
-      case Category.dumbbell:
+      case .weightedBodyWeight:
+      case .assistedBodyWeight:
+      case .barbell:
+      case .machine:
+      case .dumbbell:
         return ListView(
           children: [
             ExerciseChart(
@@ -78,7 +78,7 @@ class _Charts extends StatelessWidget {
             ),
           ],
         );
-      case Category.repsOnly:
+      case .repsOnly:
         return Column(
           children: [
             ExerciseChart(
@@ -91,7 +91,7 @@ class _Charts extends StatelessWidget {
             ),
           ],
         );
-      case Category.cardio:
+      case .cardio:
         return ListView(
           children: [
             ExerciseChart(
@@ -113,7 +113,7 @@ class _Charts extends StatelessWidget {
             ),
           ],
         );
-      case Category.duration:
+      case .duration:
         return Column(
           children: [
             ExerciseChart(
