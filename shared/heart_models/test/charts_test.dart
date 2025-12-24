@@ -29,8 +29,8 @@ void main() {
       expect(pref.data, isNull);
     });
 
-    test('ChartPreference.exerciseWeight factory works', () {
-      final pref = ChartPreference.topSetWeight('Squat');
+    test('ChartPreference.topSetWeight factory works', () {
+      final pref = ChartPreference.exercise('Squat', .topSetWeight);
 
       expect(pref.id, isNull);
       expect(pref.type, ChartPreferenceType.topSetWeight);
@@ -38,7 +38,7 @@ void main() {
     });
 
     test('toRow works', () {
-      final pref = ChartPreference.topSetWeight('Deadlift');
+      final pref = ChartPreference.exercise('Deadlift', .topSetWeight);
       final row = pref.toRow();
 
       expect(row['id'], isNull);
@@ -47,7 +47,7 @@ void main() {
     });
 
     test('copyWith works', () {
-      final pref = ChartPreference.topSetWeight('Bench Press');
+      final pref = ChartPreference.exercise('Bench Press', .topSetWeight);
       final updated = pref.copyWith(id: 'new-id');
 
       expect(updated.id, 'new-id');

@@ -125,10 +125,10 @@ abstract interface class ChartPreference {
     );
   }
 
-  factory ChartPreference.topSetWeight(String exerciseName) {
+  factory ChartPreference.exercise(String exerciseName, ChartPreferenceType type) {
     return _ChartPreference(
       id: null,
-      type: .topSetWeight,
+      type: type,
       data: {'exerciseName': exerciseName},
     );
   }
