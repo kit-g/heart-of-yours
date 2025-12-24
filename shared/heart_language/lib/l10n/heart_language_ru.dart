@@ -682,4 +682,46 @@ class LRu extends L {
 
   @override
   String get emptyChartStateBody => 'Добавьте первый подход чтобы начать отслеживать реальный прогресс';
+
+  @override
+  String get maxConsecutiveReps => 'Макс. последовательные повторения';
+
+  @override
+  String get exerciseTotalReps => 'Всего повторений';
+
+  @override
+  String get topSetWeight => 'Вес топового подхода';
+
+  @override
+  String get estimatedOneRepMax => 'Расчетный 1ПМ';
+
+  @override
+  String get totalVolume => 'Общий объем';
+
+  @override
+  String get averageWorkingWeight => 'Средний рабочий вес';
+
+  @override
+  String get addedWeightTopSet => 'Доп. вес (топовый подход)';
+
+  @override
+  String get assistanceWeight => 'Вес помощи';
+
+  @override
+  String get maxRepsInSet => 'Макс. повторений в подходе';
+
+  @override
+  String get totalReps => 'Всего повторений';
+
+  @override
+  String get cardioDistance => 'Дистанция';
+
+  @override
+  String get cardioDuration => 'Длительность';
+
+  @override
+  String get averagePace => 'Средний темп';
+
+  @override
+  String get totalTimeUnderTension => 'Общее время под нагрузкой';
 }

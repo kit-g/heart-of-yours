@@ -682,6 +682,48 @@ class LEn extends L {
 
   @override
   String get emptyChartStateBody => 'Add your first set to start tracking real progress';
+
+  @override
+  String get maxConsecutiveReps => 'Max consecutive reps';
+
+  @override
+  String get exerciseTotalReps => 'Total reps';
+
+  @override
+  String get topSetWeight => 'Top set weight';
+
+  @override
+  String get estimatedOneRepMax => 'Estimated 1RM';
+
+  @override
+  String get totalVolume => 'Total volume';
+
+  @override
+  String get averageWorkingWeight => 'Average working weight';
+
+  @override
+  String get addedWeightTopSet => 'Added weight (top set)';
+
+  @override
+  String get assistanceWeight => 'Assistance weight';
+
+  @override
+  String get maxRepsInSet => 'Max reps in a set';
+
+  @override
+  String get totalReps => 'Total reps';
+
+  @override
+  String get cardioDistance => 'Distance';
+
+  @override
+  String get cardioDuration => 'Duration';
+
+  @override
+  String get averagePace => 'Average pace';
+
+  @override
+  String get totalTimeUnderTension => 'Total time under tension';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1362,4 +1404,46 @@ class LEnCa extends LEn {
 
   @override
   String get emptyChartStateBody => 'Add your first set to start tracking real progress';
+
+  @override
+  String get maxConsecutiveReps => 'Max consecutive reps';
+
+  @override
+  String get exerciseTotalReps => 'Total reps';
+
+  @override
+  String get topSetWeight => 'Top set weight';
+
+  @override
+  String get estimatedOneRepMax => 'Estimated 1RM';
+
+  @override
+  String get totalVolume => 'Total volume';
+
+  @override
+  String get averageWorkingWeight => 'Average working weight';
+
+  @override
+  String get addedWeightTopSet => 'Added weight (top set)';
+
+  @override
+  String get assistanceWeight => 'Assistance weight';
+
+  @override
+  String get maxRepsInSet => 'Max reps in a set';
+
+  @override
+  String get totalReps => 'Total reps';
+
+  @override
+  String get cardioDistance => 'Distance';
+
+  @override
+  String get cardioDuration => 'Duration';
+
+  @override
+  String get averagePace => 'Average pace';
+
+  @override
+  String get totalTimeUnderTension => 'Total time under tension';
 }
