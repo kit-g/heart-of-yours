@@ -17,3 +17,4 @@ part 'src/constants.dart';
 part 'src/db.dart';
 part 'src/extensions.dart';
 part 'src/logger.dart';
+part 'src/migrations.dart';
