@@ -1,7 +1,7 @@
 part of 'exercises.dart';
 
 class ExerciseArchive extends StatelessWidget {
-  final void Function(Exercise) onExercise;
+  final void Function(Exercise, TapDownDetails?) onExercise;
 
   const ExerciseArchive({
     super.key,

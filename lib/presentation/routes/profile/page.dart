@@ -192,13 +192,10 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   }
 }
 
-Future<Exercise?> _showExercises(BuildContext context, TextEditingController controller, FocusNode focus) {
-  final ThemeData(
-    colorScheme: ColorScheme(surfaceContainerLow: color),
-  ) = Theme.of(
-    context,
-  );
-  return showDialog<Exercise?>(
+Future<(Exercise, ChartPreferenceType)?> _showExercises(BuildContext context, TextEditingController controller, FocusNode focus) {
+  final color = Theme.of(context).colorScheme.surfaceContainerLow;
+
+  return showDialog<(Exercise, ChartPreferenceType)?>(
     context: context,
     builder: (context) {
       final exercises = Exercises.watch(context);
@@ -209,7 +206,7 @@ Future<Exercise?> _showExercises(BuildContext context, TextEditingController con
             delegate: FixedHeightHeaderDelegate(
               backgroundColor: color,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: .spaceBetween,
                 children: [
                   IconButton(
                     visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
@@ -229,8 +226,25 @@ Future<Exercise?> _showExercises(BuildContext context, TextEditingController con
           backgroundColor: color,
           searchController: controller,
           focusNode: focus,
-          onExerciseSelected: (exercise) {
-            return Navigator.of(context).pop(exercise);
+          onExerciseSelected: (exercise, details) async {
+            final global = details?.globalPosition;
+            if (global == null) return;
+            final charType = await showMenu<ChartPreferenceType>(
+              context: context,
+              position: global.position(),
+              items: ChartPreferenceType.chartsByExerciseCategory(exercise.category).map(
+                (option) {
+                  return PopupMenuItem<ChartPreferenceType>(
+                    value: option,
+                    child: Text(_menuCopy(context, option)),
+                  );
+                },
+              ).toList(),
+            );
+
+            if (charType != null && context.mounted) {
+              Navigator.of(context).pop((exercise, charType));
+            }
           },
         ),
       );

@@ -1,7 +1,7 @@
 part of 'exercises.dart';
 
 class ExercisesPage extends StatefulWidget {
-  final void Function(Exercise) onExercise;
+  final void Function(Exercise, TapDownDetails?) onExercise;
   final String? selectedId;
   final Widget? detail;
   final VoidCallback onShowArchived;
