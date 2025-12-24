@@ -212,7 +212,7 @@ RouteBase _exercisesRoute() {
             null => null,
             _ => detail,
           },
-          onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
+          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.name),
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
@@ -229,7 +229,7 @@ RouteBase _exercisesRoute() {
           return switch (LayoutProvider.of(context)) {
             .wide => const SizedBox.shrink(), // already rendered by the builder
             .compact => ExercisesPage(
-              onExercise: (exercise) => context.goToExerciseDetail(exercise.name),
+              onExercise: (exercise, _) => context.goToExerciseDetail(exercise.name),
               onShowArchived: context.goToExerciseArchive,
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
@@ -243,7 +243,7 @@ RouteBase _exercisesRoute() {
             path: 'archived',
             builder: (context, _) {
               return ExerciseArchive(
-                onExercise: (exercise) {
+                onExercise: (exercise, _) {
                   context.goToExerciseDetail(exercise.name);
                 },
               );

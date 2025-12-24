@@ -6,7 +6,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   final Widget? appBar;
   final FocusNode focusNode;
   final Color? backgroundColor;
-  final void Function(Exercise)? onExerciseSelected;
+  final void Function(Exercise, TapDownDetails?)? onExerciseSelected;
 
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
