@@ -1289,5 +1289,89 @@
     "description": "Empty state for chart widget",
     "type": "text",
     "placeholders": {}
+  },
+  "maxConsecutiveReps": "Макс. последовательные повторения",
+  "@maxConsecutiveReps": {
+    "description": "Metric for exercise history chart",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseTotalReps": "Всего повторений",
+  "@exerciseTotalReps": {
+    "description": "Metric for exercise history chart",
+    "type": "text",
+    "placeholders": {}
+  },
+  "topSetWeight": "Вес топового подхода",
+  "@topSetWeight": {
+    "description": "For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "estimatedOneRepMax": "Расчетный 1ПМ",
+  "@estimatedOneRepMax": {
+    "description": "An estimated one-repetition maximum calculated from the best set in a workout (weight + reps) using a standard 1RM formula. Displayed as a trend line, not a guaranteed true max.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalVolume": "Общий объем",
+  "@totalVolume": {
+    "description": "Total work performed for an exercise in a session or time window, computed as the sum of (weight × reps) across all sets. Useful for tracking training load over time.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "averageWorkingWeight": "Средний рабочий вес",
+  "@averageWorkingWeight": {
+    "description": "Average weight used across working sets for an exercise, typically weighted by reps or sets. Helps smooth out noise from a single heavy or light set when charting progress.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addedWeightTopSet": "Доп. вес (топовый подход)",
+  "@addedWeightTopSet": {
+    "description": "For weighted bodyweight exercises, the heaviest external load added (e.g., belt/vest) in any set of a session. Does not include bodyweight itself.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "assistanceWeight": "Вес помощи",
+  "@assistanceWeight": {
+    "description": "For assisted bodyweight exercises, the amount of assistance provided (e.g., machine counterweight or band assistance). Lower values typically indicate progression toward unassisted reps.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "maxRepsInSet": "Макс. повторений в подходе",
+  "@maxRepsInSet": {
+    "description": "Highest number of repetitions completed in any single set for the selected exercise within a workout or time window. Used to track capacity improvements on reps-only movements.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalReps": "Всего повторений",
+  "@totalReps": {
+    "description": "Total repetitions completed for an exercise within a workout or time window, summed across all sets. Useful for reps-only exercises and high-rep accessory work.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cardioDistance": "Дистанция",
+  "@cardioDistance": {
+    "description": "For cardio exercises, total distance completed in a session (e.g., kilometers or miles depending on user units). Often charted per workout to show endurance progression.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cardioDuration": "Длительность",
+  "@cardioDuration": {
+    "description": "For cardio exercises, total time spent in the session. Can be charted alone or paired with distance to derive pace when both are available.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "averagePace": "Средний темп",
+  "@averagePace": {
+    "description": "For cardio exercises, average pace computed from distance and duration (time per unit distance, e.g., min/km). Only valid when both distance and duration are present and reliable.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalTimeUnderTension": "Общее время под нагрузкой",
+  "@totalTimeUnderTension": {
+    "description": "For duration-based exercises, total accumulated time across all sets in a session or time window. Used to chart consistency and gradual increases for holds or mobility work.",
+    "type": "text",
+    "placeholders": {}
   }
 }
