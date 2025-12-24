@@ -397,7 +397,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             backgroundColor: color,
             searchController: _searchController,
             focusNode: _focusNode,
-            onExerciseSelected: (exercise) {
+            onExerciseSelected: (exercise, _) {
               if (exercises.hasSelected(exercise)) {
                 exercises.deselect(exercise);
               } else {
