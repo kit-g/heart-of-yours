@@ -1,8 +1,22 @@
 import 'dart:convert';
 
+import 'exercise.dart' show Category;
+
 enum ChartPreferenceType {
-  exerciseWeight('exerciseWeight'),
-  exerciseReps('exerciseReps')
+  exerciseTotalReps('exerciseTotalReps'),
+  maxConsecutiveReps('maxConsecutiveReps'),
+  topSetWeight('topSetWeight'),
+  estimatedOneRepMax('estimatedOneRepMax'),
+  totalVolume('totalVolume'),
+  averageWorkingWeight('averageWorkingWeight'),
+  addedWeightTopSet('addedWeightTopSet'),
+  assistanceWeight('assistanceWeight'),
+  maxRepsInSet('maxRepsInSet'),
+  totalReps('totalReps'),
+  cardioDistance('cardioDistance'),
+  cardioDuration('cardioDuration'),
+  averagePace('averagePace'),
+  totalTimeUnderTension('totalTimeUnderTension'),
   ;
 
   final String value;
@@ -11,10 +25,74 @@ enum ChartPreferenceType {
 
   factory ChartPreferenceType.fromString(String v) {
     return switch (v) {
-      'exerciseWeight' => exerciseWeight,
-      'exerciseReps' => exerciseReps,
+      'exerciseTotalReps' => exerciseTotalReps,
+      'maxConsecutiveReps' => maxConsecutiveReps,
+      'topSetWeight' => topSetWeight,
+      'estimatedOneRepMax' => estimatedOneRepMax,
+      'totalVolume' => totalVolume,
+      'averageWorkingWeight' => averageWorkingWeight,
+      'addedWeightTopSet' => addedWeightTopSet,
+      'assistanceWeight' => assistanceWeight,
+      'maxRepsInSet' => maxRepsInSet,
+      'totalReps' => totalReps,
+      'cardioDistance' => cardioDistance,
+      'cardioDuration' => cardioDuration,
+      'averagePace' => averagePace,
+      'totalTimeUnderTension' => totalTimeUnderTension,
       _ => throw ArgumentError(v),
     };
+  }
+
+  static List<ChartPreferenceType> chartsByExerciseCategory(Category category) {
+    switch (category) {
+      case .weightedBodyWeight:
+        return const [
+          .topSetWeight,
+          .totalVolume,
+          .estimatedOneRepMax,
+          .averageWorkingWeight,
+          .addedWeightTopSet,
+          .maxRepsInSet,
+          .totalReps,
+          .maxConsecutiveReps,
+          .exerciseTotalReps,
+        ];
+
+      case .assistedBodyWeight:
+        return const [
+          .assistanceWeight,
+          .topSetWeight,
+          .totalVolume,
+          .averageWorkingWeight,
+          .maxRepsInSet,
+          .totalReps,
+          .maxConsecutiveReps,
+          .exerciseTotalReps,
+        ];
+
+      case .repsOnly:
+        return const [.maxConsecutiveReps, .maxRepsInSet, .totalReps, .exerciseTotalReps];
+
+      case .cardio:
+        return const [.cardioDistance, .cardioDuration, .averagePace];
+
+      case .duration:
+        return const [.totalTimeUnderTension];
+
+      case .machine:
+      case .dumbbell:
+      case .barbell:
+        return const [
+          .topSetWeight,
+          .estimatedOneRepMax,
+          .totalVolume,
+          .averageWorkingWeight,
+          .maxRepsInSet,
+          .totalReps,
+          .maxConsecutiveReps,
+          .exerciseTotalReps,
+        ];
+    }
   }
 }
 
@@ -47,10 +125,10 @@ abstract interface class ChartPreference {
     );
   }
 
-  factory ChartPreference.exerciseWeight(String exerciseName) {
+  factory ChartPreference.topSetWeight(String exerciseName) {
     return _ChartPreference(
       id: null,
-      type: .exerciseWeight,
+      type: .topSetWeight,
       data: {'exerciseName': exerciseName},
     );
   }

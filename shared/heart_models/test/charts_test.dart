@@ -3,51 +3,51 @@ import 'package:test/test.dart';
 
 void main() {
   group('ChartPreference', () {
-    test('ChartPreference.fromRow works with exerciseWeight', () {
+    test('ChartPreference.fromRow works with topSetWeight', () {
       final row = {
         'id': '1',
-        'type': 'exerciseWeight',
+        'type': 'topSetWeight',
         'data': '{"exerciseName": "Bench Press"}'
       };
       final pref = ChartPreference.fromRow(row);
 
       expect(pref.id, '1');
-      expect(pref.type, ChartPreferenceType.exerciseWeight);
+      expect(pref.type, ChartPreferenceType.topSetWeight);
       expect(pref.exerciseName, 'Bench Press');
     });
 
     test('ChartPreference.fromRow works with null data', () {
       final row = {
         'id': '2',
-        'type': 'exerciseReps',
+        'type': 'maxConsecutiveReps',
         'data': null
       };
       final pref = ChartPreference.fromRow(row);
 
       expect(pref.id, '2');
-      expect(pref.type, ChartPreferenceType.exerciseReps);
+      expect(pref.type, ChartPreferenceType.maxConsecutiveReps);
       expect(pref.data, isNull);
     });
 
     test('ChartPreference.exerciseWeight factory works', () {
-      final pref = ChartPreference.exerciseWeight('Squat');
+      final pref = ChartPreference.topSetWeight('Squat');
 
       expect(pref.id, isNull);
-      expect(pref.type, ChartPreferenceType.exerciseWeight);
+      expect(pref.type, ChartPreferenceType.topSetWeight);
       expect(pref.exerciseName, 'Squat');
     });
 
     test('toRow works', () {
-      final pref = ChartPreference.exerciseWeight('Deadlift');
+      final pref = ChartPreference.topSetWeight('Deadlift');
       final row = pref.toRow();
 
       expect(row['id'], isNull);
-      expect(row['type'], 'exerciseWeight');
+      expect(row['type'], 'topSetWeight');
       expect(row['data'], '{"exerciseName":"Deadlift"}');
     });
 
     test('copyWith works', () {
-      final pref = ChartPreference.exerciseWeight('Bench Press');
+      final pref = ChartPreference.topSetWeight('Bench Press');
       final updated = pref.copyWith(id: 'new-id');
 
       expect(updated.id, 'new-id');
@@ -58,8 +58,8 @@ void main() {
 
   group('ChartPreferenceType', () {
     test('fromString works', () {
-      expect(ChartPreferenceType.fromString('exerciseWeight'), ChartPreferenceType.exerciseWeight);
-      expect(ChartPreferenceType.fromString('exerciseReps'), ChartPreferenceType.exerciseReps);
+      expect(ChartPreferenceType.fromString('topSetWeight'), ChartPreferenceType.topSetWeight);
+      expect(ChartPreferenceType.fromString('maxConsecutiveReps'), ChartPreferenceType.maxConsecutiveReps);
     });
 
     test('fromString throws on invalid value', () {
