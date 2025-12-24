@@ -9,6 +9,14 @@ second_biggest=""
 
 count_lines() {
     for filename in $(find "$1" -name '*.dart'); do
+        # Extract the basename of the file
+        basename=$(basename "$filename")
+        
+        # Skip files ending with mocks.dart unless the file is exactly "mocks.dart"
+        if [[ "$basename" == *mocks.dart && "$basename" != "mocks.dart" ]]; then
+            continue
+        fi
+        
         files=$((files + 1))
         in_file=$(<"$filename" wc -l)
         lines=$((lines + in_file))
