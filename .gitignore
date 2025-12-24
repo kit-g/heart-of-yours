@@ -47,7 +47,7 @@ app.*.map.json
 
 # secrets
 **/google-services.json
-**/GoogleService-Info.plist
+**/GoogleService-Info*
 **/firebase_options.dart
 
 # config
