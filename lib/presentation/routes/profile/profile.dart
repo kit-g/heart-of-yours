@@ -21,3 +21,4 @@ part 'charts.dart';
 part 'dashboard.dart';
 part 'empty_dashboard_widget.dart';
 part 'page.dart';
+part 'utils.dart';
