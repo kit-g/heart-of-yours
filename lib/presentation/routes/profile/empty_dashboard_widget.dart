@@ -37,7 +37,7 @@ class _EmptyState extends StatelessWidget {
             customLabel: Row(
               mainAxisAlignment: .spaceBetween,
               children: [
-                Text('${exercise.name} - ${l.weightUnit}'),
+                Text('${exercise.name} - ${_chartTypeCopy(context, preference.type)}'),
                 FeedbackButton.circular(
                   tooltip: l.delete,
                   onPressed: () => onDelete(preference),

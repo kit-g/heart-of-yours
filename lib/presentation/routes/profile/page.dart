@@ -127,8 +127,8 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                           final scrolls = Scrolls.of(context);
                           final returned = await _showNewChartDialog(context, _searchController, _focus);
                           switch (returned) {
-                            case Exercise ex:
-                              final preference = ChartPreference.exerciseWeight(ex.name);
+                            case (Exercise ex, ChartPreferenceType type):
+                              final preference = ChartPreference.exercise(ex.name, type);
                               await charts.addPreference(preference);
                               await Future.delayed(const Duration(milliseconds: 100));
                               scrolls.scrollProfileToBottom();
@@ -169,6 +169,8 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     widget.onAvatar();
   }
 
+  /// If an exercise is selected, [_showExercises] returns a (Exercise, ChartPreferenceType)? record,
+  /// and this dialog returns it back to the widget.
   Future<dynamic> _showNewChartDialog(BuildContext context, TextEditingController controller, FocusNode focus) {
     final L(:newChart, :exercises) = L.of(context);
     return showBrandedDialog<dynamic>(
@@ -192,7 +194,13 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   }
 }
 
-Future<(Exercise, ChartPreferenceType)?> _showExercises(BuildContext context, TextEditingController controller, FocusNode focus) {
+/// Once popped, this returns to [_showNewChartDialog]
+/// and from there, it returns back to the page's [build] method
+Future<(Exercise, ChartPreferenceType)?> _showExercises(
+  BuildContext context,
+  TextEditingController controller,
+  FocusNode focus,
+) {
   final color = Theme.of(context).colorScheme.surfaceContainerLow;
 
   return showDialog<(Exercise, ChartPreferenceType)?>(
@@ -229,21 +237,21 @@ Future<(Exercise, ChartPreferenceType)?> _showExercises(BuildContext context, Te
           onExerciseSelected: (exercise, details) async {
             final global = details?.globalPosition;
             if (global == null) return;
-            final charType = await showMenu<ChartPreferenceType>(
+            final chartType = await showMenu<ChartPreferenceType>(
               context: context,
               position: global.position(),
               items: ChartPreferenceType.chartsByExerciseCategory(exercise.category).map(
                 (option) {
                   return PopupMenuItem<ChartPreferenceType>(
                     value: option,
-                    child: Text(_menuCopy(context, option)),
+                    child: Text(_chartTypeCopy(context, option)),
                   );
                 },
               ).toList(),
             );
 
-            if (charType != null && context.mounted) {
-              Navigator.of(context).pop((exercise, charType));
+            if (chartType != null && context.mounted) {
+              Navigator.of(context).pop((exercise, chartType));
             }
           },
         ),
@@ -252,27 +260,3 @@ Future<(Exercise, ChartPreferenceType)?> _showExercises(BuildContext context, Te
   );
 }
 
-String _menuCopy(BuildContext context, ChartPreferenceType option) {
-  return switch (option) {
-    .exerciseTotalReps => L.of(context).exerciseTotalReps,
-    .maxConsecutiveReps => L.of(context).maxConsecutiveReps,
-    .topSetWeight => L.of(context).topSetWeight,
-    .estimatedOneRepMax => L.of(context).estimatedOneRepMax,
-    .totalVolume => L.of(context).totalVolume,
-    .averageWorkingWeight => L.of(context).averageWorkingWeight,
-    .addedWeightTopSet => L.of(context).addedWeightTopSet,
-    .assistanceWeight => L.of(context).assistanceWeight,
-    .maxRepsInSet => L.of(context).maxRepsInSet,
-    .totalReps => L.of(context).totalReps,
-    .cardioDistance => L.of(context).cardioDistance,
-    .cardioDuration => L.of(context).cardioDuration,
-    .averagePace => L.of(context).averagePace,
-    .totalTimeUnderTension => L.of(context).totalTimeUnderTension,
-  };
-}
-
-extension on Offset {
-  RelativeRect position() {
-    return RelativeRect.fromLTRB(dx, dy, dx, dy);
-  }
-}
