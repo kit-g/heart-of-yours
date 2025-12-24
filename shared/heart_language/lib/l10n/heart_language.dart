@@ -1351,6 +1351,90 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Add your first set to start tracking real progress'**
   String get emptyChartStateBody;
+
+  /// Metric for exercise history chart
+  ///
+  /// In en, this message translates to:
+  /// **'Max consecutive reps'**
+  String get maxConsecutiveReps;
+
+  /// Metric for exercise history chart
+  ///
+  /// In en, this message translates to:
+  /// **'Total reps'**
+  String get exerciseTotalReps;
+
+  /// For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.
+  ///
+  /// In en, this message translates to:
+  /// **'Top set weight'**
+  String get topSetWeight;
+
+  /// An estimated one-repetition maximum calculated from the best set in a workout (weight + reps) using a standard 1RM formula. Displayed as a trend line, not a guaranteed true max.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated 1RM'**
+  String get estimatedOneRepMax;
+
+  /// Total work performed for an exercise in a session or time window, computed as the sum of (weight × reps) across all sets. Useful for tracking training load over time.
+  ///
+  /// In en, this message translates to:
+  /// **'Total volume'**
+  String get totalVolume;
+
+  /// Average weight used across working sets for an exercise, typically weighted by reps or sets. Helps smooth out noise from a single heavy or light set when charting progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Average working weight'**
+  String get averageWorkingWeight;
+
+  /// For weighted bodyweight exercises, the heaviest external load added (e.g., belt/vest) in any set of a session. Does not include bodyweight itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Added weight (top set)'**
+  String get addedWeightTopSet;
+
+  /// For assisted bodyweight exercises, the amount of assistance provided (e.g., machine counterweight or band assistance). Lower values typically indicate progression toward unassisted reps.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistance weight'**
+  String get assistanceWeight;
+
+  /// Highest number of repetitions completed in any single set for the selected exercise within a workout or time window. Used to track capacity improvements on reps-only movements.
+  ///
+  /// In en, this message translates to:
+  /// **'Max reps in a set'**
+  String get maxRepsInSet;
+
+  /// Total repetitions completed for an exercise within a workout or time window, summed across all sets. Useful for reps-only exercises and high-rep accessory work.
+  ///
+  /// In en, this message translates to:
+  /// **'Total reps'**
+  String get totalReps;
+
+  /// For cardio exercises, total distance completed in a session (e.g., kilometers or miles depending on user units). Often charted per workout to show endurance progression.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get cardioDistance;
+
+  /// For cardio exercises, total time spent in the session. Can be charted alone or paired with distance to derive pace when both are available.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get cardioDuration;
+
+  /// For cardio exercises, average pace computed from distance and duration (time per unit distance, e.g., min/km). Only valid when both distance and duration are present and reliable.
+  ///
+  /// In en, this message translates to:
+  /// **'Average pace'**
+  String get averagePace;
+
+  /// For duration-based exercises, total accumulated time across all sets in a session or time window. Used to chart consistency and gradual increases for holds or mobility work.
+  ///
+  /// In en, this message translates to:
+  /// **'Total time under tension'**
+  String get totalTimeUnderTension;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
