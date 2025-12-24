@@ -19,21 +19,23 @@ class LocalDatabase
 
     const name = 'heart.db';
 
-    final path = switch (isWeb) {
+    final dir = switch (isWeb) {
       true => 'heart',
       false => await getDatabasesPath(),
     };
+    final path = join(dir, name);
     // await deleteDatabase(path);
 
     if (isWeb) {
       databaseFactory = databaseFactoryFfiWeb;
     }
 
-    _logger.info('Local database at $path/$name');
+    _logger.info('Local database at $path');
     final db = await openDatabase(
-      join(path, name),
+      path,
       version: version,
       onUpgrade: _migrate,
+      onCreate: (db, version) => _migrate(db, 0, version),
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -133,14 +135,14 @@ class LocalDatabase
   @override
   Future<Map?> getRecord(String userId, Exercise exercise) {
     final query = switch (exercise.category) {
-      Category.weightedBodyWeight => sql.weightRecord,
-      Category.assistedBodyWeight => sql.weightRecord,
-      Category.dumbbell => sql.weightRecord,
-      Category.machine => sql.weightRecord,
-      Category.barbell => sql.weightRecord,
-      Category.repsOnly => sql.repsRecord,
-      Category.cardio => sql.distanceRecord,
-      Category.duration => sql.durationRecord,
+      .weightedBodyWeight => sql.weightRecord,
+      .assistedBodyWeight => sql.weightRecord,
+      .dumbbell => sql.weightRecord,
+      .machine => sql.weightRecord,
+      .barbell => sql.weightRecord,
+      .repsOnly => sql.repsRecord,
+      .cardio => sql.distanceRecord,
+      .duration => sql.durationRecord,
     };
     return _db.rawQuery(query, [userId, exercise.name]).then(
       (rows) {
