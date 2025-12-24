@@ -3,7 +3,7 @@ part of 'exercises.dart';
 class ExerciseItem extends StatelessWidget {
   final Exercise exercise;
   final Preferences preferences;
-  final void Function(Exercise)? onExerciseSelected;
+  final void Function(Exercise, TapDownDetails?)? onExerciseSelected;
   final bool selected;
 
   const ExerciseItem({
@@ -17,11 +17,14 @@ class ExerciseItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.bodySmall;
+    TapDownDetails? details;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        onTapDown: (d) => details = d,
         onTap: switch (onExerciseSelected) {
-          void Function(Exercise) f => () => f(exercise),
+          void Function(Exercise, TapDownDetails?) f => () => f(exercise, details),
           null => null,
         },
         child: Padding(

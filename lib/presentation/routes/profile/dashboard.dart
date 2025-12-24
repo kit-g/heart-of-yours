@@ -99,7 +99,7 @@ class _Chart extends StatelessWidget {
     }
 
     switch (preference.type) {
-      case .exerciseWeight:
+      case _:
         final exerciseName = preference.exerciseName!;
         final exercise = exercises.lookup(exerciseName)!;
         return ExerciseChart(
@@ -135,12 +135,9 @@ class _Chart extends StatelessWidget {
           getLeftLabel: weightLabel,
           errorState: const _ErrorState(),
         );
-      case .exerciseReps:
-        return throw UnimplementedError();
     }
   }
 }
-
 
 class _ErrorState extends StatelessWidget {
   const _ErrorState();
