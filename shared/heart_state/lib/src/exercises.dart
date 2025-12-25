@@ -26,8 +26,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     this.onError,
     required RemoteExerciseService remoteService,
     required ExerciseService service,
-  })  : _service = service,
-        _remoteService = remoteService;
+  }) : _service = service,
+       _remoteService = remoteService;
 
   @override
   void onSignOut() {
@@ -218,6 +218,18 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     _service.storeExercises([remote], userId: userId);
     _exercises[exercise.name] = remote;
     notifyListeners();
+  }
+
+  Future<List<(num, DateTime)>?> getChartExerciseMetics(
+    ChartPreferenceType type,
+    String exerciseName, {
+    int limit = 8,
+  }) async {
+    if (userId case String id) {
+      return _service.getExerciseMetics(id, type, exerciseName, limit: limit);
+    }
+
+    return null;
   }
 }
 
