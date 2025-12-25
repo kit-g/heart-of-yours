@@ -10,7 +10,6 @@ enum ChartPreferenceType {
   averageWorkingWeight('averageWorkingWeight'),
   addedWeightTopSet('addedWeightTopSet'),
   assistanceWeight('assistanceWeight'),
-  maxRepsInSet('maxRepsInSet'),
   totalReps('totalReps'),
   cardioDistance('cardioDistance'),
   cardioDuration('cardioDuration'),
@@ -31,7 +30,6 @@ enum ChartPreferenceType {
       'averageWorkingWeight' => averageWorkingWeight,
       'addedWeightTopSet' => addedWeightTopSet,
       'assistanceWeight' => assistanceWeight,
-      'maxRepsInSet' => maxRepsInSet,
       'totalReps' => totalReps,
       'cardioDistance' => cardioDistance,
       'cardioDuration' => cardioDuration,
@@ -50,7 +48,6 @@ enum ChartPreferenceType {
           .estimatedOneRepMax,
           .averageWorkingWeight,
           .addedWeightTopSet,
-          .maxRepsInSet,
           .totalReps,
           .maxConsecutiveReps,
         ];
@@ -61,13 +58,12 @@ enum ChartPreferenceType {
           .topSetWeight,
           .totalVolume,
           .averageWorkingWeight,
-          .maxRepsInSet,
           .totalReps,
           .maxConsecutiveReps,
         ];
 
       case .repsOnly:
-        return const [.maxConsecutiveReps, .maxRepsInSet, .totalReps];
+        return const [.maxConsecutiveReps, .totalReps];
 
       case .cardio:
         return const [.cardioDistance, .cardioDuration, .averagePace];
@@ -83,7 +79,6 @@ enum ChartPreferenceType {
           .estimatedOneRepMax,
           .totalVolume,
           .averageWorkingWeight,
-          .maxRepsInSet,
           .totalReps,
           .maxConsecutiveReps,
         ];
