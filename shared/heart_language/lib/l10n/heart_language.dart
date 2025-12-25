@@ -1358,12 +1358,6 @@ abstract class L {
   /// **'Max consecutive reps'**
   String get maxConsecutiveReps;
 
-  /// Metric for exercise history chart
-  ///
-  /// In en, this message translates to:
-  /// **'Total reps'**
-  String get exerciseTotalReps;
-
   /// For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.
   ///
   /// In en, this message translates to:

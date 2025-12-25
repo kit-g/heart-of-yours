@@ -687,9 +687,6 @@ class LRu extends L {
   String get maxConsecutiveReps => 'Макс. последовательные повторения';
 
   @override
-  String get exerciseTotalReps => 'Всего повторений';
-
-  @override
   String get topSetWeight => 'Вес топового подхода';
 
   @override
