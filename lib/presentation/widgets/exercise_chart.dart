@@ -11,6 +11,7 @@ class ExerciseChart extends StatelessWidget {
   final Widget Function(double y)? getLeftLabel;
   final String Function(double y)? getTooltip;
   final Widget errorState;
+  final Widget? loadingState;
 
   const ExerciseChart({
     super.key,
@@ -22,6 +23,7 @@ class ExerciseChart extends StatelessWidget {
     this.getLeftLabel,
     this.getTooltip,
     required this.errorState,
+    this.loadingState,
   });
 
   @override
@@ -32,9 +34,7 @@ class ExerciseChart extends StatelessWidget {
       builder: (_, future) {
         final AsyncSnapshot(connectionState: state, :error, :data) = future;
         return switch ((state, error, data)) {
-          (ConnectionState.waiting, _, _) => const Center(
-            child: CircularProgressIndicator(),
-          ),
+          (ConnectionState.waiting, _, _) => loadingState ?? const Center(child: CircularProgressIndicator()),
           (_, Object _, _) => errorState,
           (ConnectionState.done, null, List<(num, DateTime)> records) => Builder(
             builder: (_) {
