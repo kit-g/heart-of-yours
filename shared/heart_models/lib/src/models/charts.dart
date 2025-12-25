@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'exercise.dart' show Category;
 
 enum ChartPreferenceType {
-  exerciseTotalReps('exerciseTotalReps'),
   maxConsecutiveReps('maxConsecutiveReps'),
   topSetWeight('topSetWeight'),
   estimatedOneRepMax('estimatedOneRepMax'),
@@ -25,7 +24,6 @@ enum ChartPreferenceType {
 
   factory ChartPreferenceType.fromString(String v) {
     return switch (v) {
-      'exerciseTotalReps' => exerciseTotalReps,
       'maxConsecutiveReps' => maxConsecutiveReps,
       'topSetWeight' => topSetWeight,
       'estimatedOneRepMax' => estimatedOneRepMax,
@@ -55,7 +53,6 @@ enum ChartPreferenceType {
           .maxRepsInSet,
           .totalReps,
           .maxConsecutiveReps,
-          .exerciseTotalReps,
         ];
 
       case .assistedBodyWeight:
@@ -67,11 +64,10 @@ enum ChartPreferenceType {
           .maxRepsInSet,
           .totalReps,
           .maxConsecutiveReps,
-          .exerciseTotalReps,
         ];
 
       case .repsOnly:
-        return const [.maxConsecutiveReps, .maxRepsInSet, .totalReps, .exerciseTotalReps];
+        return const [.maxConsecutiveReps, .maxRepsInSet, .totalReps];
 
       case .cardio:
         return const [.cardioDistance, .cardioDuration, .averagePace];
@@ -90,7 +86,6 @@ enum ChartPreferenceType {
           .maxRepsInSet,
           .totalReps,
           .maxConsecutiveReps,
-          .exerciseTotalReps,
         ];
     }
   }
