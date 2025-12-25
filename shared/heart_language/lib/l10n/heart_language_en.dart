@@ -687,9 +687,6 @@ class LEn extends L {
   String get maxConsecutiveReps => 'Max consecutive reps';
 
   @override
-  String get exerciseTotalReps => 'Total reps';
-
-  @override
   String get topSetWeight => 'Top set weight';
 
   @override
@@ -1407,9 +1404,6 @@ class LEnCa extends LEn {
 
   @override
   String get maxConsecutiveReps => 'Max consecutive reps';
-
-  @override
-  String get exerciseTotalReps => 'Total reps';
 
   @override
   String get topSetWeight => 'Top set weight';
