@@ -684,9 +684,6 @@ class LRu extends L {
   String get emptyChartStateBody => 'Добавьте первый подход чтобы начать отслеживать реальный прогресс';
 
   @override
-  String get maxConsecutiveReps => 'Макс. последовательные повторения';
-
-  @override
   String get topSetWeight => 'Вес топового подхода';
 
   @override

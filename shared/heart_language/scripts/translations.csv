@@ -251,7 +251,6 @@ myDashboard,Title of the dashboard screen with performance charts,My Dashboard,M
 newChart,Button that allows to create a new chart,New chart,New chart,Новый график
 emptyChartStateTitle,Empty state for chart widget,Looks a little empty here,Looks a little empty here,Тут немного пусто
 emptyChartStateBody,Empty state for chart widget,Add your first set to start tracking real progress,Add your first set to start tracking real progress,Добавьте первый подход чтобы начать отслеживать реальный прогресс
-maxConsecutiveReps,Metric for exercise history chart,Max consecutive reps,Max consecutive reps,Макс. последовательные повторения
 topSetWeight,"For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",Top set weight,Top set weight,Вес топового подхода
 estimatedOneRepMax,"An estimated one-repetition maximum calculated from the best set in a workout (weight + reps) using a standard 1RM formula. Displayed as a trend line, not a guaranteed true max.",Estimated 1RM,Estimated 1RM,Расчетный 1ПМ
 totalVolume,"Total work performed for an exercise in a session or time window, computed as the sum of (weight × reps) across all sets. Useful for tracking training load over time.",Total volume,Total volume,Общий объем
