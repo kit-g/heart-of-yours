@@ -1290,12 +1290,6 @@
     "type": "text",
     "placeholders": {}
   },
-  "maxConsecutiveReps": "Макс. последовательные повторения",
-  "@maxConsecutiveReps": {
-    "description": "Metric for exercise history chart",
-    "type": "text",
-    "placeholders": {}
-  },
   "topSetWeight": "Вес топового подхода",
   "@topSetWeight": {
     "description": "For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",

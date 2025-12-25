@@ -1290,12 +1290,6 @@
     "type": "text",
     "placeholders": {}
   },
-  "maxConsecutiveReps": "Max consecutive reps",
-  "@maxConsecutiveReps": {
-    "description": "Metric for exercise history chart",
-    "type": "text",
-    "placeholders": {}
-  },
   "topSetWeight": "Top set weight",
   "@topSetWeight": {
     "description": "For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",
