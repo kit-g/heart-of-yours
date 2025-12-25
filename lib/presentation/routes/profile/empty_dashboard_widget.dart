@@ -1,6 +1,6 @@
 part of 'profile.dart';
 
-class _EmptyState extends StatelessWidget {
+class _GhostState extends StatelessWidget {
   final Exercise exercise;
   final ChartPreference preference;
   final ExerciseHistoryService exerciseHistoryService;
@@ -8,8 +8,10 @@ class _EmptyState extends StatelessWidget {
   final void Function(ChartPreference) onDelete;
   final L l;
   final TextTheme? textTheme;
+  final String title;
+  final String subtitle;
 
-  const _EmptyState({
+  const _GhostState({
     required this.exercise,
     required this.preference,
     required this.exerciseHistoryService,
@@ -17,6 +19,8 @@ class _EmptyState extends StatelessWidget {
     required this.l,
     required this.iconColor,
     required this.textTheme,
+    required this.title,
+    required this.subtitle,
   });
 
   @override
@@ -59,12 +63,12 @@ class _EmptyState extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                l.emptyChartStateTitle,
+                title,
                 textAlign: .center,
                 style: textTheme?.titleMedium,
               ),
               Text(
-                l.emptyChartStateBody,
+                subtitle,
                 textAlign: .center,
                 style: textTheme?.bodyMedium,
               ),
@@ -72,6 +76,50 @@ class _EmptyState extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _EmptyState extends _GhostState {
+  _EmptyState({
+    required super.exercise,
+    required super.preference,
+    required super.exerciseHistoryService,
+    required super.onDelete,
+    required super.l,
+    required super.iconColor,
+    required super.textTheme,
+  }) : super(
+         title: l.emptyChartStateTitle,
+         subtitle: l.emptyChartStateBody,
+       );
+}
+
+class _ErrorState extends _GhostState {
+  _ErrorState({
+    required super.exercise,
+    required super.preference,
+    required super.exerciseHistoryService,
+    required super.onDelete,
+    required super.l,
+    required super.iconColor,
+    required super.textTheme,
+  }) : super(
+         title: l.errorExerciseHistoryTitle,
+         subtitle: l.errorExerciseHistoryBody,
+       );
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 300,
+      child: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }
