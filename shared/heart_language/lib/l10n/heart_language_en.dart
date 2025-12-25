@@ -684,9 +684,6 @@ class LEn extends L {
   String get emptyChartStateBody => 'Add your first set to start tracking real progress';
 
   @override
-  String get maxConsecutiveReps => 'Max consecutive reps';
-
-  @override
   String get topSetWeight => 'Top set weight';
 
   @override
@@ -1401,9 +1398,6 @@ class LEnCa extends LEn {
 
   @override
   String get emptyChartStateBody => 'Add your first set to start tracking real progress';
-
-  @override
-  String get maxConsecutiveReps => 'Max consecutive reps';
 
   @override
   String get topSetWeight => 'Top set weight';
