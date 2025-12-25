@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../models/act.dart';
+import '../models/charts.dart';
 import '../models/exercise.dart';
 
 abstract interface class ExerciseHistoryService {
@@ -13,7 +14,16 @@ abstract interface class ExerciseHistoryService {
   Future<List<(num, DateTime)>> getDurationHistory(String userId, Exercise exercise, {int? limit});
 }
 
-abstract interface class ExerciseService implements ExerciseHistoryService {
+abstract interface class ExercisesMetricsService {
+  Future<List<(num, DateTime)>?> getExerciseMetics(
+    String userId,
+    ChartPreferenceType type,
+    String exerciseName, {
+    int limit,
+  });
+}
+
+abstract interface class ExerciseService implements ExerciseHistoryService, ExercisesMetricsService {
   Future<(DateTime?, Iterable<Exercise>)> getExercises({String? userId});
 
   Future<void> storeExercises(Iterable<Exercise> exercises, {String? userId});
