@@ -9,6 +9,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
+import 'src/metrics.dart' as metrics;
 import 'src/sql.dart' as sql;
 
 export 'package:heart_db/heart_db.dart' show LocalDatabase;
