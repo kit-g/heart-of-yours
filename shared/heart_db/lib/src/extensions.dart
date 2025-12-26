@@ -37,3 +37,14 @@ extension on Map {
     );
   }
 }
+
+extension on DatabaseExecutor {
+  Future<int> getMaxValue(String table, String column) async {
+    final rows = await rawQuery('SELECT max($column) AS max_value FROM $table;');
+    return switch (rows) {
+      [{'max_value': num v}] => v.toInt(),
+      _ => 0,
+    };
+  }
+}
+

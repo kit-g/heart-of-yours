@@ -487,7 +487,7 @@ class LocalDatabase
     final id = DateTime.timestamp().toIso8601String();
     return _db.transaction(
       (txn) async {
-        final newOrder = order ?? (await _getMaxValue(txn, _templates, 'order_in_parent') + 1);
+        final newOrder = order ?? (await txn.getMaxValue(_templates, 'order_in_parent') + 1);
         return txn
             .insert(
               _templates,
