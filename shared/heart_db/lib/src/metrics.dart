@@ -169,3 +169,21 @@ ORDER BY "when" DESC
 LIMIT ?
 ;
 """;
+
+// total tonnage lifted:
+// sum of (weight * reps) for the entire workout
+const getTotalVolumeHistory = """
+SELECT
+    sum(coalesce(sets.weight, 0) * coalesce(sets.reps, 0)) AS "value",
+    workouts.start AS "when"
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed = 1
+GROUP BY workouts.id, workouts.start
+ORDER BY "when" DESC
+LIMIT ?
+;
+""";
