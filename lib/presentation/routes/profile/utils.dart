@@ -38,3 +38,33 @@ double Function(num) _converter(ChartPreferenceType type, Preferences settings) 
     .totalTimeUnderTension => asIs,
   };
 }
+
+extension on Duration {
+  String formatted() {
+    final minutes = _pad(inMinutes.remainder(60));
+    final seconds = _pad(inSeconds.remainder(60));
+    return switch (inHours) {
+      > 0 => '${_pad(inHours)}:$minutes:$seconds',
+      _ => '$minutes:$seconds',
+    };
+  }
+
+  static String _pad(int n) => n.toString().padLeft(2, '0');
+}
+
+Widget Function(double y) _getLeftLabel(ChartPreferenceType type, TextStyle? style) {
+  switch (type) {
+    case .cardioDuration:
+    case .totalTimeUnderTension:
+      return (double y) {
+        final duration = Duration(seconds: y.toInt());
+        if (y == 0) return const SizedBox.shrink();
+        return Text(duration.formatted(), style: style);
+      };
+    case .maxConsecutiveReps:
+    case .totalReps:
+      return (double y) => y % 1 == 0 ? Text(y.toInt().toString(), style: style) : const SizedBox.shrink();
+    default:
+      return (double y) => y % 2 == 0 ? Text(y.toInt().toString(), style: style) : const SizedBox.shrink();
+  }
+}
