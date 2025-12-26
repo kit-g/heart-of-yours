@@ -8,7 +8,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
-GROUP BY workouts.id
+GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
@@ -24,7 +24,24 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
-GROUP BY workouts.id
+GROUP BY workouts.id, workouts.start
+ORDER BY "when" DESC
+LIMIT ?
+;
+""";
+
+const getAveragePaceHistory = """
+SELECT
+    sum(coalesce(sets.duration, 0)) / sum(coalesce(sets.distance, 0)) AS "value",
+    workouts.start AS "when"
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed = 1
+GROUP BY workouts.id, workouts.start
+HAVING sum(sets.distance) > 0
 ORDER BY "when" DESC
 LIMIT ?
 ;
