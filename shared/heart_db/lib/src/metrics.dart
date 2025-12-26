@@ -82,7 +82,6 @@ LIMIT ?
 ;
 """;
 
-
 // for reps-only exercises, we take the best single set
 const getMaxConsecutiveRepsHistory = """ 
 SELECT
@@ -145,6 +144,26 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+GROUP BY workouts.id, workouts.start
+ORDER BY "when" DESC
+LIMIT ?
+;
+""";
+
+// Brzycki Formula: Weight / (1.0278 - (0.0278 * Reps))
+// We take the best E1RM achieved in any single set during the session
+const getEstimatedOneRepMaxHistory = """
+SELECT
+    MAX(sets.weight / (1.0278 - (0.0278 * sets.reps))) AS "value",
+    workouts.start AS "when"
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed = 1
+  AND sets.reps > 0
+  AND sets.weight > 0
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
