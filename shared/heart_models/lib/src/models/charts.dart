@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'exercise.dart' show Category;
+import 'misc.dart';
 
 enum ChartPreferenceType {
   maxConsecutiveReps('maxConsecutiveReps'),
@@ -83,14 +84,12 @@ enum ChartPreferenceType {
   }
 }
 
-abstract interface class ChartPreference {
+abstract interface class ChartPreference implements Storable {
   String? get id;
 
   ChartPreferenceType get type;
 
   Map<String, dynamic>? get data;
-
-  Map<String, dynamic> toRow();
 
   String? get exerciseName;
 
