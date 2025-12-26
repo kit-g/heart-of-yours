@@ -5,6 +5,7 @@ class LocalDatabase
         TimersService, //
         ExerciseService,
         ExerciseHistoryService,
+        ExercisesMetricsService,
         PreviousExerciseService,
         StatsService,
         TemplateService,
@@ -623,12 +624,39 @@ class LocalDatabase
   Future<void> deleteChartPreference(String preferenceId, String userId) {
     return _db.delete(_charts, where: 'id = ? AND user_id = ?', whereArgs: [preferenceId, userId]);
   }
-}
 
-Future<int> _getMaxValue(DatabaseExecutor db, String table, String column) async {
-  final rows = await db.rawQuery('SELECT max($column) AS max_value FROM $table;');
-  return switch (rows) {
-    [{'max_value': num v}] => v.toInt(),
-    _ => 0,
-  };
+  @override
+  Future<List<(num, DateTime)>?> getExerciseMetics(
+    String userId,
+    ChartPreferenceType type,
+    String exerciseName, {
+    int limit = 8,
+  }) {
+    final query = switch (type) {
+      .maxConsecutiveReps => metrics.getMaxConsecutiveRepsHistory,
+      .topSetWeight => metrics.getTopSetWeightHistory,
+      .estimatedOneRepMax => metrics.getEstimatedOneRepMaxHistory,
+      .totalVolume => metrics.getTotalVolumeHistory,
+      .averageWorkingWeight => metrics.getAverageWorkingWeightHistory,
+      .assistanceWeight => metrics.getAssistanceWeightHistory,
+      .totalReps => metrics.getTotalRepsHistory,
+      .cardioDistance => metrics.getCardioDistanceHistory,
+      .cardioDuration => metrics.getCardioDurationHistory,
+      .averagePace => metrics.getAveragePaceHistory,
+      .totalTimeUnderTension => metrics.getTotalTimeUnderTensionHistory,
+    };
+
+    return _db.rawQuery(query, [userId, exerciseName, limit]).then(
+      (rows) {
+        return rows.map(
+          (row) {
+            return switch (row) {
+              {'value': num value, 'when': String id} => (value, DateTime.parse(id)),
+              _ => throw ArgumentError('getExerciseMetics: $row'),
+            };
+          },
+        ).toList();
+      },
+    );
+  }
 }
