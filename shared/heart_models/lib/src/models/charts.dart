@@ -8,7 +8,6 @@ enum ChartPreferenceType {
   estimatedOneRepMax('estimatedOneRepMax'),
   totalVolume('totalVolume'),
   averageWorkingWeight('averageWorkingWeight'),
-  addedWeightTopSet('addedWeightTopSet'),
   assistanceWeight('assistanceWeight'),
   totalReps('totalReps'),
   cardioDistance('cardioDistance'),
@@ -28,7 +27,6 @@ enum ChartPreferenceType {
       'estimatedOneRepMax' => estimatedOneRepMax,
       'totalVolume' => totalVolume,
       'averageWorkingWeight' => averageWorkingWeight,
-      'addedWeightTopSet' => addedWeightTopSet,
       'assistanceWeight' => assistanceWeight,
       'totalReps' => totalReps,
       'cardioDistance' => cardioDistance,
@@ -47,7 +45,6 @@ enum ChartPreferenceType {
           .totalVolume,
           .estimatedOneRepMax,
           .averageWorkingWeight,
-          .addedWeightTopSet,
           .totalReps,
           .maxConsecutiveReps,
         ];
