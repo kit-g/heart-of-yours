@@ -117,7 +117,22 @@ LIMIT ?
 ;
 """;
 
-
+// specifically for assisted exercises (pull-ups, etc.)
+const getAssistanceWeightHistory = """
+SELECT
+    min(coalesce(sets.weight, 0)) AS "value",
+    workouts.start AS "when"
+FROM sets
+INNER JOIN workout_exercises we ON sets.exercise_id = we.id
+INNER JOIN workouts ON we.workout_id = workouts.id
+WHERE workouts.user_id = ?
+  AND we.exercise_id = ?
+  AND sets.completed = 1
+GROUP BY workouts.id, workouts.start
+ORDER BY "when" DESC
+LIMIT ?
+;
+""";
 
 // sum of all duration fields for the exercise in a workout
 const getTotalTimeUnderTensionHistory = """
