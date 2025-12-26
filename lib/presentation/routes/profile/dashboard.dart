@@ -88,15 +88,6 @@ class _Chart extends StatelessWidget {
 
   Widget _chart(BuildContext context) {
     final ThemeData(:textTheme, :dividerColor) = Theme.of(context);
-    Widget weightLabel(double y) {
-      return switch (y % 2) {
-        0 => Text(
-          y.toInt().toString(),
-          style: textTheme.bodySmall,
-        ),
-        _ => const SizedBox.shrink(),
-      };
-    }
 
     switch (preference.type) {
       case _:
@@ -134,7 +125,7 @@ class _Chart extends StatelessWidget {
             ],
           ),
           converter: _converter(preference.type, settings),
-          getLeftLabel: weightLabel,
+          getLeftLabel: _getLeftLabel(preference.type, textTheme.bodySmall),
           errorState: _ErrorState(
             exercise: exercise,
             exerciseHistoryService: exerciseHistoryService,
