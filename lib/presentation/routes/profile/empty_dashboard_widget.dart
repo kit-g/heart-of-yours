@@ -10,6 +10,7 @@ class _GhostState extends StatelessWidget {
   final TextTheme? textTheme;
   final String title;
   final String subtitle;
+  final double Function(num) axisConverter;
 
   const _GhostState({
     required this.exercise,
@@ -21,6 +22,7 @@ class _GhostState extends StatelessWidget {
     required this.textTheme,
     required this.title,
     required this.subtitle,
+    required this.axisConverter,
   });
 
   @override
@@ -36,7 +38,7 @@ class _GhostState extends StatelessWidget {
           child: ExerciseChart(
             emptyState: const SizedBox.shrink(),
             callback: () => exerciseHistoryService.getWeightHistory('', exercise),
-            converter: (v) => v.toDouble(),
+            converter: axisConverter,
             errorState: const SizedBox.shrink(),
             customLabel: Row(
               mainAxisAlignment: .spaceBetween,
@@ -89,6 +91,7 @@ class _EmptyState extends _GhostState {
     required super.l,
     required super.iconColor,
     required super.textTheme,
+    required super.axisConverter,
   }) : super(
          title: l.emptyChartStateTitle,
          subtitle: l.emptyChartStateBody,
@@ -104,6 +107,7 @@ class _ErrorState extends _GhostState {
     required super.l,
     required super.iconColor,
     required super.textTheme,
+    required super.axisConverter,
   }) : super(
          title: l.errorExerciseHistoryTitle,
          subtitle: l.errorExerciseHistoryBody,
