@@ -696,9 +696,6 @@ class LEn extends L {
   String get averageWorkingWeight => 'Average working weight';
 
   @override
-  String get addedWeightTopSet => 'Added weight (top set)';
-
-  @override
   String get assistanceWeight => 'Assistance weight';
 
   @override
@@ -1410,9 +1407,6 @@ class LEnCa extends LEn {
 
   @override
   String get averageWorkingWeight => 'Average working weight';
-
-  @override
-  String get addedWeightTopSet => 'Added weight (top set)';
 
   @override
   String get assistanceWeight => 'Assistance weight';

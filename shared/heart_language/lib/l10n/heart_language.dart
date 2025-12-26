@@ -1376,12 +1376,6 @@ abstract class L {
   /// **'Average working weight'**
   String get averageWorkingWeight;
 
-  /// For weighted bodyweight exercises, the heaviest external load added (e.g., belt/vest) in any set of a session. Does not include bodyweight itself.
-  ///
-  /// In en, this message translates to:
-  /// **'Added weight (top set)'**
-  String get addedWeightTopSet;
-
   /// For assisted bodyweight exercises, the amount of assistance provided (e.g., machine counterweight or band assistance). Lower values typically indicate progression toward unassisted reps.
   ///
   /// In en, this message translates to:

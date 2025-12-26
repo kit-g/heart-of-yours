@@ -696,9 +696,6 @@ class LRu extends L {
   String get averageWorkingWeight => 'Средний рабочий вес';
 
   @override
-  String get addedWeightTopSet => 'Доп. вес (топовый подход)';
-
-  @override
   String get assistanceWeight => 'Вес помощи';
 
   @override
