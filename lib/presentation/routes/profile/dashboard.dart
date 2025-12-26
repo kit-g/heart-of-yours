@@ -102,6 +102,7 @@ class _Chart extends StatelessWidget {
       case _:
         final exerciseName = preference.exerciseName!;
         final exercise = exercises.lookup(exerciseName)!;
+        final converter = _converter(preference.type, settings);
         return ExerciseChart(
           emptyState: _EmptyState(
             exercise: exercise,
@@ -111,8 +112,9 @@ class _Chart extends StatelessWidget {
             l: l,
             preference: preference,
             textTheme: textTheme,
+            axisConverter: converter,
           ),
-          callback: () => exercises.getWeightHistory(exercise),
+          callback: () => exercises.getChartExerciseMetics(preference.type, exerciseName),
           customLabel: Row(
             mainAxisAlignment: .spaceBetween,
             children: [
@@ -131,19 +133,20 @@ class _Chart extends StatelessWidget {
               ),
             ],
           ),
-          converter: (v) => settings.weightValue(v),
+          converter: _converter(preference.type, settings),
           getLeftLabel: weightLabel,
-          errorState: const _ErrorState(),
+          errorState: _ErrorState(
+            exercise: exercise,
+            exerciseHistoryService: exerciseHistoryService,
+            onDelete: onDelete,
+            iconColor: dividerColor,
+            l: l,
+            preference: preference,
+            textTheme: textTheme,
+            axisConverter: converter,
+          ),
+          loadingState: const _LoadingState(),
         );
     }
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Text('error');
   }
 }
