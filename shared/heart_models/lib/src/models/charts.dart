@@ -164,5 +164,11 @@ class _ChartPreference implements ChartPreference {
   String? get exerciseName => data?['exerciseName'];
 
   @override
-  Map<String, dynamic> toMap() => toRow();
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'type': type.value,
+      'data': ?data,
+    };
+  }
 }
