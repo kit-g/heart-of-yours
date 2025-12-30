@@ -287,11 +287,11 @@ class Api
 }
 
 abstract final class Router {
-  static const accounts = 'v1/accounts';
-  static const exercises = 'v1/exercises';
-  static const feedback = 'v1/feedback';
-  static const templates = 'v1/templates';
-  static const workouts = 'v1/workouts';
+  static const accounts = 'api/v1/accounts';
+  static const exercises = 'api/v1/exercises';
+  static const feedback = 'api/v1/feedback';
+  static const templates = 'api/v1/templates';
+  static const workouts = 'api/v1/workouts';
 
   static String workoutImages(String workoutId) {
     return '$workouts/$workoutId/images';
