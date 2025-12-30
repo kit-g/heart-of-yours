@@ -84,7 +84,7 @@ enum ChartPreferenceType {
   }
 }
 
-abstract interface class ChartPreference implements Storable {
+abstract interface class ChartPreference implements Storable, Model {
   String? get id;
 
   ChartPreferenceType get type;
@@ -105,6 +105,7 @@ abstract interface class ChartPreference implements Storable {
       type: ChartPreferenceType.fromString(row['type']),
       data: switch (row['data']) {
         String raw => jsonDecode(raw),
+        Map m => m,
         null => null,
         _ => throw ArgumentError(row),
       },
@@ -161,4 +162,7 @@ class _ChartPreference implements ChartPreference {
 
   @override
   String? get exerciseName => data?['exerciseName'];
+
+  @override
+  Map<String, dynamic> toMap() => toRow();
 }
