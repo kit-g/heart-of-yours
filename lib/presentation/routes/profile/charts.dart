@@ -52,7 +52,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
                     child: ValueListenableBuilder<int>(
                       valueListenable: _pointedAtBar,
-                      builder: (_, __, ___) {
+                      builder: (_, _, _) {
                         return BarChart(
                           duration: animDuration,
                           BarChartData(

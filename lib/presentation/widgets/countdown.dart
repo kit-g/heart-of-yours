@@ -104,13 +104,13 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
           children: [
             ValueListenableBuilder<int>(
               valueListenable: _total,
-              builder: (_, total, __) {
+              builder: (_, total, _) {
                 return AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: switch (alarms.remainsInActiveExercise) {
                     ValueNotifier<int> seconds => ValueListenableBuilder<int>(
                         valueListenable: seconds,
-                        builder: (_, remaining, __) {
+                        builder: (_, remaining, _) {
                           final progress = remaining / total;
                           return CustomPaint(
                             size: const Size(200, 200),
@@ -157,7 +157,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
                 ),
                 ValueListenableBuilder<int>(
                   valueListenable: _total,
-                  builder: (_, total, __) {
+                  builder: (_, total, _) {
                     return Text(
                       _format(total),
                       style: textTheme.bodyLarge?.copyWith(color: colorScheme.secondary),

@@ -54,7 +54,7 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
           preferredSize: const Size.fromHeight(56),
           child: ValueListenableBuilder<_ExerciseSection?>(
             valueListenable: _section,
-            builder: (_, section, __) {
+            builder: (_, section, _) {
               return TabBar(
                 controller: _controller,
                 tabs: widget.exercise.sections.map((section) => Tab(text: _copy(context, section))).toList(),

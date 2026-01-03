@@ -31,10 +31,10 @@ class _TextFieldButton extends StatelessWidget {
           padding: const .symmetric(horizontal: 2.0),
           child: ListenableBuilder(
             listenable: focusNode,
-            builder: (__, _) {
+            builder: (_, _) {
               return ValueListenableBuilder<bool>(
                 valueListenable: errorState,
-                builder: (__, hasError, _) {
+                builder: (_, hasError, _) {
                   return PrimaryButton.shrunk(
                     margin: EdgeInsets.zero,
                     backgroundColor: hasError ? colorScheme.error : color,

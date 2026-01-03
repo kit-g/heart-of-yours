@@ -159,7 +159,7 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return ValueListenableBuilder<double>(
       valueListenable: _controller,
-      builder: (_, value, __) {
+      builder: (_, value, _) {
         return CustomPaint(
           painter: _ConfettiPainter(particles, value),
         );

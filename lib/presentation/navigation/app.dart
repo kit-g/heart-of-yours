@@ -141,7 +141,7 @@ class HeartApp extends StatelessWidget {
       ],
       builder: (_, _) {
         return Consumer<AppTheme>(
-          builder: (__, theme, _) {
+          builder: (_, theme, _) {
             return _App(
               theme: theme,
               config: appConfig,

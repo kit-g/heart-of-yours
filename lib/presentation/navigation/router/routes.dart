@@ -43,7 +43,7 @@ RouteBase _profileRoute() {
         routes: [
           GoRoute(
             path: _accountManagementPath,
-            builder: (__, _) => const AccountManagementPage(onError: reportToSentry),
+            builder: (_, _) => const AccountManagementPage(onError: reportToSentry),
             name: _accountManagementName,
           ),
         ],
@@ -68,7 +68,7 @@ RouteBase _workoutRoute() {
     routes: [
       GoRoute(
         path: 'templates',
-        builder: (__, state) {
+        builder: (_, state) {
           return TemplateEditor(
             isNewTemplate: state.uri.queryParameters['newTemplate'] == 'true',
           );
@@ -329,7 +329,7 @@ RouteBase _loginRoute() {
         ),
         .wide => ValueListenableBuilder<_AuthPages>(
           valueListenable: currentPage,
-          builder: (_, page, __) {
+          builder: (_, page, _) {
             return LayoutProvider(
               currentStack: -1,
               builder: (context, layout, _) {

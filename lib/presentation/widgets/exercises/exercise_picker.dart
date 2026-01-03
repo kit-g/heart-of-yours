@@ -247,7 +247,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
           ),
           true => ValueListenableBuilder<TextEditingValue>(
             valueListenable: searchController,
-            builder: (__, value, _) {
+            builder: (_, value, _) {
               final mine = exercises.showingMine;
               final found = exercises.search(value.text, filters: true, isMine: mine).toList();
               return SliverList.separated(

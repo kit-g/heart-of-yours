@@ -260,10 +260,10 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
         if (index == exercises.length) {
           return ValueListenableBuilder<WorkoutExercise?>(
             valueListenable: _currentlyHoveredExercise,
-            builder: (_, hoveredOver, __) {
+            builder: (_, hoveredOver, _) {
               return ValueListenableBuilder<WorkoutExercise?>(
                 valueListenable: _beingDragged,
-                builder: (_, dragged, __) {
+                builder: (_, dragged, _) {
                   return DragTarget<WorkoutExercise>(
                     onWillAcceptWithDetails: (_) {
                       _currentlyHoveredExercise.value = null;
@@ -275,7 +275,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                     onAcceptWithDetails: (details) {
                       widget.onDragExercise(details.data);
                     },
-                    builder: (_, __, ___) {
+                    builder: (_, _, _) {
                       return Column(
                         children: [
                           if (hoveredOver == null && dragged != null) _divider,
@@ -294,12 +294,12 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
         var set = sets[index];
         return ValueListenableBuilder<WorkoutExercise?>(
           valueListenable: _currentlyHoveredExercise,
-          builder: (_, hoveredOver, __) {
+          builder: (_, hoveredOver, _) {
             return Column(
               children: [
                 if (hoveredOver == set) _divider,
                 Selector<Workouts, bool>(
-                  builder: (_, isPointedAt, __) {
+                  builder: (_, isPointedAt, _) {
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 500),
                       color: isPointedAt ? colorScheme.primary : Colors.transparent,

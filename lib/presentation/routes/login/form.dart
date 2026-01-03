@@ -45,14 +45,14 @@ class _Form extends StatelessWidget {
       key: formKey,
       child: ValueListenableBuilder<bool>(
         valueListenable: obscurityController,
-        builder: (_, hide, __) {
+        builder: (_, hide, _) {
           return ValueListenableBuilder<TextEditingValue>(
             valueListenable: emailController,
-            builder: (_, emailValue, __) {
+            builder: (_, emailValue, _) {
               final hasFilledOutEmail = _looksLikeEmail(emailValue.text);
               return ValueListenableBuilder<TextEditingValue>(
                 valueListenable: passwordController,
-                builder: (_, passwordValue, __) {
+                builder: (_, passwordValue, _) {
                   final hasFilledOutPassword = passwordValue.text.isNotEmpty;
                   return Column(
                     children: [

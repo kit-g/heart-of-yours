@@ -79,7 +79,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                 children: [
                   ValueListenableBuilder<double?>(
                     valueListenable: _avatarController,
-                    builder: (_, progress, __) {
+                    builder: (_, progress, _) {
                       return AnimatedOpacity(
                         duration: const Duration(milliseconds: 200),
                         opacity: progress == null ? 1 : .3,
@@ -188,10 +188,10 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               ),
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _nameController,
-                builder: (_, value, __) {
+                builder: (_, value, _) {
                   return ListenableBuilder(
                     listenable: _nameFocusNode,
-                    builder: (context, __) {
+                    builder: (context, _) {
                       final current = value.text.trim();
                       final hasChangedName = auth.user?.displayName != current;
                       final shouldSave = current.isNotEmpty && hasChangedName;
@@ -340,7 +340,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
         padding: const EdgeInsets.all(8.0),
         child: ValueListenableBuilder<bool>(
           valueListenable: _obscurityController,
-          builder: (_, hide, __) {
+          builder: (_, hide, _) {
             return TextField(
               autocorrect: false,
               controller: _passwordController,

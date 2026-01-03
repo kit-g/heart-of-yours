@@ -54,7 +54,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
           preferredSize: const Size.fromHeight(56),
           child: ValueListenableBuilder<_ExerciseSection?>(
             valueListenable: _section,
-            builder: (_, section, __) {
+            builder: (_, section, _) {
               return CupertinoSlidingSegmentedControl<_ExerciseSection>(
                 children: Map.fromEntries(
                   widget.exercise.sections.map(

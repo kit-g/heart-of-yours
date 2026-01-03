@@ -30,7 +30,7 @@ class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker>
           ],
         ),
         Consumer<AppTheme>(
-          builder: (_, theme, __) {
+          builder: (_, theme, _) {
             return Row(
               children: [
                 if (theme.color != null)

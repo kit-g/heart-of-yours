@@ -7,7 +7,7 @@ class _ThemeModePicker extends StatelessWidget with HasHaptic {
   Widget build(BuildContext context) {
     final L(:toDarkMode, :toLightMode, :toSystemMode) = L.of(context);
     return Consumer<AppTheme>(
-      builder: (__, appTheme, _) {
+      builder: (_, appTheme, _) {
         final isSelected = ThemeMode.values.map((mode) => mode == appTheme.mode).toList();
         const radius = 4.0;
         return SizedBox(

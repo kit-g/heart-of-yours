@@ -60,7 +60,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
 
     return ListenableBuilder(
       listenable: _notifier,
-      builder: (_, __) {
+      builder: (_, _) {
         final hasImage = workout.remoteImage != null || workout.remoteImage != null;
         return PopScope(
           canPop: !_notifier.hasChanged,
@@ -108,7 +108,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 ),
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _controller,
-                  builder: (_, value, __) {
+                  builder: (_, value, _) {
                     final enabled = workout.isNotEmpty && value.text.isNotEmpty;
                     return AnimatedOpacity(
                       opacity: enabled ? 1 : .3,

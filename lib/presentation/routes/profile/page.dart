@@ -84,7 +84,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
       ),
       body: Selector<Stats, WorkoutAggregation>(
         selector: (_, provider) => provider.workouts,
-        builder: (_, workouts, __) {
+        builder: (_, workouts, _) {
           final emptyState = Stack(
             alignment: Alignment.center,
             children: [
