@@ -191,28 +191,28 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                     onPressed: () {
                       buzz();
                       switch (exercise.exercise.category) {
-                        case Category.weightedBodyWeight:
-                        case Category.assistedBodyWeight:
-                        case Category.machine:
-                        case Category.dumbbell:
-                        case Category.barbell:
+                        case .weightedBodyWeight:
+                        case .assistedBodyWeight:
+                        case .machine:
+                        case .dumbbell:
+                        case .barbell:
                           switch (m) {
                             case {'weight': num weight, 'reps': int reps}:
                               _weightController.text = prefs.weight(weight);
                               _repsController.text = '$reps';
                           }
-                        case Category.repsOnly:
+                        case .repsOnly:
                           switch (m) {
                             case {'reps': int reps}:
                               _repsController.text = '$reps';
                           }
-                        case Category.cardio:
+                        case .cardio:
                           switch (m) {
                             case {'duration': num duration, 'distance': num distance}:
                               _durationController.text = duration.toInt().toDuration();
                               _distanceController.text = prefs.distance(distance);
                           }
-                        case Category.duration:
+                        case .duration:
                           switch (m) {
                             case {'duration': num duration}:
                               _durationController.text = duration.toInt().toDuration();

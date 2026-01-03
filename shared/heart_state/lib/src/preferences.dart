@@ -100,9 +100,9 @@ class Preferences with ChangeNotifier {
     return _prefs?.setString(_distanceUnit, unit.name);
   }
 
-  String distance(num value) {
+  String distance(num value, {bool rounded = true}) {
     final v = distanceValue(value);
-    return v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
+    return rounded ? v.rounded() : v.toString();
   }
 
   double distanceValue(num value) {
@@ -112,9 +112,9 @@ class Preferences with ChangeNotifier {
     };
   }
 
-  String weight(num value) {
+  String weight(num value, {bool rounded = true}) {
     final v = weightValue(value);
-    return v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
+    return rounded ? v.rounded() : v.toString();
   }
 
   double weightValue(num value) {
@@ -130,3 +130,10 @@ const _imperialCountries = {
   'LR', // Liberia
   'MM', // Myanmar
 };
+
+extension on num {
+  String rounded() {
+    if (this % 1 == 0) return toInt().toString();
+    return toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
+  }
+}
