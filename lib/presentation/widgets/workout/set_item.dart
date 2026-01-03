@@ -119,7 +119,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     Widget dismissBackground({Alignment? alignment}) {
       return ValueListenableBuilder<bool>(
         valueListenable: _hasCrossedDismissThreshold,
-        builder: (_, hasCrossed, __) {
+        builder: (_, hasCrossed, _) {
           return Container(
             color: error,
             child: AnimatedAlign(
@@ -333,7 +333,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           Expanded(
             child: Selector<Preferences, MeasurementUnit>(
               selector: (_, provider) => provider.distanceUnit,
-              builder: (_, unit, __) {
+              builder: (_, unit, _) {
                 double? distance = set.distance;
                 if (distance != null) {
                   distance = switch (unit) {

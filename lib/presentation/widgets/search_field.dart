@@ -18,7 +18,7 @@ class SearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: focusNode,
-      builder: (__, _) {
+      builder: (_, _) {
         return TextField(
           autocorrect: false,
           controller: controller,

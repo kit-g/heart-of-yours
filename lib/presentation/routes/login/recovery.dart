@@ -93,7 +93,7 @@ class _RecoveryPageState extends State<RecoveryPage>
                   ),
                   ValueListenableBuilder<String?>(
                     valueListenable: error,
-                    builder: (_, error, __) {
+                    builder: (_, error, _) {
                       return _Error(message: error);
                     },
                   ),
@@ -106,7 +106,7 @@ class _RecoveryPageState extends State<RecoveryPage>
                 children: [
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: _emailController,
-                    builder: (_, value, ___) {
+                    builder: (_, value, _) {
                       return ValueListenableBuilder<bool>(
                         valueListenable: loader,
                         builder: (_, loading, child) {

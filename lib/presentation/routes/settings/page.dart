@@ -105,7 +105,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Selector<Preferences, MeasurementUnit>(
                   selector: (_, provider) => provider.weightUnit,
-                  builder: (_, weight, __) {
+                  builder: (_, weight, _) {
                     return FixedLengthSettingPicker<MeasurementUnit>(
                       title: weightUnit,
                       value: weight,
@@ -127,7 +127,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Selector<Preferences, MeasurementUnit>(
                   selector: (_, provider) => provider.distanceUnit,
-                  builder: (_, distance, __) {
+                  builder: (_, distance, _) {
                     return FixedLengthSettingPicker<MeasurementUnit>(
                       title: distanceUnit,
                       value: distance,

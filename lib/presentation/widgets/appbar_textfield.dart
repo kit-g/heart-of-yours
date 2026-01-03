@@ -22,10 +22,10 @@ class AppBarTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
-      builder: (_, value, __) {
+      builder: (_, value, _) {
         return ListenableBuilder(
           listenable: focusNode,
-          builder: (_, __) {
+          builder: (_, _) {
             final needsSuffix = value.text.isNotEmpty && focusNode.hasFocus;
             return TextField(
               decoration: InputDecoration(

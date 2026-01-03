@@ -54,7 +54,7 @@ class _WorkoutTimerState extends State<WorkoutTimer> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Duration>(
       valueListenable: _elapsedTime,
-      builder: (_, elapsed, __) {
+      builder: (_, elapsed, _) {
         return Text(
           _format(elapsed),
           style: widget.style,

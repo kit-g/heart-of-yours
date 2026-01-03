@@ -56,7 +56,7 @@ class _CounterState extends State<_Counter> with TickerProviderStateMixin {
         (animation) {
           return ValueListenableBuilder<double>(
             valueListenable: animation,
-            builder: (_, value, __) {
+            builder: (_, value, _) {
               return Transform.scale(
                 scale: value,
                 child: CustomPaint(

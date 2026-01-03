@@ -49,7 +49,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
           actions: [
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
-              builder: (_, value, __) {
+              builder: (_, value, _) {
                 final enabled = (templates.editable?.isNotEmpty ?? false) && value.text.isNotEmpty;
                 return AnimatedOpacity(
                   opacity: enabled ? 1 : .3,

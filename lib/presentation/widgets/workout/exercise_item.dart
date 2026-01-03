@@ -58,7 +58,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         final previous = PreviousExercises.watch(context);
         return ValueListenableBuilder<WorkoutExercise?>(
           valueListenable: dragState,
-          builder: (_, draggedExercise, __) {
+          builder: (_, draggedExercise, _) {
             final header = Padding(
               padding: const EdgeInsets.only(left: 8.0, right: 4),
               child: Row(
@@ -75,10 +75,10 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                     children: [
                       Selector<Timers, int?>(
                         selector: (_, provider) => provider[exercise.exercise.name],
-                        builder: (_, timer, __) {
+                        builder: (_, timer, _) {
                           return Selector<Alarms, (ValueNotifier<int>?, num?)>(
                             selector: (_, provider) => (provider.remainsInActiveExercise, provider.activeExerciseTotal),
-                            builder: (_, alarm, __) {
+                            builder: (_, alarm, _) {
                               return switch ((timer, alarm)) {
                                 (int timer, _) => AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 200),
@@ -91,7 +91,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                                           width: 32,
                                           child: ValueListenableBuilder<int>(
                                             valueListenable: counter,
-                                            builder: (_, remains, __) {
+                                            builder: (_, remains, _) {
                                               return CustomPaint(
                                                 painter: CircularTimerPainter(
                                                   progress: remains / total,
@@ -177,7 +177,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         onDragStarted: onDragStarted,
                         onDragEnd: (_) => onDragEnded(),
                         onDragCompleted: onDragEnded,
-                        onDraggableCanceled: (_, __) => onDragEnded(),
+                        onDraggableCanceled: (_, _) => onDragEnded(),
                         feedback: _Feedback(
                           exercise: exercise.exercise.name,
                           textTheme: textTheme,

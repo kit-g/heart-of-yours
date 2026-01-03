@@ -71,7 +71,7 @@ class ExerciseItem extends StatelessWidget {
                     ),
                     false => Selector<PreviousExercises, Map<String, dynamic>?>(
                       selector: (_, provider) => provider.last(exercise.name),
-                      builder: (_, metric, __) {
+                      builder: (_, metric, _) {
                         return switch (metric) {
                           Map<String, dynamic> m => Align(
                             alignment: Alignment.centerRight,

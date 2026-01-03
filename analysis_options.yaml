@@ -5,7 +5,6 @@ linter:
     require_trailing_commas: true
     prefer_const_constructors: true
     prefer_final_in_for_each: true
-    unnecessary_underscores: false
     avoid_positional_boolean_parameters: true
     avoid_dynamic_calls: true
     prefer_single_quotes: true

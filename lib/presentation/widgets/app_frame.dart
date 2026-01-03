@@ -31,7 +31,7 @@ class AppFrame extends StatelessWidget {
         workout,
         () => Selector<Workouts, bool>(
           selector: (_, provider) => provider.hasActiveWorkout,
-          builder: (_, hasActiveWorkout, __) {
+          builder: (_, hasActiveWorkout, _) {
             return AnimatedSwitcher(
               key: AppKeys.workoutStack,
               duration: const Duration(milliseconds: 300),
