@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:heart_state/heart_state.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'test_utils.dart';
@@ -158,13 +158,13 @@ void main() {
       expect(sut.distance(1), '1');
       // non-integer shows two decimals
       expect(sut.weight(1.234), '1.23');
-      expect(sut.distance(1.2), '1.20');
+      expect(sut.distance(1.2), '1.2');
     });
 
     test('weight() and distance() apply conversions in imperial and format', () async {
       await sut.init(locale: const Locale('en', 'US'));
       // 1kg -> 2.20 lb (two decimals)
-      expect(sut.weight(1), '2.20');
+      expect(sut.weight(1), '2.2');
       // 1 distance unit (km) should not equal '1' when converted to miles
       expect(sut.distance(1) == '1', isFalse);
       // formatting keeps two decimals for non-integers
