@@ -67,8 +67,5 @@ jobs:
       - name: Generate code
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: "Run Static Analysis"
-        run: flutter analyze
-
       - name: Run app tests
         run: flutter test

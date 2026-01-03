@@ -69,6 +69,7 @@ void main() {
       expect(() => Provider.of<PreviousExercises>(element, listen: false), returnsNormally);
       expect(() => Provider.of<RemoteConfig>(element, listen: false), returnsNormally);
       expect(() => Provider.of<Preferences>(element, listen: false), returnsNormally);
+      expect(() => Provider.of<Charts>(element, listen: false), returnsNormally);
       expect(() => Provider.of<Auth>(element, listen: false), returnsNormally);
     });
   });
