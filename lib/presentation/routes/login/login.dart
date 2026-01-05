@@ -11,13 +11,9 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
 part 'error.dart';
-
 part 'form.dart';
-
 part 'page.dart';
-
+part 'password_requirement.dart';
 part 'recovery.dart';
-
 part 'sign_up.dart';
-
 part 'utils.dart';

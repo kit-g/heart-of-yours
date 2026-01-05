@@ -1,5 +1,16 @@
 part of 'login.dart';
 
+class _PasswordValidation with ChangeNotifier {
+  PasswordValidationStatus? _status;
+
+  PasswordValidationStatus? get status => _status;
+
+  set status(PasswordValidationStatus? value) {
+    _status = value;
+    notifyListeners();
+  }
+}
+
 class SignUpPage extends StatefulWidget {
   final String? address;
   final void Function(String?) onLogin;
@@ -22,6 +33,7 @@ class _SignUpPageState extends State<SignUpPage>
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _passwordObscurityController = ValueNotifier<bool>(true);
+  final _passwordValidation = _PasswordValidation();
 
   @override
   void initState() {
@@ -32,10 +44,14 @@ class _SignUpPageState extends State<SignUpPage>
     if (widget.address case String s when s.isNotEmpty) {
       _emailController.text = s;
     }
+
+    _passwordController.addListener(_passwordListener);
   }
 
   @override
   void dispose() {
+    _passwordController.removeListener(_passwordListener);
+
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
@@ -44,7 +60,21 @@ class _SignUpPageState extends State<SignUpPage>
 
   @override
   Widget build(BuildContext context) {
-    final L(:signUpWithGoogle, :signUpWithApple, :orConnector, :signUp, :logIn) = L.of(context);
+    final L(
+      :signUpWithGoogle,
+      :signUpWithApple,
+      :orConnector,
+      :signUp,
+      :logIn,
+      :passwordPolicyMaxLength,
+      :passwordPolicyMinLength,
+      :passwordPolicyDigit,
+      :passwordPolicyLowerCase,
+      :passwordPolicyUpperCase,
+      :passwordPolicyTitle,
+    ) = L.of(
+      context,
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -72,8 +102,8 @@ class _SignUpPageState extends State<SignUpPage>
                               child: switch (loading) {
                                 false => child!,
                                 true => const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
+                                  child: CircularProgressIndicator(),
+                                ),
                               },
                             );
                           },
@@ -92,6 +122,69 @@ class _SignUpPageState extends State<SignUpPage>
                                   error: error,
                                   needsName: true,
                                   actionButtonCopy: signUp,
+                                ),
+                                ListenableBuilder(
+                                  listenable: _passwordValidation,
+                                  builder: (_, _) {
+                                    final status = _passwordValidation.status;
+                                    return AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 300),
+                                      switchInCurve: Curves.easeOutBack,
+                                      switchOutCurve: Curves.easeIn,
+                                      transitionBuilder: (child, animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: ScaleTransition(
+                                            scale: animation,
+                                            alignment: Alignment.topCenter,
+                                            child: SizeTransition(
+                                              sizeFactor: animation,
+                                              axis: Axis.vertical,
+                                              child: child,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: switch (status) {
+                                        null => const SizedBox.shrink(),
+                                        PasswordValidationStatus(:var passwordPolicy) => Padding(
+                                          key: const ValueKey('password_validation_status'),
+                                          padding: const .symmetric(vertical: 12, horizontal: 4),
+                                          child: Column(
+                                            crossAxisAlignment: .start,
+                                            spacing: 4,
+                                            children: [
+                                              Text(passwordPolicyTitle),
+                                              _Requirement(
+                                                label: passwordPolicyMinLength(passwordPolicy.minPasswordLength),
+                                                meets: status.meetsMinPasswordLength,
+                                              ),
+                                              if (passwordPolicy.maxPasswordLength case int max)
+                                                _Requirement(
+                                                  label: passwordPolicyMaxLength(max),
+                                                  meets: status.meetsMaxPasswordLength,
+                                                ),
+                                              if (passwordPolicy.containsUppercaseCharacter ?? false)
+                                                _Requirement(
+                                                  label: passwordPolicyUpperCase,
+                                                  meets: status.meetsUppercaseRequirement,
+                                                ),
+                                              if (passwordPolicy.containsLowercaseCharacter ?? false)
+                                                _Requirement(
+                                                  label: passwordPolicyLowerCase,
+                                                  meets: status.meetsLowercaseRequirement,
+                                                ),
+                                              if (passwordPolicy.containsNumericCharacter ?? false)
+                                                _Requirement(
+                                                  label: passwordPolicyDigit,
+                                                  meets: status.meetsDigitsRequirement,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      },
+                                    );
+                                  },
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
@@ -128,24 +221,24 @@ class _SignUpPageState extends State<SignUpPage>
                                       child: switch (hasAppleSignIn) {
                                         false => const SizedBox.shrink(),
                                         true => Stack(
-                                            children: [
-                                              const Positioned(
-                                                top: 0,
-                                                bottom: 0,
-                                                left: 24,
-                                                child: Icon(CustomIcons.appstore),
+                                          children: [
+                                            const Positioned(
+                                              top: 0,
+                                              bottom: 0,
+                                              left: 24,
+                                              child: Icon(CustomIcons.appstore),
+                                            ),
+                                            OutlinedButton(
+                                              onPressed: () => run(Auth.of(context).loginWithApple),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Text(signUpWithApple),
+                                                ],
                                               ),
-                                              OutlinedButton(
-                                                onPressed: () => run(Auth.of(context).loginWithApple),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(signUpWithApple),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
+                                        ),
                                       },
                                     );
                                   },
@@ -187,14 +280,20 @@ class _SignUpPageState extends State<SignUpPage>
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     return run(
-      () {
-        return Auth.of(context).signUpWithEmailAndPassword(
-          email: email,
-          password: password,
-          name: _nameController.text.trim(),
-        );
+      () async {
+        try {
+          await Auth.of(context).signUpWithEmailAndPassword(
+            email: email,
+            password: password,
+            name: _nameController.text.trim(),
+          );
+          _passwordValidation.status = null;
+        } on PasswordRequirementsNotMet catch (e) {
+          _passwordValidation.status = e.status;
+        }
       },
       onEmailExists: () async {
+        _passwordValidation.status = null;
         final shouldProceed = await _showConfirmSignInDialog(context, email) ?? false;
         if (!shouldProceed) return;
 
@@ -217,7 +316,9 @@ class _SignUpPageState extends State<SignUpPage>
       :emailExistsBody,
       :emailExistsCancelButton,
       :emailExistsOkButton,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
     return showBrandedDialog(
       context,
       title: Text(emailExistsTitle),
@@ -260,6 +361,19 @@ class _SignUpPageState extends State<SignUpPage>
           ],
         ),
       ],
+    );
+  }
+
+  void _passwordListener() {
+    final text = _passwordController.text;
+    final existing = _passwordValidation.status;
+    if (existing == null) return;
+    _passwordValidation.status = existing.copyWith(
+      meetsMaxPasswordLength: existing.satisfiesMaxPasswordLength(text),
+      meetsMinPasswordLength: existing.satisfiesMinPasswordLength(text),
+      meetsDigitsRequirement: existing.satisfiesDigitRequirement(text),
+      meetsLowercaseRequirement: existing.satisfiesLowerCaseRequirement(text),
+      meetsUppercaseRequirement: existing.satisfiesUpperCaseRequirement(text),
     );
   }
 }
