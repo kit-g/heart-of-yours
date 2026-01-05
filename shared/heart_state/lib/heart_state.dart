@@ -9,6 +9,7 @@ export 'src/clear.dart';
 export 'src/config.dart';
 export 'src/exercises.dart';
 export 'src/package.dart';
+export 'src/password.dart';
 export 'src/preferences.dart';
 export 'src/previous.dart';
 export 'src/stats.dart';
