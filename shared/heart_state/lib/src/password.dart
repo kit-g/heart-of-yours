@@ -41,3 +41,9 @@ extension ExtendedPasswordValidationStatus on PasswordValidationStatus {
     return text.contains(RegExp(r'[a-z]'));
   }
 }
+
+class PasswordRequirementsNotMet implements Exception {
+  final PasswordValidationStatus status;
+
+  PasswordRequirementsNotMet({required this.status});
+}

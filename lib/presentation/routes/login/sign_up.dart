@@ -217,6 +217,7 @@ class _SignUpPageState extends State<SignUpPage>
                                     final AsyncSnapshot(:hasData, :hasError, data: available) = snapshot;
                                     bool hasAppleSignIn = _isApple(context) && !hasError && hasData && available!;
                                     return AnimatedSwitcher(
+                                      key: const ValueKey('apple_sign_in'),
                                       duration: const Duration(milliseconds: 100),
                                       child: switch (hasAppleSignIn) {
                                         false => const SizedBox.shrink(),
