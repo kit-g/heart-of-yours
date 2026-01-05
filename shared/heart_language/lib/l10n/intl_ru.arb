@@ -1355,5 +1355,49 @@
     "description": "For duration-based exercises, total accumulated time across all sets in a session or time window. Used to chart consistency and gradual increases for holds or mobility work.",
     "type": "text",
     "placeholders": {}
+  },
+  "passwordPolicyTitle": "Давайте создадим пароль, который качает:",
+  "@passwordPolicyTitle": {
+    "description": "Title for password requirements section shown during sign-up. Sets a friendly, motivational tone for the password creation rules that follow.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "passwordPolicyMinLength": "минимум {minLength} символов",
+  "@passwordPolicyMinLength": {
+    "description": "Password requirement: minimum character count. Displayed as a bullet point in the password policy list to inform users of the minimum length constraint.",
+    "type": "text",
+    "placeholders": {
+      "minLength": {
+        "type": "int"
+      }
+    }
+  },
+  "passwordPolicyMaxLength": "не больше {maxLength} (мы верим в границы)",
+  "@passwordPolicyMaxLength": {
+    "description": "Password requirement: maximum character count. Displayed as a bullet point in the password policy list with a playful note about reasonable boundaries.",
+    "type": "text",
+    "placeholders": {
+      "maxLength": {
+        "type": "int"
+      }
+    }
+  },
+  "passwordPolicyUpperCase": "одна заглавная буква",
+  "@passwordPolicyUpperCase": {
+    "description": "Password requirement: must contain at least one uppercase letter (A-Z). Shown as a validation rule in the password policy checklist.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "passwordPolicyLowerCase": "одна строчная буква",
+  "@passwordPolicyLowerCase": {
+    "description": "Password requirement: must contain at least one lowercase letter (a-z). Shown as a validation rule in the password policy checklist.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "passwordPolicyDigit": "одна цифра где-нибудь там",
+  "@passwordPolicyDigit": {
+    "description": "Password requirement: must contain at least one numeric digit (0-9). Displayed as a validation rule in the password policy checklist with casual phrasing.",
+    "type": "text",
+    "placeholders": {}
   }
 }

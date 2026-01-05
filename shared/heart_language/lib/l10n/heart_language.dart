@@ -1417,6 +1417,42 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Total time under tension'**
   String get totalTimeUnderTension;
+
+  /// Title for password requirements section shown during sign-up. Sets a friendly, motivational tone for the password creation rules that follow.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s make a password that lifts:'**
+  String get passwordPolicyTitle;
+
+  /// Password requirement: minimum character count. Displayed as a bullet point in the password policy list to inform users of the minimum length constraint.
+  ///
+  /// In en, this message translates to:
+  /// **'at least {minLength} characters'**
+  String passwordPolicyMinLength(int minLength);
+
+  /// Password requirement: maximum character count. Displayed as a bullet point in the password policy list with a playful note about reasonable boundaries.
+  ///
+  /// In en, this message translates to:
+  /// **'no more than {maxLength} (we believe in limits)'**
+  String passwordPolicyMaxLength(int maxLength);
+
+  /// Password requirement: must contain at least one uppercase letter (A-Z). Shown as a validation rule in the password policy checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'one uppercase letter'**
+  String get passwordPolicyUpperCase;
+
+  /// Password requirement: must contain at least one lowercase letter (a-z). Shown as a validation rule in the password policy checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'one lowercase letter'**
+  String get passwordPolicyLowerCase;
+
+  /// Password requirement: must contain at least one numeric digit (0-9). Displayed as a validation rule in the password policy checklist with casual phrasing.
+  ///
+  /// In en, this message translates to:
+  /// **'one number somewhere in there'**
+  String get passwordPolicyDigit;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
