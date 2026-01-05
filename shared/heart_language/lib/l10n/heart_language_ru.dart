@@ -715,4 +715,26 @@ class LRu extends L {
 
   @override
   String get totalTimeUnderTension => 'Общее время под нагрузкой';
+
+  @override
+  String get passwordPolicyTitle => 'Давайте создадим пароль, который качает:';
+
+  @override
+  String passwordPolicyMinLength(int minLength) {
+    return 'минимум $minLength символов';
+  }
+
+  @override
+  String passwordPolicyMaxLength(int maxLength) {
+    return 'не больше $maxLength (мы верим в границы)';
+  }
+
+  @override
+  String get passwordPolicyUpperCase => 'одна заглавная буква';
+
+  @override
+  String get passwordPolicyLowerCase => 'одна строчная буква';
+
+  @override
+  String get passwordPolicyDigit => 'одна цифра где-нибудь там';
 }

@@ -715,6 +715,28 @@ class LEn extends L {
 
   @override
   String get totalTimeUnderTension => 'Total time under tension';
+
+  @override
+  String get passwordPolicyTitle => 'Let\'s make a password that lifts:';
+
+  @override
+  String passwordPolicyMinLength(int minLength) {
+    return 'at least $minLength characters';
+  }
+
+  @override
+  String passwordPolicyMaxLength(int maxLength) {
+    return 'no more than $maxLength (we believe in limits)';
+  }
+
+  @override
+  String get passwordPolicyUpperCase => 'one uppercase letter';
+
+  @override
+  String get passwordPolicyLowerCase => 'one lowercase letter';
+
+  @override
+  String get passwordPolicyDigit => 'one number somewhere in there';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1428,4 +1450,26 @@ class LEnCa extends LEn {
 
   @override
   String get totalTimeUnderTension => 'Total time under tension';
+
+  @override
+  String get passwordPolicyTitle => 'Let\'s make a password that lifts:';
+
+  @override
+  String passwordPolicyMinLength(int minLength) {
+    return 'at least $minLength characters';
+  }
+
+  @override
+  String passwordPolicyMaxLength(int maxLength) {
+    return 'no more than $maxLength (we believe in limits)';
+  }
+
+  @override
+  String get passwordPolicyUpperCase => 'one uppercase letter';
+
+  @override
+  String get passwordPolicyLowerCase => 'one lowercase letter';
+
+  @override
+  String get passwordPolicyDigit => 'one number somewhere in there';
 }
