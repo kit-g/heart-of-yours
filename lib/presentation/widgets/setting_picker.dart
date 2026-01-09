@@ -53,19 +53,22 @@ class _Switcher<T extends Object> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (Theme.of(context).platform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
+    final ThemeData(:colorScheme, :platform) = Theme.of(context);
+    switch (platform) {
+      case .iOS:
+      case .macOS:
         return CupertinoSlidingSegmentedControl<T>(
           groupValue: value,
           children: children,
           onValueChanged: onValueChanged,
+          thumbColor: colorScheme.surface,
+          backgroundColor: colorScheme.surfaceContainerHighest,
         );
 
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.linux:
-      case TargetPlatform.windows:
+      case .android:
+      case .fuchsia:
+      case .linux:
+      case .windows:
         return ToggleButtons(
           isSelected: [
             for (final key in children.keys) key == value,
