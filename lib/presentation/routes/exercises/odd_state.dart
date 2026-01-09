@@ -14,20 +14,20 @@ class _OddState extends StatelessWidget {
     final ThemeData(:textTheme) = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.all(32.0),
+      padding: const .all(32.0),
       child: Column(
         spacing: 32,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: .center,
         children: [
           Text(
             title,
             style: textTheme.titleLarge,
-            textAlign: TextAlign.center,
+            textAlign: .center,
           ),
           Text(
             body,
             style: textTheme.bodyLarge,
-            textAlign: TextAlign.center,
+            textAlign: .center,
           ),
         ],
       ),

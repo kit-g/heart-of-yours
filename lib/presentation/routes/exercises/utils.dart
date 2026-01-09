@@ -15,10 +15,10 @@ extension on Exercise {
 
 String _copy(BuildContext context, _ExerciseSection section) {
   return switch (section) {
-    _ExerciseSection.about => L.of(context).about,
-    _ExerciseSection.history => L.of(context).history,
-    _ExerciseSection.charts => L.of(context).charts,
-    _ExerciseSection.records => L.of(context).records,
+    .about => L.of(context).about,
+    .history => L.of(context).history,
+    .charts => L.of(context).charts,
+    .records => L.of(context).records,
   };
 }
 
@@ -51,19 +51,19 @@ class _Page extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 16.0, right: 16, top: 16),
       child: switch (section) {
-        _ExerciseSection.about => _About(exercise: exercise),
-        _ExerciseSection.charts => _Charts(
+        .about => _About(exercise: exercise),
+        .charts => _Charts(
           exercise: exercise,
           weightHistoryLookup: Exercises.of(context).getWeightHistory,
           repsHistoryLookup: Exercises.of(context).getRepsHistory,
           distanceHistoryLookup: Exercises.of(context).getDistanceHistory,
           durationHistoryLookup: Exercises.of(context).getDurationHistory,
         ),
-        _ExerciseSection.records => _Records(
+        .records => _Records(
           exercise: exercise,
           recordsLookup: Exercises.of(context).getExerciseRecords,
         ),
-        _ExerciseSection.history => _History(
+        .history => _History(
           exercise: exercise,
           historyLookup: (exercise, {pageSize, anchor}) {
             return Exercises.of(context).getExerciseHistory(exercise, pageSize: pageSize, anchor: anchor);
@@ -75,9 +75,7 @@ class _Page extends StatelessWidget {
   }
 }
 
-const _shape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.all(Radius.circular(8)),
-);
+const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));
 
 extension on Duration {
   String formatted() {
@@ -155,11 +153,11 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
     context,
     title: Text(
       archiveConfirmTitle(exercise.name),
-      textAlign: TextAlign.center,
+      textAlign: .center,
     ),
     content: Text(
       archiveConfirmBody,
-      textAlign: TextAlign.center,
+      textAlign: .center,
     ),
     icon: Icon(
       Icons.error_outline_rounded,
