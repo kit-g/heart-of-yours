@@ -37,6 +37,8 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData(:colorScheme) = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: true,
@@ -63,6 +65,8 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
                     },
                   ),
                 ),
+                thumbColor: colorScheme.surface,
+                backgroundColor: colorScheme.surfaceContainerHighest,
                 groupValue: section,
                 onValueChanged: (section) {
                   _section.value = section;
