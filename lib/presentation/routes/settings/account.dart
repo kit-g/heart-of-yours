@@ -200,6 +200,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                           autocorrect: false,
                           focusNode: _nameFocusNode,
                           controller: _nameController,
+                          selectionControls: context.platformSpecificSelectionControls(),
                           onSubmitted: (_) {
                             buzz();
                             if (shouldSave) {
@@ -346,7 +347,8 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               controller: _passwordController,
               obscureText: hide,
               decoration: InputDecoration(hintText: yourPassword),
-              textAlign: TextAlign.center,
+              textAlign: .center,
+              selectionControls: context.platformSpecificSelectionControls(),
             );
           },
         ),

@@ -18,6 +18,7 @@ import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/logo.dart';
+import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_language/heart_language.dart';

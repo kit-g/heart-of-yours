@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:heart/presentation/widgets/selection_controls.dart';
 
 class AppBarTextField extends StatelessWidget {
   final String hint;
@@ -28,6 +29,7 @@ class AppBarTextField extends StatelessWidget {
           builder: (_, _) {
             final needsSuffix = value.text.isNotEmpty && focusNode.hasFocus;
             return TextField(
+              selectionControls: context.platformSpecificSelectionControls(),
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: hintStyle,

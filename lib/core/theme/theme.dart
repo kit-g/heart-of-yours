@@ -101,6 +101,11 @@ ThemeData theme(ColorScheme colorScheme) {
     navigationRailTheme: const NavigationRailThemeData(
       indicatorShape: CircleBorder(),
     ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: colorScheme.primary,
+      selectionColor: colorScheme.primary.withValues(alpha: 0.3),
+      selectionHandleColor: colorScheme.primary,
+    ),
   );
 }
 
