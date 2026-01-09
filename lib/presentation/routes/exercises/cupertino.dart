@@ -44,11 +44,11 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
         leading: widget.leading,
         actions: [
           if (widget.allowOptions)
-          if (widget.exercise.isMine)
-            IconButton(
-              onPressed: () => _onExerciseMenu(context, widget.exercise),
-              icon: const Icon(Icons.more_horiz_rounded),
-            ),
+            if (widget.exercise.isMine)
+              IconButton(
+                onPressed: () => _onExerciseMenu(context, widget.exercise),
+                icon: const Icon(Icons.more_horiz_rounded),
+              ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
