@@ -74,6 +74,7 @@ class _TextFieldButton extends StatelessWidget {
                           ),
                         ),
                         child: TextField(
+                          selectionControls: context.platformSpecificSelectionControls(),
                           textInputAction: TextInputAction.done,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           controller: controller,
