@@ -51,10 +51,10 @@ class _RecoveryPageState extends State<RecoveryPage>
         leading: switch (widget.isWideScreen) {
           false => null,
           true => BackButton(
-              onPressed: () {
-                widget.onLinkSent(_emailController.text.trim());
-              },
-            ),
+            onPressed: () {
+              widget.onLinkSent(_emailController.text.trim());
+            },
+          ),
         },
       ),
       body: Padding(
@@ -81,6 +81,7 @@ class _RecoveryPageState extends State<RecoveryPage>
                   Form(
                     key: _formKey,
                     child: TextFormField(
+                      selectionControls: context.platformSpecificSelectionControls(),
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(

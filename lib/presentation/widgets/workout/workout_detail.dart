@@ -22,6 +22,7 @@ import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
+import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -666,6 +667,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(18),
                             ],
+                            selectionControls: context.platformSpecificSelectionControls(),
                             focusNode: _workoutNameFocusNode,
                             textCapitalization: TextCapitalization.words,
                             textAlign: TextAlign.center,

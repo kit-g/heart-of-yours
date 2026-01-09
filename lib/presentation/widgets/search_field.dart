@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:heart/presentation/widgets/selection_controls.dart';
 
 class SearchField extends StatelessWidget {
   final FocusNode focusNode;
@@ -33,12 +34,13 @@ class SearchField extends StatelessWidget {
             ),
             suffixIcon: switch (focusNode.hasFocus) {
               true => GestureDetector(
-                  onTap: onClear ?? _onClear,
-                  child: const Icon(Icons.close_rounded),
-                ),
+                onTap: onClear ?? _onClear,
+                child: const Icon(Icons.close_rounded),
+              ),
               false => null,
             },
           ),
+          selectionControls: context.platformSpecificSelectionControls(),
         );
       },
     );
