@@ -5,19 +5,14 @@ import 'package:flutter/material.dart';
 
 // Read off from the output on iOS 12. This color does not vary with the
 // application's theme color.
-const double _kSelectionHandleOverlap = 1.5;
+const _kSelectionHandleOverlap = 1.5;
 // Extracted from https://developer.apple.com/design/resources/.
-const double _kSelectionHandleRadius = 6;
+const _kSelectionHandleRadius = 6.0;
 
 /// As per https://github.com/flutter/flutter/issues/74890#issuecomment-1874304044
 class CustomColorCursorSelectionHandle extends CupertinoTextSelectionControls {
   @override
-  Widget buildHandle(
-    BuildContext context,
-    TextSelectionHandleType type,
-    double textLineHeight, [
-    VoidCallback? onTap,
-  ]) {
+  Widget buildHandle(BuildContext context, TextSelectionHandleType type, double textLineHeight, [VoidCallback? onTap]) {
     // iOS selection handles do not respond to taps.
     final customPaint = CustomPaint(
       painter: _TextSelectionHandlePainter(
@@ -62,20 +57,20 @@ class _TextSelectionHandlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const double halfStrokeWidth = 1.0;
-    final Paint paint = Paint()..color = color;
-    final Rect circle = Rect.fromCircle(
+    const halfStrokeWidth = 1.0;
+    final paint = Paint()..color = color;
+    final circle = Rect.fromCircle(
       center: const Offset(_kSelectionHandleRadius, _kSelectionHandleRadius),
       radius: _kSelectionHandleRadius,
     );
-    final Rect line = Rect.fromPoints(
+    final line = Rect.fromPoints(
       const Offset(
         _kSelectionHandleRadius - halfStrokeWidth,
         2 * _kSelectionHandleRadius - _kSelectionHandleOverlap,
       ),
       Offset(_kSelectionHandleRadius + halfStrokeWidth, size.height),
     );
-    final Path path = Path()
+    final path = Path()
       ..addOval(circle)
       ..addRect(line);
     canvas.drawPath(path, paint);
