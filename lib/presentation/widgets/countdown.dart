@@ -11,6 +11,7 @@ Future<void> showCountdownDialog(
   BuildContext context,
   int totalDuration, {
   VoidCallback? onCountdown,
+  required final void Function(DateTime) scheduleNotification,
 }) {
   return showAdaptiveDialog(
     barrierDismissible: true,
@@ -26,6 +27,7 @@ Future<void> showCountdownDialog(
             Countdown(
               total: totalDuration,
               onCountdown: onCountdown,
+              scheduleNotification: scheduleNotification,
             ),
           ],
         ),
@@ -37,11 +39,13 @@ Future<void> showCountdownDialog(
 class Countdown extends StatefulWidget {
   final int total;
   final VoidCallback? onCountdown;
+  final void Function(DateTime) scheduleNotification;
 
   const Countdown({
     super.key,
     required this.total,
     this.onCountdown,
+    required this.scheduleNotification,
   });
 
   @override
@@ -109,27 +113,27 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
                   duration: const Duration(milliseconds: 200),
                   child: switch (alarms.remainsInActiveExercise) {
                     ValueNotifier<int> seconds => ValueListenableBuilder<int>(
-                        valueListenable: seconds,
-                        builder: (_, remaining, _) {
-                          final progress = remaining / total;
-                          return CustomPaint(
-                            size: const Size(200, 200),
-                            painter: CircularTimerPainter(
-                              progress: progress,
-                              strokeColor: colorScheme.primary,
-                              backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
-                            ),
-                          );
-                        },
-                      ),
+                      valueListenable: seconds,
+                      builder: (_, remaining, _) {
+                        final progress = remaining / total;
+                        return CustomPaint(
+                          size: const Size(200, 200),
+                          painter: CircularTimerPainter(
+                            progress: progress,
+                            strokeColor: colorScheme.primary,
+                            backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                          ),
+                        );
+                      },
+                    ),
                     null => CustomPaint(
-                        size: const Size(200, 200),
-                        painter: CircularTimerPainter(
-                          progress: 0,
-                          strokeColor: colorScheme.primary,
-                          backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
-                        ),
+                      size: const Size(200, 200),
+                      painter: CircularTimerPainter(
+                        progress: 0,
+                        strokeColor: colorScheme.primary,
+                        backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
                       ),
+                    ),
                   },
                 );
               },
@@ -141,18 +145,18 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
                   duration: const Duration(milliseconds: 200),
                   child: switch (alarms.remainsInActiveExercise) {
                     ValueNotifier<int> seconds => ValueListenableBuilder<int>(
-                        valueListenable: seconds,
-                        builder: (_, remaining, child) {
-                          return Text(
-                            _format(remaining),
-                            style: textTheme.headlineMedium,
-                          );
-                        },
-                      ),
+                      valueListenable: seconds,
+                      builder: (_, remaining, _) {
+                        return Text(
+                          _format(remaining),
+                          style: textTheme.headlineMedium,
+                        );
+                      },
+                    ),
                     null => Text(
-                        _format(0),
-                        style: textTheme.headlineMedium,
-                      ),
+                      _format(0),
+                      style: textTheme.headlineMedium,
+                    ),
                   },
                 ),
                 ValueListenableBuilder<int>(
@@ -178,7 +182,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
                 child: PrimaryButton.wide(
                   backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
                   onPressed: () {
-                    alarms.adjustActiveExerciseTime(-10);
+                    alarms.adjustActiveExerciseTime(-10, rescheduleNotification: widget.scheduleNotification);
                     _total.value = math.max(_total.value - 10, 0);
                   },
                   child: Center(
@@ -190,7 +194,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
                 child: PrimaryButton.wide(
                   backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
                   onPressed: () {
-                    alarms.adjustActiveExerciseTime(10);
+                    alarms.adjustActiveExerciseTime(10, rescheduleNotification: widget.scheduleNotification);
                     _total.value += 10;
                   },
                   child: Center(
@@ -227,7 +231,11 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
     _total.value = math.max(widget.total, alarms.activeExerciseTotal?.toInt() ?? 0);
 
     if (alarms.remainsInActiveExercise == null) {
-      alarms.startActiveExerciseTimer(widget.total, onComplete: widget.onCountdown);
+      alarms.startActiveExerciseTimer(
+        widget.total,
+        onComplete: widget.onCountdown,
+        scheduleNotification: widget.scheduleNotification,
+      );
     }
     alarms.remainsInActiveExercise?.addListener(_tickerListener);
   }

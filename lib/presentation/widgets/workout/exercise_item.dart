@@ -114,7 +114,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                                               _selectRestTime(context, initialValue: timer);
                                             // active countdown, show it
                                             case (ValueNotifier<int> remains, _):
-                                              showCountdownDialog(context, remains.value);
+                                              showCountdownDialog(
+                                                context,
+                                                remains.value,
+                                                scheduleNotification: (_) {},
+                                              );
                                           }
                                         },
                                       ),

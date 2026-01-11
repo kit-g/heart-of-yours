@@ -469,25 +469,23 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     final timer = timers[exercise.exercise.name];
 
     if (timer == null) return;
-    return showCountdownDialog(
-      context,
-      timer,
-      onCountdown: () => _onCountdown(context),
-    );
+
+    return showCountdownDialog(context, timer, scheduleNotification: _scheduleNotification);
   }
 
-  Future<void> _onCountdown(BuildContext context) {
+  Future<void> _scheduleNotification(DateTime when) {
     final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :lb) = l;
     final body = switch (workouts.nextIncomplete?.$2) {
       ExerciseSet(:double weight, :int reps) => weightedSetRepresentation(lb(weight.toInt()), reps),
       _ => null,
     };
     final nextExercise = workouts.nextIncomplete?.$1 ?? exercise;
-    return showExerciseNotification(
-      exerciseId: nextExercise.id,
+    return scheduleExerciseNotification(
+      nextExercise.id,
+      when,
       title: restComplete,
-      subtitle: restCompleteBody(nextExercise.exercise.name),
       body: body,
+      subtitle: restCompleteBody(nextExercise.exercise.name),
     );
   }
 
