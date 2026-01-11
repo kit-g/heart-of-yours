@@ -103,7 +103,7 @@ class _TextFieldButton extends StatelessWidget {
                             FocusScope.of(context).unfocus();
                           },
                           onEditingComplete: () {},
-                          onTap: () => _selectAllText(controller),
+                          onTap: controller.selectAllText,
                           onTapOutside: (_) => focusNode.unfocus(),
                         ),
                       ),

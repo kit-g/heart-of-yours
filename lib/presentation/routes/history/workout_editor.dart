@@ -52,7 +52,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
   Widget build(BuildContext context) {
     final ThemeData(:scaffoldBackgroundColor, :colorScheme, :textTheme, :platform) = Theme.of(context);
     final l = L.of(context);
-    final L(:editWorkout, :save, :workoutName) = l;
+    final L(:editWorkout, :save, :workoutName, :defaultWorkoutName) = l;
 
     if ((_controller.text.isEmpty, workout.name) case (true, String name) when name.isNotEmpty) {
       _controller.text = name;
@@ -123,6 +123,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                                 context,
                                 workout,
                                 onFinish: () {
+                                  workout.resolveName(defaultWorkoutName());
                                   Workouts.of(context).saveWorkout(workout);
                                   Navigator.of(context).pop();
                                 },

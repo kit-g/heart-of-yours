@@ -14,11 +14,13 @@ final _integerFormatters = <TextInputFormatter>[
   LengthLimitingTextInputFormatter(4),
 ];
 
-void _selectAllText(TextEditingController controller) {
-  controller.selection = TextSelection(
-    baseOffset: 0,
-    extentOffset: controller.value.text.length,
-  );
+extension on TextEditingController {
+  void selectAllText() {
+    selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: value.text.length,
+    );
+  }
 }
 
 enum _ExerciseOption { inspectExercise, autoRestTimer, remove }
@@ -78,7 +80,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
       ),
       content: Text(
         finishWorkoutBody,
-        textAlign: TextAlign.center,
+        textAlign: .center,
       ),
       actions: actions,
     );
@@ -95,7 +97,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
       ),
       content: Text(
         finishWorkoutWarningBody,
-        textAlign: TextAlign.center,
+        textAlign: .center,
       ),
       actions: actions,
     );
@@ -120,7 +122,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
     titleTextStyle: textTheme.titleMedium,
     content: Text(
       cancelWorkoutBody,
-      textAlign: TextAlign.center,
+      textAlign: .center,
     ),
     icon: Icon(
       Icons.error_outline_rounded,
@@ -162,6 +164,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
 }
 
 Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
+  workouts.activeWorkout?.resolveName(L.of(context).defaultWorkoutName());
   context.goToWorkoutDone(workouts.activeWorkout?.id);
   cancelAllNotifications();
   return workouts.finishActiveWorkout();
@@ -217,7 +220,7 @@ class TimeFormatter extends TextInputFormatter {
     // formatted time with the correct cursor position
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: .collapsed(offset: formatted.length),
     );
   }
 }
