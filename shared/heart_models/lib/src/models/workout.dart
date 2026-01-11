@@ -115,6 +115,8 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   Workout copy({bool sameId});
 
   void completeAllSets();
+
+  void resolveName(String defaultValue);
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
@@ -496,6 +498,13 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       for (var set in each) {
         set.isCompleted = true;
       }
+    }
+  }
+
+  @override
+  void resolveName(String defaultValue) {
+    if (name?.isEmpty ?? true) {
+      name = defaultValue;
     }
   }
 }

@@ -137,7 +137,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
           },
         },
         floatingActionButton: WorkoutTimerFloatingButton(onPressed: widget.onOpenActiveWorkout),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButtonLocation: .endFloat,
       ),
     );
   }
@@ -160,14 +160,14 @@ class _EmptyState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: .min,
+          mainAxisAlignment: .center,
           spacing: 12,
           children: [
             Text(
               emptyHistoryTitle,
               style: textTheme.headlineSmall,
-              textAlign: TextAlign.center,
+              textAlign: .center,
             ),
             Text(
               emptyHistoryBody,

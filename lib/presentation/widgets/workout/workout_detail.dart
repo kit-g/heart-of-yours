@@ -758,6 +758,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       .editImage => hasImage ? removePhoto : addPhoto,
       .editName => () {
         _workoutNameFocusNode.requestFocus();
+        _workoutNameController.selectAllText();
       },
     };
   }
