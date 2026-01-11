@@ -293,16 +293,24 @@ class LEn extends L {
   String get removeExercise => 'Remove exercise';
 
   @override
-  String get morningWorkout => 'Morning Workout';
+  String morningWorkout(String when) {
+    return '$when, Morning';
+  }
 
   @override
-  String get eveningWorkout => 'Evening Workout';
+  String eveningWorkout(String when) {
+    return '$when, Evening';
+  }
 
   @override
-  String get nightWorkout => 'Night Workout';
+  String nightWorkout(String when) {
+    return '$when, Night';
+  }
 
   @override
-  String get afternoonWorkout => 'Afternoon Workout';
+  String afternoonWorkout(String when) {
+    return '$when, Afternoon';
+  }
 
   @override
   String get emptyHistoryTitle => 'Your completed workouts will be here';
@@ -1028,16 +1036,24 @@ class LEnCa extends LEn {
   String get removeExercise => 'Remove exercise';
 
   @override
-  String get morningWorkout => 'Morning Workout';
+  String morningWorkout(String when) {
+    return '$when, Morning';
+  }
 
   @override
-  String get eveningWorkout => 'Evening Workout';
+  String eveningWorkout(String when) {
+    return '$when, Evening';
+  }
 
   @override
-  String get nightWorkout => 'Night Workout';
+  String nightWorkout(String when) {
+    return '$when, Night';
+  }
 
   @override
-  String get afternoonWorkout => 'Afternoon Workout';
+  String afternoonWorkout(String when) {
+    return '$when, Afternoon';
+  }
 
   @override
   String get emptyHistoryTitle => 'Your completed workouts will be here';

@@ -623,26 +623,26 @@ abstract class L {
   /// Default workout name
   ///
   /// In en, this message translates to:
-  /// **'Morning Workout'**
-  String get morningWorkout;
+  /// **'{when}, Morning'**
+  String morningWorkout(String when);
 
   /// Default workout name
   ///
   /// In en, this message translates to:
-  /// **'Evening Workout'**
-  String get eveningWorkout;
+  /// **'{when}, Evening'**
+  String eveningWorkout(String when);
 
   /// Default workout name
   ///
   /// In en, this message translates to:
-  /// **'Night Workout'**
-  String get nightWorkout;
+  /// **'{when}, Night'**
+  String nightWorkout(String when);
 
   /// Default workout name
   ///
   /// In en, this message translates to:
-  /// **'Afternoon Workout'**
-  String get afternoonWorkout;
+  /// **'{when}, Afternoon'**
+  String afternoonWorkout(String when);
 
   /// emptyHistoryTitle
   ///
