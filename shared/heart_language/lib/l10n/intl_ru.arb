@@ -534,29 +534,45 @@
     "type": "text",
     "placeholders": {}
   },
-  "morningWorkout": "Утренняя тренировка",
+  "morningWorkout": "{when}, утро",
   "@morningWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
-  "eveningWorkout": "Вечерняя тренировка",
+  "eveningWorkout": "{when}, вечер",
   "@eveningWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
-  "nightWorkout": "Ночная тренировка",
+  "nightWorkout": "{when}, ночь",
   "@nightWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
-  "afternoonWorkout": "Дневная тренировка",
+  "afternoonWorkout": "{when}, день",
   "@afternoonWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
   "emptyHistoryTitle": "Здесь будут ваши завершенные тренировки",
   "@emptyHistoryTitle": {

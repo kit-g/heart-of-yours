@@ -102,10 +102,10 @@ metric,Measurement unit setting,Metric,Metric,Метрическая
 restTimer,"Exercise set option, ""Set the rest timer for this exercise""",Rest timer,Rest timer,Таймер отдыха
 cancelTimer,Button text,Cancel timer,Cancel timer,Отменить таймер
 removeExercise,"Exercise set option, ""Remove this exercise from workout""",Remove exercise,Remove exercise,Удалить упражнение
-morningWorkout,Default workout name,Morning Workout,Morning Workout,Утренняя тренировка
-eveningWorkout,Default workout name,Evening Workout,Evening Workout,Вечерняя тренировка
-nightWorkout,Default workout name,Night Workout,Night Workout,Ночная тренировка
-afternoonWorkout,Default workout name,Afternoon Workout,Afternoon Workout,Дневная тренировка
+morningWorkout,Default workout name,"{when}, Morning","{when}, Morning","{when}, утро"
+eveningWorkout,Default workout name,"{when}, Evening","{when}, Evening","{when}, вечер"
+nightWorkout,Default workout name,"{when}, Night","{when}, Night","{when}, ночь"
+afternoonWorkout,Default workout name,"{when}, Afternoon","{when}, Afternoon","{when}, день"
 emptyHistoryTitle,emptyHistoryTitle,Your completed workouts will be here,Your completed workouts will be here,Здесь будут ваши завершенные тренировки
 emptyHistoryBody,emptyHistoryBody,Go get them done!,Go get them done!,Вперед за тренировками!
 customThemeColorSetting,Setting item name,Custom theme color,Custom theme colour,Пользовательский цвет темы

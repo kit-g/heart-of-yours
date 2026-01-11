@@ -534,29 +534,45 @@
     "type": "text",
     "placeholders": {}
   },
-  "morningWorkout": "Morning Workout",
+  "morningWorkout": "{when}, Morning",
   "@morningWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
-  "eveningWorkout": "Evening Workout",
+  "eveningWorkout": "{when}, Evening",
   "@eveningWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
-  "nightWorkout": "Night Workout",
+  "nightWorkout": "{when}, Night",
   "@nightWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
-  "afternoonWorkout": "Afternoon Workout",
+  "afternoonWorkout": "{when}, Afternoon",
   "@afternoonWorkout": {
     "description": "Default workout name",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
   "emptyHistoryTitle": "Your completed workouts will be here",
   "@emptyHistoryTitle": {

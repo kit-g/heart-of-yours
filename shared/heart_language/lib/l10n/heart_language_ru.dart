@@ -293,16 +293,24 @@ class LRu extends L {
   String get removeExercise => 'Удалить упражнение';
 
   @override
-  String get morningWorkout => 'Утренняя тренировка';
+  String morningWorkout(String when) {
+    return '$when, утро';
+  }
 
   @override
-  String get eveningWorkout => 'Вечерняя тренировка';
+  String eveningWorkout(String when) {
+    return '$when, вечер';
+  }
 
   @override
-  String get nightWorkout => 'Ночная тренировка';
+  String nightWorkout(String when) {
+    return '$when, ночь';
+  }
 
   @override
-  String get afternoonWorkout => 'Дневная тренировка';
+  String afternoonWorkout(String when) {
+    return '$when, день';
+  }
 
   @override
   String get emptyHistoryTitle => 'Здесь будут ваши завершенные тренировки';
