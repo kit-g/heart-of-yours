@@ -252,18 +252,23 @@ Future<void> _initApp(
         // exercises with a timer emit a local notification
         // when tapped on, it will:
         // - redirect the user to the workout page
-        final HeartRouter(:goToActiveWorkout, :config) = HeartRouter.of(context);
+        final HeartRouter(:goToActiveWorkout, :config, :goToWorkouts) = HeartRouter.of(context);
 
-        if (config.state.path != '/activeWorkout') {
-          goToActiveWorkout();
-          Future.delayed(const Duration(milliseconds: 300)).then(
-            (_) {
-              // - trigger a slight animation highlighting the exercise
-              workouts.pointAt(exerciseId);
-            },
-          );
+        if (Workouts.of(context).activeWorkout != null) {
+          if (config.state.path != '/activeWorkout') {
+            goToActiveWorkout();
+            Future.delayed(const Duration(milliseconds: 300)).then(
+              (_) {
+                // - trigger a slight animation highlighting the exercise
+                workouts.pointAt(exerciseId);
+              },
+            );
+          } else {
+            workouts.pointAt(exerciseId);
+          }
         } else {
-          workouts.pointAt(exerciseId);
+          // a notification banner might still be there even if the workout was finished or cancelled
+          goToWorkouts();
         }
       },
       onUnknownNotification: reportToSentry,
