@@ -6,9 +6,13 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 class Alarms with ChangeNotifier implements SignOutStateSentry {
-  Alarms({Duration tick = const Duration(seconds: 1)}) : _tick = tick;
-
+  final VoidCallback? cancelRestTimerNotifications;
   final Duration _tick;
+
+  Alarms({
+    Duration tick = const Duration(seconds: 1),
+    this.cancelRestTimerNotifications,
+  }) : _tick = tick;
 
   @override
   void onSignOut() {
@@ -23,13 +27,15 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     return Provider.of<Alarms>(context, listen: true);
   }
 
-  ({Timer timer, ValueNotifier<int> remains, num total})? _activeExercise;
+  ({Timer timer, ValueNotifier<int> remains, num total, DateTime end})? _activeExercise;
 
   Timer? get activeExerciseTimer => _activeExercise?.timer;
 
   ValueNotifier<int>? get remainsInActiveExercise => _activeExercise?.remains;
 
   num? get activeExerciseTotal => _activeExercise?.total;
+
+  static DateTime _now() => DateTime.now();
 
   void _stopActiveExerciseTimer() {
     _activeExercise
@@ -43,16 +49,28 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  void startActiveExerciseTimer(int duration, {VoidCallback? onComplete}) {
+  void startActiveExerciseTimer(
+    int duration, {
+    final void Function(DateTime)? scheduleNotification,
+    VoidCallback? onComplete,
+  }) {
     _stopActiveExerciseTimer();
+    final endTime = _now().add(Duration(seconds: duration));
+    scheduleNotification?.call(endTime);
+
     _activeExercise = (
       remains: ValueNotifier<int>(duration),
       timer: Timer.periodic(
         _tick,
         (timer) {
-          if ((_activeExercise?.remains.value ?? 0) > 0) {
-            _activeExercise?.remains.value--;
+          final currentEnd = _activeExercise?.end;
+          if (currentEnd == null) return;
+
+          final remains = currentEnd.difference(_now()).inMilliseconds;
+          if (remains > 0) {
+            _activeExercise?.remains.value = (remains / _tick.inMilliseconds).ceil();
           } else {
+            _activeExercise?.remains.value = 0;
             if (timer.isActive) {
               onComplete?.call();
             }
@@ -61,17 +79,27 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
         },
       ),
       total: duration,
+      end: endTime,
     );
     notifyListeners();
   }
 
-  void adjustActiveExerciseTime(int adjustment) {
+  void adjustActiveExerciseTime(
+    int adjustment, {
+    final void Function(DateTime)? rescheduleNotification,
+  }) {
     switch (_activeExercise) {
-      case (:Timer timer, :ValueNotifier<int> remains, :num total):
+      case (:Timer timer, :ValueNotifier<int> remains, :num total, :DateTime end):
+        final rescheduled = end.add(Duration(seconds: adjustment));
+
+        rescheduleNotification?.call(rescheduled);
+        final newRemains = rescheduled.difference(_now()).inMilliseconds;
+
         _activeExercise = (
           timer: timer,
-          remains: remains..value = max(0, remains.value + adjustment),
+          remains: remains..value = max(0, (newRemains / 1000).ceil()),
           total: max(0, total + adjustment),
+          end: rescheduled,
         );
         notifyListeners();
     }

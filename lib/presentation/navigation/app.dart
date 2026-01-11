@@ -133,7 +133,7 @@ class HeartApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<Alarms>(
-          create: (_) => Alarms(),
+          create: (_) => Alarms(cancelRestTimerNotifications: cancelNotifications),
         ),
         Provider<Scrolls>(
           create: (_) => Scrolls(),
@@ -304,7 +304,7 @@ Future<void> _initApp(
 
   theme
     ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))
-    ..toMode(prefs.getThemeMode());
+    ..toMode(prefs.themeMode);
 
   if (!isInitialized) {
     init(lastSync: config.exercisesLastSynced).then<void>(
