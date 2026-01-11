@@ -30,13 +30,13 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
         },
         customBorder: _shape,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: .start,
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Row(
                 spacing: 8,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: .spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
@@ -50,7 +50,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
                     style: const ButtonStyle(
                       visualDensity: VisualDensity(vertical: -3, horizontal: -3),
                     ),
-                    padding: EdgeInsets.zero,
+                    padding: .zero,
                     icon: const Icon(Icons.more_horiz),
                     itemBuilder: (_) {
                       return (options ?? _TemplateOption.values).map(
@@ -77,7 +77,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const .symmetric(horizontal: 8.0),
               child: Column(
                 children: [
                   ...template.take(_maxPerCard).map(
@@ -120,9 +120,9 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
 
   void _onSelected(_TemplateOption option) {
     return switch (option) {
-      _TemplateOption.edit => onEdit?.call(template),
-      _TemplateOption.delete => onDelete?.call(template),
-      _TemplateOption.startWorkout => onStartWorkout?.call(template),
+      .edit => onEdit?.call(template),
+      .delete => onDelete?.call(template),
+      .startWorkout => onStartWorkout?.call(template),
     };
   }
 
@@ -130,21 +130,21 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return switch (option) {
-      _TemplateOption.delete => (
-          copy: L.of(context).delete,
-          style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
-          icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
-        ),
-      _TemplateOption.edit => (
-          copy: L.of(context).edit,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.edit_rounded, size: 16),
-        ),
-      _TemplateOption.startWorkout => (
-          copy: L.of(context).startWorkout,
-          style: textTheme.titleSmall,
-          icon: const Icon(Icons.fitness_center_rounded, size: 16),
-        ),
+      .delete => (
+        copy: L.of(context).delete,
+        style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
+        icon: Icon(Icons.delete, size: 16, color: colorScheme.error),
+      ),
+      .edit => (
+        copy: L.of(context).edit,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.edit_rounded, size: 16),
+      ),
+      .startWorkout => (
+        copy: L.of(context).startWorkout,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.fitness_center_rounded, size: 16),
+      ),
     };
   }
 }
@@ -153,6 +153,4 @@ const _maxPerCard = 5;
 
 enum _TemplateOption { edit, startWorkout, delete }
 
-const _shape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.all(Radius.circular(8)),
-);
+const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));

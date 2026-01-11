@@ -88,7 +88,7 @@ class _TemplatesLayout extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: .spaceBetween,
               children: [
                 Text(
                   exampleTemplates,
@@ -113,7 +113,7 @@ class _TemplatesLayout extends StatelessWidget {
                     onStartWorkout: (template) {
                       Workouts.of(context).startWorkout(template: template.toWorkout());
                     },
-                    options: const [_TemplateOption.startWorkout],
+                    options: const [.startWorkout],
                   );
                 },
               ),
@@ -266,9 +266,10 @@ class _TemplatesLayout extends StatelessWidget {
                   style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context, rootNavigator: true).pop();
-                Workouts.of(context).startWorkout(template: template.toWorkout());
+                await Workouts.of(context).startWorkout(template: template.toWorkout());
+                onNewWorkout();
               },
             ),
           ],
