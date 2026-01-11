@@ -203,6 +203,6 @@ Future<void> scheduleExerciseNotification(
   );
 }
 
-Future<void> cancelNotifications() {
+Future<void> cancelAllNotifications() {
   return _plugin.cancelAll();
 }
