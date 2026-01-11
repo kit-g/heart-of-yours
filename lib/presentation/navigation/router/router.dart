@@ -168,4 +168,8 @@ final class HeartRouter {
   Future<void> goToActiveWorkout() {
     return config.push(_activeWorkoutPath);
   }
+
+  void goToWorkouts() {
+    return config.goNamed(_workoutName);
+  }
 }
