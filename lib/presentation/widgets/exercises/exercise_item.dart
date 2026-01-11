@@ -61,32 +61,30 @@ class ExerciseItem extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: switch (selected) {
-                    true => const Align(
-                      alignment: Alignment.centerRight,
-                      child: Icon(Icons.check_circle_rounded),
-                    ),
-                    false => Selector<PreviousExercises, Map<String, dynamic>?>(
-                      selector: (_, provider) => provider.last(exercise.name),
-                      builder: (_, metric, _) {
-                        return switch (metric) {
-                          Map<String, dynamic> m => Align(
-                            alignment: Alignment.centerRight,
-                            child: PreviousSet(
-                              previousValue: m,
-                              prefs: preferences,
-                              exercise: exercise,
-                            ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: switch (selected) {
+                  true => const Align(
+                    alignment: .centerRight,
+                    child: Icon(Icons.check_circle_rounded),
+                  ),
+                  false => Selector<PreviousExercises, Map<String, dynamic>?>(
+                    selector: (_, provider) => provider.last(exercise.name),
+                    builder: (_, metric, _) {
+                      return switch (metric) {
+                        Map<String, dynamic> m => Align(
+                          alignment: .centerRight,
+                          child: PreviousSet(
+                            previousValue: m,
+                            prefs: preferences,
+                            exercise: exercise,
                           ),
-                          null => const SizedBox.shrink(),
-                        };
-                      },
-                    ),
-                  },
-                ),
+                        ),
+                        null => const SizedBox.shrink(),
+                      };
+                    },
+                  ),
+                },
               ),
             ],
           ),
