@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logging/logging.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart';
 
 final _plugin = FlutterLocalNotificationsPlugin();
 final _logger = Logger('Notifications');
@@ -19,6 +21,8 @@ Future<void> initNotifications({
   void Function(String exerciseId)? onExerciseNotification,
   void Function(Map)? onUnknownNotification,
 }) async {
+  tz.initializeTimeZones();
+
   await _createNotificationChannel(platform);
   await requestNotificationPermission(platform);
   await _plugin.initialize(
@@ -49,25 +53,52 @@ Future<void> initNotifications({
 
 Future<bool?> requestNotificationPermission(TargetPlatform platform) async {
   return switch (platform) {
-    TargetPlatform.iOS => _plugin //
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        ),
-    TargetPlatform.android => _plugin //
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission(),
-    TargetPlatform.macOS => _plugin //
-        .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        ),
-    _ => throw UnimplementedError()
+    .iOS =>
+      _plugin //
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ),
+    .android =>
+      _plugin //
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission(),
+    .macOS =>
+      _plugin //
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ),
+    _ => throw UnimplementedError(),
   };
+}
+
+NotificationDetails _details({
+  required String title,
+  String? body,
+  String? subtitle,
+}) {
+  return NotificationDetails(
+    iOS: DarwinNotificationDetails(subtitle: subtitle),
+    android: AndroidNotificationDetails(
+      _defaultChannelId,
+      _defaultChannelName,
+      icon: '@mipmap/ic_launcher',
+      enableVibration: false,
+      playSound: true,
+      styleInformation: switch ((body, subtitle)) {
+        (String b, String s) => BigTextStyleInformation('$s\n$b'),
+        (String b, null) => BigTextStyleInformation(b),
+        (null, String s) => BigTextStyleInformation(s),
+        (null, null) => null,
+      },
+    ),
+    macOS: DarwinNotificationDetails(subtitle: subtitle),
+  );
 }
 
 Future<int> _showNotification({
@@ -77,33 +108,8 @@ Future<int> _showNotification({
   String? subtitle,
   String? payload,
 }) async {
-  return _plugin
-      .show(
-        id,
-        title,
-        body,
-        payload: payload,
-        NotificationDetails(
-          iOS: DarwinNotificationDetails(subtitle: subtitle),
-          android: AndroidNotificationDetails(
-            _defaultChannelId,
-            _defaultChannelName,
-            icon: '@mipmap/ic_launcher',
-            enableVibration: false,
-            playSound: true,
-            styleInformation: switch ((body, subtitle)) {
-              (String b, String s) => BigTextStyleInformation('$s\n$b'),
-              (String b, null) => BigTextStyleInformation(b),
-              (null, String s) => BigTextStyleInformation(s),
-              (null, null) => null,
-            },
-          ),
-          macOS: DarwinNotificationDetails(subtitle: subtitle),
-        ),
-      )
-      .then<int>(
-        (_) => id,
-      );
+  final details = _details(title: title, body: body, subtitle: subtitle);
+  return _plugin.show(id, title, body, details, payload: payload).then<int>((_) => id);
 }
 
 Future<int> showExerciseNotification({
@@ -135,12 +141,12 @@ extension on NotificationResponse {
 
 Future<void> _createNotificationChannel(TargetPlatform platform) async {
   switch (platform) {
-    case TargetPlatform.android:
+    case .android:
       const channel = AndroidNotificationChannel(
         _defaultChannelId,
         _defaultChannelName,
         description: 'This channel is used for important notifications',
-        importance: Importance.defaultImportance,
+        importance: .defaultImportance,
       );
 
       return _plugin
@@ -152,22 +158,51 @@ Future<void> _createNotificationChannel(TargetPlatform platform) async {
 
 Future<bool> hasNotificationsPermission(TargetPlatform platform) async {
   switch (platform) {
-    case TargetPlatform.android:
-      final enabled = await _plugin //
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.areNotificationsEnabled();
+    case .android:
+      final enabled =
+          await _plugin //
+              .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled();
       return enabled ?? false;
-    case TargetPlatform.iOS:
-      final options = await _plugin //
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-          ?.checkPermissions();
+    case .iOS:
+      final options =
+          await _plugin //
+              .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+              ?.checkPermissions();
       return options?.isEnabled ?? false;
-    case TargetPlatform.macOS:
-      final options = await _plugin //
-          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
-          ?.checkPermissions();
+    case .macOS:
+      final options =
+          await _plugin //
+              .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
+              ?.checkPermissions();
       return options?.isEnabled ?? false;
     default:
       return false;
   }
+}
+
+Future<void> scheduleExerciseNotification(
+  String exerciseId,
+  DateTime time, {
+  required String title,
+  String? body,
+  String? subtitle,
+}) async {
+  final delay = time.difference(DateTime.now());
+  if (delay.isNegative) return;
+
+  final details = _details(title: title, body: body, subtitle: subtitle);
+  return _plugin.zonedSchedule(
+    0,
+    title,
+    body,
+    TZDateTime.from(time, local),
+    details,
+    androidScheduleMode: .exactAllowWhileIdle,
+    payload: exerciseId,
+  );
+}
+
+Future<void> cancelNotifications() {
+  return _plugin.cancelAll();
 }

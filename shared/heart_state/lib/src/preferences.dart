@@ -69,7 +69,7 @@ class Preferences with ChangeNotifier {
     };
   }
 
-  String? getThemeMode() {
+  String? get themeMode {
     return _prefs?.getString(_themeMode);
   }
 

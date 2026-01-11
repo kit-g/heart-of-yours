@@ -117,10 +117,10 @@ void main() {
       await sut.init();
 
       await sut.setThemeMode(ThemeMode.dark);
-      expect(sut.getThemeMode(), 'dark');
+      expect(sut.themeMode, 'dark');
 
       await sut.setThemeMode(null);
-      expect(sut.getThemeMode(), isNull);
+      expect(sut.themeMode, isNull);
     });
   });
 

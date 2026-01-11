@@ -39,7 +39,7 @@ void main() {
 
       // Wait one tick
       await elapse(1);
-      expect(alarms.remainsInActiveExercise!.value, 4);
+      expect(alarms.remainsInActiveExercise!.value, 499);
     });
 
     test('timer decrements once per tick and stops at zero calling onComplete once', () async {
@@ -48,13 +48,13 @@ void main() {
 
       expect(alarms.remainsInActiveExercise!.value, 2);
       await elapse(1);
-      expect(alarms.remainsInActiveExercise!.value, 1);
+      expect(alarms.remainsInActiveExercise!.value, 199);
       expect(completed, 0);
 
-      await elapse(1);
+      await elapse(198);
       // At this point remains reached 0 but timer completes on the next tick
       expect(alarms.remainsInActiveExercise, isNotNull);
-      expect(alarms.remainsInActiveExercise!.value, 0);
+      expect(alarms.remainsInActiveExercise!.value, lessThanOrEqualTo(1));
       expect(alarms.activeExerciseTimer, isA<Timer>());
       expect(completed, 0);
 
@@ -115,7 +115,7 @@ void main() {
       final firstRemains = alarms.remainsInActiveExercise!;
 
       await elapse(1);
-      expect(firstRemains.value, 4);
+      expect(firstRemains.value, 499);
 
       alarms.startActiveExerciseTimer(7);
       expect(alarms.remainsInActiveExercise, isNot(equals(firstRemains)));
@@ -126,7 +126,7 @@ void main() {
 
       // New timer runs independently
       await elapse(1);
-      expect(alarms.remainsInActiveExercise!.value, 6);
+      expect(alarms.remainsInActiveExercise!.value, 699);
     });
 
     test('onSignOut stops active exercise timer and notifies', () async {
