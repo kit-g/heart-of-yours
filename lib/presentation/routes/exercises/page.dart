@@ -36,7 +36,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
   Widget build(BuildContext context) {
     final ThemeData(scaffoldBackgroundColor: backgroundColor, :platform) = Theme.of(context);
     final exercises = Exercises.watch(context);
-    final L(:newExercise, exercises: exCopy, :exerciseOptions) = L.of(context);
+    final L(exercises: exCopy, :exerciseOptions) = L.of(context);
     final layout = LayoutProvider.of(context);
     final listview = ExercisePicker(
       appBar: SliverAppBar(
@@ -57,19 +57,11 @@ class _ExercisesPageState extends State<ExercisesPage> {
               },
               icon: Icon(
                 switch (platform) {
-                  .iOS => Icons.more_horiz_rounded,
-                  .macOS => Icons.more_horiz_rounded,
+                  .iOS || .macOS => Icons.more_horiz_rounded,
                   _ => Icons.more_vert_rounded,
                 },
               ),
             ),
-          IconButton(
-            tooltip: newExercise,
-            onPressed: () {
-              showNewExerciseDialog(context);
-            },
-            icon: const Icon(Icons.add_circle_outline_rounded),
-          ),
         ],
       ),
       exercises: exercises,

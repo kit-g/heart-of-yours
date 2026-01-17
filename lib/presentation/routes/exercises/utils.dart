@@ -210,6 +210,14 @@ Future<void> _onExerciseOptions(BuildContext context, {required VoidCallback onS
     context,
     [
       BottomMenuAction(
+        title: L.of(context).newExercise,
+        icon: const Icon(Icons.add_circle_outline_rounded),
+        onPressed: () {
+          Navigator.of(context).pop();
+          showNewExerciseDialog(context);
+        },
+      ),
+      BottomMenuAction(
         title: L.of(context).showArchived,
         icon: const Icon(Icons.archive_outlined),
         onPressed: () {
