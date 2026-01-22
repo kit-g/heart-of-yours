@@ -364,7 +364,6 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       'name': name,
       'start': start.toIso8601String(),
       'end': end?.toIso8601String(),
-      'image': ?remoteImage,
       'exercises': [
         for (var each in l)
           if (each.isNotEmpty)
