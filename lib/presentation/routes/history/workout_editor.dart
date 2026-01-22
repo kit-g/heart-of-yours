@@ -92,7 +92,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                         (option) {
                           return PopupMenuItem<_WorkoutEditOption>(
                             value: option,
-                            onTap: _workoutOptionCallback(context, option, hasImage, workout.id),
+                            onTap: _workoutOptionCallback(context, option, hasImage, workout),
                             child: Row(
                               spacing: 6,
                               children: [
@@ -317,7 +317,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     BuildContext context,
     _WorkoutEditOption option,
     bool hasImage,
-    String workoutId,
+    Workout workout,
   ) {
     final L(:capturePhoto, :chooseFromGallery, :cancel, :cropImage) = L.of(context);
 
@@ -333,7 +333,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               title: capturePhoto,
               onPressed: () {
                 pop();
-                _attachImage(context, () => captureAndCropPhoto(context, cropImage), workoutId);
+                _attachImage(context, () => captureAndCropPhoto(context, cropImage), workout);
               },
               icon: const Icon(Icons.camera_alt_rounded),
             ),
@@ -341,7 +341,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
             title: chooseFromGallery,
             onPressed: () {
               pop();
-              _attachImage(context, () => pickAndCropGalleryImage(context, cropImage), workoutId);
+              _attachImage(context, () => pickAndCropGalleryImage(context, cropImage), workout);
             },
             icon: const Icon(Icons.photo_library_rounded),
           ),
@@ -355,7 +355,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     }
 
     void removePhoto() {
-      Workouts.of(context).detachImageFromWorkout(workoutId);
+      Workouts.of(context).detachImageFromWorkout(workout);
       _notifier
         ..localImage = null
         ..remoteImage = null;
@@ -369,11 +369,11 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     };
   }
 
-  Future<void> _attachImage(BuildContext context, Future<LocalImage?> Function() getImage, String workoutId) async {
+  Future<void> _attachImage(BuildContext context, Future<LocalImage?> Function() getImage, Workout workout) async {
     final workouts = Workouts.of(context);
     final localImage = await getImage();
     if (localImage != null) {
-      final attached = await workouts.attachImageToWorkout(workoutId, localImage);
+      final attached = await workouts.attachImageToWorkout(workout, localImage);
       if (attached) {
         _notifier.localImage = localImage.$1;
       }

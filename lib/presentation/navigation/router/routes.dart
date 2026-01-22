@@ -145,8 +145,8 @@ RouteBase _historyRoute() {
         path: _historyPath,
         builder: (context, state) {
           return switch (LayoutProvider.of(context)) {
-            LayoutSize.wide => const SizedBox.shrink(), // already rendered by the builder
-            LayoutSize.compact => HistoryPage(
+            .wide => const SizedBox.shrink(), // already rendered by the builder
+            .compact => HistoryPage(
               onNewWorkout: context.goToActiveWorkout,
               onSaveAsTemplate: (workout) {
                 Templates.of(context).workoutToTemplate(workout);
@@ -175,7 +175,7 @@ RouteBase _historyRoute() {
                 final workoutId = state.pathParameters['workoutId']!;
                 final workout = Workouts.of(context).lookup(workoutId);
                 return WorkoutEditor(
-                  copy: workout!.copy(sameId: true)..completeAllSets(),
+                  copy: workout!,
                   onTapImage: context.goToGallery,
                 );
               } catch (e) {
