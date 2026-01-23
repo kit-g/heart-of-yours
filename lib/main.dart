@@ -57,7 +57,7 @@ Future<void> bootstrap({
           config: config,
           hasLocalNotifications: hasLocalNotifications,
           appConfig: appConfig,
-          firebase: firebase,
+          firebase: firebase ?? FirebaseAuth.instance,
         );
       }
 
