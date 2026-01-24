@@ -1,12 +1,11 @@
-const workouts = """
-CREATE TABLE IF NOT EXISTS workouts
+const workouts = """CREATE TABLE IF NOT EXISTS workouts
 (
     id      TEXT NOT NULL PRIMARY KEY,
     start   TEXT NOT NULL,
     "end"   TEXT,
     user_id TEXT NOT NULL,
     name    TEXT,
-    image   TEXT
+    images  TEXT
 );
 """;
 
@@ -153,7 +152,7 @@ SELECT
     _workout.start,
     _workout."end",
     _workout.name,
-    _workout.image,
+    _workout.images,
     (
         SELECT json_group_array(
             json_object(
@@ -198,7 +197,6 @@ WITH
     SELECT workout_exercises.*
     FROM workout_exercises
     INNER JOIN _workout ON _workout.id = workout_exercises.workout_id
-
 )
 , _sets AS (
     SELECT *
@@ -210,7 +208,7 @@ SELECT
     _workout.start,
     _workout."end",
     _workout.name,
-    _workout.image,
+    _workout.images,
     (
         SELECT json_group_array(
             json_object(
@@ -264,7 +262,7 @@ SELECT
     _workouts.start,
     _workouts."end",
     _workouts.name,
-    _workouts.image,
+    _workouts.images,
     (
         SELECT json_group_array(
             json_object(
