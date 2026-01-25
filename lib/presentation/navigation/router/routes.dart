@@ -489,32 +489,28 @@ RouteBase _galleryRoute() {
     parentNavigatorKey: _rootNavigatorKey,
     path: _galleryPath,
     pageBuilder: (context, state) {
-      final extra = state.extra as ({String? workoutId, String? id, String? imageLink, Uint8List? imageBytes});
-      final (:workoutId, :id, :imageLink, :imageBytes) = extra;
-      final date = DateTime.tryParse(workoutId ?? '');
-      final title = date != null ? DateFormat('EEEE, MMM d, yyyy').format(date) : null;
-      return CustomTransitionPage(
-        key: state.pageKey,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-          return FadeTransition(
-            opacity: curved,
-            child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(curved),
-              child: child,
+      switch (state.extra) {
+        case (Iterable<Media> media, int index, _):
+          return CustomTransitionPage(
+            key: state.pageKey,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+              return FadeTransition(
+                opacity: curved,
+                child: SlideTransition(
+                  position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(curved),
+                  child: child,
+                ),
+              );
+            },
+            child: GalleryPage(
+              media: media.toList(),
+              startingIndex: index,
             ),
           );
-        },
-        child: GalleryPage(
-          remote: imageLink,
-          bytes: imageBytes,
-          title: title,
-          onTapTitle: switch (workoutId) {
-            String id => () => context.goToWorkoutEditor(id),
-            null => null,
-          },
-        ),
-      );
+        default:
+          throw GoError('Unknown navigation pattern to GalleryPage');
+      }
     },
     name: _galleryName,
   );
