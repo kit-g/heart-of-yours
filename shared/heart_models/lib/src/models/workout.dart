@@ -67,9 +67,9 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   Iterable<WorkoutExercise> get sets;
 
-  abstract Uint8List? localImage;
+  Map<String, WorkoutImage>? get images;
 
-  abstract WorkoutImage? remoteImage;
+  abstract Uint8List? localImage;
 
   factory Workout({String? name}) {
     return _Workout._(
@@ -306,7 +306,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   Uint8List? localImage;
 
   @override
-  WorkoutImage? remoteImage;
+  final SplayTreeMap<String, WorkoutImage> images;
 
   _Workout._({
     required this.start,
@@ -314,10 +314,10 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     String? id,
     List<WorkoutExercise>? exercises,
     this.end,
-    this.remoteImage,
-    this.localImage,
+    Map<String, WorkoutImage>? images,
   }) : _sets = exercises ?? <WorkoutExercise>[],
-       _id = id;
+       _id = id,
+       images = SplayTreeMap.from(images ?? {});
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
     return _Workout._(
@@ -326,9 +326,11 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       id: json['id'],
       end: DateTime.tryParse(json['end'] ?? ''),
       exercises: _exercisesFromCollection(json['exercises'], lookForExercise),
-      remoteImage: switch (json) {
-        {'images': List l} when l.isNotEmpty => WorkoutImage.fromJson(l.first),
-        {'image': Map m} => WorkoutImage.fromJson(m), // from SQLite
+      images: switch (json) {
+        {'images': List l} when l.isNotEmpty => SplayTreeMap<String, WorkoutImage>.fromIterables(
+          l.map<String>((each) => each['id']),
+          l.map<WorkoutImage>((each) => WorkoutImage.fromJson(each)),
+        ),
         _ => null,
       },
     );
@@ -467,8 +469,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
     final workout = _Workout._(
       name: name,
       start: sameId ? start : DateTime.timestamp(),
-      remoteImage: remoteImage,
-      localImage: localImage,
+      images: images,
     );
 
     for (final each in this) {
