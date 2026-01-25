@@ -1453,6 +1453,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'one number somewhere in there'**
   String get passwordPolicyDigit;
+
+  /// Confirmation dialog title when user attempts to delete an image from a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this image?'**
+  String get deleteImageDialogTitle;
+
+  /// Confirmation dialog body explaining that removing the image won't delete workout data
+  ///
+  /// In en, this message translates to:
+  /// **'It won\'t affect the workout — just clears the picture'**
+  String get deleteImageDialogBody;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -1415,5 +1415,17 @@
     "description": "Password requirement: must contain at least one numeric digit (0-9). Displayed as a validation rule in the password policy checklist with casual phrasing.",
     "type": "text",
     "placeholders": {}
+  },
+  "deleteImageDialogTitle": "Remove this image?",
+  "@deleteImageDialogTitle": {
+    "description": "Confirmation dialog title when user attempts to delete an image from a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteImageDialogBody": "It won't affect the workout — just clears the picture",
+  "@deleteImageDialogBody": {
+    "description": "Confirmation dialog body explaining that removing the image won't delete workout data",
+    "type": "text",
+    "placeholders": {}
   }
 }
