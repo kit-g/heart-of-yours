@@ -69,8 +69,6 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   Map<String, WorkoutImage>? get images;
 
-  abstract Uint8List? localImage;
-
   factory Workout({String? name}) {
     return _Workout._(
       start: DateTime.timestamp(),
@@ -301,9 +299,6 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   @override
   String? name;
-
-  @override
-  Uint8List? localImage;
 
   @override
   final SplayTreeMap<String, WorkoutImage> images;

@@ -306,12 +306,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         // we'll continue working with the local image for now, by parsing the URL for the data we need
         final local = WorkoutImage.local(destinationUrl, workout.id, image.$1);
         // save it locally
-        workout
-          ..images?[local.id] = local
-          ..localImage = image.$1;
+        workout.images?[local.id] = local;
         await _localService.updateWorkout(workoutId: workout.id, images: workout.images?.values, name: workout.name);
         // and finally update state - the workouts and the progress gallery
-        _workouts[workout.id]?.localImage = image.$1;
         _progress.add(local);
 
         notifyListeners();
@@ -335,9 +332,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> detachImageFromWorkout(Workout workout, WorkoutImage image) async {
     final detached = await _remoteService.deleteWorkoutImage(workout.id, image.key);
     if (detached) {
-      _workouts[workout.id]
-        ?..images?.remove(image.id)
-        ..localImage = null;
+      _workouts[workout.id]?.images?.remove(image.id);
       _progress.removeWhere((each) => each.id == image.id);
       await _localService.updateWorkout(workoutId: workout.id, images: workout.images?.values, name: workout.name);
       notifyListeners();

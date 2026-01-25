@@ -55,7 +55,6 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
-  final Uint8List? localImage;
   final Iterable<WorkoutImage>? workoutImages;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
   final String? workoutId;
@@ -77,7 +76,6 @@ class WorkoutDetail extends StatefulWidget {
     required this.onAddExercises,
     this.needsCancelWorkoutButton = true,
     required this.allowsCompletingSet,
-    this.localImage,
     this.workoutImages,
     this.onDeleteImage,
     this.onTapImage,
@@ -733,7 +731,6 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       expand: false,
       builder: (context, scrollController) {
         final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-        print(active.images);
         return AnimatedPadding(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
@@ -742,7 +739,6 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             controller: scrollController,
             exercises: active,
             workoutImages: active.images?.values,
-            localImage: active.localImage,
             onTapImage: widget.onTapImage,
             workoutId: active.id,
             onDragExercise: workouts.append,

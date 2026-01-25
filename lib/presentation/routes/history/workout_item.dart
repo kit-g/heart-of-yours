@@ -47,14 +47,11 @@ class WorkoutItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      if (workout case Workout(
-                        :var images,
-                        :var localImage,
-                      ) when images?.isNotEmpty ?? false || localImage != null)
+                      if (workout case Workout(:Map images) when images.isNotEmpty)
                         FeedbackButton(
                           onPressed: () {
                             onTapImageIcon?.call(
-                              [...?images?.values],
+                              [...images.values],
                               startingIndex: 0,
                               workoutId: workout.id,
                             );
