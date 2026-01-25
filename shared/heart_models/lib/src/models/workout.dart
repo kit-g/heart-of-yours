@@ -1,9 +1,11 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'exercise.dart';
 import 'exercise_set.dart';
+import 'media.dart';
 import 'misc.dart';
 import 'stats.dart';
 import 'ts_for_id.dart';
@@ -209,14 +211,8 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   bool get isCompleted => every((set) => set.isCompleted);
 }
 
-abstract interface class WorkoutImage implements Comparable<WorkoutImage>, Storable {
+abstract interface class WorkoutImage implements Comparable<WorkoutImage>, Media, Storable {
   String get workoutId;
-
-  String get id;
-
-  String? get link;
-
-  Uint8List? get bytes;
 
   String get key;
 
@@ -291,6 +287,9 @@ class _WorkoutImage implements WorkoutImage {
   String toString() {
     return 'Image $id';
   }
+
+  @override
+  DateTime? get timestamp => DateTime.tryParse(workoutId);
 }
 
 class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Workout {
