@@ -8,7 +8,7 @@ class WorkoutItem extends StatelessWidget {
   final void Function(Workout)? onSaveAsTemplate;
   final void Function(Workout)? onEditWorkout;
   final void Function(Workout)? onDeleteWorkout;
-  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImageIcon;
+  final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImageIcon;
 
   const WorkoutItem({
     super.key,
@@ -48,15 +48,15 @@ class WorkoutItem extends StatelessWidget {
                   Row(
                     children: [
                       if (workout case Workout(
-                        :var remoteImage,
+                        :var images,
                         :var localImage,
-                      ) when remoteImage != null || localImage != null)
+                      ) when images?.isNotEmpty ?? false || localImage != null)
                         FeedbackButton(
                           onPressed: () {
                             onTapImageIcon?.call(
+                              [...?images?.values],
+                              startingIndex: 0,
                               workoutId: workout.id,
-                              imageLink: remoteImage?.link,
-                              imageBytes: localImage,
                             );
                           },
                           child: const Icon(Icons.image_rounded),
