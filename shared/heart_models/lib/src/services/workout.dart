@@ -32,7 +32,7 @@ abstract interface class WorkoutService {
 
   Future<Iterable<Workout>?> getWorkoutHistory(String userId, ExerciseLookup lookup);
 
-  Future<void> updateWorkout({required String workoutId, String? name, WorkoutImage? image});
+  Future<void> updateWorkout({required String workoutId, String? name, Iterable<WorkoutImage>? images});
 }
 
 abstract interface class RemoteWorkoutService implements FileUploadService {
