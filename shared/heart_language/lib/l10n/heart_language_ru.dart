@@ -745,4 +745,10 @@ class LRu extends L {
 
   @override
   String get passwordPolicyDigit => 'одна цифра где-нибудь там';
+
+  @override
+  String get deleteImageDialogTitle => 'Удалить это изображение?';
+
+  @override
+  String get deleteImageDialogBody => 'Это не повлияет на тренировку — просто удалит фотографию';
 }
