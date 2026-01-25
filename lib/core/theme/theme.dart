@@ -53,8 +53,8 @@ ThemeData theme(ColorScheme colorScheme) {
     appBarTheme: AppBarTheme(
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarIconBrightness: switch (colorScheme.brightness) {
-          Brightness.dark => Brightness.light,
-          Brightness.light => Brightness.dark,
+          .dark => .light,
+          .light => .dark,
         },
         statusBarBrightness: colorScheme.brightness,
       ),
@@ -105,6 +105,9 @@ ThemeData theme(ColorScheme colorScheme) {
       cursorColor: colorScheme.primary,
       selectionColor: colorScheme.primary.withValues(alpha: 0.3),
       selectionHandleColor: colorScheme.primary,
+    ),
+    carouselViewTheme: const CarouselViewThemeData(
+      shape: RoundedRectangleBorder(borderRadius: .all(.circular(12))),
     ),
   );
 }
