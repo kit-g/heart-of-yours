@@ -70,14 +70,14 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
   abstract WorkoutImage? remoteImage;
 
   factory Workout({String? name}) {
-    return _Workout(
+    return _Workout._(
       start: DateTime.timestamp(),
       name: name,
     );
   }
 
   factory Workout.fromExercises(Iterable<WorkoutExercise> exercises, {String? name}) {
-    return _Workout(
+    return _Workout._(
       start: DateTime.timestamp(),
       name: name,
       exercises: exercises.toList(),
@@ -226,6 +226,7 @@ abstract interface class WorkoutImage implements Comparable<WorkoutImage>, Stora
     final Uri(:String path) = Uri.parse(url);
     return _WorkoutImage(
       workoutId: workoutId,
+      // https://<domain>/workouts/<hashed_id>/<image_id>.<ext>
       id: path.split('/').last.split('.').first,
       link: url,
       key: path,
@@ -308,7 +309,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
   @override
   WorkoutImage? remoteImage;
 
-  _Workout({
+  _Workout._({
     required this.start,
     this.name,
     String? id,
@@ -320,7 +321,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
        _id = id;
 
   factory _Workout.fromJson(Map json, ExerciseLookup lookForExercise) {
-    return _Workout(
+    return _Workout._(
       start: DateTime.parse(json['start']),
       name: json['name'],
       id: json['id'],
@@ -464,7 +465,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   @override
   Workout copy({bool sameId = false}) {
-    final workout = _Workout(
+    final workout = _Workout._(
       name: name,
       start: sameId ? start : DateTime.timestamp(),
       remoteImage: remoteImage,
