@@ -357,22 +357,20 @@ class LocalDatabase
     return rows.map((each) => Workout.fromJson(each.toWorkout(), lookup));
   }
 
-  static String? _encodeImage(WorkoutImage? image) {
-    return switch (image?.toRow()) {
-      Map m => jsonEncode(m),
-      null => null,
-    };
+  static String? _encodeImages(final Iterable<WorkoutImage>? images) {
+    if (images == null) return null;
+    return jsonEncode(images.map((each) => each.toRow()).toList());
   }
 
   static void _storeWorkout(Batch batch, Workout workout, String userId) {
-    final Workout(id: workoutId, :start, :name, :end, :remoteImage) = workout;
+    final Workout(id: workoutId, :start, :name, :end, :images) = workout;
     final row = {
       'id': workoutId,
       'start': start.toIso8601String(),
       'user_id': userId,
       'name': ?name,
       'end': ?end?.toIso8601String(),
-      'image': ?_encodeImage(remoteImage),
+      'images': ?_encodeImages(images?.values),
     };
     batch.insert(_workouts, row, conflictAlgorithm: ConflictAlgorithm.replace);
 
@@ -400,8 +398,8 @@ class LocalDatabase
   }
 
   @override
-  Future<void> updateWorkout({required String workoutId, String? name, WorkoutImage? image}) {
-    final row = {'name': name, 'image': _encodeImage(image)};
+  Future<void> updateWorkout({required String workoutId, String? name, Iterable<WorkoutImage>? images}) {
+    final row = {'name': name, 'images': _encodeImages(images)};
     assert(row.isNotEmpty, 'Provide at least one attribute');
     return _db.update(_workouts, row, where: 'id = ?', whereArgs: [workoutId]);
   }
