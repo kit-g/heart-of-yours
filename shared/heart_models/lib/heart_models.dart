@@ -6,6 +6,7 @@ export 'src/models/charts.dart';
 export 'src/models/errors.dart';
 export 'src/models/exercise.dart';
 export 'src/models/exercise_set.dart';
+export 'src/models/media.dart';
 export 'src/models/misc.dart';
 export 'src/models/stats.dart';
 export 'src/models/template.dart';
