@@ -224,3 +224,59 @@ class TimeFormatter extends TextInputFormatter {
     );
   }
 }
+
+Future<void> showDeleteImageDialog(
+  BuildContext context,
+  Workout workout,
+  WorkoutImage image, {
+  required final Future<void> Function(BuildContext context) onDeleted,
+}) {
+  final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+  final L(
+    :deleteImageDialogBody,
+    :deleteImageDialogTitle,
+    :cancel,
+    :removePhoto,
+  ) = L.of(
+    context,
+  );
+  return showBrandedDialog(
+    context,
+    title: Text(deleteImageDialogTitle),
+    titleTextStyle: textTheme.titleMedium,
+    content: Text(
+      deleteImageDialogBody,
+      textAlign: .center,
+    ),
+    icon: Icon(
+      Icons.delete_forever,
+      color: colorScheme.onErrorContainer,
+    ),
+    actions: [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            child: Center(
+              child: Text(cancel),
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+          ),
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.errorContainer,
+            child: Center(
+              child: Text(
+                removePhoto,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+              ),
+            ),
+            onPressed: () => onDeleted(context),
+          ),
+        ],
+      ),
+    ],
+  );
+}
