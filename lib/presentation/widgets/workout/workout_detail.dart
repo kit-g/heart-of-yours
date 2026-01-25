@@ -424,6 +424,161 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
   }
 }
 
+class _Image extends StatefulWidget {
+  final WorkoutImage image;
+  final double width;
+  final double height;
+  final VoidCallback onTapImage;
+  final AsyncCallback onDeleteImage;
+
+  const _Image({
+    super.key,
+    required this.image,
+    required this.width,
+    required this.height,
+    required this.onTapImage,
+    required this.onDeleteImage,
+  });
+
+  @override
+  State<_Image> createState() => _ImageState();
+}
+
+class _ImageState extends State<_Image> with LoadingState<_Image> {
+  @override
+  Widget build(BuildContext context) {
+    final L(:removePhoto) = L.of(context);
+    final self = GestureDetector(
+      onTap: widget.onTapImage,
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        key: widget.key,
+        decoration: BoxDecoration(
+          borderRadius: .circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        clipBehavior: .antiAlias,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: AppImage(
+            url: widget.image.link,
+            bytes: widget.image.bytes,
+            fit: .cover,
+          ),
+        ),
+      ),
+    );
+    return switch (Theme.of(context).platform) {
+      .iOS || .macOS => CupertinoContextMenu(
+        enableHapticFeedback: true,
+        actions: [
+          CupertinoContextMenuAction(
+            onPressed: () async {
+              Navigator.of(context, rootNavigator: true).pop();
+              await _onTap();
+            },
+            isDefaultAction: true,
+            isDestructiveAction: true,
+            trailingIcon: Icons.delete_outline_outlined,
+            child: Text(removePhoto),
+          ),
+        ],
+        child: self,
+      ),
+      _ => Stack(
+        children: [
+          self,
+          Positioned(
+            top: 4,
+            right: 4,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: loader,
+              builder: (_, loading, child) {
+                const double buttonSize = 32;
+                const double iconSize = 20;
+                const color = Colors.black54;
+
+                const loader = SizedBox(
+                  key: ValueKey<String>('spinner'),
+                  width: iconSize,
+                  height: iconSize,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                );
+
+                const closeIcon = Icon(
+                  Icons.close_rounded,
+                  key: ValueKey<String>('close'),
+                  size: iconSize,
+                  color: color,
+                );
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) {
+                    final rotate = Tween<double>(begin: 0.15, end: 0.0).animate(animation);
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.85, end: 1.0).animate(animation),
+                        child: RotationTransition(
+                          turns: rotate,
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    key: ValueKey<bool>(loading),
+                    width: buttonSize,
+                    height: buttonSize,
+                    decoration: BoxDecoration(
+                      shape: .circle,
+                      color: Colors.white.withValues(alpha: .5),
+                    ),
+                    child: Material(
+                      type: .transparency,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _onTap,
+                        child: Center(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            child: loading ? loader : closeIcon,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    };
+  }
+
+  Future<void> _onTap() async {
+    startLoading();
+    try {
+      await widget.onDeleteImage();
+    } finally {
+      stopLoading();
+    }
+  }
+}
+
 const _divider = Divider(
   thickness: 2,
   indent: 8,
