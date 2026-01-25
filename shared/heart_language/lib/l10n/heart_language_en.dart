@@ -745,6 +745,12 @@ class LEn extends L {
 
   @override
   String get passwordPolicyDigit => 'one number somewhere in there';
+
+  @override
+  String get deleteImageDialogTitle => 'Remove this image?';
+
+  @override
+  String get deleteImageDialogBody => 'It won\'t affect the workout — just clears the picture';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1488,4 +1494,10 @@ class LEnCa extends LEn {
 
   @override
   String get passwordPolicyDigit => 'one number somewhere in there';
+
+  @override
+  String get deleteImageDialogTitle => 'Remove this image?';
+
+  @override
+  String get deleteImageDialogBody => 'It won\'t affect the workout — just clears the picture';
 }
