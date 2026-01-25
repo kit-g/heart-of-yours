@@ -8,7 +8,7 @@ class HistoryPage extends StatefulWidget {
   final void Function(Workout)? onDeleteWorkout;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
-  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
+  final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
   const HistoryPage({
     super.key,
@@ -63,9 +63,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   return GestureDetector(
                     onTap: () {
                       widget.onTapImage?.call(
+                        images,
+                        startingIndex: index,
                         workoutId: image.workoutId,
-                        imageLink: image.link,
-                        imageId: image.id,
                       );
                     },
                     child: Padding(

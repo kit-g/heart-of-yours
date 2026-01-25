@@ -3,6 +3,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show AsyncCallback;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/notifications.dart';
@@ -55,10 +56,11 @@ class WorkoutDetail extends StatefulWidget {
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
   final Uint8List? localImage;
-  final String? remoteImage;
-  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
+  final Iterable<WorkoutImage>? workoutImages;
+  final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
   final String? workoutId;
   final void Function(Exercise) onTapExercise;
+  final Future<void> Function(WorkoutImage)? onDeleteImage;
 
   const WorkoutDetail({
     super.key,
@@ -76,7 +78,8 @@ class WorkoutDetail extends StatefulWidget {
     this.needsCancelWorkoutButton = true,
     required this.allowsCompletingSet,
     this.localImage,
-    this.remoteImage,
+    this.workoutImages,
+    this.onDeleteImage,
     this.onTapImage,
     this.workoutId,
     required this.onTapExercise,
@@ -123,6 +126,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       scaffoldBackgroundColor: backgroundColor,
       :colorScheme,
       :textTheme,
+      :platform,
     ) = Theme.of(
       context,
     );
@@ -135,7 +139,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
           appbar
         else
           const SliverToBoxAdapter(
-            child: SizedBox(height: 16),
+            child: SizedBox(height: 4),
           ),
         ...?widget.slivers,
         SliverToBoxAdapter(
@@ -151,40 +155,59 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                 ),
               );
             },
-            child: switch (widget.localImage != null || widget.remoteImage != null) {
-              false => const SizedBox.shrink(),
-              true => Padding(
-                padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
-                child: GestureDetector(
-                  onTap: () {
-                    widget.onTapImage?.call(
-                      workoutId: widget.workoutId,
-                      imageBytes: widget.localImage,
-                      imageLink: widget.remoteImage,
-                    );
-                  },
-                  child: Container(
-                    key: ValueKey(widget.localImage ?? widget.remoteImage),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
+            child: switch (widget.workoutImages) {
+              null => const SizedBox.shrink(),
+              Iterable i when i.isEmpty => const SizedBox.shrink(),
+              Iterable<WorkoutImage> images => Padding(
+                padding: const .only(top: 8),
+                child: LayoutBuilder(
+                  builder: (_, constraints) {
+                    final width = constraints.hasBoundedWidth
+                        ? constraints.maxWidth
+                        : MediaQuery.sizeOf(context).width - 16;
+                    final height = width * 9 / 16;
+                    return switch (images.toList()) {
+                      [WorkoutImage only] => Padding(
+                        padding: const .symmetric(horizontal: 8),
+                        child: _Image(
+                          image: only,
+                          width: width,
+                          height: height,
+                          key: ValueKey(only.id),
+                          onTapImage: () => widget.onTapImage?.call(
+                            images,
+                            startingIndex: 0,
+                            workoutId: widget.workoutId,
+                          ),
+                          onDeleteImage: () async => await widget.onDeleteImage?.call(only),
                         ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: AppImage(
-                        url: widget.remoteImage,
-                        bytes: widget.localImage,
-                        fit: .cover,
                       ),
-                    ),
-                  ),
+                      List<WorkoutImage> many => SizedBox(
+                        height: height,
+                        child: PageView.builder(
+                          itemCount: many.length,
+                          itemBuilder: (_, index) {
+                            final image = many[index];
+                            return Padding(
+                              padding: const .symmetric(horizontal: 8),
+                              child: _Image(
+                                image: image,
+                                width: width,
+                                height: height,
+                                key: ValueKey(image.id),
+                                onTapImage: () => widget.onTapImage?.call(
+                                  images,
+                                  startingIndex: index,
+                                  workoutId: widget.workoutId,
+                                ),
+                                onDeleteImage: () async => await widget.onDeleteImage?.call(image),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    };
+                  },
                 ),
               ),
             },
@@ -634,7 +657,7 @@ class NewWorkoutHeader extends StatelessWidget {
 class ActiveWorkoutSheet extends StatefulWidget {
   final Workouts workouts;
   final double closingThreshold;
-  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
+  final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
   const ActiveWorkoutSheet({
     super.key,
@@ -699,7 +722,6 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     final l = L.of(context);
     final workouts = widget.workouts;
     final active = workouts.activeWorkout!;
-    final hasImage = active.localImage != null || active.remoteImage != null;
 
     return DraggableScrollableSheet(
       initialChildSize: 1.0,
@@ -711,7 +733,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       expand: false,
       builder: (context, scrollController) {
         final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-
+        print(active.images);
         return AnimatedPadding(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
@@ -719,7 +741,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
           child: WorkoutDetail(
             controller: scrollController,
             exercises: active,
-            remoteImage: active.remoteImage?.link,
+            workoutImages: active.images?.values,
             localImage: active.localImage,
             onTapImage: widget.onTapImage,
             workoutId: active.id,
@@ -738,6 +760,17 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                   () => workouts.startExercise(each),
                 );
               }
+            },
+            onDeleteImage: (image) {
+              return showDeleteImageDialog(
+                context,
+                active,
+                image,
+                onDeleted: (context) async {
+                  Navigator.of(context, rootNavigator: true).pop();
+                  await Workouts.of(context).detachImageFromActiveWorkout(image);
+                },
+              );
             },
             appBar: SliverPersistentHeader(
               pinned: true,
@@ -778,12 +811,12 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                           (option) {
                                             return PopupMenuItem<_WorkoutOption>(
                                               value: option,
-                                              onTap: _workoutOptionCallback(context, option, hasImage),
+                                              onTap: _workoutOptionCallback(context, option),
                                               child: Row(
                                                 spacing: 6,
                                                 children: [
                                                   Icon(_workoutOptionIcon(option)),
-                                                  Text(_workoutOptionCopy(l, option, hasImage)),
+                                                  Text(_workoutOptionCopy(l, option)),
                                                 ],
                                               ),
                                             );
@@ -855,9 +888,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     );
   }
 
-  String _workoutOptionCopy(L l, _WorkoutOption option, bool hasImage) {
+  String _workoutOptionCopy(L l, _WorkoutOption option) {
     return switch (option) {
-      .editImage => hasImage ? l.removePhoto : l.addPhoto,
+      .editImage => l.addPhoto,
       .editName => l.editWorkoutName,
     };
   }
@@ -869,7 +902,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     };
   }
 
-  FutureOr<void> Function() _workoutOptionCallback(BuildContext context, _WorkoutOption option, bool hasImage) {
+  FutureOr<void> Function() _workoutOptionCallback(BuildContext context, _WorkoutOption option) {
     final L(:capturePhoto, :chooseFromGallery, :cancel, :cropImage) = L.of(context);
 
     final pop = Navigator.of(context).pop;
@@ -905,12 +938,8 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       );
     }
 
-    void removePhoto() {
-      Workouts.of(context).detachImageFromActiveWorkout();
-    }
-
     return switch (option) {
-      .editImage => hasImage ? removePhoto : addPhoto,
+      .editImage => addPhoto,
       .editName => () {
         _workoutNameFocusNode.requestFocus();
         _workoutNameController.selectAllText();
