@@ -59,10 +59,7 @@ extension on BuildContext {
     return push(_activeWorkoutPath);
   }
 
-  Future<void> goToGallery({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes}) {
-    return push(
-      _galleryPath,
-      extra: (workoutId: workoutId, id: imageId, imageLink: imageLink, imageBytes: imageBytes),
-    );
+  Future<void> goToGallery(Iterable<Media> media, {required int startingIndex, String? workoutId}) {
+    return push(_galleryPath, extra: (media, startingIndex, workoutId));
   }
 }

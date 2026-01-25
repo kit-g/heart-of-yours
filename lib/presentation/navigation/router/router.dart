@@ -22,8 +22,8 @@ import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/split_scaffold.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
-import 'package:intl/intl.dart';
 
 import 'modal_route.dart';
 
