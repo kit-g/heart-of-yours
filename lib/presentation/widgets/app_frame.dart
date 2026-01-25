@@ -65,12 +65,22 @@ class AppFrame extends StatelessWidget {
     return LayoutProvider(
       currentStack: shell.currentIndex,
       builder: (context, layout, stackIndex) {
+        final ThemeData(:brightness) = Theme.of(context);
+        final isDark = brightness == .dark;
         switch (layout) {
           case LayoutSize.compact:
             return _KeyMap(
               shell: shell,
               child: Scaffold(
-                body: shell,
+                body: AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: SystemUiOverlayStyle(
+                    statusBarColor: Colors.transparent,
+                    statusBarIconBrightness: isDark ? .light : .dark,
+                    statusBarBrightness: brightness, // iOS hint
+                    systemNavigationBarIconBrightness: isDark ? .light : .dark,
+                  ),
+                  child: shell,
+                ),
                 bottomNavigationBar: BottomNavigationBar(
                   type: BottomNavigationBarType.shifting,
                   currentIndex: shell.currentIndex,
