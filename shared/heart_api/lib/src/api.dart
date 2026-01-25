@@ -189,7 +189,7 @@ class Api
   @override
   Future<bool> saveWorkout(Workout workout) async {
     final (_, code) = await post(Router.workouts, body: workout.toMap());
-    return code == 201;
+    return [200, 201].contains(code);
   }
 
   @override
