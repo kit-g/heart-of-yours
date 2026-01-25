@@ -2,7 +2,7 @@ part of 'history.dart';
 
 class WorkoutEditor extends StatefulWidget {
   final Workout copy;
-  final void Function({String? workoutId, String? imageId, String? imageLink, Uint8List? imageBytes})? onTapImage;
+  final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
   const WorkoutEditor({
     super.key,
@@ -61,7 +61,6 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return ListenableBuilder(
       listenable: _notifier,
       builder: (_, _) {
-        final hasImage = workout.remoteImage != null || workout.remoteImage != null;
         return PopScope(
           canPop: !_notifier.hasChanged,
           onPopInvokedWithResult: (didPop, _) {
@@ -92,12 +91,12 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                         (option) {
                           return PopupMenuItem<_WorkoutEditOption>(
                             value: option,
-                            onTap: _workoutOptionCallback(context, option, hasImage, workout),
+                            onTap: _workoutOptionCallback(context, option, workout),
                             child: Row(
                               spacing: 6,
                               children: [
                                 Icon(_workoutOptionIcon(option)),
-                                Text(_workoutOptionCopy(l, option, hasImage)),
+                                Text(_workoutOptionCopy(l, option)),
                               ],
                             ),
                           );
@@ -141,7 +140,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(56),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: const .only(left: 8, bottom: 2, right: 8),
                   child: AppBarTextField(
                     hint: workoutName,
                     style: textTheme.titleMedium,
@@ -166,7 +165,8 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onRemoveSet: _notifier.removeSet,
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
-                remoteImage: workout.remoteImage?.link,
+                workoutImages: workout.images?.values,
+                // remoteImage: workout.remoteImage?.link,
                 localImage: workout.localImage,
                 onTapImage: widget.onTapImage,
                 onAddExercises: (exercises) async {
@@ -180,6 +180,18 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 },
                 allowsCompletingSet: true,
                 onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+                onDeleteImage: (image) {
+                  return showDeleteImageDialog(
+                    context,
+                    workout,
+                    image,
+                    onDeleted: (context) async {
+                      Navigator.of(context, rootNavigator: true).pop();
+                      _notifier.detachImageFromWorkout(image);
+                      await Workouts.of(context).detachImageFromWorkout(workout, image);
+                    },
+                  );
+                },
               ),
             ),
           ),
@@ -203,11 +215,11 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       context,
       title: Text(
         quitEditing,
-        textAlign: TextAlign.center,
+        textAlign: .center,
       ),
       content: Text(
         changesWillBeLost,
-        textAlign: TextAlign.center,
+        textAlign: .center,
       ),
       icon: Icon(
         Icons.error_outline_rounded,
@@ -299,9 +311,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     );
   }
 
-  String _workoutOptionCopy(L l, _WorkoutEditOption option, bool hasImage) {
+  String _workoutOptionCopy(L l, _WorkoutEditOption option) {
     return switch (option) {
-      .editImage => hasImage ? l.removePhoto : l.addPhoto,
+      .editImage => l.addPhoto,
       .editName => l.editWorkoutName,
     };
   }
@@ -313,12 +325,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     };
   }
 
-  void Function() _workoutOptionCallback(
-    BuildContext context,
-    _WorkoutEditOption option,
-    bool hasImage,
-    Workout workout,
-  ) {
+  void Function() _workoutOptionCallback(BuildContext context, _WorkoutEditOption option, Workout workout) {
     final L(:capturePhoto, :chooseFromGallery, :cancel, :cropImage) = L.of(context);
 
     final pop = Navigator.of(context).pop;
@@ -354,18 +361,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       );
     }
 
-    void removePhoto() {
-      Workouts.of(context).detachImageFromWorkout(workout);
-      _notifier
-        ..localImage = null
-        ..remoteImage = null;
-    }
-
     return switch (option) {
-      .editImage => hasImage ? removePhoto : addPhoto,
-      .editName => () {
-        _focusNode.requestFocus();
-      },
+      .editImage => addPhoto,
+      .editName => () => _focusNode.requestFocus(),
     };
   }
 
@@ -439,8 +437,8 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
-  set remoteImage(String? _) {
-    workout.remoteImage = null;
+  void detachImageFromWorkout(WorkoutImage image) {
+    workout.images?.remove(image.id);
     notifyListeners();
   }
 
