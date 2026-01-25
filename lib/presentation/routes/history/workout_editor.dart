@@ -166,8 +166,6 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
                 workoutImages: workout.images?.values,
-                // remoteImage: workout.remoteImage?.link,
-                localImage: workout.localImage,
                 onTapImage: widget.onTapImage,
                 onAddExercises: (exercises) async {
                   for (final each in exercises.toList()) {
@@ -371,10 +369,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     final workouts = Workouts.of(context);
     final localImage = await getImage();
     if (localImage != null) {
-      final attached = await workouts.attachImageToWorkout(workout, localImage);
-      if (attached) {
-        _notifier.localImage = localImage.$1;
-      }
+      await workouts.attachImageToWorkout(workout, localImage);
     }
   }
 }
@@ -429,11 +424,6 @@ class _WorkoutNotifier with ChangeNotifier {
 
   set name(String? value) {
     workout.name = value;
-    notifyListeners();
-  }
-
-  set localImage(Uint8List? asset) {
-    workout.localImage = asset;
     notifyListeners();
   }
 
