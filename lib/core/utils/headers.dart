@@ -33,7 +33,7 @@ Map<String, String> _common(AppConfig config, String? appVersion, {bool isWeb = 
   return {
     if (!isWeb) 'Referer': config.appLink,
     if (!isWeb) 'User-Agent': _userAgent(config, version),
-    if (appVersion != null) 'X-App-Version': appVersion,
+    'X-App-Version': ?appVersion,
   };
 }
 

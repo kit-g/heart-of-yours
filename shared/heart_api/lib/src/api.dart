@@ -88,7 +88,7 @@ class Api
       '${Router.accounts}/$userId',
       body: {
         'action': 'uploadAvatar',
-        if (imageMimeType != null) 'mimeType': imageMimeType,
+        'mimeType': ?imageMimeType,
       },
     );
     return switch (json) {
@@ -198,7 +198,7 @@ class Api
       Router.workouts,
       query: {
         if (pageSize != null) 'pageSize': pageSize.toString(),
-        if (since != null) 'since': since,
+        'since': ?since,
       },
     );
     return switch (json) {
