@@ -12,7 +12,8 @@ enum Category implements ExerciseFilter {
   duration('Duration'),
   machine('Machine'),
   dumbbell('Dumbbell'),
-  barbell('Barbell');
+  barbell('Barbell')
+  ;
 
   @override
   final String value;
@@ -55,7 +56,8 @@ enum Target implements ExerciseFilter {
   other('Other'),
   olympic('Olympic'),
   fullBody('Full Body'),
-  cardio('Cardio');
+  cardio('Cardio')
+  ;
 
   @override
   final String value;
@@ -97,6 +99,99 @@ enum Target implements ExerciseFilter {
   String toString() => value;
 }
 
+abstract interface class MuscleTag implements Model {
+  Iterable<String>? get ids;
+
+  Iterable<String>? get groups;
+
+  bool get isEmpty;
+
+  factory MuscleTag.fromJson(Map json) {
+    return _MuscleTag(
+      ids: switch (json['ids']) {
+        List l => l.cast<String>(),
+        _ => [],
+      },
+      groups: switch (json['groups']) {
+        List l => l.cast<String>(),
+        _ => [],
+      },
+    );
+  }
+
+  factory MuscleTag.empty() {
+    return const _MuscleTag(ids: [], groups: []);
+  }
+}
+
+class _MuscleTag implements MuscleTag {
+  @override
+  final List<String>? ids;
+  @override
+  final List<String>? groups;
+
+  const _MuscleTag({
+    required this.ids,
+    required this.groups,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'ids': ids,
+      'groups': groups,
+    };
+  }
+
+  @override
+  bool get isEmpty => (ids?.isEmpty ?? true) && (groups?.isEmpty ?? true);
+}
+
+abstract interface class MuscleTagging implements Model {
+  MuscleTag get primary;
+
+  MuscleTag? get secondary;
+
+  bool get isEmpty;
+
+  factory MuscleTagging.fromJson(Map json) {
+    return _MuscleTagging(
+      primary: MuscleTag.fromJson(json['primary'] ?? {}),
+      secondary: switch (json) {
+        {'secondary': Map m} => MuscleTag.fromJson(m),
+        _ => null,
+      },
+    );
+  }
+
+  factory MuscleTagging.empty() {
+    return _MuscleTagging(primary: MuscleTag.empty(), secondary: null);
+  }
+}
+
+class _MuscleTagging implements MuscleTagging {
+  @override
+  final MuscleTag primary;
+  @override
+  final MuscleTag? secondary;
+
+  const _MuscleTagging({
+    required this.primary,
+    required this.secondary,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'primary': primary.toMap(),
+      if (secondary != null) 'secondary': secondary!.toMap(),
+    };
+  }
+
+  @override
+  bool get isEmpty => primary.isEmpty && (secondary?.isEmpty ?? true);
+}
+
 abstract interface class Exercise implements Searchable, Model, Comparable<Exercise> {
   String get name;
 
@@ -116,6 +211,8 @@ abstract interface class Exercise implements Searchable, Model, Comparable<Exerc
 
   bool get isArchived;
 
+  MuscleTagging get muscles;
+
   factory Exercise.fromJson(Map json) = _Exercise.fromJson;
 
   factory Exercise({
@@ -124,6 +221,7 @@ abstract interface class Exercise implements Searchable, Model, Comparable<Exerc
     required Target target,
     String? instructions,
     bool? isMine,
+    MuscleTagging? tags,
   }) {
     assert(name.isNotEmpty, 'Cannot have an empty name');
     return _Exercise(
@@ -132,6 +230,7 @@ abstract interface class Exercise implements Searchable, Model, Comparable<Exerc
       target: target,
       instructions: instructions,
       isMine: isMine ?? false,
+      muscles: tags ?? MuscleTagging.empty(),
     );
   }
 
@@ -145,6 +244,7 @@ abstract interface class Exercise implements Searchable, Model, Comparable<Exerc
     bool? isMine,
     String? instructions,
     bool? isArchived,
+    MuscleTagging? tags,
   });
 }
 
@@ -165,6 +265,8 @@ class _Exercise implements Exercise {
   final bool isMine;
   @override
   final bool isArchived;
+  @override
+  final MuscleTagging muscles;
 
   const _Exercise({
     required this.name,
@@ -175,6 +277,7 @@ class _Exercise implements Exercise {
     this.instructions,
     this.isMine = false,
     this.isArchived = false,
+    required this.muscles,
   });
 
   factory _Exercise.fromJson(Map json) {
@@ -207,6 +310,7 @@ class _Exercise implements Exercise {
         1 => true, // local
         _ => false, // local
       },
+      muscles: MuscleTagging.fromJson(json['muscles'] ?? {}),
     );
   }
 
@@ -229,6 +333,7 @@ class _Exercise implements Exercise {
       },
       'own': isMine ? 1 : 0,
       'archived': isArchived ? 1 : 0,
+      if (!muscles.isEmpty) 'muscles': muscles.toMap(),
     };
   }
 
@@ -282,6 +387,7 @@ class _Exercise implements Exercise {
     bool? isMine,
     String? instructions,
     bool? isArchived,
+    MuscleTagging? tags,
   }) {
     return _Exercise(
       name: name,
@@ -292,6 +398,7 @@ class _Exercise implements Exercise {
       isMine: isMine ?? this.isMine,
       instructions: instructions ?? this.instructions,
       isArchived: isArchived ?? this.isArchived,
+      muscles: tags ?? muscles,
     );
   }
 }
