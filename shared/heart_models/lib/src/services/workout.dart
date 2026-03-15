@@ -3,7 +3,11 @@ import '../models/exercise_set.dart';
 import '../models/misc.dart';
 import '../models/workout.dart';
 
-abstract interface class WorkoutService {
+abstract interface class GalleryService {
+  Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor, String? userId});
+}
+
+abstract interface class WorkoutService implements GalleryService {
   Future<void> startWorkout(Workout workout, String userId);
 
   Future<void> deleteWorkout(String workoutId);
@@ -35,14 +39,12 @@ abstract interface class WorkoutService {
   Future<void> updateWorkout({required String workoutId, String? name, Iterable<WorkoutImage>? images});
 }
 
-abstract interface class RemoteWorkoutService implements FileUploadService {
+abstract interface class RemoteWorkoutService implements FileUploadService, GalleryService {
   Future<Iterable<Workout>?> getWorkouts(ExerciseLookup lookForExercise, {int? pageSize, String? since});
 
   Future<bool> saveWorkout(Workout workout);
 
   Future<bool> deleteWorkout(String workoutId);
-
-  Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor});
 
   Future<(({String url, Map<String, String> fields})?, String?)> getWorkoutUploadLink(
     String workoutId, {
