@@ -166,6 +166,8 @@ PODS:
   - sqflite_darwin (0.0.4):
     - Flutter
     - FlutterMacOS
+  - url_launcher_macos (0.0.1):
+    - FlutterMacOS
 
 DEPENDENCIES:
   - app_settings (from `Flutter/ephemeral/.symlinks/plugins/app_settings/macos`)
@@ -182,6 +184,7 @@ DEPENDENCIES:
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sign_in_with_apple (from `Flutter/ephemeral/.symlinks/plugins/sign_in_with_apple/macos`)
   - sqflite_darwin (from `Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin`)
+  - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
 
 SPEC REPOS:
   trunk:
@@ -234,6 +237,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/sign_in_with_apple/macos
   sqflite_darwin:
     :path: Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin
+  url_launcher_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
 
 SPEC CHECKSUMS:
   app_settings: 140be3a9c0fc1f681e44afe9f549ab037b3aa3a2
@@ -269,6 +274,7 @@ SPEC CHECKSUMS:
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   sign_in_with_apple: a9e97e744e8edc36aefc2723111f652102a7a727
   sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
+  url_launcher_macos: 175a54c831f4375a6cf895875f716ee5af3888ce
 
 PODFILE CHECKSUM: 9a1dd0d7ee9341795e5aa488cb673c16d1ea27ea
 
