@@ -94,7 +94,7 @@ class _Template with Iterable<WorkoutExercise> implements Template {
       if (each.isNotEmpty) {
         final exercise = WorkoutExercise(starter: each.first.copy());
 
-        for (var (index, set) in each.skip(1).indexed) {
+        for (final (index, set) in each.skip(1).indexed) {
           final start = DateTime.timestamp().add(Duration(milliseconds: 2 * index));
           exercise.add(set.copy(start: start));
         }
@@ -113,7 +113,7 @@ class _Template with Iterable<WorkoutExercise> implements Template {
       'name': name,
       'order': order,
       'exercises': [
-        for (var exercise in this) exercise.toFullMap(),
+        for (final exercise in this) exercise.toFullMap(),
       ],
     };
   }
@@ -153,7 +153,7 @@ extension on WorkoutExercise {
       'id': id,
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
       'sets': [
-        for (var each in this) each.toMap(),
+        for (final each in this) each.toMap(),
       ],
     };
   }

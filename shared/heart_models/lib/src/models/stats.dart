@@ -166,7 +166,7 @@ class _WorkoutAggregation with Iterable<WeekSummary> implements WorkoutAggregati
   factory _WorkoutAggregation.fromRows(List<Map<String, dynamic>> rows) {
     final byWeek = <String, List<_WorkoutSummary>>{};
 
-    for (var row in rows) {
+    for (final row in rows) {
       final DateTime start = DateTime.parse(row['start']);
       final String weekId = sanitizeId(getMonday(start));
 
