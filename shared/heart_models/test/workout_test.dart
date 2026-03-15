@@ -400,7 +400,7 @@ void main() {
         () async {
           expect(workout.isEmpty, isTrue);
 
-          for (var _ in List.generate(5, (_) => 1)) {
+          for (final _ in List.generate(5, (_) => 1)) {
             var exercise = WorkoutExercise(starter: starterSet);
             workout.append(exercise);
             await 10.milliseconds;
@@ -408,8 +408,8 @@ void main() {
 
           expect(workout.isValid, equals(false)); // Not all sets are complete yet.
 
-          for (var exercise in workout) {
-            for (var set in exercise) {
+          for (final exercise in workout) {
+            for (final set in exercise) {
               set.isCompleted = true;
             }
           }
@@ -516,8 +516,8 @@ void main() {
           workout.completeAllSets();
 
           expect(workout.isValid, isTrue);
-          for (var exercise in workout) {
-            for (var set in exercise) {
+          for (final exercise in workout) {
+            for (final set in exercise) {
               expect(set.isCompleted, isTrue);
             }
           }

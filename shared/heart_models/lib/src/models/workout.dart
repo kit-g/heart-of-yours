@@ -180,7 +180,7 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
       'id': id,
       if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
       'sets': [
-        for (var each in where((each) => each.isCompleted)) each.toMap(),
+        for (final each in where((each) => each.isCompleted)) each.toMap(),
       ],
     };
   }
@@ -362,7 +362,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       'start': start.toIso8601String(),
       'end': end?.toIso8601String(),
       'exercises': [
-        for (var each in l)
+        for (final each in l)
           if (each.isNotEmpty)
             {
               ...each.toMap(),
@@ -471,7 +471,7 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
       if (each.isNotEmpty) {
         final exercise = WorkoutExercise(starter: each.first.copy());
 
-        for (var (index, set) in each.skip(1).indexed) {
+        for (final (index, set) in each.skip(1).indexed) {
           final start = DateTime.timestamp().add(Duration(milliseconds: 2 * index));
           exercise.add(set.copy(start: start));
         }
@@ -489,8 +489,8 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   @override
   void completeAllSets() {
-    for (var each in this) {
-      for (var set in each) {
+    for (final each in this) {
+      for (final set in each) {
         set.isCompleted = true;
       }
     }
