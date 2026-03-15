@@ -15,11 +15,10 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         ..enableMemoryPressureBreadcrumbs = true
         ..dsn = config.sentryDsn
         ..tracesSampleRate = 1.0
-        ..profilesSampleRate = 1.0
         ..diagnosticLevel = switch (config.env) {
-          Env.dev => SentryLevel.debug,
-          Env.test => SentryLevel.info,
-          Env.prod => SentryLevel.error,
+          .dev => .debug,
+          .test => .info,
+          .prod => .error,
         };
     },
     appRunner: appRunner,
