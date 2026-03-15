@@ -539,19 +539,25 @@ List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLooku
   };
 }
 
-abstract interface class ProgressGalleryResponse {
+abstract interface class ProgressGalleryResponse implements Iterable<WorkoutImage> {
   List<WorkoutImage> get images;
 
   String? get cursor;
 
+  factory ProgressGalleryResponse({required List<WorkoutImage> images, String? cursor}) {
+    return _ProgressGalleryResponse._(images: images, cursor: cursor);
+  }
+
   factory ProgressGalleryResponse.fromJson(Map json) = _ProgressGalleryResponse.fromJson;
 }
 
-class _ProgressGalleryResponse implements ProgressGalleryResponse {
+class _ProgressGalleryResponse with Iterable<WorkoutImage> implements ProgressGalleryResponse {
   @override
   final List<WorkoutImage> images;
   @override
   final String? cursor;
+
+  const _ProgressGalleryResponse._({required this.images, this.cursor});
 
   const _ProgressGalleryResponse({
     required this.images,
@@ -567,4 +573,7 @@ class _ProgressGalleryResponse implements ProgressGalleryResponse {
       cursor: json['cursor'],
     );
   }
+
+  @override
+  Iterator<WorkoutImage> get iterator => images.iterator;
 }
