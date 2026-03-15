@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS exercises
     thumbnail_height INT,
     instructions     TEXT,
     user_id          TEXT,
+    muscles          TEXT,
     own              INT  NOT NULL DEFAULT 0,
     archived         INT  NOT NULL DEFAULT 0,
     CHECK (own IN (0, 1)),
