@@ -113,8 +113,36 @@ void main() {
       expect(e.instructions, isNull);
       expect(e.isMine, isFalse);
       expect(e.isArchived, isFalse);
+      expect(e.muscles.isEmpty, isTrue);
 
       expect(e.toMap(), {...baseJson, 'own': 0, 'archived': 0});
+    });
+
+    test('fromJson with muscles, toMap includes it', () {
+      final json = {
+        ...baseJson,
+        'muscles': {
+          'primary': {
+            'ids': ['chest_middle'],
+            'groups': ['chest']
+          },
+        },
+      };
+      final e = Exercise.fromJson(json);
+      expect(e.muscles.isEmpty, isFalse);
+      expect(e.muscles.primary.ids, contains('chest_middle'));
+
+      final map = e.toMap();
+      expect(map['muscles'], contains('primary'));
+    });
+
+    test('factory Exercise() defaults muscles to empty', () {
+      final e = Exercise(
+        name: 'Test',
+        category: Category.barbell,
+        target: Target.chest,
+      );
+      expect(e.muscles.isEmpty, isTrue);
     });
 
     test('fromJson accepts remote-shaped asset/thumbnail', () {
@@ -331,6 +359,9 @@ void main() {
           target: Target.chest,
           instructions: 'A',
         );
+        final tagging = MuscleTagging.fromJson({
+          'primary': {'ids': ['p']}
+        });
         final copied = base.copyWith(
           category: Category.machine,
           target: Target.back,
@@ -338,6 +369,7 @@ void main() {
           isArchived: true,
           asset: (link: 'a', width: 10, height: 20),
           thumbnail: (link: 't', width: 1, height: 2),
+          tags: tagging,
         );
 
         expect(copied.name, 'X');
@@ -348,6 +380,7 @@ void main() {
         expect(copied.asset?.link, 'a');
         expect(copied.thumbnail?.link, 't');
         expect(copied.instructions, 'A', reason: 'not overridden');
+        expect(copied.muscles, tagging);
       });
     });
   });
