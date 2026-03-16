@@ -80,7 +80,15 @@ class LocalDatabase
 
         final exercises = rows.map(
           (row) {
-            return Exercise.fromJson(row.toCamel());
+            final each = row.toCamel();
+            switch (each['muscles']) {
+              case String s:
+                each['muscles'] = jsonDecode(s);
+              case null:
+                each['muscles'] = {};
+            }
+
+            return Exercise.fromJson(each);
           },
         );
 
@@ -104,7 +112,8 @@ class LocalDatabase
             for (final MapEntry(:key, :value) in each.toMap().entries) key.toSnake(): value,
           };
           if (each.isMine) row['user_id'] = userId;
-          batch.insert(_exercises, row, conflictAlgorithm: ConflictAlgorithm.replace);
+          row['muscles'] = jsonEncode(each.muscles.toMap());
+          batch.insert(_exercises, row, conflictAlgorithm: .replace);
         }
 
         txn.insert(_syncs, {'table_name': _exercises}, conflictAlgorithm: ConflictAlgorithm.replace);
