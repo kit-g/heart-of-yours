@@ -13,19 +13,16 @@ class _About extends StatelessWidget {
     return SingleChildScrollView(
       padding: const .symmetric(vertical: 8),
       child: Column(
-        crossAxisAlignment: .start,
+        crossAxisAlignment: .stretch,
         children: [
           if (asset case Asset asset)
             Padding(
               padding: const .only(bottom: 16.0),
-              child: Container(
-                color: Colors.orange,
-                child: ClipRRect(
-                  borderRadius: const .all(.circular(6)),
-                  child: AppImage(
-                    url: asset.link,
-                    fit: .cover,
-                  ),
+              child: ClipRRect(
+                borderRadius: const .all(.circular(6)),
+                child: AppImage(
+                  url: asset.link,
+                  fit: .cover,
                 ),
               ),
             ),
