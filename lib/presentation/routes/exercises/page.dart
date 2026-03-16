@@ -49,19 +49,22 @@ class _ExercisesPageState extends State<ExercisesPage> {
           centerTitle: true,
         ),
         actions: [
-          if (exercises.archived.isNotEmpty)
-            IconButton(
-              tooltip: exerciseOptions,
-              onPressed: () {
-                _onExerciseOptions(context, onShowArchived: widget.onShowArchived);
+          IconButton(
+            tooltip: exerciseOptions,
+            onPressed: () {
+              _onExerciseOptions(
+                context,
+                onShowArchived: widget.onShowArchived,
+                hasArchived: exercises.archived.isNotEmpty,
+              );
+            },
+            icon: Icon(
+              switch (platform) {
+                .iOS || .macOS => Icons.more_horiz_rounded,
+                _ => Icons.more_vert_rounded,
               },
-              icon: Icon(
-                switch (platform) {
-                  .iOS || .macOS => Icons.more_horiz_rounded,
-                  _ => Icons.more_vert_rounded,
-                },
-              ),
             ),
+          ),
         ],
       ),
       exercises: exercises,
