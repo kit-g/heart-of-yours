@@ -383,7 +383,7 @@ class LocalDatabase
         'id': exercise.id,
       };
 
-      batch.insert(_workoutExercises, exerciseRow, conflictAlgorithm: ConflictAlgorithm.replace);
+      batch.insert(_workoutExercises, exerciseRow, conflictAlgorithm: .replace);
 
       for (final set in exercise) {
         final setRow = {
@@ -392,7 +392,7 @@ class LocalDatabase
           'completed': set.isCompleted ? 1 : 0,
         };
 
-        batch.insert(_sets, setRow, conflictAlgorithm: ConflictAlgorithm.replace);
+        batch.insert(_sets, setRow, conflictAlgorithm: .replace);
       }
     }
   }
@@ -518,7 +518,7 @@ class LocalDatabase
               ...template.toRow(),
               'user_id': userId,
             },
-            conflictAlgorithm: ConflictAlgorithm.replace,
+            conflictAlgorithm: .replace,
           );
 
           final ts = DateTime.timestamp();
