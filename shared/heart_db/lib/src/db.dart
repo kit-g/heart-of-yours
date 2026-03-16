@@ -116,7 +116,7 @@ class LocalDatabase
           batch.insert(_exercises, row, conflictAlgorithm: .replace);
         }
 
-        txn.insert(_syncs, {'table_name': _exercises}, conflictAlgorithm: ConflictAlgorithm.replace);
+        txn.insert(_syncs, {'table_name': _exercises}, conflictAlgorithm: .replace);
 
         return batch.commit(noResult: true);
       },
@@ -190,7 +190,7 @@ class LocalDatabase
                 'exercise_name': exerciseName,
                 'user_id': userId,
               },
-              conflictAlgorithm: ConflictAlgorithm.replace,
+              conflictAlgorithm: .replace,
             );
         }
       },
@@ -381,7 +381,7 @@ class LocalDatabase
       'end': ?end?.toIso8601String(),
       'images': ?_encodeImages(images?.values),
     };
-    batch.insert(_workouts, row, conflictAlgorithm: ConflictAlgorithm.replace);
+    batch.insert(_workouts, row, conflictAlgorithm: .replace);
 
     for (final each in workout.indexed) {
       var (order, exercise) = each;
