@@ -205,7 +205,11 @@ Future<void> _onConfirmArchive(BuildContext context, Exercise exercise) async {
   await Exercises.of(context).archive(exercise);
 }
 
-Future<void> _onExerciseOptions(BuildContext context, {required VoidCallback onShowArchived}) async {
+Future<void> _onExerciseOptions(
+  BuildContext context, {
+  required VoidCallback onShowArchived,
+  bool hasArchived = false,
+}) async {
   return showBottomMenu(
     context,
     [
@@ -217,14 +221,15 @@ Future<void> _onExerciseOptions(BuildContext context, {required VoidCallback onS
           showNewExerciseDialog(context);
         },
       ),
-      BottomMenuAction(
-        title: L.of(context).showArchived,
-        icon: const Icon(Icons.archive_outlined),
-        onPressed: () {
-          Navigator.of(context).pop();
-          onShowArchived();
-        },
-      ),
+      if (hasArchived)
+        BottomMenuAction(
+          title: L.of(context).showArchived,
+          icon: const Icon(Icons.archive_outlined),
+          onPressed: () {
+            Navigator.of(context).pop();
+            onShowArchived();
+          },
+        ),
     ],
   );
 }
