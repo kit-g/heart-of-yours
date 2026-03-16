@@ -20,6 +20,7 @@ void main() {
     when(local.storeExercises(any)).thenAnswer((_) async {});
 
     when(remote.getExercises()).thenAnswer((_) async => <Exercise>[]);
+    when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
     // history/records delegates (we stub empty results)
     when(local.getExerciseHistory(any, any, pageSize: anyNamed('pageSize'), anchor: anyNamed('anchor')))
@@ -75,75 +76,43 @@ void main() {
   });
 
   group('init()', () {
-    test('uses local exercises when available, sets initialized and notifies once', () async {
+    test('uses local exercises when available, then fetches remote (2 notifications total)', () async {
       final e1 = ex('Squat');
-      when(
-        local.getExercises(
-          userId: anyNamed('userId'),
-        ),
-      ).thenAnswer(
-        (_) async => (DateTime(2024, 1, 1), <Exercise>[e1]),
-      );
+      final e2 = ex('Deadlift');
+
+      when(local.getExercises(userId: anyNamed('userId')))
+          .thenAnswer((_) async => (DateTime(2024, 1, 1), <Exercise>[e1]));
+      when(remote.getExercises()).thenAnswer((_) async => <Exercise>[e2]);
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
       final probe = ListenerProbe()..attach(sut);
       await sut.init();
-
-      expect(sut.isInitialized, isTrue);
-      expect(sut.lookup(e1.name), e1);
-      expect(probe.notifications, 1);
-      verifyNever(remote.getExercises());
-      verifyNever(local.storeExercises(any));
-    });
-
-    test('does nothing (no notify) when local empty and lastSync not provided', () async {
-      when(local.getExercises()).thenAnswer((_) async => (DateTime(2024, 1, 1), <Exercise>[]));
-      final probe = ListenerProbe()..attach(sut);
-      await sut.init();
-      expect(sut.isInitialized, isFalse);
-      expect(probe.notifications, 0);
-      verifyNever(remote.getExercises());
-      verifyNever(local.storeExercises(any));
-    });
-
-    test('does nothing when localSync is after lastSync (no remote call)', () async {
-      when(
-        local.getExercises(userId: anyNamed('userId')),
-      ).thenAnswer(
-        (_) async => (DateTime(2025, 1, 1), <Exercise>[]),
-      );
-
-      final probe = ListenerProbe()..attach(sut);
-      await sut.init(lastSync: DateTime(2024, 12, 31));
-
-      expect(sut.isInitialized, isFalse);
-      expect(probe.notifications, 0);
-      verifyNever(remote.getExercises());
-      verifyNever(local.storeExercises(any));
-    });
-
-    test('fetches remote (ex + own), stores locally with userId, sets initialized and notifies once', () async {
-      final e1 = ex('Deadlift');
-      final e2 = ex('Overhead Press');
-      final e3 = ex('My Curl');
-
-      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
-
-      when(remote.getExercises()).thenAnswer((_) async => <Exercise>[e1, e2]);
-      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[e3]);
-
-      final probe = ListenerProbe()..attach(sut);
-
-      await sut.init(lastSync: DateTime(2020, 1, 1));
 
       expect(sut.isInitialized, isTrue);
       expect(sut.lookup(e1.name), e1);
       expect(sut.lookup(e2.name), e2);
-      expect(sut.lookup(e3.name), e3);
-      expect(probe.notifications, 1);
+      expect(probe.notifications, 2); // 1 for local, 1 for remote
 
       verify(local.getExercises(userId: anyNamed('userId'))).called(1);
       verify(remote.getExercises()).called(1);
       verify(remote.getOwnExercises()).called(1);
+      verify(local.storeExercises(any, userId: anyNamed('userId'))).called(1);
+    });
+
+    test('when local is empty, still fetches remote, sets initialized and notifies once', () async {
+      final e1 = ex('Squat');
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
+      when(remote.getExercises()).thenAnswer((_) async => <Exercise>[e1]);
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.init();
+
+      expect(sut.isInitialized, isTrue);
+      expect(sut.lookup(e1.name), e1);
+      expect(probe.notifications, 1); // 1 for remote (none for empty local)
+
+      verify(remote.getExercises()).called(1);
       verify(local.storeExercises(any, userId: anyNamed('userId'))).called(1);
     });
 
@@ -405,8 +374,35 @@ void main() {
       expect(await sut.getDistanceHistory(e), isNull);
       expect(await sut.getDurationHistory(e), isNull);
       expect(await sut.getWeightHistory(e), isNull);
+      expect(await sut.getChartExerciseMetics(ChartPreferenceType.totalVolume, 'Bench'), isNull);
 
       verifyZeroInteractions(local);
+    });
+
+    test('getChartExerciseMetics delegates to service when userId is set', () async {
+      final metrics = <(num, DateTime)>[(100.0, DateTime(2024, 1, 1))];
+      when(local.getExerciseMetics('u1', ChartPreferenceType.totalVolume, 'Bench', limit: 8))
+          .thenAnswer((_) async => metrics);
+
+      final result = await sut.getChartExerciseMetics(ChartPreferenceType.totalVolume, 'Bench');
+
+      expect(result, metrics);
+      verify(local.getExerciseMetics('u1', ChartPreferenceType.totalVolume, 'Bench', limit: 8)).called(1);
+    });
+  });
+
+  group('showingMine', () {
+    test('getter/setter works and notifies', () {
+      final probe = ListenerProbe()..attach(sut);
+      expect(sut.showingMine, isFalse);
+
+      sut.showingMine = true;
+      expect(sut.showingMine, isTrue);
+      expect(probe.notifications, 1);
+
+      sut.showingMine = false;
+      expect(sut.showingMine, isFalse);
+      expect(probe.notifications, 2);
     });
   });
 
