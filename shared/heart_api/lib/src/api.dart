@@ -280,7 +280,7 @@ class Api
   }
 
   @override
-  Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor}) async {
+  Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor, String? userId}) async {
     final (json, _) = await get('${Router.workouts}/images', query: {'cursor': ?cursor});
     return ProgressGalleryResponse.fromJson(json);
   }
@@ -288,7 +288,7 @@ class Api
 
 abstract final class Router {
   static const accounts = 'api/v1/accounts';
-  static const exercises = 'api/v1/exercises';
+  static const exercises = 'api/v2/exercises';
   static const feedback = 'api/v1/feedback';
   static const templates = 'api/v1/templates';
   static const workouts = 'api/v1/workouts';
