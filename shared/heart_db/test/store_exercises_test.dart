@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:mockito/mockito.dart';
@@ -41,6 +43,7 @@ void main() {
     () async {
       final testExercise = exercise(name: 'Push Up');
       final expectedRow = testExercise.toMap().map((key, value) => MapEntry(key.toSnake(), value));
+      expectedRow['muscles'] = jsonEncode(testExercise.muscles.toMap());
 
       await local.storeExercises([testExercise]);
 
@@ -122,4 +125,3 @@ void main() {
     },
   );
 }
-
