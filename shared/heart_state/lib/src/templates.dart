@@ -21,9 +21,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     required this.lookForExercise,
     this.onError,
     this.maxTemplates,
-  })  : _service = service,
-        _configService = configService,
-        _remoteService = remoteService;
+  }) : _service = service,
+       _configService = configService,
+       _remoteService = remoteService;
 
   Template? editable;
 
@@ -61,7 +61,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
     final remote = await _remoteService.getTemplates(lookForExercise) ?? [];
     if (remote.isNotEmpty) {
-      _templates.addAll(remote);
+      _templates
+        ..removeWhere(remote.contains)
+        ..addAll(remote);
       notifyListeners();
       return _service.storeTemplates(remote, userId: userId);
     }
@@ -137,8 +139,10 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     }
 
     final remote = await _configService.getSampleTemplates(lookForExercise);
+    _samples
+      ..removeWhere(remote.contains)
+      ..addAll(remote);
     _service.storeTemplates(remote);
-    _samples.addAll(remote);
   }
 
   Future<void> workoutToTemplate(Workout workout) async {
