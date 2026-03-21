@@ -305,6 +305,7 @@ void main() {
       // case 1: local present
       final w1 = Workout(name: 'w1');
       when(local.getWorkoutHistory('u1', any)).thenAnswer((_) async => [w1]);
+      when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
       when(
         remote.getWorkoutGallery(cursor: anyNamed('cursor')),
       ).thenAnswer(
@@ -317,13 +318,14 @@ void main() {
       await sut.initHistory();
       expect(sut.historyInitialized, isTrue);
       expect(sut.lookup(w1.id), w1);
-      expect(probe1.notifications, 1);
+      expect(probe1.notifications, 2);
 
       // reset and test remote path
       sut.onSignOut();
       sut.userId = 'u1';
       final w2 = Workout(name: 'w2');
       when(local.getWorkoutHistory('u1', any)).thenAnswer((_) async => <Workout>[]);
+      when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
       when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [w2]);
 
       final probe2 = ListenerProbe()..attach(sut);
@@ -331,7 +333,7 @@ void main() {
 
       verify(local.storeWorkoutHistory([w2], 'u1')).called(1);
       expect(sut.lookup(w2.id), w2);
-      expect(probe2.notifications, 1);
+      expect(probe2.notifications, 2);
     });
 
     test('fetchWorkout stores and notifies when found', () async {
