@@ -290,7 +290,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Workout? lookup(String id) => _workouts[id];
 
-  Future<bool> attachImageToWorkout(Workout workout, (Uint8List, {String? mimeType, String? name}) image) async {
+  Future<WorkoutImage?> attachImageToWorkout(Workout workout, (Uint8List, {String? mimeType, String? name}) image) async {
     // destinationUrl is where the image will be available once saved
     final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workout.id);
     if (cred != null) {
@@ -307,21 +307,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         _progress.add(local);
 
         notifyListeners();
-        return true;
+        return local;
       }
     }
 
-    return false;
+    return null;
   }
 
-  Future<bool> attachImageToActiveWorkout((Uint8List, {String? mimeType, String? name}) image) async {
+  Future<WorkoutImage?> attachImageToActiveWorkout((Uint8List, {String? mimeType, String? name}) image) async {
     if (activeWorkout case Workout workout) {
       final saved = await _remoteService.saveWorkout(workout);
       if (saved) {
         return attachImageToWorkout(workout, image);
       }
     }
-    return false;
+    return null;
   }
 
   Future<void> detachImageFromWorkout(Workout workout, WorkoutImage image) async {
