@@ -13,7 +13,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final WorkoutService _localService;
   final RemoteWorkoutService _remoteService;
-  final _progress = SplayTreeSet<WorkoutImage>();
+  final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
   Workouts({
     required this.lookForExercise,
@@ -339,4 +339,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       detachImageFromWorkout(workout, image);
     }
   }
+}
+
+int _compareImages(WorkoutImage one, WorkoutImage two) {
+  final byWorkout = two.workoutId.compareTo(one.workoutId);
+  if (byWorkout != 0) return byWorkout;
+  return one.id.compareTo(two.id);
 }
