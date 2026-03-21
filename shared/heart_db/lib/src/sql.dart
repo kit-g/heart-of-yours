@@ -1,4 +1,5 @@
-const workouts = """CREATE TABLE IF NOT EXISTS workouts
+const workouts = """
+CREATE TABLE IF NOT EXISTS workouts
 (
     id      TEXT NOT NULL PRIMARY KEY,
     start   TEXT NOT NULL,
