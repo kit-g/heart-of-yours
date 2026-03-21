@@ -8,6 +8,7 @@ import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -22,6 +23,9 @@ void main() {
 
     setUp(
       () {
+        // Prevent SharedPreferences.getInstance() from throwing a MissingPluginException
+        SharedPreferences.setMockInitialValues({});
+
         db = MockLocalDatabase();
         api = MockApi();
         configApi = MockConfigApi();
@@ -35,6 +39,17 @@ void main() {
           ),
         ).thenAnswer((_) async => WorkoutAggregation.empty());
         when(db.getWeeklyWorkoutCount(any)).thenAnswer((_) async => 0);
+
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
+        when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
+        when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
+        when(db.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
+
+        when(db.getActiveWorkout(any, any)).thenAnswer((_) async => null);
+
+        when(
+          db.getWorkoutGallery(userId: anyNamed('userId')),
+        ).thenAnswer((_) async => ProgressGalleryResponse(images: <WorkoutImage>[]));
 
         when(
           api.getWorkoutGallery(cursor: anyNamed('cursor')),
