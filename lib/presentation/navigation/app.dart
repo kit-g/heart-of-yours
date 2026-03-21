@@ -176,13 +176,13 @@ class _AppState extends State<_App> {
       Color color => theme(
         ColorScheme.fromSeed(
           seedColor: color,
-          brightness: Brightness.light,
+          brightness: .light,
         ),
       ),
       null => theme(
         ColorScheme.fromSeed(
           seedColor: AppTheme.colorFromHex(widget.config.themeColorHex) ?? Colors.white,
-          brightness: Brightness.light,
+          brightness: .light,
         ),
       ),
     };
@@ -190,13 +190,13 @@ class _AppState extends State<_App> {
       Color color => theme(
         ColorScheme.fromSeed(
           seedColor: color,
-          brightness: Brightness.dark,
+          brightness: .dark,
         ),
       ),
       null => theme(
         ColorScheme.fromSeed(
           seedColor: AppTheme.colorFromHex(widget.config.themeColorHex) ?? Colors.white,
-          brightness: Brightness.dark,
+          brightness: .dark,
         ),
       ),
     };
