@@ -31,6 +31,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     historyInitialized = false;
     _notifiedOfActiveWorkout = false;
     _latestMarkedSet = null;
+    _progress.clear();
   }
 
   static Workouts of(BuildContext context) {
@@ -263,25 +264,19 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> initHistory() async {
     if (userId case String id) {
       final local = await _localService.getWorkoutHistory(id, lookForExercise);
-
       _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
+      notifyListeners();
 
-      final futures = await Future.wait([
-        _getRemoteHistory(id),
-        _remoteService.getWorkoutGallery(),
-      ]);
-
-      if (futures case [Iterable<Workout>? workouts, ProgressGalleryResponse response]) {
-        if (workouts != null) {
-          _localService.storeWorkoutHistory(workouts, id);
-          _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
-        }
-
-        _progress.addAll(response.images);
-
-        historyInitialized = true;
-        notifyListeners();
+      final workouts = await _getRemoteHistory(id);
+      if (workouts != null) {
+        await _localService.storeWorkoutHistory(workouts, id);
+        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
       }
+
+      await _localService.getWorkoutGallery(userId: id).then<void>(_progress.addAll);
+
+      historyInitialized = true;
+      notifyListeners();
     }
   }
 
