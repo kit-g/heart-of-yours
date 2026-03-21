@@ -33,7 +33,8 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
   Widget build(BuildContext context) {
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     final workouts = Workouts.watch(context);
-    final history = workouts.history.toList()..sort();
+    final historyMap = workouts.byMonth;
+    final items = historyMap.entries.expand((entry) => [entry.key, ...entry.value]).toList();
     final images = workouts.images;
     final layout = LayoutProvider.of(context);
     final listview = CustomScrollView(
@@ -88,23 +89,28 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               ),
             ),
           ),
-        if (history.isEmpty)
+        if (historyMap.isEmpty)
           const SliverFillRemaining(
             child: _EmptyState(),
           )
         else
           SliverList.builder(
-            itemCount: history.length,
-            itemBuilder: (_, index) {
-              return WorkoutItem(
-                workout: history[history.length - index - 1],
-                onStartNewWorkout: widget.onNewWorkout,
-                onSaveAsTemplate: widget.onSaveAsTemplate,
-                onEditWorkout: widget.onEditWorkout,
-                onTap: widget.onTapWorkout,
-                onDeleteWorkout: widget.onDeleteWorkout,
-                onTapImageIcon: widget.onTapImage,
-              );
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return switch (item) {
+                String key => _MonthHeader(monthKey: key),
+                Workout workout => WorkoutItem(
+                  workout: workout,
+                  onStartNewWorkout: widget.onNewWorkout,
+                  onSaveAsTemplate: widget.onSaveAsTemplate,
+                  onEditWorkout: widget.onEditWorkout,
+                  onTap: widget.onTapWorkout,
+                  onDeleteWorkout: widget.onDeleteWorkout,
+                  onTapImageIcon: widget.onTapImage,
+                ),
+                _ => const SizedBox.shrink(),
+              };
             },
           ),
       ],
@@ -145,6 +151,31 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
   @override
   void afterFirstLayout(BuildContext context) {
     Workouts.of(context).initHistory();
+  }
+}
+
+class _MonthHeader extends StatelessWidget {
+  final String monthKey;
+
+  const _MonthHeader({required this.monthKey});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+
+    final date = DateTime.parse('$monthKey-01');
+    final label = DateFormat.yMMMM().format(date);
+
+    return Container(
+      padding: const .symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        label.toUpperCase(),
+        style: textTheme.labelLarge?.copyWith(
+          color: colorScheme.primary,
+          fontWeight: .bold,
+        ),
+      ),
+    );
   }
 }
 
