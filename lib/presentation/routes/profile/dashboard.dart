@@ -13,6 +13,17 @@ class _Dashboard extends StatelessWidget {
     final length = charts.length;
     final service = FakeExerciseHistoryService();
 
+    if (!charts.initialized) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: .symmetric(vertical: 16),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
     return switch (layout) {
       .compact => SliverList(
         delegate: SliverChildBuilderDelegate(
