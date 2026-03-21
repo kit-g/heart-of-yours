@@ -26,10 +26,10 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
           children: [
             Card(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: .start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: .spaceBetween,
                     children: [
                       IconButton(
                         onPressed: () {

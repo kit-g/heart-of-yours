@@ -12,7 +12,7 @@ const _font = 'Lato';
 const _fontFallbacks = ['Noto Sans'];
 
 ThemeData theme(ColorScheme colorScheme) {
-  final textTheme = _textTheme(primaryColor: colorScheme.onSurface, secondaryColor: colorScheme.outline);
+  final textTheme = _textTheme(primaryColor: colorScheme.onSurface, secondaryColor: colorScheme.onSurfaceVariant);
   return ThemeData(
     useMaterial3: true,
     brightness: colorScheme.brightness,
@@ -20,8 +20,8 @@ ThemeData theme(ColorScheme colorScheme) {
     fontFamily: _font,
     fontFamilyFallback: _fontFallbacks,
     textTheme: textTheme,
-    scaffoldBackgroundColor: colorScheme.surface,
-    canvasColor: colorScheme.surface,
+    scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
+    canvasColor: colorScheme.surfaceContainerLowest,
     inputDecorationTheme: InputDecorationTheme(
       isDense: true,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
@@ -30,8 +30,8 @@ ThemeData theme(ColorScheme colorScheme) {
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       elevation: 1,
-      selectedIconTheme: IconThemeData(color: colorScheme.onSurface, size: 28),
-      selectedLabelStyle: textTheme.bodyLarge,
+      selectedIconTheme: IconThemeData(color: colorScheme.primary, size: 28),
+      selectedLabelStyle: textTheme.bodyLarge?.copyWith(color: colorScheme.primary),
       selectedItemColor: colorScheme.onSurface,
       showUnselectedLabels: true,
       unselectedIconTheme: IconThemeData(color: colorScheme.outline, size: 24),
@@ -51,6 +51,7 @@ ThemeData theme(ColorScheme colorScheme) {
       shape: _widerRoundedBorder,
     ),
     appBarTheme: AppBarTheme(
+      backgroundColor: colorScheme.surfaceContainerLowest,
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarIconBrightness: switch (colorScheme.brightness) {
           .dark => .light,
