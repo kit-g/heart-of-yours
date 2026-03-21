@@ -8,6 +8,7 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   String? userId;
+  bool initialized = false;
 
   Charts({
     required ChartPreferenceService service,
@@ -17,6 +18,7 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
   @override
   void onSignOut() {
     _preferences.clear();
+    initialized = false;
   }
 
   @override
@@ -37,6 +39,7 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
   Future<void> init() async {
     if (userId case String id) {
       await _service.getPreferences(id).then(_preferences.addAll);
+      initialized = true;
       notifyListeners();
     }
   }
