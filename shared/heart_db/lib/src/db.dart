@@ -236,7 +236,7 @@ class LocalDatabase
   }
 
   @override
-  Future<int> finishWorkout(Workout workout, String userId) {
+  Future<void> finishWorkout(Workout workout, String userId) {
     return _db.transaction(
       (txn) async {
         final batch = txn.batch();
@@ -252,7 +252,7 @@ class LocalDatabase
           whereArgs: [workout.id],
         );
         // we'll remove all the exercises that are not marked as finished
-        return txn.rawDelete(sql.removeUnfinished, [workout.id]);
+        await txn.rawDelete(sql.removeUnfinished, [workout.id]);
       },
     );
   }
