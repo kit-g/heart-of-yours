@@ -270,3 +270,4 @@ passwordPolicyLowerCase,Password requirement: must contain at least one lowercas
 passwordPolicyDigit,Password requirement: must contain at least one numeric digit (0-9). Displayed as a validation rule in the password policy checklist with casual phrasing.,one number somewhere in there,one number somewhere in there,одна цифра где-нибудь там
 deleteImageDialogTitle,Confirmation dialog title when user attempts to delete an image from a workout,Remove this image?,Remove this image?,Удалить это изображение?
 deleteImageDialogBody,Confirmation dialog body explaining that removing the image won't delete workout data,It won't affect the workout — just clears the picture,It won't affect the workout — just clears the picture,Это не повлияет на тренировку — просто удалит фотографию
+myProgression,Photo gallery title,My progression,My progression,Мой прогресс

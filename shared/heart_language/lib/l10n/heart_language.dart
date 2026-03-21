@@ -1465,6 +1465,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'It won\'t affect the workout — just clears the picture'**
   String get deleteImageDialogBody;
+
+  /// Photo gallery title
+  ///
+  /// In en, this message translates to:
+  /// **'My progression'**
+  String get myProgression;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
