@@ -751,4 +751,7 @@ class LRu extends L {
 
   @override
   String get deleteImageDialogBody => 'Это не повлияет на тренировку — просто удалит фотографию';
+
+  @override
+  String get myProgression => 'Мой прогресс';
 }

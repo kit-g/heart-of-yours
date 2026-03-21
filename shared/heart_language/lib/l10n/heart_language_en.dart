@@ -751,6 +751,9 @@ class LEn extends L {
 
   @override
   String get deleteImageDialogBody => 'It won\'t affect the workout — just clears the picture';
+
+  @override
+  String get myProgression => 'My progression';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1500,4 +1503,7 @@ class LEnCa extends LEn {
 
   @override
   String get deleteImageDialogBody => 'It won\'t affect the workout — just clears the picture';
+
+  @override
+  String get myProgression => 'My progression';
 }

@@ -31,10 +31,12 @@ const _imageSize = 120.0;
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage> {
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :header) = Theme.of(context);
+
+    final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
-    final historyMap = workouts.byMonth;
-    final items = historyMap.entries.expand((entry) => [entry.key, ...entry.value]).toList();
+    final byMonth = workouts.byMonth;
+    final items = byMonth.entries.expand((entry) => [entry.key, ...entry.value]).toList();
     final images = workouts.images;
     final layout = LayoutProvider.of(context);
     final listview = CustomScrollView(
@@ -53,43 +55,55 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
         ),
         if (images.isNotEmpty)
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: _imageSize,
-              child: ListView.builder(
-                scrollDirection: .horizontal,
-                itemBuilder: (context, index) {
-                  final image = images[index];
-                  final last = index == images.length - 1;
-                  final first = index == 0;
-                  return GestureDetector(
-                    onTap: () {
-                      widget.onTapImage?.call(
-                        images,
-                        startingIndex: index,
-                        workoutId: image.workoutId,
-                      );
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
-                      child: SizedBox(
-                        width: _imageSize,
-                        child: ClipRRect(
-                          borderRadius: BorderRadiusGeometry.circular(4),
-                          child: AppImage(
-                            url: image.link,
-                            bytes: image.bytes,
-                            fit: .cover,
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    myProgression.toUpperCase(),
+                    style: header,
+                  ),
+                ),
+                SizedBox(
+                  height: _imageSize,
+                  child: ListView.builder(
+                    scrollDirection: .horizontal,
+                    itemBuilder: (context, index) {
+                      final image = images[index];
+                      final last = index == images.length - 1;
+                      final first = index == 0;
+                      return GestureDetector(
+                        onTap: () {
+                          widget.onTapImage?.call(
+                            images,
+                            startingIndex: index,
+                            workoutId: image.workoutId,
+                          );
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.only(left: first ? 16 : 2, right: last ? 16 : 2),
+                          child: SizedBox(
+                            width: _imageSize,
+                            child: ClipRRect(
+                              borderRadius: BorderRadiusGeometry.circular(4),
+                              child: AppImage(
+                                url: image.link,
+                                bytes: image.bytes,
+                                fit: .cover,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-                itemCount: images.length,
-              ),
+                      );
+                    },
+                    itemCount: images.length,
+                  ),
+                ),
+              ],
             ),
           ),
-        if (historyMap.isEmpty)
+        if (byMonth.isEmpty)
           const SliverFillRemaining(
             child: _EmptyState(),
           )
@@ -161,7 +175,7 @@ class _MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final ThemeData(:textTheme, :colorScheme, :header) = Theme.of(context);
 
     final date = DateTime.parse('$monthKey-01');
     final label = DateFormat.yMMMM().format(date);
@@ -170,10 +184,7 @@ class _MonthHeader extends StatelessWidget {
       padding: const .symmetric(horizontal: 16, vertical: 8),
       child: Text(
         label.toUpperCase(),
-        style: textTheme.labelLarge?.copyWith(
-          color: colorScheme.primary,
-          fontWeight: .bold,
-        ),
+        style: header,
       ),
     );
   }
@@ -207,6 +218,15 @@ class _EmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+extension on ThemeData {
+  TextStyle? get header {
+    return textTheme.labelLarge?.copyWith(
+      color: colorScheme.primary,
+      fontWeight: .bold,
     );
   }
 }

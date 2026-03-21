@@ -1427,5 +1427,11 @@
     "description": "Confirmation dialog body explaining that removing the image won't delete workout data",
     "type": "text",
     "placeholders": {}
+  },
+  "myProgression": "My progression",
+  "@myProgression": {
+    "description": "Photo gallery title",
+    "type": "text",
+    "placeholders": {}
   }
 }
