@@ -1,6 +1,7 @@
 library;
 
 export 'package:provider/provider.dart';
+export 'package:shared_preferences/shared_preferences.dart';
 
 export 'src/alarms.dart';
 export 'src/auth.dart';
