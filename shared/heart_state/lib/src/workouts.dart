@@ -58,6 +58,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
 
+  Map<String, List<Workout>> get byMonth {
+    final result = SplayTreeMap<String, List<Workout>>((a, b) => b.compareTo(a));
+    return history.fold<Map<String, List<Workout>>>(
+      result,
+      (map, workout) {
+        final date = workout.start;
+        final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+        return map..putIfAbsent(monthKey, () => []).add(workout);
+      },
+    )..forEach((key, workouts) => workouts.sort());
+  }
+
   List<WorkoutImage> get images => UnmodifiableListView(_progress);
 
   (WorkoutExercise exercise, ExerciseSet set)? _latestMarkedSet;
@@ -290,7 +302,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Workout? lookup(String id) => _workouts[id];
 
-  Future<WorkoutImage?> attachImageToWorkout(Workout workout, (Uint8List, {String? mimeType, String? name}) image) async {
+  Future<WorkoutImage?> attachImageToWorkout(
+    Workout workout,
+    (Uint8List, {String? mimeType, String? name}) image,
+  ) async {
     // destinationUrl is where the image will be available once saved
     final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workout.id);
     if (cred != null) {
