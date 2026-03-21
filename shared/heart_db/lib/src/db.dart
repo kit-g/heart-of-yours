@@ -2,14 +2,15 @@ part of '../heart_db.dart';
 
 class LocalDatabase
     implements
-        TimersService, //
+        ChartPreferenceService,
         ExerciseService,
         ExerciseHistoryService,
         ExercisesMetricsService,
         PreviousExerciseService,
+        GalleryService,
         StatsService,
         TemplateService,
-        ChartPreferenceService,
+        TimersService,
         WorkoutService {
   final Database _db;
 
@@ -235,16 +236,16 @@ class LocalDatabase
   }
 
   @override
-  Future<void> finishWorkout(Workout workout, String userId) {
+  Future<int> finishWorkout(Workout workout, String userId) {
     return _db.transaction(
-      (txn) {
+      (txn) async {
         final batch = txn.batch();
 
         _storeWorkout(batch, workout, userId);
 
-        batch.commit(noResult: true);
+        await batch.commit(noResult: true);
 
-        txn.update(
+        await txn.update(
           _workouts,
           {'end': workout.end?.toIso8601String()},
           where: 'id = ?',
@@ -355,7 +356,7 @@ class LocalDatabase
           _storeWorkout(batch, each, userId);
         }
 
-        batch.commit();
+        await batch.commit();
       },
     );
   }
@@ -664,6 +665,28 @@ class LocalDatabase
           },
         ).toList();
       },
+    );
+  }
+
+  @override
+  Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor, String? userId}) async {
+    final rows = await _db.query(
+      _workouts,
+      columns: ['images'],
+      where: 'images IS NOT NULL AND user_id = ?',
+      whereArgs: [?userId],
+    );
+    return ProgressGalleryResponse(
+      images: rows.expand(
+        (row) {
+          return switch (row['images']) {
+            String j => (jsonDecode(j) as List).map<WorkoutImage>(
+              (each) => WorkoutImage.fromJson(each),
+            ),
+            _ => const Iterable<WorkoutImage>.empty(),
+          };
+        },
+      ).toList(),
     );
   }
 }
