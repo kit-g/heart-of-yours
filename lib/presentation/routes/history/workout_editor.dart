@@ -369,7 +369,10 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     final workouts = Workouts.of(context);
     final localImage = await getImage();
     if (localImage != null) {
-      await workouts.attachImageToWorkout(workout, localImage);
+      final remoteImage = await workouts.attachImageToWorkout(workout, localImage);
+      if (remoteImage != null) {
+        _notifier.attachImage(remoteImage);
+      }
     }
   }
 }
@@ -424,6 +427,11 @@ class _WorkoutNotifier with ChangeNotifier {
 
   set name(String? value) {
     workout.name = value;
+    notifyListeners();
+  }
+
+  void attachImage(WorkoutImage image) {
+    workout.images?[image.id] = image;
     notifyListeners();
   }
 
