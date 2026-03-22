@@ -41,7 +41,7 @@ final class HeartRouter {
   HeartRouter({this.observers, this.onError})
     : config = GoRouter(
         navigatorKey: _rootNavigatorKey,
-        debugLogDiagnostics: false,
+        debugLogDiagnostics: true,
         initialLocation: _profilePath,
         observers: observers,
         routes: [
@@ -104,6 +104,12 @@ final class HeartRouter {
     // redirect to upgrade page if required
     if (upgradeRequired) {
       return _upgradeAppPath;
+    }
+
+    switch (state.uri.path.split('/')) {
+      // website path that points at account management page
+      case ['', 'account.html']:
+        return state.namedLocation(_accountManagementName);
     }
 
     switch (state.fullPath?.split('/')) {
