@@ -67,7 +67,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
         return map..putIfAbsent(monthKey, () => []).add(workout);
       },
-    )..forEach((key, workouts) => workouts.sort());
+    )..forEach((key, workouts) => workouts.sort((one, two) => two.id.compareTo(one.id)));
   }
 
   List<WorkoutImage> get images => UnmodifiableListView(_progress);
