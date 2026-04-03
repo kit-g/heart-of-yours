@@ -171,6 +171,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> deleteWorkout(String workoutId) {
     _workouts.remove(workoutId);
+    _progress.removeWhere((image) => image.workoutId == workoutId);
     notifyListeners();
     _localService.deleteWorkout(workoutId);
     return _deleteWorkout(workoutId);
