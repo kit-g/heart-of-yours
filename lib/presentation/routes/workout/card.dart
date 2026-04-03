@@ -22,6 +22,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final style = textTheme.bodyMedium?.copyWith(color: colorScheme.outline);
     return Card(
+      color: colorScheme.surfaceContainer,
       shape: _shape,
       child: InkWell(
         onTap: () {

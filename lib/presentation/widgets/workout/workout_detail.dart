@@ -363,7 +363,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
 
   Future<Object?> _showExerciseDialog(BuildContext context) {
     final ThemeData(
-      colorScheme: ColorScheme(surfaceContainerLow: color),
+      colorScheme: ColorScheme(surfaceContainerLowest: color),
       :textTheme,
     ) = Theme.of(
       context,

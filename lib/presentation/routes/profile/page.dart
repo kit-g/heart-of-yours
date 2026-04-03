@@ -201,7 +201,7 @@ Future<(Exercise, ChartPreferenceType)?> _showExercises(
   TextEditingController controller,
   FocusNode focus,
 ) {
-  final color = Theme.of(context).colorScheme.surfaceContainerLow;
+  final color = Theme.of(context).colorScheme.surfaceContainerLowest;
 
   return showDialog<(Exercise, ChartPreferenceType)?>(
     context: context,

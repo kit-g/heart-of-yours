@@ -110,6 +110,9 @@ ThemeData theme(ColorScheme colorScheme) {
     carouselViewTheme: const CarouselViewThemeData(
       shape: RoundedRectangleBorder(borderRadius: .all(.circular(12))),
     ),
+    cardTheme: CardThemeData(
+      color: colorScheme.surfaceContainerLowest,
+    ),
   );
 }
 
