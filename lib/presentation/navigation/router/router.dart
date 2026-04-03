@@ -41,7 +41,7 @@ final class HeartRouter {
   HeartRouter({this.observers, this.onError})
     : config = GoRouter(
         navigatorKey: _rootNavigatorKey,
-        debugLogDiagnostics: true,
+        debugLogDiagnostics: false,
         initialLocation: _profilePath,
         observers: observers,
         routes: [
