@@ -116,6 +116,8 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 
   void completeAllSets();
 
+  void removeEmptySets();
+
   void resolveName(String defaultValue);
 }
 
@@ -494,6 +496,12 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
         set.isCompleted = true;
       }
     }
+  }
+
+  @override
+  void removeEmptySets() {
+    forEach((exercise) => exercise.where((set) => !set.isCompleted).toList().forEach(exercise.remove));
+    where((exercise) => exercise.isEmpty).toList().forEach(remove);
   }
 
   @override

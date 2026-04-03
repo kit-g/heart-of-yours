@@ -143,6 +143,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> saveWorkout(Workout active) {
+    active.removeEmptySets();
     _localService.finishWorkout(active, userId!);
 
     _workouts[active.id] = active;

@@ -525,6 +525,55 @@ void main() {
       );
 
       test(
+        'removeEmptySets removes incomplete sets and empty exercises',
+        () {
+          final incompleteSet1 = setFactory(isCompleted: false);
+          final incompleteSet2 = setFactory(isCompleted: false);
+
+          workout.append(workoutExercise);
+          workoutExercise
+            ..add(incompleteSet1)
+            ..add(incompleteSet2)
+            ..add(completedSet);
+
+          // another exercise that has no complete sets
+          final emptyExercise = WorkoutExercise(starter: setFactory(isCompleted: false));
+          emptyExercise.add(setFactory(isCompleted: false));
+          workout.append(emptyExercise);
+
+          expect(workout.sets.length, equals(2));
+
+          workout.removeEmptySets();
+
+          // emptyExercise should be removed entirely
+          expect(workout.sets.length, equals(1));
+
+          // workoutExercise should only have the completedSet left
+          expect(workout.first.sets.length, equals(1));
+          expect(workout.first.sets.first, equals(completedSet));
+        },
+      );
+
+      test(
+        'removeEmptySets leaves completed workouts intact',
+        () {
+          workout.append(workoutExercise);
+          workoutExercise.add(completedSet);
+
+          // mark the starter set as complete too
+          starterSet.isCompleted = true;
+
+          expect(workout.sets.length, equals(1));
+          expect(workout.first.sets.length, equals(2));
+
+          workout.removeEmptySets();
+
+          expect(workout.sets.length, equals(1));
+          expect(workout.first.sets.length, equals(2));
+        },
+      );
+
+      test(
         'fromJson creates a workout from JSON data',
         () {
           when(mockExercise.name).thenReturn('Bench Press');
