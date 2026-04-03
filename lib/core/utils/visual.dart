@@ -140,9 +140,7 @@ Future<T?> showBrandedDialog<T>(
     builder: (context) {
       return AlertDialog(
         backgroundColor: scaffoldBackgroundColor,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
         contentPadding: padding,
         icon: icon,
         title: title,
@@ -170,25 +168,40 @@ class BottomMenuAction {
 }
 
 Future<T?> showBottomMenu<T>(BuildContext context, List<BottomMenuAction> actions) {
-  switch (Theme.of(context).platform) {
-    case TargetPlatform.iOS:
-    case TargetPlatform.macOS:
+  final ThemeData(:cupertinoOverrideTheme, :brightness, :colorScheme, :textTheme, :platform) = Theme.of(context);
+  switch (platform) {
+    case .iOS:
+    case .macOS:
       return showCupertinoModalPopup<T>(
         useRootNavigator: false,
         context: context,
-        builder: (context) => CupertinoActionSheet(
-          actions: actions.map(
-            (action) {
-              return CupertinoActionSheetAction(
-                onPressed: action.onPressed ?? () {},
-                isDestructiveAction: action.isDestructive,
-                child: Text(action.title),
-              );
-            },
-          ).toList(),
+        builder: (context) => CupertinoTheme(
+          data: CupertinoThemeData(
+            brightness: brightness,
+            primaryColor: colorScheme.primary,
+            textTheme: CupertinoTextThemeData(
+              primaryColor: colorScheme.primary,
+              textStyle: textTheme.titleLarge,
+              actionTextStyle: textTheme.titleLarge?.copyWith(color: colorScheme.primary),
+            ),
+          ),
+          child: CupertinoActionSheet(
+            actions: actions.map(
+              (action) {
+                return CupertinoActionSheetAction(
+                  onPressed: action.onPressed ?? () {},
+                  isDestructiveAction: action.isDestructive,
+                  child: Text(action.title),
+                );
+              },
+            ).toList(),
+          ),
         ),
       );
-    case _:
+    case .linux:
+    case .windows:
+    case .android:
+    case .fuchsia:
       return showModalBottomSheet<T>(
         context: context,
         isScrollControlled: true,
