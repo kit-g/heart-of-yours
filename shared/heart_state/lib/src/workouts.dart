@@ -358,6 +358,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 }
 
+/// Compares two [WorkoutImage] instances for sorting.
+///
+/// Images are sorted first by workout ID in descending order (newer workouts first),
+/// then by image ID in ascending order within the same workout.
+///
+/// Returns:
+/// - A negative value if [one] should come before [two]
+/// - Zero if they are considered equal
+/// - A positive value if [one] should come after [two]
 int _compareImages(WorkoutImage one, WorkoutImage two) {
   final byWorkout = two.workoutId.compareTo(one.workoutId);
   if (byWorkout != 0) return byWorkout;

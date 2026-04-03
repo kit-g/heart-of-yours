@@ -114,7 +114,19 @@ class LocalDatabase
           };
           if (each.isMine) row['user_id'] = userId;
           row['muscles'] = jsonEncode(each.muscles.toMap());
-          batch.insert(_exercises, row, conflictAlgorithm: .replace);
+
+          final columns = row.keys.join(', ');
+          final placeholders = List.filled(row.length, '?').join(', ');
+          final updates = row.keys.where((k) => k != 'name').map((k) => '$k = EXCLUDED.$k').join(', ');
+
+          batch.rawInsert(
+            '''
+            INSERT INTO $_exercises ($columns)
+            VALUES ($placeholders)
+            ON CONFLICT(name) DO UPDATE SET $updates
+            ''',
+            row.values.toList(),
+          );
         }
 
         txn.insert(_syncs, {'table_name': _exercises}, conflictAlgorithm: .replace);
