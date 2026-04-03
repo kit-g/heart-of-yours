@@ -28,6 +28,7 @@ class WorkoutItem extends StatelessWidget {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
     return Card(
+      color: colorScheme.surfaceContainer,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: _shape,
       child: InkWell(
