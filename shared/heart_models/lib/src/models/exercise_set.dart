@@ -31,10 +31,11 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
     int? duration,
   }) {
     return switch (exercise) {
-      Exercise e => _ExerciseSet(
-          exercise: e,
-          start: start ?? DateTime.timestamp(),
-        )
+      Exercise e =>
+        _ExerciseSet(
+            exercise: e,
+            start: start ?? DateTime.timestamp(),
+          )
           ..reps = reps
           ..weight = weight
           ..distance = distance
@@ -44,16 +45,17 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
 
   factory ExerciseSet.fromJson(Exercise exercise, Map json) {
     return ExerciseSet(
-      exercise,
-      reps: json['reps'],
-      weight: switch (json['weight']) {
-        num weight => weight.toDouble(),
-        _ => null,
-      },
-      duration: (json['duration'] as num?)?.toInt(),
-      distance: (json['distance'] as num?)?.toDouble(),
-      start: DateTime.parse(deSanitizeId(json['id'] ?? json['setId'])),
-    )..isCompleted = switch (json['completed']) {
+        exercise,
+        reps: json['reps'],
+        weight: switch (json['weight']) {
+          num weight => weight.toDouble(),
+          _ => null,
+        },
+        duration: (json['duration'] as num?)?.toInt(),
+        distance: (json['distance'] as num?)?.toDouble(),
+        start: DateTime.parse(deSanitizeId(json['id'] ?? json['setId'])),
+      )
+      ..isCompleted = switch (json['completed']) {
         bool completed => completed,
         1 => true,
         _ => false,
@@ -141,17 +143,17 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   @override
   bool get canBeCompleted {
     switch (category) {
-      case Category.assistedBodyWeight:
-      case Category.barbell:
-      case Category.dumbbell:
-      case Category.machine:
+      case .assistedBodyWeight:
+      case .barbell:
+      case .dumbbell:
+      case .machine:
         return reps != null && weight != null;
-      case Category.weightedBodyWeight:
-      case Category.repsOnly:
+      case .weightedBodyWeight:
+      case .repsOnly:
         return reps != null;
-      case Category.cardio:
+      case .cardio:
         return duration != null && distance != null;
-      case Category.duration:
+      case .duration:
         return duration != null;
     }
   }
@@ -162,9 +164,9 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   @override
   ExerciseSet copy({DateTime? start}) {
     return _ExerciseSet(
-      exercise: exercise,
-      start: start ?? DateTime.timestamp(),
-    )
+        exercise: exercise,
+        start: start ?? DateTime.timestamp(),
+      )
       ..weight = weight
       ..duration = duration
       ..distance = distance
@@ -174,21 +176,21 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   @override
   void setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
     switch (category) {
-      case Category.weightedBodyWeight:
-      case Category.assistedBodyWeight:
-      case Category.machine:
-      case Category.barbell:
-      case Category.dumbbell:
+      case .weightedBodyWeight:
+      case .assistedBodyWeight:
+      case .machine:
+      case .barbell:
+      case .dumbbell:
         this
           ..weight = weight ?? this.weight
           ..reps = reps ?? this.reps;
-      case Category.repsOnly:
+      case .repsOnly:
         this.reps = reps ?? this.reps;
-      case Category.cardio:
+      case .cardio:
         this
           ..distance = distance ?? this.distance
           ..duration = duration ?? this.duration;
-      case Category.duration:
+      case .duration:
         this.duration = duration ?? this.duration;
     }
   }
@@ -208,23 +210,23 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   @override
   double? get total {
     switch (category) {
-      case Category.weightedBodyWeight:
-      case Category.assistedBodyWeight:
-      case Category.barbell:
-      case Category.dumbbell:
-      case Category.machine:
+      case .weightedBodyWeight:
+      case .assistedBodyWeight:
+      case .barbell:
+      case .dumbbell:
+      case .machine:
         return switch ((weight, reps)) {
           (double w, int r) => w * r,
           _ => null,
         };
-      case Category.repsOnly:
+      case .repsOnly:
         return reps?.toDouble();
-      case Category.cardio:
+      case .cardio:
         return switch ((duration, distance)) {
           (int duration, int distance) => duration * distance.toDouble(),
           _ => null,
         };
-      case Category.duration:
+      case .duration:
         return duration?.toDouble();
     }
   }
