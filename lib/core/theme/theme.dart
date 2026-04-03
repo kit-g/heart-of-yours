@@ -46,7 +46,7 @@ ThemeData theme(ColorScheme colorScheme) {
       backgroundColor: colorScheme.surfaceContainerLow,
     ),
     popupMenuTheme: PopupMenuThemeData(
-      color: colorScheme.tertiaryContainer,
+      color: colorScheme.onTertiary,
       iconSize: 24,
       enableFeedback: true,
       menuPadding: .zero,
