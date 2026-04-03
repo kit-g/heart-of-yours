@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,6 +113,13 @@ ThemeData theme(ColorScheme colorScheme) {
     ),
     cardTheme: CardThemeData(
       color: colorScheme.surfaceContainerLowest,
+    ),
+    cupertinoOverrideTheme: CupertinoThemeData(
+      primaryColor: colorScheme.primary,
+      primaryContrastingColor: colorScheme.onPrimary,
+      scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
+      barBackgroundColor: colorScheme.surfaceContainerLowest,
+      brightness: colorScheme.brightness,
     ),
   );
 }
