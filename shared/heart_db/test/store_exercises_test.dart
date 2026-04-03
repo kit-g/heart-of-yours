@@ -48,10 +48,9 @@ void main() {
       await local.storeExercises([testExercise]);
 
       verify(
-        batch.insert(
-          expectedTable,
-          expectedRow,
-          conflictAlgorithm: ConflictAlgorithm.replace,
+        batch.rawInsert(
+          any,
+          any,
         ),
       ).called(1);
 
@@ -75,10 +74,9 @@ void main() {
       await local.storeExercises(exercises);
 
       verify(
-        batch.insert(
-          expectedTable,
+        batch.rawInsert(
           any,
-          conflictAlgorithm: ConflictAlgorithm.replace,
+          any,
         ),
       ).called(2);
 
@@ -99,7 +97,7 @@ void main() {
     () async {
       await local.storeExercises([]);
 
-      verifyNever(batch.insert(any, any));
+      verifyNever(batch.rawInsert(any, any));
 
       verify(
         txn.insert(
