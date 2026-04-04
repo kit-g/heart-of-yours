@@ -78,7 +78,7 @@ Future<void> _runner({
   Future<void> Function(List<DeviceOrientation> orientations) setOrientations = SystemChrome.setPreferredOrientations,
   FirebaseAuth? firebase,
 }) {
-  return setOrientations([DeviceOrientation.portraitUp]).then<void>(
+  return setOrientations([.portraitUp]).then<void>(
     (_) {
       final router = HeartRouter(
         observers: [

@@ -60,3 +60,5 @@ pubspec.lock
 
 /web/sqflite_sw.js
 /web/sqlite3.wasm
+
+/.ai
