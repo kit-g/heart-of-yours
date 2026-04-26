@@ -3,12 +3,15 @@ import 'dart:math';
 import 'exercise.dart';
 import 'exercise_set.dart';
 import 'misc.dart';
+import 'uuid.dart';
 import 'workout.dart';
 
 abstract interface class Template
     with Iterable<WorkoutExercise>
     implements Comparable<Template>, HasExercises, Model, Storable {
   abstract String? name;
+
+  bool get local;
 
   String get id;
 
@@ -21,15 +24,20 @@ abstract interface class Template
       exercises: [],
       id: id,
       order: order,
+      local: true,
     );
   }
 
-  factory Template.fromJson(Map json, ExerciseLookup lookForExercise) {
+  factory Template.fromJson(Map json) {
     return _Template(
-      exercises: WorkoutExercise.fromCollection(json, lookForExercise),
+      exercises: switch (json['exercises']) {
+        List l => l.map((each) => WorkoutExercise.fromJson(each)).toList(),
+        _ => [],
+      },
       id: json['id'].toString(),
       order: json['order'],
       name: json['name'],
+      local: false,
     );
   }
 
@@ -39,17 +47,21 @@ abstract interface class Template
       id: id,
       order: order,
       name: workout.name,
+      local: true,
     );
   }
 }
 
-class _Template with Iterable<WorkoutExercise> implements Template {
+class _Template with Iterable<WorkoutExercise>, HasUuid implements Template {
   @override
   final String id;
   @override
   String? name;
   @override
   int order;
+  @override
+  final bool local;
+
   final List<WorkoutExercise> _exercises;
 
   _Template({
@@ -57,6 +69,7 @@ class _Template with Iterable<WorkoutExercise> implements Template {
     this.name,
     required this.id,
     required this.order,
+    required this.local,
   }) : _exercises = exercises;
 
   @override
@@ -84,7 +97,11 @@ class _Template with Iterable<WorkoutExercise> implements Template {
 
   @override
   int compareTo(Template other) {
-    return order.compareTo(other.order);
+    final orderComparison = order.compareTo(other.order);
+    if (orderComparison != 0) {
+      return orderComparison;
+    }
+    return id.compareTo(other.id);
   }
 
   @override
