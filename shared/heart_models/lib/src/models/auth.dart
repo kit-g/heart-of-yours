@@ -2,11 +2,34 @@ import 'dart:typed_data';
 
 import 'misc.dart';
 
-abstract interface class User implements Model {
+abstract interface class Profile implements Model {
+  String? get name;
+
+  String? get avatar;
+
+  String get id;
+
+  factory Profile({
+    required String id,
+    required String name,
+    required String avatar,
+  }) = _Profile.new;
+
+  factory Profile.fromJson(Map json) {
+    return _Profile(
+      id: json['id'],
+      name: json['username'],
+      avatar: json['avatar'],
+    );
+  }
+}
+
+abstract interface class User implements Model, Profile {
   String? get displayName;
 
   String? get email;
 
+  @override
   String get id;
 
   DateTime? get createdAt;
@@ -107,5 +130,35 @@ class _User implements User {
       id: id,
       createdAt: createdAt,
     );
+  }
+
+  @override
+  String? get avatar => remoteAvatar;
+
+  @override
+  String? get name => displayName;
+}
+
+class _Profile implements Profile {
+  @override
+  final String id;
+  @override
+  final String? name;
+  @override
+  final String? avatar;
+
+  const _Profile({
+    required this.id,
+    required this.name,
+    required this.avatar,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'avatar': avatar,
+    };
   }
 }
