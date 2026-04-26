@@ -1,7 +1,6 @@
 import 'exercise.dart';
 import 'misc.dart';
 import 'ts_for_id.dart';
-import 'utils.dart';
 
 abstract interface class Completes {
   bool get isCompleted;
@@ -24,6 +23,7 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
 
   factory ExerciseSet(
     Exercise exercise, {
+    String? id,
     DateTime? start,
     int? reps,
     double? weight,
@@ -33,6 +33,7 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
     return switch (exercise) {
       Exercise e =>
         _ExerciseSet(
+            id: id,
             exercise: e,
             start: start ?? DateTime.timestamp(),
           )
@@ -47,13 +48,18 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
     return ExerciseSet(
         exercise,
         reps: json['reps'],
+        id: json['id'],
         weight: switch (json['weight']) {
           num weight => weight.toDouble(),
           _ => null,
         },
         duration: (json['duration'] as num?)?.toInt(),
         distance: (json['distance'] as num?)?.toDouble(),
-        start: DateTime.parse(deSanitizeId(json['id'] ?? json['setId'])),
+        start: switch (json['started_at']) {
+          String s => DateTime.parse(s),
+          DateTime dt => dt,
+          _ => DateTime.timestamp(),
+        },
       )
       ..isCompleted = switch (json['completed']) {
         bool completed => completed,
@@ -87,6 +93,7 @@ abstract interface class ExerciseSet with UsesTimestampForId implements Complete
 }
 
 class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
+  final String? _id;
   @override
   final Exercise exercise;
   @override
@@ -103,19 +110,23 @@ class _ExerciseSet with UsesTimestampForId implements ExerciseSet {
   _ExerciseSet({
     required this.exercise,
     required this.start,
-  });
+    String? id,
+  }) : _id = id;
 
   @override
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'completed': isCompleted,
-      if (reps != null) 'reps': reps,
-      if (duration != null) 'duration': duration,
-      if (distance != null) 'distance': distance,
-      if (weight != null) 'weight': weight,
+      'reps': ?reps,
+      'duration': ?duration,
+      'distance': ?distance,
+      'weight': ?weight,
     };
   }
+
+  @override
+  String get id => _id ?? super.id;
 
   @override
   bool operator >(covariant ExerciseSet other) {
