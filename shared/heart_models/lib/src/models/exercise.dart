@@ -282,7 +282,7 @@ class _Exercise implements Exercise {
 
   factory _Exercise.fromJson(Map json) {
     return _Exercise(
-      name: json['name'],
+      name: json['name'] ?? json['exercise'],
       category: Category.fromString(json['category']),
       target: Target.fromString(json['target']),
       asset: switch (json['asset']) {
