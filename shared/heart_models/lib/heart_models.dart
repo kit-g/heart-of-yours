@@ -11,6 +11,7 @@ export 'src/models/misc.dart';
 export 'src/models/stats.dart';
 export 'src/models/template.dart';
 export 'src/models/utils.dart';
+export 'src/models/uuid.dart';
 export 'src/models/workout.dart';
 export 'src/services/accounts.dart';
 export 'src/services/charts.dart';
