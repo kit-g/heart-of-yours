@@ -12,7 +12,7 @@ import 'ts_for_id.dart';
 
 /// A collection of sets of the same exercise performed during a single workout
 /// E.g., squats 4x10
-abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements Model, Completes {
+abstract interface class WorkoutExercise with Iterable<ExerciseSet> implements Model, Completes, UsesTimestampForId {
   Iterable<ExerciseSet> get sets;
 
   Exercise get exercise;
@@ -27,13 +27,6 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
 
   bool remove(ExerciseSet set);
 
-  factory WorkoutExercise({required ExerciseSet starter}) {
-    return _WorkoutExercise._(
-      starter: starter,
-      exercise: starter.exercise,
-    );
-  }
-
   ExerciseSet? get best;
 
   /// whether at least one set was marked as done
@@ -41,6 +34,26 @@ abstract interface class WorkoutExercise with Iterable<ExerciseSet>, UsesTimesta
 
   static List<WorkoutExercise> fromCollection(Map json, ExerciseLookup lookForExercise) {
     return _exercisesFromCollection(json['exercises'], lookForExercise);
+  }
+
+  factory WorkoutExercise({required ExerciseSet starter}) {
+    return _WorkoutExercise._(
+      starter: starter,
+      exercise: starter.exercise,
+    );
+  }
+
+  factory WorkoutExercise.fromJson(Map json) {
+    final exercise = Exercise.fromJson(json['exercise']);
+    return _WorkoutExercise._(
+      exercise: exercise,
+      sets: switch (json['sets']) {
+        List l => l.map((e) => ExerciseSet.fromJson(exercise, e)).toList(),
+        _ => [],
+      },
+      id: json['id'],
+      order: json['exercise_order'] ?? json['order'],
+    );
   }
 }
 
@@ -122,6 +135,7 @@ abstract interface class Workout with Iterable<WorkoutExercise>, UsesTimestampFo
 }
 
 class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements WorkoutExercise {
+  final String? _id;
   final List<ExerciseSet> _sets;
   final Exercise _exercise;
   @override
@@ -133,15 +147,21 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   _WorkoutExercise._({
     ExerciseSet? starter,
     DateTime? start,
+    String? id,
+    this.order,
     required Exercise exercise,
     List<ExerciseSet>? sets,
   }) : _exercise = exercise,
+       _id = id,
        start = start ?? DateTime.timestamp(),
        _sets = sets ?? [] {
     if (starter != null) {
       _sets.add(starter);
     }
   }
+
+  @override
+  String get id => _id ?? super.id;
 
   @override
   void add(ExerciseSet set) {
@@ -180,7 +200,8 @@ class _WorkoutExercise with Iterable<ExerciseSet>, UsesTimestampForId implements
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      if (firstOrNull case ExerciseSet s) 'exercise': s.exercise.name,
+      'exercise': ?firstOrNull?.exercise.toMap(),
+      'start': start.toIso8601String(),
       'sets': [
         for (final each in where((each) => each.isCompleted)) each.toMap(),
       ],
@@ -357,20 +378,15 @@ class _Workout with Iterable<WorkoutExercise>, UsesTimestampForId implements Wor
 
   @override
   Map<String, dynamic> toMap() {
-    var l = toList();
+    Map<String, dynamic> asRequest((int, WorkoutExercise) record) {
+      return {'order': record.$1, ...record.$2.toMap()};
+    }
+
     return {
-      'id': id,
       'name': name,
       'start': start.toIso8601String(),
       'end': end?.toIso8601String(),
-      'exercises': [
-        for (final each in l)
-          if (each.isNotEmpty)
-            {
-              ...each.toMap(),
-              'order': l.indexOf(each),
-            },
-      ],
+      'exercises': where((ex) => ex.isNotEmpty).indexed.map(asRequest).toList(),
     };
   }
 
@@ -525,11 +541,18 @@ extension on Iterable<Completes> {
 
 List<WorkoutExercise> _exercisesFromCollection(dynamic collection, ExerciseLookup lookForExercise) {
   WorkoutExercise? parse(dynamic each) {
-    final exercise = lookForExercise(each['exercise']);
+    final exercise = switch (each) {
+      {'exercise': Map m} => Exercise.fromJson(m),
+      {'exercise': String s} => lookForExercise(s),
+      String s => lookForExercise(s),
+      _ => null,
+    };
+
     if (exercise == null) return null;
     return _WorkoutExercise._(
+      id: each['id'],
       exercise: exercise,
-      start: DateTime.parse(each['id']),
+      start: DateTime.parse(each['start']),
       sets: switch (each['sets']) {
         List sets => sets.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
         Map sets => sets.values.map((set) => ExerciseSet.fromJson(exercise, set)).toList()..sort(),
