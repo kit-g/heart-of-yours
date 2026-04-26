@@ -18,7 +18,8 @@ abstract interface class Storable {
 
 enum MeasurementUnit {
   imperial('Imperial'),
-  metric('Metric');
+  metric('Metric')
+  ;
 
   final String name;
 
