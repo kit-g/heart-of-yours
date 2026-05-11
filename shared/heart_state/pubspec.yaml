@@ -12,7 +12,11 @@ dependencies:
   firebase_core: 4.6.0
   flutter: { sdk: flutter }
   google_sign_in: ^7.2.0
-  heart_models: { path: '../heart_models' }
+  heart_models:
+    git:
+      url: "https://github.com/kit-g/heart-api.git"
+      path: "shared/heart_models"
+      ref: "main"
   provider: ^6.1.2
   shared_preferences: ^2.3.2
   sign_in_with_apple: ^7.0.1
