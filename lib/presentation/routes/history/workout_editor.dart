@@ -123,7 +123,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                                 workout,
                                 onFinish: () {
                                   workout.resolveName(defaultWorkoutName());
-                                  Workouts.of(context).saveWorkout(workout);
+                                  Workouts.of(context).editWorkout(workout);
                                   Navigator.of(context).pop();
                                 },
                               );
