@@ -139,10 +139,26 @@ WITH
     LIMIT 1
 )
 , _ex AS (
-    SELECT workout_exercises.*
+    SELECT 
+        workout_exercises.*,
+        json_object(
+            'name', exercises.name,
+            'category', exercises.category,
+            'target', exercises.target,
+            'asset', exercises.asset,
+            'assetWidth', exercises.asset_width,
+            'assetHeight', exercises.asset_height,
+            'thumbnail', exercises.thumbnail,
+            'thumbnailWidth', exercises.thumbnail_width,
+            'thumbnailHeight', exercises.thumbnail_height,
+            'instructions', exercises.instructions,
+            'own', exercises.own,
+            'archived', exercises.archived,
+            'muscles', json(coalesce(exercises.muscles, '{}'))
+        ) AS exercise_json
     FROM workout_exercises
     INNER JOIN _workout ON _workout.id = workout_exercises.workout_id
-
+    INNER JOIN exercises ON exercises.name = workout_exercises.exercise_id
 )
 , _sets AS (
     SELECT *
@@ -160,7 +176,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'order', _ex.exercise_order,
-                'exercise', _ex.exercise_id,
+                'exercise', json(_ex.exercise_json),
                 'sets', (
                     SELECT json_group_array(
                         json_object(
@@ -196,9 +212,26 @@ WITH
     LIMIT 1
 )
 , _ex AS (
-    SELECT workout_exercises.*
+    SELECT 
+        workout_exercises.*,
+        json_object(
+            'name', exercises.name,
+            'category', exercises.category,
+            'target', exercises.target,
+            'asset', exercises.asset,
+            'assetWidth', exercises.asset_width,
+            'assetHeight', exercises.asset_height,
+            'thumbnail', exercises.thumbnail,
+            'thumbnailWidth', exercises.thumbnail_width,
+            'thumbnailHeight', exercises.thumbnail_height,
+            'instructions', exercises.instructions,
+            'own', exercises.own,
+            'archived', exercises.archived,
+            'muscles', json(coalesce(exercises.muscles, '{}'))
+        ) AS exercise_json
     FROM workout_exercises
     INNER JOIN _workout ON _workout.id = workout_exercises.workout_id
+    INNER JOIN exercises ON exercises.name = workout_exercises.exercise_id
 )
 , _sets AS (
     SELECT *
@@ -216,7 +249,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'order', _ex.exercise_order,
-                'exercise', _ex.exercise_id,
+                'exercise', json(_ex.exercise_json),
                 'sets', (
                     SELECT json_group_array(
                         json_object(
@@ -250,8 +283,25 @@ WITH
       AND user_id = ?
 )
 , _ex AS (
-    SELECT *
+    SELECT 
+        workout_exercises.*,
+        json_object(
+            'name', exercises.name,
+            'category', exercises.category,
+            'target', exercises.target,
+            'asset', exercises.asset,
+            'assetWidth', exercises.asset_width,
+            'assetHeight', exercises.asset_height,
+            'thumbnail', exercises.thumbnail,
+            'thumbnailWidth', exercises.thumbnail_width,
+            'thumbnailHeight', exercises.thumbnail_height,
+            'instructions', exercises.instructions,
+            'own', exercises.own,
+            'archived', exercises.archived,
+            'muscles', json(coalesce(exercises.muscles, '{}'))
+        ) AS exercise_json
     FROM workout_exercises
+    INNER JOIN exercises ON exercises.name = workout_exercises.exercise_id
     WHERE workout_id IN (SELECT id FROM _workouts)
 )
 , _sets AS (
@@ -270,7 +320,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'order', _ex.exercise_order,
-                'exercise', _ex.exercise_id,
+                'exercise', json(_ex.exercise_json),
                 'sets', (
                     SELECT json_group_array(
                         json_object(
@@ -313,8 +363,25 @@ WITH
     WHERE user_id = ?
 )
 , _ex AS (
-    SELECT *
+    SELECT 
+        template_exercises.*,
+        json_object(
+            'name', exercises.name,
+            'category', exercises.category,
+            'target', exercises.target,
+            'asset', exercises.asset,
+            'assetWidth', exercises.asset_width,
+            'assetHeight', exercises.asset_height,
+            'thumbnail', exercises.thumbnail,
+            'thumbnailWidth', exercises.thumbnail_width,
+            'thumbnailHeight', exercises.thumbnail_height,
+            'instructions', exercises.instructions,
+            'own', exercises.own,
+            'archived', exercises.archived,
+            'muscles', json(coalesce(exercises.muscles, '{}'))
+        ) AS exercise_json
     FROM template_exercises
+    INNER JOIN exercises ON exercises.name = template_exercises.exercise_id
     WHERE template_id IN (SELECT id FROM _templates)
 )
 SELECT
@@ -326,7 +393,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'sets', json(_ex.description),
-                'exercise', _ex.exercise_id
+                'exercise', json(_ex.exercise_json)
             )
         )
         FROM _ex
@@ -344,8 +411,25 @@ WITH
     WHERE user_id IS NULL
 )
 , _ex AS (
-    SELECT *
+    SELECT 
+        template_exercises.*,
+        json_object(
+            'name', exercises.name,
+            'category', exercises.category,
+            'target', exercises.target,
+            'asset', exercises.asset,
+            'assetWidth', exercises.asset_width,
+            'assetHeight', exercises.asset_height,
+            'thumbnail', exercises.thumbnail,
+            'thumbnailWidth', exercises.thumbnail_width,
+            'thumbnailHeight', exercises.thumbnail_height,
+            'instructions', exercises.instructions,
+            'own', exercises.own,
+            'archived', exercises.archived,
+            'muscles', json(coalesce(exercises.muscles, '{}'))
+        ) AS exercise_json
     FROM template_exercises
+    INNER JOIN exercises ON exercises.name = template_exercises.exercise_id
     WHERE template_id IN (SELECT id FROM _templates)
 )
 SELECT
@@ -357,7 +441,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'sets', json(_ex.description),
-                'exercise', _ex.exercise_id
+                'exercise', json(_ex.exercise_json)
             )
         )
         FROM _ex
