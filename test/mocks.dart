@@ -24,7 +24,7 @@ import 'package:heart_models/heart_models.dart';
     MockSpec<WorkoutAggregation>(),
     MockSpec<WeekSummary>(),
     MockSpec<Api>(),
-    MockSpec<ConfigApi>(),
+    MockSpec<Cdn>(),
     MockSpec<LocalDatabase>(),
     MockSpec<ChartPreference>(),
     MockSpec<ChartPreferenceService>(),
