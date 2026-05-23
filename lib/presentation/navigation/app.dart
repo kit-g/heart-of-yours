@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -21,7 +23,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 class HeartApp extends StatelessWidget {
   final AppConfig appConfig;
   final Api api;
-  final ConfigApi config;
+  final Cdn cdn;
   final LocalDatabase db;
   final HeartRouter router;
   final bool? hasLocalNotifications;
@@ -31,7 +33,7 @@ class HeartApp extends StatelessWidget {
     super.key,
     required this.appConfig,
     required this.api,
-    required this.config,
+    required this.cdn,
     required this.db,
     required this.router,
     this.hasLocalNotifications = true,
@@ -64,7 +66,6 @@ class HeartApp extends StatelessWidget {
           create: (context) => Workouts(
             service: db,
             remoteService: api,
-            lookForExercise: Exercises.of(context).lookup,
             onError: (error, {stacktrace}) {
               Logger('Workouts')
                 ..shout('${error.runtimeType}: $error')
@@ -75,7 +76,7 @@ class HeartApp extends StatelessWidget {
         ),
         Provider<RemoteConfig>(
           create: (_) => RemoteConfig(
-            service: config,
+            service: cdn,
             onError: reportToSentry,
           ),
         ),
@@ -83,9 +84,8 @@ class HeartApp extends StatelessWidget {
           create: (context) => Templates(
             service: db,
             remoteService: api,
-            configService: config,
+            configService: cdn,
             onError: reportToSentry,
-            lookForExercise: Exercises.of(context).lookup,
           ),
         ),
         ChangeNotifierProvider<Timers>(
@@ -244,86 +244,88 @@ Future<void> _initApp(
   String? userId, {
   bool? hasLocalNotifications,
 }) async {
-  final workouts = Workouts.of(context);
-  if (hasLocalNotifications ?? false) {
-    initNotifications(
-      platform: Theme.of(context).platform,
-      onExerciseNotification: (exerciseId) {
-        // exercises with a timer emit a local notification
-        // when tapped on, it will:
-        // - redirect the user to the workout page
-        final HeartRouter(:goToActiveWorkout, :config, :goToWorkouts) = HeartRouter.of(context);
+  return Zone.root.run(() async {
+    final workouts = Workouts.of(context);
+    if (hasLocalNotifications ?? false) {
+      initNotifications(
+        platform: Theme.of(context).platform,
+        onExerciseNotification: (exerciseId) {
+          // exercises with a timer emit a local notification
+          // when tapped on, it will:
+          // - redirect the user to the workout page
+          final HeartRouter(:goToActiveWorkout, :config, :goToWorkouts) = HeartRouter.of(context);
 
-        if (Workouts.of(context).activeWorkout != null) {
-          if (config.state.path != '/activeWorkout') {
-            goToActiveWorkout();
-            Future.delayed(const Duration(milliseconds: 300)).then(
-              (_) {
-                // - trigger a slight animation highlighting the exercise
-                workouts.pointAt(exerciseId);
-              },
-            );
+          if (Workouts.of(context).activeWorkout != null) {
+            if (config.state.path != '/activeWorkout') {
+              goToActiveWorkout();
+              Future.delayed(const Duration(milliseconds: 300)).then(
+                (_) {
+                  // - trigger a slight animation highlighting the exercise
+                  workouts.pointAt(exerciseId);
+                },
+              );
+            } else {
+              workouts.pointAt(exerciseId);
+            }
           } else {
-            workouts.pointAt(exerciseId);
+            // a notification banner might still be there even if the workout was finished or cancelled
+            goToWorkouts();
           }
-        } else {
-          // a notification banner might still be there even if the workout was finished or cancelled
-          goToWorkouts();
-        }
-      },
-      onUnknownNotification: reportToSentry,
-    );
-  }
-
-  final info = AppInfo.of(context);
-  final appConfig = AppConfig.of(context);
-  _initAppInfo(context).then(
-    (_) {
-      _initApi(
-        config: appConfig,
-        sessionToken: sessionToken,
-        appVersion: info.fullVersion,
+        },
+        onUnknownNotification: reportToSentry,
       );
+    }
 
-      AppImage.headers = imageHeaders(config: appConfig, appVersion: info.version, isWeb: kIsWeb);
-    },
-  );
-
-  final Exercises(:isInitialized, :init) = Exercises.of(context);
-
-  final templates = Templates.of(context);
-  final prefs = Preferences.of(context);
-  final theme = AppTheme.of(context);
-  final timers = Timers.of(context);
-  final previous = PreviousExercises.of(context);
-  final config = RemoteConfig.of(context);
-  final router = HeartRouter.of(context);
-  final charts = Charts.of(context);
-
-  await Future.wait(
-    [
-      config.init(),
-      prefs.init(locale: View.of(context).platformDispatcher.locale),
-    ],
-  );
-
-  theme
-    ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))
-    ..toMode(prefs.themeMode);
-
-  if (!isInitialized) {
-    init(lastSync: config.exercisesLastSynced).then<void>(
+    final info = AppInfo.of(context);
+    final appConfig = AppConfig.of(context);
+    _initAppInfo(context).then(
       (_) {
-        // since workouts initialization looks up exercises
-        // in `Exercises`, we must chain these calls this way
-        workouts.init().then<void>((_) => router.refresh());
-        templates.init();
-        timers.init();
-        previous.init();
-        charts.init();
+        _initApi(
+          config: appConfig,
+          sessionToken: sessionToken,
+          appVersion: info.fullVersion,
+        );
+
+        AppImage.headers = imageHeaders(config: appConfig, appVersion: info.version, isWeb: kIsWeb);
       },
     );
-  }
+
+    final Exercises(:isInitialized, :init) = Exercises.of(context);
+
+    final templates = Templates.of(context);
+    final prefs = Preferences.of(context);
+    final theme = AppTheme.of(context);
+    final timers = Timers.of(context);
+    final previous = PreviousExercises.of(context);
+    final config = RemoteConfig.of(context);
+    final router = HeartRouter.of(context);
+    final charts = Charts.of(context);
+
+    await Future.wait(
+      [
+        config.init(),
+        prefs.init(locale: View.of(context).platformDispatcher.locale),
+      ],
+    );
+
+    theme
+      ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))
+      ..toMode(prefs.themeMode);
+
+    if (!isInitialized) {
+      init(lastSync: config.exercisesLastSynced).then<void>(
+        (_) {
+          // since workouts initialization looks up exercises
+          // in `Exercises`, we must chain these calls this way
+          workouts.init().then<void>((_) => router.refresh());
+          templates.init();
+          timers.init();
+          previous.init();
+          charts.init();
+        },
+      );
+    }
+  });
 }
 
 Future<void> _initAppInfo(BuildContext context) {
