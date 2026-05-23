@@ -12,13 +12,13 @@ void main() {
   group('HeartApp (smoke)', () {
     late MockLocalDatabase db;
     late MockApi api;
-    late MockConfigApi configApi;
+    late MockCdn cdn;
     late TestAppHarness harness;
 
     setUp(() async {
       db = MockLocalDatabase();
       api = MockApi();
-      configApi = MockConfigApi();
+      cdn = MockCdn();
       harness = const TestAppHarness();
     });
 
@@ -27,7 +27,7 @@ void main() {
         tester,
         db: db,
         api: api,
-        config: configApi,
+        cdn: cdn,
         appConfig: AppConfig.test(allowsFeedbackFeature: false),
         hasLocalNotifications: false,
       );
@@ -51,7 +51,7 @@ void main() {
         tester,
         db: db,
         api: api,
-        config: configApi,
+        cdn: cdn,
         appConfig: AppConfig.test(allowsFeedbackFeature: false),
         hasLocalNotifications: false,
       );

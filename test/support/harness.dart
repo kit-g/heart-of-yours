@@ -24,7 +24,7 @@ class TestAppHarness {
     WidgetTester tester, {
     required LocalDatabase db,
     required Api api,
-    required ConfigApi config,
+    required Cdn cdn,
     AppConfig? appConfig,
     bool hasLocalNotifications = false,
     HeartRouter? router,
@@ -36,7 +36,7 @@ class TestAppHarness {
       HeartApp(
         db: db,
         api: api,
-        config: config,
+        cdn: cdn,
         hasLocalNotifications: hasLocalNotifications,
         appConfig: cfg,
         firebaseAuth: firebaseAuth ?? MockFirebaseAuth(),
