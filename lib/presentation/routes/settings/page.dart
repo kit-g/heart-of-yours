@@ -236,15 +236,21 @@ class SettingsPage extends StatelessWidget with HasHaptic {
 
     BetterFeedback.of(context).show(
       (feedback) {
-        Api.instance.submitFeedback(feedback: feedback.text, screenshot: feedback.screenshot).then(
-          (success) {
-            if (success) {
-              messenger.showSnackBar(
-                SnackBar(content: Text('$feedbackReceived $heart')),
-              );
-            }
-          },
-        );
+        Api.instance
+            .submitFeedback(
+              feedback: feedback.text,
+              screenshot: feedback.screenshot,
+              mimeType: 'image/jpg',
+            )
+            .then(
+              (success) {
+                if (success) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('$feedbackReceived $heart')),
+                  );
+                }
+              },
+            );
       },
     );
   }
