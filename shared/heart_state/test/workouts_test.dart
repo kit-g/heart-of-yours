@@ -16,10 +16,6 @@ void main() {
   // simple registry of a couple of real Exercises
   final bench = ex('Bench Press');
   final squat = ex('Squat');
-  final lookup = buildLookup({
-    bench.name: bench,
-    squat.name: squat,
-  });
 
   setUp(() {
     when(local.startWorkout(any, any)).thenAnswer((_) async {});
@@ -31,18 +27,19 @@ void main() {
     when(local.storeMeasurements(any)).thenAnswer((_) async {});
     when(local.markSetAsComplete(any)).thenAnswer((_) async {});
     when(local.markSetAsIncomplete(any)).thenAnswer((_) async {});
-    when(local.getActiveWorkout(any, any)).thenAnswer((_) async => null);
-    when(local.getWorkout(any, any, any)).thenAnswer((_) async => null);
-    when(local.getWorkoutHistory(any, any)).thenAnswer((_) async => <Workout>[]);
+    when(local.getActiveWorkout(any)).thenAnswer((_) async => null);
+    when(local.getWorkout(any, any)).thenAnswer((_) async => null);
+    when(local.getWorkoutHistory(any)).thenAnswer((_) async => <Workout>[]);
     when(local.storeWorkoutHistory(any, any)).thenAnswer((_) async {});
     when(local.deleteWorkout(any)).thenAnswer((_) async {});
     when(local.updateWorkout(workoutId: anyNamed('workoutId'), name: anyNamed('name'))).thenAnswer((_) async {});
 
     when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => <Workout>[]);
-    when(remote.saveWorkout(any)).thenAnswer((_) async => true);
+    when(remote.saveWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
+    when(remote.editWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.deleteWorkout(any)).thenAnswer((_) async => true);
 
-    sut = Workouts(lookForExercise: lookup, service: local, remoteService: remote)..userId = 'u1';
+    sut = Workouts(service: local, remoteService: remote)..userId = 'u1';
   });
 
   tearDown(() {
@@ -292,7 +289,7 @@ void main() {
   group('init and history', () {
     test('init calls getActiveWorkout and sets active when available, notifies', () async {
       final w = Workout(name: 'FromLocal');
-      when(local.getActiveWorkout('u1', any)).thenAnswer((_) async => w);
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => w);
 
       final probe = ListenerProbe()..attach(sut);
       await sut.init();
@@ -304,7 +301,7 @@ void main() {
     test('initHistory: uses local if present, otherwise remote + store', () async {
       // case 1: local present
       final w1 = Workout(name: 'w1');
-      when(local.getWorkoutHistory('u1', any)).thenAnswer((_) async => [w1]);
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [w1]);
       when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
       when(
         remote.getWorkoutGallery(cursor: anyNamed('cursor')),
@@ -324,7 +321,7 @@ void main() {
       sut.onSignOut();
       sut.userId = 'u1';
       final w2 = Workout(name: 'w2');
-      when(local.getWorkoutHistory('u1', any)).thenAnswer((_) async => <Workout>[]);
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => <Workout>[]);
       when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
       when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [w2]);
 
@@ -338,7 +335,7 @@ void main() {
 
     test('fetchWorkout stores and notifies when found', () async {
       final w = Workout(name: 'fetched');
-      when(local.getWorkout('u1', any, any)).thenAnswer((_) async => w);
+      when(local.getWorkout('u1', any)).thenAnswer((_) async => w);
 
       final probe = ListenerProbe()..attach(sut);
       await sut.fetchWorkout('wid');

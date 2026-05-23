@@ -9,14 +9,12 @@ typedef WorkoutId = String;
 
 class Workouts with ChangeNotifier implements SignOutStateSentry {
   final _workouts = <WorkoutId, Workout>{};
-  final ExerciseLookup lookForExercise;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final WorkoutService _localService;
   final RemoteWorkoutService _remoteService;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
   Workouts({
-    required this.lookForExercise,
     required WorkoutService service,
     required RemoteWorkoutService remoteService,
     this.onError,
@@ -113,7 +111,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> fetchWorkout(String workoutId) async {
     if (userId case String userId) {
-      final workout = await _localService.getWorkout(userId, workoutId, lookForExercise);
+      final workout = await _localService.getWorkout(userId, workoutId);
       if (workout != null) {
         _workouts[workoutId] = workout;
         notifyListeners();
@@ -150,6 +148,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
 
     return _remoteService.saveWorkout(active);
+  }
+
+  Future<void> editWorkout(Workout workout) async {
+    _workouts[workout.id] = workout;
+    notifyListeners();
+
+    final edited = await _remoteService.editWorkout(workout);
+    if (userId case String id) {
+      await _localService.storeWorkoutHistory([workout], id);
+    }
+    _workouts[workout.id] = edited;
+    notifyListeners();
   }
 
   Future<void> cancelActiveWorkout() async {
@@ -259,7 +269,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Workout?> _getActiveWorkout(String userId) async {
     try {
-      return _localService.getActiveWorkout(userId, lookForExercise);
+      return _localService.getActiveWorkout(userId);
     } catch (error, s) {
       onError?.call(error, stacktrace: s);
       return null;
@@ -268,7 +278,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Iterable<Workout>?> _getRemoteHistory(String userId, {int pageSize = 10}) async {
     try {
-      return _remoteService.getWorkouts(lookForExercise, pageSize: pageSize);
+      return _remoteService.getWorkouts(userId, pageSize: pageSize);
     } catch (error, s) {
       onError?.call(error, stacktrace: s);
       return null;
@@ -277,7 +287,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> initHistory() async {
     if (userId case String id) {
-      final local = await _localService.getWorkoutHistory(id, lookForExercise);
+      final local = await _localService.getWorkoutHistory(id);
       _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
       notifyListeners();
 
@@ -334,9 +344,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<WorkoutImage?> attachImageToActiveWorkout((Uint8List, {String? mimeType, String? name}) image) async {
     if (activeWorkout case Workout workout) {
       final saved = await _remoteService.saveWorkout(workout);
-      if (saved) {
-        return attachImageToWorkout(workout, image);
-      }
+      return attachImageToWorkout(saved, image);
     }
     return null;
   }

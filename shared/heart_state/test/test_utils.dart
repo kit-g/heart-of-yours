@@ -18,11 +18,6 @@ class ListenerProbe {
   }
 }
 
-// Builds a simple ExerciseLookup from a map of name->Exercise
-ExerciseLookup buildLookup(Map<String, Exercise> registry) {
-  return (id) => registry[id];
-}
-
 // Convenience builders for real domain models used in tests
 Exercise ex(String name) {
   return Exercise.fromJson({

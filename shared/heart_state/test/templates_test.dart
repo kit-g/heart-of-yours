@@ -14,19 +14,13 @@ void main() {
     final remote = MockRemoteTemplateService();
     final config = MockRemoteConfigService();
     late Templates templates;
-    late ExerciseLookup lookup;
     late ListenerProbe probe;
 
     setUp(() {
-      lookup = buildLookup({
-        'Push Up': ex('Push Up'),
-        'Squat': ex('Squat'),
-      });
       templates = Templates(
         remoteService: remote,
         service: local,
         configService: config,
-        lookForExercise: lookup,
       );
       probe = ListenerProbe()..attach(templates);
     });
@@ -34,7 +28,7 @@ void main() {
     group('init', () {
       test('populates samples from local when available (no notify)', () async {
         final sampleLocal = [tmpl(id: 's1', order: 0, name: 'Sample')];
-        when(local.getTemplates(null, lookup)).thenAnswer((_) async => sampleLocal);
+        when(local.getTemplates(null)).thenAnswer((_) async => sampleLocal);
 
         await templates.init();
 
@@ -47,9 +41,9 @@ void main() {
       test('with userId: loads local templates and notifies when non-empty', () async {
         templates.userId = 'u1';
         final localTemplates = [tmpl(id: 't1', order: 1, name: 'L1')];
-        when(local.getTemplates(null, lookup)).thenAnswer((_) async => <Template>[]); // samples path irrelevant
-        when(config.getSampleTemplates(any)).thenAnswer((_) async => []);
-        when(local.getTemplates('u1', any)).thenAnswer((_) async => localTemplates);
+        when(local.getTemplates(null)).thenAnswer((_) async => <Template>[]); // samples path irrelevant
+        when(config.getSampleTemplates()).thenAnswer((_) async => []);
+        when(local.getTemplates('u1')).thenAnswer((_) async => localTemplates);
 
         await templates.init();
 
@@ -60,11 +54,11 @@ void main() {
 
       test('with userId: falls back to remote templates, notifies and stores locally', () async {
         templates.userId = 'u1';
-        when(local.getTemplates(null, any)).thenAnswer((_) async => []);
-        when(config.getSampleTemplates(any)).thenAnswer((_) async => []);
-        when(local.getTemplates('u1', any)).thenAnswer((_) async => []);
+        when(local.getTemplates(null)).thenAnswer((_) async => []);
+        when(config.getSampleTemplates()).thenAnswer((_) async => []);
+        when(local.getTemplates('u1')).thenAnswer((_) async => []);
         final remoteTemplates = [tmpl(id: 'rt1', order: 1, name: 'R1')];
-        when(remote.getTemplates(any)).thenAnswer((_) async => remoteTemplates);
+        when(remote.getTemplates()).thenAnswer((_) async => remoteTemplates);
 
         await templates.init();
 
@@ -75,10 +69,10 @@ void main() {
 
       test('with userId: nothing to load -> no notify', () async {
         templates.userId = 'u1';
-        when(local.getTemplates(null, any)).thenAnswer((_) async => []);
-        when(config.getSampleTemplates(any)).thenAnswer((_) async => []);
-        when(local.getTemplates('u1', any)).thenAnswer((_) async => []);
-        when(remote.getTemplates(any)).thenAnswer((_) async => []);
+        when(local.getTemplates(null)).thenAnswer((_) async => []);
+        when(config.getSampleTemplates()).thenAnswer((_) async => []);
+        when(local.getTemplates('u1')).thenAnswer((_) async => []);
+        when(remote.getTemplates()).thenAnswer((_) async => []);
 
         await templates.init();
         expect(templates.length, 0);
@@ -161,7 +155,7 @@ void main() {
       test('saveEditable adds to collection, persists local and remote, clears editable, and notifies', () async {
         when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
             .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
-        when(remote.saveTemplate(any)).thenAnswer((_) async => true);
+        when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
         await templates.add(ex('Push Up'));
         probe.notifications = 0;
 
@@ -178,7 +172,7 @@ void main() {
         // Prepare one in collection by saving editable
         when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
             .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
-        when(remote.saveTemplate(any)).thenAnswer((_) async => true);
+        when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
         await templates.add(ex('Push Up'));
         await templates.saveEditable();
         expect(templates.length, 1);
@@ -203,7 +197,7 @@ void main() {
           orderCounter += 1;
           return Template.empty(id: UniqueKey().toString(), order: orderCounter);
         });
-        when(remote.saveTemplate(any)).thenAnswer((_) async => true);
+        when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
         for (var i = 0; i < 6; i++) {
           await templates.add(ex('Push Up'));
           await templates.saveEditable();
@@ -242,7 +236,6 @@ void main() {
         remoteService: MockRemoteTemplateService(),
         service: MockTemplateService(),
         configService: MockRemoteConfigService(),
-        lookForExercise: buildLookup({'Push Up': ex('Push Up')}),
       );
       late Templates fromOf;
 
@@ -268,11 +261,10 @@ void main() {
         remoteService: remote,
         service: local,
         configService: MockRemoteConfigService(),
-        lookForExercise: buildLookup({'Push Up': ex('Push Up')}),
       );
       when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
           .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
-      when(remote.saveTemplate(any)).thenAnswer((_) async => true);
+      when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
 
       var builds = 0;
       Widget consumer() {
