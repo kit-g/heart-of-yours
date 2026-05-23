@@ -338,20 +338,20 @@ class LocalDatabase
   }
 
   @override
-  Future<Workout?> getActiveWorkout(String? userId, ExerciseLookup lookup) async {
+  Future<Workout?> getActiveWorkout(String? userId) async {
     final rows = await _db.rawQuery(sql.activeWorkout, [userId]);
     return switch (rows) {
-      [Map row] => Workout.fromJson(row.toWorkout(), lookup),
+      [Map row] => Workout.fromJson(row.toWorkout()),
       _ => null,
     };
   }
 
   @override
-  Future<Workout?> getWorkout(String? userId, String workoutId, ExerciseLookup lookup) {
+  Future<Workout?> getWorkout(String? userId, String workoutId) {
     return _db.rawQuery(sql.getWorkout, [workoutId, userId]).then<Workout?>(
       (rows) {
         return switch (rows) {
-          [Map row] => Workout.fromJson(row.toWorkout(), lookup),
+          [Map row] => Workout.fromJson(row.toWorkout()),
           _ => null,
         };
       },
@@ -374,9 +374,9 @@ class LocalDatabase
   }
 
   @override
-  Future<Iterable<Workout>?> getWorkoutHistory(String userId, ExerciseLookup lookup) async {
+  Future<Iterable<Workout>?> getWorkoutHistory(String userId) async {
     final rows = await _db.rawQuery(sql.history, [userId]);
-    return rows.map((each) => Workout.fromJson(each.toWorkout(), lookup));
+    return rows.map((each) => Workout.fromJson(each.toWorkout()));
   }
 
   static String? _encodeImages(final Iterable<WorkoutImage>? images) {
@@ -496,11 +496,11 @@ class LocalDatabase
   }
 
   @override
-  Future<Iterable<Template>> getTemplates(String? userId, ExerciseLookup lookup) async {
+  Future<Iterable<Template>> getTemplates(String? userId) async {
     final query = userId == null ? sql.getSampleTemplates : sql.getTemplates;
     final args = userId == null ? null : [userId];
     final rows = (await _db.rawQuery(query, args)).map((row) => row.toCamel());
-    return rows.map((row) => Template.fromJson(row, lookup));
+    return rows.map((row) => Template.fromJson(row));
   }
 
   @override
