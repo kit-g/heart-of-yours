@@ -5,7 +5,7 @@ publish_to: none
 version: 1.0.0+1 # build number is managed by the GH action, version should be bumped manually
 
 environment:
-  sdk: ">=3.10.0"
+  sdk: ">=3.12.0"
   flutter: ">=3.38.3"
 
 workspace:
@@ -13,7 +13,6 @@ workspace:
   - "shared/heart_db"
   - "shared/heart_charts"
   - "shared/heart_language"
-  - "shared/heart_models"
   - "shared/heart_state"
 
 dependencies:
@@ -37,6 +36,10 @@ dependencies:
   heart_db:
   heart_language:
   heart_models:
+    git:
+      url: "https://github.com/kit-g/heart-api.git"
+      path: "shared/heart_models"
+      ref: "main"
   heart_state:
   image_cropper: ^11.0.0
   image_picker: ^1.1.2
@@ -45,8 +48,8 @@ dependencies:
   markdown_widget: ^2.3.2+8
   mime: ^2.0.0
   package_info_plus: ^9.0.0
-  sentry_flutter: ^9.14.0
-  timezone: ^0.10.1
+  sentry_flutter: ^9.20.0
+  timezone: ^0.11.0
 
 dev_dependencies:
   build_runner: ^2.10.4
@@ -59,6 +62,9 @@ dev_dependencies:
 
 
 flutter:
+  config:
+    enable-swift-package-manager: true
+
   uses-material-design: true
   assets:
     - assets/
