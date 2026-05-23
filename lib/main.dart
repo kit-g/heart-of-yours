@@ -21,14 +21,14 @@ typedef AppRunner =
       required AppConfig appConfig,
       required LocalDatabase db,
       required Api api,
-      required ConfigApi config,
+      required Cdn cdn,
       bool? hasLocalNotifications,
       FirebaseAuth? firebase,
     });
 
 @visibleForTesting
 Future<void> bootstrap({
-  required AppConfig appConfig,
+  required AppConfig config,
   Future<void> Function() initFirebase = initializeFirebase,
   Future<LocalDatabase> Function({bool isWeb}) initDb = LocalDatabase.init,
   SentryInit? initSentry = initSentry,
@@ -38,10 +38,10 @@ Future<void> bootstrap({
   FirebaseAuth? firebase,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
-  initLogging?.call(appConfig.logLevel);
+  initLogging?.call(config.logLevel);
 
-  final api = Api(gateway: appConfig.api);
-  final config = ConfigApi(gateway: appConfig.mediaLink);
+  final api = Api(gateway: config.api);
+  final cdn = Cdn(gateway: config.mediaLink);
 
   return Future.wait<void>([
     initFirebase(),
@@ -54,15 +54,15 @@ Future<void> bootstrap({
         return appRunner(
           db: db as LocalDatabase,
           api: api,
-          config: config,
+          cdn: cdn,
           hasLocalNotifications: hasLocalNotifications,
-          appConfig: appConfig,
+          appConfig: config,
           firebase: firebase ?? FirebaseAuth.instance,
         );
       }
 
       return switch (initSentry) {
-        FutureOr<void> Function(Future<void> Function(), AppConfig) callback => callback(run, appConfig),
+        FutureOr<void> Function(Future<void> Function(), AppConfig) callback => callback(run, config),
         null => run(),
       };
     },
@@ -72,7 +72,7 @@ Future<void> bootstrap({
 Future<void> _runner({
   required Api api,
   required AppConfig appConfig,
-  required ConfigApi config,
+  required Cdn cdn,
   required LocalDatabase db,
   bool? hasLocalNotifications,
   Future<void> Function(List<DeviceOrientation> orientations) setOrientations = SystemChrome.setPreferredOrientations,
@@ -106,7 +106,7 @@ Future<void> _runner({
         HeartApp(
           db: db,
           api: api,
-          config: config,
+          cdn: cdn,
           hasLocalNotifications: hasLocalNotifications,
           appConfig: appConfig,
           firebaseAuth: firebase,
@@ -119,7 +119,7 @@ Future<void> _runner({
 
 Future<void> main() {
   return bootstrap(
-    appConfig: AppConfig.fromDartDefine(),
+    config: AppConfig.fromDartDefine(),
     hasLocalNotifications: true,
   );
 }
