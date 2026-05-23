@@ -306,8 +306,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> deleteAccountDeletionSchedule() async {
     switch (_user) {
-      case User(id: String accountId):
-        await _service.undoAccountDeletion(accountId);
+      case User(id: String()):
+        await _service.undoAccountDeletion();
         // copy without the deletion timestamp
         _user = _user?.copyWith();
         notifyListeners();

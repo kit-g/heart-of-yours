@@ -11,14 +11,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   final RemoteTemplateService _remoteService;
   final RemoteConfigService _configService;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
-  final ExerciseLookup lookForExercise;
   final int? maxTemplates;
 
   Templates({
     required RemoteTemplateService remoteService,
     required TemplateService service,
     required RemoteConfigService configService,
-    required this.lookForExercise,
     this.onError,
     this.maxTemplates,
   }) : _service = service,
@@ -50,16 +48,16 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   Future<void> init() async {
-    _initSampleTemplates(lookForExercise);
+    _initSampleTemplates();
     if (userId == null) return;
-    final local = await _service.getTemplates(userId!, lookForExercise);
+    final local = await _service.getTemplates(userId!);
 
     if (local.isNotEmpty) {
       _templates.addAll(local);
       notifyListeners();
     }
 
-    final remote = await _remoteService.getTemplates(lookForExercise) ?? [];
+    final remote = await _remoteService.getTemplates() ?? [];
     if (remote.isNotEmpty) {
       _templates
         ..removeWhere(remote.contains)
@@ -132,13 +130,13 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   bool get allowsNewTemplate => length < (maxTemplates ?? _maxTemplates);
 
-  Future<void> _initSampleTemplates(ExerciseLookup lookForExercise) async {
-    final local = await _service.getTemplates(null, lookForExercise);
+  Future<void> _initSampleTemplates() async {
+    final local = await _service.getTemplates(null);
     if (local.isNotEmpty) {
       _samples.addAll(local);
     }
 
-    final remote = await _configService.getSampleTemplates(lookForExercise);
+    final remote = await _configService.getSampleTemplates();
     _samples
       ..removeWhere(remote.contains)
       ..addAll(remote);
