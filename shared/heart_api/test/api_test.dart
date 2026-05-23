@@ -30,7 +30,7 @@ void main() {
 
       _response(
         client: client,
-        method: 'POST',
+        method: 'PUT',
         path: Router.accounts,
         statusCode: 200,
         body: user.toMap(),
@@ -47,7 +47,7 @@ void main() {
 
       _response(
         client: client,
-        method: 'POST',
+        method: 'PUT',
         path: Router.accounts,
         statusCode: 400,
         body: {'code': 'ACCOUNT_DELETED'},
@@ -61,7 +61,7 @@ void main() {
 
       _response(
         client: client,
-        method: 'POST',
+        method: 'PUT',
         path: Router.accounts,
         statusCode: 500,
         body: {'error': 'unexpected'},
@@ -156,12 +156,12 @@ void main() {
       _response(
         client: client,
         method: 'PUT',
-        path: '${Router.accounts}/42',
+        path: Router.accounts,
         statusCode: 200,
         body: {},
       );
 
-      final result = await api.undoAccountDeletion('42');
+      final result = await api.undoAccountDeletion();
       expect(result, isNull);
     });
 
@@ -169,12 +169,12 @@ void main() {
       _response(
         client: client,
         method: 'PUT',
-        path: '${Router.accounts}/42',
+        path: Router.accounts,
         statusCode: 400,
         body: {'error': 'bad request'},
       );
 
-      expect(() => api.undoAccountDeletion('42'), throwsA(isA<Map>()));
+      expect(() => api.undoAccountDeletion(), throwsA(isA<Map>()));
     });
   });
 
@@ -264,7 +264,7 @@ void main() {
         body: {'templates': templates},
       );
 
-      final result = await api.getTemplates((id) => MockExercise());
+      final result = await api.getTemplates();
       expect(result, isNotNull);
       expect(result!.length, equals(2));
       expect(result.first.name, contains('template'));
@@ -279,7 +279,7 @@ void main() {
         body: {'unexpected': []},
       );
 
-      final result = await api.getTemplates((id) => MockExercise());
+      final result = await api.getTemplates();
       expect(result, isNull);
     });
   });
@@ -312,40 +312,39 @@ void main() {
     });
 
     test('getWorkouts returns list of workouts on valid response', () async {
+      const userId = 'u1';
       final workoutJson = [
-        {'id': 'w1', 'name': 'Morning Lift', 'exerciseId': 'x'},
-        {'id': 'w2', 'name': 'Evening Run', 'exerciseId': 'y'},
+        {'id': 'w1', 'name': 'Morning Lift', 'start': '2025-01-21T12:00:00Z'},
+        {'id': 'w2', 'name': 'Evening Run', 'start': '2025-01-21T13:00:00Z'},
       ];
 
       _response(
         client: client,
         method: 'GET',
-        path: Router.workouts,
+        path: '${Router.accounts}/$userId/workouts',
         statusCode: 200,
         body: {'workouts': workoutJson},
         query: {'pageSize': '2', 'since': 'abc'},
       );
 
-      lookup(String id) => MockExercise();
-
-      final result = await api.getWorkouts(lookup, pageSize: 2, since: 'abc');
+      final result = await api.getWorkouts(userId, pageSize: 2, since: 'abc');
 
       expect(result, isNotNull);
       expect(result!.length, equals(2));
     });
 
     test('getWorkouts returns null on malformed response', () async {
+      const userId = 'us1';
       _response(
         client: client,
         method: 'GET',
-        path: Router.workouts,
+        path: '${Router.accounts}/$userId/workouts',
         statusCode: 200,
         body: {'not_workouts': []},
         query: {},
       );
 
-      lookup(String id) => MockExercise();
-      final result = await api.getWorkouts(lookup);
+      final result = await api.getWorkouts(userId);
 
       expect(result, isNull);
     });

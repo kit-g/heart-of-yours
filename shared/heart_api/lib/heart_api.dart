@@ -1,4 +1,4 @@
 library;
 
 export 'src/api.dart' show Api;
-export 'src/config.dart' show ConfigApi;
+export 'src/cdn.dart' show Cdn;
