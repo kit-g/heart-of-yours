@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:heart_models/heart_models.dart';
+import 'package:heart_models/heart_models.dart' hide PreSignedUrl;
 import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
 
@@ -63,7 +63,7 @@ class Api
 
   @override
   Future<User> registerAccount(User user) async {
-    final (json, code) = await post(Router.accounts, body: user.toMap());
+    final (json, code) = await put(Router.accounts, body: user.toMap());
     return switch ((code, json)) {
       (200, Map json) => User.fromJson(json),
       (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
@@ -119,9 +119,9 @@ class Api
   }
 
   @override
-  Future<String?> undoAccountDeletion(String accountId) {
+  Future<String?> undoAccountDeletion() {
     return put(
-      '${Router.accounts}/$accountId',
+      Router.accounts,
       body: {'action': 'undoAccountDeletion'},
     ).then(
       (response) {
@@ -135,7 +135,7 @@ class Api
   }
 
   @override
-  Future<bool> submitFeedback({String? feedback, Uint8List? screenshot}) async {
+  Future<bool> submitFeedback({required String mimeType, String? feedback, Uint8List? screenshot}) async {
     final (json, code) = await post(Router.feedback, body: {'message': feedback});
 
     final link = switch (json) {
@@ -187,22 +187,28 @@ class Api
   }
 
   @override
-  Future<bool> saveWorkout(Workout workout) async {
-    final (_, code) = await post(Router.workouts, body: workout.toMap());
-    return [200, 201].contains(code);
+  Future<Workout> saveWorkout(Workout workout) async {
+    final (json, code) = await post(Router.workouts, body: workout.toMap());
+    return Workout.fromJson(json);
   }
 
   @override
-  Future<Iterable<Workout>?> getWorkouts(ExerciseLookup lookForExercise, {int? pageSize, String? since}) async {
+  Future<Workout> editWorkout(Workout updated) async {
+    final (json, code) = await put(Router.workout(updated.id), body: updated.toMap());
+    return Workout.fromJson(json);
+  }
+
+  @override
+  Future<Iterable<Workout>?> getWorkouts(String userId, {int? pageSize, String? since}) async {
     final (json, code) = await get(
-      Router.workouts,
+      '${Router.accounts}/$userId/workouts',
       query: {
-        if (pageSize != null) 'pageSize': pageSize.toString(),
+        'pageSize': ?pageSize?.toString(),
         'since': ?since,
       },
     );
     return switch (json) {
-      {'workouts': List l} => l.map((e) => Workout.fromJson(e, lookForExercise)),
+      {'workouts': List l} => l.map((e) => Workout.fromJson(e)),
       _ => null,
     };
   }
@@ -265,18 +271,24 @@ class Api
   }
 
   @override
-  Future<Iterable<Template>?> getTemplates(ExerciseLookup lookForExercise) async {
+  Future<Iterable<Template>?> getTemplates() async {
     final (json, _) = await get(Router.templates);
     return switch (json) {
-      {'templates': List l} => l.map((e) => Template.fromJson(e, lookForExercise)),
+      {'templates': List l} => l.map((e) => Template.fromJson(e)),
       _ => null,
     };
   }
 
   @override
-  Future<bool> saveTemplate(Template template) async {
-    final (_, code) = await post(Router.templates, body: template.toMap());
-    return code == 201;
+  Future<Template> saveTemplate(Template template) async {
+    final (json, code) = await post(Router.templates, body: template.toMap());
+    return Template.fromJson(json);
+  }
+
+  @override
+  Future<Template> editTemplate(Template template) async {
+    final (json, code) = await put(Router.template(template.id), body: template.toMap());
+    return Template.fromJson(json);
   }
 
   @override
@@ -287,13 +299,21 @@ class Api
 }
 
 abstract final class Router {
-  static const accounts = 'api/v1/accounts';
-  static const exercises = 'api/v2/exercises';
-  static const feedback = 'api/v1/feedback';
-  static const templates = 'api/v1/templates';
-  static const workouts = 'api/v1/workouts';
+  static const accounts = 'v1/accounts';
+  static const exercises = 'v1/exercises';
+  static const feedback = 'v1/feedback';
+  static const templates = 'v1/templates';
+  static const workouts = 'v1/workouts';
 
   static String workoutImages(String workoutId) {
     return '$workouts/$workoutId/images';
+  }
+
+  static String template(String templateId) {
+    return '$templates/$templateId';
+  }
+
+  static String workout(String workoutId) {
+    return '$workouts/$workoutId';
   }
 }

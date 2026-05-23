@@ -2,18 +2,18 @@ import 'package:heart_models/heart_models.dart';
 import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
 
-class ConfigApi with Requests implements RemoteConfigService, HeaderAuthenticatedService {
+class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedService {
   @override
   late String gateway;
 
-  static final ConfigApi instance = ConfigApi._();
+  static final Cdn instance = Cdn._();
 
   @override
   Map<String, String>? defaultHeaders;
 
-  ConfigApi._();
+  Cdn._();
 
-  factory ConfigApi({required String gateway}) {
+  factory Cdn({required String gateway}) {
     instance.gateway = gateway;
     return instance;
   }
@@ -30,18 +30,17 @@ class ConfigApi with Requests implements RemoteConfigService, HeaderAuthenticate
 
   @override
   Future<Map> getRemoteConfig() async {
-    final (json, _) = await get('/config');
-    return json;
+    return {};
   }
 
   @override
   bool get isAuthenticated => false; // not needed
 
   @override
-  Future<Iterable<Template>> getSampleTemplates(ExerciseLookup lookForExercise) async {
-    final (json, _) = await get('/templates');
+  Future<Iterable<Template>> getSampleTemplates() async {
+    final (json, _) = await get('/static/templates');
     return switch (json) {
-      {'workouts': Map m} => m.values.map((e) => Template.fromJson(e, lookForExercise)),
+      {'templates': List l} => l.map((e) => Template.fromJson(e)),
       _ => [],
     };
   }
