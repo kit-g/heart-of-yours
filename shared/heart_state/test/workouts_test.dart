@@ -115,7 +115,7 @@ void main() {
       verify(local.startWorkout(any, 'u1')).called(1);
     });
 
-    test('finishActiveWorkout saves workout, clears active, notifies twice', () async {
+    test('finishActiveWorkout saves workout, clears active, notifies', () async {
       final probe = ListenerProbe()..attach(sut);
       await sut.startWorkout(name: 'Legs');
       probe.notifications = 0; // isolate
@@ -123,15 +123,16 @@ void main() {
       final activeBefore = sut.activeWorkout!;
       await sut.finishActiveWorkout();
 
-      // saveWorkout notifies once; clearing active notifies once more
-      expect(probe.notifications, 2);
+      // saveWorkout notifies twice (pre/post remote round-trip);
+      // clearing active notifies once more.
+      expect(probe.notifications, 3);
       expect(sut.activeWorkout, isNull);
 
       verify(local.finishWorkout(activeBefore, 'u1')).called(1);
       verify(remote.saveWorkout(activeBefore)).called(1);
     });
 
-    test('cancelActiveWorkout removes and deletes, notifies once', () async {
+    test('cancelActiveWorkout drops local row without touching remote', () async {
       final probe = ListenerProbe()..attach(sut);
       await sut.startWorkout(name: 'Arms');
       probe.notifications = 0;
@@ -142,7 +143,7 @@ void main() {
       expect(sut.activeWorkout, isNull);
       expect(probe.notifications, 1);
       verify(local.deleteWorkout(id)).called(1);
-      verify(remote.deleteWorkout(id)).called(1);
+      verifyNever(remote.deleteWorkout(any));
     });
 
     test('deleteWorkout removes by id, notifies, local+remote delete', () async {

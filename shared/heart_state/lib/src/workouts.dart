@@ -140,14 +140,27 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _activeWorkout = null;
   }
 
-  Future<void> saveWorkout(Workout active) {
+  Future<void> saveWorkout(Workout active) async {
     active.removeEmptySets();
-    _localService.finishWorkout(active, userId!);
+    await _localService.finishWorkout(active, userId!);
 
     _workouts[active.id] = active;
     notifyListeners();
 
-    return _remoteService.saveWorkout(active);
+    try {
+      final saved = await _remoteService.saveWorkout(active);
+      if (saved.id != active.id) {
+        _workouts.remove(active.id);
+        await _localService.deleteWorkout(active.id);
+      }
+      _workouts[saved.id] = saved;
+      if (userId case String id) {
+        await _localService.storeWorkoutHistory([saved], id);
+      }
+      notifyListeners();
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
   }
 
   Future<void> editWorkout(Workout workout) async {
@@ -156,20 +169,18 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     final edited = await _remoteService.editWorkout(workout);
     if (userId case String id) {
-      await _localService.storeWorkoutHistory([workout], id);
+      await _localService.storeWorkoutHistory([edited], id);
     }
-    _workouts[workout.id] = edited;
+    _workouts[edited.id] = edited;
+    if (edited.id != workout.id) {
+      _workouts.remove(workout.id);
+    }
     notifyListeners();
   }
 
   Future<void> cancelActiveWorkout() async {
-    _workouts.remove(_activeWorkoutId);
     if (_activeWorkoutId case String id) {
-      _deleteWorkout(id).catchError(
-        (error, stacktrace) {
-          onError?.call(error, stacktrace: stacktrace);
-        },
-      );
+      _workouts.remove(id);
       _localService.deleteWorkout(id);
     }
     _activeWorkoutId = null;
