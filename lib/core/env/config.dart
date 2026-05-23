@@ -29,12 +29,10 @@ class AppConfig {
     required this.maxTemplates,
     required this.sentryDsn,
     required this.themeColorHex,
-    required String appLink,
-    required String mediaLink,
-    required String testUserCredentials,
-  }) : _appLink = appLink,
-       _mediaLink = mediaLink,
-       _testUserCredentials = testUserCredentials;
+    required this._appLink,
+    required this._mediaLink,
+    required this._testUserCredentials,
+  });
 
   final String accountDeletionDeadline;
   final String api;
