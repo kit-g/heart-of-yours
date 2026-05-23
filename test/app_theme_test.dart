@@ -11,14 +11,14 @@ void main() {
     testWidgets('AppTheme toggles propagate to MaterialApp.themeMode', (tester) async {
       final db = MockLocalDatabase();
       final api = MockApi();
-      final configApi = MockConfigApi();
+      final cdn = MockCdn();
       const harness = TestAppHarness();
 
       await harness.pumpHeartApp(
         tester,
         db: db,
         api: api,
-        config: configApi,
+        cdn: cdn,
         appConfig: AppConfig.test(allowsFeedbackFeature: false),
         hasLocalNotifications: false,
       );
