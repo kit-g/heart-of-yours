@@ -26,7 +26,7 @@ Future<void> initNotifications({
   await _createNotificationChannel(platform);
   await requestNotificationPermission(platform);
   await _plugin.initialize(
-    const InitializationSettings(
+    settings: const InitializationSettings(
       iOS: DarwinInitializationSettings(
         requestSoundPermission: true,
         requestBadgePermission: true,
@@ -109,7 +109,9 @@ Future<int> _showNotification({
   String? payload,
 }) async {
   final details = _details(title: title, body: body, subtitle: subtitle);
-  return _plugin.show(id, title, body, details, payload: payload).then<int>((_) => id);
+  return _plugin
+      .show(id: id, title: title, body: body, notificationDetails: details, payload: payload)
+      .then<int>((_) => id);
 }
 
 Future<int> showExerciseNotification({
@@ -193,11 +195,11 @@ Future<void> scheduleExerciseNotification(
 
   final details = _details(title: title, body: body, subtitle: subtitle);
   return _plugin.zonedSchedule(
-    0,
-    title,
-    body,
-    TZDateTime.from(time, local),
-    details,
+    id: 0,
+    title: title,
+    body: body,
+    scheduledDate: TZDateTime.from(time, local),
+    notificationDetails: details,
     androidScheduleMode: .exactAllowWhileIdle,
     payload: exerciseId,
   );
