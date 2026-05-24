@@ -181,7 +181,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> cancelActiveWorkout() async {
     if (_activeWorkoutId case String id) {
       _workouts.remove(id);
-      _localService.deleteWorkout(id);
+      try {
+        await _localService.deleteWorkout(id);
+        await _remoteService.deleteWorkout(id);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+      }
     }
     _activeWorkoutId = null;
     notifyListeners();
