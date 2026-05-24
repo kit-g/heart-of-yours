@@ -19,7 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - shared/heart_models
           - shared/heart_api
           - shared/heart_db
           - shared/heart_state
