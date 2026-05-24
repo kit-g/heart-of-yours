@@ -53,6 +53,16 @@
                     <string>com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2</string>
                 </array>
             </dict>
+            <dict>
+                <key>CFBundleTypeRole</key>
+                <string>Editor</string>
+                <key>CFBundleURLName</key>
+                <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <string>heart</string>
+                </array>
+            </dict>
         </array>
         <key>CFBundleVersion</key>
         <string>$(FLUTTER_BUILD_NUMBER)</string>
