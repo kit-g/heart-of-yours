@@ -132,7 +132,7 @@ void main() {
       verify(remote.saveWorkout(activeBefore)).called(1);
     });
 
-    test('cancelActiveWorkout drops local row without touching remote', () async {
+    test('cancelActiveWorkout removes locally and best-effort deletes remotely', () async {
       final probe = ListenerProbe()..attach(sut);
       await sut.startWorkout(name: 'Arms');
       probe.notifications = 0;
@@ -143,7 +143,9 @@ void main() {
       expect(sut.activeWorkout, isNull);
       expect(probe.notifications, 1);
       verify(local.deleteWorkout(id)).called(1);
-      verifyNever(remote.deleteWorkout(any));
+      // active workouts may have been POST'd via attachImageToActiveWorkout;
+      // cancel always tries the remote cleanup (errors swallowed).
+      verify(remote.deleteWorkout(id)).called(1);
     });
 
     test('deleteWorkout removes by id, notifies, local+remote delete', () async {
