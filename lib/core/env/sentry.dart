@@ -26,6 +26,12 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
 }
 
 Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
+  if (kDebugMode) {
+    print(exception);
+    if (stacktrace != null) {
+      print(stacktrace);
+    }
+  }
   return Sentry.captureException(exception, stackTrace: stacktrace);
 }
 
