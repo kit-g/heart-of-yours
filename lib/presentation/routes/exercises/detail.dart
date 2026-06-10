@@ -3,6 +3,7 @@ part of 'exercises.dart';
 class ExerciseDetailPage extends StatelessWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
+  final void Function(Exercise)? onShareExercise;
   final bool allowOptions;
   final Widget? leading;
 
@@ -12,6 +13,7 @@ class ExerciseDetailPage extends StatelessWidget {
     required this.onTapWorkout,
     this.allowOptions = true,
     this.leading,
+     this.onShareExercise,
   });
 
   @override
@@ -22,12 +24,14 @@ class ExerciseDetailPage extends StatelessWidget {
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
         leading: leading,
+        onShareExercise: onShareExercise,
       ),
       _ => _MaterialExerciseDetailPage(
         exercise: exercise,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
         leading: leading,
+        onShareExercise: onShareExercise,
       ),
     };
   }
