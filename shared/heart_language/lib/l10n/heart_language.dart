@@ -1471,6 +1471,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'My progression'**
   String get myProgression;
+
+  /// Snack message when user copies text to clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get copiedToClipboard;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
