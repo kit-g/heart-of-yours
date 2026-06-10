@@ -754,4 +754,7 @@ class LRu extends L {
 
   @override
   String get myProgression => 'Мой прогресс';
+
+  @override
+  String get copiedToClipboard => 'Copied to clipboard';
 }
