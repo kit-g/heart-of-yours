@@ -2,27 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
     <dict>
-        <key>UIApplicationSceneManifest</key>
-        <dict>
-            <key>UIApplicationSupportsMultipleScenes</key>
-            <false/>
-            <key>UISceneConfigurations</key>
-            <dict>
-                <key>UIWindowSceneSessionRoleApplication</key>
-                <array>
-                    <dict>
-                        <key>UISceneClassName</key>
-                        <string>UIWindowScene</string>
-                        <key>UISceneDelegateClassName</key>
-                        <string>FlutterSceneDelegate</string>
-                        <key>UISceneConfigurationName</key>
-                        <string>flutter</string>
-                        <key>UISceneStoryboardFile</key>
-                        <string>Main</string>
-                    </dict>
-                </array>
-            </dict>
-        </dict>
         <key>CADisableMinimumFrameDurationOnPhone</key>
         <true/>
         <key>CFBundleDevelopmentRegion</key>
@@ -50,7 +29,7 @@
                 <string>Editor</string>
                 <key>CFBundleURLSchemes</key>
                 <array>
-                    <string>com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2</string>
+                    <string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
                 </array>
             </dict>
             <dict>
@@ -67,13 +46,34 @@
         <key>CFBundleVersion</key>
         <string>$(FLUTTER_BUILD_NUMBER)</string>
         <key>GIDClientID</key>
-        <string>547445170683-d75o9i7m147pd20122rlahf9l92eauk2.apps.googleusercontent.com</string>
+        <string>$(GOOGLE_CLIENT_ID)</string>
         <key>LSRequiresIPhoneOS</key>
         <true/>
         <key>NSCameraUsageDescription</key>
         <string>Allow camera access to take a new avatar photo.</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>Allow photo library access to change your avatar.</string>
+        <key>UIApplicationSceneManifest</key>
+        <dict>
+            <key>UIApplicationSupportsMultipleScenes</key>
+            <false/>
+            <key>UISceneConfigurations</key>
+            <dict>
+                <key>UIWindowSceneSessionRoleApplication</key>
+                <array>
+                    <dict>
+                        <key>UISceneClassName</key>
+                        <string>UIWindowScene</string>
+                        <key>UISceneConfigurationName</key>
+                        <string>flutter</string>
+                        <key>UISceneDelegateClassName</key>
+                        <string>FlutterSceneDelegate</string>
+                        <key>UISceneStoryboardFile</key>
+                        <string>Main</string>
+                    </dict>
+                </array>
+            </dict>
+        </dict>
         <key>UIApplicationSupportsIndirectInputEvents</key>
         <true/>
         <key>UILaunchStoryboardName</key>
