@@ -97,11 +97,13 @@ class AppConfig {
     return Provider.of<AppConfig>(context, listen: false);
   }
 
-  bool get isProd => env == Env.prod;
+  bool get isProd => env == .prod;
 
-  bool get isDev => env == Env.dev;
+  bool get isDev => env == .dev;
 
   String get appLink => Uri.https(_appLink).toString();
+
+  String get appDomain => _appLink;
 
   String get mediaLink => _mediaLink;
 

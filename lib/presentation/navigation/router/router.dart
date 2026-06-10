@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/app_upgrade.dart';
+import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
