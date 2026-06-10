@@ -29,7 +29,7 @@ typedef AppRunner =
 @visibleForTesting
 Future<void> bootstrap({
   required AppConfig config,
-  Future<void> Function() initFirebase = initializeFirebase,
+  Future<void> Function(Env env) initFirebase = initializeFirebase,
   Future<LocalDatabase> Function({bool isWeb}) initDb = LocalDatabase.init,
   SentryInit? initSentry = initSentry,
   AppRunner appRunner = _runner,
@@ -43,8 +43,8 @@ Future<void> bootstrap({
   final api = Api(gateway: config.api);
   final cdn = Cdn(gateway: config.mediaLink);
 
-  return Future.wait<void>([
-    initFirebase(),
+  return Future.wait<dynamic>([
+    initFirebase(config.env),
     initDb(isWeb: kIsWeb),
   ]).then<void>(
     (initialized) {
