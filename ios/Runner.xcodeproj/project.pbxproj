@@ -10,12 +10,12 @@
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
-		44BE33E12D1F64910075BD9F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 44BE33E02D1F64910075BD9F /* GoogleService-Info.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		A40B15F9668EDDB8DAA8BA5C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 49701AC1F2BDE3D385D75F14 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,8 +47,10 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		44375CC02FCCD9490051B76F /* RunnerRelease-dev.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "RunnerRelease-dev.entitlements"; sourceTree = "<group>"; };
 		444E54752D39B17000E6D520 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		44BE33E02D1F64910075BD9F /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		49701AC1F2BDE3D385D75F14 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				1E2CC660319B9E078E037EC9 /* Pods */,
+				49701AC1F2BDE3D385D75F14 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -131,6 +134,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				44375CC02FCCD9490051B76F /* RunnerRelease-dev.entitlements */,
 				444E54752D39B17000E6D520 /* Runner.entitlements */,
 				44BE33E02D1F64910075BD9F /* GoogleService-Info.plist */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
@@ -173,6 +177,7 @@
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
+				4491AEDA2FCE68F500B229D9 /* Provision GoogleService-Info.plist */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
@@ -219,7 +224,7 @@
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
 			packageReferences = (
-				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "FlutterGeneratedPluginSwiftPackage" */,
+				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */,
 			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
@@ -244,10 +249,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
-				44BE33E12D1F64910075BD9F /* GoogleService-Info.plist in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				A40B15F9668EDDB8DAA8BA5C /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -270,6 +275,24 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
+		4491AEDA2FCE68F500B229D9 /* Provision GoogleService-Info.plist */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Provision GoogleService-Info.plist";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nGOOGLESERVICE_INFO_PLIST=GoogleService-Info.plist\n\n# Extract the environment name from the configuration (e.g., Debug-dev -> dev)\nif [[ \"${CONFIGURATION}\" == *-dev ]]; then\n    ENVIRONMENT=\"dev\"\nelif [[ \"${CONFIGURATION}\" == *-prod ]]; then\n    ENVIRONMENT=\"prod\"\nelse\n    # Default fallback\n    ENVIRONMENT=\"dev\"\nfi\n\n# Path to the source plist\nPLIST_PATH=\"${PROJECT_DIR}/Env/${ENVIRONMENT}/${GOOGLESERVICE_INFO_PLIST}\"\n\n# Destination path in the built app bundle\nDESTINATION_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/${GOOGLESERVICE_INFO_PLIST}\"\n\necho \"Copying ${GOOGLESERVICE_INFO_PLIST} for environment: ${ENVIRONMENT}\"\n\n# Copy the file\ncp \"${PLIST_PATH}\" \"${DESTINATION_PATH}\"\n";
+		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -283,7 +306,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -395,9 +418,11 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = "Heart dev";
 				ENABLE_BITCODE = NO;
+				GOOGLE_CLIENT_ID = "547445170683-d75o9i7m147pd20122rlahf9l92eauk2.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -522,9 +547,11 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = "Heart dev";
 				ENABLE_BITCODE = NO;
+				GOOGLE_CLIENT_ID = "547445170683-d75o9i7m147pd20122rlahf9l92eauk2.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -623,9 +650,11 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = "Heart dev";
 				ENABLE_BITCODE = NO;
+				GOOGLE_CLIENT_ID = "547445170683-d75o9i7m147pd20122rlahf9l92eauk2.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -716,33 +745,38 @@
 			name = "Release-prod";
 		};
 		442A2D132D4AE35E00DCEC22 /* Release-prod */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-prod";
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Prod.entitlements;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
-				DISPLAY_NAME = Heart;
-				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Heart;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-				TREE_SHAKE_ICONS = false;
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = "Release-prod";
-		};
+            isa = XCBuildConfiguration;
+            baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+            buildSettings = {
+                ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-prod";
+                CLANG_ENABLE_MODULES = YES;
+                CODE_SIGN_ENTITLEMENTS = Runner/Prod.entitlements;
+                CODE_SIGN_IDENTITY = "Apple Development";
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+                DEVELOPMENT_TEAM = DFX2JYT8BM;
+                DISPLAY_NAME = Heart;
+                ENABLE_BITCODE = NO;
+                GOOGLE_CLIENT_ID = "340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a.apps.googleusercontent.com";
+                GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a";
+                INFOPLIST_FILE = Runner/Info.plist;
+                INFOPLIST_KEY_CFBundleDisplayName = Heart;
+                INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
+                IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+                LD_RUNPATH_SEARCH_PATHS = (
+                    "$(inherited)",
+                    "@executable_path/Frameworks",
+                );
+                PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios";
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                PROVISIONING_PROFILE_SPECIFIER = "";
+                SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
+                SWIFT_VERSION = 5.0;
+                TREE_SHAKE_ICONS = false;
+                VERSIONING_SYSTEM = "apple-generic";
+            };
+            name = "Release-prod";
+        };
 		442A2D142D4AE35E00DCEC22 /* Release-prod */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -825,9 +859,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = Heart;
 				ENABLE_BITCODE = NO;
+				GOOGLE_CLIENT_ID = "340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Heart;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -924,11 +960,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Runner/RunnerRelease-dev.entitlements";
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = "Heart dev";
 				ENABLE_BITCODE = NO;
+				GOOGLE_CLIENT_ID = "547445170683-d75o9i7m147pd20122rlahf9l92eauk2.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1082,9 +1120,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = "Heart dev";
 				ENABLE_BITCODE = NO;
+				GOOGLE_CLIENT_ID = "547445170683-d75o9i7m147pd20122rlahf9l92eauk2.apps.googleusercontent.com\n";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1112,9 +1152,11 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = P5QLJDJ7P2;
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = "Heart dev";
 				ENABLE_BITCODE = NO;
+				GOOGLE_CLIENT_ID = "547445170683-d75o9i7m147pd20122rlahf9l92eauk2.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-d75o9i7m147pd20122rlahf9l92eauk2";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1183,7 +1225,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "FlutterGeneratedPluginSwiftPackage" */ = {
+		781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage;
 		};
