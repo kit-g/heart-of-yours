@@ -3,6 +3,7 @@ part of 'exercises.dart';
 class _MaterialExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
+  final void Function(Exercise)? onShareExercise;
   final bool allowOptions;
   final Widget? leading;
 
@@ -10,6 +11,7 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
     required this.exercise,
     required this.onTapWorkout,
     required this.allowOptions,
+    required this.onShareExercise,
     this.leading,
   });
 
@@ -47,6 +49,11 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
                 onPressed: () => _onExerciseMenu(context, widget.exercise),
                 icon: const Icon(Icons.more_vert_rounded),
               ),
+          if (!widget.exercise.isMine)
+            IconButton(
+              onPressed: () => widget.onShareExercise?.call(widget.exercise),
+              icon: const Icon(Icons.share_outlined),
+            ),
         ],
         leading: widget.leading,
         title: widget.exercise.archivedAppBarTitle(context),

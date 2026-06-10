@@ -3,6 +3,7 @@ part of 'exercises.dart';
 class _CupertinoExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
+  final void Function(Exercise)? onShareExercise;
   final bool allowOptions;
   final Widget? leading;
 
@@ -10,6 +11,7 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
     required this.exercise,
     required this.onTapWorkout,
     required this.allowOptions,
+    this.onShareExercise,
     this.leading,
   });
 
@@ -45,12 +47,18 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
         title: widget.exercise.archivedAppBarTitle(context),
         leading: widget.leading,
         actions: [
-          if (widget.allowOptions)
+          if (widget.allowOptions) ...[
             if (widget.exercise.isMine)
               IconButton(
                 onPressed: () => _onExerciseMenu(context, widget.exercise),
                 icon: const Icon(Icons.more_horiz_rounded),
               ),
+            if (!widget.exercise.isMine)
+              IconButton(
+                onPressed: () => widget.onShareExercise?.call(widget.exercise),
+                icon: const Icon(Icons.ios_share_rounded),
+              ),
+          ],
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),

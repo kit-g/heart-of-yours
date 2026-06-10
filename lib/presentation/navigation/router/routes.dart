@@ -4,8 +4,7 @@ part of 'router.dart';
 enum _AuthPages {
   login,
   signUp,
-  recovery
-  ;
+  recovery;
 
   bool get isLogin => this == login;
 }
@@ -258,6 +257,9 @@ RouteBase _exercisesRoute() {
                   return ExerciseDetailPage(
                     exercise: exercise!,
                     onTapWorkout: (_) async {},
+                    onShareExercise: (exercise) {
+                      _onShareExercise(context, exercise);
+                    },
                   );
                 },
                 name: _exerciseArchivedDetailName,
@@ -280,6 +282,9 @@ RouteBase _exercisesRoute() {
                       context.goToWorkoutEditor(workoutId);
                     },
                   );
+                },
+                onShareExercise: (exercise) {
+                  _onShareExercise(context, exercise);
                 },
               );
             },
@@ -514,4 +519,17 @@ RouteBase _galleryRoute() {
     },
     name: _galleryName,
   );
+}
+
+Future<void> _onShareExercise(BuildContext context, Exercise exercise) async {
+  final link = Uri.https(AppConfig.of(context).appDomain, 'exercises/${exercise.name}');
+  Clipboard.setData(ClipboardData(text: link.toString()));
+
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(L.of(context).copiedToClipboard),
+      ),
+    );
+  }
 }
