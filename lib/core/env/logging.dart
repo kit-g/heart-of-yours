@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
 extension on LogRecord {
@@ -26,8 +27,8 @@ void initLogging(String level) {
 
 Level _getLevel(String v) {
   return switch (v) {
-    'ALL' => Level.ALL,
-    _ => Level.OFF,
+    'ALL' => .ALL,
+    _ => kDebugMode ? .ALL : .OFF,
   };
 }
 
