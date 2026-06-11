@@ -15,7 +15,6 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		A40B15F9668EDDB8DAA8BA5C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 49701AC1F2BDE3D385D75F14 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,11 +46,7 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
-		44375CC02FCCD9490051B76F /* RunnerRelease-dev.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "RunnerRelease-dev.entitlements"; sourceTree = "<group>"; };
 		444E54752D39B17000E6D520 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
-		449A7FA12FD915BF00955E34 /* RunnerDebug-dev.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "RunnerDebug-dev.entitlements"; sourceTree = "<group>"; };
-		44BE33E02D1F64910075BD9F /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		49701AC1F2BDE3D385D75F14 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
@@ -119,7 +114,6 @@
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				1E2CC660319B9E078E037EC9 /* Pods */,
-				49701AC1F2BDE3D385D75F14 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -135,10 +129,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				449A7FA12FD915BF00955E34 /* RunnerDebug-dev.entitlements */,
-				44375CC02FCCD9490051B76F /* RunnerRelease-dev.entitlements */,
 				444E54752D39B17000E6D520 /* Runner.entitlements */,
-				44BE33E02D1F64910075BD9F /* GoogleService-Info.plist */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -254,7 +245,6 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
-				A40B15F9668EDDB8DAA8BA5C /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -293,7 +283,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nGOOGLESERVICE_INFO_PLIST=GoogleService-Info.plist\n\n# Extract the environment name from the configuration (e.g., Debug-dev -> dev)\nif [[ \"${CONFIGURATION}\" == *-dev ]]; then\n    ENVIRONMENT=\"dev\"\nelif [[ \"${CONFIGURATION}\" == *-prod ]]; then\n    ENVIRONMENT=\"prod\"\nelse\n    # Default fallback\n    ENVIRONMENT=\"dev\"\nfi\n\n# Path to the source plist\nPLIST_PATH=\"${PROJECT_DIR}/Env/${ENVIRONMENT}/${GOOGLESERVICE_INFO_PLIST}\"\n\n# Destination path in the built app bundle\nDESTINATION_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/${GOOGLESERVICE_INFO_PLIST}\"\n\necho \"Copying ${GOOGLESERVICE_INFO_PLIST} for environment: ${ENVIRONMENT}\"\n\n# Copy the file\ncp \"${PLIST_PATH}\" \"${DESTINATION_PATH}\"\n";
+			shellScript = "GOOGLESERVICE_INFO_PLIST=GoogleService-Info.plist\n\nif [[ \"${CONFIGURATION}\" == *-prod ]]; then\n    ENVIRONMENT=\"prod\"\nelse\n    ENVIRONMENT=\"dev\"\nfi\n\nPLIST_PATH=\"${PROJECT_DIR}/Env/${ENVIRONMENT}/${GOOGLESERVICE_INFO_PLIST}\"\n\nDESTINATION_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/${GOOGLESERVICE_INFO_PLIST}\"\n\necho \"Copying ${GOOGLESERVICE_INFO_PLIST} for environment: ${ENVIRONMENT}\"\n\ncp \"${PLIST_PATH}\" \"${DESTINATION_PATH}\"\n";
 		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -649,7 +639,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = "Runner/RunnerDebug-dev.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = DFX2JYT8BM;
@@ -962,7 +951,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = "Runner/RunnerRelease-dev.entitlements";
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = DFX2JYT8BM;
 				DISPLAY_NAME = "Heart dev";
