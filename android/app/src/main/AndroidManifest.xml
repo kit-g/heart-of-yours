@@ -43,8 +43,6 @@
                     android:scheme="https" />
             </intent-filter>
 
-            <!-- Custom URL scheme (heart://...) for invites / sharing flows that
-                 don't need Universal Links infrastructure. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
