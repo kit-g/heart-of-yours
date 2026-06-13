@@ -1,0 +1,8 @@
+storage_mode("s3")
+s3_region("ca-central-1")
+s3_bucket(ENV["MATCH_S3_BUCKET"])
+s3_object_prefix("secrets/fastlane/")
+type("appstore")
+app_identifier(["me.heart-of.ios.dev", "me.heart-of.ios"])
+username(ENV["APPSTORE_USERNAME"])
+team_id("DFX2JYT8BM")

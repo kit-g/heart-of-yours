@@ -1,0 +1,48 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new build to TestFlight"
+  # We use a single lane and pass the environment (dev/prod) as an argument
+  lane :beta do |options|
+    env = options[:env] # 'dev' or 'prod'
+
+    # Map environments to their specific identifiers and schemes
+    app_id = env == 'prod' ? "me.heart-of.ios" : "me.heart-of.ios.dev"
+    scheme = env == 'prod' ? "Release-prod" : "Release-dev"
+
+    setup_ci
+
+    # 1. Authenticate with Apple using the key we downloaded from S3
+    # We parse the Issuer ID and Key ID from the downloaded json file
+    require 'json'
+    key_info = JSON.parse(File.read("../appstore_key.json"))
+
+    api_key = app_store_connect_api_key(
+      key_id: key_info["key_id"],
+      issuer_id: key_info["issuer_id"],
+      key_filepath: "../AuthKey_#{key_info["key_id"]}.p8",
+      duration: 1200,
+      in_house: false
+    )
+
+    # 2. Fetch certificates from S3 (Match automatically uses the AWS role credentials from GH Actions)
+    match(
+      type: "appstore",
+      app_identifier: app_id,
+      readonly: true
+    )
+
+    # 3. Build the app
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: scheme,
+      export_method: "app-store"
+    )
+
+    # 4. Upload to TestFlight
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
