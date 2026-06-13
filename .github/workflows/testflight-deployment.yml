@@ -1,0 +1,72 @@
+name: "iOS TestFlight Deployment"
+
+on:
+  workflow_call:
+    inputs:
+      aws_region:
+        required: true
+        type: string
+        description: "AWS region where secrets are stored"
+      aws_role:
+        required: true
+        type: string
+        description: "AWS role to assume to get secrets"
+      secrets_bucket:
+        required: true
+        type: string
+        description: "S3 bucket where secrets are stored"
+      environment:
+        required: true
+        type: string
+        description: "App environment (dev or prod)"
+      flavor:
+        required: true
+        type: string
+        description: "Flutter flavour"
+
+jobs:
+  deploy:
+    name: "Deploy to TestFlight"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: "Fetch secrets from S3"
+        # Download the Apple API Key, Firebase Plist, Match Passphrase, and Flutter Firebase options
+        run: |
+          # Fetch API Keys
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/AuthKey_CKGD3LH3ZH.p8 ios/AuthKey_CKGD3LH3ZH.p8
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/appstore_key.json ios/appstore_key.json
+          
+          # Fetch Match passphrase
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/fastlane_passphrase.txt ios/passphrase.txt
+          
+          # Fetch Firebase files
+          mkdir -p ios/Env/${{ inputs.environment }}
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/GoogleService-Info.plist ios/Env/${{ inputs.environment }}/GoogleService-Info.plist
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart
+
+      - name: "Set up Flutter"
+        uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: "Install Fastlane dependencies"
+        working-directory: ios
+        run: bundle install
+
+      - name: "Build & Deploy via Fastlane"
+        working-directory: ios
+        # Read the passphrase downloaded from S3 and pass it to Fastlane via MATCH_PASSWORD
+        run: |
+          export MATCH_PASSWORD=$(cat passphrase.txt)
+          export MATCH_S3_BUCKET=${{ inputs.secrets_bucket }}
+          export APPSTORE_USERNAME=$(jq -r '.username' appstore_key.json)
+          bundle exec fastlane beta env:${{ inputs.environment }}
