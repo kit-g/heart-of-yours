@@ -1,0 +1,25 @@
+name: "iOS Dev Deployment"
+
+on:
+#  push:
+#    branches:
+#      - main # Or whichever branch you use for dev
+#    paths:
+#      - 'ios/**'
+#      - 'lib/**'
+#      - 'pubspec.yaml'
+  workflow_dispatch: { }
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-dev:
+    uses: ./.github/workflows/testflight-ios-deployment.yml
+    with:
+      aws_region: "ca-central-1"
+      aws_role: "arn:aws:iam::583168578067:role/HeartGitHubActionsDeployRole"
+      secrets_bucket: "583168578067-ca-central-1-static"
+      environment: "dev"
+      flavor: "dev"
