@@ -7,7 +7,7 @@ platform :ios do
     env = options[:env] # 'dev' or 'prod'
 
     app_id = env == 'prod' ? "me.heart-of.ios" : "me.heart-of.ios.dev"
-    scheme = env == 'prod' ? "Release-prod" : "Release-dev"
+    scheme = env == 'prod' ? "prod" : "dev"
 
     setup_ci
 
@@ -26,12 +26,6 @@ platform :ios do
       type: "appstore",
       app_identifier: app_id,
       readonly: true
-    )
-
-    build_app(
-      workspace: "Runner.xcworkspace",
-      scheme: scheme,
-      export_method: "app-store"
     )
 
     upload_to_testflight(
