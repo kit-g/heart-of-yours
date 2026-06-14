@@ -44,12 +44,11 @@ jobs:
       - name: "Fetch secrets from S3"
         # Download the Apple API Key, Firebase Plist, Match Passphrase, and Flutter Firebase options
         run: |
-          # Fetch API Keys
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/AuthKey_CKGD3LH3ZH.p8 ios/AuthKey_CKGD3LH3ZH.p8
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/appstore_key.json ios/appstore_key.json
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/AuthKey_CKGD3LH3ZH.p8 ios/fastlane/AuthKey_CKGD3LH3ZH.p8
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/appstore_key.json ios/fastlane/appstore_key.json
           
           # Fetch Match passphrase
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/fastlane_passphrase.txt ios/passphrase.txt
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/fastlane_passphrase.txt ios/fastlane/passphrase.txt
           
           # Fetch Firebase files
           mkdir -p ios/Env/${{ inputs.environment }}
@@ -70,7 +69,7 @@ jobs:
         working-directory: ios
         # Read the passphrase downloaded from S3 and pass it to Fastlane via MATCH_PASSWORD
         run: |
-          export MATCH_PASSWORD=$(cat passphrase.txt)
+          export MATCH_PASSWORD=$(cat fastlane/passphrase.txt)
           export MATCH_S3_BUCKET=${{ inputs.secrets_bucket }}
-          export APPSTORE_USERNAME=$(jq -r '.username' appstore_key.json)
+          export APPSTORE_USERNAME=$(jq -r '.username' fastlane/appstore_key.json)
           bundle exec fastlane beta env:${{ inputs.environment }}
