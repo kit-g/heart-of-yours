@@ -4,6 +4,8 @@
     <dict>
         <key>CADisableMinimumFrameDurationOnPhone</key>
         <true/>
+        <key>ITSAppUsesNonExemptEncryption</key>
+        <false/>
         <key>FlutterDeepLinkingEnabled</key>
         <true/>
         <key>CFBundleDevelopmentRegion</key>
