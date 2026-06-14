@@ -44,6 +44,8 @@ jobs:
       - name: "Fetch secrets from S3"
         # Download the Apple API Key, Firebase Plist, Match Passphrase, and Flutter Firebase options
         run: |
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appconfig.json appconfig.json
+          
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/AuthKey_CKGD3LH3ZH.p8 ios/fastlane/AuthKey_CKGD3LH3ZH.p8
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/appstore_key.json ios/fastlane/appstore_key.json
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/fastlane_passphrase.txt ios/fastlane/passphrase.txt
@@ -60,7 +62,7 @@ jobs:
           cache: true
 
       - name: "Build"
-        run: flutter build ios --release --flavor ${{ inputs.flavor }} --no-codesign
+        run: flutter build ios --release --flavor ${{ inputs.flavor }} --no-codesign --dart-define-from-file=appconfig.json
 
       - name: "Install Fastlane dependencies"
         working-directory: ios
