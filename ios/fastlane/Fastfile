@@ -34,7 +34,7 @@ platform :ios do
       scheme: scheme,
       configuration: configuration,
       export_method: "app-store",
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM='DFX2JYT8BM'"
     )
 
     upload_to_testflight(
