@@ -46,11 +46,8 @@ jobs:
         run: |
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/AuthKey_CKGD3LH3ZH.p8 ios/fastlane/AuthKey_CKGD3LH3ZH.p8
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/appstore_key.json ios/fastlane/appstore_key.json
-          
-          # Fetch Match passphrase
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appstore/fastlane_passphrase.txt ios/fastlane/passphrase.txt
           
-          # Fetch Firebase files
           mkdir -p ios/Env/${{ inputs.environment }}
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/GoogleService-Info.plist ios/Env/${{ inputs.environment }}/GoogleService-Info.plist
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart

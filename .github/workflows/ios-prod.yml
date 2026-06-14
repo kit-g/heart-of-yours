@@ -1,0 +1,24 @@
+name: "iOS prod Deployment"
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ios/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+  workflow_dispatch: { }
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-prod:
+    uses: ./.github/workflows/testflight-ios-deployment.yml
+    with:
+      aws_region: "ca-central-1"
+      aws_role: "arn:aws:iam::922419543441:role/heart-github-actions-deploy-role"
+      secrets_bucket: "922419543441-ca-central-1-static"
+      environment: "prod"
+      flavor: "prod"
