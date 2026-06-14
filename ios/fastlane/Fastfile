@@ -29,13 +29,32 @@ platform :ios do
       readonly: true
     )
 
+    # Update the Xcode project directly for the Runner target only
+    # This bypasses the global SPM signing bug
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "DFX2JYT8BM",
+      code_sign_identity: "Apple Distribution",
+      profile_name: "match AppStore #{app_id}",
+      targets: ["Runner"],
+      build_configurations: [configuration]
+    )
+
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: scheme,
       configuration: configuration,
-      export_method: "app-store",
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM='DFX2JYT8BM' PROVISIONING_PROFILE_SPECIFIER='match AppStore #{app_id}'"
+      export_method: "app-store"
     )
+
+#     build_app(
+#       workspace: "Runner.xcworkspace",
+#       scheme: scheme,
+#       configuration: configuration,
+#       export_method: "app-store",
+#       xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM='DFX2JYT8BM' PROVISIONING_PROFILE_SPECIFIER='match AppStore #{app_id}'"
+#     )
 
     upload_to_testflight(
       api_key: api_key,
