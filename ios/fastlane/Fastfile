@@ -33,7 +33,8 @@ platform :ios do
       workspace: "Runner.xcworkspace",
       scheme: scheme,
       configuration: configuration,
-      export_method: "app-store"
+      export_method: "app-store",
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution'"
     )
 
     upload_to_testflight(
