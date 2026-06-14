@@ -61,6 +61,9 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: "Build"
+        run: flutter build ios --release --flavor ${{ inputs.flavor }} --no-codesign
+
       - name: "Install Fastlane dependencies"
         working-directory: ios
         run: bundle install
@@ -80,5 +83,7 @@ jobs:
         working-directory: ios
         # Read the passphrase downloaded from S3 and pass it to Fastlane via MATCH_PASSWORD
         run: |
+          export MATCH_PASSWORD=$(cat fastlane/passphrase.txt)
+          export MATCH_S3_BUCKET=${{ inputs.secrets_bucket }}
           export APPSTORE_USERNAME=$(jq -r '.username' fastlane/appstore_key.json)
           bundle exec fastlane beta env:${{ inputs.environment }}
