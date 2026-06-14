@@ -29,6 +29,9 @@ jobs:
     uses: ./.github/workflows/google-play-deployment.yml
     name: "Deploy Dev"
 #    needs: [ unit-tests ]
+    permissions:
+      id-token: write
+      contents: read
     with:
       app_id: 'me.heart.android.dev'
       aws_region: 'ca-central-1'
