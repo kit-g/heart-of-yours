@@ -69,17 +69,6 @@ jobs:
         working-directory: ios
         run: bundle install
 
-      - name: "Download Certificates via Fastlane Match"
-        working-directory: ios
-        run: |
-          export MATCH_PASSWORD=$(cat fastlane/passphrase.txt)
-          export MATCH_S3_BUCKET=${{ inputs.secrets_bucket }}
-          bundle exec fastlane match appstore --readonly true --app_identifier me.heart-of.ios.${{ inputs.environment }}
-
-      - name: "Build iOS App with Flutter"
-        run: |
-          flutter build ipa --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }} --export-options-plist=ios/fastlane/ExportOptions.plist      
-
       - name: "Deploy via Fastlane"
         working-directory: ios
         # Read the passphrase downloaded from S3 and pass it to Fastlane via MATCH_PASSWORD
