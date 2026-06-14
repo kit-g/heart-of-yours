@@ -36,7 +36,6 @@ jobs:
         with:
           role-to-assume: ${{ inputs.aws_role }}
           aws-region: ${{ inputs.aws_region }}
-          audience: 'sts.amazonaws.com'
 
       - name: "Fetch secrets from S3"
         # Download the Apple API Key, Firebase Plist, Match Passphrase, and Flutter Firebase options
