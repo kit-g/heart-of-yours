@@ -6,6 +6,12 @@ platform :ios do
   lane :beta do |options|
     env = options[:env] # 'dev' or 'prod'
 
+    app_id = env == 'prod' ? "me.heart-of.ios" : "me.heart-of.ios.dev"
+    scheme = env == 'prod' ? "prod" : "dev"
+    configuration = env == 'prod' ? "Release-prod" : "Release-dev"
+
+    setup_ci
+
     require 'json'
     key_info = JSON.parse(File.read(File.join(__dir__, "appstore_key.json")))
 
@@ -17,12 +23,22 @@ platform :ios do
       in_house: false
     )
 
-    ipa_path = "../build/ios/ipa/#{env}.ipa"
+    match(
+      type: "appstore",
+      app_identifier: app_id,
+      readonly: true
+    )
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: scheme,
+      configuration: configuration,
+      export_method: "app-store"
+    )
 
     upload_to_testflight(
       api_key: api_key,
-      skip_waiting_for_build_processing: true,
-      ipa: ipa_path
+      skip_waiting_for_build_processing: true
     )
   end
 end
