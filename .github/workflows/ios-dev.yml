@@ -19,7 +19,7 @@ jobs:
     uses: ./.github/workflows/testflight-ios-deployment.yml
     with:
       aws_region: "ca-central-1"
-      aws_role: "arn:aws:iam::583168578067:role/HeartGitHubActionsDeployRole"
+      aws_role: "arn:aws:iam::583168578067:role/heart-github-actions-deploy-role"
       secrets_bucket: "583168578067-ca-central-1-static"
       environment: "dev"
       flavor: "dev"
