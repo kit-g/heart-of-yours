@@ -24,10 +24,6 @@ on:
         type: string
         description: "Flutter flavour"
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   deploy:
     name: "Deploy to TestFlight"
