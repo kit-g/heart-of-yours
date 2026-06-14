@@ -4,11 +4,20 @@
     <dict>
         <key>method</key>
         <string>app-store</string>
+        <key>signingStyle</key>
+        <string>manual</string>
         <key>manageAppVersionAndBuildNumber</key>
         <false/>
         <key>uploadBitcode</key>
         <false/>
         <key>uploadSymbols</key>
         <true/>
+        <key>provisioningProfiles</key>
+        <dict>
+            <key>me.heart-of.ios.dev</key>
+            <string>match AppStore me.heart-of.ios.dev</string>
+            <key>me.heart-of.ios</key>
+            <string>match AppStore me.heart-of.ios</string>
+        </dict>
     </dict>
 </plist>
