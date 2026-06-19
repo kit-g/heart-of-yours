@@ -265,6 +265,19 @@ class Api
   }
 
   @override
+  Future<void> saveUnitPreference(String exerciseId, MeasurementUnit unit) {
+    return post(
+      Router.exercisePreferences,
+      body: {'exerciseId': exerciseId, 'unitSystem': unit.name},
+    );
+  }
+
+  @override
+  Future<void> deleteUnitPreference(String exerciseId)  {
+    return delete('${Router.exercisePreferences}/$exerciseId');
+  }
+
+  @override
   Future<bool> deleteTemplate(String templateId) async {
     final (_, code) = await delete('${Router.templates}/$templateId');
     return code == 204;
@@ -301,6 +314,7 @@ class Api
 abstract final class Router {
   static const accounts = 'v1/accounts';
   static const exercises = 'v1/exercises';
+  static const exercisePreferences = 'v1/exercise-preferences';
   static const feedback = 'v1/feedback';
   static const templates = 'v1/templates';
   static const workouts = 'v1/workouts';
