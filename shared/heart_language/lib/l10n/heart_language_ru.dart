@@ -756,5 +756,11 @@ class LRu extends L {
   String get myProgression => 'Мой прогресс';
 
   @override
-  String get copiedToClipboard => 'Copied to clipboard';
+  String get copiedToClipboard => 'Скопировано в буфер обмена';
+
+  @override
+  String get weightUnitLabel => 'Единица веса';
+
+  @override
+  String get distanceUnitLabel => 'Единица расстояния';
 }

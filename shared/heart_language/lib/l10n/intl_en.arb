@@ -1439,5 +1439,17 @@
     "description": "Snack message when user copies text to clipboard",
     "type": "text",
     "placeholders": {}
+  },
+  "weightUnitLabel": "Weight unit",
+  "@weightUnitLabel": {
+    "description": "Weight unit label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "distanceUnitLabel": "Distance unit",
+  "@distanceUnitLabel": {
+    "description": "Distance unit label",
+    "type": "text",
+    "placeholders": {}
   }
 }
