@@ -1477,6 +1477,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Copied to clipboard'**
   String get copiedToClipboard;
+
+  /// Weight unit label
+  ///
+  /// In en, this message translates to:
+  /// **'Weight unit'**
+  String get weightUnitLabel;
+
+  /// Distance unit label
+  ///
+  /// In en, this message translates to:
+  /// **'Distance unit'**
+  String get distanceUnitLabel;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

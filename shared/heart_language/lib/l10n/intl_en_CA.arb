@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "You've already started something important. \r\nLet's keep going.",
+  "logInBody": "You've already started something important.\r\nLet's keep going.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Every journey starts with one decision. \r\nThis one's yours.",
+  "signUpBody": "Every journey starts with one decision.\r\nThis one's yours.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Your journey isn't lost. \r\nJust a moment of pause — we'll reset together.",
+  "recoverBody": "Your journey isn't lost.\r\nJust a moment of pause — we'll reset together.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -302,7 +302,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "This exercise is archived \r\nand won't appear in your main library anymore.",
+  "exerciseArchived": "This exercise is archived\r\nand won't appear in your main library anymore.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",

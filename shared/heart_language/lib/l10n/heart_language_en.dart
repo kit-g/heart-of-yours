@@ -757,6 +757,12 @@ class LEn extends L {
 
   @override
   String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get weightUnitLabel => 'Weight unit';
+
+  @override
+  String get distanceUnitLabel => 'Distance unit';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -824,19 +830,19 @@ class LEnCa extends LEn {
   String get logInTitle => 'Welcome Back';
 
   @override
-  String get logInBody => 'You\'ve already started something important. \r\nLet\'s keep going.';
+  String get logInBody => 'You\'ve already started something important.\r\nLet\'s keep going.';
 
   @override
   String get signUpTitle => 'Begin with Heart';
 
   @override
-  String get signUpBody => 'Every journey starts with one decision. \r\nThis one\'s yours.';
+  String get signUpBody => 'Every journey starts with one decision.\r\nThis one\'s yours.';
 
   @override
   String get recoverTitle => 'Still with You';
 
   @override
-  String get recoverBody => 'Your journey isn\'t lost. \r\nJust a moment of pause — we\'ll reset together.';
+  String get recoverBody => 'Your journey isn\'t lost.\r\nJust a moment of pause — we\'ll reset together.';
 
   @override
   String get logInWithGoogle => 'Log in with Google';
@@ -918,7 +924,7 @@ class LEnCa extends LEn {
       'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won\'t affect any of your past workouts — your history stays intact.';
 
   @override
-  String get exerciseArchived => 'This exercise is archived \r\nand won\'t appear in your main library anymore.';
+  String get exerciseArchived => 'This exercise is archived\r\nand won\'t appear in your main library anymore.';
 
   @override
   String get deleteSet => 'Delete set';

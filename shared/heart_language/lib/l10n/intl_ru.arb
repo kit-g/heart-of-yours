@@ -1433,5 +1433,23 @@
     "description": "Photo gallery title",
     "type": "text",
     "placeholders": {}
+  },
+  "copiedToClipboard": "Скопировано в буфер обмена",
+  "@copiedToClipboard": {
+    "description": "Snack message when user copies text to clipboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "weightUnitLabel": "Единица веса",
+  "@weightUnitLabel": {
+    "description": "Weight unit label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "distanceUnitLabel": "Единица расстояния",
+  "@distanceUnitLabel": {
+    "description": "Distance unit label",
+    "type": "text",
+    "placeholders": {}
   }
 }

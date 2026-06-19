@@ -19,18 +19,18 @@ unarchive,"CTA, verb",Unarchive,Unarchive,Разархивировать
 password,Generic label,Password,Password,Пароль
 logIn,Generic label,Log in,Log in,Войти
 logInTitle,Login page copy,Welcome Back,Welcome Back,С возвращением!
-logInBody,Login page copy,"You've already started something important. 
-Let's keep going.","You've already started something important. 
+logInBody,Login page copy,"You've already started something important.
+Let's keep going.","You've already started something important.
 Let's keep going.","Вы уже начали что-то важное.
 Давайте продолжим!"
 signUpTitle,Sign up page copy,Begin with Heart,Begin with Heart,Начните с Heart
-signUpBody,Sign up page copy,"Every journey starts with one decision. 
-This one's yours.","Every journey starts with one decision. 
+signUpBody,Sign up page copy,"Every journey starts with one decision.
+This one's yours.","Every journey starts with one decision.
 This one's yours.","Каждое путешествие начинается с одного решения.
 Это — ваше."
 recoverTitle,Recover page copy,Still with You,Still with You,Все еще с вами
-recoverBody,Recover page copy,"Your journey isn't lost. 
-Just a moment of pause — we'll reset together.","Your journey isn't lost. 
+recoverBody,Recover page copy,"Your journey isn't lost.
+Just a moment of pause — we'll reset together.","Your journey isn't lost.
 Just a moment of pause — we'll reset together.","Ваш путь не потерян.
 Просто небольшая пауза — давайте начнем заново."
 logInWithGoogle,Button label,Log in with Google,Log in with Google,Войти через Google
@@ -61,8 +61,8 @@ archiveConfirmBody,Dialog body,"This exercise will be moved to Archived Exercise
  Archiving won't affect any of your past workouts — your history stays intact.","This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).
  Archiving won't affect any of your past workouts — your history stays intact.","Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).
  Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений."
-exerciseArchived,Tooltip over archived icon,"This exercise is archived 
-and won't appear in your main library anymore.","This exercise is archived 
+exerciseArchived,Tooltip over archived icon,"This exercise is archived
+and won't appear in your main library anymore.","This exercise is archived
 and won't appear in your main library anymore.","Это упражнение находится в архиве
 и больше не будет отображаться в основной библиотеке."
 deleteSet,Button text,Delete set,Delete set,Удалить подход
@@ -271,4 +271,6 @@ passwordPolicyDigit,Password requirement: must contain at least one numeric digi
 deleteImageDialogTitle,Confirmation dialog title when user attempts to delete an image from a workout,Remove this image?,Remove this image?,Удалить это изображение?
 deleteImageDialogBody,Confirmation dialog body explaining that removing the image won't delete workout data,It won't affect the workout — just clears the picture,It won't affect the workout — just clears the picture,Это не повлияет на тренировку — просто удалит фотографию
 myProgression,Photo gallery title,My progression,My progression,Мой прогресс
-copiedToClipboard,Snack message when user copies text to clipboard,Copied to clipboard,Copied to clipboard,""
+copiedToClipboard,Snack message when user copies text to clipboard,Copied to clipboard,Copied to clipboard,Скопировано в буфер обмена
+weightUnitLabel,Weight unit label,Weight unit,,Единица веса
+distanceUnitLabel,Distance unit label,Distance unit,,Единица расстояния
