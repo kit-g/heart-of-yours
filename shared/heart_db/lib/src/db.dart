@@ -16,7 +16,7 @@ class LocalDatabase
 
   LocalDatabase._(this._db);
 
-  static Future<LocalDatabase> init({int version = 1, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 2, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';
@@ -114,6 +114,9 @@ class LocalDatabase
           };
           if (each.isMine) row['user_id'] = userId;
           row['muscles'] = jsonEncode(each.muscles.toMap());
+          // the unit preference is per-user (exercise_details), not a column on
+          // the shared catalog row — see setExerciseUnit / getExerciseUnits.
+          row.remove('unit_system');
 
           final columns = row.keys.join(', ');
           final placeholders = List.filled(row.length, '?').join(', ');
@@ -133,6 +136,60 @@ class LocalDatabase
 
         return batch.commit(noResult: true);
       },
+    );
+  }
+
+  @override
+  Future<void> setExerciseUnit({required String exerciseName, required String userId, required MeasurementUnit? unit}) {
+    return _db.transaction(
+      (txn) async {
+        final rows = await txn.query(
+          _exerciseDetails,
+          where: 'exercise_name = ? AND user_id = ?',
+          whereArgs: [exerciseName, userId],
+        );
+
+        switch (rows) {
+          case [Map _]: // exists
+            txn.update(
+              _exerciseDetails,
+              {'unit_system': unit?.name},
+              where: 'exercise_name = ? AND user_id = ?',
+              whereArgs: [exerciseName, userId],
+            );
+          default: // new
+            txn.insert(
+              _exerciseDetails,
+              {
+                'unit_system': unit?.name,
+                'exercise_name': exerciseName,
+                'user_id': userId,
+              },
+              conflictAlgorithm: .replace,
+            );
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Map<String, MeasurementUnit>> getExerciseUnits(String userId) async {
+    final rows = await _db.query(
+      _exerciseDetails,
+      columns: ['exercise_name', 'unit_system'],
+      where: 'user_id = ? AND unit_system IS NOT NULL',
+      whereArgs: [userId],
+    );
+
+    return Map.fromEntries(
+      rows.map(
+        (row) {
+          return MapEntry(
+            row['exercise_name'] as String,
+            MeasurementUnit.fromString(row['unit_system'] as String),
+          );
+        },
+      ),
     );
   }
 
