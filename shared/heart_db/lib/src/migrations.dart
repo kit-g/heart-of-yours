@@ -19,4 +19,7 @@ const _migrations = <int, List<String>>{
     sql.charts,
     sql.chartsIndex1,
   ],
+  2: [
+    sql.addExerciseUnitSystem,
+  ],
 };
