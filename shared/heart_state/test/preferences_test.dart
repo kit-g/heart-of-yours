@@ -70,8 +70,8 @@ void main() {
 
     test('uses stored units if present, overriding locale defaults', () async {
       SharedPreferences.setMockInitialValues({
-        'weightUnit': 'Metric',
-        'distanceUnit': 'Imperial',
+        'weightUnit': 'metric',
+        'distanceUnit': 'imperial',
       });
       sut = Preferences();
       await sut.init(locale: const Locale('en', 'US'));
@@ -133,7 +133,7 @@ void main() {
       expect(probe.notifications, 1);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('weightUnit'), 'Imperial');
+      expect(prefs.getString('weightUnit'), 'imperial');
     });
 
     test('setDistanceUnit persists and notifies once', () async {
@@ -145,7 +145,7 @@ void main() {
       expect(probe.notifications, 1);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('distanceUnit'), 'Imperial');
+      expect(prefs.getString('distanceUnit'), 'imperial');
     });
   });
 
@@ -155,8 +155,8 @@ void main() {
       // metric: value used directly; 1 -> "1"
       expect(sut.weight(1), '1');
       expect(sut.distance(1), '1');
-      // non-integer shows two decimals
-      expect(sut.weight(1.234), '1.23');
+      // non-integer shows up to one decimal, trailing zeros stripped
+      expect(sut.weight(1.234), '1.2');
       expect(sut.distance(1.2), '1.2');
     });
 
