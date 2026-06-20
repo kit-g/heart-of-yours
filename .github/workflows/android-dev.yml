@@ -38,5 +38,5 @@ jobs:
       aws_role: 'arn:aws:iam::583168578067:role/heart-github-actions-deploy-role'
       environment: 'dev'
       flavor: 'dev'
-      secrets_bucket: '583168578067-heart-static'
+      secrets_bucket: '583168578067-ca-central-1-static'
       track: 'internal'
