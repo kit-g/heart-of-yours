@@ -10,6 +10,11 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final _filters = <ExerciseFilter>{};
   final _exercises = <ExerciseId, Exercise>{};
 
+  /// Per-exercise unit overrides for the current user, keyed by exercise name.
+  /// In-memory source of truth for [unitFor]; backed per-user by
+  /// `exercise_details` locally and `exercise_preferences` remotely.
+  final _units = <ExerciseId, MeasurementUnit>{};
+
   bool isInitialized = false;
   String? userId;
 
@@ -31,9 +36,11 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   @override
   void onSignOut() {
+    userId = null;
     isInitialized = false;
     _exercises.clear();
     _selectedExercises.clear();
+    _units.clear();
   }
 
   @override
@@ -65,6 +72,10 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     try {
       final (localSync, local) = await _service.getExercises(userId: userId);
 
+      if (userId case String id) {
+        _units.addAll(await _service.getExerciseUnits(id));
+      }
+
       if (local.isNotEmpty) {
         _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
         isInitialized = true;
@@ -79,6 +90,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       final all = [...ex, ...own]..sort();
       _exercises.addAll(Map.fromEntries(all.map((each) => MapEntry(each.name, each))));
       _service.storeExercises(_exercises.values, userId: userId);
+
+      // the server is the source of truth for unit prefs (it joins them onto the
+      // exercise list per authenticated user); mirror them into the local cache.
+      if (userId case String id) {
+        for (final each in all) {
+          if (each.unitSystem case MeasurementUnit u) {
+            _units[each.name] = u;
+            await _service.setExerciseUnit(exerciseName: each.name, userId: id, unit: u);
+          }
+        }
+      }
       isInitialized = true;
       notifyListeners();
     } catch (e, s) {
@@ -100,6 +122,36 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   Exercise? lookup(ExerciseId id) {
     return _exercises[id];
+  }
+
+  /// The per-exercise unit preference for the current user, or `null` when the
+  /// exercise has no override and the caller should fall back to the global
+  /// setting. Keyed by exercise name.
+  MeasurementUnit? unitFor(ExerciseId name) {
+    return _units[name];
+  }
+
+  /// Sets (or clears, when [unit] is null) the unit preference for [exercise],
+  /// updating the in-memory map, the per-user local cache, and the server.
+  Future<void> setUnit(Exercise exercise, MeasurementUnit? unit) async {
+    switch (unit) {
+      case MeasurementUnit u:
+        _units[exercise.name] = u;
+      case null:
+        _units.remove(exercise.name);
+    }
+    notifyListeners();
+
+    if (userId case String id) {
+      await _service.setExerciseUnit(exerciseName: exercise.name, userId: id, unit: unit);
+    }
+
+    switch ((exercise.id, unit)) {
+      case (String id, MeasurementUnit u):
+        await _remoteService.saveUnitPreference(id, u);
+      case (String id, null):
+        await _remoteService.deleteUnitPreference(id);
+    }
   }
 
   Iterable<Exercise> get selected => _selectedExercises;
