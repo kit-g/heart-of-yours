@@ -18,6 +18,7 @@ class PreviousSet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:lbs, :kg, :reps, :milesPlural, :km) = L.of(context);
+    final override = Exercises.of(context).unitFor(exercise.name);
 
     switch (exercise.category) {
       case Category.barbell:
@@ -25,44 +26,44 @@ class PreviousSet extends StatelessWidget {
       case Category.machine:
       case Category.assistedBodyWeight:
       case Category.weightedBodyWeight:
-        final unit = switch (prefs.weightUnit) {
+        final unit = switch (override ?? prefs.weightUnit) {
           MeasurementUnit.imperial => lbs,
           MeasurementUnit.metric => kg,
         };
         return switch (previousValue) {
           {'reps': int reps, 'weight': num weight} => Text(
-              '${prefs.weight(weight)}$unit x $reps',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            '${prefs.weight(weight, unit: override)} $unit x $reps',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           _ => const Text(_emptyValue),
         };
 
       case Category.repsOnly:
         return switch (previousValue) {
           {'reps': int value} => Text(
-              '$value $reps ',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            '$value $reps ',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           _ => const Text(_emptyValue),
         };
       case Category.duration:
         return switch (previousValue) {
           {'duration': num duration} => Text(
-              Duration(seconds: duration.toInt()).formatted(),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Duration(seconds: duration.toInt()).formatted(),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           _ => const Text(_emptyValue),
         };
       case Category.cardio:
-        final unit = switch (prefs.distanceUnit) {
+        final unit = switch (override ?? prefs.distanceUnit) {
           MeasurementUnit.imperial => milesPlural,
           MeasurementUnit.metric => km,
         };
         return switch (previousValue) {
           {'duration': num duration, 'distance': num distance} => Text(
-              '${prefs.distance(distance)}$unit | ${Duration(seconds: duration.toInt()).formatted()}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            '${prefs.distance(distance, unit: override)} $unit | ${Duration(seconds: duration.toInt()).formatted()}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           _ => const Text(_emptyValue),
         };
     }

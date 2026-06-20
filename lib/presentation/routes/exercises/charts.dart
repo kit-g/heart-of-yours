@@ -19,6 +19,7 @@ class _Charts extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
+    final unit = Exercises.watch(context).unitFor(exercise.name);
     final ThemeData(:textTheme) = Theme.of(context);
 
     Widget durationLabel(double y) {
@@ -63,7 +64,7 @@ class _Charts extends StatelessWidget {
               emptyState: const _EmptyState(),
               callback: () => weightHistoryLookup!(exercise),
               label: l.weightUnit,
-              converter: (v) => prefs.weightValue(v),
+              converter: (v) => prefs.weightValue(v, unit: unit),
               getLeftLabel: weightLabel,
               errorState: const _ErrorState(),
             ),
@@ -108,7 +109,7 @@ class _Charts extends StatelessWidget {
               emptyState: const SizedBox(),
               callback: () => distanceHistoryLookup!(exercise),
               label: l.distanceUnit,
-              converter: (v) => prefs.distanceValue(v),
+              converter: (v) => prefs.distanceValue(v, unit: unit),
               errorState: const _ErrorState(),
             ),
           ],
