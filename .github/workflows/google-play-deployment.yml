@@ -48,11 +48,15 @@ jobs:
 
       - name: "Fetch secrets from S3"
         run: |
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/keystore.jks android/keystore.jks
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/key.properties android/key.properties
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/google-services.json android/app/google-services.json
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/firebase/firebase_options.dart lib/firebase_options.dart
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/${{ inputs.environment }}/android/playstore-sa-key.json playstore-sa-key.json  
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appconfig.json appconfig.json
+
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/keystore.jks android/keystore.jks
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/key.properties android/key.properties
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/google-services.json android/app/google-services.json
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/playstore-sa-key.json playstore-sa-key.json  
+         
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options_prod.dart lib/firebase_options_prod.dart
 
       - name: "Set up Flutter"
         uses: flutter-actions/setup-flutter@v4
@@ -61,7 +65,7 @@ jobs:
           cache: true
 
       - name: "Build app bundle"
-        run: flutter build appbundle --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }}
+        run: flutter build appbundle --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }} --dart-define-from-file=appconfig.json
 
       - name: "Upload to Play Store"
         uses: r0adkll/upload-google-play@v1
