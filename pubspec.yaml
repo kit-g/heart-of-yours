@@ -19,9 +19,9 @@ dependencies:
   app_settings: ^7.0.0
   cached_network_image: ^3.4.1
   feedback: ^3.1.0
-  firebase_analytics: 12.4.1
-  firebase_auth: 6.5.1
-  firebase_core: 4.9.0
+  firebase_analytics: 12.4.3
+  firebase_auth: 6.5.3
+  firebase_core: 4.11.0
   fl_chart: 1.1.1
   flutter: { sdk: flutter }
   flutter_body_atlas: ^0.1.4
