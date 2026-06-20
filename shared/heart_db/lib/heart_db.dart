@@ -18,4 +18,6 @@ part 'src/constants.dart';
 part 'src/db.dart';
 part 'src/extensions.dart';
 part 'src/logger.dart';
-part 'src/migrations.dart';
+part 'src/migrations/index.dart';
+part 'src/migrations/0001.dart';
+part 'src/migrations/0002.dart';
