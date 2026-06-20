@@ -14,6 +14,7 @@ class _History extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prefs = Preferences.watch(context);
+    final unit = Exercises.watch(context).unitFor(exercise.name);
     return FutureBuilder<Iterable<ExerciseAct>>(
       future: historyLookup(exercise),
       builder: (_, future) {
@@ -42,6 +43,7 @@ class _History extends StatelessWidget {
                       act: act,
                       onTapWorkout: onTapWorkout,
                       prefs: prefs,
+                      unit: unit,
                     );
                   },
                 );
@@ -58,11 +60,13 @@ class _Card extends StatelessWidget {
   final ExerciseAct act;
   final void Function(String) onTapWorkout;
   final Preferences prefs;
+  final MeasurementUnit? unit;
 
   const _Card({
     required this.act,
     required this.onTapWorkout,
     required this.prefs,
+    this.unit,
   });
 
   @override
@@ -117,7 +121,7 @@ class _Card extends StatelessWidget {
                         TextSpan(text: '${index + 1}.', style: textTheme.titleSmall),
                         const TextSpan(text: '  '),
                         TextSpan(
-                          text: _formatSet(set, prefs: prefs),
+                          text: _formatSet(set, prefs: prefs, unit: unit),
                           style: textTheme.bodyMedium,
                         ),
                       ],
@@ -132,16 +136,16 @@ class _Card extends StatelessWidget {
     );
   }
 
-  String _formatSet(ExerciseSet set, {required Preferences prefs}) {
+  String _formatSet(ExerciseSet set, {required Preferences prefs, MeasurementUnit? unit}) {
     switch (set.category) {
       case Category.weightedBodyWeight:
         return switch (set) {
-          ExerciseSet(:double weight, :int reps) => '+${prefs.weight(weight)} x $reps',
+          ExerciseSet(:double weight, :int reps) => '+${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
       case Category.assistedBodyWeight:
         return switch (set) {
-          ExerciseSet(:double weight, :int reps) => '-${prefs.weight(weight)} x $reps',
+          ExerciseSet(:double weight, :int reps) => '-${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
       case Category.repsOnly:
@@ -150,7 +154,7 @@ class _Card extends StatelessWidget {
       case Category.barbell:
       case Category.dumbbell:
         return switch (set) {
-          ExerciseSet(:double weight, :int reps) => '${prefs.weight(weight)} x $reps',
+          ExerciseSet(:double weight, :int reps) => '${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
       case Category.duration:
@@ -163,7 +167,7 @@ class _Card extends StatelessWidget {
           ExerciseSet(:int duration, :double distance) => ''
               '${Duration(seconds: duration).formatted()}'
               ' | '
-              '${_double(prefs.distanceValue(distance))}',
+              '${prefs.distance(distance, unit: unit)}',
           _ => '',
         };
     }

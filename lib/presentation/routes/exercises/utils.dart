@@ -90,11 +90,6 @@ extension on Duration {
   static String _pad(int n) => n.toString().padLeft(2, '0');
 }
 
-String _double(double value) {
-  final rounded = double.parse(value.toStringAsFixed(2));
-  return rounded % 1 == 0 ? rounded.toInt().toString() : rounded.toStringAsFixed(1);
-}
-
 /// finds "beautiful timestamps
 /// for chart axes
 /// e.g., 1:30 or 30:00 are beautiful

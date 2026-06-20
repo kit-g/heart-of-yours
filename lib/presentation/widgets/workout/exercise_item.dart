@@ -131,32 +131,23 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                           );
                         },
                       ),
-                      PopupMenuButton<_ExerciseOption>(
-                        style: const ButtonStyle(
-                          visualDensity: VisualDensity(vertical: 0, horizontal: -2),
-                        ),
-                        icon: const Icon(Icons.more_horiz),
-                        onSelected: (option) => _onTapExerciseOption(context, option),
-                        itemBuilder: (context) {
-                          return _ExerciseOption.values.map(
-                            (option) {
-                              return PopupMenuItem<_ExerciseOption>(
-                                height: 40,
-                                value: option,
-                                child: Row(
-                                  spacing: 4,
-                                  children: [
-                                    _exerciseOptionIcon(option, colorScheme),
-                                    Text(
-                                      _exerciseOptionCopy(context, option),
-                                      style: _exerciseOptionStyle(textTheme, colorScheme, option),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ).toList();
+                      MenuAnchor(
+                        style: _menuStyle(),
+                        builder: (context, controller, _) {
+                          return IconButton(
+                            style: const ButtonStyle(
+                              visualDensity: VisualDensity(vertical: 0, horizontal: -2),
+                            ),
+                            icon: const Icon(Icons.more_horiz),
+                            onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+                          );
                         },
+                        menuChildren: [
+                          _exerciseOptionButton(context, .inspectExercise, textTheme, colorScheme),
+                          _exerciseOptionButton(context, .autoRestTimer, textTheme, colorScheme),
+                          if (_showsUnitOption) _unitSubmenu(context, textTheme),
+                          _exerciseOptionButton(context, .remove, textTheme, colorScheme),
+                        ],
                       ),
                     ],
                   ),
@@ -264,25 +255,26 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   List<Widget> _buttonsHeader(BuildContext context) {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
+    final override = Exercises.watch(context).unitFor(exercise.exercise.name);
 
     String weightUnit() {
-      return switch (prefs.weightUnit) {
-        MeasurementUnit.metric => l.kg,
-        MeasurementUnit.imperial => l.lbs,
+      return switch (override ?? prefs.weightUnit) {
+        .metric => l.kg,
+        .imperial => l.lbs,
       };
     }
 
     String distanceUnit() {
-      return switch (prefs.distanceUnit) {
-        MeasurementUnit.metric => l.km,
-        MeasurementUnit.imperial => l.mile,
+      return switch (override ?? prefs.distanceUnit) {
+        .metric => l.km,
+        .imperial => l.mile,
       };
     }
 
     switch (exercise.exercise.category) {
-      case Category.machine:
-      case Category.dumbbell:
-      case Category.barbell:
+      case .machine:
+      case .dumbbell:
+      case .barbell:
         return [
           Expanded(
             child: Center(
@@ -297,7 +289,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
             ),
           ),
         ];
-      case Category.weightedBodyWeight:
+      case .weightedBodyWeight:
         return [
           Expanded(
             child: Center(child: Text('+${weightUnit()}')),
@@ -308,7 +300,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
             ),
           ),
         ];
-      case Category.assistedBodyWeight:
+      case .assistedBodyWeight:
         return [
           Expanded(
             child: Center(child: Text('-${weightUnit()}')),
@@ -319,7 +311,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
             ),
           ),
         ];
-      case Category.repsOnly:
+      case .repsOnly:
         return [
           Expanded(
             flex: 2,
@@ -328,7 +320,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
             ),
           ),
         ];
-      case Category.cardio:
+      case .cardio:
         return [
           Expanded(
             child: Center(
@@ -343,7 +335,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
             ),
           ),
         ];
-      case Category.duration:
+      case .duration:
         return [
           Expanded(
             flex: 2,
@@ -361,6 +353,79 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       .remove => L.of(context).removeExercise,
       .inspectExercise => L.of(context).aboutExercise,
     };
+  }
+
+  /// Whether the per-exercise unit submenu applies (weight- or distance-based
+  /// exercises only — duration/reps have no unit).
+  bool get _showsUnitOption {
+    return switch (exercise.exercise.category) {
+      .duration || .repsOnly => false,
+      _ => true,
+    };
+  }
+
+  Widget _exerciseOptionButton(
+    BuildContext context,
+    _ExerciseOption option,
+    TextTheme textTheme,
+    ColorScheme colorScheme,
+  ) {
+    return MenuItemButton(
+      leadingIcon: _exerciseOptionIcon(option, colorScheme),
+      onPressed: () => _onTapExerciseOption(context, option),
+      child: Text(
+        _exerciseOptionCopy(context, option),
+        style: _exerciseOptionStyle(textTheme, colorScheme, option),
+      ),
+    );
+  }
+
+  /// Cascading "Weight/Distance unit → Imperial/Metric" submenu. Writes through
+  /// [Exercises.setUnit] (per-user) and check-marks the active selection.
+  Widget _unitSubmenu(BuildContext context, TextTheme textTheme) {
+    final l = L.of(context);
+    final prefs = Preferences.of(context);
+    final exercises = Exercises.of(context);
+    final isCardio = exercise.exercise.category == Category.cardio;
+    // fall back to the global setting for this dimension when there's no
+    // explicit per-exercise override, so the menu always check-marks something.
+    final current = exercises.unitFor(exercise.exercise.name) ?? (isCardio ? prefs.distanceUnit : prefs.weightUnit);
+    final label = isCardio ? l.distanceUnitLabel : l.weightUnitLabel;
+    return SubmenuButton(
+      menuStyle: _menuStyle(),
+      leadingIcon: const Icon(Icons.straighten),
+      menuChildren: [
+        for (final unit in MeasurementUnit.values)
+          MenuItemButton(
+            leadingIcon: Icon(
+              current == unit ? Icons.check : null,
+              size: 18,
+            ),
+            onPressed: () {
+              buzz();
+              exercises.setUnit(exercise.exercise, unit);
+            },
+            child: Text(
+              switch (unit) {
+                .imperial => l.imperial,
+                .metric => l.metric,
+              },
+              style: textTheme.titleSmall,
+            ),
+          ),
+      ],
+      child: Text(
+        label,
+        style: textTheme.titleSmall,
+      ),
+    );
+  }
+
+  MenuStyle _menuStyle() {
+    return const MenuStyle(
+      padding: WidgetStatePropertyAll(.zero),
+      shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: .all(.circular(8)))),
+    );
   }
 
   TextStyle? _exerciseOptionStyle(TextTheme theme, ColorScheme scheme, _ExerciseOption option) {

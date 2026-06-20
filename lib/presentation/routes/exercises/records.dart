@@ -15,64 +15,65 @@ class _Records extends StatelessWidget {
       builder: (_, future) {
         final AsyncSnapshot(connectionState: state, :error, :data) = future;
         return switch ((state, error, data)) {
-          (ConnectionState.waiting, _, _) => const Center(
+          (.waiting, _, _) => const Center(
               child: CircularProgressIndicator(),
             ),
           (_, Object _, _) => const _ErrorState(),
-          (ConnectionState.done, null, Map? records) => Builder(
+          (.done, null, Map? records) => Builder(
               builder: (_) {
-                final weightUnit = switch (prefs.weightUnit) {
-                  MeasurementUnit.imperial => l.lbs,
-                  MeasurementUnit.metric => l.kg,
+                final unit = Exercises.watch(context).unitFor(exercise.name);
+                final weightUnit = switch (unit ?? prefs.weightUnit) {
+                  .imperial => l.lbs,
+                  .metric => l.kg,
                 };
-                final distanceUnit = switch (prefs.distanceUnit) {
-                  MeasurementUnit.imperial => l.milesPlural,
-                  MeasurementUnit.metric => l.km,
+                final distanceUnit = switch (unit ?? prefs.distanceUnit) {
+                  .imperial => l.milesPlural,
+                  .metric => l.km,
                 };
 
                 return switch ((exercise.category, records)) {
-                  (Category.duration, {'duration': num duration}) => _Record(
+                  (.duration, {'duration': num duration}) => _Record(
                       metrics: [
                         (name: l.maxDuration, value: Duration(seconds: duration.toInt()).formatted()),
                       ],
                     ),
-                  (Category.dumbbell, {'reps': int reps, 'weight': num weight}) => _Record(
+                  (.dumbbell, {'reps': int reps, 'weight': num weight}) => _Record(
                       metrics: [
-                        (name: l.maxWeight, value: '${prefs.weight(weight.toDouble())} $weightUnit'),
+                        (name: l.maxWeight, value: '${prefs.weight(weight.toDouble(), unit: unit)} $weightUnit'),
                         (name: l.reps, value: '$reps'),
                       ],
                     ),
-                  (Category.barbell, {'reps': int reps, 'weight': num weight}) => _Record(
+                  (.barbell, {'reps': int reps, 'weight': num weight}) => _Record(
                       metrics: [
-                        (name: l.maxWeight, value: '${prefs.weight(weight.toDouble())} $weightUnit'),
+                        (name: l.maxWeight, value: '${prefs.weight(weight.toDouble(), unit: unit)} $weightUnit'),
                         (name: l.reps, value: '$reps'),
                       ],
                     ),
-                  (Category.weightedBodyWeight, {'reps': int reps, 'weight': num weight}) => _Record(
+                  (.weightedBodyWeight, {'reps': int reps, 'weight': num weight}) => _Record(
                       metrics: [
-                        (name: l.maxWeight, value: '${prefs.weight(weight.toDouble())} $weightUnit'),
+                        (name: l.maxWeight, value: '${prefs.weight(weight.toDouble(), unit: unit)} $weightUnit'),
                         (name: l.reps, value: '$reps'),
                       ],
                     ),
-                  (Category.machine, {'reps': int reps, 'weight': num weight}) => _Record(
+                  (.machine, {'reps': int reps, 'weight': num weight}) => _Record(
                       metrics: [
-                        (name: l.maxDistance, value: '${prefs.weight(weight.toDouble())} $weightUnit'),
-                        (name: l.maxDuration, value: '$reps'),
-                      ],
-                    ),
-                  (Category.assistedBodyWeight, {'reps': int reps}) => _Record(
-                      metrics: [
+                        (name: l.maxWeight, value: '${prefs.weight(weight.toDouble(), unit: unit)} $weightUnit'),
                         (name: l.reps, value: '$reps'),
                       ],
                     ),
-                  (Category.repsOnly, {'reps': int reps}) => _Record(
+                  (.assistedBodyWeight, {'reps': int reps}) => _Record(
                       metrics: [
                         (name: l.reps, value: '$reps'),
                       ],
                     ),
-                  (Category.cardio, {'distance': double distance, 'duration': num duration}) => _Record(
+                  (.repsOnly, {'reps': int reps}) => _Record(
                       metrics: [
-                        (name: l.maxDistance, value: '${prefs.distance(distance)} $distanceUnit'),
+                        (name: l.reps, value: '$reps'),
+                      ],
+                    ),
+                  (.cardio, {'distance': double distance, 'duration': num duration}) => _Record(
+                      metrics: [
+                        (name: l.maxDistance, value: '${prefs.distance(distance, unit: unit)} $distanceUnit'),
                         (name: l.maxDuration, value: Duration(seconds: duration.toInt()).formatted()),
                       ],
                     ),
@@ -105,7 +106,7 @@ class _Record extends StatelessWidget {
       spacing: 8,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          padding: const .symmetric(vertical: 4.0),
           child: Text(
             L.of(context).personalRecords,
             style: textTheme.labelLarge,
@@ -114,7 +115,7 @@ class _Record extends StatelessWidget {
         ...metrics.map(
           (metric) {
             return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: .spaceBetween,
               children: [
                 Text(
                   metric.name,

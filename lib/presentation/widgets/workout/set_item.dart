@@ -51,6 +51,11 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   late L l;
   late Workouts workouts;
 
+  /// Per-exercise unit override for this set's exercise, or null to fall back to
+  /// the global weight/distance setting. Single source of truth for both input
+  /// parsing and display so they never disagree.
+  MeasurementUnit? get _unitOverride => Exercises.of(context).unitFor(widget.exercise.exercise.name);
+
   @override
   void initState() {
     super.initState();
@@ -198,7 +203,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                         case .barbell:
                           switch (m) {
                             case {'weight': num weight, 'reps': int reps}:
-                              _weightController.text = prefs.weight(weight);
+                              _weightController.text = prefs.weight(weight, unit: _unitOverride);
                               _repsController.text = '$reps';
                           }
                         case .repsOnly:
@@ -210,7 +215,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                           switch (m) {
                             case {'duration': num duration, 'distance': num distance}:
                               _durationController.text = duration.toInt().toDuration();
-                              _distanceController.text = prefs.distance(distance);
+                              _distanceController.text = prefs.distance(distance, unit: _unitOverride);
                           }
                         case .duration:
                           switch (m) {
@@ -333,14 +338,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           Expanded(
             child: Selector<Preferences, MeasurementUnit>(
               selector: (_, provider) => provider.distanceUnit,
-              builder: (_, unit, _) {
-                double? distance = set.distance;
-                if (distance != null) {
-                  distance = switch (unit) {
-                    MeasurementUnit.imperial => distance.asMiles,
-                    MeasurementUnit.metric => distance,
-                  };
-                  final rounded = distance % 1 == 0 ? distance.toInt().toString() : distance.toStringAsFixed(1);
+              builder: (context, unit, _) {
+                final raw = set.distance;
+                if (raw != null) {
+                  final rounded = Preferences.of(context).distance(raw, unit: _unitOverride ?? unit);
 
                   // cannot update during build
                   WidgetsBinding.instance.addPostFrameCallback(
@@ -474,12 +475,24 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   }
 
   Future<void> _scheduleNotification(DateTime when) {
-    final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :lb) = l;
-    final body = switch (workouts.nextIncomplete?.$2) {
-      ExerciseSet(:double weight, :int reps) => weightedSetRepresentation(lb(weight.toInt()), reps),
+    final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :kg, :lbs) = l;
+    final prefs = Preferences.of(context);
+    final next = workouts.nextIncomplete;
+    // Honour the next exercise's per-exercise unit, falling back to the global
+    // weight setting — the notification used to always emit the raw metric
+    // value with an "lbs" label regardless of preference.
+    final unit = switch (next?.$1.exercise.name) {
+      String name => Exercises.of(context).unitFor(name) ?? prefs.weightUnit,
+      null => prefs.weightUnit,
+    };
+    final body = switch (next?.$2) {
+      ExerciseSet(:double weight, :int reps) => weightedSetRepresentation(
+        '${prefs.weight(weight, unit: unit)} ${unit == MeasurementUnit.imperial ? lbs : kg}',
+        reps,
+      ),
       _ => null,
     };
-    final nextExercise = workouts.nextIncomplete?.$1 ?? exercise;
+    final nextExercise = next?.$1 ?? exercise;
     return scheduleExerciseNotification(
       nextExercise.id,
       when,
@@ -494,8 +507,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     var ExerciseSet(:reps, :weight, :distance, :duration) = set;
 
     if (weight != null) {
-      final rounded = prefs.weight(weight);
-      _weightController.text = rounded;
+      _weightController.text = prefs.weight(weight, unit: _unitOverride);
     }
 
     if (reps != null) {
@@ -503,8 +515,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     }
 
     if (distance != null) {
-      final rounded = distance % 1 == 0 ? distance.toInt().toString() : distance.toStringAsFixed(1);
-      _distanceController.text = rounded;
+      _distanceController.text = prefs.distance(distance, unit: _unitOverride);
     }
 
     if (duration != null) {
@@ -602,16 +613,17 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   void _setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
     if (!context.mounted) return;
     final Preferences(:distanceUnit, :weightUnit) = Preferences.of(context);
+    final override = _unitOverride;
 
-    // we're storing in metric
+    // we're storing in metric, converting from the exercise's effective unit
     set.setMeasurements(
       duration: duration,
-      weight: switch (weightUnit) {
+      weight: switch (override ?? weightUnit) {
         .imperial => weight?.asKilograms,
         .metric => weight,
       },
       reps: reps,
-      distance: switch (distanceUnit) {
+      distance: switch (override ?? distanceUnit) {
         .imperial => distance?.asKilometers,
         .metric => distance,
       },

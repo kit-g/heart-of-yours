@@ -133,6 +133,7 @@ class WorkoutItem extends StatelessWidget {
               const SizedBox(height: 4),
               ...workout.map(
                 (exercise) {
+                  final override = Exercises.of(context).unitFor(exercise.exercise.name);
                   return Row(
                     spacing: 12,
                     children: [
@@ -148,8 +149,8 @@ class WorkoutItem extends StatelessWidget {
                           _formatSet(
                             context,
                             exercise.best,
-                            prefs.weightUnit,
-                            prefs.distanceUnit,
+                            override ?? prefs.weightUnit,
+                            override ?? prefs.distanceUnit,
                           ),
                           style: textTheme.titleSmall,
                         ),
@@ -182,24 +183,20 @@ class WorkoutItem extends StatelessWidget {
       case .machine:
       case .dumbbell:
       case .barbell:
-        return switch ((set?.weight, weightUnit)) {
-          // if weight is 0: 15x
-          (double weight, _) when weight <= 0 => '${set?.reps ?? 0}x',
-          (null, _) => '${set?.reps ?? 0}x',
-          // e.g. 11 lbs x 15 reps
-          (double weight, .imperial) when weight > 0 => '${l.lb(weight.asPounds.toInt())} x ${set?.reps ?? 0}',
+        final label = weightUnit == MeasurementUnit.imperial ? l.lbs : l.kg;
+        return switch (set?.weight) {
+          // if weight is 0 or unset: 15x
+          null => '${set?.reps ?? 0}x',
+          double weight when weight <= 0 => '${set?.reps ?? 0}x',
           // e.g. 11 kg x 15 reps
-          (double weight, .metric) when weight > 0 => '${rounded(weight)} ${l.kg} x ${set?.reps ?? 0}',
-          (_, _) => '',
+          double weight => '${Preferences.of(context).weight(weight, unit: weightUnit)} $label x ${set?.reps ?? 0}',
         };
       case .cardio:
+        final label = distanceUnit == MeasurementUnit.imperial ? l.milesPlural : l.km;
         return switch ((set?.distance, set?.duration)) {
-          (double distance, int seconds) => switch (distanceUnit) {
-            // e.g. 11 miles / 10 min
-            .imperial => '${rounded(distance.asMiles)} ${l.milesPlural} / ${seconds.formatted(context)}',
-            // e.g. 11 km / 10 min
-            .metric => '${rounded(distance)} ${l.km} / ${seconds.formatted(context)}',
-          },
+          // e.g. 11 km / 10 min
+          (double distance, int seconds) =>
+            '${Preferences.of(context).distance(distance, unit: distanceUnit)} $label / ${seconds.formatted(context)}',
           _ => '',
         };
       case .repsOnly:
@@ -405,9 +402,4 @@ enum _WorkoutOption {
   saveAsTemplate,
   repeat,
   delete,
-}
-
-String rounded(num? v) {
-  if (v == null) return '';
-  return v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
 }
