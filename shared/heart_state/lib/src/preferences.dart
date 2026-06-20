@@ -100,25 +100,33 @@ class Preferences with ChangeNotifier {
     return _prefs?.setString(_distanceUnit, unit.name);
   }
 
-  String distance(num value, {bool rounded = true}) {
-    final v = distanceValue(value);
+  /// Formats [value] (stored canonically in metric) for display.
+  ///
+  /// Pass [unit] to honour a per-exercise override; when null the global
+  /// [distanceUnit] is used.
+  String distance(num value, {bool rounded = true, MeasurementUnit? unit}) {
+    final v = distanceValue(value, unit: unit);
     return rounded ? v.rounded() : v.toString();
   }
 
-  double distanceValue(num value) {
-    return switch (distanceUnit) {
+  double distanceValue(num value, {MeasurementUnit? unit}) {
+    return switch (unit ?? distanceUnit) {
       .imperial => value.asMiles,
       .metric => value.toDouble(),
     };
   }
 
-  String weight(num value, {bool rounded = true}) {
-    final v = weightValue(value);
+  /// Formats [value] (stored canonically in metric) for display.
+  ///
+  /// Pass [unit] to honour a per-exercise override; when null the global
+  /// [weightUnit] is used.
+  String weight(num value, {bool rounded = true, MeasurementUnit? unit}) {
+    final v = weightValue(value, unit: unit);
     return rounded ? v.rounded() : v.toString();
   }
 
-  double weightValue(num value) {
-    return switch (weightUnit) {
+  double weightValue(num value, {MeasurementUnit? unit}) {
+    return switch (unit ?? weightUnit) {
       .imperial => value.asPounds,
       .metric => value.toDouble(),
     };
@@ -132,8 +140,10 @@ const _imperialCountries = {
 };
 
 extension on num {
+  /// Up to one decimal place, with a trailing `.0` stripped (the single
+  /// rounding convention used everywhere weights/distances are shown).
   String rounded() {
     if (this % 1 == 0) return toInt().toString();
-    return toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
+    return toStringAsFixed(1).replaceAll(RegExp(r'\.?0+$'), '');
   }
 }
