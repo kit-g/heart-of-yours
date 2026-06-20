@@ -62,7 +62,8 @@ platform :ios do
       api_key: api_key,
       skip_waiting_for_build_processing: false,
       distribute_external: true,
-      groups: ["Primary Testers"]
+      groups: ["Primary Testers"],
+      changelog: "Bug fixes and performance improvements."
     )
   end
 end
