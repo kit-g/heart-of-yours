@@ -28,8 +28,15 @@ class LocalDatabase
     final path = join(dir, name);
     // await deleteDatabase(path);
 
+    // `getDatabasesPath()` above resolves through the active factory, so it must
+    // be called before we override it below to keep returning the native db dir.
     if (isWeb) {
       databaseFactory = databaseFactoryFfiWeb;
+    } else {
+      // bundle a modern SQLite (JSON1 always enabled) instead of the OS one,
+      // whose JSON functions are missing on Android < 13.
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
     }
 
     _logger.info('Local database at $path');
