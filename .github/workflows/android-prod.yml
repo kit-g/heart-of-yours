@@ -1,0 +1,42 @@
+name: "Deploy Prod to Play Store"
+
+on:
+  workflow_dispatch: { }
+  push:
+    tags:
+      - "v*"
+      - "android*"
+    paths:
+      - "lib/**"
+      - "android/**"
+      - "pubspec.yaml"
+      - "shared/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: "android-prod"
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: "Unit Tests"
+    uses: ./.github/workflows/unit-tests.yml
+
+  prod:
+    uses: ./.github/workflows/google-play-deployment.yml
+    name: "Deploy Prod"
+    needs: [ unit-tests ]
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      app_id: "me.heart.android"
+      aws_region: "ca-central-1"
+      aws_role: "arn:aws:iam::922419543441:role/heart-github-actions-deploy-role"
+      environment: "prod"
+      flavor: "prod"
+      secrets_bucket: "922419543441-ca-central-1-static"
+      track: "internal"
