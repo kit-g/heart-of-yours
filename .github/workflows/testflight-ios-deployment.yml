@@ -61,6 +61,10 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # sqlite3 3.x bundles its native lib via Dart build hooks
+      - name: "Enable native asset bundling"
+        run: flutter config --enable-native-assets
+
       - name: "Build"
         run: flutter build ios --release --flavor ${{ inputs.flavor }} --no-codesign --dart-define-from-file=appconfig.json
 

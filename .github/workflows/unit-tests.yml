@@ -34,6 +34,10 @@ jobs:
           cache: true
           cache-sdk: true
 
+      # sqlite3 3.x provides its native lib via Dart build hooks; tests opening a real DB need it.
+      - name: Enable native asset bundling
+        run: flutter config --enable-native-assets
+
       - name: Pub get (workspace)
         run: flutter pub get
 
@@ -59,6 +63,10 @@ jobs:
           version: 'latest'
           cache: true
           cache-sdk: true
+
+      # sqlite3 3.x provides its native lib via Dart build hooks; tests opening a real DB need it.
+      - name: Enable native asset bundling
+        run: flutter config --enable-native-assets
 
       - name: Pub get (workspace)
         run: flutter pub get
