@@ -52,7 +52,7 @@ jobs:
 
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/keystore.jks android/keystore.jks
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/key.properties android/key.properties
-          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/google-services.json android/app/google-services.json
+          aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/google-services.json android/app/google-services.json
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/playstore/playstore-sa-key.json playstore-sa-key.json  
          
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart
