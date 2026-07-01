@@ -56,7 +56,7 @@ extension on BuildContext {
   }
 
   Future<void> goToActiveWorkout() {
-    return push(_activeWorkoutPath);
+    return _pushActiveWorkoutOnce(GoRouter.of(this));
   }
 
   Future<void> goToGallery(Iterable<Media> media, {required int startingIndex, String? workoutId}) {
