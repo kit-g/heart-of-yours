@@ -173,7 +173,7 @@ final class HeartRouter {
   }
 
   Future<void> goToActiveWorkout() {
-    return config.push(_activeWorkoutPath);
+    return _pushActiveWorkoutOnce(config);
   }
 
   void goToWorkouts() {

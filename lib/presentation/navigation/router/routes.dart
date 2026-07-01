@@ -80,6 +80,25 @@ RouteBase _workoutRoute() {
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// The active-workout sheet is a single global modal on the root navigator.
+///
+/// It can be opened concurrently from several places — the [HeartRouter._redirect]
+/// side-effect on cold start/resume, notification taps, the workout FAB, and
+/// template cards. Pushing unconditionally stacks duplicate sheets (the
+/// "workout bottom sheet is doubled" bug), so every open funnels through here
+/// and no-ops when a `/activeWorkout` match is already anywhere on the stack.
+///
+/// We scan the whole stack rather than just the top route because [GalleryPage]
+/// can be pushed on top of the sheet, so the sheet is not always the topmost
+/// match while still being present.
+Future<void> _pushActiveWorkoutOnce(GoRouter router) {
+  final alreadyOpen = router.routerDelegate.currentConfiguration.matches.any(
+    (match) => match.matchedLocation == _activeWorkoutPath,
+  );
+  if (alreadyOpen) return Future<void>.value();
+  return router.push(_activeWorkoutPath);
+}
+
 RouteBase _activeWorkoutRoute() {
   return GoRoute(
     path: _activeWorkoutPath,
