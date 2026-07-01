@@ -72,8 +72,9 @@ class _TemplatesLayout extends StatelessWidget {
                       templates.editable = template;
                       goToTemplateEditor();
                     },
-                    onStartWorkout: (template) {
-                      Workouts.of(context).startWorkout(template: template.toWorkout());
+                    onStartWorkout: (template) async {
+                      await Workouts.of(context).startWorkout(template: template.toWorkout());
+                      onNewWorkout();
                     },
                     onTap: (template) {
                       _showStartWorkoutDialog(context, template);
@@ -110,8 +111,9 @@ class _TemplatesLayout extends StatelessWidget {
                     onTap: (template) {
                       _showStartWorkoutDialog(context, template, allowsEditing: false);
                     },
-                    onStartWorkout: (template) {
-                      Workouts.of(context).startWorkout(template: template.toWorkout());
+                    onStartWorkout: (template) async {
+                      await Workouts.of(context).startWorkout(template: template.toWorkout());
+                      onNewWorkout();
                     },
                     options: const [.startWorkout],
                   );
