@@ -163,6 +163,31 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Re-attempts the server save for any finished workout persisted locally but
+  /// never confirmed on the server — e.g. a save that failed on a flaky network.
+  /// Successful saves flip to synced via [storeWorkoutHistory]; failures are left
+  /// as-is to retry next launch. An unsynced workout is never deleted; the only
+  /// removal is the stale local id after the server assigns its own on success.
+  Future<void> syncPendingWorkouts() async {
+    if (userId case String id) {
+      final pending = _workouts.values.where((workout) => workout.isCompleted && !workout.synced).toList();
+      for (final workout in pending) {
+        try {
+          final saved = await _remoteService.saveWorkout(workout);
+          if (saved.id != workout.id) {
+            _workouts.remove(workout.id);
+            await _localService.deleteWorkout(workout.id);
+          }
+          _workouts[saved.id] = saved;
+          await _localService.storeWorkoutHistory([saved], id);
+        } catch (error, stacktrace) {
+          onError?.call(error, stacktrace: stacktrace);
+        }
+      }
+      if (pending.isNotEmpty) notifyListeners();
+    }
+  }
+
   Future<void> editWorkout(Workout workout) async {
     _workouts[workout.id] = workout;
     notifyListeners();
@@ -312,6 +337,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         await _localService.storeWorkoutHistory(workouts, id);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
       }
+
+      // heal workouts stranded locally by an earlier failed network save
+      await syncPendingWorkouts();
 
       await _localService.getWorkoutGallery(userId: id).then<void>(_progress.addAll);
 

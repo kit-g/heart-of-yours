@@ -40,3 +40,20 @@ ALTER TABLE template_exercises_new RENAME TO template_exercises;
 const rebuildTemplateExercisesIndex = """
 CREATE INDEX IF NOT EXISTS template_idx ON template_exercises (template_id);
 """;
+
+/// track whether a finished workout has been confirmed saved on the server.
+///
+/// Network failures could leave a workout persisted locally but never POSTed,
+/// with no way to tell it apart from a synced one or to retry it. `synced`
+/// marks that state: 0 until the API save succeeds, 1 afterwards.
+///
+/// Existing rows are backfilled to 1 — they predate the flag and are assumed
+/// already on the server. Marking them 0 would re-POST them, and since
+/// saveWorkout creates a fresh server id, that would duplicate every workout.
+const addWorkoutSynced = """
+ALTER TABLE workouts ADD COLUMN synced INTEGER NOT NULL DEFAULT 0;
+""";
+
+const backfillWorkoutSynced = """
+UPDATE workouts SET synced = 1;
+""";

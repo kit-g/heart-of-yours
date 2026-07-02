@@ -29,5 +29,7 @@ const _migrations = <int, List<String>>{
     rebuildTemplateExercisesDrop,
     rebuildTemplateExercisesRename,
     rebuildTemplateExercisesIndex,
+    addWorkoutSynced,
+    backfillWorkoutSynced,
   ],
 };
