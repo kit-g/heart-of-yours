@@ -23,4 +23,11 @@ const _migrations = <int, List<String>>{
     addExerciseUnitSystem,
     addExerciseId,
   ],
+  3: [
+    rebuildTemplateExercisesCreate,
+    rebuildTemplateExercisesCopy,
+    rebuildTemplateExercisesDrop,
+    rebuildTemplateExercisesRename,
+    rebuildTemplateExercisesIndex,
+  ],
 };
