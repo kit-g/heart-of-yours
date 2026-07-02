@@ -26,7 +26,7 @@ class LocalDatabase
       false => await getDatabasesPath(),
     };
     final path = join(dir, name);
-    // await deleteDatabase(path);
+    await deleteDatabase(path);
 
     // `getDatabasesPath()` above resolves through the active factory, so it must
     // be called before we override it below to keep returning the native db dir.
@@ -300,7 +300,8 @@ class LocalDatabase
     return _db.transaction(
       (txn) async {
         final batch = txn.batch();
-        _storeWorkout(batch, workout, userId);
+        // local write only — not yet confirmed on the server
+        _storeWorkout(batch, workout, userId, synced: false);
         await batch.commit(noResult: true);
       },
     );
@@ -317,7 +318,8 @@ class LocalDatabase
       (txn) async {
         final batch = txn.batch();
 
-        _storeWorkout(batch, workout, userId);
+        // local write only — not yet confirmed on the server
+        _storeWorkout(batch, workout, userId, synced: false);
 
         await batch.commit(noResult: true);
 
@@ -429,7 +431,8 @@ class LocalDatabase
         final batch = txn.batch();
 
         for (final each in history) {
-          _storeWorkout(batch, each, userId);
+          // history comes from the server (or a just-confirmed save)
+          _storeWorkout(batch, each, userId, synced: true);
         }
 
         await batch.commit();
@@ -448,7 +451,7 @@ class LocalDatabase
     return jsonEncode(images.map((each) => each.toRow()).toList());
   }
 
-  static void _storeWorkout(Batch batch, Workout workout, String userId) {
+  static void _storeWorkout(Batch batch, Workout workout, String userId, {required bool synced}) {
     final Workout(id: workoutId, :start, :name, :end, :images) = workout;
     final row = {
       'id': workoutId,
@@ -457,6 +460,7 @@ class LocalDatabase
       'name': ?name,
       'end': ?end?.toIso8601String(),
       'images': ?_encodeImages(images?.values),
+      'synced': synced ? 1 : 0,
     };
     batch.insert(_workouts, row, conflictAlgorithm: .replace);
 

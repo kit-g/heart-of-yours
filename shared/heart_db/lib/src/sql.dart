@@ -42,6 +42,7 @@ SELECT
     _workout."end",
     _workout.name,
     _workout.images,
+    _workout.synced,
     (
         SELECT json_group_array(
             json_object(
@@ -116,6 +117,7 @@ SELECT
     _workout."end",
     _workout.name,
     _workout.images,
+    _workout.synced,
     (
         SELECT json_group_array(
             json_object(
@@ -188,6 +190,7 @@ SELECT
     _workouts."end",
     _workouts.name,
     _workouts.images,
+    _workouts.synced,
     (
         SELECT json_group_array(
             json_object(

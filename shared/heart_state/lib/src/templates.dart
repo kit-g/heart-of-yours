@@ -119,6 +119,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
           ..remove(template)
           ..add(saved);
         if (userId case String id) {
+          // A locally-created template is persisted under a client-generated
+          // id, but the server assigns its own id on save. Drop the stale local
+          // row first, otherwise storing the server copy leaves a duplicate.
+          if (saved.id != template.id) {
+            await _service.deleteTemplate(template.id);
+          }
           await _service.storeTemplates([saved], userId: id);
         }
       } catch (error, stacktrace) {

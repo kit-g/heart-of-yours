@@ -6,10 +6,6 @@ import 'dart:convert';
 import 'package:heart_models/heart_models.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
-// Provides the mobile plugin's default databaseFactory, which getDatabasesPath()
-// relies on to resolve the native db dir before we switch to the FFI factory.
-// ignore: unnecessary_import
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
@@ -22,6 +18,7 @@ part 'src/constants.dart';
 part 'src/db.dart';
 part 'src/extensions.dart';
 part 'src/logger.dart';
-part 'src/migrations/index.dart';
 part 'src/migrations/0001.dart';
 part 'src/migrations/0002.dart';
+part 'src/migrations/0003.dart';
+part 'src/migrations/index.dart';
