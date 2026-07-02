@@ -690,7 +690,7 @@ void main() {
                 'exercise': we.exercise.name,
                 'order': 0,
                 'sets': sets.map((s) => s.toMap()).toList(),
-              }
+              },
             ]),
           };
 
@@ -872,7 +872,7 @@ void main() {
                   'id': DateTime.now().toIso8601String(),
                   'order': 0,
                   'sets': sets1.map((s) => s.toMap()).toList(),
-                }
+                },
               ]),
             },
             {
@@ -886,7 +886,7 @@ void main() {
                   'id': DateTime.now().toIso8601String(),
                   'order': 0,
                   'sets': sets2.map((s) => s.toMap()).toList(),
-                }
+                },
               ]),
             },
           ];

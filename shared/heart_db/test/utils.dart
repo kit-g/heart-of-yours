@@ -28,7 +28,8 @@ ExerciseAct exerciseAct({
 }) {
   ex ??= exercise();
 
-  final rows = sets ??
+  final rows =
+      sets ??
       [
         {
           'workoutId': workoutId,
