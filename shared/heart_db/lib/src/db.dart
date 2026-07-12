@@ -1,5 +1,9 @@
 part of '../heart_db.dart';
 
+/// True only in debug builds. Mirrors Flutter's `kDebugMode`: a build is "debug" when it is
+/// neither a release (`dart.vm.product`) nor a profile (`dart.vm.profile`) run.
+const bool _kDebug = !bool.fromEnvironment('dart.vm.product') && !bool.fromEnvironment('dart.vm.profile');
+
 abstract class _LocalDatabase {
   Database get _db;
 }
@@ -32,7 +36,13 @@ class LocalDatabase extends _LocalDatabase
       false => await getDatabasesPath(),
     };
     final path = join(dir, name);
-    await deleteDatabase(path);
+
+    // dev convenience: wipe the DB each launch to iterate on schema/migrations.
+    // debug builds ONLY — release and profile persist, so production data
+    // survives and offline-stranded workouts can be healed on next launch.
+    if (_kDebug) {
+      await deleteDatabase(path);
+    }
 
     // `getDatabasesPath()` above resolves through the active factory, so it must
     // be called before we override it below to keep returning the native db dir.

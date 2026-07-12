@@ -90,7 +90,7 @@ extension on Duration {
   static String _pad(int n) => n.toString().padLeft(2, '0');
 }
 
-/// finds "beautiful timestamps
+/// finds "beautiful" timestamps
 /// for chart axes
 /// e.g., 1:30 or 30:00 are beautiful
 /// and 1:15 and 33:30 are ugly
