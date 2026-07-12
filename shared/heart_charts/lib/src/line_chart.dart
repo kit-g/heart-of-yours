@@ -24,6 +24,11 @@ class HistoryChart extends StatefulWidget {
   /// When null, a generic 1/2/5·10ⁿ step is chosen from the data range.
   final List<double>? yStepCandidates;
 
+  /// When set, the line, fill and tooltip all use this single hue — the
+  /// meaningful per-family color. When null, falls back to the legacy 3-stop
+  /// gradient (the `gradientColor*` args).
+  final Color? color;
+
   HistoryChart({
     super.key,
     required Iterable<Dot> series,
@@ -33,6 +38,7 @@ class HistoryChart extends StatefulWidget {
     this.topLabel,
     this.getTooltip,
     this.yStepCandidates,
+    this.color,
     Color? gradientColor1,
     Color? gradientColor2,
     Color? gradientColor3,
@@ -61,27 +67,40 @@ class _HistoryChartState extends State<HistoryChart> {
     return ListenableBuilder(
       listenable: series,
       builder: (_, __) {
+        final accent = widget.color;
+        // a solid family hue when provided; otherwise the legacy 3-stop gradient
+        final lineGradient = switch (accent) {
+          Color color => LinearGradient(colors: [color, color], stops: const [0.0, 1.0]),
+          null => LinearGradient(
+              colors: [widget.gradientColor1, widget.gradientColor2, widget.gradientColor3],
+              stops: const [0.1, 0.4, 0.9],
+            ),
+        };
+        final fillGradient = switch (accent) {
+          Color color => LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0.0)],
+            ),
+          null => LinearGradient(
+              colors: [
+                widget.gradientColor1.withValues(alpha: 0.4),
+                widget.gradientColor2.withValues(alpha: 0.4),
+                widget.gradientColor3.withValues(alpha: 0.4),
+              ],
+            ),
+        };
+
         final lineBarsData = [
           LineChartBarData(
             showingIndicators: series.tooltipIndices,
             spots: series.map((each) => FlSpot(each.x, each.y)).toList(),
             isCurved: true,
+            preventCurveOverShooting: true,
             barWidth: 4,
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [
-                  widget.gradientColor1.withValues(alpha: 0.4),
-                  widget.gradientColor2.withValues(alpha: 0.4),
-                  widget.gradientColor3.withValues(alpha: 0.4),
-                ],
-              ),
-            ),
+            belowBarData: BarAreaData(show: true, gradient: fillGradient),
             dotData: const FlDotData(show: true),
-            gradient: LinearGradient(
-              colors: [widget.gradientColor1, widget.gradientColor2, widget.gradientColor3],
-              stops: const [0.1, 0.4, 0.9],
-            ),
+            gradient: lineGradient,
           ),
         ];
         final tooltipsOnBar = lineBarsData[0];
@@ -133,7 +152,7 @@ class _HistoryChartState extends State<HistoryChart> {
                     return spotIndexes.map(
                       (index) {
                         return TouchedSpotIndicatorData(
-                          const FlLine(color: Colors.pink),
+                          FlLine(color: accent ?? Colors.pink),
                           FlDotData(
                             show: true,
                             getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
@@ -148,7 +167,7 @@ class _HistoryChartState extends State<HistoryChart> {
                     ).toList();
                   },
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) => Colors.pink,
+                    getTooltipColor: (touchedSpot) => accent ?? Colors.pink,
                     tooltipBorderRadius: BorderRadius.circular(8),
                     getTooltipItems: (lineBarsSpot) {
                       return lineBarsSpot.map(
@@ -173,6 +192,7 @@ class _HistoryChartState extends State<HistoryChart> {
                         Widget Function(double) callback => (value, meta) {
                             return SideTitleWidget(
                               meta: meta,
+                              fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
                               child: callback(value),
                             );
                           },
@@ -193,6 +213,9 @@ class _HistoryChartState extends State<HistoryChart> {
                             return SideTitleWidget(
                               meta: meta,
                               angle: -pi / 4,
+                              // nudge the first/last date inward so the rotated
+                              // label isn't clipped at the chart edge
+                              fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
                               child: Text(
                                 callback(value.toInt()),
                                 style: widget.bottomAxisLabelStyle,

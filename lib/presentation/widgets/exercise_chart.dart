@@ -13,6 +13,7 @@ class ExerciseChart extends StatelessWidget {
   final Widget errorState;
   final Widget? loadingState;
   final List<double>? yStepCandidates;
+  final Color? color;
 
   const ExerciseChart({
     super.key,
@@ -26,6 +27,7 @@ class ExerciseChart extends StatelessWidget {
     required this.errorState,
     this.loadingState,
     this.yStepCandidates,
+    this.color,
   });
 
   @override
@@ -50,6 +52,7 @@ class ExerciseChart extends StatelessWidget {
                 height: 300,
                 child: HistoryChart(
                   yStepCandidates: yStepCandidates,
+                  color: color,
                   bottomAxisLabelStyle: textTheme.bodySmall,
                   series: reversed.indexed.map(
                     (record) {

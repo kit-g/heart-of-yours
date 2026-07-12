@@ -3,8 +3,31 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
+/// The training quality a metric speaks to. Drives the chart color so a glance
+/// separates strength from volume from endurance from conditioning. Hues are a
+/// CVD-safe categorical set, themed per surface (see the dataviz validator).
+enum _ChartFamily {
+  strength(light: Color(0xFFE34948), dark: Color(0xFFE66767)),
+  volume(light: Color(0xFF2A78D6), dark: Color(0xFF3987E5)),
+  endurance(light: Color(0xFF1BAF7A), dark: Color(0xFF199E70)),
+  cardio(light: Color(0xFFEB6834), dark: Color(0xFFD95926));
+
+  const _ChartFamily({required this.light, required this.dark});
+
+  final Color light;
+  final Color dark;
+
+  Color of(Brightness brightness) {
+    return switch (brightness) {
+      .dark => dark,
+      .light => light,
+    };
+  }
+}
+
 /// Per-dimension presentation for [ChartPreferenceType] charts: the display
-/// label, the y-value converter (unit-aware) and the left-axis formatter.
+/// label, the y-value converter (unit-aware), the left-axis formatter and the
+/// training-quality color.
 ///
 /// Single source of truth shared by the profile dashboard and the per-exercise
 /// chart page, so adding a dimension only needs updating here.
@@ -67,6 +90,18 @@ extension ChartDimension on ChartPreferenceType {
   List<double>? get yStepCandidates {
     return _isTime ? const [15.0, 30.0, 60.0, 120.0, 300.0, 600.0, 900.0, 1800.0, 3600.0] : null;
   }
+
+  _ChartFamily get _family {
+    return switch (this) {
+      .topSetWeight || .estimatedOneRepMax || .averageWorkingWeight || .assistanceWeight => .strength,
+      .totalVolume || .totalReps => .volume,
+      .maxConsecutiveReps => .endurance,
+      .cardioDistance || .cardioDuration || .averagePace || .totalTimeUnderTension => .cardio,
+    };
+  }
+
+  /// The training-quality color for this dimension, themed for light/dark.
+  Color color(BuildContext context) => _family.of(Theme.of(context).brightness);
 }
 
 String _trimNumber(double value) {
