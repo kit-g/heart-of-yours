@@ -22,7 +22,7 @@ dependencies:
   firebase_analytics: 12.4.3
   firebase_auth: 6.5.3
   firebase_core: 4.11.0
-  fl_chart: 1.1.1
+  fl_chart: 1.2.0
   flutter: { sdk: flutter }
   flutter_body_atlas: ^0.1.4
   flutter_colorpicker: ^1.1.0
