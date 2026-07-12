@@ -398,14 +398,14 @@ WHERE workouts.user_id = ?
 const getWeightHistory = """
 SELECT
     MAX(sets.weight) AS "value",
-    sets.id AS "when"  
+    workouts.start AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY sets.id
+GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
 ;
@@ -414,14 +414,14 @@ LIMIT ?
 const getRepsHistory = """
 SELECT
     MAX(sets.reps) AS "value",
-    sets.id AS "when"  
+    workouts.start AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY sets.id 
+GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
 ;
@@ -430,14 +430,14 @@ LIMIT ?
 const getDurationHistory = """
 SELECT
     MAX(sets.duration) AS "value",
-    sets.id AS "when"  
+    workouts.start AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY sets.id 
+GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
 ;
@@ -446,14 +446,14 @@ LIMIT ?
 const getDistanceHistory = """
 SELECT
     MAX(sets.distance) AS "value",
-    sets.id AS "when"  
+    workouts.start AS "when"  
 FROM sets
 INNER JOIN main.workout_exercises we ON we.id = sets.exercise_id
 INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
-GROUP BY sets.id
+GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
 ;
