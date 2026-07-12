@@ -22,6 +22,7 @@ jobs:
           - shared/heart_api
           - shared/heart_db
           - shared/heart_state
+          - shared/heart_charts
 
     steps:
       - uses: actions/checkout@v6

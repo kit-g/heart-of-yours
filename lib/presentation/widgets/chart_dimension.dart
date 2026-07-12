@@ -47,50 +47,30 @@ extension ChartDimension on ChartPreferenceType {
     };
   }
 
+  /// Whether this dimension's values are durations (formatted mm:ss / h:mm:ss).
+  bool get _isTime => this == .cardioDuration || this == .totalTimeUnderTension;
+
   Widget Function(double y) leftLabel(TextStyle? style) {
-    switch (this) {
-      case .cardioDuration:
-      case .totalTimeUnderTension:
-        return (double y) {
-          return switch (_beautifyDuration(y.round())) {
-            String label => Text(label, style: style),
-            null => const SizedBox.shrink(),
-          };
-        };
-      case .maxConsecutiveReps:
-      case .totalReps:
-        return (double y) => y % 1 == 0 ? Text(y.toInt().toString(), style: style) : const SizedBox.shrink();
-      default:
-        return (double y) => y % 2 == 0 ? Text(y.toInt().toString(), style: style) : const SizedBox.shrink();
-    }
+    // The chart already snaps ticks to nice values (see HistoryChart), so we
+    // label each one exactly — no rounding, no skipping, no duplicates.
+    return (double y) => Text(_isTime ? _formatDuration(y.round()) : _trimNumber(y), style: style);
   }
 
-  /// Tooltip formatter for the dimensions whose raw value isn't self-explanatory
-  /// (times), or `null` to fall back to the chart's default numeric tooltip.
+  /// Tooltip formatter for durations; `null` falls back to the chart's default
+  /// numeric tooltip.
   String Function(double y)? get tooltip {
-    return switch (this) {
-      .cardioDuration || .totalTimeUnderTension => (y) => _formatDuration(y.toInt()),
-      _ => null,
-    };
+    return _isTime ? (y) => _formatDuration(y.round()) : null;
+  }
+
+  /// Preferred axis tick steps for [HistoryChart]: time dimensions snap to
+  /// conventional 15s/30s/1m/5m/… marks; the rest use generic nice numbers.
+  List<double>? get yStepCandidates {
+    return _isTime ? const [15.0, 30.0, 60.0, 120.0, 300.0, 600.0, 900.0, 1800.0, 3600.0] : null;
   }
 }
 
-/// Rounds a duration-axis tick to a "nice" value — nearest 10s / 30s / 5min /
-/// 15min by magnitude — and drops ticks that aren't whole minutes past 10 min,
-/// so the axis reads 1:30 or 30:00 rather than 1:15 or 33:30. `null` hides the
-/// label (including the zero tick).
-String? _beautifyDuration(int seconds) {
-  if (seconds == 0) return null;
-  final roundTo = switch (seconds) {
-    < 60 => 10, // nearest 10s
-    < 600 => 30, // nearest 30s
-    < 3600 => 300, // nearest 5min
-    _ => 900, // nearest 15min
-  };
-  final rounded = (seconds / roundTo).round() * roundTo;
-  // drop values that aren't full minutes once we're past 10 min
-  if (rounded % 60 != 0 && rounded >= 600) return null;
-  return _formatDuration(rounded);
+String _trimNumber(double value) {
+  return value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(1);
 }
 
 String _formatDuration(int totalSeconds) {

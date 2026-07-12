@@ -12,6 +12,10 @@ permissions:
   contents: read
 
 jobs:
+  unit-tests:
+    name: "Unit Tests"
+    uses: ./.github/workflows/unit-tests.yml
+
   deploy-prod:
     uses: ./.github/workflows/testflight-ios-deployment.yml
     with:

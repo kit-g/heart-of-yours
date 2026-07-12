@@ -31,6 +31,7 @@ class _Charts extends StatelessWidget {
           converter: type.converter(prefs, unit: unit),
           getLeftLabel: type.leftLabel(style),
           getTooltip: type.tooltip,
+          yStepCandidates: type.yStepCandidates,
           errorState: const _ErrorState(),
         );
       },
