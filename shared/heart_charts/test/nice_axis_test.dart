@@ -28,6 +28,8 @@ void main() {
     expect(a.min, lessThan(a.max));
     expect(onGrid(a.min, a.interval), isTrue, reason: 'min must sit on the tick grid');
     expect(onGrid(a.max, a.interval), isTrue, reason: 'max must sit on the tick grid');
+    expect(a.max - dataMax, greaterThanOrEqualTo(a.interval / 2 - 1e-9), reason: 'top headroom so the peak is not clipped');
+    expect(dataMin - a.min, greaterThanOrEqualTo(a.interval / 2 - 1e-9), reason: 'bottom headroom');
     final steps = (a.max - a.min) / a.interval;
     expect(steps - steps.round(), closeTo(0, 1e-6), reason: 'span must be a whole number of steps');
     expect(steps, inInclusiveRange(2, 12), reason: 'a sane number of gridlines');

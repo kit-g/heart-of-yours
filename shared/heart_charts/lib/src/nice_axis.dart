@@ -27,8 +27,10 @@ import 'dart:math';
   final step = _pickStep(dataMax - dataMin, targetTicks, stepCandidates);
   var lo = (dataMin / step).floorToDouble() * step;
   var hi = (dataMax / step).ceilToDouble() * step;
-  if (hi == dataMax) hi += step;
-  if (lo == dataMin) lo -= step;
+  // guarantee at least half a step of breathing room at each end so a peak or
+  // trough — and its dot marker — never sits against the chart edge
+  if (hi - dataMax < step / 2) hi += step;
+  if (dataMin - lo < step / 2) lo -= step;
   return (min: lo, max: hi, interval: step);
 }
 
