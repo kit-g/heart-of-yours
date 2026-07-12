@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import 'nice_axis.dart';
 import 'spot.dart';
 
 class HistoryChart extends StatefulWidget {
@@ -17,6 +18,12 @@ class HistoryChart extends StatefulWidget {
   final String Function(double x, double y)? getTooltip;
   final Widget? topLabel;
 
+  /// Preferred y-axis tick steps (ascending). When set, the axis snaps to the
+  /// smallest of these that keeps the tick count reasonable — e.g. duration
+  /// charts pass `[15, 30, 60, 300, …]` so ticks read 30s/1m rather than 20s.
+  /// When null, a generic 1/2/5·10ⁿ step is chosen from the data range.
+  final List<double>? yStepCandidates;
+
   HistoryChart({
     super.key,
     required Iterable<Dot> series,
@@ -25,6 +32,7 @@ class HistoryChart extends StatefulWidget {
     this.getLeftLabel,
     this.topLabel,
     this.getTooltip,
+    this.yStepCandidates,
     Color? gradientColor1,
     Color? gradientColor2,
     Color? gradientColor3,
@@ -77,6 +85,12 @@ class _HistoryChartState extends State<HistoryChart> {
           ),
         ];
         final tooltipsOnBar = lineBarsData[0];
+
+        final yAxis = niceYAxis(
+          series.lowerBoundaryY,
+          series.upperBoundaryY,
+          stepCandidates: widget.yStepCandidates,
+        );
 
         return LayoutBuilder(
           builder: (_, constraints) {
@@ -149,11 +163,12 @@ class _HistoryChartState extends State<HistoryChart> {
                   ),
                 ),
                 lineBarsData: lineBarsData,
-                minY: series.lowerBoundaryY * .9,
-                maxY: series.upperBoundaryY * 1.1,
+                minY: yAxis.min,
+                maxY: yAxis.max,
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
+                      interval: yAxis.interval,
                       getTitlesWidget: switch (widget.getLeftLabel) {
                         Widget Function(double) callback => (value, meta) {
                             return SideTitleWidget(

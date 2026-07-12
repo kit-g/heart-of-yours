@@ -137,6 +137,8 @@ class _Chart extends StatelessWidget {
           ),
           converter: _converter(preference.type, settings),
           getLeftLabel: _getLeftLabel(preference.type, textTheme.bodySmall),
+          getTooltip: preference.type.tooltip,
+          yStepCandidates: preference.type.yStepCandidates,
           errorState: _ErrorState(
             exercise: exercise,
             exerciseHistoryService: exerciseHistoryService,

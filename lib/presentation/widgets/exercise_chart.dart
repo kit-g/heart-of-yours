@@ -12,6 +12,7 @@ class ExerciseChart extends StatelessWidget {
   final String Function(double y)? getTooltip;
   final Widget errorState;
   final Widget? loadingState;
+  final List<double>? yStepCandidates;
 
   const ExerciseChart({
     super.key,
@@ -24,6 +25,7 @@ class ExerciseChart extends StatelessWidget {
     this.getTooltip,
     required this.errorState,
     this.loadingState,
+    this.yStepCandidates,
   });
 
   @override
@@ -47,6 +49,7 @@ class ExerciseChart extends StatelessWidget {
               return SizedBox(
                 height: 300,
                 child: HistoryChart(
+                  yStepCandidates: yStepCandidates,
                   bottomAxisLabelStyle: textTheme.bodySmall,
                   series: reversed.indexed.map(
                     (record) {
