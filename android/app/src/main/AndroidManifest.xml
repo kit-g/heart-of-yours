@@ -32,6 +32,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Only the paths go_router owns. The host also serves Firebase auth
+                 actions under /__/auth/*, which must stay in the browser; Android
+                 intent-filters have no exclusion syntax, so the app claims paths
+                 explicitly. A new top-level route needs a <data> entry here. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -40,6 +44,51 @@
 
                 <data
                     android:host="${deepLink}"
+                    android:pathPrefix="/workout"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/activeWorkout"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/history"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/exercises"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/profile"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/gallery"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/avatar"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/login"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/restoreAccount"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/apple"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/done"
+                    android:scheme="https" />
+                <data
+                    android:host="${deepLink}"
+                    android:pathPrefix="/upgradeApp"
                     android:scheme="https" />
             </intent-filter>
 
