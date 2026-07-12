@@ -170,6 +170,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// removal is the stale local id after the server assigns its own on success.
   Future<void> syncPendingWorkouts() async {
     if (userId case String id) {
+      final local = await _localService.getWorkoutHistory(id);
+      if (local != null) {
+        _workouts.addAll(Map.fromEntries(local.map(_entry)));
+      }
+
       final pending = _workouts.values.where((workout) => workout.isCompleted && !workout.synced).toList();
       for (final workout in pending) {
         try {

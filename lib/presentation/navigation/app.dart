@@ -317,7 +317,14 @@ Future<void> _initApp(
         (_) {
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
-          workouts.init().then<void>((_) => router.refresh());
+          workouts.init().then<void>(
+            (_) {
+              router.refresh();
+              // heal any workout stranded locally by a failed network save,
+              // independent of whether the user opens the History screen
+              workouts.syncPendingWorkouts();
+            },
+          );
           templates.init();
           timers.init();
           previous.init();
