@@ -313,6 +313,11 @@ Future<void> _initApp(
       ..toMode(prefs.themeMode);
 
     if (!isInitialized) {
+      // chart preferences are local-only and independent of the exercise
+      // catalog — load them immediately rather than behind the remote sync,
+      // so the dashboard doesn't sit on a spinner for the network round-trip
+      charts.init();
+
       init(lastSync: config.exercisesLastSynced).then<void>(
         (_) {
           // since workouts initialization looks up exercises
@@ -328,7 +333,6 @@ Future<void> _initApp(
           templates.init();
           timers.init();
           previous.init();
-          charts.init();
         },
       );
     }
