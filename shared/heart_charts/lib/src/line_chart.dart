@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'nice_axis.dart';
 import 'spot.dart';
 
+/// Width reserved for the left (y-axis) labels. Exposed so callers can align a
+/// top title over the plot, which sits to the right of this inset.
+const double historyChartLeftAxisSize = 60;
+
 class HistoryChart extends StatefulWidget {
   final Color gradientColor1;
   final Color gradientColor2;
@@ -64,6 +68,7 @@ class _HistoryChartState extends State<HistoryChart> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: series,
       builder: (_, __) {
@@ -99,6 +104,7 @@ class _HistoryChartState extends State<HistoryChart> {
             preventCurveOverShooting: true,
             barWidth: 4,
             belowBarData: BarAreaData(show: true, gradient: fillGradient),
+            // a dot on every point — they mark where the tap-to-pin targets are
             dotData: const FlDotData(show: true),
             gradient: lineGradient,
           ),
@@ -174,7 +180,7 @@ class _HistoryChartState extends State<HistoryChart> {
                         (spot) {
                           return LineTooltipItem(
                             widget.getTooltip?.call(spot.x, spot.y) ?? spot.y.toString(),
-                            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            TextStyle(color: _readableOn(accent ?? Colors.pink, scheme), fontWeight: FontWeight.bold),
                           );
                         },
                       ).toList();
@@ -199,7 +205,7 @@ class _HistoryChartState extends State<HistoryChart> {
                         null => defaultGetTitle,
                       },
                       showTitles: true,
-                      reservedSize: 60,
+                      reservedSize: historyChartLeftAxisSize,
                       maxIncluded: false,
                       minIncluded: false,
                     ),
@@ -247,6 +253,19 @@ class _HistoryChartState extends State<HistoryChart> {
       },
     );
   }
+}
+
+/// The theme ink — dark or light — that reads better on [background] (the WCAG
+/// luminance crossover), so tooltip text stays legible on any family hue. The
+/// two poles come from the color scheme rather than hardcoded black/white.
+Color _readableOn(Color background, ColorScheme scheme) {
+  final (dark, light) = scheme.onSurface.computeLuminance() < scheme.surface.computeLuminance()
+      ? (scheme.onSurface, scheme.surface)
+      : (scheme.surface, scheme.onSurface);
+  return switch (background.computeLuminance() > 0.179) {
+    true => dark,
+    false => light,
+  };
 }
 
 class ChartColors {

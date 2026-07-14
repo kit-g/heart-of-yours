@@ -120,7 +120,7 @@ class _Chart extends StatelessWidget {
           customLabel: Row(
             mainAxisAlignment: .spaceBetween,
             children: [
-              Text('$exerciseName - ${_chartTypeCopy(context, preference.type)}'),
+              Text('$exerciseName - ${preference.type.title(context, settings)}'),
               FeedbackButton.circular(
                 tooltip: l.delete,
                 onPressed: () => onDelete(preference),

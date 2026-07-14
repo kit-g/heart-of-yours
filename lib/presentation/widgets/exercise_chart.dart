@@ -32,7 +32,7 @@ class ExerciseChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme) = Theme.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     return FutureBuilder<List<(num, DateTime)>?>(
       future: callback(),
       builder: (_, future) {
@@ -47,12 +47,16 @@ class ExerciseChart extends StatelessWidget {
               }
 
               final reversed = records.reversed.toList();
+              // aim for ~6 date labels regardless of how many points there are,
+              // so a long history doesn't crowd the axis
+              final labelEvery = (reversed.length / 6).ceil().clamp(1, reversed.length);
 
               return SizedBox(
                 height: 300,
                 child: HistoryChart(
                   yStepCandidates: yStepCandidates,
                   color: color,
+                  indicatorStrokeColor: colorScheme.surface,
                   bottomAxisLabelStyle: textTheme.bodySmall,
                   series: reversed.indexed.map(
                     (record) {
@@ -64,7 +68,7 @@ class ExerciseChart extends StatelessWidget {
                     },
                   ),
                   getBottomLabel: (x) {
-                    return switch (x.isEven) {
+                    return switch (x % labelEvery == 0) {
                       true => DateFormat('d/M').format(reversed[x].$2),
                       false => '',
                     };
@@ -72,7 +76,13 @@ class ExerciseChart extends StatelessWidget {
                   getLeftLabel: getLeftLabel,
                   topLabel: switch ((label, customLabel)) {
                     (_, Widget l) => l,
-                    (String l, _) => Text(l, style: textTheme.titleMedium),
+                    // fl_chart centers the axis name over the whole chart width,
+                    // but the plot sits to the right of the y-axis labels — pad
+                    // by that reserved width so the title centers over the plot
+                    (String l, _) => Padding(
+                      padding: const .only(left: historyChartLeftAxisSize),
+                      child: Text(l, style: textTheme.titleMedium),
+                    ),
                     _ => null,
                   },
                   getTooltip: (_, y) => getTooltip?.call(y) ?? _double(y),
