@@ -27,7 +27,7 @@ class _Charts extends StatelessWidget {
           // stay quiet so an empty exercise doesn't repeat it N times
           emptyState: index == 0 ? const _EmptyState() : const SizedBox.shrink(),
           callback: () => exercises.getChartExerciseMetics(type, exercise.name, limit: _exerciseHistoryLimit),
-          label: type.label(context),
+          label: type.title(context, prefs, unit: unit),
           converter: type.converter(prefs, unit: unit),
           getLeftLabel: type.leftLabel(style),
           getTooltip: type.tooltip,

@@ -102,6 +102,34 @@ extension ChartDimension on ChartPreferenceType {
 
   /// The training-quality color for this dimension, themed for light/dark.
   Color color(BuildContext context) => _family.of(Theme.of(context).brightness);
+
+  /// The y-axis unit shown in the title, for the dimensions whose raw number is
+  /// ambiguous (weight and distance depend on the user's unit setting). Reps and
+  /// times are self-evident, so they carry no suffix.
+  String? unitLabel(BuildContext context, Preferences settings, {MeasurementUnit? unit}) {
+    final l = L.of(context);
+    return switch (this) {
+      .topSetWeight || .estimatedOneRepMax || .totalVolume || .averageWorkingWeight || .assistanceWeight =>
+        switch (unit ?? settings.weightUnit) {
+          .imperial => l.lbs,
+          .metric => l.kg,
+        },
+      .cardioDistance => switch (unit ?? settings.distanceUnit) {
+        .imperial => l.milesPlural,
+        .metric => l.km,
+      },
+      _ => null,
+    };
+  }
+
+  /// Chart title with its unit appended where one applies, e.g.
+  /// "Top set weight · kg" / "Distance · mi".
+  String title(BuildContext context, Preferences settings, {MeasurementUnit? unit}) {
+    return switch (unitLabel(context, settings, unit: unit)) {
+      String u => '${label(context)} · $u',
+      null => label(context),
+    };
+  }
 }
 
 String _trimNumber(double value) {
