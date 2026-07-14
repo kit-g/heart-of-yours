@@ -21,6 +21,7 @@ part 'src/logger.dart';
 part 'src/migrations/0001.dart';
 part 'src/migrations/0002.dart';
 part 'src/migrations/0003.dart';
+part 'src/migrations/0004.dart';
 part 'src/migrations/index.dart';
 part 'src/parts/charts.dart';
 part 'src/parts/exercises.dart';

@@ -27,7 +27,7 @@ class LocalDatabase extends _LocalDatabase
 
   LocalDatabase._(this._db);
 
-  static Future<LocalDatabase> init({int version = 3, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 4, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';
@@ -41,7 +41,6 @@ class LocalDatabase extends _LocalDatabase
     // dev convenience: wipe the DB each launch to iterate on schema/migrations.
     // debug builds ONLY — release and profile persist, so production data
     // survives and offline-stranded workouts can be healed on next launch.
-    print(_clearDatabase);
     if (_kDebug && _clearDatabase) {
       await deleteDatabase(path);
     }

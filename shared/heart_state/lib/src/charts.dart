@@ -9,6 +9,7 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
 
   String? userId;
   bool initialized = false;
+  Future<void>? _loading;
 
   Charts({
     required ChartPreferenceService service,
@@ -19,6 +20,7 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
   void onSignOut() {
     _preferences.clear();
     initialized = false;
+    _loading = null;
   }
 
   @override
@@ -36,12 +38,23 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
     return Provider.of<Charts>(context, listen: true);
   }
 
-  Future<void> init() async {
-    if (userId case String id) {
-      await _service.getPreferences(id).then(_preferences.addAll);
-      initialized = true;
-      notifyListeners();
-    }
+  Future<void> init() {
+    // idempotent: a completed init is a no-op, and concurrent callers share the
+    // single in-flight load, so preferences are never appended twice
+    return switch ((initialized, userId)) {
+      (true, _) => Future.value(),
+      (false, String id) => _loading ??= _load(id).whenComplete(() => _loading = null),
+      (false, null) => Future.value(),
+    };
+  }
+
+  Future<void> _load(String id) async {
+    final preferences = await _service.getPreferences(id);
+    _preferences
+      ..clear()
+      ..addAll(preferences);
+    initialized = true;
+    notifyListeners();
   }
 
   Future<void> addPreference(ChartPreference preference) async {

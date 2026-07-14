@@ -32,4 +32,8 @@ const _migrations = <int, List<String>>{
     addWorkoutSynced,
     backfillWorkoutSynced,
   ],
+  4: [
+    dedupeChartPreferences,
+    chartsUniqueIndex,
+  ],
 };
