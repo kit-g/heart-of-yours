@@ -49,17 +49,17 @@ class AppConfig {
 
   factory AppConfig.fromDartDefine() {
     return AppConfig._(
-      accountDeletionDeadline: const String.fromEnvironment('ACCOUNT_DELETION_DEADLINE'),
-      api: const String.fromEnvironment('API'),
-      appName: const String.fromEnvironment('APP_NAME'),
+      accountDeletionDeadline: const .fromEnvironment('ACCOUNT_DELETION_DEADLINE'),
+      api: const .fromEnvironment('API'),
+      appName: const .fromEnvironment('APP_NAME'),
       env: Env.fromString(const String.fromEnvironment('ENV').trim()),
-      logLevel: const String.fromEnvironment('LOG_LEVEL'),
+      logLevel: const .fromEnvironment('LOG_LEVEL'),
       maxTemplates: const int.fromEnvironment('MAX_TEMPLATES', defaultValue: 6),
-      sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
-      themeColorHex: const String.fromEnvironment('DEFAULT_THEME_COLOR'),
-      appLink: const String.fromEnvironment('APP_LINK'),
-      mediaLink: const String.fromEnvironment('MEDIA_LINK'),
-      testUserCredentials: const String.fromEnvironment('TEST_USER_CREDENTIALS', defaultValue: ''),
+      sentryDsn: const .fromEnvironment('SENTRY_DSN'),
+      themeColorHex: const .fromEnvironment('DEFAULT_THEME_COLOR'),
+      appLink: const .fromEnvironment('APP_LINK'),
+      mediaLink: const .fromEnvironment('MEDIA_LINK'),
+      testUserCredentials: const .fromEnvironment('TEST_USER_CREDENTIALS', defaultValue: ''),
     );
   }
 
