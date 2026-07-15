@@ -119,11 +119,8 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 300,
-      child: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    // a reserved-height blank, not a spinner: chart data is a local query that
+    // lands in a frame or two, so an animated indicator only reads as a blip
+    return const SizedBox(height: 300);
   }
 }

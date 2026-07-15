@@ -102,58 +102,61 @@ class _Chart extends StatelessWidget {
     final exerciseName = preference.exerciseName!;
     final converter = _converter(preference.type, settings);
 
-    // the exercise catalog may still be loading; the chart data is queried by
-    // name (no Exercise object needed), but the empty/error states are — show a
-    // per-card loader until it lands, then this rebuilds via the watch
-    return switch (exercises.lookup(exerciseName)) {
-      null => const SizedBox(height: 300, child: _LoadingState()),
-      final exercise => ExerciseChart(
-        emptyState: _EmptyState(
-          exercise: exercise,
-          exerciseHistoryService: exerciseHistoryService,
-          onDelete: onDelete,
-          iconColor: dividerColor,
-          l: l,
-          preference: preference,
-          textTheme: textTheme,
-          axisConverter: converter,
-        ),
-        callback: () => exercises.getChartExerciseMetics(preference.type, exerciseName),
-        customLabel: Row(
-          mainAxisAlignment: .spaceBetween,
-          children: [
-            Text('$exerciseName - ${preference.type.title(context, settings)}'),
-            FeedbackButton.circular(
-              tooltip: l.delete,
-              onPressed: () => onDelete(preference),
-              child: Padding(
-                padding: const .all(1.0),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 20,
-                  color: dividerColor,
-                ),
+    // A chart's data is keyed by exercise *name* (see the metrics queries), not
+    // the exercise catalog — which is remote-authoritative and can lag a launch
+    // behind on first run. So never block the card on the lookup: fall back to a
+    // name-only placeholder that just backs the empty/error decorations (the
+    // ghost service ignores its other fields). Once the catalog arrives, the
+    // watch rebuild swaps in the real exercise.
+    final exercise = exercises.lookup(exerciseName) ?? Exercise(name: exerciseName, category: .barbell, target: .other);
+
+    return ExerciseChart(
+      emptyState: _EmptyState(
+        exercise: exercise,
+        exerciseHistoryService: exerciseHistoryService,
+        onDelete: onDelete,
+        iconColor: dividerColor,
+        l: l,
+        preference: preference,
+        textTheme: textTheme,
+        axisConverter: converter,
+      ),
+      callback: () => exercises.getChartExerciseMetics(preference.type, exerciseName),
+      refreshKey: (exerciseName, preference.type),
+      customLabel: Row(
+        mainAxisAlignment: .spaceBetween,
+        children: [
+          Text('$exerciseName - ${preference.type.title(context, settings)}'),
+          FeedbackButton.circular(
+            tooltip: l.delete,
+            onPressed: () => onDelete(preference),
+            child: Padding(
+              padding: const .all(1.0),
+              child: Icon(
+                Icons.close_rounded,
+                size: 20,
+                color: dividerColor,
               ),
             ),
-          ],
-        ),
-        converter: converter,
-        getLeftLabel: _getLeftLabel(preference.type, textTheme.bodySmall),
-        getTooltip: preference.type.tooltip,
-        yStepCandidates: preference.type.yStepCandidates,
-        color: preference.type.color(context),
-        errorState: _ErrorState(
-          exercise: exercise,
-          exerciseHistoryService: exerciseHistoryService,
-          onDelete: onDelete,
-          iconColor: dividerColor,
-          l: l,
-          preference: preference,
-          textTheme: textTheme,
-          axisConverter: converter,
-        ),
-        loadingState: const _LoadingState(),
+          ),
+        ],
       ),
-    };
+      converter: converter,
+      getLeftLabel: _getLeftLabel(preference.type, textTheme.bodySmall),
+      getTooltip: preference.type.tooltip,
+      yStepCandidates: preference.type.yStepCandidates,
+      color: preference.type.color(context),
+      errorState: _ErrorState(
+        exercise: exercise,
+        exerciseHistoryService: exerciseHistoryService,
+        onDelete: onDelete,
+        iconColor: dividerColor,
+        l: l,
+        preference: preference,
+        textTheme: textTheme,
+        axisConverter: converter,
+      ),
+      loadingState: const _LoadingState(),
+    );
   }
 }
