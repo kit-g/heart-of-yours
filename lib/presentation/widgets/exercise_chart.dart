@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:intl/intl.dart';
 
-class ExerciseChart extends StatelessWidget {
+class ExerciseChart extends StatefulWidget {
   final Future<List<(num, DateTime)>?> Function() callback;
   final Widget emptyState;
   final String? label;
@@ -14,6 +14,13 @@ class ExerciseChart extends StatelessWidget {
   final Widget? loadingState;
   final List<double>? yStepCandidates;
   final Color? color;
+
+  /// Identity of the data this chart shows. The [callback] is invoked once and
+  /// the result is kept across rebuilds, so purely cosmetic rebuilds (theme,
+  /// units, a sibling loading) don't flash the loading state. Change this when
+  /// the underlying data changes — e.g. a different exercise/metric — to force a
+  /// re-fetch.
+  final Object? refreshKey;
 
   const ExerciseChart({
     super.key,
@@ -28,71 +35,93 @@ class ExerciseChart extends StatelessWidget {
     this.loadingState,
     this.yStepCandidates,
     this.color,
+    this.refreshKey,
   });
+
+  @override
+  State<ExerciseChart> createState() => _ExerciseChartState();
+}
+
+class _ExerciseChartState extends State<ExerciseChart> {
+  late Future<List<(num, DateTime)>?> _future = widget.callback();
+
+  @override
+  void didUpdateWidget(ExerciseChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // re-fetch only when the caller signals the data changed, never on a plain
+    // rebuild — otherwise the FutureBuilder flickers back through its loader
+    if (widget.refreshKey != oldWidget.refreshKey) {
+      _future = widget.callback();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     return FutureBuilder<List<(num, DateTime)>?>(
-      future: callback(),
-      builder: (_, future) {
-        final AsyncSnapshot(connectionState: state, :error, :data) = future;
-        return switch ((state, error, data)) {
-          (ConnectionState.waiting, _, _) => loadingState ?? const Center(child: CircularProgressIndicator()),
-          (_, Object _, _) => errorState,
-          (ConnectionState.done, null, List<(num, DateTime)> records) => Builder(
-            builder: (_) {
-              if (records.isEmpty) {
-                return emptyState;
-              }
-
-              final reversed = records.reversed.toList();
-              // aim for ~6 date labels regardless of how many points there are,
-              // so a long history doesn't crowd the axis
-              final labelEvery = (reversed.length / 6).ceil().clamp(1, reversed.length);
-
-              return SizedBox(
-                height: 300,
-                child: HistoryChart(
-                  yStepCandidates: yStepCandidates,
-                  color: color,
-                  indicatorStrokeColor: colorScheme.surface,
-                  bottomAxisLabelStyle: textTheme.bodySmall,
-                  series: reversed.indexed.map(
-                    (record) {
-                      final (index, (metric, _)) = record;
-                      return Dot(
-                        index.toDouble(),
-                        converter(metric),
-                      );
-                    },
-                  ),
-                  getBottomLabel: (x) {
-                    return switch (x % labelEvery == 0) {
-                      true => DateFormat('d/M').format(reversed[x].$2),
-                      false => '',
-                    };
-                  },
-                  getLeftLabel: getLeftLabel,
-                  topLabel: switch ((label, customLabel)) {
-                    (_, Widget l) => l,
-                    // fl_chart centers the axis name over the whole chart width,
-                    // but the plot sits to the right of the y-axis labels — pad
-                    // by that reserved width so the title centers over the plot
-                    (String l, _) => Padding(
-                      padding: const .only(left: historyChartLeftAxisSize),
-                      child: Text(l, style: textTheme.titleMedium),
-                    ),
-                    _ => null,
-                  },
-                  getTooltip: (_, y) => getTooltip?.call(y) ?? _double(y),
-                ),
-              );
-            },
-          ),
-          _ => const SizedBox.shrink(),
+      future: _future,
+      builder: (_, snapshot) {
+        final AsyncSnapshot(connectionState: state, :error, :data) = snapshot;
+        final (phase, content) = switch ((state, error, data)) {
+          (ConnectionState.waiting, _, _) => ('loading', widget.loadingState ?? const SizedBox(height: 300)),
+          (_, Object _, _) => ('error', widget.errorState),
+          (ConnectionState.done, null, List<(num, DateTime)> records) when records.isEmpty => ('empty', widget.emptyState),
+          (ConnectionState.done, null, List<(num, DateTime)> records) => ('data', _dataChart(records, textTheme, colorScheme)),
+          _ => ('none', const SizedBox.shrink()),
         };
+        // fade between phases so the chart eases in once its data lands, rather
+        // than popping in from the blank loader (default transition is a fade)
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeOut,
+          child: KeyedSubtree(key: ValueKey(phase), child: content),
+        );
       },
+    );
+  }
+
+  Widget _dataChart(List<(num, DateTime)> records, TextTheme textTheme, ColorScheme colorScheme) {
+    final reversed = records.reversed.toList();
+    // aim for ~6 date labels regardless of how many points there are, so a long
+    // history doesn't crowd the axis
+    final labelEvery = (reversed.length / 6).ceil().clamp(1, reversed.length);
+
+    return SizedBox(
+      height: 300,
+      child: HistoryChart(
+        yStepCandidates: widget.yStepCandidates,
+        color: widget.color,
+        indicatorStrokeColor: colorScheme.surface,
+        bottomAxisLabelStyle: textTheme.bodySmall,
+        series: reversed.indexed.map(
+          (record) {
+            final (index, (metric, _)) = record;
+            return Dot(
+              index.toDouble(),
+              widget.converter(metric),
+            );
+          },
+        ),
+        getBottomLabel: (x) {
+          return switch (x % labelEvery == 0) {
+            true => DateFormat('d/M').format(reversed[x].$2),
+            false => '',
+          };
+        },
+        getLeftLabel: widget.getLeftLabel,
+        topLabel: switch ((widget.label, widget.customLabel)) {
+          (_, Widget l) => l,
+          // fl_chart centers the axis name over the whole chart width, but the
+          // plot sits to the right of the y-axis labels — pad by that reserved
+          // width so the title centers over the plot
+          (String l, _) => Padding(
+            padding: const .only(left: historyChartLeftAxisSize),
+            child: Text(l, style: textTheme.titleMedium),
+          ),
+          _ => null,
+        },
+        getTooltip: (_, y) => widget.getTooltip?.call(y) ?? _double(y),
+      ),
     );
   }
 }
