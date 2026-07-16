@@ -25,53 +25,55 @@ class _Dashboard extends StatelessWidget {
     }
 
     return switch (layout) {
-      // long-press a card to drag it; the new order persists via Charts.reorder.
-      // (the wide/grid layout stays non-reorderable for now — same ordered list)
+      // drag a card by the handle in its title bar; order persists via Charts.reorder
       .compact => SliverReorderableList(
         itemCount: length,
         onReorderItem: charts.reorder,
         itemBuilder: (context, index) {
-          return ReorderableDelayedDragStartListener(
+          return Padding(
             key: ValueKey(charts[index].id),
-            index: index,
-            child: Padding(
-              padding: const .symmetric(horizontal: 16.0, vertical: 2),
-              child: _Chart(
-                preference: charts[index],
-                settings: preferences,
-                l: l,
-                exercises: exercises,
-                onDelete: (chart) => charts.removePreference(chart),
-                exerciseHistoryService: service,
-              ),
+            padding: const .symmetric(horizontal: 16.0, vertical: 2),
+            child: _Chart(
+              preference: charts[index],
+              settings: preferences,
+              l: l,
+              exercises: exercises,
+              onDelete: (chart) => charts.removePreference(chart),
+              exerciseHistoryService: service,
+              dragWrap: (child) => ReorderableDragStartListener(index: index, child: child),
             ),
           );
         },
       ),
-      // same long-press-to-drag reorder for the iPad/laptop grid
-      .wide => SliverReorderableGrid(
-        itemCount: length,
-        onReorder: charts.reorder,
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 300,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 1.5,
-        ),
-        itemBuilder: (_, index) {
-          return ReorderableGridDelayedDragStartListener(
-            key: ValueKey(charts[index].id),
-            index: index,
-            child: _Chart(
+      // same handle-drag reorder for the iPad/laptop grid; the horizontal inset
+      // matches the rest of the profile column (16)
+      .wide => SliverPadding(
+        padding: const .only(left: 16, right: 16, bottom: 8),
+        sliver: SliverReorderableGrid(
+          itemCount: length,
+          onReorder: charts.reorder,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: switch (MediaQuery.orientationOf(context)) {
+              .portrait => 2,
+              .landscape => 3,
+            },
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 1.5,
+          ),
+          itemBuilder: (_, index) {
+            return _Chart(
+              key: ValueKey(charts[index].id),
               preference: charts[index],
               settings: preferences,
               exercises: exercises,
               onDelete: (chart) => charts.removePreference(chart),
               l: l,
               exerciseHistoryService: service,
-            ),
-          );
-        },
+              dragWrap: (child) => ReorderableGridDragStartListener(index: index, child: child),
+            );
+          },
+        ),
       ),
     };
   }
@@ -85,13 +87,20 @@ class _Chart extends StatelessWidget {
   final ExerciseHistoryService exerciseHistoryService;
   final L l;
 
+  /// Wraps a widget in the layout's drag-start listener (list vs grid). The
+  /// title bar becomes the drag handle so it doesn't fight the chart's own
+  /// touch handling on the plot.
+  final Widget Function(Widget child)? dragWrap;
+
   const _Chart({
+    super.key,
     required this.preference,
     required this.settings,
     required this.l,
     required this.exercises,
     required this.onDelete,
     required this.exerciseHistoryService,
+    this.dragWrap,
   });
 
   @override
@@ -133,13 +142,23 @@ class _Chart extends StatelessWidget {
         preference: preference,
         textTheme: textTheme,
         axisConverter: converter,
+        dragWrap: dragWrap,
       ),
       callback: () => exercises.getChartExerciseMetics(preference.type, exerciseName),
       refreshKey: (exerciseName, preference.type),
       customLabel: Row(
-        mainAxisAlignment: .spaceBetween,
         children: [
-          Text('$exerciseName - ${preference.type.title(context, settings)}'),
+          if (dragWrap case final wrap?) ...[
+            wrap(Icon(Icons.drag_indicator, size: 20, color: dividerColor)),
+            const SizedBox(width: 4),
+          ],
+          Expanded(
+            child: Text(
+              '$exerciseName - ${preference.type.title(context, settings)}',
+              maxLines: 1,
+              overflow: .ellipsis,
+            ),
+          ),
           FeedbackButton.circular(
             tooltip: l.delete,
             onPressed: () => onDelete(preference),
@@ -168,6 +187,7 @@ class _Chart extends StatelessWidget {
         preference: preference,
         textTheme: textTheme,
         axisConverter: converter,
+        dragWrap: dragWrap,
       ),
       loadingState: const _LoadingState(),
     );
