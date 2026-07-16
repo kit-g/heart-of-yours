@@ -11,6 +11,7 @@ class _GhostState extends StatelessWidget {
   final String title;
   final String subtitle;
   final double Function(num) axisConverter;
+  final Widget Function(Widget child)? dragWrap;
 
   const _GhostState({
     required this.exercise,
@@ -23,6 +24,7 @@ class _GhostState extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.axisConverter,
+    this.dragWrap,
   });
 
   @override
@@ -41,9 +43,18 @@ class _GhostState extends StatelessWidget {
             converter: axisConverter,
             errorState: const SizedBox.shrink(),
             customLabel: Row(
-              mainAxisAlignment: .spaceBetween,
               children: [
-                Text('${exercise.name} - ${_chartTypeCopy(context, preference.type)}'),
+                if (dragWrap case final wrap?) ...[
+                  wrap(Icon(Icons.drag_indicator, size: 20, color: iconColor)),
+                  const SizedBox(width: 4),
+                ],
+                Expanded(
+                  child: Text(
+                    '${exercise.name} - ${_chartTypeCopy(context, preference.type)}',
+                    maxLines: 1,
+                    overflow: .ellipsis,
+                  ),
+                ),
                 FeedbackButton.circular(
                   tooltip: l.delete,
                   onPressed: () => onDelete(preference),
@@ -92,6 +103,7 @@ class _EmptyState extends _GhostState {
     required super.iconColor,
     required super.textTheme,
     required super.axisConverter,
+    super.dragWrap,
   }) : super(
          title: l.emptyChartStateTitle,
          subtitle: l.emptyChartStateBody,
@@ -108,6 +120,7 @@ class _ErrorState extends _GhostState {
     required super.iconColor,
     required super.textTheme,
     required super.axisConverter,
+    super.dragWrap,
   }) : super(
          title: l.errorExerciseHistoryTitle,
          subtitle: l.errorExerciseHistoryBody,
