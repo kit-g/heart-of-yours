@@ -74,4 +74,16 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
       }
     }
   }
+
+  /// Moves the chart at [oldIndex] to [newIndex] and persists the new order.
+  /// [newIndex] is already adjusted for the removed item (the `onReorderItem`
+  /// convention).
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    if (userId case String id) {
+      final moved = _preferences.removeAt(oldIndex);
+      _preferences.insert(newIndex, moved);
+      notifyListeners();
+      await _service.saveChartOrder(_preferences.map((each) => each.id).nonNulls.toList(), id);
+    }
+  }
 }

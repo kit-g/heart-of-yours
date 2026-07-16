@@ -35,5 +35,7 @@ const _migrations = <int, List<String>>{
   4: [
     dedupeChartPreferences,
     chartsUniqueIndex,
+    addChartsSortOrder,
+    backfillChartsSortOrder,
   ],
 };

@@ -17,3 +17,13 @@ WHERE id NOT IN (
 const chartsUniqueIndex = """
 CREATE UNIQUE INDEX IF NOT EXISTS charts_unique_idx ON charts (user_id, type, data);
 """;
+
+/// Explicit, user-controlled display order for charts on the profile screen.
+const addChartsSortOrder = """
+ALTER TABLE charts ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+""";
+
+/// Seed the order from the row id so existing charts keep their insertion order.
+const backfillChartsSortOrder = """
+UPDATE charts SET sort_order = id;
+""";

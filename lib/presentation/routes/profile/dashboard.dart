@@ -25,21 +25,28 @@ class _Dashboard extends StatelessWidget {
     }
 
     return switch (layout) {
-      .compact => SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) => Padding(
-            padding: const .symmetric(horizontal: 16.0, vertical: 2),
-            child: _Chart(
-              preference: charts[index],
-              settings: preferences,
-              l: l,
-              exercises: exercises,
-              onDelete: (chart) => charts.removePreference(chart),
-              exerciseHistoryService: service,
+      // long-press a card to drag it; the new order persists via Charts.reorder.
+      // (the wide/grid layout stays non-reorderable for now — same ordered list)
+      .compact => SliverReorderableList(
+        itemCount: length,
+        onReorderItem: charts.reorder,
+        itemBuilder: (context, index) {
+          return ReorderableDelayedDragStartListener(
+            key: ValueKey(charts[index].id),
+            index: index,
+            child: Padding(
+              padding: const .symmetric(horizontal: 16.0, vertical: 2),
+              child: _Chart(
+                preference: charts[index],
+                settings: preferences,
+                l: l,
+                exercises: exercises,
+                onDelete: (chart) => charts.removePreference(chart),
+                exerciseHistoryService: service,
+              ),
             ),
-          ),
-          childCount: length,
-        ),
+          );
+        },
       ),
       .wide => SliverGrid(
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(

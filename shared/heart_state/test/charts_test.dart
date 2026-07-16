@@ -62,6 +62,28 @@ void main() {
       verify(mockService.deleteChartPreference('pref-id', userId)).called(1);
     });
 
+    test('reorder() moves the chart and persists the new order', () async {
+      final a = MockChartPreference();
+      final b = MockChartPreference();
+      final c = MockChartPreference();
+      when(a.id).thenReturn('a');
+      when(b.id).thenReturn('b');
+      when(c.id).thenReturn('c');
+      when(mockService.getPreferences(userId)).thenAnswer((_) async => [a, b, c]);
+      when(mockService.saveChartOrder(any, any)).thenAnswer((_) async {});
+      await sut.init();
+
+      final probe = ListenerProbe()..attach(sut);
+      // onReorderItem convention: move 'a' (index 0) to the end -> newIndex 2
+      await sut.reorder(0, 2);
+
+      expect([sut[0], sut[1], sut[2]], [b, c, a]);
+      expect(probe.notifications, 1);
+
+      final captured = verify(mockService.saveChartOrder(captureAny, any)).captured;
+      expect((captured.single as List).cast<String>(), ['b', 'c', 'a']);
+    });
+
     test('onSignOut() clears preferences', () async {
       final pref = MockChartPreference();
       when(mockService.getPreferences(userId)).thenAnswer((_) async => [pref]);
