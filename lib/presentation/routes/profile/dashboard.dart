@@ -48,24 +48,30 @@ class _Dashboard extends StatelessWidget {
           );
         },
       ),
-      .wide => SliverGrid(
+      // same long-press-to-drag reorder for the iPad/laptop grid
+      .wide => SliverReorderableGrid(
+        itemCount: length,
+        onReorder: charts.reorder,
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 300,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: 1.5,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) => _Chart(
-            preference: charts[index],
-            settings: preferences,
-            exercises: exercises,
-            onDelete: (chart) => charts.removePreference(chart),
-            l: l,
-            exerciseHistoryService: service,
-          ),
-          childCount: length,
-        ),
+        itemBuilder: (_, index) {
+          return ReorderableGridDelayedDragStartListener(
+            key: ValueKey(charts[index].id),
+            index: index,
+            child: _Chart(
+              preference: charts[index],
+              settings: preferences,
+              exercises: exercises,
+              onDelete: (chart) => charts.removePreference(chart),
+              l: l,
+              exerciseHistoryService: service,
+            ),
+          );
+        },
       ),
     };
   }
