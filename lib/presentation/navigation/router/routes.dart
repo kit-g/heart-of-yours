@@ -276,8 +276,9 @@ RouteBase _exercisesRoute() {
                   return ExerciseDetailPage(
                     exercise: exercise!,
                     onTapWorkout: (_) async {},
-                    onShareExercise: (exercise) {
-                      _onShareExercise(context, exercise);
+                    initialTab: state.uri.queryParameters['tab'],
+                    onShareExercise: (exercise, {tab}) {
+                      _onShareExercise(context, exercise, tab);
                     },
                   );
                 },
@@ -294,6 +295,7 @@ RouteBase _exercisesRoute() {
 
               return ExerciseDetailPage(
                 exercise: exercise!,
+                initialTab: state.uri.queryParameters['tab'],
                 onTapWorkout: (workoutId) {
                   return Workouts.of(context).fetchWorkout(workoutId).then<void>(
                     (_) {
@@ -302,8 +304,8 @@ RouteBase _exercisesRoute() {
                     },
                   );
                 },
-                onShareExercise: (exercise) {
-                  _onShareExercise(context, exercise);
+                onShareExercise: (exercise, {tab}) {
+                  _onShareExercise(context, exercise, tab);
                 },
               );
             },
@@ -540,8 +542,15 @@ RouteBase _galleryRoute() {
   );
 }
 
-Future<void> _onShareExercise(BuildContext context, Exercise exercise) async {
-  final link = Uri.https(AppConfig.of(context).appDomain, 'exercises/${exercise.name}');
+Future<void> _onShareExercise(BuildContext context, Exercise exercise, String? tab) async {
+  final link = Uri.https(
+    AppConfig.of(context).appDomain,
+    'exercises/${exercise.name}',
+    switch (tab) {
+      String value => {'tab': value},
+      null => null,
+    },
+  );
   Clipboard.setData(ClipboardData(text: link.toString()));
 
   if (context.mounted) {
