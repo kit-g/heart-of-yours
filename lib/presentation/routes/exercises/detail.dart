@@ -3,9 +3,12 @@ part of 'exercises.dart';
 class ExerciseDetailPage extends StatelessWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
-  final void Function(Exercise)? onShareExercise;
+  final void Function(Exercise exercise, {String? tab})? onShareExercise;
   final bool allowOptions;
   final Widget? leading;
+
+  /// Tab to open on, by name (e.g. from a shared `?tab=charts` deep link).
+  final String? initialTab;
 
   const ExerciseDetailPage({
     super.key,
@@ -13,7 +16,8 @@ class ExerciseDetailPage extends StatelessWidget {
     required this.onTapWorkout,
     this.allowOptions = true,
     this.leading,
-     this.onShareExercise,
+    this.onShareExercise,
+    this.initialTab,
   });
 
   @override
@@ -25,6 +29,7 @@ class ExerciseDetailPage extends StatelessWidget {
         allowOptions: allowOptions,
         leading: leading,
         onShareExercise: onShareExercise,
+        initialTab: initialTab,
       ),
       _ => _MaterialExerciseDetailPage(
         exercise: exercise,
@@ -32,6 +37,7 @@ class ExerciseDetailPage extends StatelessWidget {
         allowOptions: allowOptions,
         leading: leading,
         onShareExercise: onShareExercise,
+        initialTab: initialTab,
       ),
     };
   }

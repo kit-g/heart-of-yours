@@ -9,7 +9,7 @@ enum _ExerciseSection {
 
 extension on Exercise {
   Iterable<_ExerciseSection> get sections {
-    return _ExerciseSection.values.where((one) => hasInfo ? true : one != _ExerciseSection.about);
+    return _ExerciseSection.values.where((one) => hasInfo ? true : one != .about);
   }
 }
 
@@ -20,6 +20,19 @@ String _copy(BuildContext context, _ExerciseSection section) {
     .charts => L.of(context).charts,
     .records => L.of(context).records,
   };
+}
+
+/// Remembers the last-viewed tab so switching exercises — e.g. in the iPad
+/// master-detail — keeps you on the same one. Session-scoped, not persisted.
+_ExerciseSection? _rememberedSection;
+
+/// Which tab a detail page opens on: an explicit [tab] name (from a shared deep
+/// link) wins, then the remembered tab, then the exercise's first available tab.
+_ExerciseSection _initialSection(Exercise exercise, String? tab) {
+  final sections = exercise.sections.toList();
+  final named = _ExerciseSection.values.where((each) => each.name == tab);
+  final requested = named.isNotEmpty ? named.first : _rememberedSection;
+  return requested != null && sections.contains(requested) ? requested : sections.first;
 }
 
 List<Widget> _pages(

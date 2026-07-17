@@ -3,9 +3,10 @@ part of 'exercises.dart';
 class _CupertinoExerciseDetailPage extends StatefulWidget {
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
-  final void Function(Exercise)? onShareExercise;
+  final void Function(Exercise exercise, {String? tab})? onShareExercise;
   final bool allowOptions;
   final Widget? leading;
+  final String? initialTab;
 
   const _CupertinoExerciseDetailPage({
     required this.exercise,
@@ -13,6 +14,7 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
     required this.allowOptions,
     this.onShareExercise,
     this.leading,
+    this.initialTab,
   });
 
   @override
@@ -20,14 +22,18 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
 }
 
 class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPage> {
+  late final List<_ExerciseSection> _sections = widget.exercise.sections.toList();
   final _section = ValueNotifier<_ExerciseSection?>(null);
-  final _pageController = PageController();
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
 
-    _section.value = widget.exercise.sections.first;
+    final initial = _initialSection(widget.exercise, widget.initialTab);
+    _section.value = initial;
+    _rememberedSection = initial;
+    _pageController = PageController(initialPage: _sections.indexOf(initial));
   }
 
   @override
@@ -35,6 +41,13 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
     _pageController.dispose();
     _section.dispose();
     super.dispose();
+  }
+
+  void _select(_ExerciseSection? section) {
+    _section.value = section;
+    if (section != null) {
+      _rememberedSection = section;
+    }
   }
 
   @override
@@ -55,7 +68,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
               ),
             if (!widget.exercise.isMine)
               IconButton(
-                onPressed: () => widget.onShareExercise?.call(widget.exercise),
+                onPressed: () => widget.onShareExercise?.call(widget.exercise, tab: _section.value?.name),
                 icon: const Icon(Icons.ios_share_rounded),
               ),
           ],
@@ -67,7 +80,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
             builder: (_, section, _) {
               return CupertinoSlidingSegmentedControl<_ExerciseSection>(
                 children: Map.fromEntries(
-                  widget.exercise.sections.map(
+                  _sections.map(
                     (section) {
                       return MapEntry(section, Text(_copy(context, section)));
                     },
@@ -77,10 +90,10 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
                 backgroundColor: colorScheme.surfaceContainerHighest,
                 groupValue: section,
                 onValueChanged: (section) {
-                  _section.value = section;
+                  _select(section);
                   if (section != null) {
                     _pageController.animateToPage(
-                      widget.exercise.sections.toList().indexOf(section),
+                      _sections.indexOf(section),
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.ease,
                     );
@@ -92,9 +105,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
         ),
       ),
       body: PageView(
-        onPageChanged: (index) {
-          _section.value = widget.exercise.sections.toList()[index];
-        },
+        onPageChanged: (index) => _select(_sections[index]),
         controller: _pageController,
         children: _pages(widget.exercise, onTapWorkout: widget.onTapWorkout),
       ),
