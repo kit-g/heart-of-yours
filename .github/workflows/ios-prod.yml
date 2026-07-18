@@ -18,6 +18,7 @@ jobs:
 
   deploy-prod:
     uses: ./.github/workflows/testflight-ios-deployment.yml
+    needs: [ unit-tests ]
     with:
       aws_region: "ca-central-1"
       aws_role: "arn:aws:iam::922419543441:role/heart-github-actions-deploy-role"
