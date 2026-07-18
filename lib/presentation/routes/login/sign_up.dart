@@ -299,11 +299,24 @@ class _SignUpPageState extends State<SignUpPage>
         if (!shouldProceed) return;
 
         return run(
-          () {
-            return Auth.of(context).logInWithEmailAndPassword(
-              email: email,
-              password: password,
-            );
+          () async {
+            try {
+              await Auth.of(context).logInWithEmailAndPassword(
+                email: email,
+                password: password,
+              );
+            } on AuthException catch (e) {
+              switch (e.reason) {
+                // The account exists but the password typed on the sign-up form
+                // isn't its password. Rather than dead-end on a generic error,
+                // send the returning user to the login page (email prefilled,
+                // forgot-password available) to enter the real one.
+                case .wrongPassword:
+                  if (mounted) widget.onLogin(email);
+                default:
+                  rethrow;
+              }
+            }
           },
         );
       },
