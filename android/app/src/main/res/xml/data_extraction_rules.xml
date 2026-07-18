@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backup / device-transfer rules for API >= 31. heart.db is a server-synced
+     cache, so excluding it stops a stale / old-schema copy being restored. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="database" path="heart.db" />
+        <exclude domain="database" path="heart.db-wal" />
+        <exclude domain="database" path="heart.db-shm" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="heart.db" />
+        <exclude domain="database" path="heart.db-wal" />
+        <exclude domain="database" path="heart.db-shm" />
+    </device-transfer>
+</data-extraction-rules>
