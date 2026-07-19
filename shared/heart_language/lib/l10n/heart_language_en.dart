@@ -319,6 +319,15 @@ class LEn extends L {
   String get emptyHistoryBody => 'Go get them done!';
 
   @override
+  String get historyEndReached => 'You\'ve reached the end';
+
+  @override
+  String get historyLoadMoreError => 'Couldn\'t load more workouts';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
   String get customThemeColorSetting => 'Custom theme color';
 
   @override
@@ -1078,6 +1087,15 @@ class LEnCa extends LEn {
 
   @override
   String get emptyHistoryBody => 'Go get them done!';
+
+  @override
+  String get historyEndReached => 'You\'ve reached the end';
+
+  @override
+  String get historyLoadMoreError => 'Couldn\'t load more workouts';
+
+  @override
+  String get retry => 'Retry';
 
   @override
   String get customThemeColorSetting => 'Custom theme colour';
