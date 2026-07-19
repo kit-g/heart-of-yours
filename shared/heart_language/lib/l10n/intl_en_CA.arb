@@ -586,6 +586,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "historyEndReached": "You've reached the end",
+  "@historyEndReached": {
+    "description": "Footer at the bottom of the workout history list once every workout has loaded",
+    "type": "text",
+    "placeholders": {}
+  },
+  "historyLoadMoreError": "Couldn't load more workouts",
+  "@historyLoadMoreError": {
+    "description": "Footer shown when loading the next page of workout history fails",
+    "type": "text",
+    "placeholders": {}
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Button to retry a failed action",
+    "type": "text",
+    "placeholders": {}
+  },
   "customThemeColorSetting": "Custom theme colour",
   "@customThemeColorSetting": {
     "description": "Setting item name",

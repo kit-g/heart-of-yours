@@ -586,6 +586,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "historyEndReached": "Вы достигли конца",
+  "@historyEndReached": {
+    "description": "Footer at the bottom of the workout history list once every workout has loaded",
+    "type": "text",
+    "placeholders": {}
+  },
+  "historyLoadMoreError": "Не удалось загрузить больше тренировок",
+  "@historyLoadMoreError": {
+    "description": "Footer shown when loading the next page of workout history fails",
+    "type": "text",
+    "placeholders": {}
+  },
+  "retry": "Повторить",
+  "@retry": {
+    "description": "Button to retry a failed action",
+    "type": "text",
+    "placeholders": {}
+  },
   "customThemeColorSetting": "Пользовательский цвет темы",
   "@customThemeColorSetting": {
     "description": "Setting item name",

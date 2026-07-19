@@ -656,6 +656,24 @@ abstract class L {
   /// **'Go get them done!'**
   String get emptyHistoryBody;
 
+  /// Footer at the bottom of the workout history list once every workout has loaded
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached the end'**
+  String get historyEndReached;
+
+  /// Footer shown when loading the next page of workout history fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load more workouts'**
+  String get historyLoadMoreError;
+
+  /// Button to retry a failed action
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
   /// Setting item name
   ///
   /// In en, this message translates to:

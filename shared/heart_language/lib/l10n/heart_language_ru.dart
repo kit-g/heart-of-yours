@@ -319,6 +319,15 @@ class LRu extends L {
   String get emptyHistoryBody => 'Вперед за тренировками!';
 
   @override
+  String get historyEndReached => 'Вы достигли конца';
+
+  @override
+  String get historyLoadMoreError => 'Не удалось загрузить больше тренировок';
+
+  @override
+  String get retry => 'Повторить';
+
+  @override
   String get customThemeColorSetting => 'Пользовательский цвет темы';
 
   @override
