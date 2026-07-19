@@ -323,14 +323,40 @@ void main() {
         method: 'GET',
         path: '${Router.accounts}/$userId/workouts',
         statusCode: 200,
-        body: {'workouts': workoutJson},
-        query: {'pageSize': '2', 'since': 'abc'},
+        body: {'workouts': workoutJson, 'cursor': 'w2'},
+        query: {'limit': '2', 'cursor': 'abc'},
       );
 
       final result = await api.getWorkouts(userId, pageSize: 2, since: 'abc');
 
       expect(result, isNotNull);
       expect(result!.length, equals(2));
+      // cursor present on the wire => authoritative "more pages" signal
+      expect(result, isA<Page<Workout>>());
+      expect((result as Page<Workout>).cursor, equals('w2'));
+      expect(result.hasMore, isTrue);
+    });
+
+    test('getWorkouts reports end of list when cursor is absent', () async {
+      const userId = 'u1';
+      _response(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/$userId/workouts',
+        statusCode: 200,
+        body: {
+          'workouts': [
+            {'id': 'w1', 'name': 'Morning Lift', 'start': '2025-01-21T12:00:00Z'},
+          ],
+        },
+        query: {'limit': '2'},
+      );
+
+      final result = await api.getWorkouts(userId, pageSize: 2);
+
+      expect(result, isA<Page<Workout>>());
+      expect((result as Page<Workout>).cursor, isNull);
+      expect(result.hasMore, isFalse);
     });
 
     test('getWorkouts returns null on malformed response', () async {

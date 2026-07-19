@@ -200,15 +200,22 @@ class Api
 
   @override
   Future<Iterable<Workout>?> getWorkouts(String userId, {int? pageSize, String? since}) async {
+    // The interface still names these pageSize/since; the wire uses limit/cursor.
     final (json, code) = await get(
       '${Router.accounts}/$userId/workouts',
       query: {
-        'pageSize': ?pageSize?.toString(),
-        'since': ?since,
+        'limit': ?pageSize?.toString(),
+        'cursor': ?since,
       },
     );
+    // The envelope emits `cursor` only when a next page exists, so its presence
+    // is the authoritative hasMore signal.
     return switch (json) {
-      {'workouts': List l} => l.map((e) => Workout.fromJson(e)),
+      {'workouts': List l} => Page<Workout>(
+        items: l.map((e) => Workout.fromJson(e)).toList(),
+        hasMore: json['cursor'] != null,
+        cursor: json['cursor'] as String?,
+      ),
       _ => null,
     };
   }

@@ -1,7 +1,8 @@
 import 'dart:collection';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+// hide Page: heart_models' pagination Page collides with Flutter's navigator Page.
+import 'package:flutter/material.dart' hide Page;
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
@@ -27,6 +28,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _activeWorkoutId = null;
     userId = null;
     historyInitialized = false;
+    _historyCursor = null;
+    _hasMoreHistory = true;
+    _loadingMoreHistory = false;
     _notifiedOfActiveWorkout = false;
     _latestMarkedSet = null;
     _progress.clear();
@@ -45,6 +49,23 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   WorkoutId? _activeWorkoutId;
 
   bool historyInitialized = false;
+
+  /// Workouts requested per history page from the backend.
+  static const _historyPageSize = 20;
+
+  /// Keyset cursor for the next history page, straight from the backend. Kept
+  /// independent of the local cache — the cache is only a display accelerator
+  /// (and is empty on a fresh device), so it must not drive pagination.
+  String? _historyCursor;
+
+  /// Flips to false once the backend hands back a short page — nothing older left.
+  bool _hasMoreHistory = true;
+
+  bool get hasMoreHistory => _hasMoreHistory;
+
+  bool _loadingMoreHistory = false;
+
+  bool get loadingMoreHistory => _loadingMoreHistory;
 
   Workout? get activeWorkout => _workouts[_activeWorkoutId];
 
@@ -322,9 +343,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<Iterable<Workout>?> _getRemoteHistory(String userId, {int pageSize = 10}) async {
+  Future<Iterable<Workout>?> _getRemoteHistory(String userId, {int pageSize = _historyPageSize, String? since}) async {
     try {
-      return _remoteService.getWorkouts(userId, pageSize: pageSize);
+      return await _remoteService.getWorkouts(userId, pageSize: pageSize, since: since);
     } catch (error, s) {
       onError?.call(error, stacktrace: s);
       return null;
@@ -341,6 +362,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (workouts != null) {
         await _localService.storeWorkoutHistory(workouts, id);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+        _historyCursor = _cursorOf(workouts);
+        _hasMoreHistory = _historyCursor != null;
       }
 
       // heal workouts stranded locally by an earlier failed network save
@@ -351,6 +374,38 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       historyInitialized = true;
       notifyListeners();
     }
+  }
+
+  /// Fetches the next, older page of workouts using the backend cursor. The
+  /// backend emits the cursor only while more remains, so a null cursor is the
+  /// authoritative end-of-list signal.
+  Future<void> loadMoreHistory() async {
+    if (_loadingMoreHistory || !_hasMoreHistory) return;
+    if (userId case String id) {
+      _loadingMoreHistory = true;
+      notifyListeners();
+
+      final workouts = await _getRemoteHistory(id, since: _historyCursor);
+      if (workouts != null) {
+        await _localService.storeWorkoutHistory(workouts, id);
+        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+        _historyCursor = _cursorOf(workouts);
+        _hasMoreHistory = _historyCursor != null;
+      }
+
+      _loadingMoreHistory = false;
+      notifyListeners();
+    }
+  }
+
+  /// The backend returns pages as a [Page] carrying the next-page cursor, absent
+  /// once the list is exhausted; null too when the page came back as a plain
+  /// list (e.g. a test double).
+  static String? _cursorOf(Iterable<Workout> page) {
+    return switch (page) {
+      Page<Workout>(:final cursor) => cursor,
+      _ => null,
+    };
   }
 
   static MapEntry<WorkoutId, Workout> _entry(Workout w) => MapEntry(w.id, w);
