@@ -111,6 +111,14 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
           SliverList.builder(
             itemCount: items.length,
             itemBuilder: (context, index) {
+              // Build-position trigger: as the tail of the list comes into view,
+              // pull the next page. Deferred a frame so it never notifies during
+              // build; loadMoreHistory is a no-op when already loading or done.
+              if (workouts.hasMoreHistory && index >= items.length - 3) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) Workouts.of(context).loadMoreHistory();
+                });
+              }
               final item = items[index];
               return switch (item) {
                 String key => _MonthHeader(monthKey: key),
@@ -126,6 +134,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                 _ => const SizedBox.shrink(),
               };
             },
+          ),
+        if (workouts.loadingMoreHistory)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
           ),
       ],
     );

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_models/heart_models.dart' as models;
 import 'package:heart_state/src/workouts.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
@@ -345,6 +348,107 @@ void main() {
 
       expect(sut.lookup('wid'), w);
       expect(probe.notifications, 1);
+    });
+  });
+
+  group('history pagination', () {
+    setUp(() {
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => <Workout>[]);
+      when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
+    });
+
+    // The backend emits `cursor` only while more pages remain, so its presence
+    // is the authoritative hasMore signal.
+    void whenFirstPage(List<Workout> items, {String? cursor}) {
+      when(
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(isNull, named: 'since')),
+      ).thenAnswer((_) async => models.Page(items: items, hasMore: cursor != null, cursor: cursor));
+    }
+
+    void whenPageAfter(String since, List<Workout> items, {String? cursor}) {
+      when(
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(since), named: 'since')),
+      ).thenAnswer((_) async => models.Page(items: items, hasMore: cursor != null, cursor: cursor));
+    }
+
+    test('initHistory keeps paging when the backend returns a cursor', () async {
+      final w1 = Workout(name: 'w1');
+      whenFirstPage([w1], cursor: 'c1');
+
+      await sut.initHistory();
+
+      expect(sut.historyInitialized, isTrue);
+      expect(sut.hasMoreHistory, isTrue);
+      expect(sut.lookup(w1.id), w1);
+    });
+
+    test('initHistory stops when the backend omits the cursor (end of list)', () async {
+      final w1 = Workout(name: 'w1');
+      whenFirstPage([w1]); // no cursor
+
+      await sut.initHistory();
+
+      expect(sut.hasMoreHistory, isFalse);
+    });
+
+    test('loadMoreHistory pages with the cursor as `since`, appends and advances', () async {
+      final w1 = Workout(name: 'w1');
+      final w2 = Workout(name: 'w2');
+      whenFirstPage([w1], cursor: 'c1');
+      whenPageAfter('c1', [w2], cursor: 'c2');
+
+      await sut.initHistory();
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.loadMoreHistory();
+
+      verify(
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+      ).called(1);
+      verify(local.storeWorkoutHistory(argThat(contains(w2)), 'u1')).called(1);
+      expect(sut.lookup(w2.id), w2);
+      expect(sut.hasMoreHistory, isTrue);
+      expect(sut.loadingMoreHistory, isFalse);
+      // one notify entering the fetch, one leaving it
+      expect(probe.notifications, 2);
+    });
+
+    test('loadMoreHistory stops at the last page and then no-ops', () async {
+      final w1 = Workout(name: 'w1');
+      final w2 = Workout(name: 'w2');
+      whenFirstPage([w1], cursor: 'c1');
+      whenPageAfter('c1', [w2]); // last page: no cursor
+
+      await sut.initHistory();
+      await sut.loadMoreHistory();
+      expect(sut.hasMoreHistory, isFalse);
+
+      clearInteractions(remote);
+      await sut.loadMoreHistory(); // guarded by !hasMore
+      verifyNever(remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')));
+    });
+
+    test('loadMoreHistory ignores a re-entrant call while a page is in flight', () async {
+      final w1 = Workout(name: 'w1');
+      whenFirstPage([w1], cursor: 'c1');
+      await sut.initHistory();
+
+      // a page that never resolves until we say so
+      final inFlight = Completer<Iterable<Workout>?>();
+      when(
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+      ).thenAnswer((_) => inFlight.future);
+
+      final first = sut.loadMoreHistory(); // takes the lock, awaits inFlight
+      await sut.loadMoreHistory(); // re-entrant: returns immediately
+
+      verify(
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+      ).called(1);
+
+      inFlight.complete(models.Page(items: const [], hasMore: false, cursor: null));
+      await first;
+      expect(sut.hasMoreHistory, isFalse);
     });
   });
 
