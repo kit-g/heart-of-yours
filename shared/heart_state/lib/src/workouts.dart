@@ -31,6 +31,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _historyCursor = null;
     _hasMoreHistory = true;
     _loadingMoreHistory = false;
+    _historyPageError = false;
     _notifiedOfActiveWorkout = false;
     _latestMarkedSet = null;
     _progress.clear();
@@ -66,6 +67,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   bool _loadingMoreHistory = false;
 
   bool get loadingMoreHistory => _loadingMoreHistory;
+
+  /// True when the last [loadMoreHistory] attempt failed. The tail shows a retry
+  /// affordance and auto-paging pauses until the user retries.
+  bool _historyPageError = false;
+
+  bool get historyPageError => _historyPageError;
 
   Workout? get activeWorkout => _workouts[_activeWorkoutId];
 
@@ -383,14 +390,19 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (_loadingMoreHistory || !_hasMoreHistory) return;
     if (userId case String id) {
       _loadingMoreHistory = true;
+      _historyPageError = false;
       notifyListeners();
 
       final workouts = await _getRemoteHistory(id, since: _historyCursor);
+      // A null return means the fetch threw (a valid page is a possibly-empty
+      // list) — surface it so the tail can offer a retry.
       if (workouts != null) {
         await _localService.storeWorkoutHistory(workouts, id);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
         _historyCursor = _cursorOf(workouts);
         _hasMoreHistory = _historyCursor != null;
+      } else {
+        _historyPageError = true;
       }
 
       _loadingMoreHistory = false;
