@@ -114,7 +114,9 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               // Build-position trigger: as the tail of the list comes into view,
               // pull the next page. Deferred a frame so it never notifies during
               // build; loadMoreHistory is a no-op when already loading or done.
-              if (workouts.hasMoreHistory && index >= items.length - 3) {
+              // Pauses on error so a failed page doesn't auto-retry in a loop —
+              // the tail shows a manual retry instead.
+              if (workouts.hasMoreHistory && !workouts.historyPageError && index >= items.length - 3) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (context.mounted) Workouts.of(context).loadMoreHistory();
                 });
@@ -135,13 +137,13 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               };
             },
           ),
-        if (workouts.loadingMoreHistory)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+        if (byMonth.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _HistoryTail(
+              loading: workouts.loadingMoreHistory,
+              error: workouts.historyPageError,
+              hasMore: workouts.hasMoreHistory,
+              onRetry: () => Workouts.of(context).loadMoreHistory(),
             ),
           ),
       ],
@@ -235,6 +237,57 @@ class _EmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The tail beneath the workout list: a page spinner while loading, a retry on
+/// failure, or a quiet "you've reached the end" once everything is loaded.
+class _HistoryTail extends StatelessWidget {
+  final bool loading;
+  final bool error;
+  final bool hasMore;
+  final VoidCallback onRetry;
+
+  const _HistoryTail({
+    required this.loading,
+    required this.error,
+    required this.hasMore,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final L(:historyEndReached, :historyLoadMoreError, :retry) = L.of(context);
+
+    final muted = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
+
+    final child = switch ((loading, error, hasMore)) {
+      (true, _, _) => const SizedBox(
+        height: 24,
+        width: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+      (_, true, _) => Column(
+        mainAxisSize: .min,
+        spacing: 4,
+        children: [
+          Text(historyLoadMoreError, style: muted, textAlign: .center),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text(retry),
+          ),
+        ],
+      ),
+      (_, _, false) => Text(historyEndReached, style: muted, textAlign: .center),
+      _ => const SizedBox.shrink(),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Center(child: child),
     );
   }
 }

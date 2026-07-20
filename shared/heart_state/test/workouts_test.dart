@@ -450,6 +450,43 @@ void main() {
       await first;
       expect(sut.hasMoreHistory, isFalse);
     });
+
+    test('loadMoreHistory flags an error when the page fetch fails', () async {
+      final w1 = Workout(name: 'w1');
+      whenFirstPage([w1], cursor: 'c1');
+      await sut.initHistory();
+
+      when(
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+      ).thenThrow(Exception('network down'));
+
+      await sut.loadMoreHistory();
+
+      expect(sut.historyPageError, isTrue);
+      expect(sut.hasMoreHistory, isTrue); // still more to fetch — retry is offered
+      expect(sut.loadingMoreHistory, isFalse);
+    });
+
+    test('retrying after a failed page clears the error and appends', () async {
+      final w1 = Workout(name: 'w1');
+      final w2 = Workout(name: 'w2');
+      whenFirstPage([w1], cursor: 'c1');
+      await sut.initHistory();
+
+      when(
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+      ).thenThrow(Exception('network down'));
+      await sut.loadMoreHistory();
+      expect(sut.historyPageError, isTrue);
+
+      // the retry succeeds
+      whenPageAfter('c1', [w2], cursor: 'c2');
+      await sut.loadMoreHistory();
+
+      expect(sut.historyPageError, isFalse);
+      expect(sut.lookup(w2.id), w2);
+      expect(sut.hasMoreHistory, isTrue);
+    });
   });
 
   group('misc', () {
