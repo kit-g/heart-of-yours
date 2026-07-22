@@ -19,6 +19,7 @@ void main() {
   // simple registry of a couple of real Exercises
   final bench = ex('Bench Press');
   final squat = ex('Squat');
+  final press = ex('Overhead Press');
 
   setUp(() {
     when(local.startWorkout(any, any)).thenAnswer((_) async {});
@@ -279,6 +280,35 @@ void main() {
       expect(probe.notifications, 2);
     });
 
+    test('swap persists the new order', () async {
+      await sut.startWorkout(name: 'Mix');
+      await sut.startExercise(bench);
+      await sut.startExercise(squat);
+      await sut.startExercise(press);
+
+      final workoutId = sut.activeWorkout!.id;
+      final [a, b, c] = sut.activeWorkout!.toList();
+
+      await sut.swap(c, b);
+
+      expect(sut.activeWorkout!.toList(), [a, c, b]);
+      verify(local.saveExerciseOrder([a.id, c.id, b.id], workoutId)).called(1);
+    });
+
+    test('append persists the new order', () async {
+      await sut.startWorkout(name: 'Mix');
+      await sut.startExercise(bench);
+      await sut.startExercise(squat);
+
+      final workoutId = sut.activeWorkout!.id;
+      final [a, b] = sut.activeWorkout!.toList();
+
+      await sut.append(a);
+
+      expect(sut.activeWorkout!.toList(), [b, a]);
+      verify(local.saveExerciseOrder([b.id, a.id], workoutId)).called(1);
+    });
+
     test('renameWorkout calls local service and notifies', () async {
       await sut.startWorkout(name: 'Old');
       final id = sut.activeWorkout!.id;
@@ -362,13 +392,21 @@ void main() {
     // `cursorOf: (w) => w.id`).
     void whenFirstPage(List<Workout> items, {required bool more}) {
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(isNull, named: 'since')),
+        remote.getWorkouts(
+          any,
+          pageSize: anyNamed('pageSize'),
+          since: argThat(isNull, named: 'since'),
+        ),
       ).thenAnswer((_) async => models.Page(items: items, hasMore: more));
     }
 
     void whenPageAfter(String since, List<Workout> items, {required bool more}) {
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(since), named: 'since')),
+        remote.getWorkouts(
+          any,
+          pageSize: anyNamed('pageSize'),
+          since: argThat(equals(since), named: 'since'),
+        ),
       ).thenAnswer((_) async => models.Page(items: items, hasMore: more));
     }
 
@@ -404,7 +442,11 @@ void main() {
       await sut.loadMoreHistory();
 
       verify(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
+        remote.getWorkouts(
+          any,
+          pageSize: anyNamed('pageSize'),
+          since: argThat(equals(w1.id), named: 'since'),
+        ),
       ).called(1);
       verify(local.storeWorkoutHistory(argThat(contains(w2)), 'u1')).called(1);
       expect(sut.lookup(w2.id), w2);
@@ -437,14 +479,22 @@ void main() {
       // a page that never resolves until we say so
       final inFlight = Completer<Iterable<Workout>?>();
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
+        remote.getWorkouts(
+          any,
+          pageSize: anyNamed('pageSize'),
+          since: argThat(equals(w1.id), named: 'since'),
+        ),
       ).thenAnswer((_) => inFlight.future);
 
       final first = sut.loadMoreHistory(); // takes the lock, awaits inFlight
       await sut.loadMoreHistory(); // re-entrant: returns immediately
 
       verify(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
+        remote.getWorkouts(
+          any,
+          pageSize: anyNamed('pageSize'),
+          since: argThat(equals(w1.id), named: 'since'),
+        ),
       ).called(1);
 
       inFlight.complete(models.Page(items: const [], hasMore: false));
@@ -458,7 +508,11 @@ void main() {
       await sut.initHistory();
 
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
+        remote.getWorkouts(
+          any,
+          pageSize: anyNamed('pageSize'),
+          since: argThat(equals(w1.id), named: 'since'),
+        ),
       ).thenThrow(Exception('network down'));
 
       await sut.loadMoreHistory();
@@ -475,7 +529,11 @@ void main() {
       await sut.initHistory();
 
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
+        remote.getWorkouts(
+          any,
+          pageSize: anyNamed('pageSize'),
+          since: argThat(equals(w1.id), named: 'since'),
+        ),
       ).thenThrow(Exception('network down'));
       await sut.loadMoreHistory();
       expect(sut.historyPageError, isTrue);

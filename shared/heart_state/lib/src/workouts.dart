@@ -323,14 +323,32 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.storeMeasurements(set);
   }
 
-  Future<void>? swap(WorkoutExercise toInsert, WorkoutExercise after) async {
-    activeWorkout?.swap(toInsert, after);
-    notifyListeners();
+  /// Places [toInsert] before [before]. The caller decides what "before" means
+  /// for a given drop — see `WorkoutDetail._onDrop`, which resolves drag
+  /// direction into this and [append].
+  Future<void> swap(WorkoutExercise toInsert, WorkoutExercise before) async {
+    if (activeWorkout case Workout workout) {
+      workout.swap(toInsert, before);
+      notifyListeners();
+      await _saveExerciseOrder(workout);
+    }
   }
 
-  Future<void>? append(WorkoutExercise exercise) async {
-    activeWorkout?.append(exercise);
-    notifyListeners();
+  Future<void> append(WorkoutExercise exercise) async {
+    if (activeWorkout case Workout workout) {
+      workout.append(exercise);
+      notifyListeners();
+      await _saveExerciseOrder(workout);
+    }
+  }
+
+  /// An active workout is only pushed to the server once it's finished, so a
+  /// reorder mid-workout survives a restart only if it's written locally.
+  Future<void> _saveExerciseOrder(Workout workout) {
+    return _localService.saveExerciseOrder(
+      workout.map((each) => each.id).toList(),
+      workout.id,
+    );
   }
 
   Future<void>? renameWorkout(String name) async {
