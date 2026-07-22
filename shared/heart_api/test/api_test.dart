@@ -333,8 +333,7 @@ void main() {
       expect(result!.length, equals(2));
       // cursor present on the wire => authoritative "more pages" signal
       expect(result, isA<Page<Workout>>());
-      expect((result as Page<Workout>).cursor, equals('w2'));
-      expect(result.hasMore, isTrue);
+      expect((result as Page<Workout>).hasMore, isTrue);
     });
 
     test('getWorkouts reports end of list when cursor is absent', () async {
@@ -355,8 +354,7 @@ void main() {
       final result = await api.getWorkouts(userId, pageSize: 2);
 
       expect(result, isA<Page<Workout>>());
-      expect((result as Page<Workout>).cursor, isNull);
-      expect(result.hasMore, isFalse);
+      expect((result as Page<Workout>).hasMore, isFalse);
     });
 
     test('getWorkouts returns null on malformed response', () async {

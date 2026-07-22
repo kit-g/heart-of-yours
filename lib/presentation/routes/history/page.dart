@@ -117,9 +117,11 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               // Pauses on error so a failed page doesn't auto-retry in a loop —
               // the tail shows a manual retry instead.
               if (workouts.hasMoreHistory && !workouts.historyPageError && index >= items.length - 3) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (context.mounted) Workouts.of(context).loadMoreHistory();
-                });
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) {
+                    if (context.mounted) Workouts.of(context).loadMoreHistory();
+                  },
+                );
               }
               final item = items[index];
               return switch (item) {

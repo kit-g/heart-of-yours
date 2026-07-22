@@ -369,8 +369,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (workouts != null) {
         await _localService.storeWorkoutHistory(workouts, id);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
-        _historyCursor = _cursorOf(workouts);
-        _hasMoreHistory = _historyCursor != null;
+        _advanceHistory(workouts);
       }
 
       // heal workouts stranded locally by an earlier failed network save
@@ -383,9 +382,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  /// Fetches the next, older page of workouts using the backend cursor. The
-  /// backend emits the cursor only while more remains, so a null cursor is the
-  /// authoritative end-of-list signal.
+  /// Fetches the next, older page of workouts, keyed off [_historyCursor]. The
+  /// backend reports `hasMore` authoritatively, so paging stops the moment a page
+  /// says there is nothing older.
   Future<void> loadMoreHistory() async {
     if (_loadingMoreHistory || !_hasMoreHistory) return;
     if (userId case String id) {
@@ -399,8 +398,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (workouts != null) {
         await _localService.storeWorkoutHistory(workouts, id);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
-        _historyCursor = _cursorOf(workouts);
-        _hasMoreHistory = _historyCursor != null;
+        _advanceHistory(workouts);
       } else {
         _historyPageError = true;
       }
@@ -410,14 +408,19 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  /// The backend returns pages as a [Page] carrying the next-page cursor, absent
-  /// once the list is exhausted; null too when the page came back as a plain
-  /// list (e.g. a test double).
-  static String? _cursorOf(Iterable<Workout> page) {
-    return switch (page) {
-      Page<Workout>(:final cursor) => cursor,
-      _ => null,
+  /// Updates paging state from a freshly fetched [page]. `hasMore` is
+  /// authoritative (the backend fetches `limit + 1`); the next keyset cursor is
+  /// the id of the last — oldest — workout in the page. That id is the backend's
+  /// own cursor (`cursorOf: (w) => w.id`), read off the server-ordered page and
+  /// never off the local cache, so gaps in the cache can't skew it. A plain list
+  /// (e.g. a test double) carries no `hasMore`, so paging stops.
+  void _advanceHistory(Iterable<Workout> page) {
+    final more = switch (page) {
+      Page<Workout>(:final hasMore) => hasMore,
+      _ => false,
     };
+    _hasMoreHistory = more;
+    _historyCursor = more && page.isNotEmpty ? page.last.id : null;
   }
 
   static MapEntry<WorkoutId, Workout> _entry(Workout w) => MapEntry(w.id, w);
