@@ -357,23 +357,24 @@ void main() {
       when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
     });
 
-    // The backend emits `cursor` only while more pages remain, so its presence
-    // is the authoritative hasMore signal.
-    void whenFirstPage(List<Workout> items, {String? cursor}) {
+    // `Page.hasMore` is authoritative; the next-page cursor the state sends is
+    // the id of the last workout in the previous page (the backend's own cursor,
+    // `cursorOf: (w) => w.id`).
+    void whenFirstPage(List<Workout> items, {required bool more}) {
       when(
         remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(isNull, named: 'since')),
-      ).thenAnswer((_) async => models.Page(items: items, hasMore: cursor != null, cursor: cursor));
+      ).thenAnswer((_) async => models.Page(items: items, hasMore: more));
     }
 
-    void whenPageAfter(String since, List<Workout> items, {String? cursor}) {
+    void whenPageAfter(String since, List<Workout> items, {required bool more}) {
       when(
         remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(since), named: 'since')),
-      ).thenAnswer((_) async => models.Page(items: items, hasMore: cursor != null, cursor: cursor));
+      ).thenAnswer((_) async => models.Page(items: items, hasMore: more));
     }
 
-    test('initHistory keeps paging when the backend returns a cursor', () async {
+    test('initHistory keeps paging when the backend reports more', () async {
       final w1 = Workout(name: 'w1');
-      whenFirstPage([w1], cursor: 'c1');
+      whenFirstPage([w1], more: true);
 
       await sut.initHistory();
 
@@ -382,20 +383,20 @@ void main() {
       expect(sut.lookup(w1.id), w1);
     });
 
-    test('initHistory stops when the backend omits the cursor (end of list)', () async {
+    test('initHistory stops when the backend reports no more (end of list)', () async {
       final w1 = Workout(name: 'w1');
-      whenFirstPage([w1]); // no cursor
+      whenFirstPage([w1], more: false);
 
       await sut.initHistory();
 
       expect(sut.hasMoreHistory, isFalse);
     });
 
-    test('loadMoreHistory pages with the cursor as `since`, appends and advances', () async {
+    test('loadMoreHistory pages off the last id as `since`, appends and advances', () async {
       final w1 = Workout(name: 'w1');
       final w2 = Workout(name: 'w2');
-      whenFirstPage([w1], cursor: 'c1');
-      whenPageAfter('c1', [w2], cursor: 'c2');
+      whenFirstPage([w1], more: true);
+      whenPageAfter(w1.id, [w2], more: true);
 
       await sut.initHistory();
       final probe = ListenerProbe()..attach(sut);
@@ -403,7 +404,7 @@ void main() {
       await sut.loadMoreHistory();
 
       verify(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
       ).called(1);
       verify(local.storeWorkoutHistory(argThat(contains(w2)), 'u1')).called(1);
       expect(sut.lookup(w2.id), w2);
@@ -416,8 +417,8 @@ void main() {
     test('loadMoreHistory stops at the last page and then no-ops', () async {
       final w1 = Workout(name: 'w1');
       final w2 = Workout(name: 'w2');
-      whenFirstPage([w1], cursor: 'c1');
-      whenPageAfter('c1', [w2]); // last page: no cursor
+      whenFirstPage([w1], more: true);
+      whenPageAfter(w1.id, [w2], more: false); // last page
 
       await sut.initHistory();
       await sut.loadMoreHistory();
@@ -430,34 +431,34 @@ void main() {
 
     test('loadMoreHistory ignores a re-entrant call while a page is in flight', () async {
       final w1 = Workout(name: 'w1');
-      whenFirstPage([w1], cursor: 'c1');
+      whenFirstPage([w1], more: true);
       await sut.initHistory();
 
       // a page that never resolves until we say so
       final inFlight = Completer<Iterable<Workout>?>();
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
       ).thenAnswer((_) => inFlight.future);
 
       final first = sut.loadMoreHistory(); // takes the lock, awaits inFlight
       await sut.loadMoreHistory(); // re-entrant: returns immediately
 
       verify(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
       ).called(1);
 
-      inFlight.complete(models.Page(items: const [], hasMore: false, cursor: null));
+      inFlight.complete(models.Page(items: const [], hasMore: false));
       await first;
       expect(sut.hasMoreHistory, isFalse);
     });
 
     test('loadMoreHistory flags an error when the page fetch fails', () async {
       final w1 = Workout(name: 'w1');
-      whenFirstPage([w1], cursor: 'c1');
+      whenFirstPage([w1], more: true);
       await sut.initHistory();
 
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
       ).thenThrow(Exception('network down'));
 
       await sut.loadMoreHistory();
@@ -470,17 +471,17 @@ void main() {
     test('retrying after a failed page clears the error and appends', () async {
       final w1 = Workout(name: 'w1');
       final w2 = Workout(name: 'w2');
-      whenFirstPage([w1], cursor: 'c1');
+      whenFirstPage([w1], more: true);
       await sut.initHistory();
 
       when(
-        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals('c1'), named: 'since')),
+        remote.getWorkouts(any, pageSize: anyNamed('pageSize'), since: argThat(equals(w1.id), named: 'since')),
       ).thenThrow(Exception('network down'));
       await sut.loadMoreHistory();
       expect(sut.historyPageError, isTrue);
 
       // the retry succeeds
-      whenPageAfter('c1', [w2], cursor: 'c2');
+      whenPageAfter(w1.id, [w2], more: true);
       await sut.loadMoreHistory();
 
       expect(sut.historyPageError, isFalse);
