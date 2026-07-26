@@ -1,3 +1,4 @@
+import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logging/logging.dart';
@@ -8,6 +9,7 @@ final _plugin = FlutterLocalNotificationsPlugin();
 final _logger = Logger('Notifications');
 
 const _currentExercise = 0;
+const _workoutTimeout = 1;
 const _defaultChannelId = 'Rest Timers';
 const _defaultChannelName = 'Rest Timers';
 
@@ -19,35 +21,66 @@ void _notificationTapBackground(NotificationResponse notificationResponse) {
 Future<void> initNotifications({
   required TargetPlatform platform,
   void Function(String exerciseId)? onExerciseNotification,
+  VoidCallback? onWorkoutTimeoutNotification,
   void Function(Map)? onUnknownNotification,
 }) async {
   tz.initializeTimeZones();
 
   await _createNotificationChannel(platform);
-  await requestNotificationPermission(platform);
+  // Permission is no longer requested here — we ask lazily, the first time the
+  // user sets a rest timer (see [ensureNotificationPermission]). The Darwin
+  // request flags are off for the same reason, so init never prompts.
   await _plugin.initialize(
     settings: const InitializationSettings(
       iOS: DarwinInitializationSettings(
-        requestSoundPermission: true,
-        requestBadgePermission: true,
-        requestAlertPermission: true,
+        requestSoundPermission: false,
+        requestBadgePermission: false,
+        requestAlertPermission: false,
       ),
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       macOS: DarwinInitializationSettings(
-        requestSoundPermission: true,
-        requestBadgePermission: true,
-        requestAlertPermission: true,
+        requestSoundPermission: false,
+        requestBadgePermission: false,
+        requestAlertPermission: false,
       ),
     ),
     onDidReceiveNotificationResponse: (notification) async {
       switch (notification) {
         case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
           return onExerciseNotification?.call(payload);
+        case NotificationResponse(:int id) when id == _workoutTimeout:
+          return onWorkoutTimeoutNotification?.call();
         default:
           return onUnknownNotification?.call(notification.toMap());
       }
     },
     onDidReceiveBackgroundNotificationResponse: _notificationTapBackground,
+  );
+}
+
+/// Requests notification permission if it isn't already granted, returning
+/// whether notifications are enabled afterwards. Safe to call repeatedly — the
+/// OS only surfaces its prompt on the first, undecided call.
+Future<bool> ensureNotificationPermission(TargetPlatform platform) async {
+  if (await hasNotificationsPermission(platform)) return true;
+  return await requestNotificationPermission(platform) ?? false;
+}
+
+/// Nudges the user, via a snackbar, that notifications are off and offers a
+/// shortcut to the OS notification settings. No-op without a [ScaffoldMessenger].
+void remindNotificationsOff(
+  BuildContext context, {
+  required String message,
+  required String settingsLabel,
+}) {
+  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+    SnackBar(
+      content: Text(message),
+      action: SnackBarAction(
+        label: settingsLabel,
+        onPressed: () => AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true),
+      ),
+    ),
   );
 }
 
@@ -203,6 +236,32 @@ Future<void> scheduleExerciseNotification(
     androidScheduleMode: .exactAllowWhileIdle,
     payload: exerciseId,
   );
+}
+
+/// Schedules the "you've gone idle" notification for an active workout at
+/// [time]. Re-scheduling replaces any pending one (same id), so the caller
+/// pushes the deadline forward simply by calling this again.
+Future<void> scheduleWorkoutTimeoutNotification(
+  DateTime time, {
+  required String title,
+  String? body,
+}) async {
+  final delay = time.difference(DateTime.now());
+  if (delay.isNegative) return;
+
+  final details = _details(title: title, body: body);
+  return _plugin.zonedSchedule(
+    id: _workoutTimeout,
+    title: title,
+    body: body,
+    scheduledDate: TZDateTime.from(time, local),
+    notificationDetails: details,
+    androidScheduleMode: .exactAllowWhileIdle,
+  );
+}
+
+Future<void> cancelWorkoutTimeoutNotification() {
+  return _plugin.cancel(id: _workoutTimeout);
 }
 
 Future<void> cancelAllNotifications() {
