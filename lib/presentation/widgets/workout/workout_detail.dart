@@ -275,11 +275,46 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
     );
   }
 
+  /// Resolves a drop onto [target] into the two reordering primitives the model
+  /// actually has — insert-before and append — picking between them by drag
+  /// direction, so the move matches where [_dropSlot] drew the indicator.
+  ///
+  /// Every consumer of this widget reorders by insert-before, so resolving
+  /// direction here keeps the fix in one place rather than in each screen's own
+  /// `swap`.
+  void _onDrop(WorkoutExercise dragged, WorkoutExercise target) {
+    final items = exercises.toList();
+
+    switch (dropIndex(items, dragged, target)) {
+      case null:
+        return;
+      case int index when index >= items.length:
+        widget.onDragExercise(dragged);
+      case int index:
+        widget.onSwapExercise(dragged, items[index]);
+    }
+  }
+
+  /// A gap reserved above *every* row for as long as a drag is in progress, so
+  /// that moving the drop indicator around never changes a row's height.
+  /// Inserting the divider only under the hovered row pushed that row out from
+  /// under the pointer, which flipped the hover to its neighbour and back.
+  Widget _dropSlot({required bool active}) {
+    return SizedBox(
+      height: _dropIndicatorHeight,
+      child: switch (active) {
+        true => _divider,
+        false => null,
+      },
+    );
+  }
+
   SliverList _exerciseList(ColorScheme colorScheme, String addSet, String setCopy, String previous) {
+    final items = exercises.toList();
     return SliverList.builder(
-      itemCount: exercises.length + 1,
+      itemCount: items.length + 1,
       itemBuilder: (_, index) {
-        if (index == exercises.length) {
+        if (index == items.length) {
           return ValueListenableBuilder<WorkoutExercise?>(
             valueListenable: _currentlyHoveredExercise,
             builder: (_, hoveredOver, _) {
@@ -300,7 +335,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                     builder: (_, _, _) {
                       return Column(
                         children: [
-                          if (hoveredOver == null && dragged != null) _divider,
+                          if (dragged != null)
+                            _dropSlot(active: dropIndex(items, dragged, hoveredOver) == items.length),
                           const SizedBox(height: 12),
                         ],
                       );
@@ -312,48 +348,52 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
           );
         }
 
-        var sets = exercises.toList();
-        var set = sets[index];
+        final set = items[index];
         return ValueListenableBuilder<WorkoutExercise?>(
           valueListenable: _currentlyHoveredExercise,
           builder: (_, hoveredOver, _) {
-            return Column(
-              children: [
-                if (hoveredOver == set) _divider,
-                Selector<Workouts, bool>(
-                  builder: (_, isPointedAt, _) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      color: isPointedAt ? colorScheme.primary : Colors.transparent,
-                      child: _WorkoutExerciseItem(
-                        index: index,
-                        exercise: set,
-                        copy: addSet,
-                        firstColumnCopy: setCopy,
-                        secondColumnCopy: previous,
-                        dragState: _beingDragged,
-                        currentlyHoveredItem: _currentlyHoveredExercise,
-                        onAddSet: widget.onAddSet,
-                        onRemoveSet: widget.onRemoveSet,
-                        onSetDone: widget.onSetDone,
-                        onRemoveExercise: widget.onRemoveExercise,
-                        onSwapExercise: widget.onSwapExercise,
-                        onDragStarted: () {
-                          _beingDragged.value = set;
-                        },
-                        onDragEnded: () {
-                          buzz();
-                          _beingDragged.value = null;
-                          _currentlyHoveredExercise.value = null;
-                        },
-                        allowCompleting: widget.allowsCompletingSet,
-                        onTapExercise: widget.onTapExercise,
-                      ),
-                    );
-                  },
-                  selector: (_, provider) => provider.pointedAtExercise == set.id,
-                ),
-              ],
+            return ValueListenableBuilder<WorkoutExercise?>(
+              valueListenable: _beingDragged,
+              builder: (_, dragged, _) {
+                return Column(
+                  children: [
+                    if (dragged != null) _dropSlot(active: dropIndex(items, dragged, hoveredOver) == index),
+                    Selector<Workouts, bool>(
+                      builder: (_, isPointedAt, _) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          color: isPointedAt ? colorScheme.primary : Colors.transparent,
+                          child: _WorkoutExerciseItem(
+                            index: index,
+                            exercise: set,
+                            copy: addSet,
+                            firstColumnCopy: setCopy,
+                            secondColumnCopy: previous,
+                            dragState: _beingDragged,
+                            currentlyHoveredItem: _currentlyHoveredExercise,
+                            onAddSet: widget.onAddSet,
+                            onRemoveSet: widget.onRemoveSet,
+                            onSetDone: widget.onSetDone,
+                            onRemoveExercise: widget.onRemoveExercise,
+                            onSwapExercise: _onDrop,
+                            onDragStarted: () {
+                              _beingDragged.value = set;
+                            },
+                            onDragEnded: () {
+                              buzz();
+                              _beingDragged.value = null;
+                              _currentlyHoveredExercise.value = null;
+                            },
+                            allowCompleting: widget.allowsCompletingSet,
+                            onTapExercise: widget.onTapExercise,
+                          ),
+                        );
+                      },
+                      selector: (_, provider) => provider.pointedAtExercise == set.id,
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
@@ -600,7 +640,10 @@ class _ImageState extends State<_Image> with LoadingState<_Image> {
   }
 }
 
+const _dropIndicatorHeight = 16.0;
+
 const _divider = Divider(
+  height: _dropIndicatorHeight,
   thickness: 2,
   indent: 8,
   endIndent: 8,

@@ -109,11 +109,14 @@ extension ChartDimension on ChartPreferenceType {
   String? unitLabel(BuildContext context, Preferences settings, {MeasurementUnit? unit}) {
     final l = L.of(context);
     return switch (this) {
-      .topSetWeight || .estimatedOneRepMax || .totalVolume || .averageWorkingWeight || .assistanceWeight =>
-        switch (unit ?? settings.weightUnit) {
-          .imperial => l.lbs,
-          .metric => l.kg,
-        },
+      .topSetWeight ||
+      .estimatedOneRepMax ||
+      .totalVolume ||
+      .averageWorkingWeight ||
+      .assistanceWeight => switch (unit ?? settings.weightUnit) {
+        .imperial => l.lbs,
+        .metric => l.kg,
+      },
       .cardioDistance => switch (unit ?? settings.distanceUnit) {
         .imperial => l.milesPlural,
         .metric => l.km,

@@ -157,9 +157,16 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
 
             return AnimatedSize(
               curve: Curves.easeInOut,
-              duration: const Duration(milliseconds: 400),
+              // Collapsing every row to its header is what makes a long workout
+              // droppable at all, but animating that collapse slides all the
+              // drop targets around for 400ms under a pointer that is already
+              // down. So the collapse is instant and only the expansion after
+              // the drop animates.
+              duration: switch (draggedExercise) {
+                null => const Duration(milliseconds: 400),
+                _ => Duration.zero,
+              },
               child: switch (draggedExercise) {
-                WorkoutExercise e when e != exercise => header,
                 null => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Column(
@@ -243,7 +250,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                     ],
                   ),
                 ),
-                _ => const SizedBox.shrink(),
+                // the dragged row holds its slot as a dimmed placeholder — taking
+                // it out of the list shifts every target below it mid-drag, and
+                // it is the row directly under the pointer
+                WorkoutExercise e when e == exercise => Opacity(opacity: .4, child: header),
+                _ => header,
               },
             );
           },
@@ -472,8 +483,18 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         timers.remove(name);
       case int seconds when seconds > 0:
         timers.setRestTimer(name, seconds);
+        // A rest timer is only useful if we may notify — ask now, the first
+        // time one is set, rather than up front at launch.
+        if (context.mounted) _ensureNotifications(context);
       default:
       // may return null on dialog dismiss, then no-op
     }
+  }
+
+  Future<void> _ensureNotifications(BuildContext context) async {
+    final enabled = await ensureNotificationPermission(Theme.of(context).platform);
+    if (enabled || !context.mounted) return;
+    final L(:notificationsDisabledReminder, :settings) = L.of(context);
+    remindNotificationsOff(context, message: notificationsDisabledReminder, settingsLabel: settings);
   }
 }

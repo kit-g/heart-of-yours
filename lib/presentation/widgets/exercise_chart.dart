@@ -63,10 +63,10 @@ class _ExerciseChartState extends State<ExerciseChart> {
       builder: (_, snapshot) {
         final AsyncSnapshot(connectionState: state, :error, :data) = snapshot;
         final (phase, content) = switch ((state, error, data)) {
-          (ConnectionState.waiting, _, _) => ('loading', widget.loadingState ?? const SizedBox(height: 300)),
+          (.waiting, _, _) => ('loading', widget.loadingState ?? const SizedBox(height: 300)),
           (_, Object _, _) => ('error', widget.errorState),
-          (ConnectionState.done, null, List<(num, DateTime)> records) when records.isEmpty => ('empty', widget.emptyState),
-          (ConnectionState.done, null, List<(num, DateTime)> records) => ('data', _dataChart(records, textTheme, colorScheme)),
+          (.done, null, List<(num, DateTime)> records) when records.isEmpty => ('empty', widget.emptyState),
+          (.done, null, List<(num, DateTime)> records) => ('data', _dataChart(records, textTheme, colorScheme)),
           _ => ('none', const SizedBox.shrink()),
         };
         // fade between phases so the chart eases in once its data lands, rather
