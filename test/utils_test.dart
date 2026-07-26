@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
+import 'package:heart_models/heart_models.dart';
 
 void main() {
   const formatter = NDigitFloatingPointFormatter();
@@ -9,7 +10,10 @@ void main() {
     return formatter
         .formatEditUpdate(
           TextEditingValue.empty,
-          TextEditingValue(text: input, selection: TextSelection.collapsed(offset: input.length)),
+          TextEditingValue(
+            text: input,
+            selection: TextSelection.collapsed(offset: input.length),
+          ),
         )
         .text;
   }
@@ -66,7 +70,10 @@ void main() {
       return formatter
           .formatEditUpdate(
             TextEditingValue.empty,
-            TextEditingValue(text: input, selection: TextSelection.collapsed(offset: input.length)),
+            TextEditingValue(
+              text: input,
+              selection: TextSelection.collapsed(offset: input.length),
+            ),
           )
           .text;
     }
@@ -169,7 +176,7 @@ void main() {
 
     test('Handles exactly 5 digits correctly', () {
       expect(format('10000'), '1:00:00');
-      expect(format('99999'), '9:99:99');// we'll allow this input
+      expect(format('99999'), '9:99:99'); // we'll allow this input
     });
 
     test('Rejects decimal or non-integer input', () {
@@ -178,5 +185,47 @@ void main() {
       expect(format('2.50'), '2:50');
     });
   });
-}
 
+  group('dropIndex', () {
+    WorkoutExercise exercise(String name) {
+      return WorkoutExercise(
+        starter: ExerciseSet(
+          Exercise.fromJson({
+            'name': name,
+            'category': 'Barbell',
+            'target': 'Chest',
+          }),
+        ),
+      );
+    }
+
+    final a = exercise('Bench Press');
+    final b = exercise('Squat');
+    final c = exercise('Deadlift');
+    final items = [a, b, c];
+
+    test('a downwards drag lands after its target', () {
+      // the case a plain insert-before turns into a no-op
+      expect(dropIndex(items, a, b), 2);
+      expect(dropIndex(items, a, c), 3);
+      expect(dropIndex(items, b, c), 3);
+    });
+
+    test('an upwards drag lands before its target', () {
+      expect(dropIndex(items, c, b), 1);
+      expect(dropIndex(items, c, a), 0);
+      expect(dropIndex(items, b, a), 0);
+    });
+
+    test('a null hover is the trailing target, i.e. append', () {
+      expect(dropIndex(items, a, null), items.length);
+    });
+
+    test('there is nothing to mark without a drag, or onto itself', () {
+      expect(dropIndex(items, null, b), isNull);
+      expect(dropIndex(items, null, null), isNull);
+      expect(dropIndex(items, a, a), isNull);
+      expect(dropIndex(items, exercise('Row'), a), isNull);
+    });
+  });
+}

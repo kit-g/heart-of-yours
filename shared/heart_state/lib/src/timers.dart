@@ -37,6 +37,9 @@ class Timers with ChangeNotifier implements SignOutStateSentry {
 
   int? operator [](String exercise) => _timers[exercise];
 
+  /// Whether the user has any rest-timer preference configured.
+  bool get isNotEmpty => _timers.isNotEmpty;
+
   Future<void> setRestTimer(String exercise, int seconds) async {
     if (userId case String userId) {
       _timers[exercise] = seconds;
