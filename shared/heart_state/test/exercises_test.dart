@@ -23,8 +23,9 @@ void main() {
     when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
     // history/records delegates (we stub empty results)
-    when(local.getExerciseHistory(any, any, pageSize: anyNamed('pageSize'), anchor: anyNamed('anchor')))
-        .thenAnswer((_) async => <ExerciseAct>[]);
+    when(
+      local.getExerciseHistory(any, any, pageSize: anyNamed('pageSize'), anchor: anyNamed('anchor')),
+    ).thenAnswer((_) async => <ExerciseAct>[]);
     when(local.getRecord(any, any)).thenAnswer((_) async => null);
     when(local.getRepsHistory(any, any, limit: anyNamed('limit'))).thenAnswer((_) async => <(num, DateTime)>[]);
     when(local.getDistanceHistory(any, any, limit: anyNamed('limit'))).thenAnswer((_) async => <(num, DateTime)>[]);
@@ -80,8 +81,9 @@ void main() {
       final e1 = ex('Squat');
       final e2 = ex('Deadlift');
 
-      when(local.getExercises(userId: anyNamed('userId')))
-          .thenAnswer((_) async => (DateTime(2024, 1, 1), <Exercise>[e1]));
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer((_) async => (DateTime(2024, 1, 1), <Exercise>[e1]));
       when(remote.getExercises()).thenAnswer((_) async => <Exercise>[e2]);
       when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
@@ -175,8 +177,11 @@ void main() {
     test(
       'when isMine=false (default), returns both own and non-own (if they match query)',
       () async {
-        final own =
-            Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest).copyWith(isMine: true);
+        final own = Exercise(
+          name: 'Bench Press',
+          category: Category.barbell,
+          target: Target.chest,
+        ).copyWith(isMine: true);
         final publicEx = Exercise(name: 'Bench Press Wide', category: Category.barbell, target: Target.chest);
         when(
           local.getExercises(
@@ -193,8 +198,11 @@ void main() {
     );
 
     test('when isMine=true, returns only exercises where isMine == true', () async {
-      final own =
-          Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest).copyWith(isMine: true);
+      final own = Exercise(
+        name: 'Bench Press',
+        category: Category.barbell,
+        target: Target.chest,
+      ).copyWith(isMine: true);
       final publicEx = Exercise(name: 'Bench Press Wide', category: Category.barbell, target: Target.chest);
       when(
         local.getExercises(
@@ -213,8 +221,11 @@ void main() {
     });
 
     test('isMine=true still respects query and filters', () async {
-      final ownChest =
-          Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest).copyWith(isMine: true);
+      final ownChest = Exercise(
+        name: 'Bench Press',
+        category: Category.barbell,
+        target: Target.chest,
+      ).copyWith(isMine: true);
       final ownBack = Exercise(name: 'Row', category: Category.barbell, target: Target.back).copyWith(isMine: true);
       final publicChest = Exercise(name: 'Incline Bench Press', category: Category.barbell, target: Target.chest);
 
@@ -381,8 +392,9 @@ void main() {
 
     test('getChartExerciseMetics delegates to service when userId is set', () async {
       final metrics = <(num, DateTime)>[(100.0, DateTime(2024, 1, 1))];
-      when(local.getExerciseMetics('u1', ChartPreferenceType.totalVolume, 'Bench', limit: 8))
-          .thenAnswer((_) async => metrics);
+      when(
+        local.getExerciseMetics('u1', ChartPreferenceType.totalVolume, 'Bench', limit: 8),
+      ).thenAnswer((_) async => metrics);
 
       final result = await sut.getChartExerciseMetics(ChartPreferenceType.totalVolume, 'Bench');
 

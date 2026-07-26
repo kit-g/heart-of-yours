@@ -94,8 +94,9 @@ void main() {
       });
 
       test('remove does not notify (by design)', () async {
-        when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
-            .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
         await templates.add(ex('Push Up'));
         probe.notifications = 0;
 
@@ -106,8 +107,9 @@ void main() {
       });
 
       test('addSet and removeSet notify and mutate sets', () async {
-        when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
-            .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
         await templates.add(ex('Push Up'));
         final exercise = templates.editable!.first;
         probe.notifications = 0;
@@ -123,8 +125,9 @@ void main() {
       });
 
       test('removeExercise notifies', () async {
-        when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
-            .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
         await templates.add(ex('Push Up'));
         probe.notifications = 0;
 
@@ -135,8 +138,9 @@ void main() {
       });
 
       test('swap and append notify', () async {
-        when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
-            .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
         await templates.add(ex('Push Up'));
         await templates.add(ex('Squat'));
         final e1 = templates.editable!.first;
@@ -153,8 +157,9 @@ void main() {
       });
 
       test('saveEditable adds to collection, persists local and remote, clears editable, and notifies', () async {
-        when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
-            .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
         when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
         await templates.add(ex('Push Up'));
         probe.notifications = 0;
@@ -170,8 +175,9 @@ void main() {
 
       test('delete removes from collection, notifies, and deletes locally and remotely', () async {
         // Prepare one in collection by saving editable
-        when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
-            .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
         when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
         await templates.add(ex('Push Up'));
         await templates.saveEditable();
@@ -208,8 +214,9 @@ void main() {
 
       test('workoutToTemplate uses startTemplate for raw and creates editable from workout, notifying', () async {
         final workout = Workout(name: 'Morning')..append(WorkoutExercise(starter: ExerciseSet(ex('Push Up'))));
-        when(local.startTemplate(userId: anyNamed('userId')))
-            .thenAnswer((_) async => Template.empty(id: 'raw-id', order: 3));
+        when(
+          local.startTemplate(userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'raw-id', order: 3));
 
         await templates.workoutToTemplate(workout);
 
@@ -262,8 +269,9 @@ void main() {
         service: local,
         configService: MockRemoteConfigService(),
       );
-      when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')))
-          .thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+      when(
+        local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+      ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
       when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
 
       var builds = 0;
