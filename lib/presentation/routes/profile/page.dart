@@ -259,4 +259,3 @@ Future<(Exercise, ChartPreferenceType)?> _showExercises(
     },
   );
 }
-

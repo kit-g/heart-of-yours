@@ -20,35 +20,35 @@ class _History extends StatelessWidget {
       builder: (_, future) {
         final AsyncSnapshot(connectionState: state, :error, :data) = future;
         return switch ((state, error, data)) {
-          (ConnectionState.waiting, _, _) => const Center(
-              child: CircularProgressIndicator(),
-            ),
+          (.waiting, _, _) => const Center(
+            child: CircularProgressIndicator(),
+          ),
           (_, Object _, _) => const _ErrorState(),
-          (ConnectionState.done, null, Iterable<ExerciseAct> query) => Builder(
-              builder: (_) {
-                if (query.isEmpty) {
-                  return const Column(
-                    children: [
-                      _EmptyState(),
-                    ],
-                  );
-                }
-
-                final acts = query.toList()..sort();
-                return ListView.builder(
-                  itemCount: acts.length,
-                  itemBuilder: (_, index) {
-                    final act = acts[index];
-                    return _Card(
-                      act: act,
-                      onTapWorkout: onTapWorkout,
-                      prefs: prefs,
-                      unit: unit,
-                    );
-                  },
+          (.done, null, Iterable<ExerciseAct> query) => Builder(
+            builder: (_) {
+              if (query.isEmpty) {
+                return const Column(
+                  children: [
+                    _EmptyState(),
+                  ],
                 );
-              },
-            ),
+              }
+
+              final acts = query.toList()..sort();
+              return ListView.builder(
+                itemCount: acts.length,
+                itemBuilder: (_, index) {
+                  final act = acts[index];
+                  return _Card(
+                    act: act,
+                    onTapWorkout: onTapWorkout,
+                    prefs: prefs,
+                    unit: unit,
+                  );
+                },
+              );
+            },
+          ),
           _ => const SizedBox.shrink(),
         };
       },
@@ -138,36 +138,37 @@ class _Card extends StatelessWidget {
 
   String _formatSet(ExerciseSet set, {required Preferences prefs, MeasurementUnit? unit}) {
     switch (set.category) {
-      case Category.weightedBodyWeight:
+      case .weightedBodyWeight:
         return switch (set) {
           ExerciseSet(:double weight, :int reps) => '+${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
-      case Category.assistedBodyWeight:
+      case .assistedBodyWeight:
         return switch (set) {
           ExerciseSet(:double weight, :int reps) => '-${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
-      case Category.repsOnly:
+      case .repsOnly:
         return '${set.reps} x';
-      case Category.machine:
-      case Category.barbell:
-      case Category.dumbbell:
+      case .machine:
+      case .barbell:
+      case .dumbbell:
         return switch (set) {
           ExerciseSet(:double weight, :int reps) => '${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
-      case Category.duration:
+      case .duration:
         return switch (set) {
           ExerciseSet(:int duration) => Duration(seconds: duration).formatted(),
           _ => '',
         };
-      case Category.cardio:
+      case .cardio:
         return switch (set) {
-          ExerciseSet(:int duration, :double distance) => ''
-              '${Duration(seconds: duration).formatted()}'
-              ' | '
-              '${prefs.distance(distance, unit: unit)}',
+          ExerciseSet(:int duration, :double distance) =>
+            ''
+                '${Duration(seconds: duration).formatted()}'
+                ' | '
+                '${prefs.distance(distance, unit: unit)}',
           _ => '',
         };
     }

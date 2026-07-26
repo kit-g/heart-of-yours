@@ -207,6 +207,9 @@ class _AppState extends State<_App> {
       themeMode: widget.theme.mode,
       debugShowCheckedModeBanner: false,
       routerConfig: widget.router.config,
+      // Wraps every route below Localizations so it can read L/AppConfig and
+      // reach a ScaffoldMessenger for the notifications-off reminder.
+      builder: (context, child) => _WorkoutTimeoutScheduler(child: child ?? const SizedBox.shrink()),
       // until data is localized
       supportedLocales: [const Locale('en')],
       // supportedLocales: L.supportedLocales,
@@ -236,6 +239,84 @@ class _AppState extends State<_App> {
       ),
     };
   }
+}
+
+/// Manages the active-workout idle-timeout notification and the
+/// notifications-off reminder. Sits below Localizations (via MaterialApp's
+/// builder), so it can read L / [AppConfig] and reach a [ScaffoldMessenger].
+///
+/// Any change to the active workout counts as activity and pushes the timeout
+/// notification back to `now + AppConfig.workoutTimeout`; finishing or
+/// cancelling the workout clears it.
+class _WorkoutTimeoutScheduler extends StatefulWidget {
+  final Widget child;
+
+  const _WorkoutTimeoutScheduler({required this.child});
+
+  @override
+  State<_WorkoutTimeoutScheduler> createState() => _WorkoutTimeoutSchedulerState();
+}
+
+class _WorkoutTimeoutSchedulerState extends State<_WorkoutTimeoutScheduler> {
+  Workouts? _workouts;
+  bool _hadActiveWorkout = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final workouts = Workouts.of(context);
+    if (!identical(workouts, _workouts)) {
+      _workouts?.removeListener(_onWorkoutsChanged);
+      _workouts = workouts..addListener(_onWorkoutsChanged);
+      _hadActiveWorkout = workouts.hasActiveWorkout;
+      // Schedule for a workout already in progress at startup (a resume).
+      if (workouts.hasActiveWorkout) _scheduleTimeout();
+    }
+  }
+
+  @override
+  void dispose() {
+    _workouts?.removeListener(_onWorkoutsChanged);
+    super.dispose();
+  }
+
+  void _onWorkoutsChanged() {
+    final workouts = _workouts;
+    if (workouts == null) return;
+
+    final active = workouts.hasActiveWorkout;
+    switch (active) {
+      case true:
+        _scheduleTimeout();
+        // A fresh start (not every subsequent change): if the user kept rest
+        // timers but has since revoked notifications, remind them.
+        if (!_hadActiveWorkout) _remindIfNotificationsOff();
+      case false:
+        cancelWorkoutTimeoutNotification();
+    }
+    _hadActiveWorkout = active;
+  }
+
+  void _scheduleTimeout() {
+    if (!mounted) return;
+    final L(:workoutTimeoutTitle, :workoutTimeoutBody) = L.of(context);
+    scheduleWorkoutTimeoutNotification(
+      DateTime.now().add(AppConfig.of(context).workoutTimeout),
+      title: workoutTimeoutTitle,
+      body: workoutTimeoutBody,
+    );
+  }
+
+  Future<void> _remindIfNotificationsOff() async {
+    if (!Timers.of(context).isNotEmpty) return;
+    final enabled = await hasNotificationsPermission(Theme.of(context).platform);
+    if (enabled || !mounted) return;
+    final L(:notificationsDisabledReminder, :settings) = L.of(context);
+    remindNotificationsOff(context, message: notificationsDisabledReminder, settingsLabel: settings);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 Future<void> _initApp(
@@ -270,6 +351,15 @@ Future<void> _initApp(
           } else {
             // a notification banner might still be there even if the workout was finished or cancelled
             goToWorkouts();
+          }
+        },
+        onWorkoutTimeoutNotification: () {
+          final HeartRouter(:goToActiveWorkout, :goToWorkouts) = HeartRouter.of(context);
+          switch (Workouts.of(context).activeWorkout) {
+            case null:
+              goToWorkouts();
+            case _:
+              goToActiveWorkout();
           }
         },
         onUnknownNotification: reportToSentry,

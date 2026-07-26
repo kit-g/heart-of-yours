@@ -45,13 +45,13 @@ class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingSta
             padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 64),
             child: switch (auth.user?.scheduledForDeletionAt) {
               DateTime t => Text(
-                  accountDeletedBody(
-                    RestoreAccountPage._formatDate(t.toLocal()),
-                  ),
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
+                accountDeletedBody(
+                  RestoreAccountPage._formatDate(t.toLocal()),
                 ),
-              _ => const SizedBox()
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              _ => const SizedBox(),
             },
           ),
           Center(
@@ -62,17 +62,17 @@ class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingSta
                   onPressed: switch (loading) {
                     true => null,
                     false => () async {
-                        startLoading();
+                      startLoading();
 
-                        try {
-                          await auth.deleteAccountDeletionSchedule();
-                          widget.onUndo();
-                        } catch (e, s) {
-                          widget.onError?.call(e, stacktrace: s);
-                        } finally {
-                          stopLoading();
-                        }
-                      },
+                      try {
+                        await auth.deleteAccountDeletionSchedule();
+                        widget.onUndo();
+                      } catch (e, s) {
+                        widget.onError?.call(e, stacktrace: s);
+                      } finally {
+                        stopLoading();
+                      }
+                    },
                   },
                   child: Text(accountDeletedAction),
                 );
