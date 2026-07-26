@@ -35,7 +35,9 @@ class _Form extends StatelessWidget {
       :hidePassword,
       :forgotPassword,
       :nameOptional,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     String? validator(String? value) {
       return (value?.isEmpty ?? true) ? cannotBeEmpty : null;

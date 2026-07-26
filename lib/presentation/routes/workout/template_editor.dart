@@ -60,9 +60,9 @@ class _TemplateEditorState extends State<TemplateEditor> {
                       backgroundColor: colorScheme.secondaryContainer,
                       onPressed: switch (enabled) {
                         true => () {
-                            Navigator.of(context).pop();
-                            templates.saveEditable();
-                          },
+                          Navigator.of(context).pop();
+                          templates.saveEditable();
+                        },
                         false => HapticFeedback.mediumImpact,
                       },
                       child: Text(save),
@@ -118,7 +118,9 @@ class _TemplateEditorState extends State<TemplateEditor> {
       :changesWillBeLost,
       :stayHere,
       :quitPage,
-    ) = L.of(context);
+    ) = L.of(
+      context,
+    );
 
     return showBrandedDialog(
       context,
