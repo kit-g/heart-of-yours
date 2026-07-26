@@ -27,6 +27,7 @@ class AppConfig {
     required this.env,
     required this.logLevel,
     required this.maxTemplates,
+    required this.workoutTimeoutMinutes,
     required this.sentryDsn,
     required this.themeColorHex,
     required this._appLink,
@@ -40,6 +41,10 @@ class AppConfig {
   final Env env;
   final String logLevel;
   final int maxTemplates;
+
+  /// Minutes of inactivity on an active workout before the idle-timeout
+  /// notification fires. Sourced from `--dart-define` for now.
+  final int workoutTimeoutMinutes;
   final String sentryDsn;
   final String themeColorHex;
   final String _appLink;
@@ -55,6 +60,7 @@ class AppConfig {
       env: Env.fromString(const String.fromEnvironment('ENV').trim()),
       logLevel: const .fromEnvironment('LOG_LEVEL'),
       maxTemplates: const int.fromEnvironment('MAX_TEMPLATES', defaultValue: 6),
+      workoutTimeoutMinutes: const int.fromEnvironment('WORKOUT_TIMEOUT_MINUTES', defaultValue: 20),
       sentryDsn: const .fromEnvironment('SENTRY_DSN'),
       themeColorHex: const .fromEnvironment('DEFAULT_THEME_COLOR'),
       appLink: const .fromEnvironment('APP_LINK'),
@@ -70,6 +76,7 @@ class AppConfig {
     Env env = Env.dev,
     String logLevel = 'ALL',
     int maxTemplates = 6,
+    int workoutTimeoutMinutes = 20,
     String sentryDsn = '',
     String themeColorHex = '',
     String appLink = '',
@@ -84,6 +91,7 @@ class AppConfig {
       env: env,
       logLevel: logLevel,
       maxTemplates: maxTemplates,
+      workoutTimeoutMinutes: workoutTimeoutMinutes,
       sentryDsn: sentryDsn,
       themeColorHex: themeColorHex,
       appLink: appLink,
@@ -96,6 +104,8 @@ class AppConfig {
   static AppConfig of(BuildContext context) {
     return Provider.of<AppConfig>(context, listen: false);
   }
+
+  Duration get workoutTimeout => Duration(minutes: workoutTimeoutMinutes);
 
   bool get isProd => env == .prod;
 
