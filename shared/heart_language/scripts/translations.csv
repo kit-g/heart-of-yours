@@ -111,6 +111,9 @@ emptyHistoryBody,emptyHistoryBody,Go get them done!,Go get them done!,Впере
 historyEndReached,Footer at the bottom of the workout history list once every workout has loaded,You've reached the end,You've reached the end,Вы достигли конца
 historyLoadMoreError,Footer shown when loading the next page of workout history fails,Couldn't load more workouts,Couldn't load more workouts,Не удалось загрузить больше тренировок
 retry,Button to retry a failed action,Retry,Retry,Повторить
+workoutTimeoutTitle,Title of the notification sent when an active workout has been idle for a while,Still working out?,Still working out?,Ещё тренируетесь?
+workoutTimeoutBody,Body of the notification sent when an active workout has been idle for a while,Your workout's been idle for a while — jump back in or wrap it up.,Your workout's been idle for a while — jump back in or wrap it up.,Тренировка простаивает уже какое-то время — вернитесь к ней или завершите её
+notificationsDisabledReminder,Snackbar reminding the user that notifications are disabled while rest timers are set,"Notifications are off, so you won't get rest-timer alerts.","Notifications are off, so you won't get rest-timer alerts.",Уведомления выключены — оповещения таймера отдыха не придут
 customThemeColorSetting,Setting item name,Custom theme color,Custom theme colour,Пользовательский цвет темы
 customThemeColorSettingSubtitle,Setting item subtitle,Used to generate a new theme,Used to generate a new theme,Используется для создания новой темы
 aboutApp,Setting item title,About app,About app,О приложении

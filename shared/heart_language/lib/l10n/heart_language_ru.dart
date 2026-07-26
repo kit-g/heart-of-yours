@@ -328,6 +328,15 @@ class LRu extends L {
   String get retry => 'Повторить';
 
   @override
+  String get workoutTimeoutTitle => 'Ещё тренируетесь?';
+
+  @override
+  String get workoutTimeoutBody => 'Тренировка простаивает уже какое-то время — вернитесь к ней или завершите её';
+
+  @override
+  String get notificationsDisabledReminder => 'Уведомления выключены — оповещения таймера отдыха не придут';
+
+  @override
   String get customThemeColorSetting => 'Пользовательский цвет темы';
 
   @override

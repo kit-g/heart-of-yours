@@ -674,6 +674,24 @@ abstract class L {
   /// **'Retry'**
   String get retry;
 
+  /// Title of the notification sent when an active workout has been idle for a while
+  ///
+  /// In en, this message translates to:
+  /// **'Still working out?'**
+  String get workoutTimeoutTitle;
+
+  /// Body of the notification sent when an active workout has been idle for a while
+  ///
+  /// In en, this message translates to:
+  /// **'Your workout\'s been idle for a while — jump back in or wrap it up.'**
+  String get workoutTimeoutBody;
+
+  /// Snackbar reminding the user that notifications are disabled while rest timers are set
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off, so you won\'t get rest-timer alerts.'**
+  String get notificationsDisabledReminder;
+
   /// Setting item name
   ///
   /// In en, this message translates to:

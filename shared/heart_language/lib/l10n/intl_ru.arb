@@ -604,6 +604,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "workoutTimeoutTitle": "Ещё тренируетесь?",
+  "@workoutTimeoutTitle": {
+    "description": "Title of the notification sent when an active workout has been idle for a while",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutTimeoutBody": "Тренировка простаивает уже какое-то время — вернитесь к ней или завершите её",
+  "@workoutTimeoutBody": {
+    "description": "Body of the notification sent when an active workout has been idle for a while",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsDisabledReminder": "Уведомления выключены — оповещения таймера отдыха не придут",
+  "@notificationsDisabledReminder": {
+    "description": "Snackbar reminding the user that notifications are disabled while rest timers are set",
+    "type": "text",
+    "placeholders": {}
+  },
   "customThemeColorSetting": "Пользовательский цвет темы",
   "@customThemeColorSetting": {
     "description": "Setting item name",
