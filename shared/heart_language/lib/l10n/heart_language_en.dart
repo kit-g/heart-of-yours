@@ -328,6 +328,15 @@ class LEn extends L {
   String get retry => 'Retry';
 
   @override
+  String get workoutTimeoutTitle => 'Still working out?';
+
+  @override
+  String get workoutTimeoutBody => 'Your workout\'s been idle for a while — jump back in or wrap it up.';
+
+  @override
+  String get notificationsDisabledReminder => 'Notifications are off, so you won\'t get rest-timer alerts.';
+
+  @override
   String get customThemeColorSetting => 'Custom theme color';
 
   @override
@@ -1096,6 +1105,15 @@ class LEnCa extends LEn {
 
   @override
   String get retry => 'Retry';
+
+  @override
+  String get workoutTimeoutTitle => 'Still working out?';
+
+  @override
+  String get workoutTimeoutBody => 'Your workout\'s been idle for a while — jump back in or wrap it up.';
+
+  @override
+  String get notificationsDisabledReminder => 'Notifications are off, so you won\'t get rest-timer alerts.';
 
   @override
   String get customThemeColorSetting => 'Custom theme colour';
