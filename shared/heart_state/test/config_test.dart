@@ -48,11 +48,13 @@ void main() {
 
   group('init()', () {
     test('fetches config, stringifies values, sets initialized and exposes exercisesLastSynced', () async {
-      when(service.getRemoteConfig()).thenAnswer((_) async => {
-            'exercisesLastSynced': '2024-01-02T03:04:05.000Z',
-            'someNumber': 42,
-            'aBool': true,
-          });
+      when(service.getRemoteConfig()).thenAnswer(
+        (_) async => {
+          'exercisesLastSynced': '2024-01-02T03:04:05.000Z',
+          'someNumber': 42,
+          'aBool': true,
+        },
+      );
 
       expect(sut.isInitialized, isFalse);
       await sut.init();
@@ -63,9 +65,11 @@ void main() {
     });
 
     test('idempotent: second init() does not refetch', () async {
-      when(service.getRemoteConfig()).thenAnswer((_) async => {
-            'exercisesLastSynced': '2024-01-02T03:04:05.000Z',
-          });
+      when(service.getRemoteConfig()).thenAnswer(
+        (_) async => {
+          'exercisesLastSynced': '2024-01-02T03:04:05.000Z',
+        },
+      );
 
       await sut.init();
       await sut.init();
@@ -87,9 +91,11 @@ void main() {
 
   group('onSignOut()', () {
     test('clears cached values (exercisesLastSynced becomes null)', () async {
-      when(service.getRemoteConfig()).thenAnswer((_) async => {
-            'exercisesLastSynced': '2024-01-02T03:04:05.000Z',
-          });
+      when(service.getRemoteConfig()).thenAnswer(
+        (_) async => {
+          'exercisesLastSynced': '2024-01-02T03:04:05.000Z',
+        },
+      );
 
       await sut.init();
       expect(sut.exercisesLastSynced, isNotNull);

@@ -122,8 +122,9 @@ void main() {
         fb.GoogleAuthProvider.credential(idToken: 'token', accessToken: 'access'),
       );
 
-      when(account.getAvatarUploadLink(any, imageMimeType: anyNamed('imageMimeType')))
-          .thenAnswer((_) async => (url: 'https://u', fields: <String, String>{}));
+      when(
+        account.getAvatarUploadLink(any, imageMimeType: anyNamed('imageMimeType')),
+      ).thenAnswer((_) async => (url: 'https://u', fields: <String, String>{}));
 
       // wait for sut.user to update
       await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -133,29 +134,31 @@ void main() {
       verify(account.getAvatarUploadLink(expectedId, imageMimeType: 'image/png')).called(1);
     });
 
-    test('updateAvatar: when user present but no upload link, sets local avatar, notifies once and returns false',
-        () async {
-      final firebase = MockFirebaseAuth();
-      final sut = Auth(service: account, firebase: firebase, googleSignIn: MockGoogleSignIn());
+    test(
+      'updateAvatar: when user present but no upload link, sets local avatar, notifies once and returns false',
+      () async {
+        final firebase = MockFirebaseAuth();
+        final sut = Auth(service: account, firebase: firebase, googleSignIn: MockGoogleSignIn());
 
-      // sign in and wait for delivery before attaching probe
-      await firebase.signInWithCredential(
-        fb.GoogleAuthProvider.credential(idToken: 'token', accessToken: 'access'),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+        // sign in and wait for delivery before attaching probe
+        await firebase.signInWithCredential(
+          fb.GoogleAuthProvider.credential(idToken: 'token', accessToken: 'access'),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      final probe = ListenerProbe()..attach(sut);
+        final probe = ListenerProbe()..attach(sut);
 
-      when(account.getAvatarUploadLink(any, imageMimeType: anyNamed('imageMimeType'))).thenAnswer((_) async => null);
+        when(account.getAvatarUploadLink(any, imageMimeType: anyNamed('imageMimeType'))).thenAnswer((_) async => null);
 
-      final bytes = Uint8List.fromList([1, 2, 3]);
-      final ok = await sut.updateAvatar((bytes, mimeType: 'image/png', name: 'a.png'), 's3://avatars');
+        final bytes = Uint8List.fromList([1, 2, 3]);
+        final ok = await sut.updateAvatar((bytes, mimeType: 'image/png', name: 'a.png'), 's3://avatars');
 
-      expect(ok, isFalse);
-      expect(probe.notifications, 1); // local avatar set triggers one notify
-      verify(account.getAvatarUploadLink(any, imageMimeType: 'image/png')).called(1);
-      verifyNever(account.uploadFile(any, any, onProgress: anyNamed('onProgress')));
-    });
+        expect(ok, isFalse);
+        expect(probe.notifications, 1); // local avatar set triggers one notify
+        verify(account.getAvatarUploadLink(any, imageMimeType: 'image/png')).called(1);
+        verifyNever(account.uploadFile(any, any, onProgress: anyNamed('onProgress')));
+      },
+    );
 
     test('deleteAccountDeletionSchedule: no-op when user is null (no service calls)', () async {
       final firebase = MockFirebaseAuth();
