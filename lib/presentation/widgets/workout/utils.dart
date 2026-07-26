@@ -25,6 +25,30 @@ extension on TextEditingController {
 
 enum _ExerciseOption { inspectExercise, autoRestTimer, remove }
 
+/// Index in [items] where [dragged] would land if dropped on [hovered] — the
+/// slot the drop indicator marks, and the slot the reorder actually produces.
+///
+/// A downwards drag lands *after* [hovered], an upwards drag *before* it, which
+/// is what makes dropping onto the neighbour directly below do something: a
+/// plain insert-before would put the exercise back where it already was.
+/// A null [hovered] means the trailing target, i.e. append.
+///
+/// Returns null when there is nothing to draw or move.
+int? dropIndex(List<WorkoutExercise> items, WorkoutExercise? dragged, WorkoutExercise? hovered) {
+  if (dragged == null) return null;
+  if (hovered == null) return items.length;
+
+  final from = items.indexOf(dragged);
+  final to = items.indexOf(hovered);
+
+  if (from < 0 || to < 0 || from == to) return null;
+
+  return switch (from < to) {
+    true => to + 1,
+    false => to,
+  };
+}
+
 Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {VoidCallback? onFinish}) async {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
   final Workouts(:activeWorkout) = workouts;
