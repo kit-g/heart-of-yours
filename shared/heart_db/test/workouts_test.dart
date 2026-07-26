@@ -298,6 +298,11 @@ void main() {
 
           when(txn.insert(any, any)).thenAnswer((_) async => 1);
           when(batch.commit(noResult: true)).thenAnswer((_) async => []);
+          when(txn.rawQuery(any, any)).thenAnswer(
+            (_) async => [
+              {'next': 3},
+            ],
+          );
 
           await local.startExercise(workoutId, we);
 
@@ -308,6 +313,8 @@ void main() {
                 'workout_id': workoutId,
                 'exercise_id': we.exercise.name,
                 'id': we.id,
+                // lands at the end of the workout
+                'exercise_order': 3,
               },
             ),
           ).called(1);
@@ -653,8 +660,78 @@ void main() {
   );
 
   group(
+    'saveExerciseOrder',
+    () {
+      test(
+        'writes each id its position, scoped to the workout',
+        () async {
+          when(batch.commit(noResult: true)).thenAnswer((_) async => []);
+
+          await local.saveExerciseOrder(['b', 'c', 'a'], 'w123');
+
+          for (final (index, id) in ['b', 'c', 'a'].indexed) {
+            verify(
+              batch.update(
+                'workout_exercises',
+                {'exercise_order': index},
+                where: 'id = ? AND workout_id = ?',
+                whereArgs: [id, 'w123'],
+              ),
+            ).called(1);
+          }
+
+          verify(batch.commit(noResult: true)).called(1);
+        },
+      );
+    },
+  );
+
+  group(
     'getActiveWorkout',
     () {
+      test(
+        'orders exercises by the stored exercise_order, not by row order',
+        () async {
+          // json_group_array gives no ordering guarantee, so the row deliberately
+          // lists the exercises in an order that contradicts exercise_order
+          Map<String, dynamic> row(String id, String name, int? order) {
+            return {
+              'id': id,
+              'order': order,
+              'exercise': exercise(name: name).toMap(),
+              'sets': [],
+            };
+          }
+
+          final w = workout(finished: false);
+
+          when(db.rawQuery(sql.activeWorkout, ['user-1'])).thenAnswer(
+            (_) async => [
+              {
+                'id': w.id,
+                'start': w.start.toIso8601String(),
+                'end': null,
+                'name': w.name,
+                'exercises': jsonEncode([
+                  row('third', 'Squat', 2),
+                  row('first', 'Push Up', 0),
+                  // predates the order column — sorts last, after every ordered row
+                  row('legacy', 'Plank', null),
+                  row('second', 'Deadlift', 1),
+                ]),
+              },
+            ],
+          );
+
+          final result = await local.getActiveWorkout('user-1');
+
+          expect(
+            result?.map((each) => each.id).toList(),
+            equals(['first', 'second', 'third', 'legacy']),
+          );
+        },
+      );
+
       test(
         'returns null if no active workout is found',
         () async {

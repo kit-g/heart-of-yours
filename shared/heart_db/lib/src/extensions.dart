@@ -23,12 +23,45 @@ extension on Map<String, dynamic> {
   }
 }
 
+/// Sentinel order for exercise rows written before `exercise_order` was
+/// populated. Sorts them after every ordered row, keeping their relative
+/// position among themselves.
+const _unordered = 1 << 31;
+
+int _orderOf(dynamic exercise) {
+  return switch (exercise) {
+    {'order': int order} => order,
+    _ => _unordered,
+  };
+}
+
+/// `json_group_array` makes no promise about the order of its elements, so the
+/// exercises of a workout come back in whatever order SQLite happened to emit
+/// rows in. Sort them by the stored `exercise_order` — the user's own ordering,
+/// which for the active workout lives nowhere else until the workout is
+/// finished and pushed to the server.
+///
+/// [List.sort] is not stable, so ties fall back to the original position.
+List<dynamic> _ordered(dynamic decoded) {
+  if (decoded is! List) return const [];
+  final indexed = decoded.indexed.toList()
+    ..sort(
+      (one, two) {
+        return switch (_orderOf(one.$2).compareTo(_orderOf(two.$2))) {
+          0 => one.$1.compareTo(two.$1),
+          int byOrder => byOrder,
+        };
+      },
+    );
+  return indexed.map((each) => each.$2).toList();
+}
+
 extension on Map {
   Map toWorkout() {
     return map(
       (key, value) {
         return switch (key) {
-          'exercises' => MapEntry(key, jsonDecode(value)),
+          'exercises' => MapEntry(key, _ordered(jsonDecode(value))),
           'image' when value != null => MapEntry(key, jsonDecode(value)),
           'end' => MapEntry(key, value ?? ''),
           _ => MapEntry(key, value),

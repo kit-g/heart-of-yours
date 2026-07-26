@@ -106,6 +106,8 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
           'workout_id': workoutId,
           'exercise_id': exercise.exercise.name,
           'id': exercise.id,
+          // a freshly started exercise lands at the end of the workout
+          'exercise_order': await _nextExerciseOrder(txn, workoutId),
         };
 
         await txn.insert(_workoutExercises, row);
@@ -122,6 +124,35 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
           batch.insert(_sets, row);
         }
 
+        await batch.commit(noResult: true);
+      },
+    );
+  }
+
+  Future<int> _nextExerciseOrder(DatabaseExecutor txn, String workoutId) async {
+    final rows = await txn.rawQuery(
+      'SELECT COALESCE(MAX(exercise_order), -1) + 1 AS next FROM $_workoutExercises WHERE workout_id = ?',
+      [workoutId],
+    );
+    return switch (rows) {
+      [{'next': int next}] => next,
+      _ => 0,
+    };
+  }
+
+  @override
+  Future<void> saveExerciseOrder(Iterable<String> orderedIds, String workoutId) {
+    return _db.transaction(
+      (txn) async {
+        final batch = txn.batch();
+        for (final (index, id) in orderedIds.indexed) {
+          batch.update(
+            _workoutExercises,
+            {'exercise_order': index},
+            where: 'id = ? AND workout_id = ?',
+            whereArgs: [id, workoutId],
+          );
+        }
         await batch.commit(noResult: true);
       },
     );
