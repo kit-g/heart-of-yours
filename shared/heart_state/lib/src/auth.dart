@@ -379,8 +379,7 @@ enum AuthExceptionReason {
   emailInUse,
   weakPassword,
   networkRequestFailed,
-  unknown
-  ;
+  unknown;
 
   factory AuthExceptionReason.fromCode(String code) {
     return switch (code) {
