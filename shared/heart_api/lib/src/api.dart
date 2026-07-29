@@ -199,6 +199,19 @@ class Api
   }
 
   @override
+  Future<Workout> patchWorkout(String workoutId, {DateTime? start, DateTime? end, String? name}) async {
+    final (json, _) = await patch(
+      Router.workout(workoutId),
+      body: {
+        'name': ?name,
+        'start': ?start?.toIso8601String(),
+        'end': ?end?.toIso8601String(),
+      },
+    );
+    return Workout.fromJson(json);
+  }
+
+  @override
   Future<Iterable<Workout>?> getWorkouts(String userId, {int? pageSize, String? since}) async {
     // The interface still names these pageSize/since; the wire uses limit/cursor.
     final (json, code) = await get(
