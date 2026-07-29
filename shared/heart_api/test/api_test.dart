@@ -357,6 +357,64 @@ void main() {
       expect((result as Page<Workout>).hasMore, isFalse);
     });
 
+    test('patchWorkout PATCHes the provided fields and parses the updated workout', () async {
+      const id = 'w1';
+      final start = DateTime.utc(2025, 1, 21, 12);
+      final end = DateTime.utc(2025, 1, 21, 13);
+
+      _response(
+        client: client,
+        method: 'PATCH',
+        path: Router.workout(id),
+        statusCode: 200,
+        body: {'id': id, 'name': 'Renamed', 'start': start.toIso8601String(), 'end': end.toIso8601String()},
+      );
+
+      final result = await api.patchWorkout(id, start: start, end: end, name: 'Renamed');
+
+      expect(result.id, equals(id));
+      expect(result.name, equals('Renamed'));
+      expect(result.start, equals(start));
+      expect(result.end, equals(end));
+
+      final captured = verify(
+        client.patch(
+          Uri.https('api.example.com', Router.workout(id)),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(
+        jsonDecode(captured as String),
+        equals({'name': 'Renamed', 'start': start.toIso8601String(), 'end': end.toIso8601String()}),
+      );
+    });
+
+    test('patchWorkout omits null fields from the request body', () async {
+      const id = 'w2';
+      final end = DateTime.utc(2025, 1, 21, 13);
+
+      _response(
+        client: client,
+        method: 'PATCH',
+        path: Router.workout(id),
+        statusCode: 200,
+        body: {'id': id, 'name': 'Kept', 'start': '2025-01-21T12:00:00.000Z', 'end': end.toIso8601String()},
+      );
+
+      await api.patchWorkout(id, end: end);
+
+      final captured = verify(
+        client.patch(
+          Uri.https('api.example.com', Router.workout(id)),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      // name and start were null, so they must not appear on the wire (partial update)
+      expect(jsonDecode(captured as String), equals({'end': end.toIso8601String()}));
+    });
+
     test('getWorkouts returns null on malformed response', () async {
       const userId = 'us1';
       _response(
@@ -527,6 +585,13 @@ void _response({
     ).thenAnswer((_) async => response),
     'PUT' => when(
       client.put(
+        uri,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      ),
+    ).thenAnswer((_) async => response),
+    'PATCH' => when(
+      client.patch(
         uri,
         headers: anyNamed('headers'),
         body: anyNamed('body'),
