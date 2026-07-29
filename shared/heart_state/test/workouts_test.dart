@@ -381,6 +381,73 @@ void main() {
     });
   });
 
+  group('editWorkoutTimes', () {
+    final start = DateTime.utc(2025, 1, 1, 8);
+    final end = DateTime.utc(2025, 1, 1, 9);
+
+    Workout patched({String id = 'w1'}) {
+      return models.Workout.fromJson({
+        'id': id,
+        'name': 'Session',
+        'start': start.toIso8601String(),
+        'end': end.toIso8601String(),
+      });
+    }
+
+    test('patches, stores the returned workout, and notifies', () async {
+      clearInteractions(local);
+      clearInteractions(remote);
+      final result = patched();
+      when(
+        remote.patchWorkout(any, start: anyNamed('start'), end: anyNamed('end'), name: anyNamed('name')),
+      ).thenAnswer((_) async => result);
+
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      final returned = await sut.editWorkoutTimes('w1', start: start, end: end);
+
+      expect(returned, same(result));
+      expect(sut.lookup('w1'), same(result));
+      verify(local.storeWorkoutHistory([result], 'u1')).called(1);
+      expect(notified, greaterThanOrEqualTo(1));
+    });
+
+    test('is a no-op returning null when neither start nor end is given', () async {
+      clearInteractions(local);
+      clearInteractions(remote);
+      final returned = await sut.editWorkoutTimes('w1');
+
+      expect(returned, isNull);
+      verifyNever(
+        remote.patchWorkout(any, start: anyNamed('start'), end: anyNamed('end'), name: anyNamed('name')),
+      );
+      verifyNever(local.storeWorkoutHistory(any, any));
+    });
+
+    test('returns null and reports the error when the patch fails', () async {
+      clearInteractions(local);
+      clearInteractions(remote);
+      final boom = Exception('boom');
+      when(
+        remote.patchWorkout(any, start: anyNamed('start'), end: anyNamed('end'), name: anyNamed('name')),
+      ).thenThrow(boom);
+
+      Object? reported;
+      final sut = Workouts(
+        service: local,
+        remoteService: remote,
+        onError: (error, {stacktrace}) => reported = error,
+      )..userId = 'u1';
+
+      final returned = await sut.editWorkoutTimes('w1', end: end);
+
+      expect(returned, isNull);
+      expect(reported, same(boom));
+      verifyNever(local.storeWorkoutHistory(any, any));
+    });
+  });
+
   group('history pagination', () {
     setUp(() {
       when(local.getWorkoutHistory('u1')).thenAnswer((_) async => <Workout>[]);

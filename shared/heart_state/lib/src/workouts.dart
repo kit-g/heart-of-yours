@@ -236,6 +236,26 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
+  /// Updates a finished workout's [start] and/or [end] through the dedicated
+  /// times PATCH endpoint, replacing the local copy with the server's
+  /// authoritative one. Returns the updated workout, or null if nothing was
+  /// requested or the request failed (reported via [onError]).
+  Future<Workout?> editWorkoutTimes(String workoutId, {DateTime? start, DateTime? end}) async {
+    if (start == null && end == null) return null;
+    try {
+      final patched = await _remoteService.patchWorkout(workoutId, start: start, end: end);
+      _workouts[patched.id] = patched;
+      if (userId case String id) {
+        await _localService.storeWorkoutHistory([patched], id);
+      }
+      notifyListeners();
+      return patched;
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return null;
+    }
+  }
+
   Future<void> cancelActiveWorkout() async {
     if (_activeWorkoutId case String id) {
       _workouts.remove(id);
