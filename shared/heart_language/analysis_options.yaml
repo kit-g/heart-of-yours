@@ -6,6 +6,7 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - lib/l10n/**
+    - build/**
 
 linter:
   rules:
