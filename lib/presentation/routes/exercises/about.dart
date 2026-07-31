@@ -20,9 +20,38 @@ class _About extends StatelessWidget {
               padding: const .only(bottom: 16.0),
               child: ClipRRect(
                 borderRadius: const .all(.circular(6)),
-                child: AppImage(
-                  url: asset.link,
-                  fit: .cover,
+                // Reserve the slot up front so the layout doesn't jump when the
+                // (often animated) asset finishes loading. Use the asset's own
+                // dimensions when known, otherwise a sensible 3:2 default.
+                child: AspectRatio(
+                  aspectRatio: switch ((asset.width, asset.height)) {
+                    (int w, int h) when w > 0 && h > 0 => w / h,
+                    _ => 3 / 2,
+                  },
+                  child: AppImage(
+                    url: asset.link,
+                    fit: .cover,
+                    fadeInDuration: const Duration(milliseconds: 80),
+                    progressIndicatorBuilder: (context, _, progress) {
+                      return ColoredBox(
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: .1),
+                        // Draw the determinate ring only while bytes are actually
+                        // arriving. cached_network_image also emits null-progress
+                        // frames — one before the first chunk and every frame of the
+                        // fade-in blend — where showing a ring would spin over the
+                        // appearing gif. On those, render just the tint.
+                        child: switch (progress.progress) {
+                          double value => Center(
+                            child: SizedBox.square(
+                              dimension: 24,
+                              child: CircularProgressIndicator(strokeWidth: 1, value: value),
+                            ),
+                          ),
+                          null => const SizedBox.expand(),
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
