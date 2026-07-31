@@ -10,6 +10,9 @@ class AppImage extends StatelessWidget {
   final Widget Function(BuildContext context, String url, DownloadProgress progress)? progressIndicatorBuilder;
   final Widget Function(BuildContext context, Object error)? errorWidget;
 
+  /// How long the loaded image crossfades in over the placeholder.
+  final Duration fadeInDuration;
+
   const AppImage({
     super.key,
     this.url,
@@ -17,6 +20,7 @@ class AppImage extends StatelessWidget {
     this.fit,
     this.progressIndicatorBuilder,
     this.errorWidget,
+    this.fadeInDuration = const Duration(milliseconds: 200),
   });
 
   @override
@@ -56,7 +60,7 @@ class AppImage extends StatelessWidget {
         },
       ),
       (String url, _) when url.startsWith('https') => CachedNetworkImage(
-        fadeInDuration: const Duration(milliseconds: 200),
+        fadeInDuration: fadeInDuration,
         httpHeaders: _headers,
         imageUrl: url,
         fit: fit,
