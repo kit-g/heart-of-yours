@@ -70,7 +70,12 @@ class _Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 16.0, right: 16, top: 16),
+      padding: switch (section) {
+        // About insets its own children: the "also try" row has to scroll clear
+        // to the screen edge, which a padded ancestor would cut short.
+        .about => const .only(top: 16),
+        _ => const .only(left: 16, right: 16, top: 16),
+      },
       child: switch (section) {
         .about => _About(
           exercise: exercise,

@@ -22,7 +22,7 @@ class _About extends StatelessWidget {
         crossAxisAlignment: .stretch,
         children: [
           Padding(
-            padding: const .only(bottom: 12),
+            padding: const .only(left: 16, right: 16, bottom: 12),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -38,7 +38,7 @@ class _About extends StatelessWidget {
           ),
           if (asset case Asset asset)
             Padding(
-              padding: const .only(bottom: 16.0),
+              padding: const .only(left: 16, right: 16, bottom: 16.0),
               child: ClipRRect(
                 borderRadius: const .all(.circular(6)),
                 // Reserve the slot up front so the layout doesn't jump when the
@@ -101,26 +101,32 @@ class _About extends StatelessWidget {
                   );
                 }
 
-                return Row(
-                  children: [
-                    Expanded(
-                      child: panel(.musclesFront),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: panel(.musclesBack),
-                    ),
-                  ],
+                return Padding(
+                  padding: const .symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: panel(.musclesFront),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: panel(.musclesBack),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
           if (instructions case String instructions when instructions.isNotEmpty)
-            MarkdownBlock(
-              data: instructions,
-              config: switch (Theme.of(context).brightness) {
-                .dark => .defaultConfig,
-                .light => .defaultConfig,
-              },
+            Padding(
+              padding: const .symmetric(horizontal: 16),
+              child: MarkdownBlock(
+                data: instructions,
+                config: switch (Theme.of(context).brightness) {
+                  .dark => .defaultConfig,
+                  .light => .defaultConfig,
+                },
+              ),
             ),
         ],
       ),
@@ -202,12 +208,18 @@ class _Alternatives extends StatelessWidget {
         crossAxisAlignment: .start,
         spacing: 8,
         children: [
-          Text(
-            L.of(context).alsoTry,
-            style: textTheme.titleSmall,
+          Padding(
+            padding: const .symmetric(horizontal: 16),
+            child: Text(
+              L.of(context).alsoTry,
+              style: textTheme.titleSmall,
+            ),
           ),
+          // the gutter lives inside the viewport, so the chips scroll past the
+          // screen edge instead of stopping short of it
           SingleChildScrollView(
             scrollDirection: .horizontal,
+            padding: const .symmetric(horizontal: 16),
             child: Row(
               spacing: 8,
               children: [
