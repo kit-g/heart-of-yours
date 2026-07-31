@@ -448,6 +448,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "sec": "sec",
+  "@sec": {
+    "description": "Abbreviation for seconds",
+    "type": "text",
+    "placeholders": {}
+  },
   "lbs": "lbs",
   "@lbs": {
     "description": "Generic label, pounds",
@@ -1297,6 +1303,36 @@
   "editWorkoutName": "Edit workout name",
   "@editWorkoutName": {
     "description": "Menu item that allows to edit workout name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editWorkoutTimes": "Edit times",
+  "@editWorkoutTimes": {
+    "description": "Menu item that allows editing a workout's start and end times",
+    "type": "text",
+    "placeholders": {}
+  },
+  "adjustTimes": "Adjust Start/End Time",
+  "@adjustTimes": {
+    "description": "Title of the dialog for editing a workout's start and end times",
+    "type": "text",
+    "placeholders": {}
+  },
+  "startTime": "Start time",
+  "@startTime": {
+    "description": "Label for a workout's start time",
+    "type": "text",
+    "placeholders": {}
+  },
+  "endTime": "End time",
+  "@endTime": {
+    "description": "Label for a workout's end time",
+    "type": "text",
+    "placeholders": {}
+  },
+  "endBeforeStart": "End time can't be before the start time.",
+  "@endBeforeStart": {
+    "description": "Validation shown when a workout's chosen end time precedes its start time",
     "type": "text",
     "placeholders": {}
   },

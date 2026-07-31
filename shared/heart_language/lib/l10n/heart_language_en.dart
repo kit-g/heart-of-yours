@@ -243,6 +243,9 @@ class LEn extends L {
   String get min => 'min';
 
   @override
+  String get sec => 'sec';
+
+  @override
   String get lbs => 'lbs';
 
   @override
@@ -689,6 +692,21 @@ class LEn extends L {
   String get editWorkoutName => 'Edit workout name';
 
   @override
+  String get editWorkoutTimes => 'Edit times';
+
+  @override
+  String get adjustTimes => 'Adjust Start/End Time';
+
+  @override
+  String get startTime => 'Start time';
+
+  @override
+  String get endTime => 'End time';
+
+  @override
+  String get endBeforeStart => 'End time can\'t be before the start time.';
+
+  @override
   String get cropImage => 'Crop image';
 
   @override
@@ -1020,6 +1038,9 @@ class LEnCa extends LEn {
 
   @override
   String get min => 'min';
+
+  @override
+  String get sec => 'sec';
 
   @override
   String get lbs => 'lbs';
@@ -1466,6 +1487,21 @@ class LEnCa extends LEn {
 
   @override
   String get editWorkoutName => 'Edit workout name';
+
+  @override
+  String get editWorkoutTimes => 'Edit times';
+
+  @override
+  String get adjustTimes => 'Adjust Start/End Time';
+
+  @override
+  String get startTime => 'Start time';
+
+  @override
+  String get endTime => 'End time';
+
+  @override
+  String get endBeforeStart => 'End time can\'t be before the start time.';
 
   @override
   String get cropImage => 'Crop image';

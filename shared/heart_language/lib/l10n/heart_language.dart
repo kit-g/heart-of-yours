@@ -536,6 +536,12 @@ abstract class L {
   /// **'min'**
   String get min;
 
+  /// Abbreviation for seconds
+  ///
+  /// In en, this message translates to:
+  /// **'sec'**
+  String get sec;
+
   /// Generic label, pounds
   ///
   /// In en, this message translates to:
@@ -1345,6 +1351,36 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Edit workout name'**
   String get editWorkoutName;
+
+  /// Menu item that allows editing a workout's start and end times
+  ///
+  /// In en, this message translates to:
+  /// **'Edit times'**
+  String get editWorkoutTimes;
+
+  /// Title of the dialog for editing a workout's start and end times
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust Start/End Time'**
+  String get adjustTimes;
+
+  /// Label for a workout's start time
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get startTime;
+
+  /// Label for a workout's end time
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get endTime;
+
+  /// Validation shown when a workout's chosen end time precedes its start time
+  ///
+  /// In en, this message translates to:
+  /// **'End time can\'t be before the start time.'**
+  String get endBeforeStart;
 
   /// Label in the image cropper
   ///
