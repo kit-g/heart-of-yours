@@ -38,4 +38,7 @@ const _migrations = <int, List<String>>{
     addChartsSortOrder,
     backfillChartsSortOrder,
   ],
+  5: [
+    addExerciseMovement,
+  ],
 };
