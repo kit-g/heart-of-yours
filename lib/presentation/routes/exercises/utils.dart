@@ -38,12 +38,16 @@ _ExerciseSection _initialSection(Exercise exercise, String? tab) {
 List<Widget> _pages(
   Exercise exercise, {
   required final Future<void> Function(String) onTapWorkout,
+  final void Function(ExerciseFilter)? onFilter,
+  final void Function(Exercise)? onTapAlternative,
 }) {
   return exercise.sections.map((section) {
     return _Page(
       section: section,
       exercise: exercise,
       onTapWorkout: onTapWorkout,
+      onFilter: onFilter,
+      onTapAlternative: onTapAlternative,
     );
   }).toList();
 }
@@ -52,11 +56,15 @@ class _Page extends StatelessWidget {
   final _ExerciseSection section;
   final Exercise exercise;
   final Future<void> Function(String) onTapWorkout;
+  final void Function(ExerciseFilter)? onFilter;
+  final void Function(Exercise)? onTapAlternative;
 
   const _Page({
     required this.section,
     required this.exercise,
     required this.onTapWorkout,
+    this.onFilter,
+    this.onTapAlternative,
   });
 
   @override
@@ -64,7 +72,11 @@ class _Page extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 16.0, right: 16, top: 16),
       child: switch (section) {
-        .about => _About(exercise: exercise),
+        .about => _About(
+          exercise: exercise,
+          onFilter: onFilter,
+          onTapAlternative: onTapAlternative,
+        ),
         .charts => _Charts(exercise: exercise),
         .records => _Records(
           exercise: exercise,

@@ -618,6 +618,9 @@ class LEn extends L {
   String get accountDeletedAction => '🔥🏆 Undo the Goodbye 🥇🔥';
 
   @override
+  String get alsoTry => 'Also try';
+
+  @override
   String get about => 'About';
 
   @override
@@ -1413,6 +1416,9 @@ class LEnCa extends LEn {
 
   @override
   String get accountDeletedAction => '🔥🏆 Undo the Goodbye 🥇🔥';
+
+  @override
+  String get alsoTry => 'Also try';
 
   @override
   String get about => 'About';

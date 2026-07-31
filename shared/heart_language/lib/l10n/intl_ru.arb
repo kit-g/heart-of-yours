@@ -1163,6 +1163,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "alsoTry": "Попробуйте также",
+  "@alsoTry": {
+    "description": "Substitution section on the exercise About tab",
+    "type": "text",
+    "placeholders": {}
+  },
   "about": "О приложении",
   "@about": {
     "description": "Generic label",

@@ -7,6 +7,8 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
   final bool allowOptions;
   final Widget? leading;
   final String? initialTab;
+  final void Function(ExerciseFilter)? onFilter;
+  final void Function(Exercise)? onTapAlternative;
 
   const _CupertinoExerciseDetailPage({
     required this.exercise,
@@ -15,6 +17,8 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
     this.onShareExercise,
     this.leading,
     this.initialTab,
+    this.onFilter,
+    this.onTapAlternative,
   });
 
   @override
@@ -107,7 +111,12 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
       body: PageView(
         onPageChanged: (index) => _select(_sections[index]),
         controller: _pageController,
-        children: _pages(widget.exercise, onTapWorkout: widget.onTapWorkout),
+        children: _pages(
+          widget.exercise,
+          onTapWorkout: widget.onTapWorkout,
+          onFilter: widget.onFilter,
+          onTapAlternative: widget.onTapAlternative,
+        ),
       ),
     );
   }

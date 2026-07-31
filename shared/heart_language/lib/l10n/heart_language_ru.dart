@@ -618,6 +618,9 @@ class LRu extends L {
   String get accountDeletedAction => '🔥🏆 Отменить удаление 🥇🔥';
 
   @override
+  String get alsoTry => 'Попробуйте также';
+
+  @override
   String get about => 'О приложении';
 
   @override

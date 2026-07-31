@@ -1163,6 +1163,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "alsoTry": "Also try",
+  "@alsoTry": {
+    "description": "Substitution section on the exercise About tab",
+    "type": "text",
+    "placeholders": {}
+  },
   "about": "About",
   "@about": {
     "description": "Generic label",

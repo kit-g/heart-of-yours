@@ -7,6 +7,8 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
   final bool allowOptions;
   final Widget? leading;
   final String? initialTab;
+  final void Function(ExerciseFilter)? onFilter;
+  final void Function(Exercise)? onTapAlternative;
 
   const _MaterialExerciseDetailPage({
     required this.exercise,
@@ -15,6 +17,8 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
     required this.onShareExercise,
     this.leading,
     this.initialTab,
+    this.onFilter,
+    this.onTapAlternative,
   });
 
   @override
@@ -82,7 +86,12 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
       ),
       body: TabBarView(
         controller: _controller,
-        children: _pages(widget.exercise, onTapWorkout: widget.onTapWorkout),
+        children: _pages(
+          widget.exercise,
+          onTapWorkout: widget.onTapWorkout,
+          onFilter: widget.onFilter,
+          onTapAlternative: widget.onTapAlternative,
+        ),
       ),
     );
   }

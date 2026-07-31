@@ -2,12 +2,18 @@ part of 'exercises.dart';
 
 class _About extends StatelessWidget {
   final Exercise exercise;
+  final void Function(ExerciseFilter)? onFilter;
+  final void Function(Exercise)? onTapAlternative;
 
-  const _About({required this.exercise});
+  const _About({
+    required this.exercise,
+    this.onFilter,
+    this.onTapAlternative,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final Exercise(:asset, :muscles, :instructions) = exercise;
+    final Exercise(:asset, :muscles, :instructions, :category, :target) = exercise;
     final ThemeData(:colorScheme) = Theme.of(context);
 
     return SingleChildScrollView(
@@ -15,6 +21,21 @@ class _About extends StatelessWidget {
       child: Column(
         crossAxisAlignment: .stretch,
         children: [
+          Padding(
+            padding: const .only(bottom: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _FilterChip(filter: category, onFilter: onFilter),
+                _FilterChip(filter: target, onFilter: onFilter),
+              ],
+            ),
+          ),
+          _Alternatives(
+            exercise: exercise,
+            onTapAlternative: onTapAlternative,
+          ),
           if (asset case Asset asset)
             Padding(
               padding: const .only(bottom: 16.0),
@@ -121,6 +142,87 @@ class _About extends StatelessWidget {
           .all //
           .where((muscle) => _shouldPaint(muscle, tags))
           .map((muscle) => MapEntry(muscle, color)),
+    );
+  }
+}
+
+/// The exercise's category or target. Tapping opens the library filtered to it;
+/// without [onFilter] it is a plain label.
+class _FilterChip extends StatelessWidget {
+  final ExerciseFilter filter;
+  final void Function(ExerciseFilter)? onFilter;
+
+  const _FilterChip({required this.filter, this.onFilter});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme) = Theme.of(context);
+    final label = Text(
+      switch (filter) {
+        Target(:final icon, :final value) => '$icon  $value',
+        _ => filter.value,
+      },
+      style: textTheme.bodyMedium,
+    );
+    const density = VisualDensity(vertical: -2, horizontal: -2);
+
+    return switch (onFilter) {
+      null => Chip(label: label, visualDensity: density),
+      final onFilter => ActionChip(
+        label: label,
+        visualDensity: density,
+        onPressed: () => onFilter(filter),
+      ),
+    };
+  }
+}
+
+/// Exercises that train the same movement pattern, closest first.
+///
+/// Hidden entirely when the library has nothing to swap in — an unannotated or
+/// user-created exercise, or one of the genuine singletons like the leg
+/// extension machine.
+class _Alternatives extends StatelessWidget {
+  final Exercise exercise;
+  final void Function(Exercise)? onTapAlternative;
+
+  const _Alternatives({required this.exercise, this.onTapAlternative});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme) = Theme.of(context);
+    // watched, so the section appears once the library finishes loading
+    final alternatives = Exercises.watch(context).alternativesTo(exercise).toList();
+
+    if (alternatives.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const .only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: .start,
+        spacing: 8,
+        children: [
+          Text(
+            L.of(context).alsoTry,
+            style: textTheme.titleSmall,
+          ),
+          SingleChildScrollView(
+            scrollDirection: .horizontal,
+            child: Row(
+              spacing: 8,
+              children: [
+                ...alternatives.map(
+                  (each) => ActionChip(
+                    label: Text(each.name, style: textTheme.bodyMedium),
+                    visualDensity: const VisualDensity(vertical: -2, horizontal: -2),
+                    onPressed: () => onTapAlternative?.call(each),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
