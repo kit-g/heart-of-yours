@@ -1214,6 +1214,12 @@ abstract class L {
   /// **'🔥🏆 Undo the Goodbye 🥇🔥'**
   String get accountDeletedAction;
 
+  /// Substitution section on the exercise About tab
+  ///
+  /// In en, this message translates to:
+  /// **'Also try'**
+  String get alsoTry;
+
   /// Generic label
   ///
   /// In en, this message translates to:

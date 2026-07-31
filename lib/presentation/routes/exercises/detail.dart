@@ -10,6 +10,14 @@ class ExerciseDetailPage extends StatelessWidget {
   /// Tab to open on, by name (e.g. from a shared `?tab=charts` deep link).
   final String? initialTab;
 
+  /// Opens the library filtered to the tapped category or target. When null the
+  /// chips render as plain labels — navigating away is wrong from a dialog
+  /// sitting on top of a workout.
+  final void Function(ExerciseFilter)? onFilter;
+
+  /// Opens a substitute suggested by the "also try" section.
+  final void Function(Exercise)? onTapAlternative;
+
   const ExerciseDetailPage({
     super.key,
     required this.exercise,
@@ -18,6 +26,8 @@ class ExerciseDetailPage extends StatelessWidget {
     this.leading,
     this.onShareExercise,
     this.initialTab,
+    this.onFilter,
+    this.onTapAlternative,
   });
 
   @override
@@ -30,6 +40,8 @@ class ExerciseDetailPage extends StatelessWidget {
         leading: leading,
         onShareExercise: onShareExercise,
         initialTab: initialTab,
+        onFilter: onFilter,
+        onTapAlternative: onTapAlternative,
       ),
       _ => _MaterialExerciseDetailPage(
         exercise: exercise,
@@ -38,6 +50,8 @@ class ExerciseDetailPage extends StatelessWidget {
         leading: leading,
         onShareExercise: onShareExercise,
         initialTab: initialTab,
+        onFilter: onFilter,
+        onTapAlternative: onTapAlternative,
       ),
     };
   }
@@ -63,6 +77,12 @@ Future<void> showExerciseDetailDialog(BuildContext context, Exercise exercise) {
             onPressed: Navigator.of(context).pop,
             icon: const Icon(Icons.close),
           ),
+          // no `onFilter`: the library is a route away, and this dialog is
+          // opened from a workout the lifter is in the middle of.
+          onTapAlternative: (alternative) {
+            Navigator.of(context).pop();
+            showExerciseDetailDialog(context, alternative);
+          },
         ),
       );
     },
