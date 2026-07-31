@@ -243,6 +243,9 @@ class LRu extends L {
   String get min => 'мин';
 
   @override
+  String get sec => 'сек';
+
+  @override
   String get lbs => 'фнт';
 
   @override
@@ -687,6 +690,21 @@ class LRu extends L {
 
   @override
   String get editWorkoutName => 'Изменить название тренировки';
+
+  @override
+  String get editWorkoutTimes => 'Изменить время';
+
+  @override
+  String get adjustTimes => 'Изменить время начала и конца';
+
+  @override
+  String get startTime => 'Время начала';
+
+  @override
+  String get endTime => 'Время окончания';
+
+  @override
+  String get endBeforeStart => 'Время окончания не может быть раньше времени начала.';
 
   @override
   String get cropImage => 'Обрезать изображение';
