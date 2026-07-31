@@ -88,6 +88,7 @@ finish,"Generic label, ""finish workout"" button",Finish,Finish,Завершит
 reset,"Generic label, ""Reset"" button",Reset,Reset,Сбросить
 h,Abbreviation for hours,h,h,ч
 min,Abbreviation for minutes,min,min,мин
+sec,Abbreviation for seconds,sec,sec,сек
 lbs,"Generic label, pounds",lbs,lbs,фнт
 skip,"Generic label, verb",Skip,Skip,Пропустить
 lb,"Generic label, pounds","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} фнт}other{{howMany} фнт}}"
@@ -250,6 +251,11 @@ Thanks for your patience — and sorry for the interruption.","Доступно 
 updateRequiredCta,"Force update screen, CTA",Update on the {storeName},Update on the {storeName},Обновить в {storeName}
 addPhoto,Menu item that allows to add photo to a workout,Add photo,Add photo,Добавить фото
 editWorkoutName,Menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки
+editWorkoutTimes,Menu item that allows editing a workout's start and end times,Edit times,Edit times,Изменить время
+adjustTimes,Title of the dialog for editing a workout's start and end times,Adjust Start/End Time,Adjust Start/End Time,Изменить время начала и конца
+startTime,Label for a workout's start time,Start time,Start time,Время начала
+endTime,Label for a workout's end time,End time,End time,Время окончания
+endBeforeStart,Validation shown when a workout's chosen end time precedes its start time,End time can't be before the start time.,End time can't be before the start time.,Время окончания не может быть раньше времени начала.
 cropImage,Label in the image cropper,Crop image,Crop image,Обрезать изображение
 removePhoto,Menu item that allows to remove photo from a workout,Remove photo,Remove photo,Удалить фото
 aboutExercise,Menu item that opens exercise details,About exercise,About exercise,Об упражнении
