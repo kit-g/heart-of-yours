@@ -280,6 +280,10 @@ RouteBase _exercisesRoute() {
                     onShareExercise: (exercise, {tab}) {
                       _onShareExercise(context, exercise, tab);
                     },
+                    onFilter: context.goToFilteredExercises,
+                    onTapAlternative: (alternative) {
+                      context.goToExerciseDetail(alternative.name);
+                    },
                   );
                 },
                 name: _exerciseArchivedDetailName,
@@ -306,6 +310,10 @@ RouteBase _exercisesRoute() {
                 },
                 onShareExercise: (exercise, {tab}) {
                   _onShareExercise(context, exercise, tab);
+                },
+                onFilter: context.goToFilteredExercises,
+                onTapAlternative: (alternative) {
+                  context.goToExerciseDetail(alternative.name);
                 },
               );
             },
