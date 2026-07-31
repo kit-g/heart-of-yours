@@ -22,6 +22,13 @@ mixin _Exercises on _LocalDatabase
                 each['muscles'] = {};
             }
 
+            switch (each['movement']) {
+              case String s:
+                each['movement'] = jsonDecode(s);
+              case null:
+                each['movement'] = {};
+            }
+
             return Exercise.fromJson(each);
           },
         );
@@ -54,6 +61,10 @@ mixin _Exercises on _LocalDatabase
           };
           if (each.isMine) row['user_id'] = userId;
           row['muscles'] = jsonEncode(each.muscles.toMap());
+          // both blobs are omitted by `toMap()` when empty, so set them
+          // unconditionally — the row is built generically from its keys, and a
+          // missing one would leave the column untouched on conflict-update.
+          row['movement'] = jsonEncode(each.movement.toMap());
           // the unit preference is per-user (exercise_details), not a column on
           // the shared catalog row — see setExerciseUnit / getExerciseUnits.
           row.remove('unit_system');
