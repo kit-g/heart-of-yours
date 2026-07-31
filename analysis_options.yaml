@@ -1,5 +1,11 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # generated output, gitignored — the iOS build checks whole packages out
+    # under build/, and analyzing them buries real findings
+    - build/**
+
 linter:
   rules:
     require_trailing_commas: true
