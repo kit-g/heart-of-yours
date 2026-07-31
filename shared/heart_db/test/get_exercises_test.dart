@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_models/heart_models.dart';
@@ -69,6 +71,69 @@ void main() {
       expect(syncedAt, now);
       expect(exercises.length, 1);
       expect(exercises.first.name, 'Push Up');
+    },
+  );
+
+  test(
+    'should decode the stored movement blob',
+    () async {
+      final row = {
+        ...exercise(name: 'Push Up').toMap().map((k, v) => MapEntry(k.toSnake(), v)),
+        'movement': jsonEncode(pushUpMovement),
+      };
+
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => [row]);
+
+      when(
+        txn.query(
+          syncsTable,
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final (_, exercises) = await local.getExercises();
+      final Movement(:groups, :axialLoad, :stability) = exercises.first.movement;
+
+      expect(groups, ['horizontal_press']);
+      expect(axialLoad, AxialLoad.none);
+      expect(stability, Stability.free);
+    },
+  );
+
+  test(
+    'should read a null movement column as an empty movement',
+    () async {
+      final row = {
+        ...exercise(name: 'Squat').toMap().map((k, v) => MapEntry(k.toSnake(), v)),
+        'movement': null,
+      };
+
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => [row]);
+
+      when(
+        txn.query(
+          syncsTable,
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final (_, exercises) = await local.getExercises();
+
+      expect(exercises.first.movement.isEmpty, isTrue);
     },
   );
 

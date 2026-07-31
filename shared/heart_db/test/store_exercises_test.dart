@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -19,6 +20,12 @@ void main() {
 
   setUp(
     () async {
+      // the mocks are shared across the group, so recorded calls would otherwise
+      // accumulate and every `called(n)` would count its predecessors' calls too.
+      clearInteractions(db);
+      clearInteractions(txn);
+      clearInteractions(batch);
+
       local = await LocalDatabase.init(other: db);
 
       when(
@@ -63,6 +70,39 @@ void main() {
       ).called(1);
 
       verify(batch.commit(noResult: true)).called(1);
+    },
+  );
+
+  test(
+    'should encode the movement blob rather than binding a map',
+    () async {
+      // `Exercise.toMap()` emits `movement` as a nested map, which sqflite
+      // cannot bind and the `exercises` table has no column for until v5.
+      final testExercise = exercise(name: 'Push Up', movement: pushUpMovement);
+
+      await local.storeExercises([testExercise]);
+
+      final captured = verify(batch.rawInsert(captureAny, captureAny)).captured;
+      final [String statement, List<Object?> values] = captured;
+
+      expect(statement, contains('movement'));
+      expect(values, contains(jsonEncode(testExercise.movement.toMap())));
+      expect(values.whereType<Map>(), isEmpty);
+    },
+  );
+
+  test(
+    'should encode an absent movement as an empty blob',
+    () async {
+      final testExercise = exercise(name: 'Push Up');
+
+      await local.storeExercises([testExercise]);
+
+      final captured = verify(batch.rawInsert(captureAny, captureAny)).captured;
+      final [String statement, List<Object?> values] = captured;
+
+      expect(statement, contains('movement'));
+      expect(values, contains(jsonEncode(Movement.empty().toMap())));
     },
   );
 

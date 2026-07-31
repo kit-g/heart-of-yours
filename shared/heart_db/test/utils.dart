@@ -1,8 +1,19 @@
 import 'package:heart_models/heart_models.dart';
 
+/// Wire-shape movement blob, camelCase as the server ships it.
+const pushUpMovement = {
+  'groups': ['horizontal_press'],
+  'axialLoad': 'none',
+  'stability': 'free',
+  'unilateral': false,
+  'impact': 'none',
+  'skill': 'low',
+};
+
 Exercise exercise({
   String name = 'Push Up',
   String target = 'Chest',
+  Map<String, dynamic>? movement,
 }) {
   return Exercise.fromJson({
     'name': name,
@@ -16,6 +27,7 @@ Exercise exercise({
     'thumbnailHeight': 200,
     'instructions': null,
     'userId': null,
+    'movement': ?movement,
   });
 }
 
