@@ -124,6 +124,38 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return _exercises[id];
   }
 
+  /// Library exercises that train the same movement pattern as [exercise] and
+  /// so can stand in for it, nearest first.
+  ///
+  /// [exercise] is re-resolved from the library by name: workout and template
+  /// payloads embed a minimal exercise stub that carries no annotation, so the
+  /// caller's copy is not necessarily the annotated one.
+  ///
+  /// The ranking is by objective distance only — no notion of what the lifter
+  /// is avoiding. That is the caller's to apply, by filtering the result on
+  /// [Movement] attributes (`m.axialLoad.atMost(AxialLoad.moderate)` and
+  /// friends). Exercises with no annotation neither offer nor accept
+  /// substitutions, so this is empty for user-created ones.
+  Iterable<Exercise> alternativesTo(Exercise exercise) {
+    final source = lookup(exercise.name) ?? exercise;
+    if (source.movement.isEmpty) return const [];
+
+    bool substitutes(Exercise other) {
+      return other.name != source.name && !other.isArchived && source.movement.sharesPatternWith(other.movement);
+    }
+
+    return _exercises.values.where(substitutes).toList()..sort(
+      (a, b) {
+        final distance = source.movement.distanceTo(a.movement).compareTo(source.movement.distanceTo(b.movement));
+        // ties broken by name so the order is stable across rebuilds
+        return switch (distance) {
+          0 => a.compareTo(b),
+          _ => distance,
+        };
+      },
+    );
+  }
+
   /// The per-exercise unit preference for the current user, or `null` when the
   /// exercise has no override and the caller should fall back to the global
   /// setting. Keyed by exercise name.
@@ -278,6 +310,27 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
 
     return null;
+  }
+}
+
+extension on Movement {
+  /// How far [other] sits from this movement across the load attributes, as a
+  /// plain sum — smaller is a closer substitute.
+  ///
+  /// `axialLoad`, `impact` and `skill` are ordinal, so they contribute the gap
+  /// between them; `stability` and `unilateral` are unordered, so they
+  /// contribute a flat mismatch. The dimensions are weighted equally, which is
+  /// a starting point rather than a claim: nothing downstream depends on the
+  /// absolute numbers, only on the order they produce.
+  int distanceTo(Movement other) {
+    int gap(int a, int b) => (a - b).abs();
+    int mismatch(bool same) => same ? 0 : 1;
+
+    return gap(axialLoad.index, other.axialLoad.index) +
+        gap(impact.index, other.impact.index) +
+        gap(skill.index, other.skill.index) +
+        mismatch(stability == other.stability) +
+        mismatch(unilateral == other.unilateral);
   }
 }
 
