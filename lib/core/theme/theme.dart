@@ -14,6 +14,14 @@ const _fontFallbacks = ['Noto Sans'];
 
 ThemeData theme(ColorScheme colorScheme) {
   final textTheme = _textTheme(primaryColor: colorScheme.onSurface, secondaryColor: colorScheme.onSurfaceVariant);
+  // The global textButtonTheme below is deliberately compact, which leaves the
+  // date/time picker OK/Cancel cramped — restore Material's roomier action
+  // padding just for those dialogs.
+  final pickerActionStyle = TextButton.styleFrom(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    minimumSize: const Size(64, 40),
+    textStyle: textTheme.bodyMedium?.copyWith(fontFamily: _font),
+  );
   return ThemeData(
     useMaterial3: true,
     brightness: colorScheme.brightness,
@@ -92,6 +100,15 @@ ThemeData theme(ColorScheme colorScheme) {
         shape: RoundedRectangleBorder(borderRadius: .circular(4)),
         textStyle: textTheme.bodyMedium?.copyWith(fontFamily: _font),
       ),
+    ),
+    timePickerTheme: TimePickerThemeData(
+      hourMinuteTextStyle: textTheme.displaySmall,
+      confirmButtonStyle: pickerActionStyle,
+      cancelButtonStyle: pickerActionStyle,
+    ),
+    datePickerTheme: DatePickerThemeData(
+      confirmButtonStyle: pickerActionStyle,
+      cancelButtonStyle: pickerActionStyle,
     ),
     listTileTheme: const ListTileThemeData(enableFeedback: true),
     outlinedButtonTheme: OutlinedButtonThemeData(
