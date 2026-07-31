@@ -439,4 +439,105 @@ void main() {
       expect(sut.filters, isEmpty);
     });
   });
+
+  group('alternativesTo()', () {
+    Future<void> load(List<Exercise> exercises) async {
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer((_) async => (null, exercises));
+      await sut.init(lastSync: DateTime(2000));
+    }
+
+    test('offers everyone else in the group and never the exercise itself', () async {
+      final squat = ex('Squat', movement: movement(['squat_bilateral']));
+      await load([
+        squat,
+        ex('Hack Squat', movement: movement(['squat_bilateral'])),
+        ex('Bench Press', movement: movement(['horizontal_press'])),
+      ]);
+
+      expect(sut.alternativesTo(squat).map((e) => e.name), ['Hack Squat']);
+    });
+
+    test('is empty for an unannotated exercise', () async {
+      final mine = ex('My Curl');
+      await load([
+        mine,
+        ex('Hack Squat', movement: movement(['squat_bilateral'])),
+      ]);
+
+      expect(sut.alternativesTo(mine), isEmpty);
+    });
+
+    test('never offers an unannotated exercise as a substitute', () async {
+      final squat = ex('Squat', movement: movement(['squat_bilateral']));
+      await load([squat, ex('My Squat Thing')]);
+
+      expect(sut.alternativesTo(squat), isEmpty);
+    });
+
+    test('ranks nearer load attributes first', () async {
+      // distance from the barbell squat: goblet 1 (axial), hack 2 (axial +
+      // stability), leg press 3 (axial x2 + stability).
+      final squat = ex('Squat', movement: movement(['squat_bilateral'], axialLoad: 'high'));
+      await load([
+        squat,
+        ex(
+          'Leg Press',
+          movement: movement(['squat_bilateral'], axialLoad: 'low', stability: 'machine'),
+        ),
+        ex(
+          'Hack Squat',
+          movement: movement(['squat_bilateral'], axialLoad: 'moderate', stability: 'machine'),
+        ),
+        ex('Goblet Squat', movement: movement(['squat_bilateral'], axialLoad: 'moderate')),
+      ]);
+
+      expect(
+        sut.alternativesTo(squat).map((e) => e.name),
+        ['Goblet Squat', 'Hack Squat', 'Leg Press'],
+      );
+    });
+
+    test('breaks ties by name so the order is stable', () async {
+      final squat = ex('Squat', movement: movement(['squat_bilateral']));
+      await load([
+        squat,
+        ex('Zercher Squat', movement: movement(['squat_bilateral'])),
+        ex('Front Squat', movement: movement(['squat_bilateral'])),
+      ]);
+
+      expect(sut.alternativesTo(squat).map((e) => e.name), ['Front Squat', 'Zercher Squat']);
+    });
+
+    test('matches on any shared group, not just the first', () async {
+      final thruster = ex('Thruster', movement: movement(['squat_bilateral', 'vertical_press']));
+      await load([
+        thruster,
+        ex('Overhead Press', movement: movement(['vertical_press'])),
+      ]);
+
+      expect(sut.alternativesTo(thruster).map((e) => e.name), ['Overhead Press']);
+    });
+
+    test('excludes archived exercises', () async {
+      final squat = ex('Squat', movement: movement(['squat_bilateral']));
+      await load([
+        squat,
+        ex('Hack Squat', movement: movement(['squat_bilateral']), archived: true),
+      ]);
+
+      expect(sut.alternativesTo(squat), isEmpty);
+    });
+
+    test('resolves the annotated library copy from an unannotated stub', () async {
+      // workout and template payloads embed a stub with no movement
+      await load([
+        ex('Squat', movement: movement(['squat_bilateral'])),
+        ex('Hack Squat', movement: movement(['squat_bilateral'])),
+      ]);
+
+      expect(sut.alternativesTo(ex('Squat')).map((e) => e.name), ['Hack Squat']);
+    });
+  });
 }
