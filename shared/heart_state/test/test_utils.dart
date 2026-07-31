@@ -19,7 +19,7 @@ class ListenerProbe {
 }
 
 // Convenience builders for real domain models used in tests
-Exercise ex(String name) {
+Exercise ex(String name, {Map<String, dynamic>? movement, bool archived = false}) {
   return Exercise.fromJson({
     'name': name,
     'category': 'Weighted Body Weight',
@@ -27,7 +27,30 @@ Exercise ex(String name) {
     'asset': null,
     'thumbnail': null,
     'instructions': null,
+    'archived': archived,
+    'movement': ?movement,
   });
+}
+
+/// A movement annotation in wire shape. Defaults describe an unloaded, free,
+/// bilateral, low-skill movement, so a test only states the attributes it is
+/// actually about.
+Map<String, dynamic> movement(
+  List<String> groups, {
+  String axialLoad = 'none',
+  String stability = 'free',
+  bool unilateral = false,
+  String impact = 'none',
+  String skill = 'low',
+}) {
+  return {
+    'groups': groups,
+    'axialLoad': axialLoad,
+    'stability': stability,
+    'unilateral': unilateral,
+    'impact': impact,
+    'skill': skill,
+  };
 }
 
 Template tmpl({required String id, int order = 0, String? name, List<WorkoutExercise> exercises = const []}) {
