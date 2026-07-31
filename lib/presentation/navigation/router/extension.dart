@@ -55,6 +55,17 @@ extension on BuildContext {
     return goNamed(_exerciseArchive);
   }
 
+  /// Opens the library showing only [filter], replacing whatever was filtered
+  /// before — arriving from a chip means "show me these", not "narrow what I
+  /// had", and the previous filters are not visible from where the chip was
+  /// tapped.
+  void goToFilteredExercises(ExerciseFilter filter) {
+    Exercises.of(this)
+      ..clearFilters()
+      ..addFilter(filter);
+    return goNamed(_exercisesName);
+  }
+
   Future<void> goToActiveWorkout() {
     return _pushActiveWorkoutOnce(GoRouter.of(this));
   }
