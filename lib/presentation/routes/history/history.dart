@@ -12,6 +12,7 @@ import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
+import 'package:heart/presentation/widgets/workout/adjust_times_dialog.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';

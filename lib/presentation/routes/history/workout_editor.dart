@@ -158,6 +158,14 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               child: WorkoutDetail(
                 exercises: workout,
                 needsCancelWorkoutButton: false,
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _WorkoutTimesSummary(
+                      workout: workout,
+                      onTap: () => _openTimesDialog(context, workout),
+                    ),
+                  ),
+                ],
                 controller: Scrolls.of(context).editWorkoutScrollController,
                 onDragExercise: _notifier.append,
                 onSwapExercise: _notifier.swap,
@@ -313,6 +321,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return switch (option) {
       .editImage => l.addPhoto,
       .editName => l.editWorkoutName,
+      .editTimes => l.editWorkoutTimes,
     };
   }
 
@@ -320,6 +329,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return switch (option) {
       .editImage => Icons.photo_camera,
       .editName => Icons.edit_rounded,
+      .editTimes => Icons.schedule_rounded,
     };
   }
 
@@ -362,7 +372,33 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return switch (option) {
       .editImage => addPhoto,
       .editName => () => _focusNode.requestFocus(),
+      .editTimes => () => _openTimesDialog(context, workout),
     };
+  }
+
+  /// Opens the "Adjust Start/End Time" dialog — from the menu item or the
+  /// linkified date/duration header. The dialog works in local time; we convert
+  /// to UTC on the wire and only patch the fields that actually changed.
+  Future<void> _openTimesDialog(BuildContext context, Workout workout) {
+    return showAdjustTimesDialog(
+      context,
+      start: workout.start.toLocal(),
+      end: workout.end?.toLocal(),
+      onSave: (start, end) async {
+        final startChanged = start != workout.start.toLocal();
+        final endChanged = end != workout.end?.toLocal();
+        if (!startChanged && !endChanged) return;
+
+        final patched = await Workouts.of(context).editWorkoutTimes(
+          workout.id,
+          start: startChanged ? start.toUtc() : null,
+          end: endChanged ? end?.toUtc() : null,
+        );
+        if (patched != null && mounted) {
+          _notifier.setTimes(start: patched.start, end: patched.end);
+        }
+      },
+    );
   }
 
   Future<void> _attachImage(BuildContext context, Future<LocalImage?> Function() getImage, Workout workout) async {
@@ -430,6 +466,15 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reflects times that were just persisted via PATCH back onto the local copy.
+  /// Notifies without flipping [hasChanged] — the change is already saved, so it
+  /// must not arm the "discard changes?" guard or require another Save.
+  void setTimes({DateTime? start, DateTime? end}) {
+    if (start != null) workout.start = start;
+    if (end != null) workout.end = end;
+    super.notifyListeners();
+  }
+
   void attachImage(WorkoutImage image) {
     workout.images?[image.id] = image;
     notifyListeners();
@@ -447,4 +492,49 @@ class _WorkoutNotifier with ChangeNotifier {
   }
 }
 
-enum _WorkoutEditOption { editImage, editName }
+enum _WorkoutEditOption { editImage, editName, editTimes }
+
+/// Linkified date + duration under the workout title. Tapping anywhere opens the
+/// "Adjust Start/End Time" dialog. Mirrors the history list-item header, but the
+/// whole block is a tappable affordance for editing the times.
+class _WorkoutTimesSummary extends StatelessWidget {
+  final Workout workout;
+  final VoidCallback onTap;
+
+  const _WorkoutTimesSummary({required this.workout, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final muted = textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant);
+    final date = DateFormat('MMM d, y').format(workout.start.toLocal());
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const .fromLTRB(16, 4, 16, 4),
+        child: Column(
+          crossAxisAlignment: .start,
+          spacing: 6,
+          children: [
+            Row(
+              spacing: 8,
+              children: [
+                Icon(Icons.calendar_today_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                Text(date, style: muted),
+              ],
+            ),
+            if (workout.duration case Duration elapsed)
+              Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.schedule_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                  Text(elapsed.formatted(context), style: muted),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

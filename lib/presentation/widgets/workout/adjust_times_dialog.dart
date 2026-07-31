@@ -82,10 +82,38 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Non-Cupertino path: sequential Material date + time popups. Same batching
+  /// flow as the wheel — it only updates the notifier; nothing persists until Save.
+  Future<void> _pickMaterial(
+    BuildContext context, {
+    required DateTime initial,
+    required ValueChanged<DateTime> onChanged,
+    DateTime? minimum,
+    DateTime? maximum,
+  }) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _clamp(initial, minimum, maximum),
+      firstDate: DateUtils.dateOnly(minimum ?? DateTime(2000)),
+      lastDate: DateUtils.dateOnly(maximum ?? DateTime.now()),
+    );
+    if (date == null || !context.mounted) return;
+    final time = await showTimePicker(context: context, initialTime: .fromDateTime(initial));
+    if (time == null) return;
+    final picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    onChanged(_clamp(picked, minimum, maximum));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :brightness, :colorScheme) = Theme.of(context);
+    final ThemeData(:textTheme, :brightness, :colorScheme, :platform) = Theme.of(context);
     final L(:adjustTimes, :duration, :startTime, :endTime, :save) = L.of(context);
+    // iOS/macOS get the inline Cupertino wheel; everywhere else the Cupertino
+    // date picker misbehaves, so fall back to Material's popup date + time pickers.
+    final cupertino = switch (platform) {
+      .iOS || .macOS => true,
+      _ => false,
+    };
 
     return Dialog(
       insetPadding: const .symmetric(horizontal: 16),
@@ -149,7 +177,9 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
             ListenableBuilder(
               listenable: Listenable.merge([_start, _end, _unfolded]),
               builder: (context, _) {
-                final expanded = _unfolded.value == .start;
+                // start can't land after the end (nor in the future when open)
+                final maximum = _end.value ?? DateTime.now();
+                final expanded = cupertino && _unfolded.value == .start;
                 return Column(
                   mainAxisSize: .min,
                   crossAxisAlignment: .stretch,
@@ -158,16 +188,24 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                       label: startTime,
                       value: _formatValue(_start.value),
                       expanded: expanded,
-                      onTap: () => _toggle(.start),
+                      onTap: switch (cupertino) {
+                        true => () => _toggle(.start),
+                        false => () => _pickMaterial(
+                          context,
+                          initial: _start.value,
+                          maximum: maximum,
+                          onChanged: (value) => _start.value = value,
+                        ),
+                      },
                     ),
-                    _Picker(
-                      expanded: expanded,
-                      brightness: brightness,
-                      initial: _start.value,
-                      // start can't land after the end (nor in the future when open)
-                      maximum: _end.value ?? DateTime.now(),
-                      onChanged: (value) => _start.value = value,
-                    ),
+                    if (cupertino)
+                      _Picker(
+                        expanded: expanded,
+                        brightness: brightness,
+                        initial: _start.value,
+                        maximum: maximum,
+                        onChanged: (value) => _start.value = value,
+                      ),
                   ],
                 );
               },
@@ -177,7 +215,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
               builder: (context, _) {
                 final end = _end.value;
                 if (end == null) return const SizedBox.shrink();
-                final expanded = _unfolded.value == .end;
+                final expanded = cupertino && _unfolded.value == .end;
                 return Column(
                   mainAxisSize: .min,
                   crossAxisAlignment: .stretch,
@@ -186,16 +224,26 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                       label: endTime,
                       value: _formatValue(end),
                       expanded: expanded,
-                      onTap: () => _toggle(.end),
+                      onTap: switch (cupertino) {
+                        true => () => _toggle(.end),
+                        false => () => _pickMaterial(
+                          context,
+                          initial: end,
+                          minimum: _start.value,
+                          maximum: DateTime.now(),
+                          onChanged: (value) => _end.value = value,
+                        ),
+                      },
                     ),
-                    _Picker(
-                      expanded: expanded,
-                      brightness: brightness,
-                      initial: end,
-                      minimum: _start.value,
-                      maximum: DateTime.now(),
-                      onChanged: (value) => _end.value = value,
-                    ),
+                    if (cupertino)
+                      _Picker(
+                        expanded: expanded,
+                        brightness: brightness,
+                        initial: end,
+                        minimum: _start.value,
+                        maximum: DateTime.now(),
+                        onChanged: (value) => _end.value = value,
+                      ),
                   ],
                 );
               },
@@ -242,9 +290,9 @@ class _TimeRow extends StatelessWidget {
   }
 }
 
-/// The inline date-time wheel, animating open/closed. Uses [CupertinoDatePicker]
-/// on every platform — Material has no inline combined date+time equivalent, and
-/// the app already leans on Cupertino wheels for its pickers.
+/// The inline date-time wheel, animating open/closed. Cupertino-only: Material
+/// has no inline combined date+time equivalent, so those platforms use the
+/// [showDatePicker]/[showTimePicker] popup flow instead.
 class _Picker extends StatelessWidget {
   final bool expanded;
   final Brightness brightness;
@@ -287,10 +335,10 @@ class _Picker extends StatelessWidget {
       },
     );
   }
+}
 
-  static DateTime _clamp(DateTime value, DateTime? lo, DateTime? hi) {
-    if (lo != null && value.isBefore(lo)) return lo;
-    if (hi != null && value.isAfter(hi)) return hi;
-    return value;
-  }
+DateTime _clamp(DateTime value, DateTime? lo, DateTime? hi) {
+  if (lo != null && value.isBefore(lo)) return lo;
+  if (hi != null && value.isAfter(hi)) return hi;
+  return value;
 }
