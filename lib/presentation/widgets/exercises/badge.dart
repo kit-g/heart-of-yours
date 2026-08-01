@@ -14,15 +14,15 @@ class _Badge extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(6)),
         child: switch (exercise.thumbnail?.link) {
           String url when url.startsWith('https://') => AppImage(
-              url: url,
-              fit: BoxFit.cover,
-              errorWidget: (_, _) {
-                return _EmptyBadge(target: exercise.target);
-              },
-              progressIndicatorBuilder: (_, _, _) {
-                return _EmptyBadge(target: exercise.target);
-              },
-            ),
+            url: url,
+            fit: BoxFit.cover,
+            errorWidget: (_, _) {
+              return _EmptyBadge(target: exercise.target);
+            },
+            progressIndicatorBuilder: (_, _, _) {
+              return _EmptyBadge(target: exercise.target);
+            },
+          ),
           _ => _EmptyBadge(target: exercise.target),
         },
       ),
