@@ -618,6 +618,33 @@ class LEn extends L {
   String get accountDeletedAction => '🔥🏆 Undo the Goodbye 🥇🔥';
 
   @override
+  String get movement => 'Movement';
+
+  @override
+  String get pattern => 'Pattern';
+
+  @override
+  String get stability => 'Stability';
+
+  @override
+  String get skillAtMost => 'Skill at most';
+
+  @override
+  String get patternHelp =>
+      'The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.';
+
+  @override
+  String get stabilityHelp =>
+      'How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.';
+
+  @override
+  String get skillAtMostHelp =>
+      'How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.';
+
+  @override
+  String get clearFilters => 'Clear';
+
+  @override
   String get alsoTry => 'Also try';
 
   @override
@@ -1416,6 +1443,33 @@ class LEnCa extends LEn {
 
   @override
   String get accountDeletedAction => '🔥🏆 Undo the Goodbye 🥇🔥';
+
+  @override
+  String get movement => 'Movement';
+
+  @override
+  String get pattern => 'Pattern';
+
+  @override
+  String get stability => 'Stability';
+
+  @override
+  String get skillAtMost => 'Skill at most';
+
+  @override
+  String get patternHelp =>
+      'The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.';
+
+  @override
+  String get stabilityHelp =>
+      'How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.';
+
+  @override
+  String get skillAtMostHelp =>
+      'How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.';
+
+  @override
+  String get clearFilters => 'Clear';
 
   @override
   String get alsoTry => 'Also try';
