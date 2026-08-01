@@ -41,21 +41,21 @@ class _Particle {
   final double oscillationFrequency;
 
   _Particle()
-      : startX = _rng.nextDouble() * 20 - 10,
-        startY = _rng.nextDouble() * 10,
-        initialVelocityX = (_rng.nextDouble() - 0.5) * 200,
-        initialVelocityY = -(_rng.nextDouble() * 500 + 40),
-        gravity = 100 + _rng.nextInt(500).toDouble(),
-        size = _rng.nextDouble() * 20 + 8,
-        color = Colors.primaries[_rng.nextInt(Colors.primaries.length)],
-        isStar = _rng.nextBool(),
-        initialRotation = _rng.nextDouble() * 2 * pi,
-        rotationSpeed = (_rng.nextDouble() - 0.5) * 4,
-        damping = 0.96 + Random().nextDouble() * 0.05,
-        // wobble range (5-15px)
-        oscillationAmplitude = _rng.nextDouble() * 10 + 5,
-        // wobble speed (2-7 Hz)
-        oscillationFrequency = _rng.nextDouble() * 5 + 2;
+    : startX = _rng.nextDouble() * 20 - 10,
+      startY = _rng.nextDouble() * 10,
+      initialVelocityX = (_rng.nextDouble() - 0.5) * 200,
+      initialVelocityY = -(_rng.nextDouble() * 500 + 40),
+      gravity = 100 + _rng.nextInt(500).toDouble(),
+      size = _rng.nextDouble() * 20 + 8,
+      color = Colors.primaries[_rng.nextInt(Colors.primaries.length)],
+      isStar = _rng.nextBool(),
+      initialRotation = _rng.nextDouble() * 2 * pi,
+      rotationSpeed = (_rng.nextDouble() - 0.5) * 4,
+      damping = 0.96 + Random().nextDouble() * 0.05,
+      // wobble range (5-15px)
+      oscillationAmplitude = _rng.nextDouble() * 10 + 5,
+      // wobble speed (2-7 Hz)
+      oscillationFrequency = _rng.nextDouble() * 5 + 2;
 }
 
 class _ConfettiPainter extends CustomPainter {

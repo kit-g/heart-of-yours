@@ -36,12 +36,12 @@ class AppBarTextField extends StatelessWidget {
                 suffixIcon: switch (needsSuffix) {
                   false => null,
                   true => IconButton(
-                      visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                      onPressed: () {
-                        focusNode.unfocus();
-                      },
-                      icon: const Icon(Icons.check_circle_rounded),
-                    ),
+                    visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                    onPressed: () {
+                      focusNode.unfocus();
+                    },
+                    icon: const Icon(Icons.check_circle_rounded),
+                  ),
                 },
                 counter: const SizedBox.shrink(), // no counter widget
               ),
