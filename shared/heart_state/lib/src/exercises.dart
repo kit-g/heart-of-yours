@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'movement_filters.dart';
+
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
@@ -53,6 +55,34 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   Iterable<ExerciseFilter> get categories => _filters.whereType<Category>();
 
   Iterable<ExerciseFilter> get targets => _filters.whereType<Target>();
+
+  Iterable<MovementFilter> get movementFilters => _filters.whereType<MovementFilter>();
+
+  /// Every movement pattern the library actually uses, most common first and
+  /// alphabetical within a count.
+  ///
+  /// Derived rather than hardcoded: content owns the vocabulary and can add a
+  /// pattern without an app release, so a fixed list would go stale silently.
+  /// Ordering by frequency keeps the patterns a lifter is likely to want — the
+  /// presses and squats — off the bottom of the sheet.
+  Iterable<String> get patterns {
+    final counts = <String, int>{};
+    for (final exercise in _exercises.values.where((each) => !each.isArchived)) {
+      for (final pattern in exercise.movement.groups) {
+        counts.update(pattern, (n) => n + 1, ifAbsent: () => 1);
+      }
+    }
+
+    return counts.keys.toList()..sort(
+      (a, b) {
+        final byCount = counts[b]!.compareTo(counts[a]!);
+        return switch (byCount) {
+          0 => a.compareTo(b),
+          _ => byCount,
+        };
+      },
+    );
+  }
 
   bool get hasOwn {
     return isInitialized && _exercises.values.any((ex) => ex.isMine && !ex.isArchived);
@@ -112,7 +142,10 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     bool fitsSearch(Exercise exercise) {
       if (exercise.isArchived) return false;
       final matchesQuery = exercise.contains(query);
-      final matchesFilters = !filters || exercise.fits(_filters);
+      // `fits` handles category and target and passes anything it does not
+      // recognise, so the movement dimensions are applied here rather than
+      // silently matching everything.
+      final matchesFilters = !filters || (exercise.fits(_filters) && exercise.matchesMovement(_filters));
       final matchesOwnership = !isMine || exercise.isMine;
       return matchesQuery && matchesFilters && matchesOwnership;
     }

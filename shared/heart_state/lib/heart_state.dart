@@ -9,6 +9,7 @@ export 'src/charts.dart';
 export 'src/clear.dart';
 export 'src/config.dart';
 export 'src/exercises.dart';
+export 'src/movement_filters.dart';
 export 'src/package.dart';
 export 'src/password.dart';
 export 'src/preferences.dart';
