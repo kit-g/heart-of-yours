@@ -17,3 +17,4 @@ import 'package:heart_state/heart_state.dart';
 part 'badge.dart';
 part 'exercise_item.dart';
 part 'exercise_picker.dart';
+part 'movement_filter_sheet.dart';
