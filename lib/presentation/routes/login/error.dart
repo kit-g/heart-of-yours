@@ -14,27 +14,27 @@ class _Error extends StatelessWidget {
       child: switch (message) {
         null => const SizedBox.shrink(),
         String error => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: colorScheme.errorContainer,
-              borderRadius: const BorderRadius.all(Radius.circular(6)),
-            ),
-            child: Row(
-              spacing: 8,
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  color: colorScheme.onErrorContainer,
-                ),
-                Expanded(
-                  child: Text(
-                    error,
-                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
-                  ),
-                ),
-              ],
-            ),
+          padding: const .symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: colorScheme.errorContainer,
+            borderRadius: const .all(.circular(6)),
           ),
+          child: Row(
+            spacing: 8,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                color: colorScheme.onErrorContainer,
+              ),
+              Expanded(
+                child: Text(
+                  error,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                ),
+              ),
+            ],
+          ),
+        ),
       },
     );
   }

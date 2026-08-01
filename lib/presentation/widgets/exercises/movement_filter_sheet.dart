@@ -1,44 +1,5 @@
 part of 'exercises.dart';
 
-/// Display copy for the filters, which carry identifiers rather than words.
-///
-/// [Category] and [Target] ship their own English in the model; the movement
-/// filters deliberately do not, so the wording is decided here, next to the
-/// localizations.
-extension MovementFilterCopy on MovementFilter {
-  /// Short form, for the sheet — the section header above already names the
-  /// dimension, so repeating it in every chip is noise.
-  String label(L l10n) {
-    return switch (this) {
-      // `horizontal_press` reads as `Horizontal Press`. Derived rather than
-      // translated: content owns the vocabulary and can add a pattern without
-      // an app release, so a hand-written label per group would ship blank.
-      PatternFilter(:final pattern) => pattern.split('_').map(_capitalize).join(' '),
-      SkillCeiling(:final limit) => _capitalize(limit.value),
-      StabilityFilter(:final stability) => _capitalize(stability.value),
-      _ => value,
-    };
-  }
-
-  /// Long form, for the picker's active-filter row, where a chip stands alone
-  /// between "Chest" and "Barbell" — a bare "Machine" there is
-  /// indistinguishable from [Category.machine].
-  String chipLabel(L l10n) {
-    return switch (this) {
-      SkillCeiling() => '${l10n.skillAtMost}: ${label(l10n)}',
-      StabilityFilter() => '${l10n.stability}: ${label(l10n)}',
-      _ => label(l10n),
-    };
-  }
-}
-
-String _capitalize(String word) {
-  return switch (word) {
-    '' => word,
-    _ => '${word[0].toUpperCase()}${word.substring(1)}',
-  };
-}
-
 /// Filters the library by what a movement *is* — its pattern and load
 /// attributes — rather than by equipment or body part.
 ///
@@ -134,6 +95,9 @@ class _MovementFilterSheet extends StatelessWidget with HasHaptic<_MovementFilte
                     triggerMode: .tap,
                     showDuration: const Duration(seconds: 8),
                     margin: const .symmetric(horizontal: 24),
+                    // above the header, not below it — below covers the very
+                    // chips the text is explaining
+                    preferBelow: false,
                     child: Icon(
                       Icons.help_outline_rounded,
                       size: 16,

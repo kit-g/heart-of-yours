@@ -13,7 +13,7 @@ class _About extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Exercise(:asset, :muscles, :instructions, :category, :target) = exercise;
+    final Exercise(:asset, :muscles, :instructions, :category, :target, :movement) = exercise;
     final ThemeData(:colorScheme) = Theme.of(context);
 
     return SingleChildScrollView(
@@ -22,14 +22,26 @@ class _About extends StatelessWidget {
         crossAxisAlignment: .stretch,
         children: [
           Padding(
-            padding: const .only(left: 16, right: 16, bottom: 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _FilterChip(filter: category, onFilter: onFilter),
-                _FilterChip(filter: target, onFilter: onFilter),
-              ],
+            padding: const .only(bottom: 12),
+            // one scrolling line rather than a wrap, matching "also try" below:
+            // an exercise with two or three patterns would otherwise reflow the
+            // row to a second line and shove everything down
+            child: SingleChildScrollView(
+              scrollDirection: .horizontal,
+              padding: const .symmetric(horizontal: 16),
+              child: Row(
+                spacing: 8,
+                children: [
+                  _FilterChip(filter: category, onFilter: onFilter),
+                  // between equipment and body part, which is the layer a
+                  // pattern occupies: coarser than "Machine", finer than
+                  // "Back". It also says out loud what "also try" is keyed on.
+                  ...movement.groups.map(
+                    (each) => _FilterChip(filter: PatternFilter(each), onFilter: onFilter),
+                  ),
+                  _FilterChip(filter: target, onFilter: onFilter),
+                ],
+              ),
             ),
           ),
           _Alternatives(
@@ -166,6 +178,8 @@ class _FilterChip extends StatelessWidget {
     final label = Text(
       switch (filter) {
         Target(:final icon, :final value) => '$icon  $value',
+        // carries an identifier, not words — the presentation layer names it
+        MovementFilter filter => filter.label(L.of(context)),
         _ => filter.value,
       },
       style: textTheme.bodyMedium,
