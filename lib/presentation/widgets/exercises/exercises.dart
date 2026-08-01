@@ -5,6 +5,7 @@ import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/keys.dart';
