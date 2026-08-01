@@ -48,10 +48,18 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
           delegate: FixedHeightHeaderDelegate(
             height: 64,
             backgroundColor: backgroundColor,
-            child: SearchField(
-              focusNode: focusNode,
-              controller: searchController,
-              hint: search,
+            child: Row(
+              spacing: 4,
+              children: [
+                Expanded(
+                  child: SearchField(
+                    focusNode: focusNode,
+                    controller: searchController,
+                    hint: search,
+                  ),
+                ),
+                _MovementFilterButton(exercises: exercises),
+              ],
             ),
           ),
         ),
@@ -211,17 +219,23 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                         final (index, filter) = record;
 
                         return Padding(
-                          padding: EdgeInsets.only(
+                          padding: .only(
                             left: (index == 0) ? 8.0 : 0.0,
                             right: (index == exercises.filters.length - 1) ? 8.0 : 0.0,
                           ),
                           child: Chip(
                             deleteButtonTooltipMessage: removeFilter,
-                            labelPadding: EdgeInsets.zero,
+                            labelPadding: .zero,
                             label: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const .symmetric(horizontal: 4),
                               child: Text(
-                                filter.value,
+                                // category and target carry their own English;
+                                // the movement filters carry identifiers and
+                                // are worded by the presentation layer
+                                switch (filter) {
+                                  MovementFilter filter => filter.chipLabel(L.of(context)),
+                                  _ => filter.value,
+                                },
                                 style: textTheme.bodyMedium,
                               ),
                             ),
@@ -273,6 +287,53 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
           ),
         },
       ],
+    );
+  }
+}
+
+/// Opens the movement filter sheet from inside the search field.
+///
+/// Filled while any movement filter is set: the sheet is the only place those
+/// filters can be reached, so the button has to say whether it is doing
+/// anything without being opened.
+class _MovementFilterButton extends StatelessWidget {
+  final Exercises exercises;
+
+  const _MovementFilterButton({required this.exercises});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme) = Theme.of(context);
+
+    return ListenableBuilder(
+      listenable: exercises,
+      builder: (context, _) {
+        final active = exercises.movementFilters.isNotEmpty;
+
+        return IconButton(
+          // a square tight box rather than `visualDensity`: the density only
+          // trims the constraints, so the button kept whatever height the row
+          // handed it and the splash came out an ellipse
+          constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+          padding: .zero,
+          iconSize: 20,
+          tooltip: L.of(context).movement,
+          icon: Icon(
+            // sliders, not a funnel: Target and Category sit directly below
+            // with `filter_alt`, and this opens a sheet rather than a menu —
+            // three identical funnels read as three of the same control
+            switch (active) {
+              true => Icons.tune_rounded,
+              false => Icons.tune_outlined,
+            },
+            color: switch (active) {
+              true => colorScheme.primary,
+              false => null,
+            },
+          ),
+          onPressed: () => showMovementFilterSheet(context, exercises),
+        );
+      },
     );
   }
 }
