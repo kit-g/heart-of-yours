@@ -1163,6 +1163,54 @@
     "type": "text",
     "placeholders": {}
   },
+  "movement": "Движение",
+  "@movement": {
+    "description": "Title of the movement filter sheet in the exercise library",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pattern": "Паттерн",
+  "@pattern": {
+    "description": "Movement filter section listing movement patterns, e.g. Horizontal Press",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stability": "Стабильность",
+  "@stability": {
+    "description": "Movement filter section for how constrained the movement path is",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillAtMost": "Сложность не выше",
+  "@skillAtMost": {
+    "description": "Movement filter section capping how technical an exercise may be",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHelp": "Само движение — шире, чем оборудование, и точнее, чем часть тела. Упражнения с общим паттерном взаимозаменяемы.",
+  "@patternHelp": {
+    "description": "Help tooltip on the Pattern section of the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilityHelp": "Насколько траекторию задаёт оборудование. «Свободно» — вы балансируете вес сами, «тренажёр» — траектория закреплена.",
+  "@stabilityHelp": {
+    "description": "Help tooltip on the Stability section of the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillAtMostHelp": "Сколько техники требует упражнение, прежде чем его можно безопасно нагружать. «Средняя» включает и «низкую».",
+  "@skillAtMostHelp": {
+    "description": "Help tooltip on the Skill section of the movement filter sheet, explaining that the choice is a ceiling",
+    "type": "text",
+    "placeholders": {}
+  },
+  "clearFilters": "Очистить",
+  "@clearFilters": {
+    "description": "Button that removes every active movement filter",
+    "type": "text",
+    "placeholders": {}
+  },
   "alsoTry": "Попробуйте также",
   "@alsoTry": {
     "description": "Substitution section on the exercise About tab",
