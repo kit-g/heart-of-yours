@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/exercises.dart';
+import 'package:heart_state/src/movement_filters.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
@@ -538,6 +539,101 @@ void main() {
       ]);
 
       expect(sut.alternativesTo(ex('Squat')).map((e) => e.name), ['Hack Squat']);
+    });
+  });
+
+  group('movement filters in search()', () {
+    Future<void> load(List<Exercise> exercises) async {
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer((_) async => (null, exercises));
+      await sut.init(lastSync: DateTime(2000));
+    }
+
+    test('narrows the library to a movement pattern', () async {
+      await load([
+        ex('Bench Press', movement: movement(['horizontal_press'])),
+        ex('Squat', movement: movement(['squat_bilateral'])),
+      ]);
+      sut.addFilter(const PatternFilter('horizontal_press'));
+
+      expect(sut.search('', filters: true).map((e) => e.name), ['Bench Press']);
+    });
+
+    test('composes with category and target rather than replacing them', () async {
+      // `fits` handles these two and passes the movement filter; the movement
+      // predicate does the reverse. Both have to hold.
+      await load([
+        ex('Bench Press', movement: movement(['horizontal_press'])),
+        ex('Push Up', movement: movement(['horizontal_press'])),
+      ]);
+      sut
+        ..addFilter(const PatternFilter('horizontal_press'))
+        ..addFilter(Target.legs);
+
+      expect(sut.search('', filters: true), isEmpty);
+    });
+
+    test('does nothing when the caller opts out of filtering', () async {
+      await load([ex('Squat', movement: movement(['squat_bilateral']))]);
+      sut.addFilter(const PatternFilter('horizontal_press'));
+
+      expect(sut.search('').map((e) => e.name), ['Squat']);
+    });
+
+    test('hides user-created exercises, which carry no annotation', () async {
+      await load([
+        ex('Bench Press', movement: movement(['horizontal_press'])),
+        ex('My Curl'),
+      ]);
+      sut.addFilter(const SkillCeiling(SkillLevel.high));
+
+      expect(sut.search('', filters: true).map((e) => e.name), ['Bench Press']);
+    });
+  });
+
+  group('patterns', () {
+    Future<void> load(List<Exercise> exercises) async {
+      when(
+        local.getExercises(userId: anyNamed('userId')),
+      ).thenAnswer((_) async => (null, exercises));
+      await sut.init(lastSync: DateTime(2000));
+    }
+
+    test('lists what the library uses, most common first', () async {
+      await load([
+        ex('Bench Press', movement: movement(['horizontal_press'])),
+        ex('Push Up', movement: movement(['horizontal_press'])),
+        ex('Squat', movement: movement(['squat_bilateral'])),
+      ]);
+
+      expect(sut.patterns, ['horizontal_press', 'squat_bilateral']);
+    });
+
+    test('breaks count ties alphabetically so the order is stable', () async {
+      await load([
+        ex('Squat', movement: movement(['squat_bilateral'])),
+        ex('Bench Press', movement: movement(['horizontal_press'])),
+      ]);
+
+      expect(sut.patterns, ['horizontal_press', 'squat_bilateral']);
+    });
+
+    test('counts every group of a multi-pattern exercise', () async {
+      await load([
+        ex('Lunge', movement: movement(['squat_unilateral', 'lunge'])),
+      ]);
+
+      expect(sut.patterns, containsAll(['lunge', 'squat_unilateral']));
+    });
+
+    test('ignores archived exercises, which the picker never shows', () async {
+      await load([
+        ex('Bench Press', movement: movement(['horizontal_press'])),
+        ex('Sissy Squat', movement: movement(['squat_bilateral']), archived: true),
+      ]);
+
+      expect(sut.patterns, ['horizontal_press']);
     });
   });
 }
