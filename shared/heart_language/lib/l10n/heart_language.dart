@@ -1214,6 +1214,54 @@ abstract class L {
   /// **'🔥🏆 Undo the Goodbye 🥇🔥'**
   String get accountDeletedAction;
 
+  /// Title of the movement filter sheet in the exercise library
+  ///
+  /// In en, this message translates to:
+  /// **'Movement'**
+  String get movement;
+
+  /// Movement filter section listing movement patterns, e.g. Horizontal Press
+  ///
+  /// In en, this message translates to:
+  /// **'Pattern'**
+  String get pattern;
+
+  /// Movement filter section for how constrained the movement path is
+  ///
+  /// In en, this message translates to:
+  /// **'Stability'**
+  String get stability;
+
+  /// Movement filter section capping how technical an exercise may be
+  ///
+  /// In en, this message translates to:
+  /// **'Skill at most'**
+  String get skillAtMost;
+
+  /// Help tooltip on the Pattern section of the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.'**
+  String get patternHelp;
+
+  /// Help tooltip on the Stability section of the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.'**
+  String get stabilityHelp;
+
+  /// Help tooltip on the Skill section of the movement filter sheet, explaining that the choice is a ceiling
+  ///
+  /// In en, this message translates to:
+  /// **'How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.'**
+  String get skillAtMostHelp;
+
+  /// Button that removes every active movement filter
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearFilters;
+
   /// Substitution section on the exercise About tab
   ///
   /// In en, this message translates to:

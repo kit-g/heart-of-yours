@@ -219,6 +219,14 @@ Simply click the button below to cancel the deletion and keep your account safe.
 
 Просто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт."
 accountDeletedAction,Delete account page,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Отменить удаление 🥇🔥
+movement,Title of the movement filter sheet in the exercise library,Movement,Movement,Движение
+pattern,"Movement filter section listing movement patterns, e.g. Horizontal Press",Pattern,Pattern,Паттерн
+stability,Movement filter section for how constrained the movement path is,Stability,Stability,Стабильность
+skillAtMost,Movement filter section capping how technical an exercise may be,Skill at most,Skill at most,Сложность не выше
+patternHelp,Help tooltip on the Pattern section of the movement filter sheet,"The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.","The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.","Само движение — шире, чем оборудование, и точнее, чем часть тела. Упражнения с общим паттерном взаимозаменяемы."
+stabilityHelp,Help tooltip on the Stability section of the movement filter sheet,How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.,How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.,"Насколько траекторию задаёт оборудование. «Свободно» — вы балансируете вес сами, «тренажёр» — траектория закреплена."
+skillAtMostHelp,"Help tooltip on the Skill section of the movement filter sheet, explaining that the choice is a ceiling",How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.,How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.,"Сколько техники требует упражнение, прежде чем его можно безопасно нагружать. «Средняя» включает и «низкую»."
+clearFilters,Button that removes every active movement filter,Clear,Clear,Очистить
 alsoTry,Substitution section on the exercise About tab,Also try,Also try,Попробуйте также
 about,Generic label,About,About,О приложении
 records,Generic label,Records,Records,Рекорды

@@ -618,6 +618,33 @@ class LRu extends L {
   String get accountDeletedAction => '🔥🏆 Отменить удаление 🥇🔥';
 
   @override
+  String get movement => 'Движение';
+
+  @override
+  String get pattern => 'Паттерн';
+
+  @override
+  String get stability => 'Стабильность';
+
+  @override
+  String get skillAtMost => 'Сложность не выше';
+
+  @override
+  String get patternHelp =>
+      'Само движение — шире, чем оборудование, и точнее, чем часть тела. Упражнения с общим паттерном взаимозаменяемы.';
+
+  @override
+  String get stabilityHelp =>
+      'Насколько траекторию задаёт оборудование. «Свободно» — вы балансируете вес сами, «тренажёр» — траектория закреплена.';
+
+  @override
+  String get skillAtMostHelp =>
+      'Сколько техники требует упражнение, прежде чем его можно безопасно нагружать. «Средняя» включает и «низкую».';
+
+  @override
+  String get clearFilters => 'Очистить';
+
+  @override
   String get alsoTry => 'Попробуйте также';
 
   @override
