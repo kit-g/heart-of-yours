@@ -11,3 +11,4 @@ const _templatesExercises = 'template_exercises';
 const _templateFolders = 'template_folders';
 const _charts = 'charts';
 const _goals = 'goals';
+const _healthSamples = 'health_samples';

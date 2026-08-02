@@ -8,6 +8,10 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
+  # models.dart only — the vocabulary, not the plugin. Importing
+  # `heart_health.dart` here would drag `package:health` (and a platform
+  # channel) into a package that only ever writes rows.
+  heart_health:
   heart_models:
     git:
       url: "https://github.com/kit-g/heart-api.git"
