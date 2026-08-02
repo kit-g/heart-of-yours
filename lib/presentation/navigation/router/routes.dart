@@ -133,6 +133,7 @@ RouteBase _historyRoute() {
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
         LayoutSize.wide => HistoryPage(
+          selectedId: workoutId,
           onNewWorkout: context.goToActiveWorkout,
           onSaveAsTemplate: (workout) {
             Templates.of(context).workoutToTemplate(workout);
@@ -195,6 +196,10 @@ RouteBase _historyRoute() {
                 return WorkoutEditor(
                   copy: workout!,
                   onTapImage: context.goToGallery,
+                  onClose: switch (LayoutProvider.of(context)) {
+                    .compact => null,
+                    .wide => context.goToHistory,
+                  },
                 );
               } catch (e) {
                 throw GoException(e.toString());
@@ -300,6 +305,17 @@ RouteBase _exercisesRoute() {
               return ExerciseDetailPage(
                 exercise: exercise!,
                 initialTab: state.uri.queryParameters['tab'],
+                // compact pushes the detail, so its default back arrow is
+                // correct. Wide holds it in a pane with nothing behind it to go
+                // back to, and "back" there should mean "put this away".
+                leading: switch (LayoutProvider.of(context)) {
+                  .compact => null,
+                  .wide => IconButton(
+                    tooltip: L.of(context).close,
+                    onPressed: context.closeExerciseDetail,
+                    icon: const Icon(Icons.close),
+                  ),
+                },
                 onTapWorkout: (workoutId) {
                   return Workouts.of(context).fetchWorkout(workoutId).then<void>(
                     (_) {
