@@ -8,6 +8,10 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   final Color? backgroundColor;
   final void Function(Exercise, TapDownDetails?)? onExerciseSelected;
 
+  /// Name of the exercise open in the detail pane, when this list is the master
+  /// half of a two-pane layout. Null everywhere the picker stands alone.
+  final String? highlightedName;
+
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
 
@@ -19,6 +23,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     this.appBar,
     this.backgroundColor,
     this.onExerciseSelected,
+    this.highlightedName,
   });
 
   @override
@@ -273,6 +278,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     preferences: preferences,
                     onExerciseSelected: onExerciseSelected,
                     selected: exercises.hasSelected(exercise),
+                    highlighted: exercise.name == highlightedName,
                   );
                 },
                 separatorBuilder: (_, _) {
