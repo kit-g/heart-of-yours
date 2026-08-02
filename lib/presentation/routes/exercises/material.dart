@@ -65,11 +65,13 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
           if (widget.allowOptions)
             if (widget.exercise.isMine)
               IconButton(
+                tooltip: L.of(context).exerciseOptions,
                 onPressed: () => _onExerciseMenu(context, widget.exercise),
                 icon: const Icon(Icons.more_vert_rounded),
               ),
           if (!widget.exercise.isMine)
             IconButton(
+              tooltip: L.of(context).share,
               onPressed: () => widget.onShareExercise?.call(widget.exercise, tab: _sections[_controller.index].name),
               icon: const Icon(Icons.share_outlined),
             ),

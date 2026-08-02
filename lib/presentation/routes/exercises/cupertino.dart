@@ -67,11 +67,13 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
           if (widget.allowOptions) ...[
             if (widget.exercise.isMine)
               IconButton(
+                tooltip: L.of(context).exerciseOptions,
                 onPressed: () => _onExerciseMenu(context, widget.exercise),
                 icon: const Icon(Icons.more_horiz_rounded),
               ),
             if (!widget.exercise.isMine)
               IconButton(
+                tooltip: L.of(context).share,
                 onPressed: () => widget.onShareExercise?.call(widget.exercise, tab: _section.value?.name),
                 icon: const Icon(Icons.ios_share_rounded),
               ),
