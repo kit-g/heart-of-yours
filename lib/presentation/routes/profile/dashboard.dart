@@ -49,28 +49,34 @@ class _Dashboard extends StatelessWidget {
       // matches the rest of the profile column (16)
       .wide => SliverPadding(
         padding: const .only(left: 16, right: 16, bottom: 8),
-        sliver: SliverReorderableGrid(
-          itemCount: length,
-          onReorder: charts.reorder,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: switch (MediaQuery.orientationOf(context)) {
-              .portrait => 2,
-              .landscape => 3,
-            },
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.5,
-          ),
-          itemBuilder: (_, index) {
-            return _Chart(
-              key: ValueKey(charts[index].id),
-              preference: charts[index],
-              settings: preferences,
-              exercises: exercises,
-              onDelete: (chart) => charts.removePreference(chart),
-              l: l,
-              exerciseHistoryService: service,
-              dragWrap: (child) => ReorderableGridDragStartListener(index: index, child: child),
+        // Counted from the width the grid is handed rather than the device's
+        // orientation. Orientation says nothing about a browser window being
+        // dragged wider, and nothing about how much of the window this grid
+        // actually got. At iPad sizes it lands on the same 2 and 3 the
+        // orientation switch produced.
+        sliver: SliverLayoutBuilder(
+          builder: (context, constraints) {
+            return SliverReorderableGrid(
+              itemCount: length,
+              onReorder: charts.reorder,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columnsFor(constraints.crossAxisExtent, maxExtent: _maxChartCardWidth),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1.5,
+              ),
+              itemBuilder: (_, index) {
+                return _Chart(
+                  key: ValueKey(charts[index].id),
+                  preference: charts[index],
+                  settings: preferences,
+                  exercises: exercises,
+                  onDelete: (chart) => charts.removePreference(chart),
+                  l: l,
+                  exerciseHistoryService: service,
+                  dragWrap: (child) => ReorderableGridDragStartListener(index: index, child: child),
+                );
+              },
             );
           },
         ),
