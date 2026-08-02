@@ -6,21 +6,33 @@ class ExerciseItem extends StatelessWidget {
   final void Function(Exercise, TapDownDetails?)? onExerciseSelected;
   final bool selected;
 
+  /// Whether this row is the one currently open in a two-pane detail view.
+  ///
+  /// Deliberately separate from [selected]: that one is the multi-select tick
+  /// used while building a workout. "I added this" and "I am looking at this"
+  /// are different states and a row can be in both at once.
+  final bool highlighted;
+
   const ExerciseItem({
     super.key,
     required this.exercise,
     required this.preferences,
     required this.selected,
+    this.highlighted = false,
     this.onExerciseSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.bodySmall;
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final style = textTheme.bodySmall;
     TapDownDetails? details;
 
     return Material(
-      color: Colors.transparent,
+      color: switch (highlighted) {
+        true => colorScheme.secondaryContainer,
+        false => Colors.transparent,
+      },
       child: InkWell(
         onTapDown: (d) => details = d,
         onTap: switch (onExerciseSelected) {
