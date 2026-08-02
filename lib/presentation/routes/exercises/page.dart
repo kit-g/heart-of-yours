@@ -72,6 +72,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       focusNode: _focusNode,
       backgroundColor: backgroundColor,
       onExerciseSelected: widget.onExercise,
+      highlightedName: widget.selectedId,
     );
 
     return Scaffold(
@@ -85,13 +86,15 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 child: listview,
               ),
               const VerticalDivider(width: 1),
-              switch (widget.detail) {
-                null => const SizedBox.shrink(),
-                Widget detail => Expanded(
-                  flex: 3,
-                  child: detail,
-                ),
-              },
+              // the pane stays put whether or not anything is selected, so
+              // picking an exercise does not resize the list underneath you
+              Expanded(
+                flex: 3,
+                child: switch (widget.detail) {
+                  null => const _NoSelectionState(),
+                  Widget detail => detail,
+                },
+              ),
             ],
           ),
         },
