@@ -9,9 +9,9 @@
 #   make test-<pkg>  one shared package, e.g. `make test-heart_db`
 
 # Packages with a test suite in the CI matrix.
-PACKAGES := heart_api heart_db heart_state heart_charts heart_language
+PACKAGES := heart_api heart_db heart_state heart_charts heart_language heart_health
 # Packages that need build_runner before their tests (heart_language has no codegen).
-CODEGEN_PACKAGES := heart_api heart_db heart_state heart_charts
+CODEGEN_PACKAGES := heart_api heart_db heart_state heart_charts heart_health
 
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
