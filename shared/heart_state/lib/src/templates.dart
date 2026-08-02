@@ -50,20 +50,29 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   Future<void> init() async {
     _initSampleTemplates();
     if (userId == null) return;
-    final local = await _service.getTemplates(userId!);
 
-    if (local.isNotEmpty) {
-      _templates.addAll(local);
-      notifyListeners();
-    }
+    // Nobody awaits this — it is started from app init and left to run — so an
+    // escaping error becomes an unhandled async one and is reported as a fatal
+    // crash. Route it through [onError] like every other initializer instead:
+    // the samples above are already in place and the app stays usable.
+    try {
+      final local = await _service.getTemplates(userId!);
 
-    final remote = await _remoteService.getTemplates() ?? [];
-    if (remote.isNotEmpty) {
-      _templates
-        ..removeWhere(remote.contains)
-        ..addAll(remote);
-      notifyListeners();
-      return _service.storeTemplates(remote, userId: userId);
+      if (local.isNotEmpty) {
+        _templates.addAll(local);
+        notifyListeners();
+      }
+
+      final remote = await _remoteService.getTemplates() ?? [];
+      if (remote.isNotEmpty) {
+        _templates
+          ..removeWhere(remote.contains)
+          ..addAll(remote);
+        notifyListeners();
+        await _service.storeTemplates(remote, userId: userId);
+      }
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
     }
   }
 
