@@ -63,6 +63,21 @@ class LocalDatabase extends _LocalDatabase
       onUpgrade: _migrate,
       onCreate: (db, version) => _migrate(db, 0, version),
       onConfigure: (db) async {
+        // Neither sqflite_common_ffi nor sqflite_common ever sets a busy
+        // handler, and SQLite's default is none — so the first moment two
+        // statements contend, the loser fails instantly with SQLITE_BUSY
+        // ("database is locked") instead of waiting. The native plugin we
+        // replaced above got a timeout for free from Android's SQLiteDatabase;
+        // with the ffi factory it has to be asked for on every connection.
+        await db.rawQuery('PRAGMA busy_timeout = 5000');
+
+        // Rollback journalling — the default — has a writer block every reader
+        // for the length of its transaction, which is how a plain SELECT ends
+        // up "locked" behind startup's catalog write. WAL lets them overlap.
+        // The setting is persisted in the file header, so re-issuing it on
+        // each open is a no-op; the web VFS has no WAL, hence the guard.
+        if (!isWeb) await db.rawQuery('PRAGMA journal_mode = WAL');
+
         await db.execute('PRAGMA foreign_keys = ON');
       },
     );
