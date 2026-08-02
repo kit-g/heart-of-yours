@@ -56,34 +56,27 @@ class _TemplatesLayout extends StatelessWidget {
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.all(8),
-          sliver: SliverGrid.count(
-            crossAxisCount: 2,
-            children: [
-              ...templates.map(
-                (template) {
-                  return _TemplateCard(
-                    template: template,
-                    onDelete: (template) {
-                      _showDeleteTemplateDialog(context, template);
-                    },
-                    onEdit: (template) {
-                      templates.editable = template;
-                      goToTemplateEditor();
-                    },
-                    onStartWorkout: (template) async {
-                      await Workouts.of(context).startWorkout(template: template.toWorkout());
-                      onNewWorkout();
-                    },
-                    onTap: (template) {
-                      _showStartWorkoutDialog(context, template);
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
+        _TemplateGrid(
+          templates: templates.toList(),
+          card: (template) {
+            return _TemplateCard(
+              template: template,
+              onDelete: (template) {
+                _showDeleteTemplateDialog(context, template);
+              },
+              onEdit: (template) {
+                templates.editable = template;
+                goToTemplateEditor();
+              },
+              onStartWorkout: (template) async {
+                await Workouts.of(context).startWorkout(template: template.toWorkout());
+                onNewWorkout();
+              },
+              onTap: (template) {
+                _showStartWorkoutDialog(context, template);
+              },
+            );
+          },
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -99,28 +92,21 @@ class _TemplatesLayout extends StatelessWidget {
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.all(8),
-          sliver: SliverGrid.count(
-            crossAxisCount: 2,
-            children: [
-              ...templates.samples.map(
-                (template) {
-                  return _TemplateCard(
-                    template: template,
-                    onTap: (template) {
-                      _showStartWorkoutDialog(context, template, allowsEditing: false);
-                    },
-                    onStartWorkout: (template) async {
-                      await Workouts.of(context).startWorkout(template: template.toWorkout());
-                      onNewWorkout();
-                    },
-                    options: const [.startWorkout],
-                  );
-                },
-              ),
-            ],
-          ),
+        _TemplateGrid(
+          templates: templates.samples.toList(),
+          card: (template) {
+            return _TemplateCard(
+              template: template,
+              onTap: (template) {
+                _showStartWorkoutDialog(context, template, allowsEditing: false);
+              },
+              onStartWorkout: (template) async {
+                await Workouts.of(context).startWorkout(template: template.toWorkout());
+                onNewWorkout();
+              },
+              options: const [.startWorkout],
+            );
+          },
         ),
       ],
     );
