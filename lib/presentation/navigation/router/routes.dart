@@ -311,6 +311,7 @@ RouteBase _exercisesRoute() {
                 leading: switch (LayoutProvider.of(context)) {
                   .compact => null,
                   .wide => IconButton(
+                    key: AppKeys.closeDetail,
                     tooltip: L.of(context).close,
                     onPressed: context.closeExerciseDetail,
                     icon: const Icon(Icons.close),

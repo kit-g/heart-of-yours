@@ -398,6 +398,11 @@ Future<void> _initApp(
       ],
     );
 
+    // Nobody awaits startup, so the tree can be torn down while this is still
+    // in flight. Everything below notifies a provider, and notifying a disposed
+    // one throws — which in a test takes the whole shell process with it.
+    if (!context.mounted) return;
+
     theme
       ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))
       ..toMode(prefs.themeMode);

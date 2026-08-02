@@ -69,6 +69,19 @@ Future<void> bootstrap({
   );
 }
 
+/// The conventional phone/tablet split: 600 logical pixels on the short edge.
+///
+/// Read off the view rather than a `MediaQuery`, because the orientation
+/// preference is set before there is a widget tree to read one from. Anything
+/// without a view — the browser, tests — counts as not a phone and stays free.
+bool get _isPhone {
+  final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+  return switch (view) {
+    null => false,
+    _ => view.physicalSize.shortestSide / view.devicePixelRatio < 600,
+  };
+}
+
 Future<void> _runner({
   required Api api,
   required AppConfig appConfig,
@@ -78,7 +91,20 @@ Future<void> _runner({
   Future<void> Function(List<DeviceOrientation> orientations) setOrientations = SystemChrome.setPreferredOrientations,
   FirebaseAuth? firebase,
 }) {
-  return setOrientations([.portraitUp]).then<void>(
+  // Phones stay portrait — the layouts are not built for a 390pt-tall viewport.
+  // Tablets are left to follow the device, which is what large-screen guidance
+  // on both platforms asks for.
+  //
+  // The split has to be made here rather than with one blanket lock, because
+  // the two platforms disagree: iPadOS ignores this preference entirely once an
+  // app allows multitasking, but Android honours it. A blanket [.portraitUp]
+  // reads as "phones only" on iOS while quietly pinning Android tablets too.
+  final orientations = switch (_isPhone) {
+    true => const [DeviceOrientation.portraitUp],
+    false => const <DeviceOrientation>[],
+  };
+
+  return setOrientations(orientations).then<void>(
     (_) {
       final router = HeartRouter(
         observers: [
