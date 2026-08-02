@@ -74,6 +74,7 @@ Future<void> showExerciseDetailDialog(BuildContext context, Exercise exercise) {
           onTapWorkout: (_) async {},
           allowOptions: false,
           leading: IconButton(
+            tooltip: L.of(context).close,
             onPressed: Navigator.of(context).pop,
             icon: const Icon(Icons.close),
           ),
