@@ -18,6 +18,7 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:logging/logging.dart';
@@ -121,6 +122,15 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        ChangeNotifierProvider<Health>(
+          // No remote service, deliberately: health data never leaves the
+          // device. `healthStore()` degrades to a no-op reader off mobile.
+          create: (_) => Health(
+            device: healthStore(),
+            local: db,
+            onError: reportHealthFailure,
+          ),
+        ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             service: api,
@@ -135,6 +145,7 @@ class HeartApp extends StatelessWidget {
               Exercises.of(context).userId = user?.id;
               Charts.of(context).userId = user?.id;
               Goals.of(context).userId = user?.id;
+              Health.of(context).userId = user?.id;
               PreviousExercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
@@ -424,6 +435,7 @@ Future<void> _initApp(
     final router = HeartRouter.of(context);
     final charts = Charts.of(context);
     final stats = Stats.of(context);
+    final health = Health.of(context);
 
     await Future.wait(
       [
@@ -454,6 +466,10 @@ Future<void> _initApp(
       // catalog — load them immediately rather than behind the remote sync,
       // so the dashboard doesn't sit on a spinner for the network round-trip
       charts.init();
+
+      // Local-only too, and independent of the exercise catalog. A refused or
+      // never-granted permission simply yields nothing.
+      health.init();
 
       init(lastSync: config.exercisesLastSynced).then<void>(
         (hasExercises) {

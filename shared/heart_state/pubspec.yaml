@@ -11,6 +11,7 @@ dependencies:
   firebase_core: 4.13.0
   flutter: { sdk: flutter }
   google_sign_in: ^7.2.0
+  heart_health:
   heart_models:
     git:
       url: "https://github.com/kit-g/heart-api.git"
