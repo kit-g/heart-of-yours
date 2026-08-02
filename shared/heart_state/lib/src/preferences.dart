@@ -30,8 +30,22 @@ class Preferences with ChangeNotifier {
     return Provider.of<Preferences>(context, listen: true);
   }
 
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   Future<void> init({Locale? locale}) async {
     _prefs = await SharedPreferences.getInstance();
+    // Startup kicks this off and does not await it, so the app can be torn down
+    // while the shared preferences read is still in flight — notifying then
+    // throws. Rare in the app, routine in a test, where it takes the whole
+    // shell process down with it.
+    if (_disposed) return;
+
     _isInitialized = true;
     final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(
