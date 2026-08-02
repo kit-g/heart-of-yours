@@ -10,6 +10,10 @@ class HistoryPage extends StatefulWidget {
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
+  /// Id of the workout open in [detail], so the list can mark which card the
+  /// pane is showing. Null in compact, where the detail covers the list anyway.
+  final String? selectedId;
+
   const HistoryPage({
     super.key,
     required this.onNewWorkout,
@@ -20,6 +24,7 @@ class HistoryPage extends StatefulWidget {
     required this.onOpenActiveWorkout,
     this.detail,
     this.onTapImage,
+    this.selectedId,
   });
 
   @override
@@ -134,6 +139,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   onTap: widget.onTapWorkout,
                   onDeleteWorkout: widget.onDeleteWorkout,
                   onTapImageIcon: widget.onTapImage,
+                  highlighted: workout.id == widget.selectedId,
                 ),
                 _ => const SizedBox.shrink(),
               };
@@ -166,13 +172,15 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   child: listview,
                 ),
                 const VerticalDivider(width: 1),
-                switch (widget.detail) {
-                  null => const SizedBox.shrink(),
-                  Widget detail => Expanded(
-                    flex: 3,
-                    child: detail,
-                  ),
-                },
+                // held open whether or not anything is selected, so picking a
+                // workout does not resize the list underneath you
+                Expanded(
+                  flex: 3,
+                  child: switch (widget.detail) {
+                    null => const _NoSelectionState(),
+                    Widget detail => detail,
+                  },
+                ),
               ],
             ),
           },
@@ -217,26 +225,56 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:emptyHistoryTitle, :emptyHistoryBody) = L.of(context);
+    return _Placeholder(title: emptyHistoryTitle, body: emptyHistoryBody);
+  }
+}
+
+/// Holds the detail pane open on a wide screen before a workout is picked.
+///
+/// The pane used to collapse instead, which let the list reflow from full width
+/// to two fifths the moment you tapped a card.
+class _NoSelectionState extends StatelessWidget {
+  const _NoSelectionState();
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:noWorkoutSelectedTitle, :noWorkoutSelectedBody) = L.of(context);
+    return _Placeholder(key: AppKeys.noSelection, title: noWorkoutSelectedTitle, body: noWorkoutSelectedBody);
+  }
+}
+
+class _Placeholder extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _Placeholder({super.key, required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
     final ThemeData(:textTheme) = Theme.of(context);
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: .min,
-          mainAxisAlignment: .center,
-          spacing: 12,
-          children: [
-            Text(
-              emptyHistoryTitle,
-              style: textTheme.headlineSmall,
-              textAlign: .center,
-            ),
-            Text(
-              emptyHistoryBody,
-              style: textTheme.bodyLarge,
-            ),
-          ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: readableWidth),
+          child: Column(
+            mainAxisSize: .min,
+            mainAxisAlignment: .center,
+            spacing: 12,
+            children: [
+              Text(
+                title,
+                style: textTheme.headlineSmall,
+                textAlign: .center,
+              ),
+              Text(
+                body,
+                style: textTheme.bodyLarge,
+                textAlign: .center,
+              ),
+            ],
+          ),
         ),
       ),
     );

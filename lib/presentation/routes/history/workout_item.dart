@@ -10,6 +10,9 @@ class WorkoutItem extends StatelessWidget {
   final void Function(Workout)? onDeleteWorkout;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImageIcon;
 
+  /// Whether this card is the one open in a two-pane detail view.
+  final bool highlighted;
+
   const WorkoutItem({
     super.key,
     required this.workout,
@@ -20,6 +23,7 @@ class WorkoutItem extends StatelessWidget {
     this.onEditWorkout,
     this.onDeleteWorkout,
     this.onTapImageIcon,
+    this.highlighted = false,
   });
 
   @override
@@ -28,7 +32,10 @@ class WorkoutItem extends StatelessWidget {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
     return Card(
-      color: colorScheme.surfaceContainer,
+      color: switch (highlighted) {
+        true => colorScheme.secondaryContainer,
+        false => colorScheme.surfaceContainer,
+      },
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: _shape,
       child: InkWell(
