@@ -62,6 +62,9 @@ dev_dependencies:
   firebase_auth_mocks: ^0.15.0
   # imported by lib/main_driver.dart, a debug-only entrypoint — never by main.dart
   flutter_driver: { sdk: flutter }
+  # integration_test/ — runs locally and on Firebase Test Lab, which is where
+  # the Android tablet coverage comes from
+  integration_test: { sdk: flutter }
 
 
 flutter:
