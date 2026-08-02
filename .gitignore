@@ -63,3 +63,4 @@ pubspec.lock
 /web/sqlite3.wasm
 
 /.ai
+/.claude/worktrees
