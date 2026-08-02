@@ -1577,5 +1577,35 @@
     "description": "Distance unit label",
     "type": "text",
     "placeholders": {}
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Tooltip on a button that dismisses a dialog or a detail pane",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noWorkoutSelectedTitle": "Nothing selected",
+  "@noWorkoutSelectedTitle": {
+    "description": "Placeholder shown in the detail pane on a tablet when no workout is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noWorkoutSelectedBody": "Pick a workout to see what you did and make changes.",
+  "@noWorkoutSelectedBody": {
+    "description": "Placeholder shown in the detail pane on a tablet when no workout is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noExerciseSelectedTitle": "Nothing selected",
+  "@noExerciseSelectedTitle": {
+    "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noExerciseSelectedBody": "Pick an exercise to see how it's done, plus your history and records.",
+  "@noExerciseSelectedBody": {
+    "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
+    "type": "text",
+    "placeholders": {}
   }
 }

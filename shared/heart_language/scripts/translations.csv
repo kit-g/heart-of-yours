@@ -295,3 +295,8 @@ myProgression,Photo gallery title,My progression,My progression,Мой прог�
 copiedToClipboard,Snack message when user copies text to clipboard,Copied to clipboard,Copied to clipboard,Скопировано в буфер обмена
 weightUnitLabel,Weight unit label,Weight unit,,Единица веса
 distanceUnitLabel,Distance unit label,Distance unit,,Единица расстояния
+close,Tooltip on a button that dismisses a dialog or a detail pane,Close,Close,Закрыть
+noWorkoutSelectedTitle,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Nothing selected,Nothing selected,Ничего не выбрано
+noWorkoutSelectedBody,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Pick a workout to see what you did and make changes.,Pick a workout to see what you did and make changes.,"Выберите тренировку, чтобы посмотреть и изменить её."
+noExerciseSelectedTitle,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,Nothing selected,Nothing selected,Ничего не выбрано
+noExerciseSelectedBody,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,"Pick an exercise to see how it's done, plus your history and records.","Pick an exercise to see how it's done, plus your history and records.","Выберите упражнение, чтобы увидеть технику, историю и рекорды."

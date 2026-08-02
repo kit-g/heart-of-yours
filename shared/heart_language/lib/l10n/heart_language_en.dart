@@ -829,6 +829,21 @@ class LEn extends L {
 
   @override
   String get distanceUnitLabel => 'Distance unit';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get noWorkoutSelectedTitle => 'Nothing selected';
+
+  @override
+  String get noWorkoutSelectedBody => 'Pick a workout to see what you did and make changes.';
+
+  @override
+  String get noExerciseSelectedTitle => 'Nothing selected';
+
+  @override
+  String get noExerciseSelectedBody => 'Pick an exercise to see how it\'s done, plus your history and records.';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1650,4 +1665,19 @@ class LEnCa extends LEn {
 
   @override
   String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get noWorkoutSelectedTitle => 'Nothing selected';
+
+  @override
+  String get noWorkoutSelectedBody => 'Pick a workout to see what you did and make changes.';
+
+  @override
+  String get noExerciseSelectedTitle => 'Nothing selected';
+
+  @override
+  String get noExerciseSelectedBody => 'Pick an exercise to see how it\'s done, plus your history and records.';
 }
