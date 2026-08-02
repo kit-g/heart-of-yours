@@ -98,7 +98,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return Provider.of<Exercises>(context, listen: true);
   }
 
-  Future<void> init({DateTime? lastSync}) async {
+  /// Loads the exercise catalog, reporting whether it ended up populated.
+  ///
+  /// The answer matters to the caller: templates and workouts both persist rows
+  /// with a foreign key onto `exercises.name`, so they cannot be initialized
+  /// against an empty catalog. Swallowing the error here and resolving normally
+  /// let them run anyway — a locked database at startup surfaced as a
+  /// `FOREIGN KEY constraint failed` half a second later, in the chained init.
+  ///
+  /// A local cache counts: the remote sync failing is survivable, the catalog
+  /// being empty is not.
+  Future<bool> init({DateTime? lastSync}) async {
     try {
       final (localSync, local) = await _service.getExercises(userId: userId);
 
@@ -119,7 +129,10 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
       final all = [...ex, ...own]..sort();
       _exercises.addAll(Map.fromEntries(all.map((each) => MapEntry(each.name, each))));
-      _service.storeExercises(_exercises.values, userId: userId);
+      // awaited: everything chained behind this init writes rows referencing
+      // `exercises.name`, and letting the catalog write stay in flight leaves
+      // them racing a parent row that is not committed yet.
+      await _service.storeExercises(_exercises.values, userId: userId);
 
       // the server is the source of truth for unit prefs (it joins them onto the
       // exercise list per authenticated user); mirror them into the local cache.
@@ -136,6 +149,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
+    return isInitialized;
   }
 
   Iterable<Exercise> search(String query, {bool filters = false, bool isMine = false}) {

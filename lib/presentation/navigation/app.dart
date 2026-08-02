@@ -414,7 +414,13 @@ Future<void> _initApp(
       charts.init();
 
       init(lastSync: config.exercisesLastSynced).then<void>(
-        (_) {
+        (hasExercises) {
+          // everything below reads or writes against the exercise catalog —
+          // templates and workouts persist rows with a foreign key onto
+          // `exercises.name`. Running them against an empty catalog trades a
+          // reported failure for a constraint violation, so stop here instead.
+          if (!hasExercises) return;
+
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
           workouts.init().then<void>(
