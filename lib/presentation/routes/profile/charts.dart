@@ -1,5 +1,17 @@
 part of 'profile.dart';
 
+/// Tall enough to read a bar chart, short enough to leave the dashboard below
+/// it visible without scrolling.
+const _maxChartHeight = 360.0;
+
+/// Widest a dashboard chart card gets before the grid adds a column instead.
+///
+/// These cards are summaries — the detail lives behind a tap — so the
+/// dashboard is worth keeping dense. Lands on 3 columns in iPad landscape and
+/// 2 in portrait, and sits mid-band rather than near a boundary so a change in
+/// rail width or padding does not flip the count.
+const _maxChartCardWidth = 440.0;
+
 class WorkoutsAggregationChart extends StatefulWidget {
   final WorkoutAggregation workouts;
   final double? opacity;
@@ -29,94 +41,102 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final L(:workoutsPerWeek) = L.of(context);
-    return AspectRatio(
-      aspectRatio: 5 / 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              workoutsPerWeek,
-              style: textTheme.titleLarge,
-            ),
-            Expanded(
-              child: Opacity(
-                opacity: widget.opacity ?? 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    color: colorScheme.primaryContainer,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: _pointedAtBar,
-                      builder: (_, _, _) {
-                        return BarChart(
-                          duration: animDuration,
-                          BarChartData(
-                            maxY: widget.workouts.max.toDouble() + 1,
-                            minY: 0,
-                            barTouchData: BarTouchData(
-                              touchTooltipData: BarTouchTooltipData(
-                                getTooltipColor: (_) => Colors.transparent,
-                                tooltipHorizontalAlignment: FLHorizontalAlignment.center,
-                                tooltipMargin: 0,
-                                getTooltipItem: _tooltip,
-                              ),
-                              touchCallback: _onTouch,
-                            ),
-                            titlesData: FlTitlesData(
-                              show: true,
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: _xTitles,
-                                  reservedSize: 32,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          // 5:4 is right on a phone and absurd on a tablet: this is a
+          // full-bleed sliver, so at 1850pt wide the ratio alone asked for a
+          // 1480pt-tall chart, pushing the rest of the profile off screen.
+          // Past the cap, extra width makes the chart wider, not taller.
+          height: min(constraints.maxWidth * 4 / 5, _maxChartHeight),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  workoutsPerWeek,
+                  style: textTheme.titleLarge,
+                ),
+                Expanded(
+                  child: Opacity(
+                    opacity: widget.opacity ?? 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.all(Radius.circular(12)),
+                        color: colorScheme.primaryContainer,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _pointedAtBar,
+                          builder: (_, _, _) {
+                            return BarChart(
+                              duration: animDuration,
+                              BarChartData(
+                                maxY: widget.workouts.max.toDouble() + 1,
+                                minY: 0,
+                                barTouchData: BarTouchData(
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (_) => Colors.transparent,
+                                    tooltipHorizontalAlignment: FLHorizontalAlignment.center,
+                                    tooltipMargin: 0,
+                                    getTooltipItem: _tooltip,
+                                  ),
+                                  touchCallback: _onTouch,
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: _xTitles,
+                                      reservedSize: 32,
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      interval: 1.0,
+                                      reservedSize: 28,
+                                      minIncluded: false,
+                                      maxIncluded: true,
+                                      getTitlesWidget: _yTitles,
+                                    ),
+                                  ),
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: widget.workouts.indexed.map(
+                                  (record) {
+                                    final (index, summary) = record;
+                                    return _bar(index, summary);
+                                  },
+                                ).toList(),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawHorizontalLine: true,
+                                  drawVerticalLine: false,
+                                  checkToShowHorizontalLine: (v) => v % 1 == 0,
                                 ),
                               ),
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  interval: 1.0,
-                                  reservedSize: 28,
-                                  minIncluded: false,
-                                  maxIncluded: true,
-                                  getTitlesWidget: _yTitles,
-                                ),
-                              ),
-                            ),
-                            borderData: FlBorderData(show: false),
-                            barGroups: widget.workouts.indexed.map(
-                              (record) {
-                                final (index, summary) = record;
-                                return _bar(index, summary);
-                              },
-                            ).toList(),
-                            gridData: FlGridData(
-                              show: true,
-                              drawHorizontalLine: true,
-                              drawVerticalLine: false,
-                              checkToShowHorizontalLine: (v) => v % 1 == 0,
-                            ),
-                          ),
-                        );
-                      },
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
