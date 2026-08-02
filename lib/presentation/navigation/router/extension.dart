@@ -47,8 +47,28 @@ extension on BuildContext {
     return go('$_historyPath/$workoutId');
   }
 
+  /// Pushes on a phone, replaces on a tablet.
+  ///
+  /// Compact puts the detail on top of the list as its own screen, so pushing
+  /// is right and the back arrow means what it says. Wide keeps the detail in a
+  /// pane that never goes away, and pushing there quietly stacks every exercise
+  /// looked at — which is what made the pane's back button walk through them
+  /// one at a time instead of closing.
   Future<Object?> goToExerciseDetail(String exerciseId) {
-    return push('$_exercisesPath/$exerciseId');
+    final path = '$_exercisesPath/$exerciseId';
+
+    switch (LayoutProvider.of(this)) {
+      case .compact:
+        return push(path);
+      case .wide:
+        go(path);
+        return Future<Object?>.value();
+    }
+  }
+
+  /// Empties the two-pane detail without leaving the exercises stack.
+  void closeExerciseDetail() {
+    return go(_exercisesPath);
   }
 
   void goToExerciseArchive() {
