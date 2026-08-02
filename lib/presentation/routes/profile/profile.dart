@@ -1,5 +1,7 @@
 library;
 
+import 'dart:math';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:heart/core/theme/state.dart';
@@ -12,6 +14,7 @@ import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/exercise_chart.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
+import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
