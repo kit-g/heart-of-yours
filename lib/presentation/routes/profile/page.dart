@@ -207,53 +207,60 @@ Future<(Exercise, ChartPreferenceType)?> _showExercises(
     context: context,
     builder: (context) {
       final exercises = Exercises.watch(context);
-      return Card(
-        child: ExercisePicker(
-          appBar: SliverPersistentHeader(
-            pinned: true,
-            delegate: FixedHeightHeaderDelegate(
-              backgroundColor: color,
-              child: Row(
-                mainAxisAlignment: .spaceBetween,
-                children: [
-                  IconButton(
-                    visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                    ),
+      // a bare Card takes the whole screen; the picker still wants the height,
+      // so only the width is bounded
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: dialogWidth),
+          child: Card(
+            child: ExercisePicker(
+              appBar: SliverPersistentHeader(
+                pinned: true,
+                delegate: FixedHeightHeaderDelegate(
+                  backgroundColor: color,
+                  child: Row(
+                    mainAxisAlignment: .spaceBetween,
+                    children: [
+                      IconButton(
+                        visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                  height: 40,
+                  borderRadius: const .all(.circular(12)),
+                ),
               ),
-              height: 40,
-              borderRadius: const .all(.circular(12)),
+              exercises: exercises,
+              backgroundColor: color,
+              searchController: controller,
+              focusNode: focus,
+              onExerciseSelected: (exercise, details) async {
+                final global = details?.globalPosition;
+                if (global == null) return;
+                final chartType = await showMenu<ChartPreferenceType>(
+                  context: context,
+                  position: global.position(),
+                  items: ChartPreferenceType.chartsByExerciseCategory(exercise.category).map(
+                    (option) {
+                      return PopupMenuItem<ChartPreferenceType>(
+                        value: option,
+                        child: Text(_chartTypeCopy(context, option)),
+                      );
+                    },
+                  ).toList(),
+                );
+
+                if (chartType != null && context.mounted) {
+                  Navigator.of(context).pop((exercise, chartType));
+                }
+              },
             ),
           ),
-          exercises: exercises,
-          backgroundColor: color,
-          searchController: controller,
-          focusNode: focus,
-          onExerciseSelected: (exercise, details) async {
-            final global = details?.globalPosition;
-            if (global == null) return;
-            final chartType = await showMenu<ChartPreferenceType>(
-              context: context,
-              position: global.position(),
-              items: ChartPreferenceType.chartsByExerciseCategory(exercise.category).map(
-                (option) {
-                  return PopupMenuItem<ChartPreferenceType>(
-                    value: option,
-                    child: Text(_chartTypeCopy(context, option)),
-                  );
-                },
-              ).toList(),
-            );
-
-            if (chartType != null && context.mounted) {
-              Navigator.of(context).pop((exercise, chartType));
-            }
-          },
         ),
       );
     },

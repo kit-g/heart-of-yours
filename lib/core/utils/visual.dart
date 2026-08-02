@@ -123,6 +123,14 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
+/// Widest a dialog gets before it stops growing with the screen.
+///
+/// A dialog should read as a panel sitting on top of the app. Left unbounded it
+/// takes whatever the screen offers — on an iPad that meant an 825pt card with
+/// 5pt of margin either side, which looks like a broken page rather than a
+/// dialog. No phone is this wide, so nothing changes there.
+const dialogWidth = 560.0;
+
 Future<T?> showBrandedDialog<T>(
   BuildContext context, {
   required Widget title,
@@ -145,7 +153,16 @@ Future<T?> showBrandedDialog<T>(
         icon: icon,
         title: title,
         titleTextStyle: titleTextStyle ?? textTheme.titleMedium,
-        content: content,
+        // An AlertDialog is as wide as its widest part, so content that wants
+        // to expand — a picker, a list — dragged the whole dialog out to the
+        // screen edge.
+        content: switch (content) {
+          null => null,
+          Widget c => ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: dialogWidth),
+            child: c,
+          ),
+        },
         contentTextStyle: contentTextStyle,
         actions: actions,
       );
