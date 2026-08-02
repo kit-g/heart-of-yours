@@ -28,11 +28,16 @@ class ExerciseItem extends StatelessWidget {
     final style = textTheme.bodySmall;
     TapDownDetails? details;
 
-    return Material(
-      color: switch (highlighted) {
-        true => colorScheme.secondaryContainer,
-        false => Colors.transparent,
-      },
+    return TweenAnimationBuilder<Color?>(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      tween: ColorTween(
+        end: switch (highlighted) {
+          true => colorScheme.secondaryContainer,
+          false => Colors.transparent,
+        },
+      ),
+      builder: (_, color, child) => Material(color: color, child: child),
       child: InkWell(
         onTapDown: (d) => details = d,
         onTap: switch (onExerciseSelected) {
