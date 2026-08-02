@@ -1,6 +1,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show AsyncCallback;
@@ -158,54 +159,14 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
               Iterable i when i.isEmpty => const SizedBox.shrink(),
               Iterable<WorkoutImage> images => Padding(
                 padding: const .only(top: 8),
-                child: LayoutBuilder(
-                  builder: (_, constraints) {
-                    final width = constraints.hasBoundedWidth
-                        ? constraints.maxWidth
-                        : MediaQuery.sizeOf(context).width - 16;
-                    final height = width * 9 / 16;
-                    return switch (images.toList()) {
-                      [WorkoutImage only] => Padding(
-                        padding: const .symmetric(horizontal: 8),
-                        child: _Image(
-                          image: only,
-                          width: width,
-                          height: height,
-                          key: ValueKey(only.id),
-                          onTapImage: () => widget.onTapImage?.call(
-                            images,
-                            startingIndex: 0,
-                            workoutId: widget.workoutId,
-                          ),
-                          onDeleteImage: () async => await widget.onDeleteImage?.call(only),
-                        ),
-                      ),
-                      List<WorkoutImage> many => SizedBox(
-                        height: height,
-                        child: PageView.builder(
-                          itemCount: many.length,
-                          itemBuilder: (_, index) {
-                            final image = many[index];
-                            return Padding(
-                              padding: const .symmetric(horizontal: 8),
-                              child: _Image(
-                                image: image,
-                                width: width,
-                                height: height,
-                                key: ValueKey(image.id),
-                                onTapImage: () => widget.onTapImage?.call(
-                                  images,
-                                  startingIndex: index,
-                                  workoutId: widget.workoutId,
-                                ),
-                                onDeleteImage: () async => await widget.onDeleteImage?.call(image),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    };
-                  },
+                child: _Media(
+                  images: images.toList(),
+                  onTapImage: (index) => widget.onTapImage?.call(
+                    images,
+                    startingIndex: index,
+                    workoutId: widget.workoutId,
+                  ),
+                  onDeleteImage: (image) async => await widget.onDeleteImage?.call(image),
                 ),
               ),
             },
@@ -484,6 +445,77 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
     );
   }
 }
+
+/// The strip of photos above the exercise list.
+///
+/// Sizes from the space it is handed rather than the window: this also renders
+/// inside a two-pane detail, where the pane is a fraction of the width the
+/// window reports.
+///
+/// One scrolling row covers every case. A `PageView` used to hold the extra
+/// photos, which on a tablet meant a single 613pt-tall image with nothing on
+/// screen saying a second one existed. Here the next photo is always visibly
+/// cut off, which is the whole affordance.
+class _Media extends StatelessWidget {
+  final List<WorkoutImage> images;
+  final void Function(int index) onTapImage;
+  final Future<void> Function(WorkoutImage) onDeleteImage;
+
+  const _Media({
+    required this.images,
+    required this.onTapImage,
+    required this.onDeleteImage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = switch (constraints.hasBoundedWidth) {
+          true => constraints.maxWidth,
+          false => MediaQuery.sizeOf(context).width,
+        };
+
+        // a photo scaling with the pane forever is what made this 613pt tall on
+        // an iPad; past a point extra width should buy another photo, not a
+        // bigger one
+        final itemWidth = switch (images.length) {
+          1 => min(available - _mediaGutter * 2, _maxImageWidth),
+          // held back from the full width so the next photo peeks
+          _ => min((available - _mediaGutter * 2) * .9, _maxImageWidth),
+        };
+        final height = itemWidth * 9 / 16;
+
+        return SizedBox(
+          height: height,
+          child: ListView.separated(
+            scrollDirection: .horizontal,
+            padding: const .symmetric(horizontal: _mediaGutter),
+            itemCount: images.length,
+            separatorBuilder: (_, _) => const SizedBox(width: _mediaGutter),
+            itemBuilder: (_, index) {
+              final image = images[index];
+              return _Image(
+                image: image,
+                width: itemWidth,
+                height: height,
+                key: ValueKey(image.id),
+                onTapImage: () => onTapImage(index),
+                onDeleteImage: () async => await onDeleteImage(image),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Keeps a photo to a sensible size once the pane is wide enough that 16:9
+/// would otherwise swallow the screen.
+const _maxImageWidth = 500.0;
+
+const _mediaGutter = 8.0;
 
 class _Image extends StatefulWidget {
   final WorkoutImage image;
