@@ -1577,5 +1577,35 @@
     "description": "Distance unit label",
     "type": "text",
     "placeholders": {}
+  },
+  "close": "Закрыть",
+  "@close": {
+    "description": "Tooltip on a button that dismisses a dialog or a detail pane",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noWorkoutSelectedTitle": "Ничего не выбрано",
+  "@noWorkoutSelectedTitle": {
+    "description": "Placeholder shown in the detail pane on a tablet when no workout is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noWorkoutSelectedBody": "Выберите тренировку, чтобы посмотреть и изменить её.",
+  "@noWorkoutSelectedBody": {
+    "description": "Placeholder shown in the detail pane on a tablet when no workout is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noExerciseSelectedTitle": "Ничего не выбрано",
+  "@noExerciseSelectedTitle": {
+    "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noExerciseSelectedBody": "Выберите упражнение, чтобы увидеть технику, историю и рекорды.",
+  "@noExerciseSelectedBody": {
+    "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
+    "type": "text",
+    "placeholders": {}
   }
 }
