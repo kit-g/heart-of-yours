@@ -4,9 +4,8 @@ Every beat counts.
 
 ## Introduction
 
-Heart of yours is a minimalist fitness tracker mobile app that collects and aggregates your workout
-data. It is also a
-showcase of a real-live serverless Flutter project.
+Heart of yours is a minimalist fitness tracker that collects and aggregates your workout data. It
+is also a showcase of a real-live serverless Flutter project.
 
 <div style="display: flex; justify-content: space-around; align-items: center; gap: 10px;">
   <img src="assets/screenshots/timer.png" alt="Workout" style="width: 30%;">
@@ -14,10 +13,21 @@ showcase of a real-live serverless Flutter project.
   <img src="assets/screenshots/congrats.png" alt="History" style="width: 30%;">
 </div>
 
+## Supported platforms
+
+iPhone and Android phones, and **iPad and Android tablets** in both orientations. Phones are
+portrait-only; tablets follow the device.
+
+Large screens are not a phone layout stretched wide. The navigation bar becomes a rail, History and
+Exercises become two-pane, and grids count their columns from the width they are actually given.
+The rules for keeping it that way are in [CLAUDE.md](CLAUDE.md#large-screens) — the short version is
+that each page measures its own constraints rather than the window, and caps what it does with
+them.
+
 ## Prerequisites
 
-- Dart 3.6+
-- Flutter 3.27+
+- Dart 3.12+
+- Flutter 3.38.3+ (the app uses dot-shorthand enum and constructor syntax)
 - a Firebase account
 - Flutterfire CLI
 - XCode (for iOS)
@@ -37,6 +47,8 @@ The project has the following general structure.
     └── dev.json
         ...
 ├── firebase.json
+├── integration_test
+    └── ...
 ├── ios
     └── ...
 ├── lib
@@ -75,11 +87,9 @@ High level steps are:
 
 - Get a Firebase account
 - Start a Firebase project
-- Start a **Flutter** app in that project - the code right supports Android and iOS but this might
-  change in the future.
-  Setting up an Android and iOS apps separately is of course completely fine, but the Flutter option
-  is easier and
-  faster.
+- Start a **Flutter** app in that project. The code targets Android and iOS; a web build is planned
+  but not worked on yet. Setting Android and iOS up separately is fine, but the Flutter option is
+  easier and faster.
 - Generate the Firebase project credentials as per the link above.
 
 Ultimately, the setup process is in no way different from any boilerplate Flutter + Firebase
@@ -104,16 +114,26 @@ Populate this with your values. Full list of variables is in `lib/core/env/confi
 Then, to run:
 
 ```shell
-flutter run --dart-define-from-file="env/dev.json"
-```
-
-on iOS and
-
-```shell
 flutter run --flavor dev --dart-define-from-file="env/dev.json"
 ```
 
-on Android. This will change when we'll get closer to the release.
+The flavour is required on both platforms. On iOS, omitting it fails the build at `actool` with
+*"None of the input catalogs contained ... an app icon set named AppIcon"* — the asset catalog holds
+`AppIcon-dev` and `AppIcon-prod` and no unflavoured `AppIcon`.
+
+To pick a device, pass `-d` with an id from `flutter devices`:
+
+```shell
+flutter devices
+flutter run --flavor dev -d "iPad Pro 11-inch (M4)" --dart-define-from-file="env/dev.json"
+```
+
+Since tablets are supported, run on one before calling a UI change done. There is no Android tablet
+emulator by default — create one with
+`avdmanager create avd -n Pixel_Tablet -k "system-images;android-34;google_apis;arm64-v8a" -d pixel_tablet`.
+
+`lib/main_driver.dart` is a debug-only entrypoint that enables the Flutter Driver extension, so a
+running app can be tapped, scrolled and screenshotted from outside. See the `drive-the-app` skill.
 
 ## State management
 
@@ -160,6 +180,14 @@ We test the app and each package separately. From the repo root:
   ```shell
   flutter test
   ```
+
+- Integration tests live in `integration_test/` and need a device, so they do not run under a plain
+  `flutter test`:
+  ```shell
+  flutter test integration_test/ -d <device-id>
+  ```
+  They are also the artefact for Firebase Test Lab, which is where tablet coverage comes from
+  without owning the hardware.
 
 ## CI
 
