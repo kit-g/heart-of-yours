@@ -56,4 +56,8 @@ const _migrations = <int, List<String>>{
     templateFoldersIndex,
     addTemplateFolderId,
   ],
+  9: [
+    healthSamples,
+    healthSamplesIndex,
+  ],
 };

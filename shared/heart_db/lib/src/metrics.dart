@@ -187,3 +187,58 @@ ORDER BY "when" DESC
 LIMIT ?
 ;
 ''';
+
+// A cumulative metric — steps, active energy, sleep minutes — bucketed by the
+// user's local day.
+//
+// The nested query is the whole point. HealthKit and Health Connect both hold
+// the same hour's steps from the phone, the watch and any syncing third-party
+// app as *distinct* samples, not duplicates, so a plain `sum(value)` multiplies
+// the user's step count by however many devices they own. Instead: total each
+// source separately, then let the best-covered source win the day.
+//
+// This can undercount a day genuinely split across devices (morning on the
+// phone, evening on the watch). That is the right way to be wrong — a chart
+// that quietly invents 12,000 extra steps is worse than one that misses a few.
+//
+// `date(start, 'localtime')` is safe because `start` is always stored UTC with
+// a trailing `Z`; see HealthSample.toRow.
+const dailyCumulativeHealth = '''
+SELECT day, max(source_total) AS "value"
+FROM (
+    SELECT
+        date(start, 'localtime') AS day,
+        source_id,
+        sum(value) AS source_total
+    FROM health_samples
+    WHERE user_id = ?
+      AND metric = ?
+      AND start >= ?
+      AND start < ?
+    GROUP BY day, source_id
+)
+GROUP BY day
+ORDER BY day
+;
+''';
+
+// An instantaneous metric — resting heart rate, HRV, body mass, body fat —
+// bucketed by the user's local day.
+//
+// Averaged rather than reconciled: these are repeated point readings, so two
+// sources measuring the same morning are two opinions of one number, and their
+// mean is a fair summary. Nothing accumulates, so there is nothing to
+// double-count.
+const dailyAverageHealth = '''
+SELECT
+    date(start, 'localtime') AS day,
+    avg(value) AS "value"
+FROM health_samples
+WHERE user_id = ?
+  AND metric = ?
+  AND start >= ?
+  AND start < ?
+GROUP BY day
+ORDER BY day
+;
+''';
