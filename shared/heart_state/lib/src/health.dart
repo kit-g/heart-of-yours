@@ -124,7 +124,21 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   /// rather than trusting it.
   Future<bool> connect() async {
     final asked = await _device.requestAccess(tracked);
+
+    // Re-read the status rather than trusting the one taken at launch. If that
+    // check threw, [_status] is stuck at its `unavailable` default and [sync]
+    // returns early forever — and outside Android's [openInstaller] there is
+    // nothing else that would ever reopen the gate.
+    _status = await _device.status();
+
+    // The first sync backfills a year across every tracked metric, so the sheet
+    // is routinely answered while it is still running. Join that pass rather
+    // than racing it, then run a fresh one: the windows it already read were
+    // read before consent existed, so its results say nothing about what the
+    // user just granted.
+    await _inFlight;
     await sync();
+
     return asked;
   }
 
@@ -138,10 +152,19 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   /// The window deliberately overlaps the last known sample: the store can
   /// backfill a reading behind the watermark once a watch syncs. Overlap is
   /// free because rows collide on the platform's sample UUID.
-  Future<void> sync() async {
-    if (_syncing || userId == null) return;
-    if (_status != .available) return;
+  Future<void> sync() {
+    if (userId == null) return Future.value();
+    if (_status != .available) return Future.value();
 
+    // Concurrent callers join the pass already running instead of starting a
+    // second one over the same windows. [connect] is the one caller that needs
+    // a genuinely fresh read, and it awaits [_inFlight] first to get one.
+    return _inFlight ??= _sync().whenComplete(() => _inFlight = null);
+  }
+
+  Future<void>? _inFlight;
+
+  Future<void> _sync() async {
     _syncing = true;
     notifyListeners();
 
