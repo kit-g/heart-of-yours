@@ -829,4 +829,19 @@ class LRu extends L {
 
   @override
   String get distanceUnitLabel => 'Единица расстояния';
+
+  @override
+  String get close => 'Закрыть';
+
+  @override
+  String get noWorkoutSelectedTitle => 'Ничего не выбрано';
+
+  @override
+  String get noWorkoutSelectedBody => 'Выберите тренировку, чтобы посмотреть и изменить её.';
+
+  @override
+  String get noExerciseSelectedTitle => 'Ничего не выбрано';
+
+  @override
+  String get noExerciseSelectedBody => 'Выберите упражнение, чтобы увидеть технику, историю и рекорды.';
 }

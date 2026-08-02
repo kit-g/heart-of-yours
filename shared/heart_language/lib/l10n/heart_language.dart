@@ -1615,6 +1615,36 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Distance unit'**
   String get distanceUnitLabel;
+
+  /// Tooltip on a button that dismisses a dialog or a detail pane
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// Placeholder shown in the detail pane on a tablet when no workout is selected yet
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing selected'**
+  String get noWorkoutSelectedTitle;
+
+  /// Placeholder shown in the detail pane on a tablet when no workout is selected yet
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a workout to see what you did and make changes.'**
+  String get noWorkoutSelectedBody;
+
+  /// Placeholder shown in the detail pane on a tablet when no exercise is selected yet
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing selected'**
+  String get noExerciseSelectedTitle;
+
+  /// Placeholder shown in the detail pane on a tablet when no exercise is selected yet
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an exercise to see how it\'s done, plus your history and records.'**
+  String get noExerciseSelectedBody;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
