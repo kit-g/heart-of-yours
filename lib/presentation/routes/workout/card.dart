@@ -155,3 +155,81 @@ const _maxPerCard = 5;
 enum _TemplateOption { edit, startWorkout, delete }
 
 const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));
+
+/// Tiles [_TemplateCard]s to a comfortable reading width instead of a fixed
+/// column count.
+///
+/// A fixed count is what made these cards square: two columns of an iPad in
+/// landscape is a 900pt cell holding two lines of text. Deriving the count from
+/// the width the grid actually gets means the same code covers a phone, either
+/// iPad orientation and a browser window being dragged around.
+class _TemplateGrid extends StatelessWidget {
+  final List<Template> templates;
+  final Widget Function(Template) card;
+
+  const _TemplateGrid({
+    required this.templates,
+    required this.card,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.all(8),
+      sliver: SliverLayoutBuilder(
+        builder: (context, constraints) {
+          return SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columnsFor(constraints.crossAxisExtent, maxExtent: _maxCardWidth),
+              mainAxisExtent: _cardExtent(context),
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (_, index) => card(templates[index]),
+              childCount: templates.length,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Every cell in a grid shares one height, so reserve what the fullest
+  /// template here needs and no more. Derived from the text metrics rather than
+  /// hardcoded, because at 200% text scale a fixed height clips the rows.
+  double _cardExtent(BuildContext context) {
+    final TextTheme(:titleMedium, :bodyMedium) = Theme.of(context).textTheme;
+    final scaler = MediaQuery.textScalerOf(context);
+    final longest = templates.fold(0, (longest, t) => max(longest, t.length));
+    final listed = min(longest, _maxPerCard);
+    final overflow = switch (longest > _maxPerCard) {
+      true => 1,
+      false => 0,
+    };
+    // a one-exercise template still gets a card, not a sliver
+    final rows = max(_minRowsPerCard, listed + overflow);
+
+    // the title row is as tall as its popup menu button, not its text
+    final title = max(_menuButtonHeight, _lineExtent(titleMedium, scaler));
+    return title + rows * _lineExtent(bodyMedium, scaler) + _cardMargin + _cardBottomPadding;
+  }
+
+  double _lineExtent(TextStyle? style, TextScaler scaler) {
+    return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
+  }
+}
+
+/// An [IconButton] at the card's [VisualDensity] of -3.
+const _menuButtonHeight = 36.0;
+
+/// [Card]'s default margin, top and bottom.
+const _cardMargin = 8.0;
+
+/// Breathing room under the last exercise row, which is otherwise flush with
+/// the bottom of the card.
+const _cardBottomPadding = 8.0;
+
+/// A card shorter than this reads as a fragment rather than a card, however few
+/// exercises the template holds.
+const _minRowsPerCard = 2;
+
+const _maxCardWidth = 360.0;
