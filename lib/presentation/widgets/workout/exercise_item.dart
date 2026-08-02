@@ -135,6 +135,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         style: _menuStyle(),
                         builder: (context, controller, _) {
                           return IconButton(
+                            key: WorkoutDetailKeys.exerciseOptionsFor(exercise.exercise.name),
+                            tooltip: L.of(context).exerciseOptions,
                             style: const ButtonStyle(
                               visualDensity: VisualDensity(vertical: 0, horizontal: -2),
                             ),

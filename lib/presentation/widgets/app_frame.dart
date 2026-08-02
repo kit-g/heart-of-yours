@@ -67,18 +67,19 @@ class AppFrame extends StatelessWidget {
       builder: (context, layout, stackIndex) {
         final ThemeData(:brightness) = Theme.of(context);
         final isDark = brightness == .dark;
+        final overlayStyle = SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? .light : .dark,
+          statusBarBrightness: brightness, // iOS hint
+          systemNavigationBarIconBrightness: isDark ? .light : .dark,
+        );
         switch (layout) {
           case LayoutSize.compact:
             return _KeyMap(
               shell: shell,
               child: Scaffold(
                 body: AnnotatedRegion<SystemUiOverlayStyle>(
-                  value: SystemUiOverlayStyle(
-                    statusBarColor: Colors.transparent,
-                    statusBarIconBrightness: isDark ? .light : .dark,
-                    statusBarBrightness: brightness, // iOS hint
-                    systemNavigationBarIconBrightness: isDark ? .light : .dark,
-                  ),
+                  value: overlayStyle,
                   child: shell,
                 ),
                 bottomNavigationBar: BottomNavigationBar(
@@ -98,24 +99,30 @@ class AppFrame extends StatelessWidget {
           case LayoutSize.wide:
             return _KeyMap(
               shell: shell,
-              child: Row(
-                children: [
-                  NavigationRail(
-                    selectedIndex: shell.currentIndex,
-                    onDestinationSelected: (index) => _onTap(context, index),
-                    labelType: NavigationRailLabelType.all,
-                    destinations: destinations.map(
-                      (d) {
-                        return NavigationRailDestination(
-                          icon: d.$2(),
-                          label: Text(d.$1),
-                        );
-                      },
-                    ).toList(),
+              child: Scaffold(
+                body: AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: overlayStyle,
+                  child: Row(
+                    children: [
+                      NavigationRail(
+                        key: AppKeys.navigationRail,
+                        selectedIndex: shell.currentIndex,
+                        onDestinationSelected: (index) => _onTap(context, index),
+                        labelType: NavigationRailLabelType.all,
+                        destinations: destinations.map(
+                          (d) {
+                            return NavigationRailDestination(
+                              icon: d.$2(),
+                              label: Text(d.$1),
+                            );
+                          },
+                        ).toList(),
+                      ),
+                      const VerticalDivider(width: 1),
+                      Expanded(child: shell),
+                    ],
                   ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: shell),
-                ],
+                ),
               ),
             );
         }
