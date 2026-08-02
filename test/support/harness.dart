@@ -29,6 +29,10 @@ class TestAppHarness {
     bool hasLocalNotifications = false,
     HeartRouter? router,
     fb.FirebaseAuth? firebaseAuth,
+    // The app has animations that never stop, so pumpAndSettle can hang on it.
+    // Tests that only need a rendered frame can pump a fixed number instead.
+    bool settle = true,
+    int pumps = 8,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -44,7 +48,14 @@ class TestAppHarness {
       ),
     );
 
-    await pumpAndSettleSafe(tester);
+    switch (settle) {
+      case true:
+        await pumpAndSettleSafe(tester);
+      case false:
+        for (var i = 0; i < pumps; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+    }
   }
 }
 
