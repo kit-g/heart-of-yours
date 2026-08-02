@@ -5,6 +5,7 @@ class _OddState extends StatelessWidget {
   final String body;
 
   const _OddState({
+    super.key,
     required this.title,
     required this.body,
   });
@@ -15,21 +16,28 @@ class _OddState extends StatelessWidget {
 
     return Padding(
       padding: const .all(32.0),
-      child: Column(
-        spacing: 32,
-        mainAxisAlignment: .center,
-        children: [
-          Text(
-            title,
-            style: textTheme.titleLarge,
-            textAlign: .center,
+      child: Center(
+        // prose stops being readable long before a tablet pane runs out of
+        // width, so the copy is capped rather than set to the space available
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: readableWidth),
+          child: Column(
+            spacing: 32,
+            mainAxisAlignment: .center,
+            children: [
+              Text(
+                title,
+                style: textTheme.titleLarge,
+                textAlign: .center,
+              ),
+              Text(
+                body,
+                style: textTheme.bodyLarge,
+                textAlign: .center,
+              ),
+            ],
           ),
-          Text(
-            body,
-            style: textTheme.bodyLarge,
-            textAlign: .center,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -42,6 +50,20 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final L(emptyExerciseHistoryTitle: title, emptyExerciseHistoryBody: body) = L.of(context);
     return _OddState(title: title, body: body);
+  }
+}
+
+/// Holds the detail pane open on a wide screen before anything is picked.
+///
+/// The pane used to collapse instead, which let the list reflow from full width
+/// to two fifths the moment you tapped a row.
+class _NoSelectionState extends StatelessWidget {
+  const _NoSelectionState();
+
+  @override
+  Widget build(BuildContext context) {
+    final L(noExerciseSelectedTitle: title, noExerciseSelectedBody: body) = L.of(context);
+    return _OddState(key: AppKeys.noSelection, title: title, body: body);
   }
 }
 
