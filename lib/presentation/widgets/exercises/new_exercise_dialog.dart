@@ -36,6 +36,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                       mainAxisAlignment: .spaceBetween,
                       children: [
                         IconButton(
+                          tooltip: L.of(context).close,
                           onPressed: () {
                             Navigator.of(context, rootNavigator: true).pop();
                           },
