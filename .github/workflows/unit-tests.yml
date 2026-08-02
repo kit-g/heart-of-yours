@@ -51,6 +51,7 @@ jobs:
           - heart_state
           - heart_charts
           - heart_language
+          - heart_health
 
     steps:
       - uses: actions/checkout@v7
