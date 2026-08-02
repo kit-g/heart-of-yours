@@ -4,10 +4,15 @@ class WorkoutEditor extends StatefulWidget {
   final Workout copy;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
+  /// Empties the two-pane detail. Null in compact, where the editor is a pushed
+  /// route and popping it is the right thing.
+  final VoidCallback? onClose;
+
   const WorkoutEditor({
     super.key,
     required this.copy,
     this.onTapImage,
+    this.onClose,
   });
 
   @override
@@ -73,6 +78,17 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               scrolledUnderElevation: 0,
               backgroundColor: scaffoldBackgroundColor,
               title: Text(editWorkout),
+              // in a persistent pane there is nothing behind to go back to, so
+              // the control says "put this away" instead
+              leading: switch (widget.onClose) {
+                null => null,
+                _ => IconButton(
+                  key: AppKeys.closeDetail,
+                  tooltip: L.of(context).close,
+                  onPressed: () => _close(context),
+                  icon: const Icon(Icons.close),
+                ),
+              },
               actions: [
                 PrimaryButton.shrunk(
                   key: _optionsButtonKey,
@@ -206,7 +222,22 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     );
   }
 
-  Future<void> _showDiscardTemplateDialog(BuildContext context) {
+  /// Dismisses the pane, routing through the same unsaved-changes guard that
+  /// [PopScope] gives the pushed route — closing must not be a quiet way to
+  /// throw edits away.
+  void _close(BuildContext context) {
+    final close = widget.onClose;
+    if (close == null) return;
+
+    switch (_notifier.hasChanged) {
+      case true:
+        _showDiscardTemplateDialog(context, onQuit: close);
+      case false:
+        close();
+    }
+  }
+
+  Future<void> _showDiscardTemplateDialog(BuildContext context, {VoidCallback? onQuit}) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final L(
       :quitEditing,
@@ -254,7 +285,15 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               ),
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
-                Navigator.of(context).pop();
+                switch (onQuit) {
+                  // pushed route: leaving means popping it
+                  case null:
+                    Navigator.of(context).pop();
+                  // persistent pane: there is no route to pop, only a
+                  // selection to clear
+                  case VoidCallback quit:
+                    quit();
+                }
               },
             ),
           ],
