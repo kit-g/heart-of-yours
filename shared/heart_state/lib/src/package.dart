@@ -4,7 +4,10 @@ import 'package:provider/provider.dart';
 typedef Package = ({String appName, String version, String build});
 
 class AppInfo with ChangeNotifier {
-  late Package _package;
+  /// [init] reports a failed lookup and carries on, so this cannot be `late`:
+  /// every later read would throw a LateInitializationError far from the actual
+  /// failure. An unknown version is worth sending in a header; a crash is not.
+  Package _package = (appName: '', version: '', build: '');
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   AppInfo({this.onError});
