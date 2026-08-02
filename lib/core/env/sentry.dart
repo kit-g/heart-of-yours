@@ -67,4 +67,46 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
   return Sentry.captureException(exception, stackTrace: stacktrace);
 }
 
+/// An error whose payload was dropped before it could reach Sentry, leaving
+/// only what is safe: the original type, and the stack trace it came with.
+@visibleForTesting
+class RedactedError implements Exception {
+  final Type original;
+  final String domain;
+
+  const RedactedError(this.original, this.domain);
+
+  @override
+  String toString() => '$original in $domain (message withheld — $domain data stays on device)';
+}
+
+/// Reports a health failure without its message.
+///
+/// Health data is device-only, and an exception message is a side channel that
+/// quietly breaks that promise. The risk is not theoretical: a sqflite error
+/// carries the failing SQL **and its bound arguments**, so a insert that blows
+/// up on a bad row would ship the user's heart rate to a third party inside the
+/// error string. Platform channel errors can echo the payload just as happily.
+///
+/// So nothing but the type and the stack trace survives. Both are about our
+/// code rather than the user's body, and together they are enough to find the
+/// bug — which is the only reason to report at all.
+///
+/// Use this for anything touching [Health]; never pass a health error to
+/// [reportToSentry].
+Future<void> reportHealthFailure(dynamic exception, {dynamic stacktrace}) {
+  if (kDebugMode) {
+    // Locally the full error is far more useful than a redacted one, and it
+    // goes nowhere.
+    print(exception);
+    if (stacktrace != null) {
+      print(stacktrace);
+    }
+  }
+  return Sentry.captureException(
+    RedactedError(exception.runtimeType, 'health'),
+    stackTrace: stacktrace,
+  );
+}
+
 typedef SentryInit = FutureOr<void> Function(Future<void> Function(), AppConfig);
