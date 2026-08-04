@@ -5,6 +5,7 @@ import 'auth.dart';
 import 'charts.dart';
 import 'config.dart';
 import 'exercises.dart';
+import 'goals.dart';
 import 'previous.dart';
 import 'stats.dart';
 import 'templates.dart';
@@ -16,6 +17,7 @@ void clearState(BuildContext context) {
   Auth.of(context).onSignOut();
   Charts.of(context).onSignOut();
   Exercises.of(context).onSignOut();
+  Goals.of(context).onSignOut();
   PreviousExercises.of(context).onSignOut();
   RemoteConfig.of(context).onSignOut();
   Stats.of(context).onSignOut();
