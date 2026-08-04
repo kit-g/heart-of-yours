@@ -9,6 +9,7 @@ class Api
     implements
         AccountService,
         FeedbackService,
+        GoalService,
         HeaderAuthenticatedService,
         RemoteExerciseService,
         RemoteTemplateService,
@@ -47,7 +48,20 @@ class Api
 
   @override
   void reauthenticate(String sessionToken) {
-    instance.defaultHeaders?['Authorization'] = sessionToken;
+    // Re-apply the scheme. Callers hand over a raw provider token (see
+    // `onReauthenticate` in `main.dart`, which passes Firebase's id token
+    // straight through), while the header this replaces was built as
+    // `Bearer <token>` by `headers()`.
+    //
+    // Dropping the prefix does not read as unauthenticated — the gateway
+    // rejects the header outright, with a *plain-text* body. That body then
+    // fails to parse, so the caller saw a FormatException from deep inside
+    // jsonDecode rather than a 401, on whichever request happened to be in
+    // flight when the token expired. [isAuthenticated] asserts the same shape.
+    instance.defaultHeaders?['Authorization'] = switch (sessionToken.startsWith('Bearer ')) {
+      true => sessionToken,
+      false => 'Bearer $sessionToken',
+    };
   }
 
   @override
@@ -295,6 +309,50 @@ class Api
   }
 
   @override
+  Future<Iterable<Goal>> getGoals(String userId) async {
+    final (json, _) = await get(Router.goals);
+    return switch (json) {
+      {'goals': List l} => l.map((each) => Goal.fromJson(each as Map)),
+      _ => const <Goal>[],
+    };
+  }
+
+  @override
+  Future<Goal> createGoal(Goal goal, String userId) async {
+    final (json, code) = await post(Router.goals, body: goal.toBody());
+    return switch ((code, json)) {
+      (200 || 201, Map json) => Goal.fromJson(json),
+      _ => throw ArgumentError(json),
+    };
+  }
+
+  @override
+  Future<Goal> updateGoal(String goalId, Goal goal, String userId) async {
+    final (json, code) = await put(Router.goal(goalId), body: goal.toBody());
+    return switch ((code, json)) {
+      (200, Map json) => Goal.fromJson(json),
+      _ => throw ArgumentError(json),
+    };
+  }
+
+  @override
+  Future<void> deleteGoal(String goalId, String userId) {
+    return delete(Router.goal(goalId));
+  }
+
+  @override
+  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
+    final (json, code) = await put(
+      Router.goalStage(goalId, stageId),
+      body: {'achievedAt': achievedAt.toUtc().toIso8601String()},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => Goal.fromJson(json),
+      _ => throw ArgumentError(json),
+    };
+  }
+
+  @override
   Future<bool> deleteTemplate(String templateId) async {
     final (_, code) = await delete('${Router.templates}/$templateId');
     return code == 204;
@@ -333,8 +391,17 @@ abstract final class Router {
   static const exercises = 'v1/exercises';
   static const exercisePreferences = 'v1/exercise-preferences';
   static const feedback = 'v1/feedback';
+  static const goals = 'v1/goals';
   static const templates = 'v1/templates';
   static const workouts = 'v1/workouts';
+
+  static String goal(String goalId) {
+    return '$goals/$goalId';
+  }
+
+  static String goalStage(String goalId, String stageId) {
+    return '$goals/$goalId/stages/$stageId';
+  }
 
   static String workoutImages(String workoutId) {
     return '$workouts/$workoutId/images';
@@ -346,5 +413,20 @@ abstract final class Router {
 
   static String workout(String workoutId) {
     return '$workouts/$workoutId';
+  }
+}
+
+extension on Goal {
+  /// The definition only. `id`, `archived` and `createdAt` are the server's to
+  /// own, and the typed input layer on the other end takes just these fields.
+  /// Stage ids *are* sent when we have them — the server preserves the ones it
+  /// is given, which is what keeps an offline-minted ladder addressable.
+  Map<String, dynamic> toBody() {
+    return {
+      'metric': metric.value,
+      'exerciseId': ?exerciseId,
+      'cadence': ?cadence?.value,
+      'stages': stages.map((stage) => stage.toMap()).toList(),
+    };
   }
 }
