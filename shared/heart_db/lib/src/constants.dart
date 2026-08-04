@@ -10,4 +10,3 @@ const _templates = 'templates';
 const _templatesExercises = 'template_exercises';
 const _charts = 'charts';
 const _goals = 'goals';
-const _healthSamples = 'health_samples';
