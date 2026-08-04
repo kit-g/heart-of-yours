@@ -71,6 +71,53 @@ void main() {
     );
 
     group(
+      'reauthenticate method',
+      () {
+        test(
+          'should re-apply the Bearer scheme to a raw provider token',
+          () {
+            // what `onReauthenticate` passes: Firebase's id token, unprefixed
+            api.defaultHeaders = {'Authorization': 'Bearer stale-token'};
+
+            api.reauthenticate('fresh-token');
+
+            // Without the scheme the gateway answers with a plain-text
+            // "Invalid 'authorization' header", which is not JSON and surfaces
+            // as a FormatException on the next request rather than a 401.
+            expect(api.defaultHeaders?['Authorization'], 'Bearer fresh-token');
+            expect(api.isAuthenticated, true);
+          },
+        );
+
+        test(
+          'should not double-prefix a token that already carries the scheme',
+          () {
+            api.defaultHeaders = {'Authorization': 'Bearer stale-token'};
+
+            api.reauthenticate('Bearer fresh-token');
+
+            expect(api.defaultHeaders?['Authorization'], 'Bearer fresh-token');
+            expect(api.isAuthenticated, true);
+          },
+        );
+
+        test(
+          'should leave other headers alone',
+          () {
+            api.defaultHeaders = {
+              'Authorization': 'Bearer stale-token',
+              'Content-Type': 'application/json',
+            };
+
+            api.reauthenticate('fresh-token');
+
+            expect(api.defaultHeaders?['Content-Type'], 'application/json');
+          },
+        );
+      },
+    );
+
+    group(
       'isAuthenticated property',
       () {
         test('should return true for valid Bearer token', () {
