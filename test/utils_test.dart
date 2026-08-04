@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_models/heart_models.dart';
 
