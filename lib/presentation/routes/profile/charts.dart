@@ -4,6 +4,13 @@ part of 'profile.dart';
 /// it visible without scrolling.
 const _maxChartHeight = 360.0;
 
+/// Height of a profile tile's heading.
+///
+/// Fixed, and shared by the aggregation chart and the goals card, because the
+/// goals heading carries an "Add goal" button and a bare title does not — left
+/// to their natural heights the two blocks below them start on different lines.
+const _tileHeaderHeight = 44.0;
+
 /// Widest a dashboard chart card gets before the grid adds a column instead.
 ///
 /// These cards are summaries — the detail lives behind a tap — so the
@@ -50,13 +57,21 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
           // Past the cap, extra width makes the chart wider, not taller.
           height: min(constraints.maxWidth * 4 / 5, _maxChartHeight),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            // vertical only: the row this sits in owns the horizontal inset, so
+            // the gutter between tiles can match the chart grid's below
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text(
-                  workoutsPerWeek,
-                  style: textTheme.titleLarge,
+                SizedBox(
+                  height: _tileHeaderHeight,
+                  child: Align(
+                    alignment: .centerLeft,
+                    child: Text(
+                      workoutsPerWeek,
+                      style: textTheme.titleLarge,
+                    ),
+                  ),
                 ),
                 Expanded(
                   child: Opacity(
