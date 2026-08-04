@@ -9,6 +9,7 @@ import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
+import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
@@ -108,6 +109,13 @@ class HeartApp extends StatelessWidget {
             service: db,
           ),
         ),
+        ChangeNotifierProvider<Goals>(
+          create: (_) => Goals(
+            service: LocalGoals(db),
+            remoteService: api,
+            onError: reportToSentry,
+          ),
+        ),
         ChangeNotifierProvider<Auth>(
           create: (context) => Auth(
             service: api,
@@ -121,6 +129,12 @@ class HeartApp extends StatelessWidget {
               router.refresh();
               Exercises.of(context).userId = user?.id;
               Charts.of(context).userId = user?.id;
+              Goals.of(context).userId = user?.id;
+              // Also kicked from the profile screen's first layout. Doing it
+              // here too means the server pull happens once auth has settled —
+              // the very first request of a launch can lose a race with token
+              // refresh, and Goals.init skips the pull once one has succeeded.
+              if (user != null) Goals.of(context).init();
               PreviousExercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
