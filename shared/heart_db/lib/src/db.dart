@@ -18,6 +18,7 @@ class LocalDatabase extends _LocalDatabase
         ExercisesMetricsService,
         PreviousExerciseService,
         GalleryService,
+        GoalService,
         StatsService,
         TemplateService,
         TimersService,
