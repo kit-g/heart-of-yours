@@ -112,8 +112,9 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
           return CustomScrollView(
             controller: Scrolls.of(context).profileScrollController,
             slivers: [
-              SliverToBoxAdapter(
-                child: workouts.isEmpty ? emptyState : WorkoutsAggregationChart(workouts: workouts),
+              _ProfileArea(
+                workouts: workouts,
+                emptyState: emptyState,
               ),
               SliverToBoxAdapter(
                 child: Padding(
@@ -157,6 +158,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   @override
   void afterFirstLayout(BuildContext context) {
     Stats.of(context).init();
+    Goals.of(context).init();
   }
 
   void _toAccount() {
