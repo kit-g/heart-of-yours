@@ -838,6 +838,88 @@
     "type": "text",
     "placeholders": {}
   },
+  "goals": "Цели",
+  "@goals": {
+    "description": "Title of the goals card on the profile screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addGoal": "Добавить цель",
+  "@addGoal": {
+    "description": "Button that starts creating a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noGoalsYet": "Целей пока нет",
+  "@noGoalsYet": {
+    "description": "Empty state of the goals card",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workouts": "Тренировки",
+  "@workouts": {
+    "description": "The whole-workout goal metric, as opposed to a per-exercise one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newGoal": "Новая цель",
+  "@newGoal": {
+    "description": "Title of the dialog that creates a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalTarget": "Целевое значение",
+  "@goalTarget": {
+    "description": "Title of the dialog where the user types a goal's target number",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalPerWeek": "в неделю",
+  "@goalPerWeek": {
+    "description": "Suffix on a goal that repeats weekly, as in '3 / 4 per week'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalPerMonth": "в месяц",
+  "@goalPerMonth": {
+    "description": "Suffix on a goal that repeats monthly, as in '12 / 16 per month'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalDue": "До {date}",
+  "@goalDue": {
+    "description": "The deadline of a goal milestone",
+    "type": "text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "goalComplete": "Выполнено",
+  "@goalComplete": {
+    "description": "Shown on a goal whose every milestone has been achieved",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalMilestone": "Разовая",
+  "@goalMilestone": {
+    "description": "Goal shape: a one-off target rather than a repeating one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalWeekly": "Еженедельная",
+  "@goalWeekly": {
+    "description": "Goal shape: a target that repeats every week",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalMonthly": "Ежемесячная",
+  "@goalMonthly": {
+    "description": "Goal shape: a target that repeats every month",
+    "type": "text",
+    "placeholders": {}
+  },
   "category": "Категория",
   "@category": {
     "description": "Label button that allows to choose Exercise category",

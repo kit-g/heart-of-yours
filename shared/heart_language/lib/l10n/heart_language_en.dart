@@ -447,6 +447,47 @@ class LEn extends L {
   String get workoutsPerWeekBody => 'Go get them done!';
 
   @override
+  String get goals => 'Goals';
+
+  @override
+  String get addGoal => 'Add goal';
+
+  @override
+  String get noGoalsYet => 'No goals yet';
+
+  @override
+  String get workouts => 'Workouts';
+
+  @override
+  String get newGoal => 'New goal';
+
+  @override
+  String get goalTarget => 'Target';
+
+  @override
+  String get goalPerWeek => 'per week';
+
+  @override
+  String get goalPerMonth => 'per month';
+
+  @override
+  String goalDue(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String get goalComplete => 'Complete';
+
+  @override
+  String get goalMilestone => 'Milestone';
+
+  @override
+  String get goalWeekly => 'Weekly';
+
+  @override
+  String get goalMonthly => 'Monthly';
+
+  @override
   String get category => 'Category';
 
   @override
@@ -1287,6 +1328,47 @@ class LEnCa extends LEn {
 
   @override
   String get workoutsPerWeekBody => 'Go get them done!';
+
+  @override
+  String get goals => 'Goals';
+
+  @override
+  String get addGoal => 'Add goal';
+
+  @override
+  String get noGoalsYet => 'No goals yet';
+
+  @override
+  String get workouts => 'Workouts';
+
+  @override
+  String get newGoal => 'New goal';
+
+  @override
+  String get goalTarget => 'Target';
+
+  @override
+  String get goalPerWeek => 'per week';
+
+  @override
+  String get goalPerMonth => 'per month';
+
+  @override
+  String goalDue(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String get goalComplete => 'Complete';
+
+  @override
+  String get goalMilestone => 'Milestone';
+
+  @override
+  String get goalWeekly => 'Weekly';
+
+  @override
+  String get goalMonthly => 'Monthly';
 
   @override
   String get category => 'Category';
