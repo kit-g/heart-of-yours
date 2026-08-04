@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -68,6 +70,66 @@ extension ChartDimension on ChartPreferenceType {
       .averagePace => asIs,
       .totalTimeUnderTension => asIs,
     };
+  }
+
+  /// The inverse of [converter]: takes a number the user typed in their own
+  /// units and returns it in the metric the app stores, the same direction
+  /// `set_item.dart` converts on input. Goal targets go through here so a
+  /// target typed as `225 lb` is stored as kilograms like everything else.
+  double storedValue(Preferences settings, double value, {MeasurementUnit? unit}) {
+    double weight() {
+      return switch (unit ?? settings.weightUnit) {
+        .imperial => value.asKilograms,
+        .metric => value,
+      };
+    }
+
+    double distance() {
+      return switch (unit ?? settings.distanceUnit) {
+        .imperial => value.asKilometers,
+        .metric => value,
+      };
+    }
+
+    return switch (this) {
+      .topSetWeight => weight(),
+      .estimatedOneRepMax => weight(),
+      .totalVolume => weight(),
+      .averageWorkingWeight => weight(),
+      .assistanceWeight => weight(),
+      .cardioDistance => distance(),
+      .maxConsecutiveReps => value,
+      .totalReps => value,
+      .cardioDuration => value,
+      .averagePace => value,
+      .totalTimeUnderTension => value,
+    };
+  }
+
+  /// What a field accepting a value of this dimension will let through.
+  ///
+  /// Durations are typed right-to-left as `mm:ss`; counts are whole; everything
+  /// else takes a decimal. Paired with [parseTyped], which is its inverse.
+  List<TextInputFormatter> get formatters {
+    if (_isTime) return [TimeFormatter()];
+    return switch (this) {
+      .maxConsecutiveReps ||
+      .totalReps => [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
+      _ => [const NDigitFloatingPointFormatter(), FilteringTextInputFormatter.singleLineFormatter],
+    };
+  }
+
+  /// Reads back what [formatters] allowed, in the unit the field displays —
+  /// still the user's, so [storedValue] converts afterwards. Null when the text
+  /// does not describe a usable value.
+  ///
+  /// A duration is seconds behind `mm:ss`, which is why this cannot just be
+  /// `double.tryParse` at the call site.
+  double? parseTyped(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return null;
+    if (_isTime) return parseDuration(trimmed)?.toDouble();
+    return double.tryParse(trimmed.replaceAll(',', '.'));
   }
 
   /// Whether this dimension's values are durations (formatted mm:ss / h:mm:ss).

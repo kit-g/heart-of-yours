@@ -20,4 +20,9 @@ abstract final class AppKeys {
   /// Dismisses a two-pane detail. Distinct from a back button: it clears the
   /// selection rather than popping a route.
   static const closeDetail = Key('AppFrame.closeDetail');
+
+  /// Removes one goal from the goals card. Keyed per goal because the card
+  /// shows several, and the profile screen carries other delete buttons whose
+  /// tooltip reads the same.
+  static Key deleteGoal(String? goalId) => Key('Goals.delete.$goalId');
 }
