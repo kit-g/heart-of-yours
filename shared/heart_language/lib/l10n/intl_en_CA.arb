@@ -838,6 +838,88 @@
     "type": "text",
     "placeholders": {}
   },
+  "goals": "Goals",
+  "@goals": {
+    "description": "Title of the goals card on the profile screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addGoal": "Add goal",
+  "@addGoal": {
+    "description": "Button that starts creating a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noGoalsYet": "No goals yet",
+  "@noGoalsYet": {
+    "description": "Empty state of the goals card",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workouts": "Workouts",
+  "@workouts": {
+    "description": "The whole-workout goal metric, as opposed to a per-exercise one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newGoal": "New goal",
+  "@newGoal": {
+    "description": "Title of the dialog that creates a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalTarget": "Target",
+  "@goalTarget": {
+    "description": "Title of the dialog where the user types a goal's target number",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalPerWeek": "per week",
+  "@goalPerWeek": {
+    "description": "Suffix on a goal that repeats weekly, as in '3 / 4 per week'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalPerMonth": "per month",
+  "@goalPerMonth": {
+    "description": "Suffix on a goal that repeats monthly, as in '12 / 16 per month'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalDue": "Due {date}",
+  "@goalDue": {
+    "description": "The deadline of a goal milestone",
+    "type": "text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "goalComplete": "Complete",
+  "@goalComplete": {
+    "description": "Shown on a goal whose every milestone has been achieved",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalMilestone": "Milestone",
+  "@goalMilestone": {
+    "description": "Goal shape: a one-off target rather than a repeating one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalWeekly": "Weekly",
+  "@goalWeekly": {
+    "description": "Goal shape: a target that repeats every week",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalMonthly": "Monthly",
+  "@goalMonthly": {
+    "description": "Goal shape: a target that repeats every month",
+    "type": "text",
+    "placeholders": {}
+  },
   "category": "Category",
   "@category": {
     "description": "Label button that allows to choose Exercise category",

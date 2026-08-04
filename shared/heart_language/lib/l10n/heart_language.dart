@@ -902,6 +902,84 @@ abstract class L {
   /// **'Go get them done!'**
   String get workoutsPerWeekBody;
 
+  /// Title of the goals card on the profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get goals;
+
+  /// Button that starts creating a goal
+  ///
+  /// In en, this message translates to:
+  /// **'Add goal'**
+  String get addGoal;
+
+  /// Empty state of the goals card
+  ///
+  /// In en, this message translates to:
+  /// **'No goals yet'**
+  String get noGoalsYet;
+
+  /// The whole-workout goal metric, as opposed to a per-exercise one
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get workouts;
+
+  /// Title of the dialog that creates a goal
+  ///
+  /// In en, this message translates to:
+  /// **'New goal'**
+  String get newGoal;
+
+  /// Title of the dialog where the user types a goal's target number
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get goalTarget;
+
+  /// Suffix on a goal that repeats weekly, as in '3 / 4 per week'
+  ///
+  /// In en, this message translates to:
+  /// **'per week'**
+  String get goalPerWeek;
+
+  /// Suffix on a goal that repeats monthly, as in '12 / 16 per month'
+  ///
+  /// In en, this message translates to:
+  /// **'per month'**
+  String get goalPerMonth;
+
+  /// The deadline of a goal milestone
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String goalDue(String date);
+
+  /// Shown on a goal whose every milestone has been achieved
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get goalComplete;
+
+  /// Goal shape: a one-off target rather than a repeating one
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get goalMilestone;
+
+  /// Goal shape: a target that repeats every week
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get goalWeekly;
+
+  /// Goal shape: a target that repeats every month
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get goalMonthly;
+
   /// Label button that allows to choose Exercise category
   ///
   /// In en, this message translates to:
