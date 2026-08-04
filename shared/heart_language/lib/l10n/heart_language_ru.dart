@@ -447,6 +447,47 @@ class LRu extends L {
   String get workoutsPerWeekBody => 'Вперед за тренировками!';
 
   @override
+  String get goals => 'Цели';
+
+  @override
+  String get addGoal => 'Добавить цель';
+
+  @override
+  String get noGoalsYet => 'Целей пока нет';
+
+  @override
+  String get workouts => 'Тренировки';
+
+  @override
+  String get newGoal => 'Новая цель';
+
+  @override
+  String get goalTarget => 'Целевое значение';
+
+  @override
+  String get goalPerWeek => 'в неделю';
+
+  @override
+  String get goalPerMonth => 'в месяц';
+
+  @override
+  String goalDue(String date) {
+    return 'До $date';
+  }
+
+  @override
+  String get goalComplete => 'Выполнено';
+
+  @override
+  String get goalMilestone => 'Разовая';
+
+  @override
+  String get goalWeekly => 'Еженедельная';
+
+  @override
+  String get goalMonthly => 'Ежемесячная';
+
+  @override
   String get category => 'Категория';
 
   @override

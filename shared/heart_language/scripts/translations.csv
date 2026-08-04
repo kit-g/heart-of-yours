@@ -149,6 +149,19 @@ restComplete,Rest notification banner,Rest complete!,Rest complete!,Отдых �
 workoutsPerWeek,Chart label,Workouts per week,Workouts per week,Workouts per week
 workoutsPerWeekTitle,Chart label,Your workouts will be presented here,Your workouts will be presented here,Ваши тренировки будут отображаться здесь
 workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Вперед за тренировками!
+goals,Title of the goals card on the profile screen,Goals,Goals,Цели
+addGoal,Button that starts creating a goal,Add goal,Add goal,Добавить цель
+noGoalsYet,Empty state of the goals card,No goals yet,No goals yet,Целей пока нет
+workouts,"The whole-workout goal metric, as opposed to a per-exercise one",Workouts,Workouts,Тренировки
+newGoal,Title of the dialog that creates a goal,New goal,New goal,Новая цель
+goalTarget,Title of the dialog where the user types a goal's target number,Target,Target,Целевое значение
+goalPerWeek,"Suffix on a goal that repeats weekly, as in '3 / 4 per week'",per week,per week,в неделю
+goalPerMonth,"Suffix on a goal that repeats monthly, as in '12 / 16 per month'",per month,per month,в месяц
+goalDue,The deadline of a goal milestone,Due {date},Due {date},До {date}
+goalComplete,Shown on a goal whose every milestone has been achieved,Complete,Complete,Выполнено
+goalMilestone,Goal shape: a one-off target rather than a repeating one,Milestone,Milestone,Разовая
+goalWeekly,Goal shape: a target that repeats every week,Weekly,Weekly,Еженедельная
+goalMonthly,Goal shape: a target that repeats every month,Monthly,Monthly,Ежемесячная
 category,Label button that allows to choose Exercise category,Category,Category,Категория
 target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель
 removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Удалить фильтр
