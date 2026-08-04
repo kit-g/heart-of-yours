@@ -10,7 +10,7 @@ abstract class _LocalDatabase {
 }
 
 class LocalDatabase extends _LocalDatabase
-    with _Charts, _Exercises, _Stats, _Templates, _Timers, _Workouts
+    with _Charts, _Exercises, _Goals, _Stats, _Templates, _Timers, _Workouts
     implements
         ChartPreferenceService,
         ExerciseService,
