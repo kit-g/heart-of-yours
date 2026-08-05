@@ -162,6 +162,13 @@ goalComplete,Shown on a goal whose every milestone has been achieved,Complete,Co
 goalMilestone,Goal shape: a one-off target rather than a repeating one,Milestone,Milestone,Разовая
 goalWeekly,Goal shape: a target that repeats every week,Weekly,Weekly,Еженедельная
 goalMonthly,Goal shape: a target that repeats every month,Monthly,Monthly,Ежемесячная
+goalLadder,Heading over the list of a goal's staged targets,Milestones,Milestones,Этапы
+goalAddRung,Button that adds another staged target to a goal,Add milestone,Add milestone,Добавить этап
+goalAchievedOn,When a milestone's target was first met,Achieved {date},Achieved {date},Достигнуто {date}
+goalNoDeadline,Shown on a milestone the user has not given a date to,No deadline,No deadline,Без срока
+goalSetDeadline,Button that opens the date picker for a milestone,Set a deadline,Set a deadline,Указать срок
+goalClearDeadline,Button that removes a milestone's date,Clear deadline,Clear deadline,Убрать срок
+goalDuplicateTarget,Why a milestone cannot be saved: two rungs of a ladder cannot share a target,There is already a milestone at this target,There is already a milestone at this target,Этап с таким значением уже есть
 category,Label button that allows to choose Exercise category,Category,Category,Категория
 target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель
 removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Удалить фильтр

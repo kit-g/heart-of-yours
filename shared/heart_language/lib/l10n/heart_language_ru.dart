@@ -488,6 +488,29 @@ class LRu extends L {
   String get goalMonthly => 'Ежемесячная';
 
   @override
+  String get goalLadder => 'Этапы';
+
+  @override
+  String get goalAddRung => 'Добавить этап';
+
+  @override
+  String goalAchievedOn(String date) {
+    return 'Достигнуто $date';
+  }
+
+  @override
+  String get goalNoDeadline => 'Без срока';
+
+  @override
+  String get goalSetDeadline => 'Указать срок';
+
+  @override
+  String get goalClearDeadline => 'Убрать срок';
+
+  @override
+  String get goalDuplicateTarget => 'Этап с таким значением уже есть';
+
+  @override
   String get category => 'Категория';
 
   @override
