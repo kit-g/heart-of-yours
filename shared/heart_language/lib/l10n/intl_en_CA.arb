@@ -920,6 +920,52 @@
     "type": "text",
     "placeholders": {}
   },
+  "goalLadder": "Milestones",
+  "@goalLadder": {
+    "description": "Heading over the list of a goal's staged targets",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalAddRung": "Add milestone",
+  "@goalAddRung": {
+    "description": "Button that adds another staged target to a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalAchievedOn": "Achieved {date}",
+  "@goalAchievedOn": {
+    "description": "When a milestone's target was first met",
+    "type": "text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "goalNoDeadline": "No deadline",
+  "@goalNoDeadline": {
+    "description": "Shown on a milestone the user has not given a date to",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalSetDeadline": "Set a deadline",
+  "@goalSetDeadline": {
+    "description": "Button that opens the date picker for a milestone",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalClearDeadline": "Clear deadline",
+  "@goalClearDeadline": {
+    "description": "Button that removes a milestone's date",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalDuplicateTarget": "There is already a milestone at this target",
+  "@goalDuplicateTarget": {
+    "description": "Why a milestone cannot be saved: two rungs of a ladder cannot share a target",
+    "type": "text",
+    "placeholders": {}
+  },
   "category": "Category",
   "@category": {
     "description": "Label button that allows to choose Exercise category",

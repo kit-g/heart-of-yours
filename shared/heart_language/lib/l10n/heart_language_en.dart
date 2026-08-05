@@ -488,6 +488,29 @@ class LEn extends L {
   String get goalMonthly => 'Monthly';
 
   @override
+  String get goalLadder => 'Milestones';
+
+  @override
+  String get goalAddRung => 'Add milestone';
+
+  @override
+  String goalAchievedOn(String date) {
+    return 'Achieved $date';
+  }
+
+  @override
+  String get goalNoDeadline => 'No deadline';
+
+  @override
+  String get goalSetDeadline => 'Set a deadline';
+
+  @override
+  String get goalClearDeadline => 'Clear deadline';
+
+  @override
+  String get goalDuplicateTarget => 'There is already a milestone at this target';
+
+  @override
   String get category => 'Category';
 
   @override
@@ -1369,6 +1392,29 @@ class LEnCa extends LEn {
 
   @override
   String get goalMonthly => 'Monthly';
+
+  @override
+  String get goalLadder => 'Milestones';
+
+  @override
+  String get goalAddRung => 'Add milestone';
+
+  @override
+  String goalAchievedOn(String date) {
+    return 'Achieved $date';
+  }
+
+  @override
+  String get goalNoDeadline => 'No deadline';
+
+  @override
+  String get goalSetDeadline => 'Set a deadline';
+
+  @override
+  String get goalClearDeadline => 'Clear deadline';
+
+  @override
+  String get goalDuplicateTarget => 'There is already a milestone at this target';
 
   @override
   String get category => 'Category';
