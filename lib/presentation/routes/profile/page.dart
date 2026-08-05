@@ -158,7 +158,24 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   @override
   void afterFirstLayout(BuildContext context) {
     Stats.of(context).init();
-    Goals.of(context).init();
+    _observeGoals();
+  }
+
+  /// Records anything already achieved, once the goals and the local history
+  /// they are measured against are both loaded.
+  ///
+  /// Here rather than in [Goals] itself because measuring a goal means reaching
+  /// into the stats the app computes locally, which the notifier deliberately
+  /// knows nothing about.
+  Future<void> _observeGoals() async {
+    final goals = Goals.of(context);
+    final exercises = Exercises.of(context);
+    final stats = Stats.of(context);
+
+    await goals.init();
+    await goals.observeProgress(
+      (goal) => currentGoalValue(goal, exercises: exercises, workouts: stats.workouts),
+    );
   }
 
   void _toAccount() {
@@ -183,7 +200,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         width: double.maxFinite,
         child: ListTile(
           onTap: () async {
-            final returned = await _showExercises(context, controller, focus);
+            final returned = await showExercisePicker(context, controller: controller, focus: focus);
             if (returned != null && context.mounted) {
               return Navigator.of(context, rootNavigator: true).pop(returned);
             }
@@ -194,77 +211,4 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
       ),
     );
   }
-}
-
-/// Once popped, this returns to [_showNewChartDialog]
-/// and from there, it returns back to the page's [build] method
-Future<(Exercise, ChartPreferenceType)?> _showExercises(
-  BuildContext context,
-  TextEditingController controller,
-  FocusNode focus,
-) {
-  final color = Theme.of(context).colorScheme.surfaceContainerLowest;
-
-  return showDialog<(Exercise, ChartPreferenceType)?>(
-    context: context,
-    builder: (context) {
-      final exercises = Exercises.watch(context);
-      // a bare Card takes the whole screen; the picker still wants the height,
-      // so only the width is bounded
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: dialogWidth),
-          child: Card(
-            child: ExercisePicker(
-              appBar: SliverPersistentHeader(
-                pinned: true,
-                delegate: FixedHeightHeaderDelegate(
-                  backgroundColor: color,
-                  child: Row(
-                    mainAxisAlignment: .spaceBetween,
-                    children: [
-                      IconButton(
-                        visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          size: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                  height: 40,
-                  borderRadius: const .all(.circular(12)),
-                ),
-              ),
-              exercises: exercises,
-              backgroundColor: color,
-              searchController: controller,
-              focusNode: focus,
-              onExerciseSelected: (exercise, details) async {
-                final global = details?.globalPosition;
-                if (global == null) return;
-                final chartType = await showMenu<ChartPreferenceType>(
-                  context: context,
-                  position: global.position(),
-                  items: ChartPreferenceType.chartsByExerciseCategory(exercise.category).map(
-                    (option) {
-                      return PopupMenuItem<ChartPreferenceType>(
-                        value: option,
-                        child: Text(_chartTypeCopy(context, option)),
-                      );
-                    },
-                  ).toList(),
-                );
-
-                if (chartType != null && context.mounted) {
-                  Navigator.of(context).pop((exercise, chartType));
-                }
-              },
-            ),
-          ),
-        ),
-      );
-    },
-  );
 }
