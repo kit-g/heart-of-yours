@@ -160,6 +160,52 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     return _push(local, () => _remoteService.markStageAchieved(goalId, stageId, id, achievedAt));
   }
 
+  /// Records every rung whose target the user has now met.
+  ///
+  /// Progress is computed locally, so nothing here knows how to measure a goal
+  /// — [valueOf] resolves a goal's current value in stored units, and this
+  /// decides what that means. Keeping the measuring outside is what lets the
+  /// rule be tested without a database, a chart or a workout.
+  ///
+  /// - Recurring goals are skipped: a cadence goal resets each period and is
+  ///   never "done", which is why the server gives it exactly one stage.
+  /// - Every unachieved rung is checked, not just the current one, so a single
+  ///   session that clears two at once records both.
+  /// - Already-stamped rungs are left alone, so the timestamp keeps saying when
+  ///   the target was *first* met rather than when the app last looked.
+  Future<void> observeProgress(Future<num?> Function(Goal goal) valueOf) async {
+    if (userId == null) return;
+
+    for (final goal in List.of(_goals)) {
+      if (goal.cadence != null || goal.isComplete || goal.id == null) continue;
+
+      final num? value;
+      try {
+        value = await valueOf(goal);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+        continue;
+      }
+      if (value == null) continue;
+
+      for (final stage in goal.stages) {
+        if (stage.isAchieved || stage.id == null) continue;
+        if (!_meets(stage, value, goal.metric.lowerIsBetter)) continue;
+
+        await markStageAchieved(goal.id!, stage.id!, DateTime.timestamp());
+      }
+    }
+  }
+
+  /// Pace is the one metric where progress means going down, so its rungs are
+  /// met from above.
+  bool _meets(GoalStage stage, num value, bool lowerIsBetter) {
+    return switch (lowerIsBetter) {
+      true => value <= stage.target,
+      false => value >= stage.target,
+    };
+  }
+
   /// Re-attempts the push for goals persisted locally but never confirmed —
   /// a write made offline, or one that hit a flaky network. Failures are left
   /// unsynced to retry next launch; nothing is ever dropped.

@@ -44,3 +44,52 @@ class LocalGoals implements LocalGoalService {
     return _db.reconcileGoalId(localId, saved, userId);
   }
 }
+
+/// A goal's current value, in the units it is stored in.
+///
+/// One resolver for both readers, deliberately: the number the card shows and
+/// the number [Goals.observeProgress] judges a rung against have to be the same
+/// one, or the app can display a target as unmet while recording it as met.
+///
+/// Null where it cannot be answered *correctly* rather than approximately:
+///
+/// - a whole-workout goal is answered only for a weekly cadence, from the
+///   aggregation the profile already holds;
+/// - a per-exercise milestone is its latest observed value;
+/// - a per-exercise goal with a cadence would need a period-bounded aggregate
+///   that `heart_db/metrics.dart` does not provide, so it has no answer yet.
+Future<num?> currentGoalValue(
+  Goal goal, {
+  required Exercises exercises,
+  required WorkoutAggregation workouts,
+}) async {
+  if (goal.metric.isWholeWorkout) {
+    return switch (goal.cadence) {
+      .week => workouts.isEmpty ? null : workouts.last.length,
+      _ => null,
+    };
+  }
+
+  if (goal.cadence != null) return null;
+
+  final metric = goal.metric.chart;
+  final exercise = goalExercise(goal, exercises);
+  if (metric == null || exercise == null) return null;
+
+  final history = await exercises.getChartExerciseMetics(metric, exercise.name, limit: 1);
+  return switch (history) {
+    [(final num value, _), ...] => value,
+    _ => null,
+  };
+}
+
+/// Goals address an exercise by its server id while the app's catalog is keyed
+/// by name, so this is a scan rather than a lookup.
+Exercise? goalExercise(Goal goal, Exercises exercises) {
+  if (goal.exerciseId case final String id) {
+    for (final exercise in exercises) {
+      if (exercise.id == id) return exercise;
+    }
+  }
+  return null;
+}
