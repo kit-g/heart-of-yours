@@ -7,9 +7,3 @@ String _chartTypeCopy(BuildContext context, ChartPreferenceType option) => optio
 double Function(num) _converter(ChartPreferenceType type, Preferences settings) => type.converter(settings);
 
 Widget Function(double y) _getLeftLabel(ChartPreferenceType type, TextStyle? style) => type.leftLabel(style);
-
-extension on Offset {
-  RelativeRect position() {
-    return RelativeRect.fromLTRB(dx, dy, dx, dy);
-  }
-}
