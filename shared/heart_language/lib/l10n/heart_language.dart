@@ -980,6 +980,48 @@ abstract class L {
   /// **'Monthly'**
   String get goalMonthly;
 
+  /// Heading over the list of a goal's staged targets
+  ///
+  /// In en, this message translates to:
+  /// **'Milestones'**
+  String get goalLadder;
+
+  /// Button that adds another staged target to a goal
+  ///
+  /// In en, this message translates to:
+  /// **'Add milestone'**
+  String get goalAddRung;
+
+  /// When a milestone's target was first met
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved {date}'**
+  String goalAchievedOn(String date);
+
+  /// Shown on a milestone the user has not given a date to
+  ///
+  /// In en, this message translates to:
+  /// **'No deadline'**
+  String get goalNoDeadline;
+
+  /// Button that opens the date picker for a milestone
+  ///
+  /// In en, this message translates to:
+  /// **'Set a deadline'**
+  String get goalSetDeadline;
+
+  /// Button that removes a milestone's date
+  ///
+  /// In en, this message translates to:
+  /// **'Clear deadline'**
+  String get goalClearDeadline;
+
+  /// Why a milestone cannot be saved: two rungs of a ladder cannot share a target
+  ///
+  /// In en, this message translates to:
+  /// **'There is already a milestone at this target'**
+  String get goalDuplicateTarget;
+
   /// Label button that allows to choose Exercise category
   ///
   /// In en, this message translates to:
