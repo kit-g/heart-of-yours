@@ -110,6 +110,113 @@ void main() {
     expect(remote.created, hasLength(1));
   });
 
+  group('observeProgress', () {
+    Goal ladderOf(List<num> targets, {GoalMetric metric = GoalMetric.topSetWeight}) {
+      return Goal(
+        id: 'goal-1',
+        metric: metric,
+        exerciseId: 'exercise-1',
+        stages: [
+          for (final (index, target) in targets.indexed) GoalStage(id: 's$index', target: target),
+        ],
+      );
+    }
+
+    /// On both sides before init: a pull is authoritative for synced rows, so
+    /// seeding only the local mirror leaves the list empty and every assertion
+    /// about "nothing was stamped" passes for the wrong reason.
+    Future<void> seed(List<Goal> goals) {
+      local.goals.addAll(goals);
+      remote.goals.addAll(goals);
+      return sut.init();
+    }
+
+    Future<void> observe(num? value) {
+      return sut.observeProgress((_) async => value);
+    }
+
+    test('stamps a rung once its target is met', () async {
+      await seed([ladderOf([100])]);
+
+      await observe(100);
+
+      expect(local.achieved, ['s0']);
+      expect(sut.single.stages.single.isAchieved, isTrue);
+    });
+
+    test('leaves a rung alone below its target', () async {
+      await seed([ladderOf([100])]);
+
+      await observe(99.5);
+
+      expect(local.achieved, isEmpty);
+    });
+
+    test('clears two rungs at once when the value passes both', () async {
+      await seed([ladderOf([100, 120])]);
+
+      await observe(125);
+
+      expect(local.achieved, ['s0', 's1']);
+    });
+
+    test('does not re-stamp, so the timestamp stays the first observation', () async {
+      await seed([ladderOf([100])]);
+
+      await observe(120);
+      local.achieved.clear();
+      await observe(130);
+
+      expect(local.achieved, isEmpty);
+    });
+
+    test('skips recurring goals, which are never done', () async {
+      await seed([
+        Goal(
+          id: 'goal-1',
+          metric: .workouts,
+          cadence: .week,
+          stages: [GoalStage(id: 's0', target: 4)],
+        ),
+      ]);
+
+      await observe(9);
+
+      expect(local.achieved, isEmpty);
+    });
+
+    test('meets a pace rung from above, since lower is better there', () async {
+      await seed([ladderOf([300], metric: .averagePace)]);
+
+      await observe(280);
+
+      expect(local.achieved, ['s0']);
+    });
+
+    test('skips a goal whose value cannot be measured', () async {
+      await seed([ladderOf([100])]);
+
+      await observe(null);
+
+      expect(local.achieved, isEmpty);
+    });
+
+    test('one goal failing to measure does not stop the rest', () async {
+      await seed([
+        ladderOf([100]),
+        Goal(id: 'goal-2', metric: .topSetWeight, exerciseId: 'e2', stages: [GoalStage(id: 'x0', target: 50)]),
+      ]);
+
+      await sut.observeProgress((goal) async {
+        if (goal.id == 'goal-1') throw StateError('no history');
+        return 60;
+      });
+
+      expect(local.achieved, ['x0']);
+      expect(errors, isNotEmpty);
+    });
+  });
+
   test('pushPending retries goals the server never confirmed', () async {
     local.unsynced.add(ladder(id: 'local-1'));
     remote.mintedId = 'server-1';
@@ -234,9 +341,19 @@ class _FakeRemote implements GoalService {
   Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
     _guard();
     achieved.add(stageId);
-    return goals.firstWhere(
+
+    // the stamped goal, as the endpoint returns it — handing back the stored
+    // copy instead makes the caller overwrite the achievement it just recorded
+    final goal = goals.firstWhere(
       (each) => each.id == goalId,
       orElse: () => Goal(id: goalId, metric: .topSetWeight, exerciseId: 'e', stages: [GoalStage(target: 1)]),
     );
+    final stamped = goal.copyWith(
+      stages: goal.stages.map((s) => s.id == stageId ? s.copyWith(achievedAt: achievedAt) : s).toList(),
+    );
+    goals
+      ..removeWhere((each) => each.id == goalId)
+      ..add(stamped);
+    return stamped;
   }
 }
