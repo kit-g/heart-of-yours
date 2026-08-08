@@ -38,8 +38,9 @@ mixin AsyncState<T extends StatefulWidget> on State<T>, LoadingState<T>, HasErro
           error.value = _errorCopy(l, e.reason);
           return;
       }
-    } catch (error, stacktrace) {
-      return reportToSentry(error, stacktrace: stacktrace);
+    } catch (e, stacktrace) {
+      error.value = l.unknownError;
+      return reportToSentry(e, stacktrace: stacktrace);
     } finally {
       try {
         stopLoading();

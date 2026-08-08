@@ -201,7 +201,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
         width: 44,
         child: Center(
           child: Text(
-            DateFormat('d/M').format(summary.startDate),
+            L.of(context).dayAndMonth(summary.startDate),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),

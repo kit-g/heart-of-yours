@@ -12,10 +12,6 @@ class RestoreAccountPage extends StatefulWidget {
 
   @override
   State<RestoreAccountPage> createState() => _RestoreAccountPageState();
-
-  static String _formatDate(DateTime dt) {
-    return DateFormat('EEEE, d MMM y').format(dt);
-  }
 }
 
 class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingState<RestoreAccountPage> {
@@ -34,7 +30,12 @@ class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingSta
         actions: [
           IconButton.outlined(
             tooltip: logOut,
-            onPressed: () => clearState(context),
+            onPressed: () {
+              // same pair as the profile page's log-out: theme is provided
+              // above heart_state's clearState fan-out
+              AppTheme.of(context).onSignOut();
+              clearState(context);
+            },
             icon: const Icon(Icons.logout_rounded),
           ),
         ],
@@ -46,7 +47,7 @@ class _RestoreAccountPageState extends State<RestoreAccountPage> with LoadingSta
             child: switch (auth.user?.scheduledForDeletionAt) {
               DateTime t => Text(
                 accountDeletedBody(
-                  RestoreAccountPage._formatDate(t.toLocal()),
+                  L.of(context).fullDate(t.toLocal()),
                 ),
                 style: Theme.of(context).textTheme.bodyLarge,
                 textAlign: TextAlign.center,

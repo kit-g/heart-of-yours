@@ -80,7 +80,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   case null:
                     final currentlyShown = widget.media[page];
                     final date = currentlyShown.timestamp;
-                    final title = date != null ? DateFormat('EEEE, MMM d, yyyy').format(date) : null;
+                    final title = date != null ? L.of(context).fullDate(date) : null;
                     return switch (title) {
                       String t => Text(
                         t,
