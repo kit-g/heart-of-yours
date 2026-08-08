@@ -102,10 +102,17 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
 
   Future<void>? _initializing;
 
+  /// The signed-in user's own goals. Goals are read by *whose* they are now —
+  /// the server lets one account see another's — and this app only ever asks
+  /// for its own.
+  Future<Iterable<Goal>> _mine(String id) {
+    return _service.getTargetUserGoals(requesterId: id, targetUserId: id);
+  }
+
   Future<void> _init() async {
     if (userId case String id) {
       try {
-        _replace(await _service.getGoals(id));
+        _replace(await _mine(id));
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       }
@@ -121,8 +128,11 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<void> pull() async {
     if (userId case String id) {
       try {
-        await _service.storeGoals(await _remoteService.getGoals(id), id);
-        _replace(await _service.getGoals(id));
+        await _service.storeGoals(
+          await _remoteService.getTargetUserGoals(requesterId: id, targetUserId: id),
+          id,
+        );
+        _replace(await _mine(id));
         _pulled = true;
         notifyListeners();
       } catch (error, stacktrace) {
