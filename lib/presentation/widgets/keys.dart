@@ -21,8 +21,23 @@ abstract final class AppKeys {
   /// selection rather than popping a route.
   static const closeDetail = Key('AppFrame.closeDetail');
 
-  /// Removes one goal from the goals card. Keyed per goal because the card
-  /// shows several, and the profile screen carries other delete buttons whose
-  /// tooltip reads the same.
-  static Key deleteGoal(String? goalId) => Key('Goals.delete.$goalId');
+  /// One goal's row on the goals card. Keyed per goal because the card shows
+  /// several and they are otherwise indistinguishable to a finder.
+  static Key goalRow(String? goalId) => Key('Goals.row.$goalId');
+
+  /// Dismisses the goal detail surface.
+  static const closeGoalDetail = Key('Goals.detail.close');
+
+  /// Appends a rung to a goal's ladder.
+  static const addRung = Key('Goals.ladder.add');
+
+  /// Sets or changes a rung's deadline.
+  static const rungDueDate = Key('Goals.rung.dueDate');
+
+  /// One rung of a goal's ladder. Keyed per rung so a finder can tell them
+  /// apart — swiping one away is how a rung is removed.
+  static Key ladderRung(String? stageId) => Key('Goals.ladder.rung.$stageId');
+
+  /// Stands in for the add-goal button once the server would refuse another.
+  static const goalsAtCapacity = Key('Goals.atCapacity');
 }
