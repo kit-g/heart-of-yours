@@ -1,5 +1,2 @@
-include: package:flutter_lints/flutter.yaml
-
-analyzer:
-  exclude:
-    - build/**
+# Single source of truth: the root config carries the lint set and formatter.
+include: ../../analysis_options.yaml

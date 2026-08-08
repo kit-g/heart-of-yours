@@ -1,12 +1,10 @@
 name: heart_charts
 description: "Chart widgets"
 version: 0.0.1
-homepage: ""
 publish_to: none
 
 environment:
   sdk: "^3.6.0"
-  flutter: ">=1.17.0"
 
 dependencies:
   flutter:
