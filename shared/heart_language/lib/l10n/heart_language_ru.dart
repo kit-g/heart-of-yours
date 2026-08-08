@@ -508,7 +508,7 @@ class LRu extends L {
   String get goalClearDeadline => 'Убрать срок';
 
   @override
-  String get goalDuplicateTarget => 'Этап с таким значением уже есть';
+  String get goalsAtCapacity => 'Больше целей Heart не хранит. Удалите одну';
 
   @override
   String get category => 'Категория';

@@ -1016,11 +1016,11 @@ abstract class L {
   /// **'Clear deadline'**
   String get goalClearDeadline;
 
-  /// Why a milestone cannot be saved: two rungs of a ladder cannot share a target
+  /// Tooltip explaining why the add-goal button is missing
   ///
   /// In en, this message translates to:
-  /// **'There is already a milestone at this target'**
-  String get goalDuplicateTarget;
+  /// **'You have as many goals as Heart keeps. Delete one to make room for another.'**
+  String get goalsAtCapacity;
 
   /// Label button that allows to choose Exercise category
   ///
