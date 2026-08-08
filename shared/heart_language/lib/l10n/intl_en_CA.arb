@@ -960,9 +960,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "goalDuplicateTarget": "There is already a milestone at this target",
-  "@goalDuplicateTarget": {
-    "description": "Why a milestone cannot be saved: two rungs of a ladder cannot share a target",
+  "goalsAtCapacity": "You have as many goals as Heart keeps. Delete one to make room for another.",
+  "@goalsAtCapacity": {
+    "description": "Tooltip explaining why the add-goal button is missing",
     "type": "text",
     "placeholders": {}
   },
