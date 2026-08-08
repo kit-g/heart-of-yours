@@ -15,6 +15,10 @@ class ExerciseChart extends StatefulWidget {
   final List<double>? yStepCandidates;
   final Color? color;
 
+  /// Values to mark across the plot. Already in display units — the chart is
+  /// given converted numbers, so these have to arrive converted too.
+  final List<ChartThreshold> thresholds;
+
   /// Identity of the data this chart shows. The [callback] is invoked once and
   /// the result is kept across rebuilds, so purely cosmetic rebuilds (theme,
   /// units, a sibling loading) don't flash the loading state. Change this when
@@ -35,6 +39,7 @@ class ExerciseChart extends StatefulWidget {
     this.loadingState,
     this.yStepCandidates,
     this.color,
+    this.thresholds = const [],
     this.refreshKey,
   });
 
@@ -89,6 +94,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
     return SizedBox(
       height: 300,
       child: HistoryChart(
+        thresholds: widget.thresholds,
         yStepCandidates: widget.yStepCandidates,
         color: widget.color,
         indicatorStrokeColor: colorScheme.surface,
