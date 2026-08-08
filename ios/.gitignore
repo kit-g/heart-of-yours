@@ -27,6 +27,11 @@ Flutter/flutter_export_environment.sh
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
 
+# Secrets CI fetches into the tree (see testflight-ios-deployment.yml); never commit
+*.p8
+fastlane/appstore_key.json
+fastlane/passphrase.txt
+
 # Exceptions to above rules.
 !default.mode1v3
 !default.mode2v3
