@@ -309,8 +309,10 @@ class Api
   }
 
   @override
-  Future<Iterable<Goal>> getGoals(String userId) async {
-    final (json, _) = await get(Router.goals);
+  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
+    // Reading goals is scoped by whose they are — the same shape workouts use,
+    // where asking for your own id is the first allowed case.
+    final (json, _) = await get(Router.userGoals(targetUserId));
     return switch (json) {
       {'goals': List l} => l.map((each) => Goal.fromJson(each as Map)),
       _ => const <Goal>[],
@@ -397,6 +399,10 @@ abstract final class Router {
 
   static String goal(String goalId) {
     return '$goals/$goalId';
+  }
+
+  static String userGoals(String targetUserId) {
+    return '$accounts/$targetUserId/goals';
   }
 
   static String goalStage(String goalId, String stageId) {
