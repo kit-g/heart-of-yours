@@ -508,7 +508,7 @@ class LEn extends L {
   String get goalClearDeadline => 'Clear deadline';
 
   @override
-  String get goalDuplicateTarget => 'There is already a milestone at this target';
+  String get goalsAtCapacity => 'You have as many goals as Heart keeps. Delete one to make room for another.';
 
   @override
   String get category => 'Category';
@@ -1414,7 +1414,7 @@ class LEnCa extends LEn {
   String get goalClearDeadline => 'Clear deadline';
 
   @override
-  String get goalDuplicateTarget => 'There is already a milestone at this target';
+  String get goalsAtCapacity => 'You have as many goals as Heart keeps. Delete one to make room for another.';
 
   @override
   String get category => 'Category';

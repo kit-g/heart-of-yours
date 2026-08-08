@@ -960,9 +960,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "goalDuplicateTarget": "Этап с таким значением уже есть",
-  "@goalDuplicateTarget": {
-    "description": "Why a milestone cannot be saved: two rungs of a ladder cannot share a target",
+  "goalsAtCapacity": "Больше целей Heart не хранит. Удалите одну",
+  "@goalsAtCapacity": {
+    "description": "Tooltip explaining why the add-goal button is missing",
     "type": "text",
     "placeholders": {}
   },
