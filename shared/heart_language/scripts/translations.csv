@@ -168,7 +168,7 @@ goalAchievedOn,When a milestone's target was first met,Achieved {date},Achieved 
 goalNoDeadline,Shown on a milestone the user has not given a date to,No deadline,No deadline,Без срока
 goalSetDeadline,Button that opens the date picker for a milestone,Set a deadline,Set a deadline,Указать срок
 goalClearDeadline,Button that removes a milestone's date,Clear deadline,Clear deadline,Убрать срок
-goalDuplicateTarget,Why a milestone cannot be saved: two rungs of a ladder cannot share a target,There is already a milestone at this target,There is already a milestone at this target,Этап с таким значением уже есть
+goalsAtCapacity,Tooltip explaining why the add-goal button is missing,You have as many goals as Heart keeps. Delete one to make room for another.,You have as many goals as Heart keeps. Delete one to make room for another.,Больше целей Heart не хранит. Удалите одну, чтобы добавить новую.
 category,Label button that allows to choose Exercise category,Category,Category,Категория
 target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель
 removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Удалить фильтр
