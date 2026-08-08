@@ -11,7 +11,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job runs the same make targets developers run locally — the recipe
+# lives in the Makefile, not here.
 jobs:
+  lint:
+    name: "Analyze"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
+        with:
+          channel: 'stable'
+          version: '3.44.8' # keep in sync with the other workflows and the README
+          cache: true
+          cache-sdk: true
+
+      - name: Dependencies
+        run: make deps
+
+      - name: Analyze
+        run: make lint
+
   test_packages:
     name: "Pkg • ${{ matrix.package }}"
     runs-on: ubuntu-latest
@@ -19,36 +41,28 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - shared/heart_api
-          - shared/heart_db
-          - shared/heart_state
-          - shared/heart_charts
+          - heart_api
+          - heart_db
+          - heart_state
+          - heart_charts
+          - heart_language
 
     steps:
       - uses: actions/checkout@v6
 
       - name: Set up Flutter
-        uses: flutter-actions/setup-flutter@v4
+        uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
-          version: 'latest'
+          version: '3.44.8' # keep in sync with the other workflows and the README
           cache: true
           cache-sdk: true
 
-      # sqlite3 3.x provides its native lib via Dart build hooks; tests opening a real DB need it.
-      - name: Enable native asset bundling
-        run: flutter config --enable-native-assets
-
-      - name: Pub get (workspace)
-        run: flutter pub get
-
-      # Codegen only inside the package under test
-      - name: Generate code
-        working-directory: ${{ matrix.package }}
-        run: dart run build_runner build --delete-conflicting-outputs
+      - name: Dependencies
+        run: make deps
 
       - name: "Run tests"
-        run: flutter test ${{ matrix.package }}
+        run: make test-${{ matrix.package }}
 
   test_app:
     name: "App • tests"
@@ -58,22 +72,15 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Flutter
-        uses: flutter-actions/setup-flutter@v4
+        uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
-          version: 'latest'
+          version: '3.44.8' # keep in sync with the other workflows and the README
           cache: true
           cache-sdk: true
 
-      # sqlite3 3.x provides its native lib via Dart build hooks; tests opening a real DB need it.
-      - name: Enable native asset bundling
-        run: flutter config --enable-native-assets
-
-      - name: Pub get (workspace)
-        run: flutter pub get
-
-      - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+      - name: Dependencies
+        run: make deps
 
       - name: Run app tests
-        run: flutter test
+        run: make test-app
