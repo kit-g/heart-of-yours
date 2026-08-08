@@ -11,21 +11,35 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
+import 'package:heart/presentation/widgets/date_picker.dart';
+import 'package:heart/presentation/widgets/exercise_chart.dart';
 import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/popping_text.dart';
+import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 
 part 'card.dart';
+part 'detail.dart';
+part 'ladder.dart';
+part 'rung.dart';
 part 'ladder_bar.dart';
 part 'new_goal.dart';
 part 'row.dart';
+part 'swipe.dart';
+part 'text.dart';
+
+/// How far a row travels before the swipe counts as a delete. Matches the
+/// exercise set's, so the gesture feels the same wherever it is used.
+const _dismissThreshold = .5;
 
 extension on num {
   /// Trims a trailing `.0` — targets are whole far more often than not, and
