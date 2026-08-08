@@ -110,6 +110,86 @@ void main() {
     expect(remote.created, hasLength(1));
   });
 
+  group('deadline order', () {
+    Goal withRungs(List<(num, DateTime?)> rungs, {GoalMetric metric = GoalMetric.topSetWeight}) {
+      return Goal(
+        id: 'goal-1',
+        metric: metric,
+        exerciseId: 'exercise-1',
+        stages: [
+          for (final (index, (target, due)) in rungs.indexed) GoalStage(id: 's$index', target: target, dueOn: due),
+        ],
+      );
+    }
+
+    List<num> targetsOf(Goal goal) => goal.stages.map((each) => each.target).toList();
+
+    DateTime day(int month) => DateTime(2026, month, 1);
+
+    test('orders rungs by when they come due, not by how big they are', () async {
+      // the ladder that prompted this: bigger targets falling sooner
+      await sut.create(
+        withRungs([
+          (12, day(12)),
+          (14, day(10)),
+          (16, day(8)),
+        ]),
+      );
+
+      expect(targetsOf(local.created.single), [16, 14, 12]);
+    });
+
+    test('leaves a descending ladder alone — that is a real intention', () async {
+      // strong enough, light enough, and no further
+      await sut.create(
+        withRungs([
+          (85, day(3)),
+          (82, day(6)),
+          (78, day(9)),
+        ]),
+      );
+
+      expect(targetsOf(local.created.single), [85, 82, 78]);
+    });
+
+    test('sorts an undated rung last, since it is the open-ended one', () async {
+      await sut.create(
+        withRungs([
+          (100, null),
+          (120, day(5)),
+        ]),
+      );
+
+      expect(targetsOf(local.created.single), [120, 100]);
+    });
+
+    test('reorders on update too, since an edit can move a deadline', () async {
+      final goal = withRungs([
+        (12, day(6)),
+        (14, day(9)),
+      ]);
+      local.goals.add(goal);
+      remote.goals.add(goal);
+      await sut.init();
+
+      // the later rung pulled forward
+      await sut.update(
+        withRungs([
+          (12, day(6)),
+          (14, day(3)),
+        ]),
+      );
+
+      expect(targetsOf(sut.single), [14, 12]);
+    });
+
+    test('leaves a single rung alone', () async {
+      await sut.create(withRungs([(100, null)]));
+
+      expect(targetsOf(local.created.single), [100]);
+    });
+  });
+
   group('observeProgress', () {
     Goal ladderOf(List<num> targets, {GoalMetric metric = GoalMetric.topSetWeight}) {
       return Goal(
@@ -136,7 +216,9 @@ void main() {
     }
 
     test('stamps a rung once its target is met', () async {
-      await seed([ladderOf([100])]);
+      await seed([
+        ladderOf([100]),
+      ]);
 
       await observe(100);
 
@@ -145,7 +227,9 @@ void main() {
     });
 
     test('leaves a rung alone below its target', () async {
-      await seed([ladderOf([100])]);
+      await seed([
+        ladderOf([100]),
+      ]);
 
       await observe(99.5);
 
@@ -153,7 +237,9 @@ void main() {
     });
 
     test('clears two rungs at once when the value passes both', () async {
-      await seed([ladderOf([100, 120])]);
+      await seed([
+        ladderOf([100, 120]),
+      ]);
 
       await observe(125);
 
@@ -161,7 +247,9 @@ void main() {
     });
 
     test('does not re-stamp, so the timestamp stays the first observation', () async {
-      await seed([ladderOf([100])]);
+      await seed([
+        ladderOf([100]),
+      ]);
 
       await observe(120);
       local.achieved.clear();
@@ -186,7 +274,9 @@ void main() {
     });
 
     test('meets a pace rung from above, since lower is better there', () async {
-      await seed([ladderOf([300], metric: .averagePace)]);
+      await seed([
+        ladderOf([300], metric: .averagePace),
+      ]);
 
       await observe(280);
 
@@ -194,7 +284,9 @@ void main() {
     });
 
     test('skips a goal whose value cannot be measured', () async {
-      await seed([ladderOf([100])]);
+      await seed([
+        ladderOf([100]),
+      ]);
 
       await observe(null);
 
@@ -204,7 +296,12 @@ void main() {
     test('one goal failing to measure does not stop the rest', () async {
       await seed([
         ladderOf([100]),
-        Goal(id: 'goal-2', metric: .topSetWeight, exerciseId: 'e2', stages: [GoalStage(id: 'x0', target: 50)]),
+        Goal(
+          id: 'goal-2',
+          metric: .topSetWeight,
+          exerciseId: 'e2',
+          stages: [GoalStage(id: 'x0', target: 50)],
+        ),
       ]);
 
       await sut.observeProgress((goal) async {
