@@ -77,7 +77,27 @@ class InkButton extends StatelessWidget {
   }
 }
 
-const _defaultMargin = EdgeInsets.symmetric(horizontal: 8.0, vertical: 6);
+/// The inset [PrimaryButton] puts around its label.
+///
+/// Public so `textButtonTheme` can share it: a text button sitting beside a
+/// primary button should put its label on the same inset, and writing the
+/// numbers down twice is how the two drift apart.
+const primaryButtonPadding = EdgeInsets.symmetric(horizontal: 8.0, vertical: 6);
+
+/// The corner [PrimaryButton] clips its ink to, shared for the same reason.
+const primaryButtonRadius = Radius.circular(8);
+
+/// The height [PrimaryButton] comes out at with a single line of label.
+///
+/// A floor rather than a fixed size, so text scaling still grows the button.
+/// It exists because matching padding is not enough to match height: a
+/// TextButton lays its label out through `ButtonStyle`, and the ascent/descent
+/// rounding lands a point shy of the same text rendered plainly inside a
+/// PrimaryButton. Setting the floor states the intent — the two are the same
+/// height — instead of chasing it with a padding fudge.
+const primaryButtonMinHeight = 32.0;
+
+const _defaultMargin = primaryButtonPadding;
 
 class PrimaryButton extends StatelessWidget {
   final Widget child;
