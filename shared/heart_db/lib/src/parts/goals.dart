@@ -7,13 +7,18 @@ part of '../../heart_db.dart';
 /// workouts already use. Rows carry a `synced` flag; anything still 0 is a
 /// write the server has not confirmed.
 mixin _Goals on _LocalDatabase implements GoalService {
+  /// The local mirror only ever holds the signed-in user's goals, so there is
+  /// nobody else's to read: [requesterId] is accepted to satisfy the shared
+  /// interface and asserted against [targetUserId] rather than silently
+  /// answering with the wrong person's ladder.
   @override
-  Future<Iterable<Goal>> getGoals(String userId) {
+  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) {
+    assert(requesterId == targetUserId, 'the local mirror holds only the signed-in user\'s goals');
     return _db
         .query(
           _goals,
           where: 'user_id = ? AND archived = 0',
-          whereArgs: [userId],
+          whereArgs: [targetUserId],
           orderBy: 'created_at',
         )
         .then((rows) => rows.map(Goal.fromRow));
