@@ -101,7 +101,7 @@ class WorkoutItem extends StatelessWidget {
                 ],
               ),
               Text(
-                _formatDate(workout.start),
+                L.of(context).fullDate(workout.start),
               ),
               Row(
                 children: [
@@ -171,10 +171,6 @@ class WorkoutItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static String _formatDate(DateTime dt) {
-    return DateFormat('EEEE, d MMM y').format(dt);
   }
 
   static String _formatSet(

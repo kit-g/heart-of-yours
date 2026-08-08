@@ -93,7 +93,7 @@ class _Card extends StatelessWidget {
                     ),
                     if (start != null)
                       Text(
-                        DateFormat('yMMMd').format(start),
+                        DateFormat.yMMMd(L.of(context).localeName).format(start),
                         style: textTheme.bodySmall,
                       ),
                   ],
@@ -107,7 +107,7 @@ class _Card extends StatelessWidget {
                   ),
                   if (start != null)
                     Text(
-                      DateFormat('EEEE, h:mm a').format(start.toLocal()),
+                      DateFormat('EEEE, h:mm a', L.of(context).localeName).format(start.toLocal()),
                       style: textTheme.bodySmall,
                     ),
                 ],

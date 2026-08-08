@@ -164,8 +164,9 @@ class _RecoveryPageState extends State<RecoveryPage>
       );
     } on AuthException catch (e) {
       error.value = _errorCopy(l, e.reason);
-    } catch (error, stacktrace) {
-      reportToSentry(error, stacktrace: stacktrace);
+    } catch (e, stacktrace) {
+      error.value = l.unknownError;
+      reportToSentry(e, stacktrace: stacktrace);
     } finally {
       try {
         stopLoading();
