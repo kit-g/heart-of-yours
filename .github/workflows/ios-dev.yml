@@ -7,15 +7,25 @@ on:
       - 'ios/**'
       - 'lib/**'
       - 'pubspec.yaml'
+      - 'shared/**'
   workflow_dispatch: { }
 
 permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: "ios-dev"
+  cancel-in-progress: true
+
 jobs:
+  unit-tests:
+    name: "Unit Tests"
+    uses: ./.github/workflows/unit-tests.yml
+
   deploy-dev:
     uses: ./.github/workflows/testflight-ios-deployment.yml
+    needs: [ unit-tests ]
     with:
       aws_region: "ca-central-1"
       aws_role: "arn:aws:iam::583168578067:role/heart-github-actions-deploy-role"

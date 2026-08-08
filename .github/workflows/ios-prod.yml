@@ -11,6 +11,10 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: "ios-prod"
+  cancel-in-progress: true
+
 jobs:
   unit-tests:
     name: "Unit Tests"
