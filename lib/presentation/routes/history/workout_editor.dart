@@ -546,7 +546,7 @@ class _WorkoutTimesSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final muted = textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant);
-    final date = DateFormat('MMM d, y').format(workout.start.toLocal());
+    final date = DateFormat.yMMMd(L.of(context).localeName).format(workout.start.toLocal());
 
     return InkWell(
       onTap: onTap,

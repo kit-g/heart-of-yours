@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heart_charts/heart_charts.dart';
-import 'package:intl/intl.dart';
+import 'package:heart_language/heart_language.dart';
 
 class ExerciseChart extends StatefulWidget {
   final Future<List<(num, DateTime)>?> Function() callback;
@@ -104,7 +104,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
         ),
         getBottomLabel: (x) {
           return switch (x % labelEvery == 0) {
-            true => DateFormat('d/M').format(reversed[x].$2),
+            true => L.of(context).dayAndMonth(reversed[x].$2),
             false => '',
           };
         },
