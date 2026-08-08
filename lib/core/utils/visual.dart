@@ -147,7 +147,6 @@ Future<T?> showBrandedDialog<T>(
     context: context,
     builder: (context) {
       return AlertDialog(
-        backgroundColor: scaffoldBackgroundColor,
         shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
         contentPadding: padding,
         icon: icon,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'nice_axis.dart';
 import 'spot.dart';
+import 'threshold.dart';
 
 /// Width reserved for the left (y-axis) labels. Exposed so callers can align a
 /// top title over the plot, which sits to the right of this inset.
@@ -33,6 +34,14 @@ class HistoryChart extends StatefulWidget {
   /// gradient (the `gradientColor*` args).
   final Color? color;
 
+  /// Values to mark across the plot — a goal's rungs, say.
+  ///
+  /// They widen the y-axis as well as drawing: a target is normally *above*
+  /// anything the series contains, and an axis fitted to the data alone would
+  /// put the line off the top of the chart, hiding it in exactly the case it
+  /// exists for.
+  final List<ChartThreshold> thresholds;
+
   HistoryChart({
     super.key,
     required Iterable<Dot> series,
@@ -43,6 +52,7 @@ class HistoryChart extends StatefulWidget {
     this.getTooltip,
     this.yStepCandidates,
     this.color,
+    this.thresholds = const [],
     Color? gradientColor1,
     Color? gradientColor2,
     Color? gradientColor3,
@@ -111,9 +121,10 @@ class _HistoryChartState extends State<HistoryChart> {
         ];
         final tooltipsOnBar = lineBarsData[0];
 
+        final marks = widget.thresholds.map((each) => each.value);
         final yAxis = niceYAxis(
-          series.lowerBoundaryY,
-          series.upperBoundaryY,
+          [series.lowerBoundaryY, ...marks].reduce(min),
+          [series.upperBoundaryY, ...marks].reduce(max),
           stepCandidates: widget.yStepCandidates,
         );
 
@@ -188,6 +199,29 @@ class _HistoryChartState extends State<HistoryChart> {
                   ),
                 ),
                 lineBarsData: lineBarsData,
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: widget.thresholds.map(
+                    (each) {
+                      final color = each.color ?? accent ?? scheme.outline;
+                      return HorizontalLine(
+                        y: each.value,
+                        color: color.withValues(alpha: each.reached ? .9 : .5),
+                        strokeWidth: 1.5,
+                        // dashed while it is still ahead of you, solid once met
+                        dashArray: each.reached ? null : const [6, 4],
+                        label: switch (each.label) {
+                          final String text => HorizontalLineLabel(
+                              show: true,
+                              alignment: Alignment.topRight,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+                              labelResolver: (_) => text,
+                            ),
+                          null => HorizontalLineLabel(),
+                        },
+                      );
+                    },
+                  ).toList(),
+                ),
                 minY: yAxis.min,
                 maxY: yAxis.max,
                 titlesData: FlTitlesData(
