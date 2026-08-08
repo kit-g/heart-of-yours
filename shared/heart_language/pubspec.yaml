@@ -1,16 +1,16 @@
 name: heart_language
 description: "Language resource"
 version: 0.0.1
-homepage:
+publish_to: none
 
 environment:
   sdk: ^3.5.4
-  flutter: ">=1.17.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  intl: any
+  # kept in lockstep with flutter_localizations' pin
+  intl: ^0.20.2
 
 resolution: workspace
 
