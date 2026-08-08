@@ -38,8 +38,10 @@ count_lines() {
     done
 }
 
-count_lines "../lib/"
-count_lines "../shared/"
+# resolve from the script's own location so this works from any cwd
+root="$(cd "$(dirname "$0")/.." && pwd)"
+count_lines "$root/lib/"
+count_lines "$root/shared/"
 
 echo "There are $lines lines in $files files"
 echo "The biggest file is $biggest with $max lines"
