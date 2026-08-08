@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/presentation/widgets/buttons.dart';
 
 const _widerRadius = Radius.circular(12);
 const _widerBorderRadius = BorderRadius.all(_widerRadius);
@@ -31,6 +32,12 @@ ThemeData theme(ColorScheme colorScheme) {
     textTheme: textTheme,
     scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
     canvasColor: colorScheme.surfaceContainerLowest,
+    // Material's default dialog surface is `surfaceContainerHigh`, which under a
+    // tinted scheme reads as grey against the near-white the app sits on.
+    // `surfaceContainerLowest` is the lightest tone in the light scheme — the
+    // same one the scaffold uses — so a dialog is as bright as the app gets
+    // rather than a grey slab floating on it.
+    dialogTheme: DialogThemeData(backgroundColor: colorScheme.surfaceContainerLowest),
     inputDecorationTheme: InputDecorationTheme(
       isDense: true,
       border: OutlineInputBorder(borderRadius: .circular(6), borderSide: .none),
@@ -51,7 +58,9 @@ ThemeData theme(ColorScheme colorScheme) {
       shape: const RoundedRectangleBorder(
         borderRadius: .only(topLeft: _widerRadius, topRight: _widerRadius),
       ),
-      backgroundColor: colorScheme.surfaceContainerLow,
+      // matches dialogs: a sheet is a surface the app puts in front of itself,
+      // and it was reading a shade greyer than everything around it
+      backgroundColor: colorScheme.surfaceContainerLowest,
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: colorScheme.onTertiary,
@@ -92,12 +101,19 @@ ThemeData theme(ColorScheme colorScheme) {
       shape: const RoundedRectangleBorder(borderRadius: .all(.circular(4))),
     ),
     textButtonTheme: TextButtonThemeData(
+      // Matched to PrimaryButton, which text buttons sit beside in every dialog
+      // footer. It used to carry its own 4pt inset and a 4pt corner, and a
+      // `compact` density on top — density shrinks the box *after* padding, so
+      // the two could never line up however the padding was set.
       style: TextButton.styleFrom(
-        padding: const EdgeInsets.all(4),
-        minimumSize: const Size(0, 0),
+        padding: primaryButtonPadding,
+        minimumSize: const Size(0, primaryButtonMinHeight),
         tapTargetSize: .shrinkWrap,
-        visualDensity: .compact,
-        shape: RoundedRectangleBorder(borderRadius: .circular(4)),
+        visualDensity: .standard,
+        shape: const RoundedRectangleBorder(borderRadius: .all(primaryButtonRadius)),
+        // bodyMedium is what a PrimaryButton's label inherits inside a dialog,
+        // so both read at the same size; the height floor above is what makes
+        // them the same *box*.
         textStyle: textTheme.bodyMedium?.copyWith(fontFamily: _font),
       ),
     ),
