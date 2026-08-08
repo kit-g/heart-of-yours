@@ -33,6 +33,14 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   final GoalService _remoteService;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
+  /// How many live goals the server will hold for one user.
+  ///
+  /// Duplicated from the API deliberately — the cap is enforced inside the
+  /// `INSERT` (`WHERE count(...) < 50`) and there is no endpoint that reports
+  /// it, so the app cannot learn it. Knowing it lets the UI stop offering a
+  /// goal it cannot create; the server stays the one that actually enforces it.
+  static const maxActive = 50;
+
   final _goals = <Goal>[];
 
   String? userId;
@@ -59,6 +67,13 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Iterator<Goal> get iterator => _goals.iterator;
 
   List<Goal> get all => UnmodifiableListView(_goals);
+
+  /// Whether the server would refuse another goal.
+  ///
+  /// Counted locally, so it can disagree with the server when goals were made
+  /// on another device and not pulled yet. The create still fails in that case;
+  /// this only stops the app offering what it can usually tell is impossible.
+  bool get isAtCapacity => _goals.length >= maxActive;
 
   static Goals of(BuildContext context) => Provider.of<Goals>(context, listen: false);
 
@@ -118,7 +133,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
 
   Future<Goal> create(Goal goal) async {
     final id = userId!;
-    final local = await _service.createGoal(goal, id);
+    final local = await _service.createGoal(Goal.inDeadlineOrder(goal), id);
     _goals.add(local);
     notifyListeners();
 
@@ -128,7 +143,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<Goal> update(Goal goal) async {
     final id = userId!;
     final goalId = goal.id!;
-    final local = await _service.updateGoal(goalId, goal, id);
+    final local = await _service.updateGoal(goalId, Goal.inDeadlineOrder(goal), id);
     _swap(goalId, local);
     notifyListeners();
 
