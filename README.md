@@ -174,7 +174,8 @@ make test
 
 Individual suites have sub-targets — `make test-heart_db`, `make test-heart_state`,
 `make test-heart_api`, `make test-heart_charts`, `make test-heart_language`, `make test-app`.
-Static analysis is `make lint` (also the pre-push hook installed by `make bootstrap`).
+`make lint` is the gate — static analysis plus a format check (`make format` fixes it) — and
+also runs as the pre-push hook installed by `make bootstrap`.
 
 Integration tests live in `integration_test/` and need a device, so they do not run under a plain
 `flutter test`:

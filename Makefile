@@ -4,8 +4,8 @@
 #
 #   make bootstrap   fresh clone → working setup (deps, codegen, git hooks)
 #   make test        the full matrix, exactly as CI runs it
-#   make lint        static analysis (the CI gate; formatting is not gated
-#                    because the tree predates enforcement — use `make format`)
+#   make lint        the CI gate: static analysis + format check
+#                    (`make format` fixes what the check reports)
 #   make test-<pkg>  one shared package, e.g. `make test-heart_db`
 
 # Packages with a test suite in the CI matrix.
@@ -16,7 +16,7 @@ CODEGEN_PACKAGES := heart_api heart_db heart_state heart_charts
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
-.PHONY: bootstrap deps hooks codegen codegen-app lint format test test-app \
+.PHONY: bootstrap deps hooks codegen codegen-app lint format format-check test test-app \
         $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
 bootstrap: hooks deps codegen codegen-app
@@ -39,13 +39,16 @@ hooks:
 codegen: $(CODEGEN_TARGETS)
 
 $(CODEGEN_TARGETS): codegen-%:
-	cd shared/$* && dart run build_runner build --delete-conflicting-outputs
+	cd shared/$* && dart run build_runner build
 
 codegen-app:
-	dart run build_runner build --delete-conflicting-outputs
+	dart run build_runner build
 
-lint:
+lint: format-check
 	flutter analyze
+
+format-check:
+	git ls-files -co --exclude-standard '*.dart' | xargs dart format --output=none --set-exit-if-changed
 
 # format only files git knows about: `dart format .` would descend into
 # build/ (including vendored SPM package checkouts) — it does not honor
