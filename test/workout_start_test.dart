@@ -58,6 +58,8 @@ void main() {
           final user = MockUser(uid: 'u1', email: 'u1@test');
           final firebase = MockFirebaseAuth(mockUser: user, signedIn: true);
 
+          // the dashboard animates indefinitely, so pump fixed frames
+          // rather than settling
           await harness.pumpHeartApp(
             tester,
             db: db,
@@ -65,16 +67,17 @@ void main() {
             cdn: configApi,
             firebaseAuth: firebase,
             hasLocalNotifications: false,
+            settle: false,
           );
 
           // 1) Go to workout stack by key
           await tester.tapByKey(AppKeys.workoutStack);
-          await pumpAndSettleSafe(tester);
+          await tester.pumpTimes();
 
           // 2) Tap Start New Workout (key)
           await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
 
-          await pumpAndSettleSafe(tester);
+          await tester.pumpTimes();
 
           // 3) Verify we see all expected controls by keys
           expect(find.byKey(WorkoutDetailKeys.finishWorkout), findsOneWidget);
@@ -82,7 +85,6 @@ void main() {
           expect(find.byKey(WorkoutDetailKeys.cancelWorkout), findsOneWidget);
           expect(find.byKey(WorkoutDetailKeys.addExercises), findsOneWidget);
         },
-        skip: true,
       );
     },
   );
