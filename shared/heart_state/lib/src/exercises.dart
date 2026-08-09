@@ -371,6 +371,7 @@ extension on Movement {
   /// absolute numbers, only on the order they produce.
   int distanceTo(Movement other) {
     int gap(int a, int b) => (a - b).abs();
+    // ignore: avoid_positional_boolean_parameters — a two-line local helper
     int mismatch(bool same) => same ? 0 : 1;
 
     return gap(axialLoad.index, other.axialLoad.index) +

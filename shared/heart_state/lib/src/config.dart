@@ -29,6 +29,7 @@ class RemoteConfig implements SignOutStateSentry {
   @override
   void onSignOut() {
     _config.clear();
+    isInitialized = false;
   }
 
   static RemoteConfig of(BuildContext context) {
