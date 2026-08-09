@@ -137,10 +137,9 @@ void main() {
   test('translations.csv is well-formed', () {
     final file = File('${root.path}/scripts/translations.csv');
     expect(file.existsSync(), isTrue, reason: '${file.path} is missing');
-    final rows = const CsvToListConverter(
-      eol: '\r\n',
-      shouldParseNumbers: false,
-    ).convert(file.readAsStringSync());
+    // csv 8: fields stay strings unless dynamicTyping is on, delimiter and
+    // line endings are auto-detected
+    final rows = Csv().decode(file.readAsStringSync());
     expect(rows, isNotEmpty, reason: 'CSV has no header row');
 
     final header = rows.first.cast<String>();
