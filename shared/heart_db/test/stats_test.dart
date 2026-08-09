@@ -217,23 +217,21 @@ void main() {
       test(
         'returns zero for an empty week',
         () async {
-          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3)), 0);
+          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3), userId: userId), 0);
         },
       );
 
       test(
-        'counts finished workouts in the week of the given date, for every user',
+        'counts finished workouts in the week of the given date, for the asking user',
         () async {
           await seedWorkout(start: dayOf(daysFromMonday: 1, hour: 9));
           await seedWorkout(start: dayOf(daysFromMonday: 3, hour: 19));
-          // the query carries no user filter, so other users on the device
-          // count too — documents current behavior
           await seedWorkout(start: dayOf(daysFromMonday: 2), user: strangerId);
           // last week
           await seedWorkout(start: dayOf(daysFromMonday: -3));
 
-          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 4)), 3);
-          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: -3)), 1);
+          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 4), userId: userId), 2);
+          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: -3), userId: userId), 1);
         },
       );
 
@@ -241,6 +239,17 @@ void main() {
         'excludes unfinished workouts',
         () async {
           await seedWorkout(start: dayOf(daysFromMonday: 1), finished: false);
+
+          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3), userId: userId), 0);
+        },
+      );
+
+      test(
+        'a null userId matches nothing',
+        () async {
+          // same as getWorkoutSummary: `user_id = NULL` is never true, so with
+          // nobody to count for the answer is none rather than everybody's
+          await seedWorkout(start: dayOf(daysFromMonday: 1));
 
           expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3)), 0);
         },
@@ -251,7 +260,7 @@ void main() {
         () async {
           await seedWorkout(start: dayOf(hour: 0, minute: 0));
 
-          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3)), 1);
+          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3), userId: userId), 1);
         },
       );
 
@@ -265,8 +274,93 @@ void main() {
             end: dayOf(daysFromMonday: 7, hour: 1),
           );
 
-          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3)), 1);
-          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 10)), 0);
+          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3), userId: userId), 1);
+          expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 10), userId: userId), 0);
+        },
+      );
+    },
+  );
+
+  group(
+    'getMonthlyWorkoutCount',
+    () {
+      // Anchored to fixed dates rather than to [monday]: what this query is
+      // worth is entirely in where it draws month boundaries, and a seed
+      // derived from "this week" straddles them differently every month.
+      test(
+        'counts the finished workouts inside the month',
+        () async {
+          await seedWorkout(start: DateTime(2026, 8, 1, 7));
+          await seedWorkout(start: DateTime(2026, 8, 15, 18));
+          await seedWorkout(start: DateTime(2026, 8, 31, 23));
+
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 8, 9), userId: userId), 3);
+        },
+      );
+
+      test(
+        'excludes the months either side',
+        () async {
+          // the ends of the range are where an off-by-one lives, and a workout
+          // late on the 31st is the one a careless upper bound drops
+          await seedWorkout(start: DateTime(2026, 7, 31, 23, 59));
+          await seedWorkout(start: DateTime(2026, 8, 1));
+          await seedWorkout(start: DateTime(2026, 8, 31, 23, 59));
+          await seedWorkout(start: DateTime(2026, 9, 1));
+
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 8, 9), userId: userId), 2);
+        },
+      );
+
+      test(
+        'rolls the year over in December',
+        () async {
+          // the upper bound is month + 1, which is 13 here; DateTime normalises
+          // it to next January, and getting that wrong counts nothing at all
+          await seedWorkout(start: DateTime(2026, 12, 5));
+          await seedWorkout(start: DateTime(2026, 12, 30));
+          await seedWorkout(start: DateTime(2027, 1, 2));
+
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 12, 31), userId: userId), 2);
+        },
+      );
+
+      test(
+        'excludes unfinished workouts',
+        () async {
+          await seedWorkout(start: DateTime(2026, 8, 2));
+          await seedWorkout(start: DateTime(2026, 8, 9), finished: false);
+
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 8, 9), userId: userId), 1);
+        },
+      );
+
+      test(
+        'counts only the asking user, unlike the weekly count beside it',
+        () async {
+          await seedWorkout(start: DateTime(2026, 8, 3));
+          await seedWorkout(start: DateTime(2026, 8, 4), user: strangerId);
+
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 8, 9), userId: userId), 1);
+        },
+      );
+
+      test(
+        'a workout spanning midnight on the first counts toward the month it started in',
+        () async {
+          await seedWorkout(start: DateTime(2026, 7, 31, 23, 30), end: DateTime(2026, 8, 1, 1));
+
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 8, 9), userId: userId), 0);
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 7, 9), userId: userId), 1);
+        },
+      );
+
+      test(
+        'returns zero for a month with nothing in it',
+        () async {
+          await seedWorkout(start: DateTime(2026, 8, 3));
+
+          expect(await local.getMonthlyWorkoutCount(DateTime(2026, 9, 9), userId: userId), 0);
         },
       );
     },

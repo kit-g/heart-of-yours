@@ -20,6 +20,12 @@ void main() {
   const userId = 'user-1';
   const other = 'user-2';
 
+  /// Goals belong to whoever owns them, and the local mirror only ever holds
+  /// the signed-in user's — so reading is always asking for your own.
+  Future<Iterable<Goal>> goalsOf(String id) {
+    return local.getTargetUserGoals(requesterId: id, targetUserId: id);
+  }
+
   Goal goal({
     String? id,
     GoalMetric metric = GoalMetric.topSetWeight,
@@ -90,7 +96,7 @@ void main() {
         userId,
       );
 
-      final read = (await local.getGoals(userId)).single;
+      final read = (await goalsOf(userId)).single;
 
       expect(read.stages, hasLength(2));
       expect(read.stages.first.target, 100);
@@ -112,7 +118,7 @@ void main() {
         userId,
       );
 
-      final read = (await local.getGoals(userId)).single;
+      final read = (await goalsOf(userId)).single;
 
       expect(read.metric, GoalMetric.workouts);
       expect(read.exerciseId, isNull);
@@ -126,12 +132,12 @@ void main() {
     });
   });
 
-  group('getGoals', () {
+  group('getTargetUserGoals', () {
     test('hides archived goals', () async {
       await local.createGoal(goal(id: 'live'), userId);
       await local.createGoal(goal(id: 'gone', archived: true), userId);
 
-      expect((await local.getGoals(userId)).map((each) => each.id), ['live']);
+      expect((await goalsOf(userId)).map((each) => each.id), ['live']);
     });
 
     test('reads archived back as a real bool, not a SQLite 1', () async {
@@ -147,14 +153,14 @@ void main() {
       await local.createGoal(goal(id: 'second', createdAt: DateTime.utc(2026, 2, 1)), userId);
       await local.createGoal(goal(id: 'first', createdAt: DateTime.utc(2026, 1, 1)), userId);
 
-      expect((await local.getGoals(userId)).map((each) => each.id), ['first', 'second']);
+      expect((await goalsOf(userId)).map((each) => each.id), ['first', 'second']);
     });
 
     test('is scoped to one user', () async {
       await local.createGoal(goal(id: 'mine'), userId);
       await local.createGoal(goal(id: 'theirs'), other);
 
-      expect((await local.getGoals(userId)).map((each) => each.id), ['mine']);
+      expect((await goalsOf(userId)).map((each) => each.id), ['mine']);
     });
   });
 
@@ -177,7 +183,7 @@ void main() {
       expect(updated.stages.first.isAchieved, isFalse);
       expect(updated.stages.last.achievedAt, at);
       // and it persisted, rather than only being returned
-      expect((await local.getGoals(userId)).single.stages.last.achievedAt, at);
+      expect((await goalsOf(userId)).single.stages.last.achievedAt, at);
     });
 
     test('is idempotent — re-stamping overwrites rather than failing', () async {
@@ -233,7 +239,7 @@ void main() {
 
       await local.storeGoals([goal(id: 'from-server')], userId);
 
-      expect((await local.getGoals(userId)).map((each) => each.id), ['from-server']);
+      expect((await goalsOf(userId)).map((each) => each.id), ['from-server']);
     });
 
     test('leaves an unsynced local write in place', () async {
@@ -242,7 +248,7 @@ void main() {
 
       await local.storeGoals([goal(id: 'from-server', createdAt: DateTime.utc(2026, 1, 1))], userId);
 
-      expect((await local.getGoals(userId)).map((each) => each.id), ['from-server', 'offline']);
+      expect((await goalsOf(userId)).map((each) => each.id), ['from-server', 'offline']);
       expect((await local.unsyncedGoals(userId)).map((each) => each.id), ['offline']);
     });
 
@@ -252,7 +258,7 @@ void main() {
 
       await local.storeGoals([goal(id: 'mine')], userId);
 
-      expect((await local.getGoals(other)).map((each) => each.id), ['theirs']);
+      expect((await goalsOf(other)).map((each) => each.id), ['theirs']);
     });
 
     test('marks everything it stores as synced', () async {
@@ -268,7 +274,7 @@ void main() {
 
       await local.reconcileGoalId('local-1', goal(id: 'server-1'), userId);
 
-      expect((await local.getGoals(userId)).map((each) => each.id), ['server-1']);
+      expect((await goalsOf(userId)).map((each) => each.id), ['server-1']);
       expect(await local.unsyncedGoals(userId), isEmpty);
     });
 
@@ -277,7 +283,7 @@ void main() {
 
       await local.reconcileGoalId('local-1', goal(id: 'local-1'), userId);
 
-      expect((await local.getGoals(userId)).map((each) => each.id), ['local-1']);
+      expect((await goalsOf(userId)).map((each) => each.id), ['local-1']);
       expect(await local.unsyncedGoals(userId), isEmpty);
     });
   });
@@ -296,7 +302,7 @@ void main() {
         userId,
       );
 
-      final read = (await local.getGoals(userId)).single;
+      final read = (await goalsOf(userId)).single;
       expect(read.stages.single.target, 200);
       // it is a local write again until the server confirms it
       expect((await local.unsyncedGoals(userId)).map((each) => each.id), ['goal-1']);
@@ -309,7 +315,7 @@ void main() {
 
       await local.deleteGoal('goal-1', userId);
 
-      expect(await local.getGoals(userId), isEmpty);
+      expect(await goalsOf(userId), isEmpty);
     });
 
     test('will not delete somebody else goal', () async {
@@ -317,7 +323,7 @@ void main() {
 
       await local.deleteGoal('theirs', userId);
 
-      expect((await local.getGoals(other)).map((each) => each.id), ['theirs']);
+      expect((await goalsOf(other)).map((each) => each.id), ['theirs']);
     });
   });
 
