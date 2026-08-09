@@ -1,5 +1,9 @@
-PACKAGE_NAME="heart_theme" # lowercase and underscores only
-DESCRIPTION="Material app theme"
+#!/bin/sh
+# Scaffolds a new shared package. Run from shared/, editing the three
+# variables first. Remember to add the package to the root pubspec's
+# `workspace:` list and to the Makefile/CI matrix.
+PACKAGE_NAME="${1:?usage: ./new.sh <package_name> [description]}" # lowercase and underscores only
+DESCRIPTION="${2:-A shared heart package}"
 ORG="me.heart-of"
 
 mkdir "$PACKAGE_NAME"
@@ -14,19 +18,8 @@ flutter create . \
 mkdir "lib/src"
 
 cat <<EOF > analysis_options.yaml
-include: package:flutter_lints/flutter.yaml
-
-linter:
-  rules:
-    require_trailing_commas: true
-    prefer_const_constructors: true
-    prefer_final_in_for_each: true
-    avoid_positional_boolean_parameters: true
-    avoid_dynamic_calls: true
-    prefer_single_quotes: true
-
-formatter:
-  trailing_commas: preserve
+# Single source of truth: the root config carries the lint set and formatter.
+include: ../../analysis_options.yaml
 EOF
 
 rm "lib/$PACKAGE_NAME.dart"
