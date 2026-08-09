@@ -658,6 +658,29 @@
     "type": "text",
     "placeholders": {}
   },
+  "goalsAchievedHeading": "{count, plural, one{Goal reached} other{Goals reached}}",
+  "@goalsAchievedHeading": {
+    "description": "Workout complete screen, heading above the goal rungs this session earned",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalAchievedTarget": "{goal} · {target}",
+  "@goalAchievedTarget": {
+    "description": "Workout complete screen, one earned rung: the goal's name and the target that was met",
+    "type": "text",
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
   "finishWorkoutTitle": "Finish Workout?",
   "@finishWorkoutTitle": {
     "description": "Workout completion confirmation dialog",
