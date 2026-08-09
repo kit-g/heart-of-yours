@@ -267,7 +267,7 @@ void saveJsonFile(String filePath, Map<String, dynamic> data) {
   }
   try {
     final content = file.readAsStringSync();
-    final rows = const CsvToListConverter().convert(content);
+    final rows = Csv().decode(content);
     if (rows.isEmpty) {
       return ([], []);
     }
@@ -299,7 +299,7 @@ void saveCsvFile(String filePath, List<String> headers, List<Map<String, String>
       rows.add(row);
     }
 
-    final csv = const ListToCsvConverter().convert(rows);
+    final csv = Csv().encode(rows);
     final file = File(filePath);
     file.writeAsStringSync(csv);
   } catch (e) {
