@@ -56,6 +56,15 @@ Future<void> _amend(BuildContext context, Future<void> Function() edit) async {
   }
 }
 
+extension on WorkoutAggregation {
+  /// Every workout in the aggregation, not every week.
+  ///
+  /// What a goal's reading is keyed on. `length` counts weeks, and a session
+  /// logged into a week that already exists leaves that unchanged — so a goal
+  /// went on showing the value it had before the workout landed.
+  int get workoutCount => fold(0, (total, week) => total + week.length);
+}
+
 extension on num {
   /// Trims a trailing `.0` — targets are whole far more often than not, and
   /// "100.0 kg" reads like a measurement rather than an intention.

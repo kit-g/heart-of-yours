@@ -47,7 +47,7 @@ class _GoalDetailState extends State<GoalDetail> {
     );
     final exercise = goalExercise(goal, exercises);
 
-    final key = (goal.id, exercise?.name, widget.workouts.length);
+    final key = (goal.id, exercise?.name, widget.workouts.workoutCount);
     if (key != _key) {
       _key = key;
       _reading = currentGoalValue(
