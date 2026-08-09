@@ -13,6 +13,7 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
   @override
   void onSignOut() {
     _previous.clear();
+    userId = null;
   }
 
   static PreviousExercises of(BuildContext context) {
