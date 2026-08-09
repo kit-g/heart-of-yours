@@ -9,6 +9,9 @@ class _Dashboard extends StatelessWidget {
     final charts = Charts.watch(context);
     final preferences = Preferences.watch(context);
     final exercises = Exercises.watch(context);
+    // watched, not read: a rung reached or a goal deleted redraws the lines
+    // across every chart it applies to
+    final goals = Goals.watch(context);
     final l = L.of(context);
     final length = charts.length;
     final service = FakeExerciseHistoryService();
@@ -38,6 +41,7 @@ class _Dashboard extends StatelessWidget {
               settings: preferences,
               l: l,
               exercises: exercises,
+              goals: goals,
               onDelete: (chart) => charts.removePreference(chart),
               exerciseHistoryService: service,
               dragWrap: (child) => ReorderableDragStartListener(index: index, child: child),
@@ -71,6 +75,7 @@ class _Dashboard extends StatelessWidget {
                   preference: charts[index],
                   settings: preferences,
                   exercises: exercises,
+                  goals: goals,
                   onDelete: (chart) => charts.removePreference(chart),
                   l: l,
                   exerciseHistoryService: service,
@@ -89,6 +94,11 @@ class _Chart extends StatelessWidget {
   final ChartPreference preference;
   final Preferences settings;
   final Exercises exercises;
+
+  /// Every goal the user has; the ones this chart's metric and exercise match
+  /// are drawn across it.
+  final Iterable<Goal> goals;
+
   final void Function(ChartPreference) onDelete;
   final ExerciseHistoryService exerciseHistoryService;
   final L l;
@@ -104,6 +114,7 @@ class _Chart extends StatelessWidget {
     required this.settings,
     required this.l,
     required this.exercises,
+    required this.goals,
     required this.onDelete,
     required this.exerciseHistoryService,
     this.dragWrap,
@@ -139,6 +150,18 @@ class _Chart extends StatelessWidget {
     final exercise = exercises.lookup(exerciseName) ?? Exercise(name: exerciseName, category: .barbell, target: .other);
 
     return ExerciseChart(
+      // the rung being worked toward, per goal on this exercise and metric.
+      // The axis grows to include it (see HistoryChart), so a target still far
+      // off says so by how much of the plot it leaves below it.
+      thresholds: [
+        for (final goal in goalsOnChart(
+          goals,
+          exerciseName: exerciseName,
+          metric: preference.type,
+          exercises: exercises,
+        ))
+          ...goalThresholds(context, goal, metric: preference.type, settings: settings, nextOnly: true),
+      ],
       emptyState: _EmptyState(
         exercise: exercise,
         exerciseHistoryService: exerciseHistoryService,
