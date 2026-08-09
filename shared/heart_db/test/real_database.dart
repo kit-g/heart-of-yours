@@ -45,6 +45,9 @@ const _schema = [
   dropChartsUniqueIndex,
   dedupeNullDataChartPreferences,
   chartsUniqueIndexNullSafe,
+  // v7
+  goals,
+  goalsIndex,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -54,7 +57,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 6,
+      version: 7,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
