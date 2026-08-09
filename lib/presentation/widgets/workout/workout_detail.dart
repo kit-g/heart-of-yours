@@ -370,6 +370,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       context,
     );
     final L(:add) = L.of(context);
+    // captured before the dialog: the cleanup below outlives this State's context
+    final allExercises = Exercises.of(context);
     return showDialog(
       context: context,
       builder: (context) {
@@ -432,14 +434,12 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       },
     ).then<void>(
       (_) {
+        // let the close animation finish before the list visibly resets
         Future.delayed(
           const Duration(milliseconds: 100),
-          () {
-            // ignore: use_build_context_synchronously
-            Exercises.of(context)
-              ..unselectAll()
-              ..clearFilters();
-          },
+          () => allExercises
+            ..unselectAll()
+            ..clearFilters(),
         );
       },
     );

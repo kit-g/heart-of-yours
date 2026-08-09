@@ -290,7 +290,7 @@ class Api
   }
 
   @override
-  Future<void> deleteUnitPreference(String exerciseId)  {
+  Future<void> deleteUnitPreference(String exerciseId) {
     return delete('${Router.exercisePreferences}/$exerciseId');
   }
 

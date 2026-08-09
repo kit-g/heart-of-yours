@@ -53,8 +53,7 @@ void main() {
             // Verify headers were completely replaced
             expect(api.defaultHeaders, newHeaders);
             expect(api.defaultHeaders?['Authorization'], 'Bearer new-token');
-            expect(api.defaultHeaders?['Content-Type'],
-                null); // Old header should be gone
+            expect(api.defaultHeaders?['Content-Type'], null); // Old header should be gone
           },
         );
 
@@ -108,9 +107,7 @@ void main() {
 
         test('should return false for non-Bearer token', () {
           // Set different authorization type
-          api.defaultHeaders = {
-            'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
-          };
+          api.defaultHeaders = {'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ='};
 
           // Verify isAuthenticated is false
           expect(api.isAuthenticated, false);
@@ -128,8 +125,7 @@ void main() {
           // Test each malformed token
           for (final token in malformedTokens) {
             api.defaultHeaders = {'Authorization': token};
-            expect(api.isAuthenticated, false,
-                reason: 'Failed for token: $token');
+            expect(api.isAuthenticated, false, reason: 'Failed for token: $token');
           }
         });
 

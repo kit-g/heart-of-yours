@@ -121,7 +121,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
       await _service.updateTemplate(template);
 
       try {
-        final save = template.local ? _remoteService.saveTemplate: _remoteService.editTemplate;
+        final save = template.local ? _remoteService.saveTemplate : _remoteService.editTemplate;
 
         final saved = await save(template);
         _templates
