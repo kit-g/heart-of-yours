@@ -44,7 +44,22 @@ $(CODEGEN_TARGETS): codegen-%:
 codegen-app:
 	dart run build_runner build
 
-lint: format-check
+# `flutter analyze` must resolve the gitignored Firebase options; on machines
+# without Firebase credentials (CI), stub them. `flutterfire configure`
+# produces the real ones (see README) — when present, these are no-ops.
+# Note: analysis also needs generated mocks — CI runs `make codegen codegen-app`
+# before lint; dev machines have them after bootstrap or any test run.
+lib/firebase_options.dart lib/firebase_options_prod.dart:
+	printf '%s\n' \
+	  '// Stub written by make so `flutter analyze` resolves this import.' \
+	  '// The real, gitignored file comes from `flutterfire configure` — see README.' \
+	  "import 'package:firebase_core/firebase_core.dart';" \
+	  '' \
+	  'class DefaultFirebaseOptions {' \
+	  '  static FirebaseOptions get currentPlatform => throw UnimplementedError();' \
+	  '}' > $@
+
+lint: format-check lib/firebase_options.dart lib/firebase_options_prod.dart
 	flutter analyze
 
 format-check:
