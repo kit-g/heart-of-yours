@@ -324,7 +324,9 @@ class Api
     final (json, code) = await post(Router.goals, body: goal.toBody());
     return switch ((code, json)) {
       (200 || 201, Map json) => Goal.fromJson(json),
-      _ => throw ArgumentError(json),
+      // the body carries a stable `code`; thrown whole so the caller can tell a
+      // refusal from an outage instead of retrying both forever
+      _ => throw json,
     };
   }
 
@@ -333,7 +335,7 @@ class Api
     final (json, code) = await put(Router.goal(goalId), body: goal.toBody());
     return switch ((code, json)) {
       (200, Map json) => Goal.fromJson(json),
-      _ => throw ArgumentError(json),
+      _ => throw json,
     };
   }
 
@@ -350,7 +352,7 @@ class Api
     );
     return switch ((code, json)) {
       (200, Map json) => Goal.fromJson(json),
-      _ => throw ArgumentError(json),
+      _ => throw json,
     };
   }
 
