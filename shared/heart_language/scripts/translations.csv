@@ -120,6 +120,8 @@ customThemeColorSettingSubtitle,Setting item subtitle,Used to generate a new the
 aboutApp,Setting item title,About app,About app,О приложении
 congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!
 congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!
+goalsAchievedHeading,"Workout complete screen, heading above the goal rungs this session earned","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Цель взята} few{Цели взяты} many{Целей взято} other{Цели взяты}}"
+goalAchievedTarget,"Workout complete screen, one earned rung: the goal's name and the target that was met",{goal} · {target},{goal} · {target},{goal} · {target}
 finishWorkoutTitle,Workout completion confirmation dialog,Finish Workout?,Finish Workout?,Завершить тренировку?
 finishWorkoutWarningTitle,Workout completion confirmation dialog,Complete Your Workout?,Complete Your Workout?,Завершить тренировку?
 finishWorkoutWarningBody,Workout completion confirmation dialog,"Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные."
@@ -168,7 +170,7 @@ goalAchievedOn,When a milestone's target was first met,Achieved {date},Achieved 
 goalNoDeadline,Shown on a milestone the user has not given a date to,No deadline,No deadline,Без срока
 goalSetDeadline,Button that opens the date picker for a milestone,Set a deadline,Set a deadline,Указать срок
 goalClearDeadline,Button that removes a milestone's date,Clear deadline,Clear deadline,Убрать срок
-goalsAtCapacity,Tooltip explaining why the add-goal button is missing,You have as many goals as Heart keeps. Delete one to make room for another.,You have as many goals as Heart keeps. Delete one to make room for another.,Больше целей Heart не хранит. Удалите одну, чтобы добавить новую.
+goalsAtCapacity,Tooltip explaining why the add-goal button is missing,You have as many goals as Heart keeps. Delete one to make room for another.,You have as many goals as Heart keeps. Delete one to make room for another.,Больше целей Heart не хранит. Удалите одну
 category,Label button that allows to choose Exercise category,Category,Category,Категория
 target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель
 removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Удалить фильтр

@@ -728,6 +728,18 @@ abstract class L {
   /// **'Your workout is complete!'**
   String get congratulationsBody;
 
+  /// Workout complete screen, heading above the goal rungs this session earned
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Goal reached} other{Goals reached}}'**
+  String goalsAchievedHeading(int count);
+
+  /// Workout complete screen, one earned rung: the goal's name and the target that was met
+  ///
+  /// In en, this message translates to:
+  /// **'{goal} · {target}'**
+  String goalAchievedTarget(String goal, String target);
+
   /// Workout completion confirmation dialog
   ///
   /// In en, this message translates to:
