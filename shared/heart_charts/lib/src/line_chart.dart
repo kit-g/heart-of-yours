@@ -240,9 +240,9 @@ class _HistoryChartState extends State<HistoryChart> {
                     Widget label => AxisTitles(
                         axisNameWidget: label,
                         axisNameSize: 22,
-                        sideTitles: SideTitles(showTitles: true, reservedSize: 0),
+                        sideTitles: const SideTitles(showTitles: true, reservedSize: 0),
                       ),
-                    null => AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    null => const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   },
                 ),
                 borderData: FlBorderData(show: false),
