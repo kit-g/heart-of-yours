@@ -575,7 +575,9 @@ void main() {
     });
 
     test('does nothing when the caller opts out of filtering', () async {
-      await load([ex('Squat', movement: movement(['squat_bilateral']))]);
+      await load([
+        ex('Squat', movement: movement(['squat_bilateral'])),
+      ]);
       sut.addFilter(const PatternFilter('horizontal_press'));
 
       expect(sut.search('').map((e) => e.name), ['Squat']);

@@ -238,7 +238,8 @@ void main() {
       expect(
         fanned.toSet(),
         implementers,
-        reason: 'clearState must sign out exactly the SignOutStateSentry implementers — '
+        reason:
+            'clearState must sign out exactly the SignOutStateSentry implementers — '
             'an implementer missing here keeps the previous user\'s state after sign-out',
       );
       expect(

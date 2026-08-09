@@ -54,7 +54,10 @@ void main() {
         db: db,
         api: api,
         cdn: cdn,
-        firebaseAuth: MockFirebaseAuth(mockUser: MockUser(uid: 'u1', email: 'u1@test'), signedIn: true),
+        firebaseAuth: MockFirebaseAuth(
+          mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+          signedIn: true,
+        ),
         settle: false,
       );
     }
