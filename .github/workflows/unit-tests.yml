@@ -36,7 +36,8 @@ jobs:
         run: make deps
 
       - name: Analyze
-        run: make lint
+        # codegen first: analysis needs the generated mocks
+        run: make codegen codegen-app lint
 
   test_packages:
     name: "Pkg • ${{ matrix.package }}"
