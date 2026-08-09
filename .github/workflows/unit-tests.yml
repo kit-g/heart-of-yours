@@ -71,7 +71,17 @@ jobs:
         run: make deps
 
       - name: "Run tests"
-        run: make test-${{ matrix.package }}
+        run: make test-${{ matrix.package }} REPORTS_DIR="$GITHUB_WORKSPACE/test-reports"
+
+      # even when tests fail — the summary exists for the runs that went wrong
+      - name: "Upload test report"
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-${{ matrix.package }}
+          path: test-reports/
+          if-no-files-found: ignore
+          retention-days: 7
 
   test_app:
     name: "App • tests"
@@ -96,4 +106,37 @@ jobs:
         run: make deps
 
       - name: Run app tests
-        run: make test-app
+        run: make test-app REPORTS_DIR="$GITHUB_WORKSPACE/test-reports"
+
+      # even when tests fail — the summary exists for the runs that went wrong
+      - name: "Upload test report"
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-app
+          path: test-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test_summary:
+    name: "Test Summary"
+    runs-on: ubuntu-latest
+    needs: [ test_packages, test_app ]
+    # The point of the summary is the runs that went wrong, so it must not be
+    # skipped when a test job fails.
+    if: always()
+    steps:
+      - uses: actions/checkout@v7
+
+      # A cancelled or skipped test job leaves nothing to download; the summary
+      # says so rather than failing and adding a second red X to the run.
+      - name: "Collect reports"
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: test-report-*
+          path: test-reports
+          merge-multiple: true
+
+      - name: "Render summary"
+        run: python3 scripts/test_summary.py test-reports >> "$GITHUB_STEP_SUMMARY"
