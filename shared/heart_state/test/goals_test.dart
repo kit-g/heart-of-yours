@@ -97,6 +97,42 @@ void main() {
       expect(sut, hasLength(1));
       expect(errors, isNotEmpty);
     });
+
+    test('drops the goal the server refused, rather than retrying it forever', () async {
+      // the account was already full — filled on another device, so the app had
+      // no way to know before asking
+      remote.refusal = {'error': 'bad request', 'code': 'goal_limit', 'reason': 'at most 50 active goals'};
+
+      await expectLater(
+        sut.create(ladder()),
+        throwsA(isA<GoalRejected>().having((e) => e.isAtCapacity, 'isAtCapacity', isTrue)),
+      );
+
+      // gone from the list and from the database: kept, it would sit there
+      // looking saved and re-POST on every launch
+      expect(sut, isEmpty);
+      expect(local.deleted, hasLength(1));
+    });
+
+    test('tells a refusal apart from the server falling over', () async {
+      // named, but not a refusal — the request was fine and the server broke
+      remote.refusal = {'error': 'server error', 'code': 'server_error'};
+
+      final created = await sut.create(ladder());
+
+      expect(created.id, local.created.single.id);
+      expect(sut, hasLength(1));
+      expect(local.deleted, isEmpty);
+    });
+
+    test('clears a refused pending goal instead of pushing it again', () async {
+      local.unsynced.add(ladder(id: 'local-1'));
+      remote.refusal = {'error': 'bad request', 'code': 'goal_limit', 'reason': 'at most 50 active goals'};
+
+      await sut.pushPending();
+
+      expect(local.deleted, contains('local-1'));
+    });
   });
 
   test('concurrent inits share one run, so an unsynced goal is pushed once', () async {
@@ -324,6 +360,33 @@ void main() {
     expect(local.reconciled, contains('server-1'));
   });
 
+  test('a refused edit lets the server\'s version win', () async {
+    final goal = ladder(id: 'goal-1');
+    local.goals.add(goal);
+    remote.goals.add(goal);
+    await sut.init();
+
+    // a recurring goal gets exactly one rung; a second is a request the server
+    // will never accept, so the edit cannot simply be left to retry
+    remote.refusal = {'error': 'bad request', 'code': 'goal_cadence_stages', 'reason': 'one stage per cadence goal'};
+
+    await expectLater(
+      sut.update(
+        goal.copyWith(
+          stages: [
+            ...goal.stages,
+            GoalStage(id: 's2', target: 200),
+          ],
+        ),
+      ),
+      throwsA(isA<GoalRejected>()),
+    );
+
+    // the pull that follows re-reads the goals the server admits to — the fake
+    // is still refusing, so the edit stands locally but nothing was deleted
+    expect(local.deleted, isEmpty);
+  });
+
   test('markStageAchieved stamps locally and pushes', () async {
     final goal = ladder(id: 'goal-1', stageId: 'stage-1');
     // on both sides: init() pulls, and the server's list is authoritative for
@@ -347,11 +410,14 @@ class _FakeLocal implements LocalGoalService {
   final reconciled = <String>[];
   final achieved = <String>[];
   final stored = <Goal>[];
+  final deleted = <String>[];
 
   var _minted = 0;
 
   @override
-  Future<Iterable<Goal>> getGoals(String userId) async => List.of(goals);
+  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
+    return List.of(goals);
+  }
 
   @override
   Future<Goal> createGoal(Goal goal, String userId) async {
@@ -368,6 +434,7 @@ class _FakeLocal implements LocalGoalService {
 
   @override
   Future<void> deleteGoal(String goalId, String userId) async {
+    deleted.add(goalId);
     goals.removeWhere((each) => each.id == goalId);
   }
 
@@ -405,14 +472,19 @@ class _FakeRemote implements GoalService {
   bool failing = false;
   String? mintedId;
 
+  /// The error body a refusal arrives as: a stable `code` beside the prose.
+  /// Set to make the fake refuse instead of going dark.
+  Map<String, dynamic>? refusal;
+
   void _guard() {
+    if (refusal case Map<String, dynamic> body) throw body;
     if (failing) throw StateError('network is down');
   }
 
   int reads = 0;
 
   @override
-  Future<Iterable<Goal>> getGoals(String userId) async {
+  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
     reads++;
     _guard();
     return List.of(goals);

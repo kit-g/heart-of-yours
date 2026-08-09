@@ -74,7 +74,7 @@ class _RemoteConfig extends RemoteConfig {
 class _Stats extends Stats {
   int calls = 0;
 
-  _Stats() : super(onError: null, service: MockStatsService());
+  _Stats() : super(onError: null, service: MockLocalStatsService());
 
   @override
   void onSignOut() => calls++;
@@ -98,6 +98,15 @@ class _Timers extends Timers {
   int calls = 0;
 
   _Timers() : super(service: MockTimersService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
+class _Goals extends Goals {
+  int calls = 0;
+
+  _Goals() : super(service: MockLocalGoalService(), remoteService: MockGoalService());
 
   @override
   void onSignOut() => calls++;
@@ -135,6 +144,7 @@ void main() {
     late _Auth auth;
     late _Charts charts;
     late _Exercises exercises;
+    late _Goals goals;
     late _Previous previous;
     late _RemoteConfig config;
     late _Stats stats;
@@ -148,6 +158,7 @@ void main() {
       auth = _Auth();
       charts = _Charts();
       exercises = _Exercises();
+      goals = _Goals();
       previous = _Previous();
       config = _RemoteConfig();
       stats = _Stats();
@@ -162,6 +173,7 @@ void main() {
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
+            ChangeNotifierProvider<Goals>.value(value: goals),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             Provider<RemoteConfig>.value(value: config),
             ChangeNotifierProvider<Stats>.value(value: stats),
@@ -185,6 +197,7 @@ void main() {
         auth.calls,
         charts.calls,
         exercises.calls,
+        goals.calls,
         previous.calls,
         config.calls,
         stats.calls,
@@ -249,7 +262,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the ten known notifiers', () {
+    test('the fan-out list is the eleven known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -259,6 +272,7 @@ void main() {
         'Auth',
         'Charts',
         'Exercises',
+        'Goals',
         'PreviousExercises',
         'RemoteConfig',
         'Stats',
