@@ -9,6 +9,6 @@ ALTER TABLE exercise_details ADD COLUMN unit_system TEXT
     CHECK (unit_system IS NULL OR unit_system IN ('imperial', 'metric'));
 """;
 
-const addExerciseId = """
+const addExerciseId = '''
 ALTER TABLE exercises ADD COLUMN id TEXT;
-""";
+''';

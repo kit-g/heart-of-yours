@@ -59,9 +59,10 @@ jobs:
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options_prod.dart lib/firebase_options_prod.dart
 
       - name: "Set up Flutter"
-        uses: flutter-actions/setup-flutter@v4
+        uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
+          version: '3.44.8' # keep in sync with the other workflows and the README
           cache: true
 
       # sqlite3 3.x bundles its native lib via Dart build hooks;
@@ -73,7 +74,7 @@ jobs:
         run: flutter build appbundle --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }} --dart-define-from-file=appconfig.json
 
       - name: "Upload to Play Store"
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
           serviceAccountJson: "playstore-sa-key.json"
           packageName: ${{ inputs.app_id }}
