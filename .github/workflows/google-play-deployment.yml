@@ -58,11 +58,15 @@ jobs:
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options_prod.dart lib/firebase_options_prod.dart
 
+      - name: "Read pinned Flutter version"
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: "Set up Flutter"
         uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
-          version: '3.44.8' # keep in sync with the other workflows and the README
+          version: ${{ steps.flutter.outputs.version }}
           cache: true
 
       # sqlite3 3.x bundles its native lib via Dart build hooks;

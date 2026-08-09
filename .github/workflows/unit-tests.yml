@@ -20,11 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Read pinned Flutter version
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Flutter
         uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
-          version: '3.44.8' # keep in sync with the other workflows and the README
+          version: ${{ steps.flutter.outputs.version }}
           cache: true
           cache-sdk: true
 
@@ -50,11 +54,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Read pinned Flutter version
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Flutter
         uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
-          version: '3.44.8' # keep in sync with the other workflows and the README
+          version: ${{ steps.flutter.outputs.version }}
           cache: true
           cache-sdk: true
 
@@ -71,11 +79,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Read pinned Flutter version
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Flutter
         uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
-          version: '3.44.8' # keep in sync with the other workflows and the README
+          version: ${{ steps.flutter.outputs.version }}
           cache: true
           cache-sdk: true
 

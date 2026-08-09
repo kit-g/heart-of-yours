@@ -55,10 +55,15 @@ jobs:
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options_prod.dart lib/firebase_options_prod.dart
 
+      - name: "Read pinned Flutter version"
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: "Set up Flutter"
-        uses: flutter-actions/setup-flutter@v4
+        uses: flutter-actions/setup-flutter@921d50dce8cdd6aaf578d12f91c013095de220e5 # v4.3
         with:
           channel: 'stable'
+          version: ${{ steps.flutter.outputs.version }}
           cache: true
 
       # sqlite3 3.x bundles its native lib via Dart build hooks
@@ -76,7 +81,9 @@ jobs:
         working-directory: ios
         # Read the passphrase downloaded from S3 and pass it to Fastlane via MATCH_PASSWORD
         run: |
-          export MATCH_PASSWORD=$(cat fastlane/passphrase.txt)
+          MATCH_PASSWORD=$(cat fastlane/passphrase.txt)
+          echo "::add-mask::$MATCH_PASSWORD"
+          export MATCH_PASSWORD
           export MATCH_S3_BUCKET=${{ inputs.secrets_bucket }}
           export APPSTORE_USERNAME=$(jq -r '.username' fastlane/appstore_key.json)
           bundle exec fastlane beta env:${{ inputs.environment }}
