@@ -73,11 +73,18 @@ format:
 
 test: $(TEST_TARGETS) test-app
 
+# With REPORTS_DIR set (CI), each suite also writes a dart-test JSON report
+# there for the Test Summary job to aggregate; locally nothing changes.
+# $(call suite_test,<path or empty for the app>,<report name>)
+define suite_test
+$(if $(REPORTS_DIR),mkdir -p "$(REPORTS_DIR)" && )flutter test $(1) $(if $(REPORTS_DIR),--file-reporter="json:$(REPORTS_DIR)/$(2).json")
+endef
+
 test-heart_language:
-	flutter test shared/heart_language
+	$(call suite_test,shared/heart_language,heart_language)
 
 $(filter-out test-heart_language,$(TEST_TARGETS)): test-%: codegen-%
-	flutter test shared/$*
+	$(call suite_test,shared/$*,$*)
 
 test-app: codegen-app
-	flutter test
+	$(call suite_test,,app)
