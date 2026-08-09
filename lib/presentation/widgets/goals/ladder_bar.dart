@@ -78,14 +78,16 @@ class _LadderPainter extends CustomPainter {
 
     double x(double value) => (value / span).clamp(0.0, 1.0) * size.width;
 
-    if (current case final double value) {
-      // Progress is only filled where "more" means "closer". For pace — the one
-      // metric where progress goes down — a bar filling rightwards would read
-      // exactly backwards, so that case gets a position marker and no fill.
-      switch (lowerIsBetter) {
-        case false:
+    // Progress is only filled where "more" means "closer". For pace — the one
+    // metric where progress goes down — a bar filling rightwards would read
+    // exactly backwards, so that case gets a position marker and no fill.
+    switch (lowerIsBetter) {
+      case false:
+        if (_reached case final double value) {
           canvas.drawLine(Offset(0, y), Offset(x(value), y), line..color = fill);
-        case true:
+        }
+      case true:
+        if (current case final double value) {
           canvas.drawLine(
             Offset(x(value), 0),
             Offset(x(value), size.height),
@@ -93,7 +95,7 @@ class _LadderPainter extends CustomPainter {
               ..color = fill
               ..strokeWidth = 2,
           );
-      }
+        }
     }
 
     for (final (index, target) in targets.indexed) {
@@ -109,8 +111,35 @@ class _LadderPainter extends CustomPainter {
     }
   }
 
+  /// How far along the bar is filled.
+  ///
+  /// Whichever is further: where the user is now, or the furthest rung already
+  /// cleared. Clearing a rung is a ratchet — `achievedAt` records when it was
+  /// *first* met — while [current] is only the latest reading, so a shorter ride
+  /// than last week's drags it back below rungs that are still met. Filling to
+  /// [current] alone left a finished ladder drawn as a part-filled bar with its
+  /// own achieved ticks stranded past the end of the fill.
+  double? get _reached {
+    double? cleared;
+    for (final (index, target) in targets.indexed) {
+      if (index >= achieved.length || !achieved[index]) continue;
+      if (cleared == null || target > cleared) cleared = target;
+    }
+
+    return switch ((current, cleared)) {
+      (final double now, final double met) => now > met ? now : met,
+      (final double now, null) => now,
+      (null, final double met) => met,
+      _ => null,
+    };
+  }
+
   @override
   bool shouldRepaint(_LadderPainter old) {
-    return old.current != current || old.targets != targets || old.fill != fill || old.track != track;
+    return old.current != current ||
+        old.targets != targets ||
+        old.achieved != achieved ||
+        old.fill != fill ||
+        old.track != track;
   }
 }
