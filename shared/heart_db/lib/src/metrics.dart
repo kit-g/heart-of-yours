@@ -1,4 +1,4 @@
-const getCardioDurationHistory = """
+const getCardioDurationHistory = '''
 SELECT
     sum(coalesce(sets.duration, 0)) AS "value",
     workouts.start AS "when"
@@ -12,9 +12,9 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
-const getCardioDistanceHistory = """
+const getCardioDistanceHistory = '''
 SELECT
     sum(coalesce(sets.distance, 0)) AS "value",
     workouts.start AS "when"
@@ -28,9 +28,9 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
-const getAveragePaceHistory = """
+const getAveragePaceHistory = '''
 SELECT
     sum(coalesce(sets.duration, 0)) / sum(coalesce(sets.distance, 0)) AS "value",
     workouts.start AS "when"
@@ -45,10 +45,10 @@ HAVING sum(sets.distance) > 0
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // Volume-weighted average: Total Volume / Total Reps
-const getAverageWorkingWeightHistory = """ 
+const getAverageWorkingWeightHistory = ''' 
 SELECT
     sum(sets.weight * sets.reps) / sum(sets.reps) AS "value",
     workouts.start AS "when"
@@ -63,10 +63,10 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // Specifically for weighted bodyweight exercises
-const getTopSetWeightHistory = """
+const getTopSetWeightHistory = '''
 SELECT
     max(coalesce(sets.weight, 0)) AS "value",
     workouts.start AS "when"
@@ -80,10 +80,10 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // for reps-only exercises, we take the best single set
-const getMaxConsecutiveRepsHistory = """ 
+const getMaxConsecutiveRepsHistory = ''' 
 SELECT
     max(sets.reps) AS "value",
     workouts.start AS "when"
@@ -97,10 +97,10 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // sum of all reps across all sets performed in a workout
-const getTotalRepsHistory = """
+const getTotalRepsHistory = '''
 SELECT
     sum(coalesce(sets.reps, 0)) AS "value",
     workouts.start AS "when"
@@ -114,10 +114,10 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // specifically for assisted exercises (pull-ups, etc.)
-const getAssistanceWeightHistory = """
+const getAssistanceWeightHistory = '''
 SELECT
     min(coalesce(sets.weight, 0)) AS "value",
     workouts.start AS "when"
@@ -131,10 +131,10 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // sum of all duration fields for the exercise in a workout
-const getTotalTimeUnderTensionHistory = """
+const getTotalTimeUnderTensionHistory = '''
 SELECT
     sum(coalesce(sets.duration, 0)) AS "value",
     workouts.start AS "when"
@@ -148,11 +148,11 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // Brzycki Formula: Weight / (1.0278 - (0.0278 * Reps))
 // We take the best E1RM achieved in any single set during the session
-const getEstimatedOneRepMaxHistory = """
+const getEstimatedOneRepMaxHistory = '''
 SELECT
     MAX(sets.weight / (1.0278 - (0.0278 * sets.reps))) AS "value",
     workouts.start AS "when"
@@ -168,11 +168,11 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 // total tonnage lifted:
 // sum of (weight * reps) for the entire workout
-const getTotalVolumeHistory = """
+const getTotalVolumeHistory = '''
 SELECT
     sum(coalesce(sets.weight, 0) * coalesce(sets.reps, 0)) AS "value",
     workouts.start AS "when"
@@ -186,4 +186,4 @@ GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';

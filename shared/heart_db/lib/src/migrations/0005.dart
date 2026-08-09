@@ -7,6 +7,6 @@ part of '../../heart_db.dart';
 /// Not merely additive: `storeExercises` builds its insert generically from
 /// `Exercise.toMap()`, which emits `movement` for every annotated exercise, so
 /// without this column the catalog write fails outright.
-const addExerciseMovement = """
+const addExerciseMovement = '''
 ALTER TABLE exercises ADD COLUMN movement TEXT;
-""";
+''';
