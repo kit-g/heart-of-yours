@@ -17,7 +17,9 @@ class LocalGoals implements LocalGoalService {
   const LocalGoals(this._db);
 
   @override
-  Future<Iterable<Goal>> getGoals(String userId) => _db.getGoals(userId);
+  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) {
+    return _db.getTargetUserGoals(requesterId: requesterId, targetUserId: targetUserId);
+  }
 
   @override
   Future<Goal> createGoal(Goal goal, String userId) => _db.createGoal(goal, userId);
@@ -53,8 +55,10 @@ class LocalGoals implements LocalGoalService {
 ///
 /// Null where it cannot be answered *correctly* rather than approximately:
 ///
-/// - a whole-workout goal is answered only for a weekly cadence, from the
-///   aggregation the profile already holds;
+/// - a whole-workout goal is answered from the aggregation the profile already
+///   holds for a weekly cadence, and from [workoutsThisMonth] for a monthly one
+///   — those buckets are weeks, and a week straddling the first of the month
+///   belongs cleanly to neither;
 /// - a per-exercise milestone is its latest observed value;
 /// - a per-exercise goal with a cadence would need a period-bounded aggregate
 ///   that `heart_db/metrics.dart` does not provide, so it has no answer yet.
@@ -62,10 +66,14 @@ Future<num?> currentGoalValue(
   Goal goal, {
   required Exercises exercises,
   required WorkoutAggregation workouts,
+  Future<int> Function()? workoutsThisMonth,
 }) async {
   if (goal.metric.isWholeWorkout) {
     return switch (goal.cadence) {
       .week => workouts.isEmpty ? null : workouts.last.length,
+      // costs a query, so it is asked for only when a goal is actually counting
+      // months — and left unanswered rather than guessed if nobody supplied one
+      .month => await workoutsThisMonth?.call(),
       _ => null,
     };
   }
