@@ -1,5 +1,6 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:mockito/annotations.dart';
 
 @GenerateNiceMocks(
@@ -7,7 +8,9 @@ import 'package:mockito/annotations.dart';
     MockSpec<Exercise>(),
     MockSpec<TimersService>(),
     MockSpec<AccountService>(),
-    MockSpec<StatsService>(),
+    MockSpec<LocalStatsService>(),
+    MockSpec<LocalGoalService>(),
+    MockSpec<GoalService>(),
     MockSpec<TemplateService>(),
     MockSpec<Template>(),
     MockSpec<Workout>(),

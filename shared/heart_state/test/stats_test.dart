@@ -4,10 +4,13 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/stats.dart';
 import 'package:provider/provider.dart';
 
-class RecordingStatsService implements StatsService {
+class RecordingStatsService implements LocalStatsService {
   WorkoutAggregation workoutSummary = WorkoutAggregation.empty();
   final List<DateTime> weeklyCountCalls = [];
+  final List<String?> weeklyCountUsers = [];
   int weeklyCountToReturn = 0;
+  final List<(DateTime, String?)> monthlyCountCalls = [];
+  int monthlyCountToReturn = 0;
 
   @override
   Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack, String? userId}) async {
@@ -15,9 +18,16 @@ class RecordingStatsService implements StatsService {
   }
 
   @override
-  Future<int> getWeeklyWorkoutCount(DateTime d) async {
+  Future<int> getWeeklyWorkoutCount(DateTime d, {String? userId}) async {
     weeklyCountCalls.add(d);
+    weeklyCountUsers.add(userId);
     return weeklyCountToReturn;
+  }
+
+  @override
+  Future<int> getMonthlyWorkoutCount(DateTime d, {String? userId}) async {
+    monthlyCountCalls.add((d, userId));
+    return monthlyCountToReturn;
   }
 }
 

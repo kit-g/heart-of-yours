@@ -28,6 +28,57 @@ abstract interface class LocalGoalService implements GoalService {
 /// measured against stats the app already computes in SQLite, so a goal reads
 /// correctly offline. The server's one job beyond storage is remembering that a
 /// stage was achieved, which is why [markStageAchieved] pushes.
+/// A write the server considered and refused.
+///
+/// The distinction a local-first list needs is not *which* failure happened but
+/// whether repeating it could ever work. An outage, a dropped connection or a
+/// 500 are worth retrying forever; a refusal is not — retrying one spends a
+/// request on every launch and leaves a goal that looks saved and never will be.
+///
+/// The server names every failure with a stable [code] for exactly this, so the
+/// client branches on identity rather than on prose that may be reworded.
+/// `server_error` is the one named failure that is still transient; an unnamed
+/// one — no body, a timeout, a proxy's HTML — never reached the handler at all.
+class GoalRejected implements Exception {
+  /// The server's stable identifier: `goal_limit`, `goal_scope`,
+  /// `goal_cadence_stages`, `goal_not_found`, `goal_stage_not_found`, or the
+  /// category default a route has not specialised yet.
+  final String code;
+
+  /// The server's human sentence, when it sent one.
+  final String? reason;
+
+  const GoalRejected(this.code, {this.reason});
+
+  /// The account is already at its cap. The only refusal a *valid* create can
+  /// hit on state the app cannot see — a goal made on another device and not
+  /// yet pulled — so it is worth saying out loud rather than only reporting.
+  bool get isAtCapacity => code == 'goal_limit';
+
+  /// Named, but still transient: the request was fine and the server broke.
+  static const _serverError = 'server_error';
+
+  /// Reads a refusal out of whatever the service threw, or null when the
+  /// failure could just as well be an outage.
+  static GoalRejected? from(Object? error) {
+    return switch (error) {
+      {'code': _serverError} => null,
+      {'code': String code} => GoalRejected(
+        code,
+        reason: switch (error) {
+          {'reason': String reason} => reason,
+          {'message': String message} => message,
+          _ => null,
+        },
+      ),
+      _ => null,
+    };
+  }
+
+  @override
+  String toString() => reason ?? 'Goal rejected: $code';
+}
+
 class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   final LocalGoalService _service;
   final GoalService _remoteService;
@@ -147,7 +198,11 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     _goals.add(local);
     notifyListeners();
 
-    return _push(local, () => _remoteService.createGoal(local, id));
+    // A refused create has nothing on the server to reconcile against, so the
+    // local row goes with it — left behind it would retry on every launch and
+    // sit in the list looking saved. Rethrown because a create is something the
+    // user just asked for and is still watching.
+    return _push(local, () => _remoteService.createGoal(local, id), onRejected: _discard);
   }
 
   Future<Goal> update(Goal goal) async {
@@ -157,7 +212,9 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     _swap(goalId, local);
     notifyListeners();
 
-    return _push(local, () => _remoteService.updateGoal(goalId, local, id));
+    // The server still holds the goal, so it holds the truth: let its version
+    // win rather than keeping an edit it has refused.
+    return _push(local, () => _remoteService.updateGoal(goalId, local, id), onRejected: _revert);
   }
 
   Future<void> remove(Goal goal) async {
@@ -182,7 +239,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     _swap(goalId, local);
     notifyListeners();
 
-    return _push(local, () => _remoteService.markStageAchieved(goalId, stageId, id, achievedAt));
+    return _push(local, () => _remoteService.markStageAchieved(goalId, stageId, id, achievedAt), onRejected: _revert);
   }
 
   /// Records every rung whose target the user has now met.
@@ -217,7 +274,14 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
         if (stage.isAchieved || stage.id == null) continue;
         if (!_meets(stage, value, goal.metric.lowerIsBetter)) continue;
 
-        await markStageAchieved(goal.id!, stage.id!, DateTime.timestamp());
+        try {
+          await markStageAchieved(goal.id!, stage.id!, DateTime.timestamp());
+        } on GoalRejected catch (rejection, stacktrace) {
+          // Nobody asked for this one — it is the app noticing on the user's
+          // behalf — so a refusal is reported, not raised, and the remaining
+          // rungs still get their look.
+          onError?.call(rejection, stacktrace: stacktrace);
+        }
       }
     }
   }
@@ -253,7 +317,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     if (userId case String id) {
       try {
         for (final goal in await _service.unsyncedGoals(id)) {
-          await _push(goal, () => _remoteService.createGoal(goal, id));
+          await _push(goal, () => _remoteService.createGoal(goal, id), onRejected: _discard);
         }
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
@@ -262,8 +326,16 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   }
 
   /// Sends [send] to the server and adopts whatever comes back — the server
-  /// mints the authoritative id. On failure [local] stands and stays unsynced.
-  Future<Goal> _push(Goal local, Future<Goal> Function() send) async {
+  /// mints the authoritative id.
+  ///
+  /// A failure the server never saw leaves [local] standing and unsynced, to be
+  /// retried; one it saw and refused is handed to [onRejected] to undo, because
+  /// retrying it forever would only keep failing.
+  Future<Goal> _push(
+    Goal local,
+    Future<Goal> Function() send, {
+    required Future<void> Function(Goal local) onRejected,
+  }) async {
     final id = userId!;
     try {
       final saved = await send();
@@ -272,10 +344,26 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
       notifyListeners();
       return saved;
     } catch (error, stacktrace) {
+      if (GoalRejected.from(error) case GoalRejected rejection) {
+        await onRejected(local);
+        throw rejection;
+      }
       onError?.call(error, stacktrace: stacktrace);
       return local;
     }
   }
+
+  /// Undoes a refused create: the goal exists nowhere else.
+  Future<void> _discard(Goal local) async {
+    _goals.removeWhere((each) => each.id == local.id);
+    notifyListeners();
+    if (userId case String id) {
+      await _service.deleteGoal(local.id!, id);
+    }
+  }
+
+  /// Undoes a refused edit by re-reading the goals the server will admit to.
+  Future<void> _revert(Goal local) => pull();
 
   void _replace(Iterable<Goal> goals) {
     _goals
