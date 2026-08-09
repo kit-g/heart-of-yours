@@ -7,6 +7,7 @@ import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 /// A lightweight, reusable harness to keep widget tests DRY.
 ///
@@ -35,6 +36,16 @@ class TestAppHarness {
     int pumps = 8,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
+
+    // AppInfo.init runs during app startup; without this the platform channel
+    // is missing under `flutter test` and every pump logs a stack trace
+    PackageInfo.setMockInitialValues(
+      appName: 'heart',
+      packageName: 'me.heart.test',
+      version: '0.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
 
     await tester.pumpWidget(
       HeartApp(
@@ -78,6 +89,16 @@ extension ExtWidgetTester on WidgetTester {
   Future<void> tapByKey(Key key, [Duration duration = const Duration(milliseconds: 100)]) async {
     await tap(find.byKey(key));
     await pump(duration);
+  }
+
+  /// Bounded alternative to pumpAndSettle for screens with never-ending
+  /// animations (the dashboard): advances a fixed number of frames so pending
+  /// futures and route transitions complete without waiting to settle.
+  /// (Named to avoid WidgetTester's own pumpFrames.)
+  Future<void> pumpTimes([int times = 8, Duration step = const Duration(milliseconds: 100)]) async {
+    for (var i = 0; i < times; i++) {
+      await pump(step);
+    }
   }
 
   Future<void> enterTextAndWait(Finder finder, String text) async {

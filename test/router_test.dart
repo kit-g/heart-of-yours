@@ -77,6 +77,8 @@ void main() {
       final user = MockUser(uid: 'u1', email: 'u1@test');
       final firebase = MockFirebaseAuth(mockUser: user, signedIn: true);
 
+      // the dashboard animates indefinitely, so pump a fixed number of frames
+      // rather than settling
       await harness.pumpHeartApp(
         tester,
         db: db,
@@ -84,10 +86,11 @@ void main() {
         cdn: cdn,
         firebaseAuth: firebase,
         hasLocalNotifications: false,
+        settle: false,
       );
 
       expect(find.byType(ProfilePage), findsOneWidget);
-    }, skip: true);
+    });
 
     testWidgets('deep link: goToExercise navigates to WorkoutPage', (tester) async {
       final user = MockUser(uid: 'u1', email: 'u1@test');
@@ -102,6 +105,7 @@ void main() {
         firebaseAuth: firebase,
         router: router,
         hasLocalNotifications: false,
+        settle: false,
       );
 
       // Ensure we're not already on the workout page (initial is Profile)
@@ -109,10 +113,10 @@ void main() {
 
       // Trigger the router helper
       router.goToExercise('bench-press');
-      await pumpAndSettleSafe(tester);
+      await tester.pumpTimes();
 
       expect(find.byType(WorkoutPage), findsOneWidget);
-    }, skip: true);
+    });
 
     testWidgets('router.refresh reacts to Auth user change: LoginPage -> ProfilePage', (tester) async {
       final firebase = MockFirebaseAuth(signedIn: false);
@@ -126,16 +130,17 @@ void main() {
         firebaseAuth: firebase,
         router: router,
         hasLocalNotifications: false,
+        settle: false,
       );
 
       expect(find.byType(LoginPage), findsOneWidget);
 
       // Sign in; Auth listens to userChanges and HeartApp wires onUserChange -> router.refresh()
       await firebase.signInWithEmailAndPassword(email: 'a@b.c', password: 'x');
-      await pumpAndSettleSafe(tester);
+      await tester.pumpTimes();
 
       expect(find.byType(ProfilePage), findsOneWidget);
-    }, skip: true);
+    });
 
     testWidgets('bottom navigation: tapping items by AppKeys switches stacks', (tester) async {
       final user = MockUser(uid: 'u1', email: 'u1@test');
@@ -148,6 +153,7 @@ void main() {
         cdn: cdn,
         firebaseAuth: firebase,
         hasLocalNotifications: false,
+        settle: false,
       );
 
       // Initially on Profile
@@ -168,6 +174,6 @@ void main() {
       // Back to Profile
       await tester.tapByKey(AppKeys.profileStack);
       expect(find.byType(ProfilePage), findsOneWidget);
-    }, skip: true);
+    });
   });
 }
