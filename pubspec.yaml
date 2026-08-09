@@ -16,7 +16,7 @@ workspace:
   - "shared/heart_state"
 
 dependencies:
-  app_settings: ^7.0.0
+  app_settings: ^8.0.3
   cached_network_image: ^3.4.1
   feedback: ^3.1.0
   firebase_analytics: 12.4.3
