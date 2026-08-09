@@ -146,6 +146,7 @@ class HeartApp extends StatelessWidget {
               theme: theme,
               config: appConfig,
               router: router,
+              hasLocalNotifications: hasLocalNotifications ?? true,
             );
           },
         );
@@ -158,11 +159,13 @@ class _App extends StatefulWidget {
   final AppTheme theme;
   final AppConfig config;
   final HeartRouter router;
+  final bool hasLocalNotifications;
 
   const _App({
     required this.theme,
     required this.config,
     required this.router,
+    required this.hasLocalNotifications,
   });
 
   @override
@@ -209,7 +212,10 @@ class _AppState extends State<_App> {
       routerConfig: widget.router.config,
       // Wraps every route below Localizations so it can read L/AppConfig and
       // reach a ScaffoldMessenger for the notifications-off reminder.
-      builder: (context, child) => _WorkoutTimeoutScheduler(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => _WorkoutTimeoutScheduler(
+        enabled: widget.hasLocalNotifications,
+        child: child ?? const SizedBox.shrink(),
+      ),
       // until data is localized
       supportedLocales: [const Locale('en')],
       // supportedLocales: L.supportedLocales,
@@ -251,7 +257,11 @@ class _AppState extends State<_App> {
 class _WorkoutTimeoutScheduler extends StatefulWidget {
   final Widget child;
 
-  const _WorkoutTimeoutScheduler({required this.child});
+  /// Mirrors HeartApp.hasLocalNotifications: when false, the notifications
+  /// plugin is never initialized, so no call here may reach it.
+  final bool enabled;
+
+  const _WorkoutTimeoutScheduler({required this.child, required this.enabled});
 
   @override
   State<_WorkoutTimeoutScheduler> createState() => _WorkoutTimeoutSchedulerState();
@@ -281,6 +291,7 @@ class _WorkoutTimeoutSchedulerState extends State<_WorkoutTimeoutScheduler> {
   }
 
   void _onWorkoutsChanged() {
+    if (!widget.enabled) return;
     final workouts = _workouts;
     if (workouts == null) return;
 
@@ -298,7 +309,7 @@ class _WorkoutTimeoutSchedulerState extends State<_WorkoutTimeoutScheduler> {
   }
 
   void _scheduleTimeout() {
-    if (!mounted) return;
+    if (!widget.enabled || !mounted) return;
     final L(:workoutTimeoutTitle, :workoutTimeoutBody) = L.of(context);
     scheduleWorkoutTimeoutNotification(
       DateTime.now().add(AppConfig.of(context).workoutTimeout),
