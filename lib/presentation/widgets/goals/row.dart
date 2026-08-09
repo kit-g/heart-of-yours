@@ -42,7 +42,7 @@ class _GoalRowState extends State<GoalRow> {
     final exercise = goalExercise(widget.goal, exercises);
 
     // re-read only when the thing being measured changes, not on every notify
-    final key = (goal.id, exercise?.name, goal.cadence, widget.workouts.length);
+    final key = (goal.id, exercise?.name, goal.cadence, widget.workouts.workoutCount);
     if (key != _key) {
       _key = key;
       _reading = _read(exercises);
