@@ -220,7 +220,7 @@ SELECT
 FROM _workouts;
 """;
 
-const removeUnfinished = """
+const removeUnfinished = '''
 DELETE
 FROM sets
 WHERE completed = 0
@@ -229,7 +229,7 @@ WHERE completed = 0
           FROM workout_exercises
           WHERE workout_id = ?
       );
-""";
+''';
 
 const getTemplates = """
 WITH
@@ -329,7 +329,7 @@ FROM _templates
 ;
 """;
 
-const getExerciseHistory = """
+const getExerciseHistory = '''
 SELECT
    we.id AS exercise_id,
    workouts.id AS workout_id,
@@ -347,9 +347,9 @@ WHERE we.exercise_id = ?
   AND workouts.user_id = ?
   AND sets.completed
 ;
-""";
+''';
 
-const weightRecord = """
+const weightRecord = '''
 SELECT
     max(reps) AS reps,
     max(weight) AS weight
@@ -359,9 +359,9 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed;
-""";
+''';
 
-const distanceRecord = """
+const distanceRecord = '''
 SELECT
     max(duration) AS duration,
     max(distance) AS distance
@@ -371,9 +371,9 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed;
-""";
+''';
 
-const durationRecord = """
+const durationRecord = '''
 SELECT
     max(duration) AS duration
 FROM sets
@@ -382,9 +382,9 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed;
-""";
+''';
 
-const repsRecord = """
+const repsRecord = '''
 SELECT
     max(reps) AS reps
 FROM sets
@@ -393,9 +393,9 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed;
-""";
+''';
 
-const getWeightHistory = """
+const getWeightHistory = '''
 SELECT
     MAX(sets.weight) AS "value",
     workouts.start AS "when"  
@@ -409,9 +409,9 @@ GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
-const getRepsHistory = """
+const getRepsHistory = '''
 SELECT
     MAX(sets.reps) AS "value",
     workouts.start AS "when"  
@@ -425,9 +425,9 @@ GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
-const getDurationHistory = """
+const getDurationHistory = '''
 SELECT
     MAX(sets.duration) AS "value",
     workouts.start AS "when"  
@@ -441,9 +441,9 @@ GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
-const getDistanceHistory = """
+const getDistanceHistory = '''
 SELECT
     MAX(sets.distance) AS "value",
     workouts.start AS "when"  
@@ -457,7 +457,7 @@ GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
 ;
-""";
+''';
 
 const getPreviousExercises = """
 WITH _recent AS (

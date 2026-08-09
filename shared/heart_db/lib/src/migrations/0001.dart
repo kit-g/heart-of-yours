@@ -1,6 +1,6 @@
 part of '../../heart_db.dart';
 
-const workouts = """
+const workouts = '''
 CREATE TABLE IF NOT EXISTS workouts
 (
     id      TEXT NOT NULL PRIMARY KEY,
@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS workouts
     name    TEXT,
     images  TEXT
 );
-""";
+''';
 
-const exercises = """
+const exercises = '''
 CREATE TABLE IF NOT EXISTS exercises
 (
     name             TEXT NOT NULL PRIMARY KEY,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS exercises
     CHECK (thumbnail_width IS NULL OR thumbnail_width > 0),
     CHECK (thumbnail_height IS NULL OR thumbnail_height > 0)
 );
-""";
+''';
 
 const syncs = """
 CREATE TABLE IF NOT EXISTS syncs
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS syncs
 );
 """;
 
-const workoutExercises = """
+const workoutExercises = '''
 CREATE TABLE IF NOT EXISTS workout_exercises
 (
     workout_id     TEXT NOT NULL REFERENCES workouts (id) ON DELETE CASCADE,
@@ -56,17 +56,17 @@ CREATE TABLE IF NOT EXISTS workout_exercises
     id             TEXT NOT NULL PRIMARY KEY,
     exercise_order INT
 );
-""";
+''';
 
-const workoutExerciseIndex1 = """
+const workoutExerciseIndex1 = '''
 CREATE INDEX IF NOT EXISTS exercise_idx ON workout_exercises (exercise_id);
-""";
+''';
 
-const workoutExerciseIndex2 = """
+const workoutExerciseIndex2 = '''
 CREATE INDEX IF NOT EXISTS workout_idx ON workout_exercises (workout_id);
-""";
+''';
 
-const sets = """
+const sets = '''
 CREATE TABLE IF NOT EXISTS sets
 (
     exercise_id TEXT    NOT NULL REFERENCES workout_exercises (id) ON DELETE CASCADE,
@@ -81,11 +81,11 @@ CREATE TABLE IF NOT EXISTS sets
     CHECK (duration >= 0),
     CHECK (distance >= 0)
 );
-""";
+''';
 
-const setsIndex = """
+const setsIndex = '''
 CREATE INDEX IF NOT EXISTS exercise_idx ON sets (exercise_id);
-""";
+''';
 
 const templates = """
 CREATE TABLE IF NOT EXISTS templates
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS templates
 );
 """;
 
-const templatesExercises = """
+const templatesExercises = '''
 CREATE TABLE IF NOT EXISTS template_exercises
 (
     id          TEXT    NOT NULL PRIMARY KEY,
@@ -106,17 +106,17 @@ CREATE TABLE IF NOT EXISTS template_exercises
     exercise_id TEXT    NOT NULL REFERENCES exercises ON DELETE CASCADE,
     description TEXT
 );
-""";
+''';
 
-const templatesExercisesIndex1 = """
+const templatesExercisesIndex1 = '''
 CREATE INDEX IF NOT EXISTS exercise_idx ON template_exercises (exercise_id);
-""";
+''';
 
-const templatesExercisesIndex2 = """
+const templatesExercisesIndex2 = '''
 CREATE INDEX IF NOT EXISTS template_idx ON template_exercises (template_id);
-""";
+''';
 
-const charts = """
+const charts = '''
 CREATE TABLE IF NOT EXISTS charts
 (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,13 +124,13 @@ CREATE TABLE IF NOT EXISTS charts
     type    TEXT NOT NULL,
     data    TEXT 
 );
-""";
+''';
 
-const chartsIndex1 = """
+const chartsIndex1 = '''
 CREATE INDEX IF NOT EXISTS user_idx ON charts (user_id);
-""";
+''';
 
-const exerciseDetails = """
+const exerciseDetails = '''
 CREATE TABLE IF NOT EXISTS exercise_details
 (
     exercise_name TEXT NOT NULL REFERENCES exercises ON DELETE CASCADE,
@@ -138,8 +138,8 @@ CREATE TABLE IF NOT EXISTS exercise_details
     rest_timer    INTEGER,
     PRIMARY KEY (exercise_name, user_id)
 );
-""";
+''';
 
-const detailsIndex = """
+const detailsIndex = '''
 CREATE INDEX IF NOT EXISTS exercise_name_idx ON exercise_details (exercise_name);
-""";
+''';
