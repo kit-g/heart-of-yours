@@ -50,7 +50,12 @@ class _GoalDetailState extends State<GoalDetail> {
     final key = (goal.id, exercise?.name, widget.workouts.length);
     if (key != _key) {
       _key = key;
-      _reading = currentGoalValue(goal, exercises: exercises, workouts: widget.workouts);
+      _reading = currentGoalValue(
+        goal,
+        exercises: exercises,
+        workouts: widget.workouts,
+        workoutsThisMonth: () => Stats.of(context).getMonthlyWorkoutCount(DateTime.now()),
+      );
     }
 
     // see GoalRow: units are `late` until Preferences has loaded
@@ -139,25 +144,12 @@ class _GoalDetailState extends State<GoalDetail> {
     if (metric == null) return const SizedBox.shrink();
 
     final convert = metric.converter(settings);
-    final unit = metric.unitLabel(context, settings);
 
     return SizedBox(
       height: 300,
       child: ExerciseChart(
-        // one line per rung, in display units like the series itself
-        thresholds: goal.stages.map(
-          (stage) {
-            final target = convert(stage.target);
-            return ChartThreshold(
-              value: target,
-              label: switch (unit) {
-                final String unit => '${target.trimmed()} $unit',
-                null => target.trimmed(),
-              },
-              reached: stage.isAchieved,
-            );
-          },
-        ).toList(),
+        // the whole ladder: there is room for it here, unlike on a dashboard card
+        thresholds: goalThresholds(context, goal, metric: metric, settings: settings),
         callback: () => Exercises.of(context).getChartExerciseMetics(metric, exercise.name),
         refreshKey: (exercise.name, metric, goal.stages.length),
         converter: convert,
