@@ -42,13 +42,13 @@ const _migrations = <int, List<String>>{
     addExerciseMovement,
   ],
   6: [
-    goals,
-    goalsIndex,
-  ],
-  6: [
     addSetsExerciseIndex,
     dropChartsUniqueIndex,
     dedupeNullDataChartPreferences,
     chartsUniqueIndexNullSafe,
+  ],
+  7: [
+    goals,
+    goalsIndex,
   ],
 };
