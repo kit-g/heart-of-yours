@@ -74,8 +74,12 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: L.localizationsDelegates,
           supportedLocales: L.supportedLocales,
+          // scrollable, as the profile screen always is: unbounded the card
+          // grows with its list, and a long one overflows a bare test surface
           home: Scaffold(
-            body: GoalsCard(workouts: WorkoutAggregation.empty()),
+            body: SingleChildScrollView(
+              child: GoalsCard(workouts: WorkoutAggregation.empty()),
+            ),
           ),
         ),
       ),
@@ -124,17 +128,94 @@ void main() {
     expect(find.byType(GoalRow), findsOneWidget);
   });
 
-  testWidgets('deleting a row removes the goal', (tester) async {
+  group('at capacity', () {
+    List<Goal> many(int count) {
+      return [for (var i = 0; i < count; i++) workoutsGoal(id: 'goal-$i')];
+    }
+
+    testWidgets('offers to add a goal while there is room', (tester) async {
+      await seed(many(Goals.maxActive - 1));
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add goal'), findsOneWidget);
+      expect(find.byKey(AppKeys.goalsAtCapacity), findsNothing);
+    });
+
+    testWidgets('stops offering once the server would refuse another', (tester) async {
+      // the cap is enforced in the INSERT, so the create would come back a 400
+      await seed(many(Goals.maxActive));
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add goal'), findsNothing);
+      expect(find.byKey(AppKeys.goalsAtCapacity), findsOneWidget);
+    });
+
+    testWidgets('says why the button is gone', (tester) async {
+      await seed(many(Goals.maxActive));
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(AppKeys.goalsAtCapacity));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Delete one'), findsOneWidget);
+    });
+  });
+
+  testWidgets('reads Complete as soon as the last unmet rung goes', (tester) async {
+    // deleting the rung above an achieved one leaves every rung met, so the
+    // goal is complete — the card should say so without waiting for a relaunch
+    final ladder = Goal(
+      id: 'goal-1',
+      metric: .topSetWeight,
+      exerciseId: 'exercise-1',
+      stages: [
+        GoalStage(id: 's0', target: 100, achievedAt: DateTime.utc(2026, 6, 1)),
+        GoalStage(id: 's1', target: 120),
+      ],
+    );
+    await seed([ladder]);
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('Complete'), findsNothing);
+
+    await goals.update(ladder.copyWith(stages: [ladder.stages.first]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Complete'), findsOneWidget);
+  });
+
+  testWidgets('swiping a row away removes the goal', (tester) async {
+    // the same gesture an exercise set uses, and like it, no confirmation
     await seed([workoutsGoal(id: 'goal-1')]);
 
     await pump(tester);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(AppKeys.deleteGoal('goal-1')));
+    await tester.fling(find.byType(GoalRow), const Offset(-500, 0), 1000);
     await tester.pumpAndSettle();
 
     expect(goals, isEmpty);
     expect(find.text('No goals yet'), findsOneWidget);
+  });
+
+  testWidgets('a half-hearted swipe puts the row back', (tester) async {
+    await seed([workoutsGoal(id: 'goal-1')]);
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(GoalRow), const Offset(-40, 0));
+    await tester.pumpAndSettle();
+
+    expect(goals, hasLength(1));
+    expect(find.byType(GoalRow), findsOneWidget);
   });
 }
 
@@ -142,7 +223,9 @@ class _FakeLocal implements LocalGoalService {
   final goals = <Goal>[];
 
   @override
-  Future<Iterable<Goal>> getGoals(String userId) async => List.of(goals);
+  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
+    return List.of(goals);
+  }
 
   @override
   Future<Goal> createGoal(Goal goal, String userId) async => goal;
@@ -178,7 +261,9 @@ class _FakeRemote implements GoalService {
   final goals = <Goal>[];
 
   @override
-  Future<Iterable<Goal>> getGoals(String userId) async => List.of(goals);
+  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
+    return List.of(goals);
+  }
 
   @override
   Future<Goal> createGoal(Goal goal, String userId) async => goal;
