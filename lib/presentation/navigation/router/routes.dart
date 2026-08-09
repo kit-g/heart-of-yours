@@ -365,25 +365,25 @@ RouteBase _loginRoute() {
   return GoRoute(
     path: _loginPath,
     builder: (context, state) {
-      final layout = MediaQuery.sizeOf(context).width >= 600 ? LayoutSize.wide : LayoutSize.compact;
-      return switch (layout) {
-        // login page and password recovery page will communicate through the query parameter
-        // this will enable us to preserve the content of the email field.
-        .compact => LoginPage(
-          onPasswordRecovery: (address) {
-            context.goToPasswordRecoveryPage(address: address);
-          },
-          onSignUp: (address) {
-            context.goToSignUp(address: address);
-          },
-          address: state.uri.queryParameters['address'],
-        ),
-        .wide => ValueListenableBuilder<_AuthPages>(
-          valueListenable: currentPage,
-          builder: (_, page, _) {
-            return LayoutProvider(
-              currentStack: -1,
-              builder: (context, layout, _) {
+      // LayoutProvider owns the breakpoint for this route and both branches
+      return LayoutProvider(
+        currentStack: -1,
+        builder: (context, layout, _) {
+          return switch (layout) {
+            // login page and password recovery page will communicate through the query parameter
+            // this will enable us to preserve the content of the email field.
+            .compact => LoginPage(
+              onPasswordRecovery: (address) {
+                context.goToPasswordRecoveryPage(address: address);
+              },
+              onSignUp: (address) {
+                context.goToSignUp(address: address);
+              },
+              address: state.uri.queryParameters['address'],
+            ),
+            .wide => ValueListenableBuilder<_AuthPages>(
+              valueListenable: currentPage,
+              builder: (_, page, _) {
                 return SplitPaneScaffold(
                   reverse: page.isLogin,
                   leftPane: switch (page) {
@@ -430,10 +430,10 @@ RouteBase _loginRoute() {
                   },
                 );
               },
-            );
-          },
-        ),
-      };
+            ),
+          };
+        },
+      );
     },
     name: _loginName,
     redirect: (context, state) {
