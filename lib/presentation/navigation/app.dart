@@ -416,6 +416,7 @@ Future<void> _initApp(
     final config = RemoteConfig.of(context);
     final router = HeartRouter.of(context);
     final charts = Charts.of(context);
+    final stats = Stats.of(context);
 
     await Future.wait(
       [
@@ -449,17 +450,30 @@ Future<void> _initApp(
 
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
-          workouts.init().then<void>(
-            (_) {
-              router.refresh();
-              // heal any workout stranded locally by a failed network save,
-              // independent of whether the user opens the History screen
-              workouts.syncPendingWorkouts();
-            },
-          );
+          workouts
+              .init()
+              .then<void>(
+                (_) {
+                  router.refresh();
+                  // Pulls what other devices logged into the local mirror, and
+                  // heals anything stranded here by a failed save. Until this
+                  // ran at startup the only thing that ran it was opening the
+                  // History screen — so a workout from the phone reached the
+                  // tablet's goals and previous-set tags a launch late, after
+                  // some unrelated visit to History had quietly seeded it.
+                  return workouts.initHistory();
+                },
+              )
+              .then<void>(
+                (_) {
+                  // both read training data straight out of that mirror, so
+                  // they are only correct once it has been filled
+                  previous.init();
+                  stats.init();
+                },
+              );
           templates.init();
           timers.init();
-          previous.init();
         },
       );
     }
