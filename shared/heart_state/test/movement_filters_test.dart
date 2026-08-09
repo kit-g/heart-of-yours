@@ -88,7 +88,7 @@ void main() {
       // for free; these carry a payload and have to earn it.
       final filters = <ExerciseFilter>{}
         ..add(const PatternFilter('lunge'))
-        ..add(PatternFilter('lung${'e'}'))
+        ..add(const PatternFilter('lung${'e'}'))
         ..add(const SkillCeiling(SkillLevel.low))
         ..add(SkillCeiling(SkillLevel.values.first));
 

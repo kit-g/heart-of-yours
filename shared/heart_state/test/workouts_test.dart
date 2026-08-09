@@ -564,7 +564,7 @@ void main() {
         ),
       ).called(1);
 
-      inFlight.complete(models.Page(items: const [], hasMore: false));
+      inFlight.complete(const models.Page(items: [], hasMore: false));
       await first;
       expect(sut.hasMoreHistory, isFalse);
     });
