@@ -36,10 +36,25 @@ part 'new_goal.dart';
 part 'row.dart';
 part 'swipe.dart';
 part 'text.dart';
+part 'thresholds.dart';
 
 /// How far a row travels before the swipe counts as a delete. Matches the
 /// exercise set's, so the gesture feels the same wherever it is used.
 const _dismissThreshold = .5;
+
+/// Applies an edit to a goal, and says so when the server refuses it.
+///
+/// A refused edit is rolled back — the server keeps the version it already
+/// holds — so without this the rung would simply spring back with nothing said.
+/// The messenger is read before the await so nothing touches a stale context.
+Future<void> _amend(BuildContext context, Future<void> Function() edit) async {
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    await edit();
+  } on GoalRejected catch (rejection) {
+    messenger.snack(rejection.toString());
+  }
+}
 
 extension on num {
   /// Trims a trailing `.0` — targets are whole far more often than not, and

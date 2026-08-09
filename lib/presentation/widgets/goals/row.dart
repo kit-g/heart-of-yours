@@ -117,7 +117,12 @@ class _GoalRowState extends State<GoalRow> {
   }
 
   Future<num?> _read(Exercises exercises) {
-    return currentGoalValue(widget.goal, exercises: exercises, workouts: widget.workouts);
+    return currentGoalValue(
+      widget.goal,
+      exercises: exercises,
+      workouts: widget.workouts,
+      workoutsThisMonth: () => Stats.of(context).getMonthlyWorkoutCount(DateTime.now()),
+    );
   }
 
   double _convert(Preferences settings, num value) {

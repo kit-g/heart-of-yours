@@ -71,13 +71,16 @@ class GoalLadder extends StatelessWidget {
     final rung = await showRungDialog(context, goal: goal, exercise: exercise);
     if (rung == null) return;
 
+    if (!context.mounted) return;
+
     // Appended as typed; [Goals.inDeadlineOrder] puts it where it falls due.
-    await goals.update(goal.copyWith(stages: [...goal.stages, rung]));
+    await _amend(context, () => goals.update(goal.copyWith(stages: [...goal.stages, rung])));
   }
 
   Future<void> _removeRung(BuildContext context, GoalStage stage) {
     final stages = goal.stages.where((each) => each.id != stage.id).toList();
-    return Goals.of(context).update(goal.copyWith(stages: stages));
+    final goals = Goals.of(context);
+    return _amend(context, () => goals.update(goal.copyWith(stages: stages)));
   }
 }
 
@@ -179,6 +182,7 @@ class _Rung extends StatelessWidget {
     if (edited == null) return;
 
     final stages = goal.stages.map((each) => each.id == stage.id ? edited : each).toList();
-    await goals.update(goal.copyWith(stages: stages));
+    if (!context.mounted) return;
+    await _amend(context, () => goals.update(goal.copyWith(stages: stages)));
   }
 }
