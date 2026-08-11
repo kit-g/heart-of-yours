@@ -533,6 +533,12 @@ class LEn extends L {
   String get goalsViewActive => 'Back';
 
   @override
+  String get goalOpenWorkout => 'View the session';
+
+  @override
+  String get goalWorkoutGone => 'That session is no longer on this device';
+
+  @override
   String get goalsAtCapacity => 'You have as many goals as Heart keeps. Delete one to make room for another.';
 
   @override
@@ -1462,6 +1468,12 @@ class LEnCa extends LEn {
 
   @override
   String get goalsViewActive => 'Back';
+
+  @override
+  String get goalOpenWorkout => 'View the session';
+
+  @override
+  String get goalWorkoutGone => 'That session is no longer on this device';
 
   @override
   String get goalsAtCapacity => 'You have as many goals as Heart keeps. Delete one to make room for another.';

@@ -173,6 +173,8 @@ goalClearDeadline,Button that removes a milestone's date,Clear deadline,Clear de
 goalsViewAchieved,Button on the goals card that flips it over to show goals already achieved,Achieved,Achieved,Достигнутые
 goalsAchievedTitle,"Heading on the back of the goals card, above the goals already achieved",Achieved,Achieved,Достигнутые
 goalsViewActive,Button on the back of the goals card that flips it to the goals still being worked on,Back,Back,Назад
+goalOpenWorkout,"Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it",View the session,View the session,Открыть тренировку
+goalWorkoutGone,Shown when the workout credited with a goal rung can no longer be found,That session is no longer on this device,That session is no longer on this device,Этой тренировки больше нет на устройстве
 goalsAtCapacity,Tooltip explaining why the add-goal button is missing,You have as many goals as Heart keeps. Delete one to make room for another.,You have as many goals as Heart keeps. Delete one to make room for another.,Больше целей Heart не хранит. Удалите одну
 category,Label button that allows to choose Exercise category,Category,Category,Категория
 target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель
