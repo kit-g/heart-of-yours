@@ -90,25 +90,29 @@ class _RungFormState extends State<_RungForm> {
           inputFormatters: _formatters,
           decoration: InputDecoration(suffixText: unit),
         ),
-        Align(
-          alignment: .centerLeft,
-          child: TextButton.icon(
-            key: AppKeys.rungDueDate,
-            onPressed: _pickDueDate,
-            icon: const Icon(Icons.event_rounded, size: 20),
-            label: Text(
-              switch (_dueOn) {
-                final DateTime due => DateFormat.yMMMd().format(due),
-                null => l.goalSetDeadline,
-              },
+        // A recurring goal has no deadline to set: its period *is* the
+        // deadline, and it resets rather than falling due. Offering the control
+        // would store a `dueOn` nothing ever reads.
+        if (widget.goal.cadence == null)
+          Align(
+            alignment: .centerLeft,
+            child: TextButton.icon(
+              key: AppKeys.rungDueDate,
+              onPressed: _pickDueDate,
+              icon: const Icon(Icons.event_rounded, size: 20),
+              label: Text(
+                switch (_dueOn) {
+                  final DateTime due => DateFormat.yMMMd().format(due),
+                  null => l.goalSetDeadline,
+                },
+              ),
             ),
           ),
-        ),
         Row(
           mainAxisAlignment: .end,
           spacing: 8,
           children: [
-            if (_dueOn != null)
+            if (_dueOn != null && widget.goal.cadence == null)
               TextButton(
                 onPressed: () => setState(() => _dueOn = null),
                 child: Padding(

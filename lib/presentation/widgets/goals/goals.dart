@@ -8,6 +8,8 @@
 /// somewhere of its own to live next to the summary.
 library;
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/goals.dart';
@@ -28,6 +30,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 
 part 'card.dart';
+part 'flip.dart';
 part 'detail.dart';
 part 'ladder.dart';
 part 'rung.dart';
