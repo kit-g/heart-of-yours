@@ -128,7 +128,10 @@ class _RungFormState extends State<_RungForm> {
                     null => null,
                     _ => _submit,
                   },
-                  child: Text(widget.stage == null ? l.addGoal : l.save),
+                  // this dialog adds a *rung*, not a goal — the sheet that
+                  // opened it says "Add milestone" and the button used to
+                  // disagree with it at the moment of confirming
+                  child: Text(widget.stage == null ? l.goalAddRung : l.save),
                 );
               },
             ),
