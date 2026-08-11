@@ -64,11 +64,21 @@ class _LadderPainter extends CustomPainter {
     if (targets.isEmpty) return;
 
     final y = size.height / 2;
-    final line = Paint()
+    // The track is capped round because its ends are the bar's ends. The fill
+    // is not: a round cap draws a 3px half-disc wherever progress stops, which
+    // reads as one more rung dot — so the bar appeared to show dots that were
+    // sometimes filled and sometimes hollow with no rule behind it. Only the
+    // circles below are rungs; the fill just ends.
+    final rail = Paint()
       ..strokeWidth = 3
-      ..strokeCap = .round;
+      ..strokeCap = .round
+      ..color = track;
+    final progress = Paint()
+      ..strokeWidth = 3
+      ..strokeCap = .butt
+      ..color = fill;
 
-    canvas.drawLine(Offset(0, y), Offset(size.width, y), line..color = track);
+    canvas.drawLine(Offset(0, y), Offset(size.width, y), rail);
 
     // The domain runs from the origin to the furthest point in play, so ticks
     // sit where the targets actually are relative to one another — an evenly
@@ -84,7 +94,7 @@ class _LadderPainter extends CustomPainter {
     switch (lowerIsBetter) {
       case false:
         if (_reached case final double value) {
-          canvas.drawLine(Offset(0, y), Offset(x(value), y), line..color = fill);
+          canvas.drawLine(Offset(0, y), Offset(x(value), y), progress);
         }
       case true:
         if (current case final double value) {
@@ -99,7 +109,7 @@ class _LadderPainter extends CustomPainter {
     }
 
     for (final (index, target) in targets.indexed) {
-      final isAchieved = index < achieved.length && achieved[index];
+      final isAchieved = _met(index, target);
       canvas.drawCircle(
         Offset(x(target).clamp(3.0, size.width - 3), y),
         3.5,
@@ -109,6 +119,26 @@ class _LadderPainter extends CustomPainter {
           ..strokeWidth = 2,
       );
     }
+  }
+
+  /// Whether a rung reads as met.
+  ///
+  /// Stamped, or currently satisfied. The stamp alone is not enough: a
+  /// recurring goal is never stamped — it resets each period, so
+  /// [Goals.observeProgress] skips it — which left its one rung drawn hollow
+  /// even at six workouts against a target of four. And the stamp alone is not
+  /// redundant either: a milestone stays met after the reading falls back below
+  /// it, which is the whole point of recording when it first fell.
+  bool _met(int index, double target) {
+    if (index < achieved.length && achieved[index]) return true;
+
+    return switch (current) {
+      final double value => switch (lowerIsBetter) {
+        true => value <= target,
+        false => value >= target,
+      },
+      null => false,
+    };
   }
 
   /// How far along the bar is filled.
