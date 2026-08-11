@@ -129,4 +129,40 @@ void main() {
 
     expect(find.byType(Dismissible), findsNWidgets(2));
   });
+
+  group('a recurring goal has no deadline', () {
+    Goal recurring() {
+      return Goal(
+        id: 'goal-1',
+        metric: .totalVolume,
+        exerciseId: 'exercise-1',
+        cadence: .week,
+        stages: [GoalStage(id: 's0', target: 2000)],
+      );
+    }
+
+    testWidgets('says nothing about one on the rung', (tester) async {
+      // its period is the deadline, and it resets rather than falling due —
+      // "No deadline" advertised a thing that cannot apply to this shape
+      await pump(tester, recurring());
+      await tester.pumpAndSettle();
+
+      expect(find.text('No deadline'), findsNothing);
+    });
+
+    testWidgets('still states one on a milestone rung', (tester) async {
+      await pump(
+        tester,
+        Goal(
+          id: 'goal-2',
+          metric: .topSetWeight,
+          exerciseId: 'exercise-1',
+          stages: [GoalStage(id: 's0', target: 100)],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('No deadline'), findsOneWidget);
+    });
+  });
 }
