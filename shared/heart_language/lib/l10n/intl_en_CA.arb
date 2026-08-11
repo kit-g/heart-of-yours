@@ -1747,6 +1747,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "weightUnitLabel": "Weight unit",
+  "@weightUnitLabel": {
+    "description": "Weight unit label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "distanceUnitLabel": "Distance unit",
+  "@distanceUnitLabel": {
+    "description": "Distance unit label",
+    "type": "text",
+    "placeholders": {}
+  },
   "close": "Close",
   "@close": {
     "description": "Tooltip on a button that dismisses a dialog or a detail pane",

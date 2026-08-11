@@ -320,8 +320,8 @@ deleteImageDialogTitle,Confirmation dialog title when user attempts to delete an
 deleteImageDialogBody,Confirmation dialog body explaining that removing the image won't delete workout data,It won't affect the workout — just clears the picture,It won't affect the workout — just clears the picture,Это не повлияет на тренировку — просто удалит фотографию
 myProgression,Photo gallery title,My progression,My progression,Мой прогресс
 copiedToClipboard,Snack message when user copies text to clipboard,Copied to clipboard,Copied to clipboard,Скопировано в буфер обмена
-weightUnitLabel,Weight unit label,Weight unit,,Единица веса
-distanceUnitLabel,Distance unit label,Distance unit,,Единица расстояния
+weightUnitLabel,Weight unit label,Weight unit,Weight unit,Единица веса
+distanceUnitLabel,Distance unit label,Distance unit,Distance unit,Единица расстояния
 close,Tooltip on a button that dismisses a dialog or a detail pane,Close,Close,Закрыть
 noWorkoutSelectedTitle,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Nothing selected,Nothing selected,Ничего не выбрано
 noWorkoutSelectedBody,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Pick a workout to see what you did and make changes.,Pick a workout to see what you did and make changes.,"Выберите тренировку, чтобы посмотреть и изменить её."
