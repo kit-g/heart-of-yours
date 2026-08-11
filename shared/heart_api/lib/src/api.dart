@@ -226,6 +226,22 @@ class Api
   }
 
   @override
+  Future<Workout> getTargetWorkout({
+    required String requesterId,
+    required String targetUserId,
+    required String workoutId,
+  }) async {
+    final (json, code) = await get(Router.userWorkout(targetUserId, workoutId));
+    return switch ((code, json)) {
+      (200, Map json) => Workout.fromJson(json),
+      // thrown whole: the body carries a stable `code`, which is how the caller
+      // tells "no such workout" apart from "not yours to see" — and both apart
+      // from an outage, where nothing named comes back at all
+      _ => throw json,
+    };
+  }
+
+  @override
   Future<Iterable<Workout>?> getWorkouts(String userId, {int? pageSize, String? since}) async {
     // The interface still names these pageSize/since; the wire uses limit/cursor.
     final (json, code) = await get(
@@ -430,6 +446,10 @@ abstract final class Router {
 
   static String userGoals(String targetUserId) {
     return '$accounts/$targetUserId/goals';
+  }
+
+  static String userWorkout(String targetUserId, String workoutId) {
+    return '$accounts/$targetUserId/workouts/$workoutId';
   }
 
   static String goalStage(String goalId, String stageId) {
