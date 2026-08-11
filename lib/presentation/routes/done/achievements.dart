@@ -37,30 +37,73 @@ class _AchievementsState extends State<_Achievements> {
       future: _earned,
       builder: (_, snapshot) {
         final earned = snapshot.data;
-        if (earned == null || earned.isEmpty) return const SizedBox.shrink();
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 32, left: 24, right: 24),
-          child: Column(
-            spacing: 8,
-            children: [
-              Text(
-                l.goalsAchievedHeading(earned.length),
-                style: textTheme.titleMedium,
-              ),
-              for (final (goal: goal, stage: stage) in earned)
-                Text(
-                  l.goalAchievedTarget(
-                    goalTitle(context, goal, goalExercise(goal, exercises)),
-                    _target(context, goal, stage, settings),
-                  ),
-                  textAlign: TextAlign.center,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        // It arrives late by nature — the observation waits on the workout
+        // being written — so it lands into a screen that has already settled.
+        // Appearing instantly reads as a glitch rather than a result; it rises
+        // and fades in, and the column grows with it instead of shoving the
+        // summary and the button down a frame.
+        return AnimatedSize(
+          duration: _revealDuration,
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: AnimatedSwitcher(
+            duration: _revealDuration,
+            switchInCurve: Curves.easeOutCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween(
+                    begin: const Offset(0, .2),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
                 ),
-            ],
+              );
+            },
+            child: switch (earned) {
+              null || [] => const SizedBox(width: double.infinity),
+              _ => _earnedBlock(earned, textTheme, colorScheme, l, settings, exercises),
+            },
           ),
         );
       },
+    );
+  }
+
+  /// How long the block takes to arrive. Slower than a state change, because
+  /// this is the screen's one piece of news.
+  static const _revealDuration = Duration(milliseconds: 450);
+
+  Widget _earnedBlock(
+    List<GoalAchievement> earned,
+    TextTheme textTheme,
+    ColorScheme colorScheme,
+    L l,
+    Preferences settings,
+    Exercises exercises,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 32, left: 24, right: 24),
+      child: Column(
+        spacing: 8,
+        children: [
+          Text(
+            l.goalsAchievedHeading(earned.length),
+            style: textTheme.titleMedium,
+          ),
+          for (final (goal: goal, stage: stage) in earned)
+            Text(
+              l.goalAchievedTarget(
+                goalTitle(context, goal, goalExercise(goal, exercises)),
+                _target(context, goal, stage, settings),
+              ),
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+        ],
+      ),
     );
   }
 
