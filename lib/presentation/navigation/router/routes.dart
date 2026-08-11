@@ -490,6 +490,27 @@ RouteBase _workoutDoneRoute() {
           workout: workout!,
           onQuit: context.goToWorkouts,
           workoutsThisWeekCallback: () => Stats.of(context).getWeeklyWorkoutCount(workout.start),
+          // This screen is pushed as finishing *starts*, so the sets that just
+          // earned a rung may not be in the database yet — goal progress is read
+          // back out of it. Waiting on the finish is what makes the answer real
+          // rather than one workout stale.
+          achievementsCallback: () async {
+            final workouts = Workouts.of(context);
+            final goals = Goals.of(context);
+            final exercises = Exercises.of(context);
+            final stats = Stats.of(context);
+
+            await workouts.finishing;
+            // the aggregation is what whole-workout goals are judged against,
+            // and it predates the workout that just landed
+            await stats.init();
+
+            return goals.observeProgress(
+              (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
+              // this screen is the one place that knows which session earned it
+              achievedBy: workout.id,
+            );
+          },
         );
       } catch (e) {
         throw GoException('$e');
