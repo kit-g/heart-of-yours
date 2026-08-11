@@ -206,9 +206,21 @@ RouteBase _historyRoute() {
               }
             },
             name: _historyEditName,
-            redirect: (context, state) {
+            // Resolves before deciding, rather than bouncing on a memory miss.
+            //
+            // The mirror holds only what has been paged in, so a synchronous
+            // lookup sent every deep link into older history back to the list —
+            // and would send *every* web deep link there, since that client has
+            // no warm mirror at all. Redirecting is now reserved for a workout
+            // the server itself will not produce.
+            redirect: (context, state) async {
+              final workouts = Workouts.of(context);
               return switch (state.pathParameters['workoutId']) {
-                String id when Workouts.of(context).lookup(id) != null => null,
+                String id when workouts.lookup(id) != null => null,
+                String id => switch (await workouts.fetchWorkout(id)) {
+                  true => null,
+                  false => _historyPath,
+                },
                 _ => _historyPath,
               };
             },
@@ -500,16 +512,35 @@ RouteBase _workoutDoneRoute() {
             final exercises = Exercises.of(context);
             final stats = Stats.of(context);
 
-            await workouts.finishing;
+            // The id the server settled on, not the one this device saved
+            // under: `saveWorkout` adopts the server's when they differ, and
+            // crediting a rung with the pre-save id had the server reject the
+            // attribution outright — it was an id it had never seen.
+            final finished = await workouts.finishing;
             // the aggregation is what whole-workout goals are judged against,
             // and it predates the workout that just landed
             await stats.init();
 
-            return goals.observeProgress(
+            final stamped = await goals.observeProgress(
               (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
               // this screen is the one place that knows which session earned it
-              achievedBy: workout.id,
+              achievedBy: finished?.id ?? workout.id,
             );
+
+            // A recurring goal is never stamped, so it would otherwise go
+            // uncelebrated the week it is met — announced here when this
+            // session is what carried the period over.
+            final carried = await goals.observePeriodWins(
+              valueOf: (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
+              valueBefore: (goal) => currentGoalValue(
+                goal,
+                exercises: exercises,
+                workoutCount: workoutCounter(stats),
+                without: workout.start,
+              ),
+            );
+
+            return [...stamped, ...carried];
           },
         );
       } catch (e) {
