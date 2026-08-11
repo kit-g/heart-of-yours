@@ -472,6 +472,135 @@ void main() {
       });
     });
 
+    group('finishing reports what landed', () {
+      test('gives back the server\'s copy, under the id it minted', () async {
+        // anything that refers to the session afterwards — a goal rung crediting
+        // it, most of all — has to use the id it came back with. Crediting the
+        // pre-save id had the server refuse the attribution as an id it had
+        // never seen.
+        await sut.startWorkout(name: 'Chest');
+        final localId = sut.activeWorkout!.id;
+        final minted = Workout.fromJson({
+          'id': 'server-minted',
+          'start': DateTime.utc(2026, 8, 11).toIso8601String(),
+          'end': DateTime.utc(2026, 8, 11, 1).toIso8601String(),
+          'exercises': [],
+        });
+        when(remote.saveWorkout(any)).thenAnswer((_) async => minted);
+
+        final finished = await sut.finishActiveWorkout();
+
+        expect(finished?.id, 'server-minted');
+        expect(finished?.id, isNot(localId));
+        expect(await sut.finishing, isNotNull);
+      });
+
+      test('falls back to the local copy when the push fails', () async {
+        // the workout is still real and still finished; only the server has
+        // not confirmed it, so its own id is the best there is
+        await sut.startWorkout(name: 'Chest');
+        final localId = sut.activeWorkout!.id;
+        when(remote.saveWorkout(any)).thenThrow(Exception('offline'));
+
+        final finished = await sut.finishActiveWorkout();
+
+        expect(finished?.id, localId);
+      });
+
+      test('completes with nothing when there was nothing active', () async {
+        expect(await sut.finishActiveWorkout(), isNull);
+      });
+    });
+
+    group('fetchWorkout falls back to the server', () {
+      // the mocks are shared across this file and never reset, so `verify` and
+      // `verifyNever` would otherwise pick up calls from earlier tests
+      setUp(() {
+        clearInteractions(local);
+        clearInteractions(remote);
+      });
+
+      test('asks the server when the mirror has never seen it', () async {
+        // the mirror holds only what has been paged in, so "not here" is
+        // usually "not downloaded" — a deep link into older history used to
+        // dead-end on exactly this
+        final remoteOnly = Workout(name: 'from the server');
+        when(local.getWorkout('u1', any)).thenAnswer((_) async => null);
+        when(
+          remote.getTargetWorkout(
+            requesterId: anyNamed('requesterId'),
+            targetUserId: anyNamed('targetUserId'),
+            workoutId: anyNamed('workoutId'),
+          ),
+        ).thenAnswer((_) async => remoteOnly);
+
+        expect(await sut.fetchWorkout(remoteOnly.id), isTrue);
+        expect(sut.lookup(remoteOnly.id), isNotNull);
+      });
+
+      test('caches the user\'s own, so the next launch has it locally', () async {
+        final mine = Workout(name: 'mine');
+        when(local.getWorkout('u1', any)).thenAnswer((_) async => null);
+        when(
+          remote.getTargetWorkout(
+            requesterId: anyNamed('requesterId'),
+            targetUserId: anyNamed('targetUserId'),
+            workoutId: anyNamed('workoutId'),
+          ),
+        ).thenAnswer((_) async => mine);
+
+        await sut.fetchWorkout(mine.id);
+
+        verify(local.storeWorkoutHistory([mine], 'u1')).called(1);
+      });
+
+      test('does not cache a connection\'s session', () async {
+        // the mirror is the user's own: storing someone else's workout would
+        // leak into their history, their aggregation, and every goal measured
+        // against it
+        final theirs = Workout(name: 'a friend\'s');
+        when(local.getWorkout('u1', any)).thenAnswer((_) async => null);
+        when(
+          remote.getTargetWorkout(
+            requesterId: anyNamed('requesterId'),
+            targetUserId: anyNamed('targetUserId'),
+            workoutId: anyNamed('workoutId'),
+          ),
+        ).thenAnswer((_) async => theirs);
+
+        expect(await sut.fetchWorkout(theirs.id, ownerId: 'someone-else'), isTrue);
+        verifyNever(local.storeWorkoutHistory([theirs], 'u1'));
+      });
+
+      test('reports failure when the server will not produce it either', () async {
+        // only now does "gone" mean gone — the caller can say so honestly
+        when(local.getWorkout('u1', any)).thenAnswer((_) async => null);
+        when(
+          remote.getTargetWorkout(
+            requesterId: anyNamed('requesterId'),
+            targetUserId: anyNamed('targetUserId'),
+            workoutId: anyNamed('workoutId'),
+          ),
+        ).thenThrow({'error': 'not found', 'code': 'not_found'});
+
+        expect(await sut.fetchWorkout('never-existed'), isFalse);
+      });
+
+      test('never asks the server when the mirror already has it', () async {
+        final held = Workout(name: 'local');
+        when(local.getWorkout('u1', any)).thenAnswer((_) async => held);
+
+        expect(await sut.fetchWorkout(held.id), isTrue);
+        verifyNever(
+          remote.getTargetWorkout(
+            requesterId: anyNamed('requesterId'),
+            targetUserId: anyNamed('targetUserId'),
+            workoutId: anyNamed('workoutId'),
+          ),
+        );
+      });
+    });
+
     test('fetchWorkout stores and notifies when found', () async {
       final w = Workout(name: 'fetched');
       when(local.getWorkout('u1', any)).thenAnswer((_) async => w);
