@@ -1001,6 +1001,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "goalOpenWorkout": "Открыть тренировку",
+  "@goalOpenWorkout": {
+    "description": "Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalWorkoutGone": "Этой тренировки больше нет на устройстве",
+  "@goalWorkoutGone": {
+    "description": "Shown when the workout credited with a goal rung can no longer be found",
+    "type": "text",
+    "placeholders": {}
+  },
   "goalsAtCapacity": "Больше целей Heart не хранит. Удалите одну",
   "@goalsAtCapacity": {
     "description": "Tooltip explaining why the add-goal button is missing",
