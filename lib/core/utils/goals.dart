@@ -18,8 +18,16 @@ class LocalGoals implements LocalGoalService {
   const LocalGoals(this._db);
 
   @override
-  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) {
-    return _db.getTargetUserGoals(requesterId: requesterId, targetUserId: targetUserId);
+  Future<Iterable<Goal>> getTargetUserGoals({
+    required String requesterId,
+    required String targetUserId,
+    bool archived = false,
+  }) {
+    return _db.getTargetUserGoals(
+      requesterId: requesterId,
+      targetUserId: targetUserId,
+      archived: archived,
+    );
   }
 
   @override
@@ -32,12 +40,20 @@ class LocalGoals implements LocalGoalService {
   Future<void> deleteGoal(String goalId, String userId) => _db.deleteGoal(goalId, userId);
 
   @override
-  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) {
-    return _db.markStageAchieved(goalId, stageId, userId, achievedAt);
+  Future<Goal> markStageAchieved(
+    String goalId,
+    String stageId,
+    String userId,
+    DateTime achievedAt, {
+    String? achievedBy,
+  }) {
+    return _db.markStageAchieved(goalId, stageId, userId, achievedAt, achievedBy: achievedBy);
   }
 
   @override
-  Future<void> storeGoals(Iterable<Goal> goals, String userId) => _db.storeGoals(goals, userId);
+  Future<void> storeGoals(Iterable<Goal> goals, String userId, {bool archived = false}) {
+    return _db.storeGoals(goals, userId, archived: archived);
+  }
 
   @override
   Future<Iterable<Goal>> unsyncedGoals(String userId) => _db.unsyncedGoals(userId);
@@ -60,10 +76,8 @@ class LocalGoals implements LocalGoalService {
 ///
 /// Null where it cannot be answered *correctly* rather than approximately:
 ///
-/// - a whole-workout goal is answered from the aggregation the profile already
-///   holds for a weekly cadence, and from [workoutsThisMonth] for a monthly one
-///   — those buckets are weeks, and a week straddling the first of the month
-///   belongs cleanly to neither;
+/// - a whole-workout goal is [workoutCount] over the goal's own period, which
+///   for a milestone (no cadence) is every workout there has ever been;
 /// - a per-exercise milestone is its latest observed value;
 /// - a per-exercise goal with a cadence is its sessions inside the current
 ///   period, folded the way that dimension folds — see
@@ -71,19 +85,14 @@ class LocalGoals implements LocalGoalService {
 Future<num?> currentGoalValue(
   Goal goal, {
   required Exercises exercises,
-  required WorkoutAggregation workouts,
-  Future<int> Function()? workoutsThisMonth,
+  Future<int> Function(GoalCadence? period)? workoutCount,
   DateTime? asOf,
 }) async {
-  if (goal.metric.isWholeWorkout) {
-    return switch (goal.cadence) {
-      .week => workouts.isEmpty ? null : workouts.last.length,
-      // costs a query, so it is asked for only when a goal is actually counting
-      // months — and left unanswered rather than guessed if nobody supplied one
-      .month => await workoutsThisMonth?.call(),
-      _ => null,
-    };
-  }
+  // Every period is the same question asked of a different window, including
+  // the unbounded one — a "do 8 workouts" milestone used to fall past the week
+  // and month cases and answer null, which drew an empty bar and, because
+  // observeProgress skips a goal it cannot measure, never announced the 8th.
+  if (goal.metric.isWholeWorkout) return await workoutCount?.call(goal.cadence);
 
   final metric = goal.metric.chart;
   final exercise = goalExercise(goal, exercises);
@@ -122,6 +131,21 @@ Future<num?> currentGoalValue(
 /// this only has to outrun a single period — far more sessions of one exercise
 /// than a week or a month of training ever contains.
 const _sessionsPerPeriod = 60;
+
+/// Counts workouts over whichever window a goal measures.
+///
+/// One resolver so the three periods cannot drift apart, and so a goal without
+/// a cadence is answered rather than skipped.
+Future<int> Function(GoalCadence?) workoutCounter(Stats stats, {DateTime? asOf}) {
+  return (period) {
+    final now = asOf ?? DateTime.now();
+    return switch (period) {
+      .week => stats.getWeeklyWorkoutCount(now),
+      .month => stats.getMonthlyWorkoutCount(now),
+      null => stats.getTotalWorkoutCount(),
+    };
+  };
+}
 
 /// The half-open window a cadence goal is currently accumulating in.
 ///
