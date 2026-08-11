@@ -11,14 +11,21 @@ mixin _Goals on _LocalDatabase implements GoalService {
   /// nobody else's to read: [requesterId] is accepted to satisfy the shared
   /// interface and asserted against [targetUserId] rather than silently
   /// answering with the wrong person's ladder.
+  ///
+  /// [archived] picks a slice and never a union, matching the server: false is
+  /// the live list, true the achieved surface behind the card flip.
   @override
-  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) {
+  Future<Iterable<Goal>> getTargetUserGoals({
+    required String requesterId,
+    required String targetUserId,
+    bool archived = false,
+  }) {
     assert(requesterId == targetUserId, 'the local mirror holds only the signed-in user\'s goals');
     return _db
         .query(
           _goals,
-          where: 'user_id = ? AND archived = 0',
-          whereArgs: [targetUserId],
+          where: 'user_id = ? AND archived = ?',
+          whereArgs: [targetUserId, archived ? 1 : 0],
           orderBy: 'created_at',
         )
         .then((rows) => rows.map(Goal.fromRow));
@@ -55,7 +62,13 @@ mixin _Goals on _LocalDatabase implements GoalService {
   }
 
   @override
-  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
+  Future<Goal> markStageAchieved(
+    String goalId,
+    String stageId,
+    String userId,
+    DateTime achievedAt, {
+    String? achievedBy,
+  }) async {
     final goal = await _findGoal(goalId, userId);
     if (goal == null) throw ArgumentError.value(goalId, 'goalId', 'no such goal');
 
@@ -66,7 +79,7 @@ mixin _Goals on _LocalDatabase implements GoalService {
     final stages = goal.stages
         .map(
           (stage) => switch (stage.id) {
-            final id when id == stageId => stage.copyWith(achievedAt: achievedAt),
+            final id when id == stageId => stage.copyWith(achievedAt: achievedAt, achievedBy: achievedBy),
             _ => stage,
           },
         )
@@ -82,14 +95,22 @@ mixin _Goals on _LocalDatabase implements GoalService {
     return updated;
   }
 
-  /// Replaces the server's view of this user's goals, marking every row synced.
+  /// Replaces the server's view of one slice of this user's goals, marking
+  /// every row synced.
   ///
   /// Unsynced local rows are left alone — they are writes the server has not
   /// accepted yet, and dropping them would lose work done offline.
-  Future<void> storeGoals(Iterable<Goal> goals, String userId) {
+  Future<void> storeGoals(Iterable<Goal> goals, String userId, {bool archived = false}) {
     return _db.transaction(
       (txn) async {
-        await txn.delete(_goals, where: 'user_id = ? AND synced = 1', whereArgs: [userId]);
+        // Only the slice being replaced. The live list and the achieved surface
+        // are pulled separately, so clearing both here would mean whichever
+        // landed second wiped the other.
+        await txn.delete(
+          _goals,
+          where: 'user_id = ? AND synced = 1 AND archived = ?',
+          whereArgs: [userId, archived ? 1 : 0],
+        );
         final batch = txn.batch();
         for (final goal in goals) {
           batch.insert(_goals, goal.toRow(userId, synced: true), conflictAlgorithm: .replace);

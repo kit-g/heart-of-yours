@@ -9,9 +9,10 @@ mixin _Stats on _LocalDatabase implements StatsService {
     // `user_id = NULL` matches nothing (and a null whereArg will throw in a
     // future sqflite), so answer the degenerate query directly
     if (userId == null) return Future.value(WorkoutAggregation.empty());
-    final cutoff = getMonday(
-      DateTime.timestamp(),
-    ).subtract(Duration(days: 7 * (weeksBack ?? 0))).toIso8601String();
+    // The user's week, matching `WorkoutAggregation.fromRows`, which buckets by
+    // the local calendar — then converted to UTC, because that is the zone
+    // `start` is stored in and the comparison is lexicographic.
+    final cutoff = getMonday(DateTime.now()).subtract(Duration(days: 7 * (weeksBack ?? 0))).toUtc().toIso8601String();
     return _db
         .query(
           _workouts,
@@ -26,6 +27,27 @@ mixin _Stats on _LocalDatabase implements StatsService {
         );
   }
 
+  /// Every finished workout the user has, with no period bound.
+  ///
+  /// What a "do N workouts" milestone counts. Local, so it counts what this
+  /// device has pulled down — history is paged, so a user who has never opened
+  /// far enough back can be undercounted until they do.
+  Future<int> getTotalWorkoutCount({String? userId}) {
+    return _db
+        .rawQuery(
+          'SELECT count(*) AS c FROM workouts WHERE end IS NOT NULL AND user_id = ?',
+          [userId],
+        )
+        .then(
+          (rows) {
+            return switch (rows) {
+              [{'c': num count}] => count.toInt(),
+              _ => 0,
+            };
+          },
+        );
+  }
+
   /// Finished workouts in [d]'s calendar month.
   ///
   /// Not on [StatsService]: the weekly count is, and this belongs beside it, but
@@ -36,8 +58,11 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// the user is living in rather than UTC's. `end IS NOT NULL` matches the
   /// aggregation's rule — an unfinished workout is not one you have done.
   Future<int> getMonthlyWorkoutCount(DateTime d, {String? userId}) {
-    final from = DateTime(d.year, d.month);
-    final to = DateTime(d.year, d.month + 1);
+    // Bounds in [d]'s own zone so "this month" is the month the user is living
+    // in, then converted to UTC: `start` is stored as a UTC ISO string, and the
+    // comparison is lexicographic, so both sides have to be in the same zone.
+    final from = DateTime(d.year, d.month).toUtc();
+    final to = DateTime(d.year, d.month + 1).toUtc();
     return _db
         .rawQuery(
           'SELECT count(*) AS c FROM workouts '
@@ -61,7 +86,9 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// [getWorkoutSummary]: `user_id = NULL` is never true, so there is no user to
   /// count for.
   Future<int> getWeeklyWorkoutCount(DateTime d, {String? userId}) {
-    final monday = getMonday(d);
+    // the user's week, expressed in the zone `start` is stored in — see
+    // [getMonthlyWorkoutCount]
+    final monday = getMonday(d).toUtc();
     // a workout belongs to the week it started in; the old
     // `start > monday AND end < next` dropped week-spanning workouts entirely
     return _db
