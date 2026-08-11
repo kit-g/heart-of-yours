@@ -53,8 +53,7 @@ class _GoalDetailState extends State<GoalDetail> {
       _reading = currentGoalValue(
         goal,
         exercises: exercises,
-        workouts: widget.workouts,
-        workoutsThisMonth: () => Stats.of(context).getMonthlyWorkoutCount(DateTime.now()),
+        workoutCount: workoutCounter(Stats.of(context)),
       );
     }
 

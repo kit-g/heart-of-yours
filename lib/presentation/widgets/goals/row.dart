@@ -120,8 +120,7 @@ class _GoalRowState extends State<GoalRow> {
     return currentGoalValue(
       widget.goal,
       exercises: exercises,
-      workouts: widget.workouts,
-      workoutsThisMonth: () => Stats.of(context).getMonthlyWorkoutCount(DateTime.now()),
+      workoutCount: workoutCounter(Stats.of(context)),
     );
   }
 
