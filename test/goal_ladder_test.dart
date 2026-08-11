@@ -165,4 +165,72 @@ void main() {
       expect(find.text('No deadline'), findsOneWidget);
     });
   });
+
+  group('the session credited with a rung', () {
+    Goal achieved({String? by}) {
+      return Goal(
+        id: 'goal-1',
+        metric: .topSetWeight,
+        exerciseId: 'exercise-1',
+        stages: [
+          GoalStage(id: 's0', target: 100, achievedAt: DateTime.utc(2026, 8, 1), achievedBy: by),
+        ],
+      );
+    }
+
+    testWidgets('offers a way back to it when one is credited', (tester) async {
+      await pump(tester, achieved(by: 'workout-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    });
+
+    testWidgets('offers nothing when the rung was never attributed', (tester) async {
+      // stamped before attribution shipped, or observed on the profile screen
+      // where no workout is in hand
+      await pump(tester, achieved());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
+      expect(find.textContaining('Achieved'), findsOneWidget);
+    });
+  });
+
+  group('an achieved rung is history', () {
+    Goal ladder({required bool achieved}) {
+      return Goal(
+        id: 'goal-1',
+        metric: .topSetWeight,
+        exerciseId: 'exercise-1',
+        stages: [
+          GoalStage(id: 's0', target: 100, achievedAt: achieved ? DateTime.utc(2026, 8, 1) : null),
+          GoalStage(id: 's1', target: 120),
+        ],
+      );
+    }
+
+    testWidgets('cannot be reopened for editing', (tester) async {
+      // its target and date are what was met and when; a new rung is the way
+      // forward, not a redefined old one
+      await pump(tester, ladder(achieved: true));
+      await tester.pumpAndSettle();
+
+      final rung = tester.widget<InkWell>(
+        find.descendant(of: find.byKey(AppKeys.ladderRung('s0')), matching: find.byType(InkWell)),
+      );
+
+      expect(rung.onTap, isNull);
+    });
+
+    testWidgets('an unmet rung still opens', (tester) async {
+      await pump(tester, ladder(achieved: false));
+      await tester.pumpAndSettle();
+
+      final rung = tester.widget<InkWell>(
+        find.descendant(of: find.byKey(AppKeys.ladderRung('s0')), matching: find.byType(InkWell)),
+      );
+
+      expect(rung.onTap, isNotNull);
+    });
+  });
 }
