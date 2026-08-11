@@ -1001,6 +1001,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "goalOpenWorkout": "View the session",
+  "@goalOpenWorkout": {
+    "description": "Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalWorkoutGone": "That session is no longer on this device",
+  "@goalWorkoutGone": {
+    "description": "Shown when the workout credited with a goal rung can no longer be found",
+    "type": "text",
+    "placeholders": {}
+  },
   "goalsAtCapacity": "You have as many goals as Heart keeps. Delete one to make room for another.",
   "@goalsAtCapacity": {
     "description": "Tooltip explaining why the add-goal button is missing",
