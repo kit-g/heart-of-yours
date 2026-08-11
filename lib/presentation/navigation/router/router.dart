@@ -181,4 +181,10 @@ final class HeartRouter {
   void goToWorkouts() {
     return config.goNamed(_workoutName);
   }
+
+  /// Opens one past session — what a goal rung links back to, crediting the
+  /// workout that met it.
+  void goToWorkoutEditor(String workoutId) {
+    return config.go('$_historyPath/$workoutId');
+  }
 }
