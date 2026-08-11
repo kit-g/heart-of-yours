@@ -59,7 +59,9 @@ void main() {
     });
 
     test('retries a failed pull, and stops retrying once one succeeds', () async {
-      // the first request of a launch can lose a race with token refresh
+      // the first request of a launch can lose a race with token refresh.
+      // A pull reads both slices — the live list and the achieved surface — so
+      // a successful one costs two reads and a failed one stops at the first.
       remote.failing = true;
       await sut.init();
       expect(remote.reads, 1);
@@ -67,11 +69,108 @@ void main() {
       remote.failing = false;
       remote.goals.add(ladder(id: 'server-1'));
       await sut.init();
-      expect(remote.reads, 2);
+      expect(remote.reads, 3);
       expect(sut.single.id, 'server-1');
 
       await sut.init();
-      expect(remote.reads, 2, reason: 'a pull that succeeded is never repeated');
+      expect(remote.reads, 3, reason: 'a pull that succeeded is never repeated');
+    });
+  });
+
+  group('the achieved surface', () {
+    Goal done({String id = 'goal-1'}) {
+      return Goal(
+        id: id,
+        metric: .topSetWeight,
+        exerciseId: 'exercise-1',
+        stages: [GoalStage(id: '${id}s', target: 100, achievedAt: DateTime.utc(2026, 8, 1))],
+      );
+    }
+
+    test('files a finished goal away at launch', () async {
+      // archiving is the move, not a display flag — it is what frees a slot
+      // against the server's cap
+      final finished = done();
+      local.goals.add(finished);
+      remote.goals.add(finished);
+
+      await sut.init();
+
+      expect(sut, isEmpty);
+      expect(sut.archived.map((each) => each.id), ['goal-1']);
+      expect(sut.hasArchived, isTrue);
+    });
+
+    test('leaves a goal finished mid-session where the user can see it', () async {
+      // it was just earned; having it vanish from under them is the opposite
+      // of a reward. The next launch puts it away.
+      final live = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(live);
+      remote.goals.add(live);
+      await sut.init();
+
+      await sut.observeProgress((_) async => 120);
+
+      expect(sut.single.id, 'goal-1');
+      expect(sut.archived, isEmpty);
+    });
+
+    test('a rung added to a finished goal brings it back', () async {
+      final finished = done();
+      local.goals.add(finished);
+      remote.goals.add(finished);
+      await sut.init();
+      expect(sut.archived, hasLength(1));
+
+      final revived = sut.archived.single;
+      await sut.update(
+        revived.copyWith(
+          stages: [
+            ...revived.stages,
+            GoalStage(id: 's2', target: 120),
+          ],
+        ),
+      );
+
+      expect(sut.single.id, 'goal-1');
+      expect(sut.archived, isEmpty);
+    });
+
+    test('an edit to a still-finished goal leaves it filed away', () async {
+      // only ever revives: editing an achieved goal must not drag it back
+      final finished = done();
+      local.goals.add(finished);
+      remote.goals.add(finished);
+      await sut.init();
+
+      final filed = sut.archived.single;
+      await sut.update(filed.copyWith(stages: [filed.stages.single.copyWith(target: 110)]));
+
+      expect(sut, isEmpty);
+      expect(sut.archived, hasLength(1));
+    });
+
+    test('deleting from the achieved surface removes it there too', () async {
+      final finished = done();
+      local.goals.add(finished);
+      remote.goals.add(finished);
+      await sut.init();
+
+      await sut.remove(sut.archived.single);
+
+      expect(sut.archived, isEmpty);
+      expect(sut.hasArchived, isFalse);
+    });
+
+    test('an archived goal does not count against the cap', () async {
+      final finished = done();
+      local.goals.add(finished);
+      remote.goals.add(finished);
+
+      await sut.init();
+
+      expect(sut.isAtCapacity, isFalse);
+      expect(sut, isEmpty, reason: 'the live list is what the cap counts');
     });
   });
 
@@ -251,6 +350,56 @@ void main() {
       return sut.observeProgress((_) async => value);
     }
 
+    test('credits the workout that earned the rung', () async {
+      // posterity, and the link the goal detail renders back to that session
+      final goal = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(goal);
+      remote.goals.add(goal);
+      await sut.init();
+
+      await sut.observeProgress((_) async => 120, achievedBy: 'workout-7');
+
+      expect(local.attributed, ['workout-7']);
+      expect(remote.attributed, ['workout-7']);
+    });
+
+    test('attributes nothing when the caller does not know the session', () async {
+      // a profile build has no workout in hand, and a wrong attribution is
+      // worse than none — the server would reject an id we do not own anyway
+      final goal = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(goal);
+      remote.goals.add(goal);
+      await sut.init();
+
+      await sut.observeProgress((_) async => 120);
+
+      expect(local.attributed, [null]);
+    });
+
+    test('reports the rungs it stamped, so the caller can announce them', () async {
+      // the workout summary congratulates you for exactly these
+      final goal = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(goal);
+      remote.goals.add(goal);
+      await sut.init();
+
+      final earned = await sut.observeProgress((_) async => 120);
+
+      expect(earned, hasLength(1));
+      expect(earned.single.stage.id, 'stage-1');
+      expect(earned.single.goal.id, 'goal-1');
+    });
+
+    test('reports nothing when nothing new was met', () async {
+      // the common case: this runs on every profile build
+      final goal = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(goal);
+      remote.goals.add(goal);
+      await sut.init();
+
+      expect(await sut.observeProgress((_) async => 50), isEmpty);
+    });
+
     test('stamps a rung once its target is met', () async {
       await seed([
         ladderOf([100]),
@@ -409,14 +558,19 @@ class _FakeLocal implements LocalGoalService {
   final unsynced = <Goal>[];
   final reconciled = <String>[];
   final achieved = <String>[];
+  final attributed = <String?>[];
   final stored = <Goal>[];
   final deleted = <String>[];
 
   var _minted = 0;
 
   @override
-  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
-    return List.of(goals);
+  Future<Iterable<Goal>> getTargetUserGoals({
+    required String requesterId,
+    required String targetUserId,
+    bool archived = false,
+  }) async {
+    return goals.where((each) => each.archived == archived).toList();
   }
 
   @override
@@ -439,8 +593,15 @@ class _FakeLocal implements LocalGoalService {
   }
 
   @override
-  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
+  Future<Goal> markStageAchieved(
+    String goalId,
+    String stageId,
+    String userId,
+    DateTime achievedAt, {
+    String? achievedBy,
+  }) async {
     achieved.add(stageId);
+    attributed.add(achievedBy);
     final goal = goals.firstWhere((each) => each.id == goalId);
     return goal.copyWith(
       stages: goal.stages.map((s) => s.id == stageId ? s.copyWith(achievedAt: achievedAt) : s).toList(),
@@ -448,10 +609,12 @@ class _FakeLocal implements LocalGoalService {
   }
 
   @override
-  Future<void> storeGoals(Iterable<Goal> goals, String userId) async {
+  Future<void> storeGoals(Iterable<Goal> goals, String userId, {bool archived = false}) async {
     stored.addAll(goals);
+    // one slice at a time, as the database does — replacing the whole list here
+    // would let the live pull wipe the achieved surface
     this.goals
-      ..clear()
+      ..removeWhere((each) => each.archived == archived)
       ..addAll(goals);
   }
 
@@ -468,6 +631,7 @@ class _FakeRemote implements GoalService {
   final goals = <Goal>[];
   final created = <Goal>[];
   final achieved = <String>[];
+  final attributed = <String?>[];
 
   bool failing = false;
   String? mintedId;
@@ -484,10 +648,14 @@ class _FakeRemote implements GoalService {
   int reads = 0;
 
   @override
-  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
+  Future<Iterable<Goal>> getTargetUserGoals({
+    required String requesterId,
+    required String targetUserId,
+    bool archived = false,
+  }) async {
     reads++;
     _guard();
-    return List.of(goals);
+    return goals.where((each) => each.archived == archived).toList();
   }
 
   @override
@@ -507,9 +675,16 @@ class _FakeRemote implements GoalService {
   Future<void> deleteGoal(String goalId, String userId) async => _guard();
 
   @override
-  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
+  Future<Goal> markStageAchieved(
+    String goalId,
+    String stageId,
+    String userId,
+    DateTime achievedAt, {
+    String? achievedBy,
+  }) async {
     _guard();
     achieved.add(stageId);
+    attributed.add(achievedBy);
 
     // the stamped goal, as the endpoint returns it — handing back the stored
     // copy instead makes the caller overwrite the achievement it just recorded

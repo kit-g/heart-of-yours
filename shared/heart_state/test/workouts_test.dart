@@ -369,6 +369,109 @@ void main() {
       expect(probe2.notifications, 2);
     });
 
+    group('history reconciliation', () {
+      /// A workout as the server would hand it back: finished and synced.
+      Workout fromServer({required String id, required DateTime start}) {
+        return Workout.fromJson({
+          'id': id,
+          'start': start.toIso8601String(),
+          'end': start.add(const Duration(hours: 1)).toIso8601String(),
+          'exercises': [],
+        });
+      }
+
+      /// Wires the local service over a mutable store, so a delete actually
+      /// removes the row — `syncPendingWorkouts` re-reads history immediately
+      /// after reconciling, and a static stub would hand the row straight back.
+      List<Workout> stubLocal(List<Workout> stored) {
+        when(local.getWorkoutHistory('u1')).thenAnswer((_) async => List.of(stored));
+        when(local.deleteWorkout(any)).thenAnswer((invocation) async {
+          stored.removeWhere((each) => each.id == invocation.positionalArguments.first);
+        });
+        when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
+        when(
+          remote.getWorkoutGallery(cursor: anyNamed('cursor')),
+        ).thenAnswer((_) async => ProgressGalleryResponse.fromJson({'images': []}));
+        return stored;
+      }
+
+      test('drops a workout the server no longer has', () async {
+        // deleted on another device. storeWorkoutHistory only upserts, so
+        // nothing else would ever remove it from this one's mirror
+        final kept = fromServer(id: 'kept', start: DateTime(2026, 8, 5));
+        final deletedElsewhere = fromServer(id: 'gone', start: DateTime(2026, 8, 6));
+
+        stubLocal([kept, deletedElsewhere]);
+        when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [kept]);
+
+        await sut.initHistory();
+
+        expect(sut.lookup('gone'), isNull);
+        expect(sut.lookup('kept'), isNotNull);
+        verify(local.deleteWorkout('gone')).called(1);
+      });
+
+      test('leaves history older than the page alone', () async {
+        // the page is the newest N; anything before its oldest member simply
+        // was not asked about, and absence is not evidence of deletion
+        final older = fromServer(id: 'older', start: DateTime(2026, 1, 2));
+        final page = fromServer(id: 'recent', start: DateTime(2026, 8, 6));
+
+        stubLocal([older, page]);
+        when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [page]);
+
+        await sut.initHistory();
+
+        expect(sut.lookup('older'), isNotNull);
+        verifyNever(local.deleteWorkout('older'));
+      });
+
+      test('leaves an unsynced workout alone', () async {
+        // a local write the server has not seen yet — the opposite of a
+        // deletion, and deleting it would lose the session outright
+        final pending = Workout(name: 'not pushed yet')..finish(DateTime(2026, 8, 7));
+        final page = fromServer(id: 'recent', start: DateTime(2026, 8, 6));
+
+        stubLocal([pending, page]);
+        when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [page]);
+        when(remote.saveWorkout(any)).thenAnswer((invocation) async => invocation.positionalArguments.first);
+
+        await sut.initHistory();
+
+        verifyNever(local.deleteWorkout(pending.id));
+      });
+
+      test('reconciles nothing when the page comes back empty', () async {
+        // an empty page is indistinguishable from a server answering wrongly,
+        // and the price of being wrong is every workout the user has
+        final local1 = fromServer(id: 'a', start: DateTime(2026, 8, 5));
+        final local2 = fromServer(id: 'b', start: DateTime(2026, 8, 6));
+
+        stubLocal([local1, local2]);
+        when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => <Workout>[]);
+
+        await sut.initHistory();
+
+        expect(sut.lookup('a'), isNotNull);
+        expect(sut.lookup('b'), isNotNull);
+        verifyNever(local.deleteWorkout('a'));
+        verifyNever(local.deleteWorkout('b'));
+      });
+
+      test('reconciles nothing when the fetch failed', () async {
+        // a null page is an error, not an empty server
+        final held = fromServer(id: 'held', start: DateTime(2026, 8, 5));
+
+        stubLocal([held]);
+        when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenThrow(Exception('offline'));
+
+        await sut.initHistory();
+
+        expect(sut.lookup('held'), isNotNull);
+        verifyNever(local.deleteWorkout('held'));
+      });
+    });
+
     test('fetchWorkout stores and notifies when found', () async {
       final w = Workout(name: 'fetched');
       when(local.getWorkout('u1', any)).thenAnswer((_) async => w);

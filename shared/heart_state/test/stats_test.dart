@@ -29,6 +29,15 @@ class RecordingStatsService implements LocalStatsService {
     monthlyCountCalls.add((d, userId));
     return monthlyCountToReturn;
   }
+
+  final List<String?> totalCountCalls = [];
+  int totalCountToReturn = 0;
+
+  @override
+  Future<int> getTotalWorkoutCount({String? userId}) async {
+    totalCountCalls.add(userId);
+    return totalCountToReturn;
+  }
 }
 
 void main() {

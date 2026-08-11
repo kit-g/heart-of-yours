@@ -11,6 +11,9 @@ abstract interface class LocalStatsService implements StatsService {
   /// Finished workouts in [d]'s calendar month.
   Future<int> getMonthlyWorkoutCount(DateTime d, {String? userId});
 
+  /// Every finished workout, unbounded — what a "do N workouts" goal counts.
+  Future<int> getTotalWorkoutCount({String? userId});
+
   /// The shared signature takes no user, which counted every account that had
   /// ever signed in on the device. Widened here — an override may add optional
   /// parameters — so both counts are scoped the same way.
@@ -63,5 +66,10 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   /// a week that straddles the first of the month belongs to neither cleanly.
   Future<int> getMonthlyWorkoutCount(DateTime d) {
     return _service.getMonthlyWorkoutCount(d, userId: userId);
+  }
+
+  /// Every finished workout this device knows about.
+  Future<int> getTotalWorkoutCount() {
+    return _service.getTotalWorkoutCount(userId: userId);
   }
 }
