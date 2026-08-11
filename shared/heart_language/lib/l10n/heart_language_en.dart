@@ -524,6 +524,15 @@ class LEn extends L {
   String get goalClearDeadline => 'Clear deadline';
 
   @override
+  String get goalsViewAchieved => 'Achieved';
+
+  @override
+  String get goalsAchievedTitle => 'Achieved';
+
+  @override
+  String get goalsViewActive => 'Back';
+
+  @override
   String get goalsAtCapacity => 'You have as many goals as Heart keeps. Delete one to make room for another.';
 
   @override
@@ -1444,6 +1453,15 @@ class LEnCa extends LEn {
 
   @override
   String get goalClearDeadline => 'Clear deadline';
+
+  @override
+  String get goalsViewAchieved => 'Achieved';
+
+  @override
+  String get goalsAchievedTitle => 'Achieved';
+
+  @override
+  String get goalsViewActive => 'Back';
 
   @override
   String get goalsAtCapacity => 'You have as many goals as Heart keeps. Delete one to make room for another.';
