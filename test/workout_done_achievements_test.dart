@@ -80,6 +80,31 @@ void main() {
     expect(find.textContaining('180 kg'), findsOneWidget);
   });
 
+  testWidgets('survives a rebuild, having only one answer to give', (tester) async {
+    // The observation stamps what it finds, so it reports a rung exactly once.
+    // This block watches Preferences and Exercises, so any notification rebuilds
+    // it — asking again from `build` made the congratulation vanish as fast as
+    // it appeared.
+    var asked = 0;
+    await pump(tester, () async {
+      asked++;
+      final g = goal('goal-1', 180);
+      return switch (asked) {
+        1 => [(goal: g, stage: g.stages.single)],
+        // the second answer is what the real observation gives: nothing new
+        _ => const <GoalAchievement>[],
+      };
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Goal reached'), findsOneWidget);
+
+    exercises.notifyListeners();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Goal reached'), findsOneWidget);
+    expect(asked, 1);
+  });
+
   testWidgets('pluralises when a session clears more than one', (tester) async {
     await pump(tester, () async {
       final first = goal('goal-1', 180);
@@ -92,6 +117,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Goals reached'), findsOneWidget);
+  });
+
+  testWidgets('arrives over a beat rather than appearing outright', (tester) async {
+    // it lands into a screen that has already settled, so appearing instantly
+    // reads as a glitch rather than as the session's one piece of news
+    final pending = Completer<List<GoalAchievement>>();
+    await pump(tester, () => pending.future);
+    await tester.pump();
+
+    final g = goal('goal-1', 180);
+    pending.complete([(goal: g, stage: g.stages.single)]);
+    await tester.pump();
+    // one frame in, it is on its way but not yet arrived
+    await tester.pump(const Duration(milliseconds: 60));
+
+    final faded = tester.widget<FadeTransition>(
+      find.ancestor(of: find.text('Goal reached'), matching: find.byType(FadeTransition)).first,
+    );
+    expect(faded.opacity.value, greaterThan(0));
+    expect(faded.opacity.value, lessThan(1));
+
+    await tester.pumpAndSettle();
+    expect(find.text('Goal reached'), findsOneWidget);
   });
 
   testWidgets('says nothing at all when the session earned none', (tester) async {
