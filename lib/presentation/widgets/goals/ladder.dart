@@ -46,7 +46,7 @@ class GoalLadder extends StatelessWidget {
           Align(
             alignment: .centerLeft,
             child: Padding(
-              padding: const .fromLTRB(16, 8, 16, 0),
+              padding: const .fromLTRB(16, 8, 16, 16),
               child: PrimaryButton.shrunk(
                 key: AppKeys.addRung,
                 onPressed: () => _addRung(context),
@@ -231,6 +231,7 @@ class _Rung extends StatelessWidget {
     final workouts = Workouts.of(context);
     final router = HeartRouter.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
     final gone = L.of(context).goalWorkoutGone;
 
     final resolved = workouts.lookup(workoutId) != null || await workouts.fetchWorkout(workoutId);
@@ -239,6 +240,7 @@ class _Rung extends StatelessWidget {
       case false:
         messenger.snack(gone);
       case true:
+        navigator.pop();
         router.goToWorkoutEditor(workoutId);
     }
   }
