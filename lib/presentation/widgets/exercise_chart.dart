@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
@@ -89,7 +91,23 @@ class _ExerciseChartState extends State<ExerciseChart> {
     final reversed = records.reversed.toList();
     // aim for ~6 date labels regardless of how many points there are, so a long
     // history doesn't crowd the axis
-    final labelEvery = (reversed.length / 6).ceil().clamp(1, reversed.length);
+    // One label per *day*, not per Nth point. Points are sessions, so training
+    // twice in a day used to print the same date twice — "8/9, 8/9, 8/9, 8/11"
+    // reads as a broken axis rather than a busy week. The first session of each
+    // day carries the label, and those are then thinned to roughly six.
+    final firstOfDay = <int>[];
+    String? previous;
+    for (final (index, (_, at)) in reversed.indexed) {
+      final day = L.of(context).dayAndMonth(at);
+      if (day == previous) continue;
+      previous = day;
+      firstOfDay.add(index);
+    }
+    final labelEvery = (firstOfDay.length / 6).ceil().clamp(1, max(firstOfDay.length, 1));
+    final labelled = {
+      for (final (nth, index) in firstOfDay.indexed)
+        if (nth % labelEvery == 0) index,
+    };
 
     return SizedBox(
       height: 300,
@@ -109,7 +127,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
           },
         ),
         getBottomLabel: (x) {
-          return switch (x % labelEvery == 0) {
+          return switch (labelled.contains(x)) {
             true => L.of(context).dayAndMonth(reversed[x].$2),
             false => '',
           };
