@@ -15,6 +15,14 @@ String goalTitle(BuildContext context, Goal goal, Exercise? exercise) {
 
 /// The line under the title: where the user is, and the deadline if there is
 /// one. A cadence goal says "1 / 4 · per week"; a ladder says what is next.
+/// [current] is in the units the app *stores*, exactly as [currentGoalValue]
+/// answers — this converts it, the same way it converts the target.
+///
+/// Taking it pre-converted was the ambiguity that broke it: the target was
+/// converted in here while `current` was printed as handed over, so whichever
+/// call site guessed differently was wrong. The row converted first, the detail
+/// sheet did not, and an imperial user read "100 / 225 lbs" with 100 still in
+/// kilograms. One function owns the units now.
 String goalStatus(
   BuildContext context,
   Goal goal, {
@@ -28,7 +36,7 @@ String goalStatus(
   // num, not double: a workout count arrives as an int and would otherwise
   // fall through to the empty branch, quietly dropping the progress
   final progress = switch (current) {
-    final num value => '${value.trimmed()} / ',
+    final num value => '${goal.convert(settings, value).trimmed()} / ',
     _ => '',
   };
 
