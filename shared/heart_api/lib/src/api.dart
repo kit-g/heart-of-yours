@@ -309,10 +309,15 @@ class Api
   }
 
   @override
-  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
+  Future<Iterable<Goal>> getTargetUserGoals({
+    required String requesterId,
+    required String targetUserId,
+    bool archived = false,
+  }) async {
     // Reading goals is scoped by whose they are — the same shape workouts use,
-    // where asking for your own id is the first allowed case.
-    final (json, _) = await get(Router.userGoals(targetUserId));
+    // where asking for your own id is the first allowed case. `archived` picks
+    // a slice rather than widening one: true returns only the achieved goals.
+    final (json, _) = await get(Router.userGoals(targetUserId, archived: archived));
     return switch (json) {
       {'goals': List l} => l.map((each) => Goal.fromJson(each as Map)),
       _ => const <Goal>[],
@@ -345,10 +350,21 @@ class Api
   }
 
   @override
-  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
+  Future<Goal> markStageAchieved(
+    String goalId,
+    String stageId,
+    String userId,
+    DateTime achievedAt, {
+    String? achievedBy,
+  }) async {
     final (json, code) = await put(
       Router.goalStage(goalId, stageId),
-      body: {'achievedAt': achievedAt.toUtc().toIso8601String()},
+      body: {
+        'achievedAt': achievedAt.toUtc().toIso8601String(),
+        // the workout credited with the rung; the server rejects one the
+        // caller does not own, so it is sent only when we have it
+        'achievedBy': ?achievedBy,
+      },
     );
     return switch ((code, json)) {
       (200, Map json) => Goal.fromJson(json),
@@ -403,8 +419,9 @@ abstract final class Router {
     return '$goals/$goalId';
   }
 
-  static String userGoals(String targetUserId) {
-    return '$accounts/$targetUserId/goals';
+  static String userGoals(String targetUserId, {bool archived = false}) {
+    final path = '$accounts/$targetUserId/goals';
+    return archived ? '$path?archived=true' : path;
   }
 
   static String goalStage(String goalId, String stageId) {
@@ -425,8 +442,14 @@ abstract final class Router {
 }
 
 extension on Goal {
-  /// The definition only. `id`, `archived` and `createdAt` are the server's to
-  /// own, and the typed input layer on the other end takes just these fields.
+  /// The definition, the ladder, and which side of the card it lives on.
+  ///
+  /// `id` and `createdAt` stay the server's to mint. `archived` does not: the
+  /// app decides when a finished goal is put away, and the server counts only
+  /// non-archived goals against the cap — so leaving it out meant archiving
+  /// never persisted, and the next pull handed the goal straight back to the
+  /// live list.
+  ///
   /// Stage ids *are* sent when we have them — the server preserves the ones it
   /// is given, which is what keeps an offline-minted ladder addressable.
   Map<String, dynamic> toBody() {
@@ -434,6 +457,7 @@ extension on Goal {
       'metric': metric.value,
       'exerciseId': ?exerciseId,
       'cadence': ?cadence?.value,
+      'archived': archived,
       'stages': stages.map((stage) => stage.toMap()).toList(),
     };
   }
