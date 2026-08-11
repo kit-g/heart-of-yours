@@ -40,4 +40,10 @@ abstract final class AppKeys {
 
   /// Stands in for the add-goal button once the server would refuse another.
   static const goalsAtCapacity = Key('Goals.atCapacity');
+
+  /// Turns the goals card over to the goals already achieved.
+  static const goalsViewAchieved = Key('Goals.viewAchieved');
+
+  /// Turns it back to the goals still being worked on.
+  static const goalsViewActive = Key('Goals.viewActive');
 }

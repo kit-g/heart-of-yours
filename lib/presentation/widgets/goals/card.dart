@@ -31,6 +31,11 @@ class _GoalsCardState extends State<GoalsCard> {
   final _searchController = TextEditingController();
   final _focus = FocusNode();
 
+  /// Which face is up. Local to the card — nothing outside it cares, and it
+  /// resets to the live list whenever the profile is rebuilt, which is the
+  /// right default every time.
+  bool _showsAchieved = false;
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -42,8 +47,22 @@ class _GoalsCardState extends State<GoalsCard> {
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final L(:goals, :addGoal, :noGoalsYet, :goalsAtCapacity) = L.of(context);
+    final L(
+      :goals,
+      :addGoal,
+      :noGoalsYet,
+      :goalsAtCapacity,
+      :goalsViewAchieved,
+      :goalsAchievedTitle,
+      :goalsViewActive,
+    ) = L.of(
+      context,
+    );
     final state = Goals.watch(context);
+
+    // Nothing to turn to, so nothing offers to: the button appears with the
+    // first achieved goal and goes with the last.
+    if (!state.hasArchived && _showsAchieved) _showsAchieved = false;
 
     final body = Container(
       // clipped: a swiping row paints edge to edge now, and without this the
@@ -73,6 +92,21 @@ class _GoalsCardState extends State<GoalsCard> {
       ),
     );
 
+    final achieved = Container(
+      clipBehavior: .antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: const .all(.circular(12)),
+        // tinted rather than neutral: turning the card over should land you
+        // somewhere that plainly is not the list you left. Derived from the
+        // seed, so it holds under whatever accent the user picked.
+        color: colorScheme.secondaryContainer,
+      ),
+      child: Padding(
+        padding: const .symmetric(vertical: 8),
+        child: _rows(state.archived),
+      ),
+    );
+
     // Same skeleton as the aggregation chart it sits beside — a title in
     // `titleLarge` over a filled, rounded block. An outlined box with the title
     // inside read as a different kind of object entirely, side by side.
@@ -87,44 +121,85 @@ class _GoalsCardState extends State<GoalsCard> {
           SizedBox(
             height: widget.headerHeight,
             child: Row(
+              spacing: 8,
               children: [
                 Expanded(
-                  child: Text(goals, style: textTheme.titleLarge),
+                  child: AnimatedSwitcher(
+                    duration: _flipDuration,
+                    switchInCurve: _flipCurve,
+                    // the switcher stacks its children centred, which pushed
+                    // the heading off the left edge every other tile lines up on
+                    layoutBuilder: (current, previous) {
+                      return Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [...previous, ?current],
+                      );
+                    },
+                    child: Text(
+                      _showsAchieved ? goalsAchievedTitle : goals,
+                      key: ValueKey(_showsAchieved),
+                      style: textTheme.titleLarge,
+                    ),
+                  ),
                 ),
+                // Only ever offered when there is something on the other side.
+                if (state.hasArchived)
+                  PrimaryButton.shrunk(
+                    key: _showsAchieved ? AppKeys.goalsViewActive : AppKeys.goalsViewAchieved,
+                    onPressed: () => setState(() => _showsAchieved = !_showsAchieved),
+                    child: Text(_showsAchieved ? goalsViewActive : goalsViewAchieved),
+                  ),
                 // At the cap the button goes rather than staying and failing:
                 // the server refuses the create, and a dead button that reports
                 // an error afterwards is worse than one that is not offered.
                 // The mark is there for anyone who wonders where it went.
-                switch (state.isAtCapacity) {
-                  true => Tooltip(
-                    key: AppKeys.goalsAtCapacity,
-                    message: goalsAtCapacity,
-                    // tap, not hover: on a phone there is nothing to hover with
-                    triggerMode: TooltipTriggerMode.tap,
-                    showDuration: const Duration(seconds: 4),
-                    child: Icon(
-                      Icons.help_outline_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                AnimatedSize(
+                  duration: _flipDuration,
+                  curve: _flipCurve,
+                  alignment: Alignment.centerRight,
+                  child: AnimatedOpacity(
+                    duration: _flipDuration,
+                    curve: _flipCurve,
+                    opacity: _showsAchieved ? 0 : 1,
+                    child: switch (_showsAchieved) {
+                      // width collapses to nothing, so the flip button slides
+                      // across into the space rather than jumping
+                      true => const SizedBox.shrink(),
+                      false => switch (state.isAtCapacity) {
+                        true => Tooltip(
+                          key: AppKeys.goalsAtCapacity,
+                          message: goalsAtCapacity,
+                          // tap, not hover: on a phone there is nothing to hover with
+                          triggerMode: TooltipTriggerMode.tap,
+                          showDuration: const Duration(seconds: 4),
+                          child: Icon(
+                            Icons.help_outline_rounded,
+                            size: 20,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        false => PrimaryButton.shrunk(
+                          onPressed: _addGoal,
+                          child: Row(
+                            spacing: 6,
+                            children: [
+                              const Icon(Icons.add_rounded, size: 20),
+                              Text(addGoal),
+                            ],
+                          ),
+                        ),
+                      },
+                    },
                   ),
-                  false => PrimaryButton.shrunk(
-                    onPressed: _addGoal,
-                    child: Row(
-                      spacing: 6,
-                      children: [
-                        const Icon(Icons.add_rounded, size: 20),
-                        Text(addGoal),
-                      ],
-                    ),
-                  ),
-                },
+                ),
               ],
             ),
           ),
           switch (widget.bounded) {
-            true => Expanded(child: body),
-            false => body,
+            true => Expanded(
+              child: _FlipCard(showsBack: _showsAchieved, front: body, back: achieved),
+            ),
+            false => _FlipCard(showsBack: _showsAchieved, front: body, back: achieved),
           },
         ],
       ),
