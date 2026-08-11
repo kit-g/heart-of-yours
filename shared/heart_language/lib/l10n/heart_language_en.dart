@@ -1857,6 +1857,12 @@ class LEnCa extends LEn {
   String get copiedToClipboard => 'Copied to clipboard';
 
   @override
+  String get weightUnitLabel => 'Weight unit';
+
+  @override
+  String get distanceUnitLabel => 'Distance unit';
+
+  @override
   String get close => 'Close';
 
   @override
