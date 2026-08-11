@@ -170,6 +170,9 @@ goalAchievedOn,When a milestone's target was first met,Achieved {date},Achieved 
 goalNoDeadline,Shown on a milestone the user has not given a date to,No deadline,No deadline,Без срока
 goalSetDeadline,Button that opens the date picker for a milestone,Set a deadline,Set a deadline,Указать срок
 goalClearDeadline,Button that removes a milestone's date,Clear deadline,Clear deadline,Убрать срок
+goalsViewAchieved,Button on the goals card that flips it over to show goals already achieved,Achieved,Achieved,Достигнутые
+goalsAchievedTitle,"Heading on the back of the goals card, above the goals already achieved",Achieved,Achieved,Достигнутые
+goalsViewActive,Button on the back of the goals card that flips it to the goals still being worked on,Back,Back,Назад
 goalsAtCapacity,Tooltip explaining why the add-goal button is missing,You have as many goals as Heart keeps. Delete one to make room for another.,You have as many goals as Heart keeps. Delete one to make room for another.,Больше целей Heart не хранит. Удалите одну
 category,Label button that allows to choose Exercise category,Category,Category,Категория
 target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель

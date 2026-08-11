@@ -1028,6 +1028,24 @@ abstract class L {
   /// **'Clear deadline'**
   String get goalClearDeadline;
 
+  /// Button on the goals card that flips it over to show goals already achieved
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved'**
+  String get goalsViewAchieved;
+
+  /// Heading on the back of the goals card, above the goals already achieved
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved'**
+  String get goalsAchievedTitle;
+
+  /// Button on the back of the goals card that flips it to the goals still being worked on
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get goalsViewActive;
+
   /// Tooltip explaining why the add-goal button is missing
   ///
   /// In en, this message translates to:
