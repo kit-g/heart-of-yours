@@ -58,6 +58,14 @@ jobs:
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options.dart lib/firebase_options.dart
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/firebase/firebase_options_prod.dart lib/firebase_options_prod.dart
 
+      # AGP 9.3's bundled lint calls List.removeLast(), a JDK 21 API,
+      # so lintVital crashes on the runner's default JDK 17
+      - name: "Set up JDK"
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: "Read pinned Flutter version"
         id: flutter
         run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
