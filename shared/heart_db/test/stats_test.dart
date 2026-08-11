@@ -12,9 +12,9 @@ void main() {
   const userId = 'user-1';
   const strangerId = 'user-2';
 
-  // all seeds are derived from the Monday of the current week — the same
-  // anchor the queries themselves compute from DateTime.timestamp()
-  final monday = getMonday(DateTime.timestamp());
+  // all seeds are derived from the Monday of the current week on the user's own
+  // calendar — the anchor the queries and the aggregation both use now
+  final monday = getMonday(DateTime.now());
 
   // calendar arithmetic (not Duration) so day offsets survive DST shifts
   DateTime dayOf({int daysFromMonday = 0, int hour = 12, int minute = 0}) {
@@ -31,13 +31,17 @@ void main() {
     String? name,
   }) async {
     final id = 'workout-${sequence++}';
+    // Stored in UTC, as production does: `Workout.start` defaults to
+    // `DateTime.timestamp()`. Seeding local wall-clock strings here hid a bug
+    // where the queries built their boundaries in local time and compared them
+    // against UTC rows — the two agree only at UTC+0.
     await db.insert('workouts', {
       'id': id,
-      'start': start.toIso8601String(),
+      'start': start.toUtc().toIso8601String(),
       'end': switch ((finished, end)) {
         (false, _) => null,
-        (true, DateTime e) => e.toIso8601String(),
-        (true, null) => start.add(const Duration(hours: 1)).toIso8601String(),
+        (true, DateTime e) => e.toUtc().toIso8601String(),
+        (true, null) => start.add(const Duration(hours: 1)).toUtc().toIso8601String(),
       },
       'user_id': user,
       'name': name,
@@ -142,6 +146,9 @@ void main() {
       test(
         'Sunday night and Monday morning land in adjacent weeks',
         () async {
+          // The bucketing is on the user's calendar now, so a Sunday 23:59
+          // session stays in the week the user lived it — west of UTC it is
+          // already Monday in UTC, which used to file it into the next week.
           final sundayNight = dayOf(daysFromMonday: -1, hour: 23, minute: 59);
           await seedWorkout(start: sundayNight);
           final mondayId = await seedWorkout(start: dayOf(hour: 0, minute: 30));
@@ -276,6 +283,42 @@ void main() {
 
           expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 3), userId: userId), 1);
           expect(await local.getWeeklyWorkoutCount(dayOf(daysFromMonday: 10), userId: userId), 0);
+        },
+      );
+    },
+  );
+
+  group(
+    'getTotalWorkoutCount',
+    () {
+      test(
+        'counts every finished workout, with no period bound',
+        () async {
+          // what a "do N workouts" milestone counts — weeks and months are
+          // irrelevant to it, which is why it gets its own query
+          await seedWorkout(start: dayOf(daysFromMonday: 1));
+          await seedWorkout(start: dayOf(daysFromMonday: -30));
+          await seedWorkout(start: dayOf(daysFromMonday: -400));
+
+          expect(await local.getTotalWorkoutCount(userId: userId), 3);
+        },
+      );
+
+      test(
+        'excludes unfinished workouts and other users',
+        () async {
+          await seedWorkout(start: dayOf(daysFromMonday: 1));
+          await seedWorkout(start: dayOf(daysFromMonday: 2), finished: false);
+          await seedWorkout(start: dayOf(daysFromMonday: 3), user: strangerId);
+
+          expect(await local.getTotalWorkoutCount(userId: userId), 1);
+        },
+      );
+
+      test(
+        'answers zero for a user with nothing logged',
+        () async {
+          expect(await local.getTotalWorkoutCount(userId: userId), 0);
         },
       );
     },
