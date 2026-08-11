@@ -20,8 +20,13 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
   final _searchController = TextEditingController();
   final _focus = FocusNode();
 
+  /// Held so the listener can be removed without a context, which `dispose`
+  /// cannot safely reach a provider through.
+  Workouts? _workouts;
+
   @override
   void dispose() {
+    _workouts?.removeListener(_onWorkoutsChanged);
     _searchController.dispose();
     _focus.dispose();
 
@@ -155,10 +160,34 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     );
   }
 
+  /// How many finished workouts the app knew about last time the aggregation
+  /// was rebuilt. Deleting one — or finishing one elsewhere — has to rebuild it,
+  /// or the profile keeps reporting a week that no longer exists and every goal
+  /// keeps the value it cached against it.
+  int? _knownWorkouts;
+
   @override
   void afterFirstLayout(BuildContext context) {
+    final workouts = _workouts = Workouts.of(context);
+    _knownWorkouts = workouts.history.length;
+    workouts.addListener(_onWorkoutsChanged);
+
     Stats.of(context).init();
     _observeGoals();
+  }
+
+  /// Rebuilds the aggregation when the set of finished workouts changes.
+  ///
+  /// [Workouts] notifies constantly during an active session — every set ticked
+  /// — so the count is the filter: only a workout appearing or disappearing is
+  /// worth re-querying for.
+  void _onWorkoutsChanged() {
+    if (!mounted) return;
+    final count = Workouts.of(context).history.length;
+    if (count == _knownWorkouts) return;
+
+    _knownWorkouts = count;
+    Stats.of(context).init();
   }
 
   /// Records anything already achieved, once the goals and the local history
@@ -174,12 +203,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
 
     await goals.init();
     await goals.observeProgress(
-      (goal) => currentGoalValue(
-        goal,
-        exercises: exercises,
-        workouts: stats.workouts,
-        workoutsThisMonth: () => stats.getMonthlyWorkoutCount(DateTime.now()),
-      ),
+      (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
     );
   }
 
