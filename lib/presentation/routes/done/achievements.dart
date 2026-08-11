@@ -7,10 +7,24 @@ part of 'done.dart';
 /// card. It also renders nothing while it waits: the observation has to read
 /// the workout back out of the database, and a spinner here would sit in the
 /// middle of the confetti for no reason.
-class _Achievements extends StatelessWidget {
+class _Achievements extends StatefulWidget {
   final Future<List<GoalAchievement>> Function() callback;
 
   const _Achievements({required this.callback});
+
+  @override
+  State<_Achievements> createState() => _AchievementsState();
+}
+
+class _AchievementsState extends State<_Achievements> {
+  /// Resolved once, not per build.
+  ///
+  /// The observation *stamps* what it finds, so it only ever reports a rung the
+  /// first time. This widget watches [Preferences] and [Exercises] for its
+  /// copy, so it rebuilds on any of their notifications — asking again from
+  /// `build` meant the second answer was empty and the congratulation vanished
+  /// as fast as it appeared.
+  late final Future<List<GoalAchievement>> _earned = widget.callback();
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +34,7 @@ class _Achievements extends StatelessWidget {
     final exercises = Exercises.watch(context);
 
     return FutureBuilder<List<GoalAchievement>>(
-      future: callback(),
+      future: _earned,
       builder: (_, snapshot) {
         final earned = snapshot.data;
         if (earned == null || earned.isEmpty) return const SizedBox.shrink();
