@@ -526,6 +526,15 @@ class LRu extends L {
   String get goalClearDeadline => 'Убрать срок';
 
   @override
+  String get goalsViewAchieved => 'Достигнутые';
+
+  @override
+  String get goalsAchievedTitle => 'Достигнутые';
+
+  @override
+  String get goalsViewActive => 'Назад';
+
+  @override
   String get goalsAtCapacity => 'Больше целей Heart не хранит. Удалите одну';
 
   @override

@@ -983,6 +983,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "goalsViewAchieved": "Достигнутые",
+  "@goalsViewAchieved": {
+    "description": "Button on the goals card that flips it over to show goals already achieved",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalsAchievedTitle": "Достигнутые",
+  "@goalsAchievedTitle": {
+    "description": "Heading on the back of the goals card, above the goals already achieved",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalsViewActive": "Назад",
+  "@goalsViewActive": {
+    "description": "Button on the back of the goals card that flips it to the goals still being worked on",
+    "type": "text",
+    "placeholders": {}
+  },
   "goalsAtCapacity": "Больше целей Heart не хранит. Удалите одну",
   "@goalsAtCapacity": {
     "description": "Tooltip explaining why the add-goal button is missing",
