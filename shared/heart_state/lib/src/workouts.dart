@@ -137,14 +137,52 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<void> fetchWorkout(String workoutId) async {
-    if (userId case String userId) {
-      final workout = await _localService.getWorkout(userId, workoutId);
-      if (workout != null) {
-        _workouts[workoutId] = workout;
+  /// Resolves one workout, local mirror first, then the server.
+  ///
+  /// The mirror only holds what has been paged in — twenty workouts on the
+  /// first launch — so "not here" is usually "not downloaded", not "gone".
+  /// Without the remote leg a deep link into older history dead-ends, a web
+  /// client with no warm mirror can resolve nothing at all, and a connection's
+  /// session is unreachable by construction: [initHistory] only ever pulls the
+  /// signed-in user's own list.
+  ///
+  /// [ownerId] is whose workout it is, defaulting to the signed-in user. Passing
+  /// someone else's asks the server on their behalf; it answers only for an
+  /// active connection, and refuses otherwise.
+  ///
+  /// Returns whether the workout could be resolved at all, so a caller can tell
+  /// a missing workout from one it simply has not fetched yet.
+  Future<bool> fetchWorkout(String workoutId, {String? ownerId}) async {
+    if (userId case String id) {
+      final local = await _localService.getWorkout(id, workoutId);
+      if (local != null) {
+        _workouts[workoutId] = local;
         notifyListeners();
+        return true;
+      }
+
+      try {
+        final remote = await _remoteService.getTargetWorkout(
+          requesterId: id,
+          targetUserId: ownerId ?? id,
+          workoutId: workoutId,
+        );
+        _workouts[remote.id] = remote;
+        // cached only when it is the user's own — the mirror is theirs, and
+        // storing a connection's session in it would leak into their history,
+        // their aggregation and every goal measured against it
+        if ((ownerId ?? id) == id) {
+          await _localService.storeWorkoutHistory([remote], id);
+        }
+        notifyListeners();
+        return true;
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+        return false;
       }
     }
+
+    return false;
   }
 
   Future<void> startWorkout({String? name, Workout? template}) {
@@ -163,25 +201,34 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Exposed because the workout summary is pushed the moment finishing starts,
   /// not when it lands — and anything reading the workout back out of the
   /// database (goal progress, most of all) has to wait for the write.
-  Future<void>? get finishing => _finishing;
+  /// The finish most recently started, completing with the workout as it ended
+  /// up — or null if there was nothing active to finish.
+  Future<Workout?>? get finishing => _finishing;
 
-  Future<void>? _finishing;
+  Future<Workout?>? _finishing;
 
-  Future<void> finishActiveWorkout() {
+  Future<Workout?> finishActiveWorkout() {
     return _finishing = _finishActiveWorkout();
   }
 
-  Future<void> _finishActiveWorkout() async {
+  Future<Workout?> _finishActiveWorkout() async {
     activeWorkout?.finish(DateTime.timestamp());
 
     final active = activeWorkout;
-    if (active == null) return;
+    if (active == null) return null;
 
-    await saveWorkout(active);
+    final saved = await saveWorkout(active);
     _activeWorkout = null;
+    return saved;
   }
 
-  Future<void> saveWorkout(Workout active) async {
+  /// Returns the workout as it ended up — the server's copy where the push
+  /// landed, the local one where it did not.
+  ///
+  /// Which matters because the server mints its own id: anything that wants to
+  /// *refer* to this session afterwards has to use the id it came back with,
+  /// not the one it was saved under.
+  Future<Workout> saveWorkout(Workout active) async {
     active.removeEmptySets();
     await _localService.finishWorkout(active, userId!);
 
@@ -199,8 +246,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         await _localService.storeWorkoutHistory([saved], id);
       }
       notifyListeners();
+      return saved;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
+      return active;
     }
   }
 

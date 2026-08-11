@@ -55,6 +55,14 @@ class GoalRejected implements Exception {
   /// yet pulled — so it is worth saying out loud rather than only reporting.
   bool get isAtCapacity => code == 'goal_limit';
 
+  /// The workout credited with a rung is not one the server will accept — it
+  /// belongs to someone else, or this device pushed the stamp before the
+  /// workout itself landed.
+  ///
+  /// The achievement is still real; only the attribution was refused. Worth
+  /// telling apart so a stamp can be retried without it rather than dropped.
+  bool get isUnknownWorkout => code == 'goal_workout_unknown';
+
   /// Named, but still transient: the request was fine and the server broke.
   static const _serverError = 'server_error';
 
@@ -148,6 +156,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
 
   @override
   void onSignOut() {
+    _retired = false;
     _archived.clear();
     _goals.clear();
     userId = null;
@@ -203,12 +212,23 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   /// was just earned, and having it vanish from under them mid-session is the
   /// opposite of a reward. The next launch puts it away. Archiving is what
   /// actually moves it, which is also what frees a slot against the cap.
+  ///
+  /// Runs once per session, not once per [init]. `init` is called from the
+  /// profile screen *and* on every auth-state emission — token refresh included
+  /// — so tying retirement to it filed a goal away the moment one of those
+  /// landed after it was earned, which is exactly what this is meant to prevent.
   Future<void> _retireCompleted() async {
+    if (_retired) return;
+    _retired = true;
+
     final finished = _goals.where((goal) => goal.isComplete).toList();
     for (final goal in finished) {
       await archive(goal);
     }
   }
+
+  /// Whether this session has already filed away what it found finished.
+  bool _retired = false;
 
   /// Server wins for anything it has already confirmed.
   ///
@@ -285,7 +305,10 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<Goal> _setArchived(Goal goal, bool archived) async {
     final id = userId!;
     final goalId = goal.id!;
-    final moved = goal.copyWith(archived: archived);
+    // Ordered here too. Reviving comes through this path rather than [update],
+    // so without it a rung added to a finished ladder kept the position it was
+    // typed in — visible the moment the new one is due before an existing one.
+    final moved = Goal.inDeadlineOrder(goal).copyWith(archived: archived);
 
     final (from, to) = switch (archived) {
       true => (_goals, _archived),
@@ -328,11 +351,21 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     _swap(goalId, local);
     notifyListeners();
 
-    return _push(
-      local,
-      () => _remoteService.markStageAchieved(goalId, stageId, id, achievedAt, achievedBy: achievedBy),
-      onRejected: _revert,
-    );
+    try {
+      return await _push(
+        local,
+        () => _remoteService.markStageAchieved(goalId, stageId, id, achievedAt, achievedBy: achievedBy),
+        onRejected: _revert,
+      );
+    } on GoalRejected catch (rejection) {
+      // The achievement is real; only the credit was refused — the workout is
+      // one the server will not accept, usually because this device stamped the
+      // rung before the workout itself finished landing. Losing the rung over a
+      // link nobody asked for would be the wrong trade, so it is re-sent
+      // unattributed. Once.
+      if (!rejection.isUnknownWorkout || achievedBy == null) rethrow;
+      return markStageAchieved(goalId, stageId, achievedAt);
+    }
   }
 
   /// Records every rung whose target the user has now met.
@@ -397,6 +430,52 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     }
 
     return achieved;
+  }
+
+  /// Recurring goals this session carried over their target.
+  ///
+  /// Separate from [observeProgress] because nothing is stamped: a cadence goal
+  /// resets each period and is never "done", so there is no achievement to
+  /// record — only something worth saying once.
+  ///
+  /// Announced when the session made the difference: with it the period meets
+  /// the target, without it the period did not. That is both truer than "is it
+  /// met right now" and self-limiting — a later session in the same period
+  /// cannot re-announce, because by then the period already met the target
+  /// without it. No marker to persist, and nothing to reset when the week
+  /// rolls over.
+  Future<List<GoalAchievement>> observePeriodWins({
+    required Future<num?> Function(Goal goal) valueOf,
+    required Future<num?> Function(Goal goal) valueBefore,
+  }) async {
+    final wins = <GoalAchievement>[];
+    if (userId == null) return wins;
+
+    for (final goal in List.of(_goals)) {
+      if (goal.cadence == null) continue;
+      // the db gives a cadence goal exactly one stage
+      final stage = goal.stages.firstOrNull;
+      if (stage == null) continue;
+
+      final num? now;
+      final num? before;
+      try {
+        now = await valueOf(goal);
+        before = await valueBefore(goal);
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+        continue;
+      }
+
+      if (now == null) continue;
+      if (!_meets(stage, now, goal.metric.lowerIsBetter)) continue;
+      // already there without this session, so this session is not the news
+      if (before != null && _meets(stage, before, goal.metric.lowerIsBetter)) continue;
+
+      wins.add((goal: goal, stage: stage));
+    }
+
+    return wins;
   }
 
   /// Pace is the one metric where progress means going down, so its rungs are

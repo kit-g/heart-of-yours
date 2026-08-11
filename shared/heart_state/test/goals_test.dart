@@ -77,6 +77,73 @@ void main() {
     });
   });
 
+  group('observePeriodWins', () {
+    Goal weekly({num target = 2000}) {
+      return Goal(
+        id: 'goal-w',
+        metric: .totalVolume,
+        exerciseId: 'exercise-1',
+        cadence: .week,
+        stages: [GoalStage(id: 's0', target: target)],
+      );
+    }
+
+    Future<List<GoalAchievement>> observe({required num now, required num before}) {
+      return sut.observePeriodWins(
+        valueOf: (_) async => now,
+        valueBefore: (_) async => before,
+      );
+    }
+
+    Future<void> seedWeekly() async {
+      final goal = weekly();
+      local.goals.add(goal);
+      remote.goals.add(goal);
+      await sut.init();
+    }
+
+    test('announces the session that carried the period over', () async {
+      await seedWeekly();
+
+      final wins = await observe(now: 2160, before: 1200);
+
+      expect(wins, hasLength(1));
+      expect(wins.single.goal.id, 'goal-w');
+    });
+
+    test('stays quiet for a later session in a period already won', () async {
+      // otherwise it congratulates you again every workout until the week ends
+      await seedWeekly();
+
+      expect(await observe(now: 3000, before: 2400), isEmpty);
+    });
+
+    test('stays quiet while the period is still short', () async {
+      await seedWeekly();
+
+      expect(await observe(now: 1800, before: 900), isEmpty);
+    });
+
+    test('stamps nothing — a recurring goal is never done', () async {
+      await seedWeekly();
+
+      await observe(now: 2160, before: 1200);
+
+      expect(local.achieved, isEmpty);
+      expect(remote.achieved, isEmpty);
+      expect(sut.single.stages.single.isAchieved, isFalse);
+    });
+
+    test('leaves milestones to observeProgress', () async {
+      final milestone = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(milestone);
+      remote.goals.add(milestone);
+      await sut.init();
+
+      expect(await observe(now: 120, before: 0), isEmpty);
+    });
+  });
+
   group('the achieved surface', () {
     Goal done({String id = 'goal-1'}) {
       return Goal(
@@ -113,6 +180,39 @@ void main() {
 
       expect(sut.single.id, 'goal-1');
       expect(sut.archived, isEmpty);
+    });
+
+    test('leaves a mid-session win alone even when init runs again', () async {
+      // `init` fires from the profile screen and on every auth-state emission,
+      // token refresh included — retirement must not ride along with it, or the
+      // goal is filed away moments after it is earned
+      final live = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(live);
+      remote.goals.add(live);
+      await sut.init();
+
+      await sut.observeProgress((_) async => 120);
+      expect(sut.single.id, 'goal-1');
+
+      await sut.init();
+
+      expect(sut.single.id, 'goal-1', reason: 'still where the user can see it');
+      expect(sut.archived, isEmpty);
+    });
+
+    test('files it away on the next session', () async {
+      final live = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(live);
+      remote.goals.add(live);
+      await sut.init();
+      await sut.observeProgress((_) async => 120);
+
+      // a fresh launch: same store, new notifier
+      final next = Goals(service: local, remoteService: remote)..userId = userId;
+      await next.init();
+
+      expect(next, isEmpty);
+      expect(next.archived.map((each) => each.id), ['goal-1']);
     });
 
     test('a rung added to a finished goal brings it back', () async {
@@ -374,6 +474,26 @@ void main() {
       await sut.observeProgress((_) async => 120);
 
       expect(local.attributed, [null]);
+    });
+
+    test('keeps the rung when the server refuses only the attribution', () async {
+      // the workout is one the server will not credit — the achievement itself
+      // is still real, so it goes again without the link rather than being lost
+      final goal = ladder(id: 'goal-1', stageId: 'stage-1', target: 100);
+      local.goals.add(goal);
+      remote.goals.add(goal);
+      await sut.init();
+
+      remote.refusalOnAttribution = {
+        'error': 'bad request',
+        'code': 'goal_workout_unknown',
+        'reason': 'no such workout',
+      };
+
+      await sut.observeProgress((_) async => 120, achievedBy: 'workout-gone');
+
+      expect(remote.achieved, contains('stage-1'));
+      expect(remote.attributed.last, isNull, reason: 'the retry drops the credit');
     });
 
     test('reports the rungs it stamped, so the caller can announce them', () async {
@@ -640,6 +760,10 @@ class _FakeRemote implements GoalService {
   /// Set to make the fake refuse instead of going dark.
   Map<String, dynamic>? refusal;
 
+  /// Refuses only a stamp that credits a workout, the way the server rejects an
+  /// `achievedBy` it does not recognise.
+  Map<String, dynamic>? refusalOnAttribution;
+
   void _guard() {
     if (refusal case Map<String, dynamic> body) throw body;
     if (failing) throw StateError('network is down');
@@ -683,6 +807,12 @@ class _FakeRemote implements GoalService {
     String? achievedBy,
   }) async {
     _guard();
+    if (achievedBy != null) {
+      if (refusalOnAttribution case final Map<String, dynamic> body) {
+        attributed.add(achievedBy);
+        throw body;
+      }
+    }
     achieved.add(stageId);
     attributed.add(achievedBy);
 
