@@ -1046,6 +1046,18 @@ abstract class L {
   /// **'Back'**
   String get goalsViewActive;
 
+  /// Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it
+  ///
+  /// In en, this message translates to:
+  /// **'View the session'**
+  String get goalOpenWorkout;
+
+  /// Shown when the workout credited with a goal rung can no longer be found
+  ///
+  /// In en, this message translates to:
+  /// **'That session is no longer on this device'**
+  String get goalWorkoutGone;
+
   /// Tooltip explaining why the add-goal button is missing
   ///
   /// In en, this message translates to:

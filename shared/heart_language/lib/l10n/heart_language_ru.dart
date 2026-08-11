@@ -535,6 +535,12 @@ class LRu extends L {
   String get goalsViewActive => 'Назад';
 
   @override
+  String get goalOpenWorkout => 'Открыть тренировку';
+
+  @override
+  String get goalWorkoutGone => 'Этой тренировки больше нет на устройстве';
+
+  @override
   String get goalsAtCapacity => 'Больше целей Heart не хранит. Удалите одну';
 
   @override
