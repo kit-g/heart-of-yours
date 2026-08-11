@@ -148,6 +148,22 @@ void main() {
       expect(await read(goal(metric: .averagePace, target: 300)), isNull);
     });
 
+    test('can answer what the period was worth before one session', () async {
+      // the workout summary asks twice — with and without the session that just
+      // ended — and announces only when the difference crosses the target
+      final session = DateTime(2026, 8, 6, 9);
+      history([
+        (240, session),
+        (600, DateTime(2026, 8, 4, 9)),
+      ]);
+
+      expect(await read(goal()), 840);
+      expect(
+        await currentGoalValue(goal(), exercises: exercises, asOf: now, without: session),
+        600,
+      );
+    });
+
     test('sums a month the same way it sums a week', () async {
       history([
         (240, DateTime(2026, 8, 6)),

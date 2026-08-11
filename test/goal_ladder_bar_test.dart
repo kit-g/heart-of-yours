@@ -99,4 +99,86 @@ void main() {
       ),
     );
   });
+
+  testWidgets('the fill ends flat, so only rungs read as dots', (tester) async {
+    // a round cap draws a half-disc wherever progress stops, which looked like
+    // one more rung — the bar seemed to show dots filled and hollow at random
+    await pump(tester, targets: [10, 20], achieved: [false, false], current: 12);
+
+    expect(
+      bar,
+      paints..something(
+        (method, arguments) {
+          if (method != #drawLine) return false;
+          // the fill is the short line; the track runs the full width
+          final to = arguments[1] as Offset;
+          if (to.dx != 60.0) return false;
+          return (arguments[2] as Paint).strokeCap == StrokeCap.butt;
+        },
+      ),
+    );
+  });
+
+  testWidgets('the track keeps its rounded ends, which are the bar\'s own', (tester) async {
+    await pump(tester, targets: [10, 20], achieved: [false, false], current: 12);
+
+    expect(
+      bar,
+      paints..something(
+        (method, arguments) {
+          if (method != #drawLine) return false;
+          final to = arguments[1] as Offset;
+          if (to.dx != width) return false;
+          return (arguments[2] as Paint).strokeCap == StrokeCap.round;
+        },
+      ),
+    );
+  });
+
+  group('a rung reads as met', () {
+    testWidgets('when the current value satisfies it, even unstamped', (tester) async {
+      // a recurring goal is never stamped — it resets each period, so
+      // observeProgress skips it — and its rung sat hollow at six workouts
+      // against a target of four
+      await pump(tester, targets: [4], achieved: [false], current: 6);
+
+      expect(
+        bar,
+        paints..something(
+          (method, arguments) {
+            return method == #drawCircle && (arguments[2] as Paint).style == PaintingStyle.fill;
+          },
+        ),
+      );
+    });
+
+    testWidgets('and not when it falls short', (tester) async {
+      await pump(tester, targets: [4], achieved: [false], current: 2);
+
+      expect(
+        bar,
+        isNot(
+          paints..something(
+            (method, arguments) {
+              return method == #drawCircle && (arguments[2] as Paint).style == PaintingStyle.fill;
+            },
+          ),
+        ),
+      );
+    });
+
+    testWidgets('stays met once stamped, even after the reading falls back', (tester) async {
+      // the whole point of recording when a milestone first fell
+      await pump(tester, targets: [100], achieved: [true], current: 60);
+
+      expect(
+        bar,
+        paints..something(
+          (method, arguments) {
+            return method == #drawCircle && (arguments[2] as Paint).style == PaintingStyle.fill;
+          },
+        ),
+      );
+    });
+  });
 }
