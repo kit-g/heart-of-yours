@@ -1,5 +1,6 @@
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:mockito/annotations.dart';
 import 'package:heart_models/heart_models.dart';
 
@@ -14,6 +15,7 @@ import 'package:heart_models/heart_models.dart';
     MockSpec<RemoteTemplateService>(),
     MockSpec<RemoteConfigService>(),
     MockSpec<StatsService>(),
+    MockSpec<LocalStatsService>(),
     MockSpec<TimersService>(),
     MockSpec<PreviousExerciseService>(),
     MockSpec<Exercise>(),

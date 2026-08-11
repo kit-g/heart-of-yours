@@ -21,6 +21,7 @@ void main() {
   late Goals goals;
   late Exercises exercises;
   late Preferences preferences;
+  late Stats stats;
 
   const userId = 'user-1';
 
@@ -58,6 +59,8 @@ void main() {
     // looks like anyway
     exercises = Exercises(remoteService: MockRemoteExerciseService(), service: MockExerciseService());
 
+    stats = Stats(onError: null, service: MockLocalStatsService());
+
     SharedPreferences.setMockInitialValues({});
     preferences = Preferences();
     await preferences.init();
@@ -69,6 +72,9 @@ void main() {
         providers: [
           ChangeNotifierProvider<Goals>.value(value: goals),
           ChangeNotifierProvider<Exercises>.value(value: exercises),
+          // a goal counting whole workouts asks Stats how many there are, so
+          // every row resolves it whether or not this goal needs it
+          ChangeNotifierProvider<Stats>.value(value: stats),
           ChangeNotifierProvider<Preferences>.value(value: settings ?? preferences),
         ],
         child: MaterialApp(
@@ -110,9 +116,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Workouts'), findsOneWidget);
-    // no current value: the weekly count needs an aggregation this test has
-    // none of, and a wrong number would be worse than none
-    expect(find.text('4 · per week'), findsOneWidget);
+    // the count comes from a period-bounded query now rather than off the
+    // aggregation, so it is answered even here — the stubbed service says none
+    expect(find.text('0 / 4 · per week'), findsOneWidget);
   });
 
   testWidgets('builds before preferences have loaded, rather than throwing', (tester) async {
@@ -191,6 +197,78 @@ void main() {
     expect(find.text('Complete'), findsOneWidget);
   });
 
+  group('the achieved surface', () {
+    Goal finished({String id = 'done-1'}) {
+      return Goal(
+        id: id,
+        metric: .topSetWeight,
+        exerciseId: 'exercise-1',
+        archived: true,
+        stages: [GoalStage(id: '${id}s', target: 100, achievedAt: DateTime.utc(2026, 8, 1))],
+      );
+    }
+
+    testWidgets('offers nothing to flip to when nothing is achieved', (tester) async {
+      await seed([workoutsGoal()]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(AppKeys.goalsViewAchieved), findsNothing);
+    });
+
+    testWidgets('offers the flip once a goal has been achieved', (tester) async {
+      await seed([workoutsGoal(), finished()]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(AppKeys.goalsViewAchieved), findsOneWidget);
+    });
+
+    testWidgets('turns over to the achieved goals and back', (tester) async {
+      await seed([workoutsGoal(id: 'live-1'), finished()]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      // the live face: the goal being worked on, and the way to add another
+      expect(find.byKey(AppKeys.goalRow('live-1')), findsOneWidget);
+      expect(find.text('Add goal'), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.goalsViewAchieved));
+      await tester.pumpAndSettle();
+
+      // the back: only what is finished, and no invitation to add to it
+      expect(find.byKey(AppKeys.goalRow('done-1')), findsOneWidget);
+      expect(find.byKey(AppKeys.goalRow('live-1')), findsNothing);
+      expect(find.text('Add goal'), findsNothing);
+      expect(find.text('Achieved'), findsWidgets);
+
+      await tester.tap(find.byKey(AppKeys.goalsViewActive));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(AppKeys.goalRow('live-1')), findsOneWidget);
+      expect(find.byKey(AppKeys.goalRow('done-1')), findsNothing);
+    });
+
+    testWidgets('comes back to the live face when the last achieved goal goes', (tester) async {
+      // otherwise the card is left showing an empty back with no way off it
+      await seed([workoutsGoal(id: 'live-1'), finished()]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AppKeys.goalsViewAchieved));
+      await tester.pumpAndSettle();
+
+      await goals.remove(goals.archived.single);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(AppKeys.goalRow('live-1')), findsOneWidget);
+      expect(find.byKey(AppKeys.goalsViewAchieved), findsNothing);
+    });
+  });
+
   testWidgets('swiping a row away removes the goal', (tester) async {
     // the same gesture an exercise set uses, and like it, no confirmation
     await seed([workoutsGoal(id: 'goal-1')]);
@@ -223,8 +301,12 @@ class _FakeLocal implements LocalGoalService {
   final goals = <Goal>[];
 
   @override
-  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
-    return List.of(goals);
+  Future<Iterable<Goal>> getTargetUserGoals({
+    required String requesterId,
+    required String targetUserId,
+    bool archived = false,
+  }) async {
+    return goals.where((each) => each.archived == archived).toList();
   }
 
   @override
@@ -239,14 +321,21 @@ class _FakeLocal implements LocalGoalService {
   }
 
   @override
-  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
+  Future<Goal> markStageAchieved(
+    String goalId,
+    String stageId,
+    String userId,
+    DateTime achievedAt, {
+    String? achievedBy,
+  }) async {
     return goals.firstWhere((each) => each.id == goalId);
   }
 
   @override
-  Future<void> storeGoals(Iterable<Goal> goals, String userId) async {
+  Future<void> storeGoals(Iterable<Goal> goals, String userId, {bool archived = false}) async {
+    // one slice at a time, as the database does
     this.goals
-      ..clear()
+      ..removeWhere((each) => each.archived == archived)
       ..addAll(goals);
   }
 
@@ -261,8 +350,12 @@ class _FakeRemote implements GoalService {
   final goals = <Goal>[];
 
   @override
-  Future<Iterable<Goal>> getTargetUserGoals({required String requesterId, required String targetUserId}) async {
-    return List.of(goals);
+  Future<Iterable<Goal>> getTargetUserGoals({
+    required String requesterId,
+    required String targetUserId,
+    bool archived = false,
+  }) async {
+    return goals.where((each) => each.archived == archived).toList();
   }
 
   @override
@@ -277,7 +370,13 @@ class _FakeRemote implements GoalService {
   }
 
   @override
-  Future<Goal> markStageAchieved(String goalId, String stageId, String userId, DateTime achievedAt) async {
+  Future<Goal> markStageAchieved(
+    String goalId,
+    String stageId,
+    String userId,
+    DateTime achievedAt, {
+    String? achievedBy,
+  }) async {
     return goals.firstWhere((each) => each.id == goalId);
   }
 }

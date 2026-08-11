@@ -60,7 +60,7 @@ void main() {
   });
 
   Future<num?> read(Goal g) {
-    return currentGoalValue(g, exercises: exercises, workouts: WorkoutAggregation.empty(), asOf: now);
+    return currentGoalValue(g, exercises: exercises, asOf: now);
   }
 
   group('goalPeriod', () {
@@ -166,6 +166,70 @@ void main() {
     ]);
 
     expect(await read(goal(metric: .topSetWeight, cadence: null, target: 220)), 150);
+  });
+
+  group('a whole-workout goal', () {
+    Goal workoutsGoal({GoalCadence? cadence, num target = 8}) {
+      return Goal(
+        id: 'goal-w',
+        metric: .workouts,
+        cadence: cadence,
+        stages: [GoalStage(id: 's0', target: target)],
+      );
+    }
+
+    /// Records which period the resolver asked about.
+    (List<GoalCadence?>, Future<int> Function(GoalCadence?)) counter(int answer) {
+      final asked = <GoalCadence?>[];
+      return (
+        asked,
+        (period) async {
+          asked.add(period);
+          return answer;
+        },
+      );
+    }
+
+    test('counts every workout there has ever been for a milestone', () async {
+      // "do 8 workouts" is not a weekly or monthly question, and answering it
+      // with null drew an empty bar and skipped the achievement
+      final (asked, count) = counter(7);
+
+      expect(await currentGoalValue(workoutsGoal(), exercises: exercises, workoutCount: count), 7);
+      expect(asked, [null]);
+    });
+
+    test('asks about the week for a weekly goal', () async {
+      final (asked, count) = counter(3);
+
+      expect(
+        await currentGoalValue(
+          workoutsGoal(cadence: .week),
+          exercises: exercises,
+          workoutCount: count,
+        ),
+        3,
+      );
+      expect(asked, [GoalCadence.week]);
+    });
+
+    test('asks about the month for a monthly goal', () async {
+      final (asked, count) = counter(11);
+
+      expect(
+        await currentGoalValue(
+          workoutsGoal(cadence: .month),
+          exercises: exercises,
+          workoutCount: count,
+        ),
+        11,
+      );
+      expect(asked, [GoalCadence.month]);
+    });
+
+    test('stays unanswered when nobody supplied a counter', () async {
+      expect(await currentGoalValue(workoutsGoal(), exercises: exercises), isNull);
+    });
   });
 
   group('PeriodAggregate', () {
