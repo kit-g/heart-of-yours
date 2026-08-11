@@ -317,7 +317,16 @@ class Api
     // Reading goals is scoped by whose they are — the same shape workouts use,
     // where asking for your own id is the first allowed case. `archived` picks
     // a slice rather than widening one: true returns only the achieved goals.
-    final (json, _) = await get(Router.userGoals(targetUserId, archived: archived));
+    final (json, _) = await get(
+      Router.userGoals(targetUserId),
+      // as a query parameter, not glued onto the path — `Uri.https` encodes the
+      // path, so a `?` in it arrives as `%3F` and the server sees one long path
+      // segment that matches no route
+      query: switch (archived) {
+        true => const {'archived': 'true'},
+        false => null,
+      },
+    );
     return switch (json) {
       {'goals': List l} => l.map((each) => Goal.fromJson(each as Map)),
       _ => const <Goal>[],
@@ -419,9 +428,8 @@ abstract final class Router {
     return '$goals/$goalId';
   }
 
-  static String userGoals(String targetUserId, {bool archived = false}) {
-    final path = '$accounts/$targetUserId/goals';
-    return archived ? '$path?archived=true' : path;
+  static String userGoals(String targetUserId) {
+    return '$accounts/$targetUserId/goals';
   }
 
   static String goalStage(String goalId, String stageId) {
