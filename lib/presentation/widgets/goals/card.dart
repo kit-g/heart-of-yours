@@ -121,7 +121,6 @@ class _GoalsCardState extends State<GoalsCard> {
           SizedBox(
             height: widget.headerHeight,
             child: Row(
-              spacing: 8,
               children: [
                 Expanded(
                   child: AnimatedSwitcher(
@@ -146,8 +145,12 @@ class _GoalsCardState extends State<GoalsCard> {
                 if (state.hasArchived)
                   PrimaryButton.shrunk(
                     key: _showsAchieved ? AppKeys.goalsViewActive : AppKeys.goalsViewAchieved,
+                    backgroundColor: colorScheme.secondaryContainer,
                     onPressed: () => setState(() => _showsAchieved = !_showsAchieved),
-                    child: Text(_showsAchieved ? goalsViewActive : goalsViewAchieved),
+                    child: Text(
+                      _showsAchieved ? goalsViewActive : goalsViewAchieved,
+                      style: TextStyle(color: colorScheme.onSecondaryContainer),
+                    ),
                   ),
                 // At the cap the button goes rather than staying and failing:
                 // the server refuses the create, and a dead button that reports
@@ -165,27 +168,34 @@ class _GoalsCardState extends State<GoalsCard> {
                       // width collapses to nothing, so the flip button slides
                       // across into the space rather than jumping
                       true => const SizedBox.shrink(),
+                      // the leading gap lives in here so it collapses too
                       false => switch (state.isAtCapacity) {
-                        true => Tooltip(
-                          key: AppKeys.goalsAtCapacity,
-                          message: goalsAtCapacity,
-                          // tap, not hover: on a phone there is nothing to hover with
-                          triggerMode: TooltipTriggerMode.tap,
-                          showDuration: const Duration(seconds: 4),
-                          child: Icon(
-                            Icons.help_outline_rounded,
-                            size: 20,
-                            color: colorScheme.onSurfaceVariant,
+                        true => Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Tooltip(
+                            key: AppKeys.goalsAtCapacity,
+                            message: goalsAtCapacity,
+                            // tap, not hover: on a phone there is nothing to hover with
+                            triggerMode: TooltipTriggerMode.tap,
+                            showDuration: const Duration(seconds: 4),
+                            child: Icon(
+                              Icons.help_outline_rounded,
+                              size: 20,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
-                        false => PrimaryButton.shrunk(
-                          onPressed: _addGoal,
-                          child: Row(
-                            spacing: 6,
-                            children: [
-                              const Icon(Icons.add_rounded, size: 20),
-                              Text(addGoal),
-                            ],
+                        false => Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: PrimaryButton.shrunk(
+                            onPressed: _addGoal,
+                            child: Row(
+                              spacing: 6,
+                              children: [
+                                const Icon(Icons.add_rounded, size: 20),
+                                Text(addGoal),
+                              ],
+                            ),
                           ),
                         ),
                       },
