@@ -28,7 +28,7 @@ class _RungForm extends StatefulWidget {
 }
 
 class _RungFormState extends State<_RungForm> {
-  final _controller = TextEditingController();
+  late final _input = GoalTargetInput(widget.goal.metric.chart);
 
   DateTime? _dueOn;
 
@@ -39,38 +39,18 @@ class _RungFormState extends State<_RungForm> {
     _dueOn = widget.stage?.dueOn;
 
     if (widget.stage?.target case final num target) {
-      final settings = Preferences.of(context);
-      if (settings.isInitialized) {
-        _controller.value = _formatters.fold(
-          TextEditingValue(text: widget.goal.convert(settings, target).trimmed()),
-          (value, formatter) => formatter.formatEditUpdate(TextEditingValue.empty, value),
-        );
-      }
+      _input.prefill(Preferences.of(context), target);
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _input.dispose();
     super.dispose();
   }
 
-  List<TextInputFormatter> get _formatters {
-    return widget.goal.metric.chart?.formatters ??
-        [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)];
-  }
-
-  double? get _typed {
-    final text = _controller.text;
-    final typed = widget.goal.metric.chart?.parseTyped(text) ?? double.tryParse(text.trim());
-    return switch (typed) {
-      final double value when value > 0 => value,
-      _ => null,
-    };
-  }
-
   /// The target to save, or null while the field cannot yield a usable one.
-  double? get _target => _typed;
+  double? get _target => _input.typed;
 
   @override
   Widget build(BuildContext context) {
@@ -84,10 +64,10 @@ class _RungFormState extends State<_RungForm> {
       spacing: 16,
       children: [
         TextField(
-          controller: _controller,
+          controller: _input.controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: _formatters,
+          inputFormatters: _input.formatters,
           decoration: InputDecoration(suffixText: unit),
         ),
         // A recurring goal has no deadline to set: its period *is* the
@@ -121,7 +101,7 @@ class _RungFormState extends State<_RungForm> {
                 ),
               ),
             ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _controller,
+              valueListenable: _input.controller,
               builder: (_, _, _) {
                 return PrimaryButton.shrunk(
                   onPressed: switch (_target) {
@@ -157,7 +137,7 @@ class _RungFormState extends State<_RungForm> {
     if (typed == null) return;
 
     final settings = Preferences.of(context);
-    final target = widget.goal.metric.chart?.storedValue(settings, typed) ?? typed;
+    final target = _input.toStored(settings, typed);
 
     Navigator.of(context, rootNavigator: true).pop(
       GoalStage(

@@ -107,48 +107,81 @@ class _Rung extends StatelessWidget {
     final target = goal.convert(settings, stage.target).trimmed();
     final isCurrent = stage.id == goal.currentStage?.id;
 
-    final row = InkWell(
-      onTap: () => _edit(context),
-      borderRadius: const .all(.circular(8)),
-      child: Padding(
-        // matches the sheet's own inset; the swipe background behind this runs
-        // the full width, the way it does on the goals card
-        padding: const .symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          spacing: 12,
-          children: [
-            Icon(
-              // circled, to pair with the empty circle an unmet rung shows —
-              // filled against outline reads as done without celebrating it
-              stage.isAchieved ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-              size: 18,
-              // achieved reads as settled, not as a prize
-              color: stage.isAchieved ? colorScheme.onSurfaceVariant : dividerColor,
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: .start,
-                spacing: 2,
-                children: [
-                  Text(
-                    switch (unit) {
-                      final String unit => '$target $unit',
-                      null => target,
-                    },
-                    style: switch (isCurrent) {
-                      true => textTheme.bodyLarge,
-                      false => textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
-                    },
-                  ),
-                  if (_state(l) case final String state)
-                    Text(
-                      state,
-                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                ],
+    final row = Padding(
+      // Outside the ink, so the splash stops short of the edge instead of
+      // running the full bleed. The swipe background sits behind all of this
+      // and still runs edge to edge — `Dismissible` clips it to nothing at
+      // rest, so the inset never shows red.
+      padding: const .symmetric(horizontal: 8),
+      child: InkWell(
+        // An achieved rung is history. Editing its target would rewrite what
+        // was met and when, so the row stops being tappable once it has fallen
+        // — a new rung is the way forward, not a redefined old one.
+        onTap: switch (stage.isAchieved) {
+          true => null,
+          false => () => _edit(context),
+        },
+        borderRadius: const .all(.circular(8)),
+        child: Padding(
+          // the rest of the sheet's inset; the 8 above plus this lines the text
+          // up with everything else in the sheet
+          padding: const .symmetric(horizontal: 8, vertical: 10),
+          child: Row(
+            spacing: 12,
+            children: [
+              Icon(
+                // circled, to pair with the empty circle an unmet rung shows —
+                // filled against outline reads as done without celebrating it
+                stage.isAchieved ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                size: 18,
+                // achieved reads as settled, not as a prize
+                color: stage.isAchieved ? colorScheme.onSurfaceVariant : dividerColor,
               ),
-            ),
-          ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: .start,
+                  spacing: 2,
+                  children: [
+                    Text(
+                      switch (unit) {
+                        final String unit => '$target $unit',
+                        null => target,
+                      },
+                      style: switch (isCurrent) {
+                        true => textTheme.bodyLarge,
+                        false => textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                      },
+                    ),
+                    if (_state(l) case final String state)
+                      switch (stage.achievedBy) {
+                        // the session credited with the rung — a link back to it,
+                        // and the only affordance that opens something other than
+                        // this rung's own editor
+                        final String workoutId => InkWell(
+                          onTap: () => _openWorkout(context, workoutId),
+                          borderRadius: const .all(.circular(4)),
+                          child: Row(
+                            mainAxisSize: .min,
+                            spacing: 4,
+                            children: [
+                              Text(
+                                state,
+                                style: textTheme.bodySmall?.copyWith(color: colorScheme.primary),
+                              ),
+                              Icon(Icons.open_in_new_rounded, size: 12, color: colorScheme.primary),
+                            ],
+                          ),
+                        ),
+                        null => Text(
+                          state,
+                          style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      },
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -178,6 +211,36 @@ class _Rung extends StatelessWidget {
       _ when goal.cadence != null => null,
       _ => l.goalNoDeadline,
     };
+  }
+
+  /// Opens the session credited with this rung.
+  ///
+  /// Resolved on tap rather than while building. `achievedBy` has no foreign
+  /// key and the server never cleans it up — deleting the workout leaves the id
+  /// behind on purpose, since cleanup could not reach the user's other devices
+  /// anyway. So the link can be stale, and the honest answer is only knowable
+  /// when someone asks for it.
+  ///
+  /// Resolving per rung during build would also mean a fetch on every frame:
+  /// [Workouts.fetchWorkout] notifies, which rebuilds, which fetches again.
+  ///
+  /// The fetch reaches the server when the mirror misses, so "gone" now means
+  /// the server would not produce it either — not merely that this device never
+  /// downloaded it, which is what the message used to claim.
+  Future<void> _openWorkout(BuildContext context, String workoutId) async {
+    final workouts = Workouts.of(context);
+    final router = HeartRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final gone = L.of(context).goalWorkoutGone;
+
+    final resolved = workouts.lookup(workoutId) != null || await workouts.fetchWorkout(workoutId);
+
+    switch (resolved) {
+      case false:
+        messenger.snack(gone);
+      case true:
+        router.goToWorkoutEditor(workoutId);
+    }
   }
 
   Future<void> _edit(BuildContext context) async {
