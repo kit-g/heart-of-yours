@@ -74,6 +74,10 @@ class LocalGoals implements LocalGoalService {
 /// Passed explicitly by tests so a recurring goal's arithmetic does not depend
 /// on the day the suite happens to run.
 ///
+/// [without] excludes the session that started at that instant from a recurring
+/// goal's period — asking what the week was worth before a given workout, which
+/// is how the summary tells whether *this* session carried it over the line.
+///
 /// Null where it cannot be answered *correctly* rather than approximately:
 ///
 /// - a whole-workout goal is [workoutCount] over the goal's own period, which
@@ -87,6 +91,7 @@ Future<num?> currentGoalValue(
   required Exercises exercises,
   Future<int> Function(GoalCadence? period)? workoutCount,
   DateTime? asOf,
+  DateTime? without,
 }) async {
   // Every period is the same question asked of a different window, including
   // the unbounded one — a "do 8 workouts" milestone used to fall past the week
@@ -106,7 +111,10 @@ Future<num?> currentGoalValue(
     final history = await exercises.getChartExerciseMetics(metric, exercise.name, limit: _sessionsPerPeriod);
     final inPeriod = [
       for (final (value, at) in history ?? const <(num, DateTime)>[])
-        if (!at.isBefore(from) && at.isBefore(to)) value,
+        if (!at.isBefore(from) && at.isBefore(to))
+          // [without] drops one session, so a caller can ask what the period
+          // was worth before it — the difference is what a single workout did
+          if (without == null || !at.isAtSameMomentAs(without)) value,
     ];
 
     return switch (inPeriod.isEmpty) {
