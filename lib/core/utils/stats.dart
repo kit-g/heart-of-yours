@@ -24,4 +24,7 @@ class LocalStats implements LocalStatsService {
   Future<int> getMonthlyWorkoutCount(DateTime d, {String? userId}) {
     return _db.getMonthlyWorkoutCount(d, userId: userId);
   }
+
+  @override
+  Future<int> getTotalWorkoutCount({String? userId}) => _db.getTotalWorkoutCount(userId: userId);
 }
