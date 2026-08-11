@@ -158,7 +158,20 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.startWorkout(workout, userId!);
   }
 
-  Future<void> finishActiveWorkout() async {
+  /// The finish most recently started, or null before one this session.
+  ///
+  /// Exposed because the workout summary is pushed the moment finishing starts,
+  /// not when it lands — and anything reading the workout back out of the
+  /// database (goal progress, most of all) has to wait for the write.
+  Future<void>? get finishing => _finishing;
+
+  Future<void>? _finishing;
+
+  Future<void> finishActiveWorkout() {
+    return _finishing = _finishActiveWorkout();
+  }
+
+  Future<void> _finishActiveWorkout() async {
     activeWorkout?.finish(DateTime.timestamp());
 
     final active = activeWorkout;
@@ -407,6 +420,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (workouts != null) {
         await _localService.storeWorkoutHistory(workouts, id);
         _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+        await _dropDeletedElsewhere(workouts);
         _advanceHistory(workouts);
       }
 
@@ -418,6 +432,46 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       historyInitialized = true;
       notifyListeners();
     }
+  }
+
+  /// Removes workouts this device still holds that the server no longer has.
+  ///
+  /// [WorkoutService.storeWorkoutHistory] only ever upserts, so nothing else
+  /// deletes a local row. Without this a workout deleted on another device
+  /// lives on in this one's mirror forever — inflating the weekly aggregation,
+  /// the dashboard charts, and any goal that counts workouts.
+  ///
+  /// Bounded to the page's own range. Only rows at or newer than the oldest
+  /// workout [page] returned are candidates, so older history this launch never
+  /// asked for is left alone. Unsynced rows are never candidates either: those
+  /// are local writes the server has not seen yet, which is the opposite of a
+  /// deletion.
+  ///
+  /// An empty page reconciles nothing. It is indistinguishable from a server
+  /// that answered wrongly, and the price of being wrong here is every workout
+  /// the user has — so the one account this cannot heal is someone who deleted
+  /// their last remaining workout elsewhere.
+  Future<void> _dropDeletedElsewhere(Iterable<Workout> page) async {
+    if (page.isEmpty) return;
+
+    final kept = page.map((each) => each.id).toSet();
+    final oldest = page.map((each) => each.start).reduce((a, b) => a.isBefore(b) ? a : b);
+
+    final stale = _workouts.values.where(
+      (workout) {
+        if (!workout.isCompleted || !workout.synced) return false;
+        if (kept.contains(workout.id)) return false;
+        return !workout.start.isBefore(oldest);
+      },
+    ).toList();
+
+    for (final workout in stale) {
+      _workouts.remove(workout.id);
+      _progress.removeWhere((image) => image.workoutId == workout.id);
+      await _localService.deleteWorkout(workout.id);
+    }
+
+    if (stale.isNotEmpty) notifyListeners();
   }
 
   /// Fetches the next, older page of workouts, keyed off [_historyCursor]. The
