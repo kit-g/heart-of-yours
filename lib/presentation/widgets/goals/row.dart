@@ -84,7 +84,10 @@ class _GoalRowState extends State<GoalRow> {
                 FutureBuilder<num?>(
                   future: _reading,
                   builder: (_, snapshot) {
-                    final current = switch (snapshot.data) {
+                    // the bar plots against converted targets, so it needs the
+                    // converted reading; the status line converts its own now
+                    final reading = snapshot.data;
+                    final current = switch (reading) {
                       final num value => _convert(settings, value),
                       _ => null,
                     };
@@ -94,7 +97,7 @@ class _GoalRowState extends State<GoalRow> {
                       spacing: 6,
                       children: [
                         Text(
-                          goalStatus(context, widget.goal, settings: settings, current: current),
+                          goalStatus(context, widget.goal, settings: settings, current: reading),
                           style: subdued,
                         ),
                         GoalLadderBar(

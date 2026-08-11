@@ -97,13 +97,13 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
   /// Owned by the form, not by the caller. A controller disposed as soon as the
   /// dialog's future completes is still attached to a field that has not been
   /// unmounted yet — the route is only starting its exit animation.
-  final _controller = TextEditingController();
+  late final _input = GoalTargetInput(widget.metric.chart);
 
   GoalCadence? _cadence = GoalCadence.week;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _input.dispose();
     super.dispose();
   }
 
@@ -116,18 +116,7 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
       case final Goal goal:
         _cadence = goal.cadence;
         final target = goal.currentStage?.target ?? goal.stages.last.target;
-        // units are `late` until Preferences has loaded; an unconverted field
-        // would be worse than an empty one, so only prefill once it is safe
-        final settings = Preferences.of(context);
-        if (settings.isInitialized) {
-          final shown = goal.metric.chart?.converter(settings)(target) ?? target.toDouble();
-          // run it through the field's own formatters so a duration arrives as
-          // mm:ss rather than a raw count of seconds
-          _controller.value = _formatters.fold(
-            TextEditingValue(text: shown.trimmed()),
-            (value, formatter) => formatter.formatEditUpdate(TextEditingValue.empty, value),
-          );
-        }
+        _input.prefill(Preferences.of(context), target);
       // A whole-workout goal is a rate ("4 a week"); a lift is a milestone.
       // Both are changeable below — this only picks the likelier one.
       case null:
@@ -147,13 +136,13 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
       spacing: 16,
       children: [
         TextField(
-          controller: _controller,
+          controller: _input.controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           // Per dimension: a duration types as mm:ss, reps are whole, the rest
           // decimal. Without these the field took any character and the button
           // simply stayed disabled, with nothing saying why.
-          inputFormatters: _formatters,
+          inputFormatters: _input.formatters,
           // no `border`: the app's InputDecorationTheme already fills the
           // field and removes the side, which is what every other input in
           // the app looks like — see `SearchField`
@@ -176,7 +165,7 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
             // live and silently do nothing, which reads as the app ignoring
             // you rather than as "this is not filled in yet".
             ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _controller,
+              valueListenable: _input.controller,
               builder: (_, _, _) {
                 return PrimaryButton.shrunk(
                   onPressed: switch (_target) {
@@ -193,24 +182,9 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
     );
   }
 
-  /// A whole-workout goal is a count of workouts; every other metric brings its
-  /// own rules from [ChartDimension].
-  List<TextInputFormatter> get _formatters {
-    return widget.metric.chart?.formatters ??
-        [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)];
-  }
-
   /// The typed target in display units, or null while the field cannot yield
-  /// one. A goal with a target of zero is not a goal, so that counts as "not
-  /// filled in" and leaves the button disabled.
-  double? get _target {
-    final text = _controller.text;
-    final typed = widget.metric.chart?.parseTyped(text) ?? double.tryParse(text.trim());
-    return switch (typed) {
-      final double value when value > 0 => value,
-      _ => null,
-    };
-  }
+  /// one.
+  double? get _target => _input.typed;
 
   /// Targets are stored canonically metric, so a value typed in pounds or miles
   /// is converted back on the way in — the same direction `set_item.dart` takes.
@@ -219,7 +193,7 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
     if (typed == null) return;
 
     final settings = Preferences.of(context);
-    final target = widget.metric.chart?.storedValue(settings, typed) ?? typed;
+    final target = _input.toStored(settings, typed);
 
     // Editing rewrites the rung being worked toward and leaves the rest of the
     // ladder — and every stage id — alone, so achievements already recorded on
