@@ -140,10 +140,11 @@ class _Rung extends StatelessWidget {
                       false => textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
                     },
                   ),
-                  Text(
-                    _state(l),
-                    style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                  ),
+                  if (_state(l) case final String state)
+                    Text(
+                      state,
+                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
                 ],
               ),
             ),
@@ -166,10 +167,15 @@ class _Rung extends StatelessWidget {
 
   /// Achieved beats due: once a rung has fallen, when it fell is the fact worth
   /// stating, and its old deadline stops mattering.
-  String _state(L l) {
+  ///
+  /// Null for a recurring goal with nothing stamped — it has no deadline to be
+  /// without. Its period is the deadline, and the header already states it, so
+  /// "No deadline" there was noise advertising a thing that cannot apply.
+  String? _state(L l) {
     return switch ((stage.achievedAt, stage.dueOn)) {
       (final DateTime at, _) => l.goalAchievedOn(DateFormat.yMMMd().format(at)),
       (_, final DateTime due) => l.goalDue(DateFormat.yMMMd().format(due)),
+      _ when goal.cadence != null => null,
       _ => l.goalNoDeadline,
     };
   }

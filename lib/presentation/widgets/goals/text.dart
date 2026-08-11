@@ -25,9 +25,6 @@ String goalStatus(
   final stage = goal.currentStage;
   if (stage == null) return l.goalComplete;
 
-  final unit = goal.metric.chart?.unitLabel(context, settings) ?? '';
-  final suffix = unit.isEmpty ? '' : ' $unit';
-
   // num, not double: a workout count arrives as an int and would otherwise
   // fall through to the empty branch, quietly dropping the progress
   final progress = switch (current) {
@@ -44,7 +41,19 @@ String goalStatus(
     },
   };
 
-  return '$progress${goal.convert(settings, stage.target).trimmed()}$suffix$cadence';
+  return '$progress${goalTargetLabel(context, goal, stage.target, settings: settings)}$cadence';
+}
+
+/// A target as the user reads it: converted to their units, trimmed of a
+/// trailing `.0`, with the unit appended where the dimension has one.
+///
+/// The target half of [goalStatus], on its own — the workout summary states a
+/// rung it just earned and wants exactly this without the progress or the
+/// cadence wrapped around it.
+String goalTargetLabel(BuildContext context, Goal goal, num target, {required Preferences settings}) {
+  final unit = goal.metric.chart?.unitLabel(context, settings) ?? '';
+  final suffix = unit.isEmpty ? '' : ' $unit';
+  return '${goal.convert(settings, target).trimmed()}$suffix';
 }
 
 extension GoalUnits on Goal {
