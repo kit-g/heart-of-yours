@@ -131,11 +131,6 @@ class HeartApp extends StatelessWidget {
               Exercises.of(context).userId = user?.id;
               Charts.of(context).userId = user?.id;
               Goals.of(context).userId = user?.id;
-              // Also kicked from the profile screen's first layout. Doing it
-              // here too means the server pull happens once auth has settled —
-              // the very first request of a launch can lose a race with token
-              // refresh, and Goals.init skips the pull once one has succeeded.
-              if (user != null) Goals.of(context).init();
               PreviousExercises.of(context).userId = user?.id;
               Stats.of(context).userId = user?.id;
               Templates.of(context).userId = user?.id;
@@ -394,7 +389,15 @@ Future<void> _initApp(
 
     final info = AppInfo.of(context);
     final appConfig = AppConfig.of(context);
-    _initAppInfo(context).then(
+
+    /// Completes once the API carries a session token.
+    ///
+    /// Held rather than fired and forgotten, because anything that talks to the
+    /// server before it lands gets a 401 and pays for a forced token refresh to
+    /// recover. The goals pull used to be exactly that: kicked from
+    /// `onUserChange`, which runs *before* this, so every launch opened with a
+    /// wasted round trip.
+    final authenticated = _initAppInfo(context).then(
       (_) {
         _initApi(
           config: appConfig,
@@ -433,6 +436,14 @@ Future<void> _initApp(
     theme
       ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))
       ..toMode(prefs.themeMode);
+
+    // `onUserChange` has already set the id — it runs before this — so the only
+    // thing left to wait for is the token.
+    authenticated.then<void>(
+      (_) {
+        if (context.mounted) Goals.of(context).init();
+      },
+    );
 
     if (!isInitialized) {
       // chart preferences are local-only and independent of the exercise
