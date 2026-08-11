@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/date_picker.dart';
@@ -38,6 +39,7 @@ part 'ladder_bar.dart';
 part 'new_goal.dart';
 part 'row.dart';
 part 'swipe.dart';
+part 'target_input.dart';
 part 'text.dart';
 part 'thresholds.dart';
 
