@@ -175,13 +175,44 @@ void main() {
     });
   });
 
-  test('a milestone still reads the latest session, not the period', () async {
-    history([
-      (150, DateTime(2026, 8, 6)),
-      (200, DateTime(2026, 8, 4)),
-    ]);
+  group('a milestone', () {
+    test('reads the best session there has been, not the latest', () async {
+      // "have you ever pressed 220" — a lighter session since does not undo a
+      // heavier one. Reading the latest had a goal sitting at 2025 of 3000
+      // while the chart right above it showed a session of 2880.
+      history([
+        (150, DateTime(2026, 8, 6)),
+        (200, DateTime(2026, 8, 4)),
+      ]);
 
-    expect(await read(goal(metric: .topSetWeight, cadence: null, target: 220)), 150);
+      expect(await read(goal(metric: .topSetWeight, cadence: null, target: 220)), 200);
+    });
+
+    test('takes the lowest where lower is better', () async {
+      // best pace is the fastest one run, not the slowest
+      history([
+        (330, DateTime(2026, 8, 6)),
+        (300, DateTime(2026, 8, 4)),
+      ]);
+
+      expect(await read(goal(metric: .averagePace, cadence: null, target: 280)), 300);
+    });
+
+    test('ignores the period entirely', () async {
+      // no cadence, so a session from last month still counts
+      history([
+        (150, DateTime(2026, 8, 6)),
+        (200, DateTime(2026, 5, 4)),
+      ]);
+
+      expect(await read(goal(metric: .topSetWeight, cadence: null, target: 220)), 200);
+    });
+
+    test('stays unanswered where the exercise has never been logged', () async {
+      history([]);
+
+      expect(await read(goal(metric: .topSetWeight, cadence: null, target: 220)), isNull);
+    });
   });
 
   group('a whole-workout goal', () {
