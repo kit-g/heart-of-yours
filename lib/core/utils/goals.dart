@@ -144,6 +144,7 @@ Future<num?> currentGoalValue(
     },
   );
 }
+
 //   git diff -- lib/core/utils/goals.dart shared/heart_state/lib/src/goals.dart test/goal_period_test.dart shared/heart_state/test/goals_test.dart
 /// How many sessions of one exercise to pull when folding a period.
 ///
