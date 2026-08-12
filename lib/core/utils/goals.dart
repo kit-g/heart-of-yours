@@ -82,7 +82,8 @@ class LocalGoals implements LocalGoalService {
 ///
 /// - a whole-workout goal is [workoutCount] over the goal's own period, which
 ///   for a milestone (no cadence) is every workout there has ever been;
-/// - a per-exercise milestone is its latest observed value;
+/// - a per-exercise milestone is its best observed value — a milestone is a
+///   ratchet, so a lighter session does not undo one;
 /// - a per-exercise goal with a cadence is its sessions inside the current
 ///   period, folded the way that dimension folds — see
 ///   [ChartDimension.periodAggregate].
@@ -126,19 +127,37 @@ Future<num?> currentGoalValue(
     };
   }
 
-  final history = await exercises.getChartExerciseMetics(metric, exercise.name, limit: 1);
-  return switch (history) {
-    [(final num value, _), ...] => value,
-    _ => null,
-  };
-}
+  // A milestone asks whether the target has *ever* been reached, so the reading
+  // is the best session rather than the most recent one. Reading the latest
+  // made the number walk backwards after every lighter day — a goal of 3000 lb
+  // on an exercise topping out at 2880 showed 2025, because that was simply the
+  // last session logged — and it contradicted the rungs beside it, which stay
+  // stamped once cleared.
+  final history = await exercises.getChartExerciseMetics(metric, exercise.name, limit: _milestoneHistory);
+  final values = [for (final (value, _) in history ?? const <(num, DateTime)>[]) value];
+  if (values.isEmpty) return null;
 
+  return values.reduce(
+    switch (goal.metric.lowerIsBetter) {
+      true => (a, b) => a < b ? a : b,
+      false => (a, b) => a > b ? a : b,
+    },
+  );
+}
+//   git diff -- lib/core/utils/goals.dart shared/heart_state/lib/src/goals.dart test/goal_period_test.dart shared/heart_state/test/goals_test.dart
 /// How many sessions of one exercise to pull when folding a period.
 ///
 /// The queries are ordered newest first and bounded by count, not by date, so
 /// this only has to outrun a single period — far more sessions of one exercise
 /// than a week or a month of training ever contains.
 const _sessionsPerPeriod = 60;
+
+/// How far back a milestone looks for its best session.
+///
+/// A bound rather than a window: the answer wanted is the best there has ever
+/// been, and this only keeps the scan from being unbounded. One exercise
+/// trained twice a week takes five years to reach it.
+const _milestoneHistory = 500;
 
 /// Counts workouts over whichever window a goal measures.
 ///

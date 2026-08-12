@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/goals.dart';
@@ -332,6 +334,30 @@ void main() {
 
       expect(local.deleted, contains('local-1'));
     });
+  });
+
+  test('a create still on the wire is not pushed a second time', () async {
+    // The create's request met an expired token. Reauthenticating emits a new
+    // auth state, that re-runs init, and its pushPending finds the row still
+    // unsynced — indistinguishable from one written offline — so it POSTed it
+    // again and the server minted a second goal, identical down to the stage
+    // id it was handed.
+    final gate = Completer<void>();
+    remote.gate = gate;
+    remote.mintedId = 'server-1';
+
+    final creating = sut.create(ladder());
+    await pumpEventQueue();
+
+    // the row as the database holds it mid-flight: written, not yet confirmed
+    local.unsynced.add(local.created.single);
+    await sut.pushPending();
+
+    gate.complete();
+    await creating;
+
+    expect(remote.created, hasLength(1));
+    expect(sut, hasLength(1));
   });
 
   test('concurrent inits share one run, so an unsynced goal is pushed once', () async {
@@ -782,8 +808,17 @@ class _FakeRemote implements GoalService {
     return goals.where((each) => each.archived == archived).toList();
   }
 
+  /// Holds the *next* create open, so a test can act while one is on the wire.
+  /// One-shot: anything arriving behind it goes straight through, which is what
+  /// makes a second push visible rather than deadlocked.
+  Completer<void>? gate;
+
   @override
   Future<Goal> createGoal(Goal goal, String userId) async {
+    if (gate case Completer<void> held) {
+      gate = null;
+      await held.future;
+    }
     _guard();
     created.add(goal);
     return goal.copyWith(id: mintedId ?? goal.id);

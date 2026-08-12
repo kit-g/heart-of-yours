@@ -491,8 +491,9 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   /// a write made offline, or one that hit a flaky network. Failures are left
   /// unsynced to retry next launch; nothing is ever dropped.
   ///
-  /// Never runs twice at once: each pass POSTs rows the previous pass has not
-  /// yet reconciled, and the server mints a fresh id every time.
+  /// Never runs twice at once, and never touches a row whose push is already
+  /// in flight: each pass POSTs rows nothing else has reconciled yet, and the
+  /// server mints a fresh id every time.
   Future<void> pushPending() async {
     if (_pushing) return;
     _pushing = true;
@@ -509,6 +510,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     if (userId case String id) {
       try {
         for (final goal in await _service.unsyncedGoals(id)) {
+          if (_inFlight.contains(goal.id)) continue;
           await _push(goal, () => _remoteService.createGoal(goal, id), onRejected: _discard);
         }
       } catch (error, stacktrace) {
@@ -529,10 +531,12 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     required Future<void> Function(Goal local) onRejected,
   }) async {
     final id = userId!;
+    final localId = local.id!;
+    _inFlight.add(localId);
     try {
       final saved = await send();
-      await _service.reconcileGoalId(local.id!, saved, id);
-      _swap(local.id!, saved);
+      await _service.reconcileGoalId(localId, saved, id);
+      _swap(localId, saved);
       notifyListeners();
       return saved;
     } catch (error, stacktrace) {
@@ -542,8 +546,23 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
       }
       onError?.call(error, stacktrace: stacktrace);
       return local;
+    } finally {
+      _inFlight.remove(localId);
     }
   }
+
+  /// Local ids with a push already on the wire.
+  ///
+  /// A create writes its row unsynced and only reconciles it when the server
+  /// answers, so for the length of that round-trip the row looks exactly like
+  /// one written offline. Anything reaching [pushPending] inside that window
+  /// POSTs it a second time and the server mints a second goal — two identical
+  /// goals from one create, down to the shared stage id.
+  ///
+  /// Not hypothetical: a create whose request meets an expired token triggers a
+  /// reauth, the auth emission re-runs `init`, and its [pushPending] lands
+  /// while the retried POST is still in the air.
+  final _inFlight = <String>{};
 
   /// Undoes a refused create: the goal exists nowhere else.
   Future<void> _discard(Goal local) async {
