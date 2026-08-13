@@ -1118,6 +1118,54 @@ abstract class L {
   /// **'New Template'**
   String get newTemplate;
 
+  /// Button and dialog title for creating a template folder
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get newFolder;
+
+  /// Label of the folder name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get folderName;
+
+  /// Menu item and dialog title for renaming a template folder
+  ///
+  /// In en, this message translates to:
+  /// **'Rename folder'**
+  String get renameFolder;
+
+  /// Menu item and dialog title for deleting a template folder
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder'**
+  String get deleteFolder;
+
+  /// Reassurance in the delete-folder dialog: deleting a folder never deletes its templates
+  ///
+  /// In en, this message translates to:
+  /// **'The templates inside will be kept'**
+  String get deleteFolderBody;
+
+  /// Template menu item and dialog title for filing a template into a folder
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get moveToFolder;
+
+  /// Option in the move-to-folder dialog that unfiles the template
+  ///
+  /// In en, this message translates to:
+  /// **'No folder'**
+  String get noFolder;
+
+  /// Error shown when creating or renaming a folder to a name already in use
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a folder with this name'**
+  String get folderNameTaken;
+
   /// Edit template form header
   ///
   /// In en, this message translates to:

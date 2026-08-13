@@ -573,6 +573,30 @@ class LEn extends L {
   String get newTemplate => 'New Template';
 
   @override
+  String get newFolder => 'New folder';
+
+  @override
+  String get folderName => 'Folder name';
+
+  @override
+  String get renameFolder => 'Rename folder';
+
+  @override
+  String get deleteFolder => 'Delete folder';
+
+  @override
+  String get deleteFolderBody => 'The templates inside will be kept';
+
+  @override
+  String get moveToFolder => 'Move to folder';
+
+  @override
+  String get noFolder => 'No folder';
+
+  @override
+  String get folderNameTaken => 'You already have a folder with this name';
+
+  @override
   String get editTemplate => 'Edit Template';
 
   @override
@@ -1508,6 +1532,30 @@ class LEnCa extends LEn {
 
   @override
   String get newTemplate => 'New Template';
+
+  @override
+  String get newFolder => 'New folder';
+
+  @override
+  String get folderName => 'Folder name';
+
+  @override
+  String get renameFolder => 'Rename folder';
+
+  @override
+  String get deleteFolder => 'Delete folder';
+
+  @override
+  String get deleteFolderBody => 'The templates inside will be kept';
+
+  @override
+  String get moveToFolder => 'Move to folder';
+
+  @override
+  String get noFolder => 'No folder';
+
+  @override
+  String get folderNameTaken => 'You already have a folder with this name';
 
   @override
   String get editTemplate => 'Edit Template';

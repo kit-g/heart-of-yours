@@ -1078,6 +1078,54 @@
     "type": "text",
     "placeholders": {}
   },
+  "newFolder": "Новая папка",
+  "@newFolder": {
+    "description": "Button and dialog title for creating a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "folderName": "Название папки",
+  "@folderName": {
+    "description": "Label of the folder name text field",
+    "type": "text",
+    "placeholders": {}
+  },
+  "renameFolder": "Переименовать папку",
+  "@renameFolder": {
+    "description": "Menu item and dialog title for renaming a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteFolder": "Удалить папку",
+  "@deleteFolder": {
+    "description": "Menu item and dialog title for deleting a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteFolderBody": "Шаблоны внутри останутся",
+  "@deleteFolderBody": {
+    "description": "Reassurance in the delete-folder dialog: deleting a folder never deletes its templates",
+    "type": "text",
+    "placeholders": {}
+  },
+  "moveToFolder": "Переместить в папку",
+  "@moveToFolder": {
+    "description": "Template menu item and dialog title for filing a template into a folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noFolder": "Без папки",
+  "@noFolder": {
+    "description": "Option in the move-to-folder dialog that unfiles the template",
+    "type": "text",
+    "placeholders": {}
+  },
+  "folderNameTaken": "У вас уже есть папка с таким названием",
+  "@folderNameTaken": {
+    "description": "Error shown when creating or renaming a folder to a name already in use",
+    "type": "text",
+    "placeholders": {}
+  },
   "editTemplate": "Редактировать шаблон",
   "@editTemplate": {
     "description": "Edit template form header",

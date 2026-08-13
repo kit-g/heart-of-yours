@@ -185,6 +185,14 @@ templates,Workout templates section header,Templates,Templates,Шаблоны
 exampleTemplates,Workout templates section header,Example templates,Example templates,Примеры шаблонов
 template,A single workout template,Template,Template,Шаблон
 newTemplate,New template form header,New Template,New Template,Новый шаблон
+newFolder,Button and dialog title for creating a template folder,New folder,New folder,Новая папка
+folderName,Label of the folder name text field,Folder name,Folder name,Название папки
+renameFolder,Menu item and dialog title for renaming a template folder,Rename folder,Rename folder,Переименовать папку
+deleteFolder,Menu item and dialog title for deleting a template folder,Delete folder,Delete folder,Удалить папку
+deleteFolderBody,Reassurance in the delete-folder dialog: deleting a folder never deletes its templates,The templates inside will be kept,The templates inside will be kept,Шаблоны внутри останутся
+moveToFolder,Template menu item and dialog title for filing a template into a folder,Move to folder,Move to folder,Переместить в папку
+noFolder,Option in the move-to-folder dialog that unfiles the template,No folder,No folder,Без папки
+folderNameTaken,Error shown when creating or renaming a folder to a name already in use,You already have a folder with this name,You already have a folder with this name,У вас уже есть папка с таким названием
 editTemplate,Edit template form header,Edit Template,Edit Template,Редактировать шаблон
 editWorkout,Edit workout form header,Edit Workout,Edit Workout,Редактировать тренировку
 templateName,Edit template text field hint,Template name,Template name,Название шаблона

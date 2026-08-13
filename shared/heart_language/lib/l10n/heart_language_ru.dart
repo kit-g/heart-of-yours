@@ -575,6 +575,30 @@ class LRu extends L {
   String get newTemplate => 'Новый шаблон';
 
   @override
+  String get newFolder => 'Новая папка';
+
+  @override
+  String get folderName => 'Название папки';
+
+  @override
+  String get renameFolder => 'Переименовать папку';
+
+  @override
+  String get deleteFolder => 'Удалить папку';
+
+  @override
+  String get deleteFolderBody => 'Шаблоны внутри останутся';
+
+  @override
+  String get moveToFolder => 'Переместить в папку';
+
+  @override
+  String get noFolder => 'Без папки';
+
+  @override
+  String get folderNameTaken => 'У вас уже есть папка с таким названием';
+
+  @override
   String get editTemplate => 'Редактировать шаблон';
 
   @override

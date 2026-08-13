@@ -1078,6 +1078,54 @@
     "type": "text",
     "placeholders": {}
   },
+  "newFolder": "New folder",
+  "@newFolder": {
+    "description": "Button and dialog title for creating a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "folderName": "Folder name",
+  "@folderName": {
+    "description": "Label of the folder name text field",
+    "type": "text",
+    "placeholders": {}
+  },
+  "renameFolder": "Rename folder",
+  "@renameFolder": {
+    "description": "Menu item and dialog title for renaming a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteFolder": "Delete folder",
+  "@deleteFolder": {
+    "description": "Menu item and dialog title for deleting a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteFolderBody": "The templates inside will be kept",
+  "@deleteFolderBody": {
+    "description": "Reassurance in the delete-folder dialog: deleting a folder never deletes its templates",
+    "type": "text",
+    "placeholders": {}
+  },
+  "moveToFolder": "Move to folder",
+  "@moveToFolder": {
+    "description": "Template menu item and dialog title for filing a template into a folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noFolder": "No folder",
+  "@noFolder": {
+    "description": "Option in the move-to-folder dialog that unfiles the template",
+    "type": "text",
+    "placeholders": {}
+  },
+  "folderNameTaken": "You already have a folder with this name",
+  "@folderNameTaken": {
+    "description": "Error shown when creating or renaming a folder to a name already in use",
+    "type": "text",
+    "placeholders": {}
+  },
   "editTemplate": "Edit Template",
   "@editTemplate": {
     "description": "Edit template form header",
