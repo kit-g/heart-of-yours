@@ -74,21 +74,20 @@ void main() {
           const userId = 'user-1';
           final we = wExercise();
 
+          // the shape sql.getTemplates builds: one object per exercise, with
+          // the sets under 'sets' and the full exercise under 'exercise'
           final row = {
             'id': 1,
             'name': 'Chest Day',
             'order': 0,
             'created_at': '2025-07-21T10:00:00Z',
-            'exercises': jsonEncode(
-              we.map(
-                (e) {
-                  return {
-                    ...e.toMap(),
-                    'exercise': 'Push Up',
-                  };
-                },
-              ).toList(),
-            ),
+            'exercises': jsonEncode([
+              {
+                'id': '2025-07-21T10:00:00.000Z',
+                'sets': we.map((s) => s.toMap()).toList(),
+                'exercise': we.exercise.toMap(),
+              },
+            ]),
           };
 
           when(db.rawQuery(userQuery, [userId])).thenAnswer((_) async => [row]);
@@ -104,7 +103,6 @@ void main() {
 
           verify(db.rawQuery(userQuery, [userId])).called(1);
         },
-        skip: 'pending postgres migration: getTemplates JSON parsing not finalized',
       );
 
       test(
@@ -117,16 +115,13 @@ void main() {
             'name': 'Full Body',
             'order': 0,
             'created_at': '2025-07-21T10:00:00Z',
-            'exercises': jsonEncode(
-              we.map(
-                (e) {
-                  return {
-                    ...e.toMap(),
-                    'exercise': 'Push Up',
-                  };
-                },
-              ).toList(),
-            ),
+            'exercises': jsonEncode([
+              {
+                'id': '2025-07-21T10:00:00.000Z',
+                'sets': we.map((s) => s.toMap()).toList(),
+                'exercise': we.exercise.toMap(),
+              },
+            ]),
           };
 
           when(db.rawQuery(sampleQuery, null)).thenAnswer((_) async => [row]);
@@ -139,7 +134,6 @@ void main() {
 
           verify(db.rawQuery(sampleQuery, null)).called(1);
         },
-        skip: 'pending postgres migration: getTemplates JSON parsing not finalized',
       );
     },
   );
