@@ -51,4 +51,9 @@ const _migrations = <int, List<String>>{
     goals,
     goalsIndex,
   ],
+  8: [
+    templateFolders,
+    templateFoldersIndex,
+    addTemplateFolderId,
+  ],
 };
