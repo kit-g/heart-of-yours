@@ -48,6 +48,10 @@ const _schema = [
   // v7
   goals,
   goalsIndex,
+  // v8
+  templateFolders,
+  templateFoldersIndex,
+  addTemplateFolderId,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -57,7 +61,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 7,
+      version: 8,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
