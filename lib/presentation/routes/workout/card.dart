@@ -4,6 +4,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
   final Template template;
   final void Function(Template)? onDelete;
   final void Function(Template)? onEdit;
+  final void Function(Template)? onMove;
   final void Function(Template)? onStartWorkout;
   final void Function(Template) onTap;
   final List<_TemplateOption>? options;
@@ -12,6 +13,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
     required this.template,
     this.onDelete,
     this.onEdit,
+    this.onMove,
     this.onStartWorkout,
     this.options,
     required this.onTap,
@@ -122,6 +124,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
   void _onSelected(_TemplateOption option) {
     return switch (option) {
       .edit => onEdit?.call(template),
+      .move => onMove?.call(template),
       .delete => onDelete?.call(template),
       .startWorkout => onStartWorkout?.call(template),
     };
@@ -141,6 +144,11 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
         style: textTheme.titleSmall,
         icon: const Icon(Icons.edit_rounded, size: 16),
       ),
+      .move => (
+        copy: L.of(context).moveToFolder,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.drive_file_move_outlined, size: 16),
+      ),
       .startWorkout => (
         copy: L.of(context).startWorkout,
         style: textTheme.titleSmall,
@@ -152,7 +160,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
 
 const _maxPerCard = 5;
 
-enum _TemplateOption { edit, startWorkout, delete }
+enum _TemplateOption { edit, move, startWorkout, delete }
 
 const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));
 
@@ -181,7 +189,7 @@ class _TemplateGrid extends StatelessWidget {
           return SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columnsFor(constraints.crossAxisExtent, maxExtent: _maxCardWidth),
-              mainAxisExtent: _cardExtent(context),
+              mainAxisExtent: _cardExtent(context, templates),
             ),
             delegate: SliverChildBuilderDelegate(
               (_, index) => card(templates[index]),
@@ -192,30 +200,62 @@ class _TemplateGrid extends StatelessWidget {
       ),
     );
   }
+}
 
-  /// Every cell in a grid shares one height, so reserve what the fullest
-  /// template here needs and no more. Derived from the text metrics rather than
-  /// hardcoded, because at 200% text scale a fixed height clips the rows.
-  double _cardExtent(BuildContext context) {
-    final TextTheme(:titleMedium, :bodyMedium) = Theme.of(context).textTheme;
-    final scaler = MediaQuery.textScalerOf(context);
-    final longest = templates.fold(0, (longest, t) => max(longest, t.length));
-    final listed = min(longest, _maxPerCard);
-    final overflow = switch (longest > _maxPerCard) {
-      true => 1,
-      false => 0,
-    };
-    // a one-exercise template still gets a card, not a sliver
-    final rows = max(_minRowsPerCard, listed + overflow);
+/// [_TemplateGrid] for a box context: what a folder's [ExpansionTile] holds,
+/// since tile children cannot be slivers. Same columns, same card height;
+/// never a scrollable of its own.
+class _TemplateGridBox extends StatelessWidget {
+  final List<Template> templates;
+  final Widget Function(Template) card;
 
-    // the title row is as tall as its popup menu button, not its text
-    final title = max(_menuButtonHeight, _lineExtent(titleMedium, scaler));
-    return title + rows * _lineExtent(bodyMedium, scaler) + _cardMargin + _cardBottomPadding;
+  const _TemplateGridBox({
+    required this.templates,
+    required this.card,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columnsFor(constraints.maxWidth, maxExtent: _maxCardWidth),
+            mainAxisExtent: _cardExtent(context, templates),
+          ),
+          itemCount: templates.length,
+          itemBuilder: (_, index) => card(templates[index]),
+        );
+      },
+    );
   }
+}
 
-  double _lineExtent(TextStyle? style, TextScaler scaler) {
-    return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
-  }
+/// Every cell in a grid shares one height, so reserve what the fullest
+/// template here needs and no more. Derived from the text metrics rather than
+/// hardcoded, because at 200% text scale a fixed height clips the rows.
+double _cardExtent(BuildContext context, List<Template> templates) {
+  final TextTheme(:titleMedium, :bodyMedium) = Theme.of(context).textTheme;
+  final scaler = MediaQuery.textScalerOf(context);
+  final longest = templates.fold(0, (longest, t) => max(longest, t.length));
+  final listed = min(longest, _maxPerCard);
+  final overflow = switch (longest > _maxPerCard) {
+    true => 1,
+    false => 0,
+  };
+  // a one-exercise template still gets a card, not a sliver
+  final rows = max(_minRowsPerCard, listed + overflow);
+
+  // the title row is as tall as its popup menu button, not its text
+  final title = max(_menuButtonHeight, _lineExtent(titleMedium, scaler));
+  return title + rows * _lineExtent(bodyMedium, scaler) + _cardMargin + _cardBottomPadding;
+}
+
+double _lineExtent(TextStyle? style, TextScaler scaler) {
+  return scaler.scale(style?.fontSize ?? 14) * (style?.height ?? 1.4);
 }
 
 /// An [IconButton] at the card's [VisualDensity] of -3.
