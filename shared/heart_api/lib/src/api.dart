@@ -8,6 +8,7 @@ class Api
     with Requests
     implements
         AccountService,
+        ApiTemplateFolderService,
         FeedbackService,
         GoalService,
         HeaderAuthenticatedService,
@@ -424,6 +425,103 @@ class Api
     return Template.fromJson(json);
   }
 
+  /// Files [template] into [folderId], or unfiles it when null.
+  ///
+  /// A dedicated call rather than [editTemplate] because `template.toMap()`
+  /// carries no `folderId` key — the server reads its absence as "leave the
+  /// filing alone" — and because the PUT is a full replace, the body must be
+  /// the whole template, not the one changed field.
+  Future<Template> moveTemplate(Template template, {required String? folderId}) async {
+    final (json, code) = await put(
+      Router.template(template.id),
+      body: {
+        ...template.toMap(),
+        'folderId': folderId,
+      },
+    );
+    return switch ((code, json)) {
+      (200, Map json) => Template.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  /// The interface is owner-scoped for the server's sake; over HTTP the caller
+  /// is whoever the auth header says, so [userId] plays no part in the request.
+  @override
+  Future<Iterable<TemplateFolder>> getFolders({required String userId}) async {
+    final (json, code) = await get(Router.templateFolders);
+    return switch ((code, json)) {
+      (200, {'folders': List l}) => l.map((e) => TemplateFolder.fromJson(e as Map)),
+      _ => throw json,
+    };
+  }
+
+  @override
+  Future<TemplateFolder> createFolder({required String userId, required TemplateFolder folder}) async {
+    final (json, code) = await post(
+      Router.templateFolders,
+      body: {'name': folder.name, 'order': folder.order},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => TemplateFolder.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  @override
+  Future<TemplateFolder> updateFolder({
+    required String userId,
+    required String folderId,
+    required TemplateFolder folder,
+  }) async {
+    final (json, code) = await put(
+      Router.templateFolder(folderId),
+      body: {'name': folder.name, 'order': folder.order},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => TemplateFolder.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  @override
+  Future<void> deleteFolder({required String userId, required String folderId}) async {
+    final (json, code) = await delete(Router.templateFolder(folderId));
+    if (code >= 400) throw json;
+  }
+
+  @override
+  Future<Iterable<TemplateShare>> shareFolder({
+    required String coachId,
+    required String targetUserId,
+    required String folderId,
+  }) async {
+    final (json, code) = await post(Router.folderShare(targetUserId, folderId));
+    return switch ((code, json)) {
+      (200, {'shares': List l}) => l.map((e) => _shareFromJson(e as Map)),
+      _ => throw json,
+    };
+  }
+
+  /// [TemplateShare] only knows how to read itself off a database row; this is
+  /// its wire shape, which nests the student as `assignedTo`.
+  static TemplateShare _shareFromJson(Map json) {
+    return TemplateShare(
+      id: json['id'].toString(),
+      masterTemplateId: json['masterTemplateId'].toString(),
+      studentTemplateId: json['studentTemplateId'].toString(),
+      templateName: json['templateName'] as String? ?? '',
+      assignedTo: switch (json['assignedTo']) {
+        final Map m => Profile.fromJson(m),
+        _ => throw ArgumentError.value(json, 'assignedTo', 'a share needs its student'),
+      },
+      assignedAt: switch (json['assignedAt']) {
+        final String s => DateTime.parse(s),
+        _ => DateTime.timestamp(),
+      },
+    );
+  }
+
   @override
   Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor, String? userId}) async {
     final (json, _) = await get('${Router.workouts}/images', query: {'cursor': ?cursor});
@@ -438,6 +536,7 @@ abstract final class Router {
   static const feedback = 'v1/feedback';
   static const goals = 'v1/goals';
   static const templates = 'v1/templates';
+  static const templateFolders = 'v1/template-folders';
   static const workouts = 'v1/workouts';
 
   static String goal(String goalId) {
@@ -462,6 +561,14 @@ abstract final class Router {
 
   static String template(String templateId) {
     return '$templates/$templateId';
+  }
+
+  static String templateFolder(String folderId) {
+    return '$templateFolders/$folderId';
+  }
+
+  static String folderShare(String targetUserId, String folderId) {
+    return '$accounts/$targetUserId/folders/$folderId';
   }
 
   static String workout(String workoutId) {
