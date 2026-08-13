@@ -7,6 +7,7 @@ const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
 const _weightUnit = 'weightUnit';
 const _distanceUnit = 'distanceUnit';
+const _collapsedFolders = 'collapsedTemplateFolders';
 
 class Preferences with ChangeNotifier {
   SharedPreferences? _prefs;
@@ -112,6 +113,25 @@ class Preferences with ChangeNotifier {
     _distance = unit;
     notifyListeners();
     return _prefs?.setString(_distanceUnit, unit.name);
+  }
+
+  /// Which template folders the user has folded away. View state, but the kind
+  /// worth remembering: a roster of folders that reopens fully expanded on
+  /// every launch would need re-collapsing daily.
+  bool isFolderCollapsed(String folderId) {
+    return _prefs?.getStringList(_collapsedFolders)?.contains(folderId) ?? false;
+  }
+
+  Future<bool>? toggleFolderCollapsed(String folderId) {
+    final collapsed = (_prefs?.getStringList(_collapsedFolders) ?? []).toSet();
+    if (!collapsed.remove(folderId)) {
+      collapsed.add(folderId);
+    }
+    // setStringList updates the in-memory cache synchronously, so listeners
+    // rebuilt by this notify already read the new state
+    final write = _prefs?.setStringList(_collapsedFolders, collapsed.toList());
+    notifyListeners();
+    return write;
   }
 
   /// Formats [value] (stored canonically in metric) for display.
