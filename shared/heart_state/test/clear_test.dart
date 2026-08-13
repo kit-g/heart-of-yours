@@ -88,6 +88,9 @@ class _Templates extends Templates {
         remoteService: MockRemoteTemplateService(),
         service: MockTemplateService(),
         configService: MockRemoteConfigService(),
+        folderService: MockLocalTemplateFolderService(),
+        remoteFolderService: MockApiTemplateFolderService(),
+        filingService: MockRemoteTemplateFilingService(),
       );
 
   @override
