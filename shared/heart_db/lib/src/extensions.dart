@@ -56,7 +56,37 @@ List<dynamic> _ordered(dynamic decoded) {
   return indexed.map((each) => each.$2).toList();
 }
 
+/// A template's exercises carry no `order` of their own — their ids are the
+/// ordering, written as ascending timestamps by `_Templates` — so unlike
+/// [_ordered] this sorts on the id. ISO timestamps compare correctly as text.
+List<dynamic> _orderedByStamp(dynamic decoded) {
+  if (decoded is! List) return const [];
+  return decoded.toList()..sort(
+    (one, two) {
+      return switch ((one, two)) {
+        ({'id': final String a}, {'id': final String b}) => a.compareTo(b),
+        _ => 0,
+      };
+    },
+  );
+}
+
 extension on Map {
+  /// The `exercises` and `folder` columns arrive as JSON text — SQLite's
+  /// `json_object`/`json_group_array` return strings — while
+  /// `Template.fromJson` expects them decoded.
+  Map toTemplate() {
+    return map(
+      (key, value) {
+        return switch (key) {
+          'exercises' when value is String => MapEntry(key, _orderedByStamp(jsonDecode(value))),
+          'folder' when value is String => MapEntry(key, jsonDecode(value)),
+          _ => MapEntry(key, value),
+        };
+      },
+    );
+  }
+
   Map toWorkout() {
     return map(
       (key, value) {

@@ -262,9 +262,9 @@ WITH
     WHERE template_id IN (SELECT id FROM _templates)
 )
 SELECT
-    id,
-    name,
-    order_in_parent AS "order",
+    _templates.id,
+    _templates.name,
+    _templates.order_in_parent AS "order",
     (
         SELECT json_group_array(
             json_object(
@@ -275,10 +275,34 @@ SELECT
         )
         FROM _ex
         WHERE _ex.template_id = _templates.id
-    ) AS exercises
+    ) AS exercises,
+    CASE
+        WHEN folder.id IS NULL THEN NULL
+        ELSE json_object(
+            'id', folder.id,
+            'name', folder.name,
+            'order', folder.order_index,
+            'createdAt', folder.created_at
+        )
+    END AS folder
 FROM _templates
+LEFT JOIN template_folders AS folder ON folder.id = _templates.folder_id
 ;
 """;
+
+const getTemplateFolders = '''
+SELECT
+    template_folders.*,
+    (
+        SELECT count(*)
+        FROM templates
+        WHERE templates.folder_id = template_folders.id
+    ) AS template_count
+FROM template_folders
+WHERE user_id = ?
+ORDER BY order_index, name COLLATE NOCASE
+;
+''';
 
 const getSampleTemplates = """
 WITH
