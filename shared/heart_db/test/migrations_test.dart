@@ -138,7 +138,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 7);
+          expect(await userVersion(db), 8);
           expect(
             await tables(db),
             {
@@ -149,6 +149,7 @@ void main() {
               'sets',
               'templates',
               'template_exercises',
+              'template_folders',
               'exercise_details',
               'charts',
               'goals',
@@ -400,7 +401,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 7);
+          expect(await userVersion(db), 8);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
