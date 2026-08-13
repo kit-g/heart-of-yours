@@ -26,7 +26,9 @@ mixin _Templates on _LocalDatabase implements TemplateService {
           batch.insert(
             _templatesExercises,
             {
-              'id': ts.subtract(Duration(milliseconds: 2 * index)).toIso8601String(),
+              // ids double as display order — getTemplates sorts on them — so
+              // they must ascend with the exercise's position
+              'id': ts.add(Duration(milliseconds: 2 * index)).toIso8601String(),
               'template_id': template.id,
               'exercise_id': exercise.exercise.name,
               'description': jsonEncode(desc),
@@ -49,7 +51,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
     final query = userId == null ? sql.getSampleTemplates : sql.getTemplates;
     final args = userId == null ? null : [userId];
     final rows = (await _db.rawQuery(query, args)).map((row) => row.toCamel());
-    return rows.map((row) => Template.fromJson(row));
+    return rows.map((row) => Template.fromJson(row.toTemplate()));
   }
 
   @override
@@ -88,9 +90,20 @@ mixin _Templates on _LocalDatabase implements TemplateService {
             {
               ...template.toRow(),
               'user_id': userId,
+              'folder_id': template.folderId,
             },
             conflictAlgorithm: .replace,
           );
+
+          // The nested folder rides along on every filed template, so the
+          // mirror row it points at can be kept fresh in the same write.
+          if (template.folder case final TemplateFolder folder when userId != null) {
+            batch.insert(
+              _templateFolders,
+              folder.toDbRow(userId),
+              conflictAlgorithm: .replace,
+            );
+          }
 
           final ts = DateTime.timestamp();
 
