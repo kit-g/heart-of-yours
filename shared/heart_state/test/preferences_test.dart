@@ -149,6 +149,40 @@ void main() {
     });
   });
 
+  group('collapsed template folders', () {
+    test('folders start expanded', () async {
+      await sut.init();
+      expect(sut.isFolderCollapsed('f1'), isFalse);
+    });
+
+    test('toggle collapses, persists and notifies; toggling back expands', () async {
+      await sut.init();
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.toggleFolderCollapsed('f1');
+      expect(sut.isFolderCollapsed('f1'), isTrue);
+      // one folder's state is not another's
+      expect(sut.isFolderCollapsed('f2'), isFalse);
+      expect(probe.notifications, 1);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getStringList('collapsedTemplateFolders'), ['f1']);
+
+      await sut.toggleFolderCollapsed('f1');
+      expect(sut.isFolderCollapsed('f1'), isFalse);
+      expect(prefs.getStringList('collapsedTemplateFolders'), isEmpty);
+    });
+
+    test('collapsed state survives a new Preferences instance', () async {
+      SharedPreferences.setMockInitialValues({
+        'collapsedTemplateFolders': ['f1'],
+      });
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.isFolderCollapsed('f1'), isTrue);
+    });
+  });
+
   group('formatting and conversions', () {
     test('weight() and distance() format integers without decimals in metric', () async {
       await sut.init(locale: const Locale('de', 'DE'));

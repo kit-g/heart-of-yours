@@ -53,13 +53,23 @@ Map<String, dynamic> movement(
   };
 }
 
-Template tmpl({required String id, int order = 0, String? name, List<WorkoutExercise> exercises = const []}) {
-  final t = Template.empty(id: id, order: order);
+Template tmpl({
+  required String id,
+  int order = 0,
+  String? name,
+  List<WorkoutExercise> exercises = const [],
+  TemplateFolder? folder,
+}) {
+  final t = Template.empty(id: id, order: order, folder: folder);
   t.name = name;
   for (final we in exercises) {
     t.append(we);
   }
   return t;
+}
+
+TemplateFolder fldr({String id = 'f1', String name = 'Push', int order = 0}) {
+  return TemplateFolder(id: id, name: name, order: order);
 }
 
 WorkoutExercise wEx(Exercise exercise, {int sets = 1}) {
