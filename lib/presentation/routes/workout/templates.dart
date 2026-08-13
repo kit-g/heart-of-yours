@@ -1124,6 +1124,12 @@ class _FolderNameFormState extends State<_FolderNameForm> {
                   errorText: error,
                   // a dialog is narrower than the sentence
                   errorMaxLines: 2,
+                  // A blank helper holds the first of those lines open, so the
+                  // error slots into space that was already there. The dialog
+                  // is centred, so growing by a line moves every button under
+                  // it and half a line of the field above it — reserving the
+                  // line costs a little padding and takes most of that away.
+                  helperText: ' ',
                 ),
                 onChanged: (_) => _rejected.value = null,
                 onSubmitted: (_) => _submit(),
