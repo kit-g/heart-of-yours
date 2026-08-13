@@ -158,7 +158,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
                 ),
               ),
               onPressed: () {
-                Templates.of(context).editable = null;
+                Templates.of(context).discardEditable();
                 Navigator.of(context, rootNavigator: true).pop();
                 Navigator.of(context).pop();
               },
