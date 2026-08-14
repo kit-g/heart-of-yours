@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS health_samples
 
 /// Every read is "this metric, this user, this window", so the index leads with
 /// the two equality columns and carries `start` for the range and the ordering.
-const healthSamplesIndex = """
+const healthSamplesIndex = '''
 CREATE INDEX IF NOT EXISTS health_samples_lookup
     ON health_samples (user_id, metric, start);
-""";
+''';

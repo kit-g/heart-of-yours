@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart_health/heart_health.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
@@ -124,6 +125,44 @@ class _Workouts extends Workouts {
   void onSignOut() => calls++;
 }
 
+/// A local mirror that holds nothing. [clearState] never reaches storage — it
+/// only fans out — so the store just has to exist.
+class _NoHealthStore implements HealthSampleStore {
+  @override
+  Future<void> storeHealthSamples(Iterable<HealthSample> samples, String userId) async {}
+
+  @override
+  Future<List<HealthSample>> getHealthSamples({
+    required String userId,
+    required HealthMetric metric,
+    required DateTime from,
+    required DateTime to,
+  }) async => const [];
+
+  @override
+  Future<DateTime?> lastHealthSampleAt({required String userId, required HealthMetric metric}) async => null;
+
+  @override
+  Future<List<HealthDailyValue>> getDailyHealth({
+    required String userId,
+    required HealthMetric metric,
+    required DateTime from,
+    required DateTime to,
+  }) async => const [];
+
+  @override
+  Future<void> deleteHealthSamples(String userId) async {}
+}
+
+class _Health extends Health {
+  int calls = 0;
+
+  _Health() : super(device: const UnsupportedHealthStore(), local: _NoHealthStore());
+
+  @override
+  void onSignOut() => calls++;
+}
+
 /// Resolves the heart_state package root whether the runner's working
 /// directory is the package itself or the repository root.
 Directory _packageRoot() {
@@ -148,6 +187,7 @@ void main() {
     late _Charts charts;
     late _Exercises exercises;
     late _Goals goals;
+    late _Health health;
     late _Previous previous;
     late _RemoteConfig config;
     late _Stats stats;
@@ -162,6 +202,7 @@ void main() {
       charts = _Charts();
       exercises = _Exercises();
       goals = _Goals();
+      health = _Health();
       previous = _Previous();
       config = _RemoteConfig();
       stats = _Stats();
@@ -177,6 +218,7 @@ void main() {
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<Health>.value(value: health),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             Provider<RemoteConfig>.value(value: config),
             ChangeNotifierProvider<Stats>.value(value: stats),
@@ -201,6 +243,7 @@ void main() {
         charts.calls,
         exercises.calls,
         goals.calls,
+        health.calls,
         previous.calls,
         config.calls,
         stats.calls,
@@ -265,7 +308,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the eleven known notifiers', () {
+    test('the fan-out list is the twelve known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -276,6 +319,7 @@ void main() {
         'Charts',
         'Exercises',
         'Goals',
+        'Health',
         'PreviousExercises',
         'RemoteConfig',
         'Stats',

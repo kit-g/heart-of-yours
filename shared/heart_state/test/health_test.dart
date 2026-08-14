@@ -185,7 +185,15 @@ void main() {
       // year rather than picking up where the deleted rows left off.
       device.reads.clear();
       await sut.sync();
-      expect(device.readsFor(HealthMetric.steps).single.to.difference(device.readsFor(HealthMetric.steps).single.from).inDays, 365);
+      expect(
+        device
+            .readsFor(HealthMetric.steps)
+            .single
+            .to
+            .difference(device.readsFor(HealthMetric.steps).single.from)
+            .inDays,
+        365,
+      );
     });
   });
 
