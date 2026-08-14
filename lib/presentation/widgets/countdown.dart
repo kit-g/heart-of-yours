@@ -11,7 +11,7 @@ Future<void> showCountdownDialog(
   BuildContext context,
   int totalDuration, {
   VoidCallback? onCountdown,
-  required final void Function(DateTime) scheduleNotification,
+  required void Function(DateTime) scheduleNotification,
 }) {
   return showAdaptiveDialog(
     barrierDismissible: true,
@@ -41,7 +41,7 @@ class Countdown extends StatefulWidget {
   final VoidCallback? onCountdown;
   final void Function(DateTime) scheduleNotification;
 
-  const Countdown({
+  const new({
     super.key,
     required this.total,
     this.onCountdown,
@@ -262,7 +262,7 @@ class CircularTimerPainter extends CustomPainter {
   final Color backgroundColor;
   final double strokeWidth;
 
-  const CircularTimerPainter({
+  const new({
     required this.progress,
     required this.strokeColor,
     required this.backgroundColor,

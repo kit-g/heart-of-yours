@@ -5,8 +5,8 @@ publish_to: none
 version: 1.2.0+1 # build number is managed by the GH action, version should be bumped manually
 
 environment:
-  sdk: ">=3.12.0"
-  flutter: ">=3.38.3"
+  sdk: ">=3.13.0"
+  flutter: ">=3.47.0"
 
 workspace:
   - "shared/heart_api"
@@ -54,14 +54,7 @@ dependencies:
   sentry_flutter: ^9.22.0
   timezone: ^0.11.0
 
-# `health` caps device_info_plus at ^12, which pins win32 ^5; package_info_plus
-# needs win32 ^6, so the two cannot co-resolve. device_info_plus 13 is the first
-# to move to win32 ^6. `health` touches exactly two fields of it —
-# `androidInfo.id` and `iosInfo.identifierForVendor` — and both are unchanged in
-# 13.x, so the bump is safe. Drop this once `health` widens its constraint.
-dependency_overrides:
-  device_info_plus: ^13.0.0
-
+  flutter_driver: any
 dev_dependencies:
   build_runner: ^2.10.4
   flutter_launcher_icons: ^0.14.3
@@ -71,12 +64,12 @@ dev_dependencies:
   test: ^1.31.0
   firebase_auth_mocks: ^0.15.0
   # imported by lib/main_driver.dart, a debug-only entrypoint — never by main.dart
-  flutter_driver: { sdk: flutter }
-  # integration_test/ — runs locally and on Firebase Test Lab, which is where
-  # the Android tablet coverage comes from
   integration_test: { sdk: flutter }
 
 
+  heart_health: any
+  http: any
+  health: any
 flutter:
   config:
     enable-swift-package-manager: true

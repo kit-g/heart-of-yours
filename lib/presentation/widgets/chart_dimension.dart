@@ -14,7 +14,7 @@ enum _ChartFamily {
   endurance(light: Color(0xFF1BAF7A), dark: Color(0xFF199E70)),
   cardio(light: Color(0xFFEB6834), dark: Color(0xFFD95926));
 
-  const _ChartFamily({required this.light, required this.dark});
+  new({required this.light, required this.dark});
 
   final Color light;
   final Color dark;

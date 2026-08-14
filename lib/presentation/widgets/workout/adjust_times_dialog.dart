@@ -30,7 +30,7 @@ class _AdjustTimesDialog extends StatefulWidget {
   final DateTime? end;
   final Future<void> Function(DateTime start, DateTime? end) onSave;
 
-  const _AdjustTimesDialog({required this.start, required this.end, required this.onSave});
+  const new({required this.start, required this.end, required this.onSave});
 
   @override
   State<_AdjustTimesDialog> createState() => _AdjustTimesDialogState();
@@ -262,7 +262,7 @@ class _TimeRow extends StatelessWidget {
   final bool expanded;
   final VoidCallback onTap;
 
-  const _TimeRow({required this.label, required this.value, required this.expanded, required this.onTap});
+  const new({required this.label, required this.value, required this.expanded, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +301,7 @@ class _Picker extends StatelessWidget {
   final DateTime? maximum;
   final ValueChanged<DateTime> onChanged;
 
-  const _Picker({
+  const new({
     required this.expanded,
     required this.brightness,
     required this.initial,

@@ -443,7 +443,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Workout?> _getActiveWorkout(String userId) async {
     try {
-      return _localService.getActiveWorkout(userId);
+      return await _localService.getActiveWorkout(userId);
     } catch (error, s) {
       onError?.call(error, stacktrace: s);
       return null;

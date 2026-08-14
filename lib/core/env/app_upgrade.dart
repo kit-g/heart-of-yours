@@ -1,7 +1,7 @@
 class AppVersionSentry {
   static final AppVersionSentry instance = AppVersionSentry._();
 
-  AppVersionSentry._();
+  new _();
 
   bool _upgradeRequired = false;
 

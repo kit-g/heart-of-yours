@@ -198,7 +198,7 @@ Future<void> showDeleteImageDialog(
   BuildContext context,
   Workout workout,
   WorkoutImage image, {
-  required final Future<void> Function(BuildContext context) onDeleted,
+  required Future<void> Function(BuildContext context) onDeleted,
 }) {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
   final L(
