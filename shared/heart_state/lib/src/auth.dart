@@ -116,7 +116,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
       if (account.authentication case GoogleSignInAuthentication(:String? idToken)) {
         final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
-        return _loginWithCredential(cred);
+        return await _loginWithCredential(cred);
       }
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
@@ -149,7 +149,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         _ => null,
       };
 
-      return _loginWithCredential(
+      return await _loginWithCredential(
         appleToken,
         appleEmail: credential.email,
         appleName: name,

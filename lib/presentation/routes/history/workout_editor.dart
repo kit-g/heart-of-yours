@@ -8,7 +8,7 @@ class WorkoutEditor extends StatefulWidget {
   /// route and popping it is the right thing.
   final VoidCallback? onClose;
 
-  const WorkoutEditor({
+  const new({
     super.key,
     required this.copy,
     this.onTapImage,
@@ -459,7 +459,7 @@ class _WorkoutNotifier with ChangeNotifier {
 
   bool get hasChanged => _hasChanged;
 
-  _WorkoutNotifier(this.workout);
+  new(this.workout);
 
   void addSet(WorkoutExercise exercise) {
     final set = exercise.lastOrNull?.copy() ?? ExerciseSet(exercise.exercise);
@@ -540,7 +540,7 @@ class _WorkoutTimesSummary extends StatelessWidget {
   final Workout workout;
   final VoidCallback onTap;
 
-  const _WorkoutTimesSummary({required this.workout, required this.onTap});
+  const new({required this.workout, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

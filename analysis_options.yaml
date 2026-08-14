@@ -5,6 +5,12 @@ analyzer:
     # generated output, gitignored — the iOS build checks whole packages out
     # under build/, and analyzing them buries real findings
     - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   rules:
@@ -15,6 +21,12 @@ linter:
     avoid_dynamic_calls: true
     prefer_single_quotes: true
     use_null_aware_elements: true
+    empty_container_bodies: true
+    initialize_in_field_declaration: true
+    unnecessary_const_in_enum_constructor: true
+    unnecessary_primary_constructor_body: true
+    unnecessary_type_name_in_constructor: true
+    use_declaring_parameters: true
 
 formatter:
   trailing_commas: preserve

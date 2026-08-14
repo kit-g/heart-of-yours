@@ -10,7 +10,7 @@ import 'package:heart_state/heart_state.dart';
 class AppFrame extends StatelessWidget {
   final StatefulNavigationShell shell;
 
-  const AppFrame({
+  const new({
     super.key,
     required this.shell,
   });
@@ -182,7 +182,7 @@ class _KeyMap extends StatelessWidget {
   final Widget child;
   final StatefulNavigationShell shell;
 
-  const _KeyMap({
+  const new({
     required this.child,
     required this.shell,
   });
@@ -232,14 +232,14 @@ class _KeyMap extends StatelessWidget {
   }
 }
 
-class _NextTabIntent extends Intent {}
+class _NextTabIntent extends Intent;
 
-class _PreviousTabIntent extends Intent {}
+class _PreviousTabIntent extends Intent;
 
-class _NewWorkoutIntent extends Intent {}
+class _NewWorkoutIntent extends Intent;
 
 class _TabIntent extends Intent {
   final int index;
 
-  const _TabIntent(this.index);
+  const new(this.index);
 }

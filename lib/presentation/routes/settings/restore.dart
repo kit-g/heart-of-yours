@@ -4,7 +4,7 @@ class RestoreAccountPage extends StatefulWidget {
   final VoidCallback onUndo;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  const RestoreAccountPage({
+  const new({
     super.key,
     required this.onUndo,
     this.onError,
