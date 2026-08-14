@@ -37,9 +37,9 @@ _ExerciseSection _initialSection(Exercise exercise, String? tab) {
 
 List<Widget> _pages(
   Exercise exercise, {
-  required final Future<void> Function(String) onTapWorkout,
-  final void Function(ExerciseFilter)? onFilter,
-  final void Function(Exercise)? onTapAlternative,
+  required Future<void> Function(String) onTapWorkout,
+  void Function(ExerciseFilter)? onFilter,
+  void Function(Exercise)? onTapAlternative,
 }) {
   return exercise.sections.map((section) {
     return _Page(
@@ -59,7 +59,7 @@ class _Page extends StatelessWidget {
   final void Function(ExerciseFilter)? onFilter;
   final void Function(Exercise)? onTapAlternative;
 
-  const _Page({
+  const new({
     required this.section,
     required this.exercise,
     required this.onTapWorkout,
