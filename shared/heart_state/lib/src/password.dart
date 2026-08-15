@@ -18,25 +18,25 @@ extension ExtendedPasswordValidationStatus on PasswordValidationStatus {
       ..meetsDigitsRequirement = meetsDigitsRequirement ?? this.meetsDigitsRequirement;
   }
 
-  bool satisfiesMaxPasswordLength(final String text) {
+  bool satisfiesMaxPasswordLength(String text) {
     return (passwordPolicy.maxPasswordLength ?? 120) >= text.length;
   }
 
-  bool satisfiesMinPasswordLength(final String text) {
+  bool satisfiesMinPasswordLength(String text) {
     return passwordPolicy.minPasswordLength <= text.length;
   }
 
-  bool satisfiesDigitRequirement(final String text) {
+  bool satisfiesDigitRequirement(String text) {
     if (!(passwordPolicy.containsNumericCharacter ?? false)) return true;
     return text.contains(RegExp(r'[0-9]'));
   }
 
-  bool satisfiesUpperCaseRequirement(final String text) {
+  bool satisfiesUpperCaseRequirement(String text) {
     if (!(passwordPolicy.containsUppercaseCharacter ?? false)) return true;
     return text.contains(RegExp(r'[A-Z]'));
   }
 
-  bool satisfiesLowerCaseRequirement(final String text) {
+  bool satisfiesLowerCaseRequirement(String text) {
     if (!(passwordPolicy.containsLowercaseCharacter ?? false)) return true;
     return text.contains(RegExp(r'[a-z]'));
   }
@@ -45,5 +45,5 @@ extension ExtendedPasswordValidationStatus on PasswordValidationStatus {
 class PasswordRequirementsNotMet implements Exception {
   final PasswordValidationStatus status;
 
-  PasswordRequirementsNotMet({required this.status});
+  new({required this.status});
 }

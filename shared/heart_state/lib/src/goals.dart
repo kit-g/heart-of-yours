@@ -48,7 +48,7 @@ class GoalRejected implements Exception {
   /// The server's human sentence, when it sent one.
   final String? reason;
 
-  const GoalRejected(this.code, {this.reason});
+  const new(this.code, {this.reason});
 
   /// The account is already at its cap. The only refusal a *valid* create can
   /// hit on state the app cannot see — a goal made on another device and not
@@ -125,12 +125,11 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   /// pull is never repeated.
   bool _pulled = false;
 
-  Goals({
-    required LocalGoalService service,
-    required GoalService remoteService,
+  new({
+    required this._service,
+    required this._remoteService,
     this.onError,
-  }) : _service = service,
-       _remoteService = remoteService;
+  });
 
   @override
   Iterator<Goal> get iterator => _goals.iterator;

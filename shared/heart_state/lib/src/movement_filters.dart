@@ -9,7 +9,7 @@ import 'package:heart_models/heart_models.dart';
 /// else, so it fails open rather than throwing. [Exercise.matchesMovement]
 /// applies these alongside `fits`, and the two compose.
 abstract class MovementFilter implements ExerciseFilter {
-  const MovementFilter();
+  const new();
 
   /// Filters sharing a dimension are OR-ed; different dimensions are AND-ed —
   /// the same shape category and target already have in [Exercise.fits]. Two
@@ -41,7 +41,7 @@ abstract class MovementFilter implements ExerciseFilter {
 class PatternFilter extends MovementFilter {
   final String pattern;
 
-  const PatternFilter(this.pattern);
+  const new(this.pattern);
 
   @override
   String get dimension => 'pattern';
@@ -72,7 +72,7 @@ class PatternFilter extends MovementFilter {
 class SkillCeiling extends MovementFilter {
   final SkillLevel limit;
 
-  const SkillCeiling(this.limit);
+  const new(this.limit);
 
   @override
   String get dimension => 'skill';
@@ -100,7 +100,7 @@ class SkillCeiling extends MovementFilter {
 class StabilityFilter extends MovementFilter {
   final Stability stability;
 
-  const StabilityFilter(this.stability);
+  const new(this.stability);
 
   @override
   String get dimension => 'stability';
