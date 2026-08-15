@@ -9,10 +9,10 @@ class RemoteConfig implements SignOutStateSentry {
 
   bool isInitialized = false;
 
-  RemoteConfig({
-    required RemoteConfigService service,
+  new({
+    required this._service,
     this.onError,
-  }) : _service = service;
+  });
 
   Future<void> init() async {
     if (isInitialized) return;

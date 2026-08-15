@@ -36,8 +36,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  Auth({
-    required AccountService service,
+  new({
+    required this._service,
     this.onUserChange,
     this.onError,
     this.onEnter,
@@ -46,8 +46,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.appleSignInRedirect,
     fb.FirebaseAuth? firebase,
     GoogleSignIn? googleSignIn,
-  }) : _service = service,
-       _firebase = firebase ?? fb.FirebaseAuth.instance,
+  }) : _firebase = firebase ?? fb.FirebaseAuth.instance,
        _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
     // such is the way with Google sign-in
     // on the web - Firebase does not pick it up
@@ -324,8 +323,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   Future<bool> updateAvatar(
     (Uint8List, {String? mimeType, String? name}) localImage,
     String avatarStorage, {
-    final void Function(int bytes, int totalBytes)? onProgress,
-    final void Function(String url)? onDone,
+    void Function(int bytes, int totalBytes)? onProgress,
+    void Function(String url)? onDone,
   }) async {
     if (user case User user) {
       // update local image and notify the UI
@@ -381,7 +380,7 @@ enum AuthExceptionReason {
   networkRequestFailed,
   unknown;
 
-  factory AuthExceptionReason.fromCode(String code) {
+  factory fromCode(String code) {
     return switch (code) {
       'wrong-password' => wrongPassword,
       'invalid-credential' => wrongPassword,
@@ -399,7 +398,7 @@ enum AuthExceptionReason {
 class AuthException implements Exception {
   final AuthExceptionReason reason;
 
-  AuthException(this.reason);
+  new(this.reason);
 
   @override
   String toString() {
