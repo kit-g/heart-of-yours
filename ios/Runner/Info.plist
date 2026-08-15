@@ -55,6 +55,8 @@
         <true/>
         <key>NSCameraUsageDescription</key>
         <string>Allow camera access to take a new avatar photo.</string>
+        <key>NSHealthShareUsageDescription</key>
+        <string>Heart shows your resting heart rate, sleep and body data alongside your training, so you can see how they move together. This data stays on your device — Heart never uploads it.</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>Allow photo library access to change your avatar.</string>
         <key>UIApplicationSceneManifest</key>
