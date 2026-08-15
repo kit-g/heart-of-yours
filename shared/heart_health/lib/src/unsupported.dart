@@ -36,4 +36,7 @@ class UnsupportedHealthStore implements HealthService {
 
   @override
   Future<void> openInstaller() async {}
+
+  @override
+  Future<bool> openPermissions() async => false;
 }
