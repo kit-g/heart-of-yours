@@ -4,7 +4,7 @@ class _OddState extends StatelessWidget {
   final String title;
   final String body;
 
-  const _OddState({
+  const new({
     super.key,
     required this.title,
     required this.body,
@@ -44,7 +44,7 @@ class _OddState extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +58,7 @@ class _EmptyState extends StatelessWidget {
 /// The pane used to collapse instead, which let the list reflow from full width
 /// to two fifths the moment you tapped a row.
 class _NoSelectionState extends StatelessWidget {
-  const _NoSelectionState();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +68,7 @@ class _NoSelectionState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState();
+  const new();
 
   @override
   Widget build(BuildContext context) {

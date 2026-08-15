@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class GoogleSignInButton extends StatelessWidget {
   final void Function()? onPressed;
 
-  const GoogleSignInButton({
+  const new({
     super.key,
     this.onPressed,
   });

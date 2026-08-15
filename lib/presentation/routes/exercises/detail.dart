@@ -18,7 +18,7 @@ class ExerciseDetailPage extends StatelessWidget {
   /// Opens a substitute suggested by the "also try" section.
   final void Function(Exercise)? onTapAlternative;
 
-  const ExerciseDetailPage({
+  const new({
     super.key,
     required this.exercise,
     required this.onTapWorkout,

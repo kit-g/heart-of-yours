@@ -6,7 +6,7 @@ class GalleryPage extends StatefulWidget {
   final int startingIndex;
   final VoidCallback? onTapTitle;
 
-  const GalleryPage({
+  const new({
     super.key,
     required this.media,
     this.title,

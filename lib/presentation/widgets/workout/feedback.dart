@@ -1,7 +1,7 @@
 part of 'workout_detail.dart';
 
 class _Feedback extends StatelessWidget {
-  const _Feedback({
+  const new({
     required this.exercise,
     required this.textTheme,
   });

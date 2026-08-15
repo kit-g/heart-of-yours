@@ -22,7 +22,7 @@ class _FlipCard extends StatelessWidget {
   final Widget front;
   final Widget back;
 
-  const _FlipCard({
+  const new({
     required this.showsBack,
     required this.front,
     required this.back,

@@ -89,7 +89,7 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
   final BorderRadius borderRadius;
   final EdgeInsets padding;
 
-  const FixedHeightHeaderDelegate({
+  const new({
     required this.child,
     required this.height,
     this.backgroundColor,
@@ -175,7 +175,7 @@ class BottomMenuAction {
   final VoidCallback? onPressed;
   final bool isDestructive;
 
-  const BottomMenuAction({
+  const new({
     required this.title,
     this.icon,
     this.onPressed,

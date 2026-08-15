@@ -16,7 +16,7 @@ class GoalRow extends StatefulWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const GoalRow({
+  const new({
     super.key,
     required this.goal,
     required this.workouts,

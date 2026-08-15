@@ -15,7 +15,7 @@ class SignUpPage extends StatefulWidget {
   final String? address;
   final void Function(String?) onLogin;
 
-  const SignUpPage({
+  const new({
     super.key,
     required this.onLogin,
     this.address,

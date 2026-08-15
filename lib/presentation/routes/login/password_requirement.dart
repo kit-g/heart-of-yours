@@ -4,7 +4,7 @@ class _Requirement extends StatelessWidget {
   final String label;
   final bool meets;
 
-  const _Requirement({
+  const new({
     required this.label,
     required this.meets,
   });

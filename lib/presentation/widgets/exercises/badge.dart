@@ -3,7 +3,7 @@ part of 'exercises.dart';
 class _Badge extends StatelessWidget {
   final Exercise exercise;
 
-  const _Badge({required this.exercise});
+  const new({required this.exercise});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +33,7 @@ class _Badge extends StatelessWidget {
 class _EmptyBadge extends StatelessWidget {
   final Target target;
 
-  const _EmptyBadge({required this.target});
+  const new({required this.target});
 
   @override
   Widget build(BuildContext context) {

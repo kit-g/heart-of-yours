@@ -74,7 +74,7 @@ class RedactedError implements Exception {
   final Type original;
   final String domain;
 
-  const RedactedError(this.original, this.domain);
+  const new(this.original, this.domain);
 
   @override
   String toString() => '$original in $domain (message withheld — $domain data stays on device)';

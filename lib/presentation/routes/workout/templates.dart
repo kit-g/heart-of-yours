@@ -6,7 +6,7 @@ class _TemplatesLayout extends StatefulWidget {
   final void Function({bool? newTemplate}) goToTemplateEditor;
   final VoidCallback onNewWorkout;
 
-  const _TemplatesLayout({
+  const new({
     required this.goToTemplateEditor,
     required this.onNewWorkout,
   });
@@ -583,7 +583,7 @@ class _FolderSection extends StatelessWidget {
   final void Function(Template) onDrop;
   final Widget Function(Template) card;
 
-  const _FolderSection({
+  const new({
     super.key,
     required this.folder,
     required this.templates,
@@ -818,7 +818,7 @@ class _MoveOption extends StatelessWidget {
   final bool current;
   final VoidCallback onTap;
 
-  const _MoveOption({
+  const new({
     required this.icon,
     required this.title,
     this.current = false,
@@ -863,7 +863,7 @@ class _Landing extends StatelessWidget {
   final VoidCallback onDone;
   final Widget child;
 
-  const _Landing({
+  const new({
     required this.animate,
     required this.onDone,
     required this.child,
@@ -882,7 +882,7 @@ class _LandingAnimation extends StatefulWidget {
   final VoidCallback onDone;
   final Widget child;
 
-  const _LandingAnimation({required this.onDone, required this.child});
+  const new({required this.onDone, required this.child});
 
   @override
   State<_LandingAnimation> createState() => _LandingAnimationState();
@@ -930,7 +930,7 @@ class _LandingAnimationState extends State<_LandingAnimation> with SingleTickerP
 class _DragPreview extends StatelessWidget {
   final Template template;
 
-  const _DragPreview({required this.template});
+  const new({required this.template});
 
   @override
   Widget build(BuildContext context) {
@@ -974,7 +974,7 @@ class _UnfileTarget extends StatelessWidget {
   final bool labelled;
   final void Function(Template) onDrop;
 
-  const _UnfileTarget({
+  const new({
     required this.label,
     required this.dragged,
     required this.labelled,
@@ -1042,7 +1042,7 @@ class _FolderNameForm extends StatefulWidget {
   final Set<String> taken;
   final Future<void> Function(String name) onSubmit;
 
-  const _FolderNameForm({
+  const new({
     this.initial,
     required this.taken,
     required this.onSubmit,

@@ -3,7 +3,7 @@ part of 'workout.dart';
 class TemplateEditor extends StatefulWidget {
   final bool isNewTemplate;
 
-  const TemplateEditor({
+  const new({
     super.key,
     required this.isNewTemplate,
   });

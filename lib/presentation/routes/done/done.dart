@@ -26,7 +26,7 @@ class WorkoutDone extends StatelessWidget {
   /// pushed the moment finishing starts, not when it lands.
   final Future<List<GoalAchievement>> Function() achievementsCallback;
 
-  const WorkoutDone({
+  const new({
     super.key,
     required this.workout,
     required this.workoutsThisWeekCallback,

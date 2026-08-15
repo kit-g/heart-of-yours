@@ -12,7 +12,7 @@ class _Form extends StatelessWidget {
   final bool needsName;
   final String actionButtonCopy;
 
-  const _Form({
+  const new({
     required this.formKey,
     required this.emailController,
     required this.passwordController,

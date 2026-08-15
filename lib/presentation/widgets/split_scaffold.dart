@@ -5,7 +5,7 @@ class SplitPaneScaffold extends StatelessWidget {
   final Widget rightPane;
   final bool reverse;
 
-  const SplitPaneScaffold({
+  const new({
     super.key,
     required this.leftPane,
     required this.rightPane,

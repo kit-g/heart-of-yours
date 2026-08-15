@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 class NDigitFloatingPointFormatter extends TextInputFormatter {
   final int n;
 
-  const NDigitFloatingPointFormatter({this.n = 5});
+  const new({this.n = 5});
 
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {

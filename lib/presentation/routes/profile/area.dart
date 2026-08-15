@@ -11,7 +11,7 @@ class _ProfileArea extends StatelessWidget {
   final WorkoutAggregation workouts;
   final Widget emptyState;
 
-  const _ProfileArea({
+  const new({
     required this.workouts,
     required this.emptyState,
   });

@@ -10,7 +10,7 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
   final void Function(ExerciseFilter)? onFilter;
   final void Function(Exercise)? onTapAlternative;
 
-  const _MaterialExerciseDetailPage({
+  const new({
     required this.exercise,
     required this.onTapWorkout,
     required this.allowOptions,

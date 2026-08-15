@@ -14,7 +14,7 @@ class HistoryPage extends StatefulWidget {
   /// pane is showing. Null in compact, where the detail covers the list anyway.
   final String? selectedId;
 
-  const HistoryPage({
+  const new({
     super.key,
     required this.onNewWorkout,
     required this.onSaveAsTemplate,
@@ -200,7 +200,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
 class _MonthHeader extends StatelessWidget {
   final String monthKey;
 
-  const _MonthHeader({required this.monthKey});
+  const new({required this.monthKey});
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +220,7 @@ class _MonthHeader extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +234,7 @@ class _EmptyState extends StatelessWidget {
 /// The pane used to collapse instead, which let the list reflow from full width
 /// to two fifths the moment you tapped a card.
 class _NoSelectionState extends StatelessWidget {
-  const _NoSelectionState();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +247,7 @@ class _Placeholder extends StatelessWidget {
   final String title;
   final String body;
 
-  const _Placeholder({super.key, required this.title, required this.body});
+  const new({super.key, required this.title, required this.body});
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +289,7 @@ class _HistoryTail extends StatelessWidget {
   final bool hasMore;
   final VoidCallback onRetry;
 
-  const _HistoryTail({
+  const new({
     required this.loading,
     required this.error,
     required this.hasMore,

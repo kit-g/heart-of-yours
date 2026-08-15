@@ -134,7 +134,7 @@ class _Item extends StatelessWidget {
   final Duration duration;
   final TextStyle? textStyle;
 
-  const _Item({
+  const new({
     required this.duration,
     this.textStyle,
   });
@@ -176,7 +176,7 @@ class _Button extends StatelessWidget {
   final TextStyle? style;
   final VoidCallback onPressed;
 
-  const _Button({
+  const new({
     required this.copy,
     required this.color,
     required this.style,
@@ -202,7 +202,7 @@ class _Button extends StatelessWidget {
 }
 
 class _CancelButton extends StatelessWidget {
-  const _CancelButton();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +223,7 @@ class _CancelButton extends StatelessWidget {
 class _OkButton extends StatelessWidget {
   final ValueNotifier<int?> currentValue;
 
-  const _OkButton({required this.currentValue});
+  const new({required this.currentValue});
 
   @override
   Widget build(BuildContext context) {
