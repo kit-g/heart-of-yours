@@ -980,6 +980,9 @@ class LRu extends L {
   String get healthBpm => 'уд/мин';
 
   @override
+  String get healthChecking => 'Ищем новые показатели…';
+
+  @override
   String get healthDelete => 'Удалить данные здоровья';
 
   @override
@@ -988,10 +991,6 @@ class LRu extends L {
 
   @override
   String get healthDeleteTitle => 'Удалить копию данных здоровья в Heart?';
-
-  @override
-  String get healthEmptyBody =>
-      'Из хранилища здоровья на телефоне ничего не пришло. Если вы записываете данные часами или другим приложением, Heart может понадобиться разрешение на чтение.';
 
   @override
   String get healthHeartRateVariability => 'Вариабельность пульса';
@@ -1020,6 +1019,16 @@ class LRu extends L {
 
   @override
   String get healthMinutesShort => 'м';
+
+  @override
+  String get healthOffInHealthApp =>
+      'В приложении «Здоровье» нажмите фото профиля, затем «Приложения» и разрешите Heart читать данные.';
+
+  @override
+  String get healthOffInSettings => 'Разрешите Heart читать данные о здоровье в настройках здоровья на устройстве.';
+
+  @override
+  String get healthOffTitle => 'Heart не читает данные о здоровье';
 
   @override
   String get healthOnThisDevice => 'На этом устройстве';

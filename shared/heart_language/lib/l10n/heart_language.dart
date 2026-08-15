@@ -1880,6 +1880,12 @@ abstract class L {
   /// **'bpm'**
   String get healthBpm;
 
+  /// Shown on the health card while the app is reading the phone's health store, in place of the empty-state message. Mostly seen in the seconds after the user comes back from granting permission, so it must not sound like a result — it is what is happening, not what was found
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for new readings…'**
+  String get healthChecking;
+
   /// Settings row that deletes Heart's local copy of health data
   ///
   /// In en, this message translates to:
@@ -1897,12 +1903,6 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Delete Heart\'s copy of your health data?'**
   String get healthDeleteTitle;
-
-  /// Shown after the permission sheet when no health data came back. Covers two cases the app cannot tell apart — the user declined, and the user granted but has no data — so it must not assume either, and must not read as an error
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing has arrived from your phone\'s health store. If you record health data with a watch or another app, Heart may need permission to read it.'**
-  String get healthEmptyBody;
 
   /// Name of a health metric
   ///
@@ -1958,6 +1958,24 @@ abstract class L {
   /// **'m'**
   String get healthMinutesShort;
 
+  /// iOS only. Body of the dialog behind the info button on the greyed-out Health header, shown once the user has been asked and nothing is being read. The dialog's button opens the Health app; this is what to do on arrival, since Apple gives no way to link straight to Heart's row. An instruction, not an explanation — do not add why the permission is there rather than in Heart. Match the wording Apple's Health app uses in this locale
+  ///
+  /// In en, this message translates to:
+  /// **'In the Health app, tap your profile picture, then Apps, and let Heart read.'**
+  String get healthOffInHealthApp;
+
+  /// Non-iOS fallback for healthOffInHealthApp. Same rules: an instruction, never an explanation, and neutral about why there is nothing to show
+  ///
+  /// In en, this message translates to:
+  /// **'Let Heart read your health data in your device’s health settings.'**
+  String get healthOffInSettings;
+
+  /// Title of that dialog, and the tooltip on the button that opens it. States the fact and nothing else — the app cannot tell whether the user declined or simply has no readings, so it must not sound like a fault on either side
+  ///
+  /// In en, this message translates to:
+  /// **'Heart isn’t reading any health data'**
+  String get healthOffTitle;
+
   /// Subtitle under the Health header. States where health data is kept. Must not be softened into 'private' or 'secure' — workouts do sync to a server and only health data does not
   ///
   /// In en, this message translates to:
@@ -1970,7 +1988,7 @@ abstract class L {
   /// **'Open the Health app'**
   String get healthOpenHealthApp;
 
-  /// iOS only. Sits under the button above and describes the two taps still left once the Health app opens on its summary screen. Apple gives no way to link straight to Heart's row. Match the wording Apple's Health app uses in this locale
+  /// iOS only. Sits under the row that opens the Health app and says what to do once there, since Apple gives no way to link straight to Heart's row. An instruction only — it is not the place to explain why the permission lives outside Heart. Match the wording Apple's Health app uses in this locale
   ///
   /// In en, this message translates to:
   /// **'Tap your profile picture, then Apps'**
