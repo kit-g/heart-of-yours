@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show PlatformException;
 import 'package:health/health.dart' as plugin;
 import 'package:heart_health/heart_health.dart';
 import 'package:logging/logging.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 final _logger = Logger('Health');
 
@@ -18,7 +19,13 @@ class DeviceHealthStore implements HealthService {
   /// the caller's non-problem.
   Future<void>? _configured;
 
-  new({plugin.Health? health}) : _plugin = health ?? plugin.Health();
+  /// How [openPermissions] leaves the app. A seam only so tests can assert
+  /// *where* it sends the user, which is the part that was wrong.
+  final Future<bool> Function(Uri url) _launch;
+
+  new({plugin.Health? health, Future<bool> Function(Uri url)? launch})
+    : _plugin = health ?? plugin.Health(),
+      _launch = launch ?? launchUrl;
 
   @override
   bool get isSupported => true;
@@ -141,6 +148,31 @@ class DeviceHealthStore implements HealthService {
   Future<void> openInstaller() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       await _plugin.installHealthConnect();
+    }
+  }
+
+  @override
+  Future<bool> openPermissions() async {
+    // Android's equivalent is a Health Connect settings intent, which neither
+    // the plugin nor url_launcher can fire. False sends the caller to the app's
+    // settings page, which is at least in the right building on Android — on
+    // iOS it is not, which is the whole reason this method exists.
+    if (defaultTargetPlatform != .iOS) return false;
+
+    try {
+      // Undocumented but long-standing, and the only handle Apple gives out:
+      // there is no API for deep-linking to Heart's own row, so this lands on
+      // the Health summary and the user walks the last two steps.
+      //
+      // Launched without a `canLaunchUrl` check on purpose — that one calls
+      // `canOpenURL`, which answers false for any scheme absent from
+      // `LSApplicationQueriesSchemes`. Opening reports its own failure.
+      return await _launch(Uri.parse('x-apple-health://'));
+    } catch (error, stacktrace) {
+      // A simulator has no Health app, and neither will anything else that
+      // fails here. The caller's fallback is the answer, not a crash.
+      _logger.warning('Could not open the Health app', error, stacktrace);
+      return false;
     }
   }
 
