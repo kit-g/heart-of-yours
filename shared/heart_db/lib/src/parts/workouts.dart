@@ -1,7 +1,7 @@
 part of '../../heart_db.dart';
 
 mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
-  static String? _encodeImages(final Iterable<WorkoutImage>? images) {
+  static String? _encodeImages(Iterable<WorkoutImage>? images) {
     if (images == null) return null;
     return jsonEncode(images.map((each) => each.toRow()).toList());
   }
