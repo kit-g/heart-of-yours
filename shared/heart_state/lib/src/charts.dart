@@ -11,10 +11,10 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
   bool initialized = false;
   Future<void>? _loading;
 
-  Charts({
-    required ChartPreferenceService service,
+  new({
+    required this._service,
     this.onError,
-  }) : _service = service;
+  });
 
   @override
   void onSignOut() {

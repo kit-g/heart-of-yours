@@ -10,7 +10,7 @@ class _FakePreviousService implements PreviousExerciseService {
   Map<ExerciseId, List<Map<String, dynamic>>> response;
   Object? error;
 
-  _FakePreviousService({this.response = const {}});
+  new({this.response = const {}});
 
   @override
   Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSets(String userId) async {

@@ -18,12 +18,11 @@ class Health with ChangeNotifier implements SignOutStateSentry {
 
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  Health({
-    required HealthService device,
-    required HealthSampleStore local,
+  new({
+    required this._device,
+    required this._local,
     this.onError,
-  }) : _device = device,
-       _local = local;
+  });
 
   /// What we read. Deliberately small: every entry is a metric the app can
   /// actually show or reason about, and each one is a permission the user is

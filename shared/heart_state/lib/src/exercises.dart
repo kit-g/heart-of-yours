@@ -29,12 +29,11 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     notifyListeners();
   }
 
-  Exercises({
+  new({
     this.onError,
-    required RemoteExerciseService remoteService,
-    required ExerciseService service,
-  }) : _service = service,
-       _remoteService = remoteService;
+    required this._remoteService,
+    required this._service,
+  });
 
   @override
   void onSignOut() {

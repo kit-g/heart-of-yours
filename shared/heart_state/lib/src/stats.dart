@@ -25,10 +25,10 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   final LocalStatsService _service;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  Stats({
+  new({
     required this.onError,
-    required LocalStatsService service,
-  }) : _service = service;
+    required this._service,
+  });
 
   String? userId;
 

@@ -10,7 +10,7 @@ class AppInfo with ChangeNotifier {
   Package _package = (appName: '', version: '', build: '');
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  AppInfo({this.onError});
+  new({this.onError});
 
   static AppInfo of(BuildContext context) {
     return Provider.of<AppInfo>(context, listen: false);

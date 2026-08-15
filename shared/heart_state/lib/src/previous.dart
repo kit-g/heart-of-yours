@@ -8,7 +8,7 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
   final PreviousExerciseService _service;
   String? userId;
 
-  PreviousExercises({required PreviousExerciseService service}) : _service = service;
+  new({required this._service});
 
   @override
   void onSignOut() {

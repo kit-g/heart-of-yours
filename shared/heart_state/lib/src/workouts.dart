@@ -15,12 +15,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final RemoteWorkoutService _remoteService;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
-  Workouts({
+  new({
     required WorkoutService service,
-    required RemoteWorkoutService remoteService,
+    required this._remoteService,
     this.onError,
-  }) : _localService = service,
-       _remoteService = remoteService;
+  }) : _localService = service;
 
   @override
   void onSignOut() {

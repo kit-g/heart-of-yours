@@ -25,7 +25,7 @@ class _Alarms extends Alarms {
 class _Auth extends Auth {
   int calls = 0;
 
-  _Auth() : super(service: MockAccountService(), firebase: MockFirebaseAuth());
+  new() : super(service: MockAccountService(), firebase: MockFirebaseAuth());
 
   @override
   FutureOr<void> onSignOut() => calls++;
@@ -34,7 +34,7 @@ class _Auth extends Auth {
 class _Charts extends Charts {
   int calls = 0;
 
-  _Charts() : super(service: MockChartPreferenceService());
+  new() : super(service: MockChartPreferenceService());
 
   @override
   void onSignOut() => calls++;
@@ -43,7 +43,7 @@ class _Charts extends Charts {
 class _Exercises extends Exercises {
   int calls = 0;
 
-  _Exercises() : super(service: MockExerciseService(), remoteService: MockRemoteExerciseService());
+  new() : super(service: MockExerciseService(), remoteService: MockRemoteExerciseService());
 
   @override
   void onSignOut() => calls++;
@@ -57,7 +57,7 @@ class _FakePreviousService implements PreviousExerciseService {
 class _Previous extends PreviousExercises {
   int calls = 0;
 
-  _Previous() : super(service: _FakePreviousService());
+  new() : super(service: _FakePreviousService());
 
   @override
   void onSignOut() => calls++;
@@ -66,7 +66,7 @@ class _Previous extends PreviousExercises {
 class _RemoteConfig extends RemoteConfig {
   int calls = 0;
 
-  _RemoteConfig() : super(service: MockRemoteConfigService());
+  new() : super(service: MockRemoteConfigService());
 
   @override
   void onSignOut() => calls++;
@@ -75,7 +75,7 @@ class _RemoteConfig extends RemoteConfig {
 class _Stats extends Stats {
   int calls = 0;
 
-  _Stats() : super(onError: null, service: MockLocalStatsService());
+  new() : super(onError: null, service: MockLocalStatsService());
 
   @override
   void onSignOut() => calls++;
@@ -84,7 +84,7 @@ class _Stats extends Stats {
 class _Templates extends Templates {
   int calls = 0;
 
-  _Templates()
+  new()
     : super(
         remoteService: MockRemoteTemplateService(),
         service: MockTemplateService(),
@@ -101,7 +101,7 @@ class _Templates extends Templates {
 class _Timers extends Timers {
   int calls = 0;
 
-  _Timers() : super(service: MockTimersService());
+  new() : super(service: MockTimersService());
 
   @override
   void onSignOut() => calls++;
@@ -110,7 +110,7 @@ class _Timers extends Timers {
 class _Goals extends Goals {
   int calls = 0;
 
-  _Goals() : super(service: MockLocalGoalService(), remoteService: MockGoalService());
+  new() : super(service: MockLocalGoalService(), remoteService: MockGoalService());
 
   @override
   void onSignOut() => calls++;
@@ -119,7 +119,7 @@ class _Goals extends Goals {
 class _Workouts extends Workouts {
   int calls = 0;
 
-  _Workouts() : super(service: MockWorkoutService(), remoteService: MockRemoteWorkoutService());
+  new() : super(service: MockWorkoutService(), remoteService: MockRemoteWorkoutService());
 
   @override
   void onSignOut() => calls++;
@@ -157,7 +157,7 @@ class _NoHealthStore implements HealthSampleStore {
 class _Health extends Health {
   int calls = 0;
 
-  _Health() : super(device: const UnsupportedHealthStore(), local: _NoHealthStore());
+  new() : super(device: const UnsupportedHealthStore(), local: _NoHealthStore());
 
   @override
   void onSignOut() => calls++;

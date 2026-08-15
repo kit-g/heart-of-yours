@@ -47,21 +47,16 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final int? maxTemplates;
 
-  Templates({
-    required RemoteTemplateService remoteService,
-    required TemplateService service,
-    required RemoteConfigService configService,
-    required LocalTemplateFolderService folderService,
-    required ApiTemplateFolderService remoteFolderService,
-    required RemoteTemplateFilingService filingService,
+  new({
+    required this._remoteService,
+    required this._service,
+    required this._configService,
+    required this._folderService,
+    required this._remoteFolderService,
+    required this._filingService,
     this.onError,
     this.maxTemplates,
-  }) : _service = service,
-       _configService = configService,
-       _remoteService = remoteService,
-       _folderService = folderService,
-       _remoteFolderService = remoteFolderService,
-       _filingService = filingService;
+  });
 
   Template? editable;
 

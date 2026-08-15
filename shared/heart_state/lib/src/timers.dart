@@ -9,7 +9,7 @@ class Timers with ChangeNotifier implements SignOutStateSentry {
 
   String? userId;
 
-  Timers({required TimersService service}) : _service = service;
+  new({required this._service});
 
   @override
   void onSignOut() {

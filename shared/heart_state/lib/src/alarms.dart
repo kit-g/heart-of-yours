@@ -9,10 +9,10 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   final VoidCallback? cancelRestTimerNotifications;
   final Duration _tick;
 
-  Alarms({
-    Duration tick = const Duration(seconds: 1),
+  new({
+    this._tick = const Duration(seconds: 1),
     this.cancelRestTimerNotifications,
-  }) : _tick = tick;
+  });
 
   @override
   void onSignOut() {
@@ -51,7 +51,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
 
   void startActiveExerciseTimer(
     int duration, {
-    final void Function(DateTime)? scheduleNotification,
+    void Function(DateTime)? scheduleNotification,
     VoidCallback? onComplete,
   }) {
     _stopActiveExerciseTimer();
@@ -86,7 +86,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
 
   void adjustActiveExerciseTime(
     int adjustment, {
-    final void Function(DateTime)? rescheduleNotification,
+    void Function(DateTime)? rescheduleNotification,
   }) {
     switch (_activeExercise) {
       case (:Timer timer, :ValueNotifier<int> remains, :num total, :DateTime end):
