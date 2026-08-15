@@ -238,6 +238,62 @@ void main() {
     });
   });
 
+  group('onResume', () {
+    // The whole point: permissions are granted in another app, and coming back
+    // is the only moment we get. Without this the user grants access, returns,
+    // and is looking at the same empty card that sent them away.
+    test('a return from the permission trip re-reads, however recent the last pass', () async {
+      await sut.init();
+      device.reads.clear();
+
+      await sut.openPermissions();
+      await sut.onResume();
+
+      expect(device.reads, hasLength(tracked.length));
+    });
+
+    // Including when there was nowhere to send them: the fallback lands the
+    // user on a page they can still change their mind from.
+    test('arms even when the platform had nowhere to send them', () async {
+      await sut.init();
+      device.reads.clear();
+      device.permissionsReachable = false;
+
+      await sut.openPermissions();
+      await sut.onResume();
+
+      expect(device.reads, hasLength(tracked.length));
+    });
+
+    test('an ordinary resume soon after a sync reads nothing', () async {
+      await sut.init();
+      device.reads.clear();
+
+      await sut.onResume();
+
+      expect(device.reads, isEmpty, reason: 'alt-tabbing is not new data');
+    });
+
+    test('an ordinary resume picks up staleness once the mirror has aged', () async {
+      sut = Health(device: device, local: store, resumeInterval: Duration.zero)..userId = userId;
+      await sut.init();
+      device.reads.clear();
+
+      await sut.onResume();
+
+      expect(device.reads, hasLength(tracked.length));
+    });
+
+    // Nothing has been read for anyone yet, so there is no recent pass to
+    // throttle against — and [sync] itself is what declines to run.
+    test('is harmless before anything has been read', () async {
+      await sut.onResume();
+
+      expect(device.reads, isEmpty);
+      expect(errors, isEmpty);
+    });
+  });
+
   group('connect', () {
     test('shows the sheet and syncs', () async {
       await sut.init();
