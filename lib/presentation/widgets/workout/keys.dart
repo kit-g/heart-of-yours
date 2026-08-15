@@ -1,7 +1,7 @@
 part of 'workout_detail.dart';
 
 class WorkoutDetailKeys {
-  WorkoutDetailKeys._();
+  new _();
 
   static const cancelWorkout = Key('WorkoutDetail.cancelWorkout');
   static const options = Key('WorkoutDetail.options');

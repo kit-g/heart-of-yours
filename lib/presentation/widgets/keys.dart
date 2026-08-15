@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 abstract final class AppKeys {
-  const AppKeys._();
+  const new _();
 
   static const profileStack = Key('AppFrame.profileStack');
   static const workoutStack = Key('AppFrame.workoutStack');

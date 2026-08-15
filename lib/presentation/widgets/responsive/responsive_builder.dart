@@ -23,7 +23,7 @@ class LayoutProvider extends StatelessWidget {
   final int currentStack;
   final double breakpoint;
 
-  const LayoutProvider({
+  const new({
     super.key,
     required this.builder,
     required this.currentStack,
@@ -59,7 +59,7 @@ class _LayoutInherited extends InheritedWidget {
   final LayoutSize layout;
   final int stackIndex;
 
-  const _LayoutInherited({
+  const new({
     required super.child,
     required this.layout,
     required this.stackIndex,

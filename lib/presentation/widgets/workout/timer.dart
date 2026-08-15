@@ -9,7 +9,7 @@ class WorkoutTimer extends StatefulWidget {
   final Duration? initValue;
   final TextStyle? style;
 
-  const WorkoutTimer({
+  const new({
     super.key,
     required this.start,
     this.initValue,
@@ -78,7 +78,7 @@ class _WorkoutTimerState extends State<WorkoutTimer> {
 class WorkoutTimerFloatingButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
-  const WorkoutTimerFloatingButton({
+  const new({
     super.key,
     this.onPressed,
   });

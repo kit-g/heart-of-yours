@@ -8,7 +8,7 @@ class PreviousSet extends StatelessWidget {
   final Map<String, dynamic> previousValue;
   final Preferences prefs;
 
-  const PreviousSet({
+  const new({
     super.key,
     required this.previousValue,
     required this.exercise,

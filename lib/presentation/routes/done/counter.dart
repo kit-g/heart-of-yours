@@ -6,7 +6,7 @@ class _Counter extends StatefulWidget {
   final Color color;
   final double size;
 
-  const _Counter({
+  const new({
     required this.count,
     required this.color,
     this.duration = 200,
@@ -105,7 +105,7 @@ class _CounterState extends State<_Counter> with TickerProviderStateMixin {
 class _PulsePainter extends CustomPainter {
   final Color color;
 
-  const _PulsePainter({required this.color});
+  const new({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {

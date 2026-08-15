@@ -15,7 +15,7 @@ import 'package:heart_state/heart_state.dart';
 class LocalGoals implements LocalGoalService {
   final LocalDatabase _db;
 
-  const LocalGoals(this._db);
+  const new(this._db);
 
   @override
   Future<Iterable<Goal>> getTargetUserGoals({

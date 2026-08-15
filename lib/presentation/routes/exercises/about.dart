@@ -5,7 +5,7 @@ class _About extends StatelessWidget {
   final void Function(ExerciseFilter)? onFilter;
   final void Function(Exercise)? onTapAlternative;
 
-  const _About({
+  const new({
     required this.exercise,
     this.onFilter,
     this.onTapAlternative,
@@ -170,7 +170,7 @@ class _FilterChip extends StatelessWidget {
   final ExerciseFilter filter;
   final void Function(ExerciseFilter)? onFilter;
 
-  const _FilterChip({required this.filter, this.onFilter});
+  const new({required this.filter, this.onFilter});
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +206,7 @@ class _Alternatives extends StatelessWidget {
   final Exercise exercise;
   final void Function(Exercise)? onTapAlternative;
 
-  const _Alternatives({required this.exercise, this.onTapAlternative});
+  const new({required this.exercise, this.onTapAlternative});
 
   @override
   Widget build(BuildContext context) {

@@ -51,7 +51,7 @@ class CustomColorCursorSelectionHandle extends CupertinoTextSelectionControls {
 }
 
 class _TextSelectionHandlePainter extends CustomPainter {
-  const _TextSelectionHandlePainter(this.color);
+  const new(this.color);
 
   final Color color;
 

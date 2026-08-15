@@ -1,7 +1,7 @@
 part of 'settings.dart';
 
 class _ThemeModePicker extends StatelessWidget with HasHaptic {
-  const _ThemeModePicker();
+  const new();
 
   @override
   Widget build(BuildContext context) {

@@ -10,7 +10,7 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
   final void Function(ExerciseFilter)? onFilter;
   final void Function(Exercise)? onTapAlternative;
 
-  const _CupertinoExerciseDetailPage({
+  const new({
     required this.exercise,
     required this.onTapWorkout,
     required this.allowOptions,

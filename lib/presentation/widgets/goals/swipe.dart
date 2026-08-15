@@ -17,7 +17,7 @@ class _SwipeToDelete extends StatefulWidget {
   /// tell rows apart as the list changes under it.
   final Key dismissKey;
 
-  const _SwipeToDelete({
+  const new({
     required this.dismissKey,
     required this.child,
     required this.onDelete,

@@ -14,7 +14,7 @@ class GoalsCard extends StatefulWidget {
   /// this one is taller by itself — it carries a button and they carry a title.
   final double headerHeight;
 
-  const GoalsCard({
+  const new({
     super.key,
     required this.workouts,
     this.bounded = false,

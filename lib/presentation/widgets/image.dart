@@ -13,7 +13,7 @@ class AppImage extends StatelessWidget {
   /// How long the loaded image crossfades in over the placeholder.
   final Duration fadeInDuration;
 
-  const AppImage({
+  const new({
     super.key,
     this.url,
     this.bytes,

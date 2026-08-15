@@ -28,7 +28,7 @@ class ExerciseChart extends StatefulWidget {
   /// re-fetch.
   final Object? refreshKey;
 
-  const ExerciseChart({
+  const new({
     super.key,
     required this.emptyState,
     required this.callback,

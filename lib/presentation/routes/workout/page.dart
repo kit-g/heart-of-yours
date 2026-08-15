@@ -4,7 +4,7 @@ class WorkoutPage extends StatefulWidget {
   final void Function({bool? newTemplate}) goToTemplateEditor;
   final VoidCallback onOpenActiveWorkout;
 
-  const WorkoutPage({
+  const new({
     super.key,
     required this.goToTemplateEditor,
     required this.onOpenActiveWorkout,

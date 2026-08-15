@@ -4,7 +4,7 @@ import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
 
 class UpgradeRequiredPage extends StatelessWidget {
-  const UpgradeRequiredPage({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context) {

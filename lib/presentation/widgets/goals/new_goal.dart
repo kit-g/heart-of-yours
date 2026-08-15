@@ -83,7 +83,7 @@ class _GoalTargetForm extends StatefulWidget {
   /// The goal being edited, or null when composing a new one.
   final Goal? goal;
 
-  const _GoalTargetForm({
+  const new({
     required this.exercise,
     required this.metric,
     this.goal,

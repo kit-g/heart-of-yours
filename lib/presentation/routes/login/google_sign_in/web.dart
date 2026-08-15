@@ -5,7 +5,7 @@ import 'package:heart_state/heart_state.dart';
 class GoogleSignInButton extends StatelessWidget {
   final void Function()? onPressed;
 
-  const GoogleSignInButton({
+  const new({
     super.key,
     this.onPressed,
   });

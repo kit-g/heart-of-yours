@@ -8,14 +8,14 @@ class FeedbackButton extends StatelessWidget {
   final ShapeBorder? inkwellBorder;
   final String? tooltip;
 
-  const FeedbackButton({
+  const new({
     super.key,
     required this.child,
     this.onPressed,
     this.tooltip,
   }) : inkwellBorder = const RoundedRectangleBorder(borderRadius: .all(.circular(4)));
 
-  const FeedbackButton.circular({
+  const new circular({
     super.key,
     required this.child,
     this.onPressed,

@@ -1,7 +1,7 @@
 part of 'profile.dart';
 
 class _Dashboard extends StatelessWidget {
-  const _Dashboard();
+  const new();
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +108,7 @@ class _Chart extends StatelessWidget {
   /// touch handling on the plot.
   final Widget Function(Widget child)? dragWrap;
 
-  const _Chart({
+  const new({
     super.key,
     required this.preference,
     required this.settings,

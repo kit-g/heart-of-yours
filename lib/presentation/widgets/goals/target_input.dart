@@ -20,7 +20,7 @@ class GoalTargetInput {
 
   final TextEditingController controller = TextEditingController();
 
-  GoalTargetInput(this.metric);
+  new(this.metric);
 
   void dispose() => controller.dispose();
 

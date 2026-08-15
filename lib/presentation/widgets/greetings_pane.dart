@@ -5,7 +5,7 @@ class GreetingsPane extends StatelessWidget {
   final String title;
   final String body;
 
-  const GreetingsPane({
+  const new({
     super.key,
     required this.title,
     required this.body,

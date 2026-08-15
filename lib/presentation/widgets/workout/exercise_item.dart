@@ -18,7 +18,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final bool allowCompleting;
   final void Function(Exercise) onTapExercise;
 
-  const _WorkoutExerciseItem({
+  const new({
     required this.index,
     required this.exercise,
     required this.onAddSet,

@@ -3,7 +3,7 @@ part of 'workout_detail.dart';
 class _EmptyState extends StatelessWidget {
   final double size;
 
-  const _EmptyState({this.size = 320});
+  const new({this.size = 320});
 
   @override
   Widget build(BuildContext context) {
