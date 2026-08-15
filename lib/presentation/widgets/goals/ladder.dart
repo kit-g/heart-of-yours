@@ -11,7 +11,7 @@ class GoalLadder extends StatelessWidget {
   final Goal goal;
   final Preferences settings;
 
-  const GoalLadder({
+  const new({
     super.key,
     required this.goal,
     required this.settings,
@@ -90,7 +90,7 @@ class _Rung extends StatelessWidget {
   final Preferences settings;
   final VoidCallback? onRemove;
 
-  const _Rung({
+  const new({
     super.key,
     required this.goal,
     required this.stage,

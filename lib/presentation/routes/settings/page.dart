@@ -3,7 +3,7 @@ part of 'settings.dart';
 class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
 
-  const SettingsPage({
+  const new({
     super.key,
     required this.onAccountManagement,
   });

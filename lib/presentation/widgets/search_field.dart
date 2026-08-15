@@ -7,7 +7,7 @@ class SearchField extends StatelessWidget {
   final VoidCallback? onClear;
   final String? hint;
 
-  const SearchField({
+  const new({
     super.key,
     required this.focusNode,
     required this.controller,

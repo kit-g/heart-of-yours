@@ -13,7 +13,7 @@ class ExerciseItem extends StatelessWidget {
   /// are different states and a row can be in both at once.
   final bool highlighted;
 
-  const ExerciseItem({
+  const new({
     super.key,
     required this.exercise,
     required this.preferences,

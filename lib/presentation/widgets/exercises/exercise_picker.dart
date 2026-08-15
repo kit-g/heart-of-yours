@@ -15,7 +15,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
 
-  ExercisePicker({
+  new({
     super.key,
     required this.exercises,
     required this.searchController,
@@ -305,7 +305,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
 class _MovementFilterButton extends StatelessWidget {
   final Exercises exercises;
 
-  const _MovementFilterButton({required this.exercises});
+  const new({required this.exercises});
 
   @override
   Widget build(BuildContext context) {

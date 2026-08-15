@@ -21,7 +21,7 @@ class _RungForm extends StatefulWidget {
   final Goal goal;
   final GoalStage? stage;
 
-  const _RungForm({required this.goal, this.stage});
+  const new({required this.goal, this.stage});
 
   @override
   State<_RungForm> createState() => _RungFormState();

@@ -7,7 +7,7 @@ class PoppingText extends StatefulWidget {
   final TextStyle? style;
   final ValueNotifier<bool> trigger;
 
-  const PoppingText({
+  const new({
     required this.text,
     required this.trigger,
     this.style,

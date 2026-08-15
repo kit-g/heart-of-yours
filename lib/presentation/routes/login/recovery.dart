@@ -5,7 +5,7 @@ class RecoveryPage extends StatefulWidget {
   final String? address;
   final bool isWideScreen;
 
-  const RecoveryPage({
+  const new({
     super.key,
     required this.onLinkSent,
     this.address,

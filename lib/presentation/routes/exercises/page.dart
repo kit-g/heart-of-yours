@@ -7,7 +7,7 @@ class ExercisesPage extends StatefulWidget {
   final VoidCallback onShowArchived;
   final VoidCallback onOpenActiveWorkout;
 
-  const ExercisesPage({
+  const new({
     super.key,
     required this.onExercise,
     this.selectedId,

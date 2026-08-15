@@ -13,7 +13,7 @@ class _GhostState extends StatelessWidget {
   final double Function(num) axisConverter;
   final Widget Function(Widget child)? dragWrap;
 
-  const _GhostState({
+  const new({
     required this.exercise,
     required this.preference,
     required this.exerciseHistoryService,
@@ -94,7 +94,7 @@ class _GhostState extends StatelessWidget {
 }
 
 class _EmptyState extends _GhostState {
-  _EmptyState({
+  new({
     required super.exercise,
     required super.preference,
     required super.exerciseHistoryService,
@@ -111,7 +111,7 @@ class _EmptyState extends _GhostState {
 }
 
 class _ErrorState extends _GhostState {
-  _ErrorState({
+  new({
     required super.exercise,
     required super.preference,
     required super.exerciseHistoryService,
@@ -128,7 +128,7 @@ class _ErrorState extends _GhostState {
 }
 
 class _LoadingState extends StatelessWidget {
-  const _LoadingState();
+  const new();
 
   @override
   Widget build(BuildContext context) {

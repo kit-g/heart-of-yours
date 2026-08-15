@@ -4,7 +4,7 @@ class AvatarPage extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onEdit;
 
-  const AvatarPage({
+  const new({
     super.key,
     required this.onBack,
     required this.onEdit,

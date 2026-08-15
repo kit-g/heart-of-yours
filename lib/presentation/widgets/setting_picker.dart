@@ -7,7 +7,7 @@ class FixedLengthSettingPicker<T extends Object> extends StatelessWidget {
   final ValueChanged<T?> onValueChanged;
   final Map<T, Widget> children;
 
-  const FixedLengthSettingPicker({
+  const new({
     super.key,
     required this.title,
     required this.value,
@@ -44,7 +44,7 @@ class _Switcher<T extends Object> extends StatelessWidget {
   final Map<T, Widget> children;
   final ValueChanged<T?> onValueChanged;
 
-  const _Switcher({
+  const new({
     super.key,
     required this.children,
     required this.value,

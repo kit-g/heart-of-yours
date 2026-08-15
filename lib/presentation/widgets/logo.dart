@@ -4,7 +4,7 @@ import 'package:heart_language/heart_language.dart';
 class Logo extends StatelessWidget {
   final double titleFontSize;
 
-  const Logo({
+  const new({
     super.key,
     this.titleFontSize = 48,
   });
@@ -24,7 +24,7 @@ class Logo extends StatelessWidget {
 class LogoTitle extends StatelessWidget {
   final double fontSize;
 
-  const LogoTitle({
+  const new({
     super.key,
     this.fontSize = 48,
   });
@@ -45,7 +45,7 @@ class Motto extends StatelessWidget {
   final double fontSize;
   final FontWeight? weight;
 
-  const Motto({
+  const new({
     super.key,
     this.fontSize = 24,
     this.weight,
@@ -67,7 +67,7 @@ class Motto extends StatelessWidget {
 class LogoStripe extends StatelessWidget {
   final Color? backgroundColor;
 
-  const LogoStripe({super.key, this.backgroundColor});
+  const new({super.key, this.backgroundColor});
 
   @override
   Widget build(BuildContext context) {

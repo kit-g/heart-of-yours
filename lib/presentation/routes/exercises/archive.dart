@@ -3,7 +3,7 @@ part of 'exercises.dart';
 class ExerciseArchive extends StatelessWidget {
   final void Function(Exercise, TapDownDetails?) onExercise;
 
-  const ExerciseArchive({
+  const new({
     super.key,
     required this.onExercise,
   });

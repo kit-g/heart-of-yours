@@ -47,7 +47,7 @@ class _MovementFilterSheet extends StatelessWidget with HasHaptic<_MovementFilte
   /// dragging the content resizes nothing.
   final ScrollController controller;
 
-  const _MovementFilterSheet({required this.exercises, required this.controller});
+  const new({required this.exercises, required this.controller});
 
   @override
   Widget build(BuildContext context) {

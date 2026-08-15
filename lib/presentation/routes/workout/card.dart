@@ -9,7 +9,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
   final void Function(Template) onTap;
   final List<_TemplateOption>? options;
 
-  const _TemplateCard({
+  const new({
     required this.template,
     this.onDelete,
     this.onEdit,
@@ -175,7 +175,7 @@ class _TemplateGrid extends StatelessWidget {
   final List<Template> templates;
   final Widget Function(Template) card;
 
-  const _TemplateGrid({
+  const new({
     required this.templates,
     required this.card,
   });
@@ -209,7 +209,7 @@ class _TemplateGridBox extends StatelessWidget {
   final List<Template> templates;
   final Widget Function(Template) card;
 
-  const _TemplateGridBox({
+  const new({
     required this.templates,
     required this.card,
   });

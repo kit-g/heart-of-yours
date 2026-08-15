@@ -4,7 +4,7 @@ class _Records extends StatelessWidget {
   final Exercise exercise;
   final Future<Map?> Function(Exercise exercise) recordsLookup;
 
-  const _Records({required this.exercise, required this.recordsLookup});
+  const new({required this.exercise, required this.recordsLookup});
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +95,7 @@ class _Records extends StatelessWidget {
 class _Record extends StatelessWidget {
   final List<_Metric> metrics;
 
-  const _Record({required this.metrics});
+  const new({required this.metrics});
 
   @override
   Widget build(BuildContext context) {

@@ -3,7 +3,7 @@ part of 'login.dart';
 class _Error extends StatelessWidget {
   final String? message;
 
-  const _Error({required this.message});
+  const new({required this.message});
 
   @override
   Widget build(BuildContext context) {

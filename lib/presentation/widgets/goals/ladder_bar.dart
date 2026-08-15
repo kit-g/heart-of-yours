@@ -13,7 +13,7 @@ class GoalLadderBar extends StatelessWidget {
   final Color track;
   final Color fill;
 
-  const GoalLadderBar({
+  const new({
     super.key,
     required this.targets,
     required this.achieved,
@@ -50,7 +50,7 @@ class _LadderPainter extends CustomPainter {
   final Color track;
   final Color fill;
 
-  const _LadderPainter({
+  const new({
     required this.targets,
     required this.achieved,
     required this.current,

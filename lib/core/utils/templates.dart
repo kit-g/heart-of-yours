@@ -14,7 +14,7 @@ import 'package:heart_state/heart_state.dart';
 class LocalTemplateFolders implements LocalTemplateFolderService {
   final LocalDatabase _db;
 
-  const LocalTemplateFolders(this._db);
+  const new(this._db);
 
   @override
   Future<Iterable<TemplateFolder>> getFolders(String userId) => _db.getTemplateFolders(userId);
@@ -41,7 +41,7 @@ class LocalTemplateFolders implements LocalTemplateFolderService {
 class RemoteTemplateFiling implements RemoteTemplateFilingService {
   final Api _api;
 
-  const RemoteTemplateFiling(this._api);
+  const new(this._api);
 
   @override
   Future<Template> moveTemplate(Template template, {required String? folderId}) {

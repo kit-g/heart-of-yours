@@ -3,7 +3,7 @@ part of 'settings.dart';
 class AccountManagementPage extends StatefulWidget {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  const AccountManagementPage({super.key, this.onError});
+  const new({super.key, this.onError});
 
   @override
   State<AccountManagementPage> createState() => _AccountManagementPageState();

@@ -5,7 +5,7 @@ class ProfilePage extends StatefulWidget {
   final VoidCallback onAccount;
   final VoidCallback onAvatar;
 
-  const ProfilePage({
+  const new({
     super.key,
     required this.onSettings,
     required this.onAccount,

@@ -6,7 +6,7 @@ enum Env {
   test,
   prod;
 
-  factory Env.fromString(String? v) {
+  factory fromString(String? v) {
     return switch (v) {
       'dev' || 'd' || 'development' => dev,
       'prod' || 'p' || 'production' => prod,
@@ -19,7 +19,7 @@ enum Env {
 /// App config is fetched from the environment
 /// implying that it is run/built with `--dart-define(-from-file)`
 class AppConfig {
-  const AppConfig._({
+  const new _({
     required this.accountDeletionDeadline,
     this.allowsFeedbackFeature = true,
     required this.api,
@@ -52,7 +52,7 @@ class AppConfig {
   final String _testUserCredentials;
   final bool allowsFeedbackFeature;
 
-  factory AppConfig.fromDartDefine() {
+  factory fromDartDefine() {
     return AppConfig._(
       accountDeletionDeadline: const .fromEnvironment('ACCOUNT_DELETION_DEADLINE'),
       api: const .fromEnvironment('API'),
@@ -69,7 +69,7 @@ class AppConfig {
     );
   }
 
-  factory AppConfig.test({
+  factory test({
     String accountDeletionDeadline = '2',
     String api = '',
     String appName = 'Heart',

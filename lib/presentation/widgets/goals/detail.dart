@@ -16,7 +16,7 @@ class GoalDetail extends StatefulWidget {
   /// The sheet's controller, so dragging the list drags the sheet.
   final ScrollController? scrollController;
 
-  const GoalDetail({
+  const new({
     super.key,
     required this.goal,
     required this.workouts,

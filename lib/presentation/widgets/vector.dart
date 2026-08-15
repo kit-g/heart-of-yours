@@ -11,7 +11,7 @@ class Vector extends StatelessWidget {
   final String? package;
   final String? semanticsLabel;
 
-  const Vector(
+  const new(
     this.asset, {
     super.key,
     this.height,

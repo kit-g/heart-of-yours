@@ -23,7 +23,7 @@ class WorkoutsAggregationChart extends StatefulWidget {
   final WorkoutAggregation workouts;
   final double? opacity;
 
-  const WorkoutsAggregationChart({
+  const new({
     super.key,
     required this.workouts,
     this.opacity,

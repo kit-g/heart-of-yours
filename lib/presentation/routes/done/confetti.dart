@@ -40,7 +40,7 @@ class _Particle {
   /// how fast it wobbles
   final double oscillationFrequency;
 
-  _Particle()
+  new()
     : startX = _rng.nextDouble() * 20 - 10,
       startY = _rng.nextDouble() * 10,
       initialVelocityX = (_rng.nextDouble() - 0.5) * 200,
@@ -62,7 +62,7 @@ class _ConfettiPainter extends CustomPainter {
   final List<_Particle> particles;
   final double progress;
 
-  _ConfettiPainter(this.particles, this.progress);
+  new(this.particles, this.progress);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -130,7 +130,7 @@ class Confetti extends StatefulWidget {
   final int particleCount;
   final int duration;
 
-  const Confetti({
+  const new({
     super.key,
     this.particleCount = 15,
     this.duration = 4,

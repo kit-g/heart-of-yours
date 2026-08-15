@@ -63,7 +63,7 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(Exercise) onTapExercise;
   final Future<void> Function(WorkoutImage)? onDeleteImage;
 
-  const WorkoutDetail({
+  const new({
     super.key,
     required this.exercises,
     this.appBar,
@@ -462,7 +462,7 @@ class _Media extends StatelessWidget {
   final void Function(int index) onTapImage;
   final Future<void> Function(WorkoutImage) onDeleteImage;
 
-  const _Media({
+  const new({
     required this.images,
     required this.onTapImage,
     required this.onDeleteImage,
@@ -525,7 +525,7 @@ class _Image extends StatefulWidget {
   final VoidCallback onTapImage;
   final AsyncCallback onDeleteImage;
 
-  const _Image({
+  const new({
     super.key,
     required this.image,
     required this.width,
@@ -685,7 +685,7 @@ const _divider = Divider(
 class NewWorkoutHeader extends StatelessWidget {
   final VoidCallback openWorkoutSheet;
 
-  const NewWorkoutHeader({
+  const new({
     super.key,
     required this.openWorkoutSheet,
   });
@@ -733,7 +733,7 @@ class ActiveWorkoutSheet extends StatefulWidget {
   final double closingThreshold;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
-  const ActiveWorkoutSheet({
+  const new({
     super.key,
     required this.workouts,
     this.closingThreshold = .25,

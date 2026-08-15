@@ -17,7 +17,7 @@ class AppTheme with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  AppTheme({ThemeMode? mode}) : _mode = mode ?? ThemeMode.system;
+  new({ThemeMode? mode}) : _mode = mode ?? ThemeMode.system;
 
   static AppTheme of(BuildContext context) {
     return Provider.of<AppTheme>(context, listen: false);

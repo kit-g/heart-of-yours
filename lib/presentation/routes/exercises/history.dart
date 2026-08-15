@@ -5,7 +5,7 @@ class _History extends StatelessWidget {
   final Future<Iterable<ExerciseAct>> Function(Exercise exercise, {int? pageSize, String? anchor}) historyLookup;
   final Future<void> Function(String) onTapWorkout;
 
-  const _History({
+  const new({
     required this.exercise,
     required this.historyLookup,
     required this.onTapWorkout,
@@ -62,7 +62,7 @@ class _Card extends StatelessWidget {
   final Preferences prefs;
   final MeasurementUnit? unit;
 
-  const _Card({
+  const new({
     required this.act,
     required this.onTapWorkout,
     required this.prefs,

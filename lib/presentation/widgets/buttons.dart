@@ -10,7 +10,7 @@ class InkButton extends StatelessWidget {
   final BoxBorder? border;
   final InteractiveInkFeatureFactory? splashFactory;
 
-  const InkButton({
+  const new({
     super.key,
     required this.child,
     required this.onPressed,
@@ -20,7 +20,7 @@ class InkButton extends StatelessWidget {
     this.splashFactory,
   });
 
-  const InkButton.rounded({
+  const new rounded({
     super.key,
     required this.child,
     required this.onPressed,
@@ -109,7 +109,7 @@ class PrimaryButton extends StatelessWidget {
   final BoxBorder? border;
   final InteractiveInkFeatureFactory? splashFactory;
 
-  const PrimaryButton.shrunk({
+  const new shrunk({
     super.key,
     required this.child,
     required this.onPressed,
@@ -120,7 +120,7 @@ class PrimaryButton extends StatelessWidget {
     this.splashFactory = InkRipple.splashFactory,
   }) : wide = false;
 
-  const PrimaryButton.wide({
+  const new wide({
     super.key,
     required this.child,
     required this.onPressed,

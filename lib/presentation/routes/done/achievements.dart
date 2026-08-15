@@ -10,7 +10,7 @@ part of 'done.dart';
 class _Achievements extends StatefulWidget {
   final Future<List<GoalAchievement>> Function() callback;
 
-  const _Achievements({required this.callback});
+  const new({required this.callback});
 
   @override
   State<_Achievements> createState() => _AchievementsState();

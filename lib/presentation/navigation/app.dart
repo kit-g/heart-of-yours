@@ -33,7 +33,7 @@ class HeartApp extends StatelessWidget {
   final bool? hasLocalNotifications;
   final FirebaseAuth? firebaseAuth;
 
-  const HeartApp({
+  const new({
     super.key,
     required this.appConfig,
     required this.api,
@@ -186,7 +186,7 @@ class _App extends StatefulWidget {
   final HeartRouter router;
   final bool hasLocalNotifications;
 
-  const _App({
+  const new({
     required this.theme,
     required this.config,
     required this.router,
@@ -286,7 +286,7 @@ class _WorkoutTimeoutScheduler extends StatefulWidget {
   /// plugin is never initialized, so no call here may reach it.
   final bool enabled;
 
-  const _WorkoutTimeoutScheduler({required this.child, required this.enabled});
+  const new({required this.child, required this.enabled});
 
   @override
   State<_WorkoutTimeoutScheduler> createState() => _WorkoutTimeoutSchedulerState();

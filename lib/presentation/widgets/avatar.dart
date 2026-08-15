@@ -11,7 +11,7 @@ class EditableAvatar extends StatelessWidget {
   final VoidCallback? onTap;
   final double? progress;
 
-  const EditableAvatar({
+  const new({
     super.key,
     this.onTap,
     this.remote,
@@ -82,7 +82,7 @@ class Avatar extends StatelessWidget {
   final Uint8List? local;
   final double radius;
 
-  const Avatar({super.key, this.remote, this.local, required this.radius});
+  const new({super.key, this.remote, this.local, required this.radius});
 
   @override
   Widget build(BuildContext context) {

@@ -9,7 +9,7 @@ class _TextFieldButton extends StatelessWidget {
   final ValueNotifier<bool> errorState;
   final List<TextInputFormatter>? formatters;
 
-  const _TextFieldButton({
+  const new({
     required this.focusNode,
     required this.errorState,
     this.color,

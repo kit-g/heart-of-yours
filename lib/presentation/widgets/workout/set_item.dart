@@ -13,7 +13,7 @@ class _ExerciseSetItem extends StatefulWidget {
   final bool isLocked;
   final Map<String, dynamic>? previousValue;
 
-  const _ExerciseSetItem({
+  const new({
     required this.set,
     required this.index,
     required this.exercise,

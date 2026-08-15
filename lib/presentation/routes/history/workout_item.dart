@@ -13,7 +13,7 @@ class WorkoutItem extends StatelessWidget {
   /// Whether this card is the one open in a two-pane detail view.
   final bool highlighted;
 
-  const WorkoutItem({
+  const new({
     super.key,
     required this.workout,
     this.onTap,

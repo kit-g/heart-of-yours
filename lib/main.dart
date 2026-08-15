@@ -16,15 +16,14 @@ import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-typedef AppRunner =
-    Future<void> Function({
-      required AppConfig appConfig,
-      required LocalDatabase db,
-      required Api api,
-      required Cdn cdn,
-      bool? hasLocalNotifications,
-      FirebaseAuth? firebase,
-    });
+typedef AppRunner = Future<void> Function({
+  required AppConfig appConfig,
+  required LocalDatabase db,
+  required Api api,
+  required Cdn cdn,
+  bool? hasLocalNotifications,
+  FirebaseAuth? firebase,
+});
 
 @visibleForTesting
 Future<void> bootstrap({

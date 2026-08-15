@@ -9,7 +9,7 @@ class AppBarTextField extends StatelessWidget {
   final FocusNode focusNode;
   final TextEditingController controller;
 
-  const AppBarTextField({
+  const new({
     super.key,
     required this.hint,
     this.style,

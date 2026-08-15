@@ -8,7 +8,7 @@ import 'package:heart_state/heart_state.dart';
 class LocalStats implements LocalStatsService {
   final LocalDatabase _db;
 
-  const LocalStats(this._db);
+  const new(this._db);
 
   @override
   Future<WorkoutAggregation> getWorkoutSummary({int? weeksBack = 8, String? userId}) {

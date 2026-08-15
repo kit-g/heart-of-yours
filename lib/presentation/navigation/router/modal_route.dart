@@ -11,7 +11,7 @@ class ModalSheetPage<T> extends Page<T> {
   final CapturedThemes? themes;
   final WidgetBuilder builder;
 
-  const ModalSheetPage({
+  const new({
     required this.builder,
     this.anchorPoint,
     this.barrierColor = Colors.black54,

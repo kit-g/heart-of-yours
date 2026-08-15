@@ -1,7 +1,7 @@
 part of 'settings.dart';
 
 class _ColorPicker extends StatefulWidget {
-  const _ColorPicker();
+  const new();
 
   @override
   State<_ColorPicker> createState() => _ColorPickerState();

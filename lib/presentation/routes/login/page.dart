@@ -5,7 +5,7 @@ class LoginPage extends StatefulWidget {
   final void Function(String?) onSignUp;
   final String? address;
 
-  const LoginPage({
+  const new({
     super.key,
     required this.onPasswordRecovery,
     required this.onSignUp,
