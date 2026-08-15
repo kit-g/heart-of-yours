@@ -55,6 +55,18 @@ abstract interface class HealthService {
   /// Sends the user to install or update Health Connect. Android only; a no-op
   /// everywhere else.
   Future<void> openInstaller();
+
+  /// Opens wherever this platform keeps health permissions, and says whether it
+  /// got there.
+  ///
+  /// **The app's own page in the OS settings is the wrong place, and it is the
+  /// obvious wrong place.** iOS does not list HealthKit access there: Settings ›
+  /// Heart offers cellular data, Siri and search, and no mention of health at
+  /// all. Read access lives in the Health app, under the user's profile.
+  ///
+  /// Returns false when this platform has nowhere to send them — then, and only
+  /// then, is falling back to the app's settings page better than nothing.
+  Future<bool> openPermissions();
 }
 
 /// Whether the device's health store can be used.
