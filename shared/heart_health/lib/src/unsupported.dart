@@ -11,7 +11,7 @@ part of '../heart_health.dart';
 /// `store.dart` because it depends on nothing — both branches need it, and web
 /// can see it without pulling in the plugin.
 class UnsupportedHealthStore implements HealthService {
-  const UnsupportedHealthStore();
+  const new();
 
   @override
   bool get isSupported => false;
