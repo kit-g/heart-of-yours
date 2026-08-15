@@ -226,6 +226,18 @@ void main() {
     });
   });
 
+  group('openPermissions', () {
+    // Straight through, and it stays that way: only the device knows where its
+    // permissions live, and the UI must not be tempted to guess.
+    test('is the device answering', () async {
+      expect(await sut.openPermissions(), isTrue);
+      expect(device.log, contains('openPermissions'));
+
+      device.permissionsReachable = false;
+      expect(await sut.openPermissions(), isFalse);
+    });
+  });
+
   group('connect', () {
     test('shows the sheet and syncs', () async {
       await sut.init();
@@ -385,6 +397,14 @@ class _FakeDevice implements HealthService {
   Future<void> openInstaller() async {
     log.add('openInstaller');
     openInstallerCalls++;
+  }
+
+  bool permissionsReachable = true;
+
+  @override
+  Future<bool> openPermissions() async {
+    log.add('openPermissions');
+    return permissionsReachable;
   }
 }
 
