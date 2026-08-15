@@ -1964,7 +1964,19 @@ abstract class L {
   /// **'On this device'**
   String get healthOnThisDevice;
 
-  /// Button that opens the operating system's settings app
+  /// iOS only. Button that opens Apple's Health app, which is where read permissions live — the app's own page in iOS Settings has no health toggle at all. 'Health' here is the name of Apple's app and should keep whatever name it has in this locale
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Health app'**
+  String get healthOpenHealthApp;
+
+  /// iOS only. Sits under the button above and describes the two taps still left once the Health app opens on its summary screen. Apple gives no way to link straight to Heart's row. Match the wording Apple's Health app uses in this locale
+  ///
+  /// In en, this message translates to:
+  /// **'Tap your profile picture, then Apps'**
+  String get healthOpenHealthAppHint;
+
+  /// Button that opens the operating system's settings app. Non-iOS fallback for healthOpenHealthApp
   ///
   /// In en, this message translates to:
   /// **'Open settings'**

@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "You've already started something important.\nLet's keep going.",
+  "logInBody": "You've already started something important.\r\nLet's keep going.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Every journey starts with one decision.\nThis one's yours.",
+  "signUpBody": "Every journey starts with one decision.\r\nThis one's yours.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Your journey isn't lost.\nJust a moment of pause — we'll reset together.",
+  "recoverBody": "Your journey isn't lost.\r\nJust a moment of pause — we'll reset together.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -296,13 +296,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won't affect any of your past workouts — your history stays intact.",
+  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won't affect any of your past workouts — your history stays intact.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "This exercise is archived\nand won't appear in your main library anymore.",
+  "exerciseArchived": "This exercise is archived\r\nand won't appear in your main library anymore.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -1296,7 +1296,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
+  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\r\n\r\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1378,7 +1378,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.",
+  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\r\n\r\nIf you change your mind, you can restore your account anytime before this date.\r\n\r\nSimply click the button below to cancel the deletion and keep your account safe.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
@@ -1560,7 +1560,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredBody": "There's an important update waiting — one that keeps your app working as it should.\n\nYou'll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.",
+  "updateRequiredBody": "There's an important update waiting — one that keeps your app working as it should.\r\n\r\nYou'll need to install it before continuing.\r\nThanks for your patience — and sorry for the interruption.",
   "@updateRequiredBody": {
     "description": "Force update screen, body",
     "type": "text",
@@ -1945,9 +1945,21 @@
     "type": "text",
     "placeholders": {}
   },
+  "healthOpenHealthApp": "Open the Health app",
+  "@healthOpenHealthApp": {
+    "description": "iOS only. Button that opens Apple's Health app, which is where read permissions live — the app's own page in iOS Settings has no health toggle at all. 'Health' here is the name of Apple's app and should keep whatever name it has in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenHealthAppHint": "Tap your profile picture, then Apps",
+  "@healthOpenHealthAppHint": {
+    "description": "iOS only. Sits under the button above and describes the two taps still left once the Health app opens on its summary screen. Apple gives no way to link straight to Heart's row. Match the wording Apple's Health app uses in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
   "healthOpenSettings": "Open settings",
   "@healthOpenSettings": {
-    "description": "Button that opens the operating system's settings app",
+    "description": "Button that opens the operating system's settings app. Non-iOS fallback for healthOpenHealthApp",
     "type": "text",
     "placeholders": {}
   },
