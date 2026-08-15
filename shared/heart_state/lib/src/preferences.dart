@@ -8,6 +8,8 @@ const _themeMode = 'themeMode';
 const _weightUnit = 'weightUnit';
 const _distanceUnit = 'distanceUnit';
 const _collapsedFolders = 'collapsedTemplateFolders';
+const _healthInviteDismissed = 'healthInviteDismissed';
+const _healthAsked = 'healthAsked';
 
 class Preferences with ChangeNotifier {
   SharedPreferences? _prefs;
@@ -132,6 +134,40 @@ class Preferences with ChangeNotifier {
     final write = _prefs?.setStringList(_collapsedFolders, collapsed.toList());
     notifyListeners();
     return write;
+  }
+
+  /// Whether the user has waved away the offer to read their health data.
+  ///
+  /// Local rather than in the synced `Settings`, deliberately: the whole feature
+  /// is device-only, so "I don't want this here" is a fact about this phone. A
+  /// second device asks again, which is correct — that phone may be the one with
+  /// the watch paired to it.
+  bool healthInviteDismissed(String? userId) {
+    if (userId == null) return false;
+    return _prefs?.getBool('$_healthInviteDismissed-$userId') ?? false;
+  }
+
+  Future<bool>? dismissHealthInvite(String? userId) {
+    if (userId == null) return null;
+    notifyListeners();
+    return _prefs?.setBool('$_healthInviteDismissed-$userId', true);
+  }
+
+  /// Whether the OS permission sheet has ever been shown on this device.
+  ///
+  /// The only thing separating "we have not asked yet" from "we asked and
+  /// nothing came back", because the platform will not tell us which of
+  /// *declined* or *granted but empty* actually happened. It is not a permission
+  /// state and must never be rendered as one.
+  bool healthAsked(String? userId) {
+    if (userId == null) return false;
+    return _prefs?.getBool('$_healthAsked-$userId') ?? false;
+  }
+
+  Future<bool>? setHealthAsked(String? userId) {
+    if (userId == null) return null;
+    notifyListeners();
+    return _prefs?.setBool('$_healthAsked-$userId', true);
   }
 
   /// Formats [value] (stored canonically in metric) for display.
