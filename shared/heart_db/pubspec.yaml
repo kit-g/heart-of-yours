@@ -5,7 +5,7 @@ homepage: 'https://github.com/kit-g/heart-of-yours'
 publish_to: none
 
 environment:
-  sdk: ^3.10.0
+  sdk: ^3.13.0
 
 dependencies:
   # models.dart only — the vocabulary, not the plugin. Importing
@@ -35,3 +35,4 @@ dev_dependencies:
   flutter_lints: 6.0.0
   mockito: ^5.4.2
   build_runner: ^2.4.6
+  sqflite_common: any

@@ -27,7 +27,7 @@ class LocalDatabase extends _LocalDatabase
   @override
   final Database _db;
 
-  LocalDatabase._(this._db);
+  new _(this._db);
 
   static Future<LocalDatabase> init({int version = 9, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);

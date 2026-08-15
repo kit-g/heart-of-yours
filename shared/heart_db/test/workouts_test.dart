@@ -993,4 +993,4 @@ void main() {
   );
 }
 
-class MockDatabaseException extends Mock implements DatabaseException {}
+class MockDatabaseException extends Mock implements DatabaseException;
