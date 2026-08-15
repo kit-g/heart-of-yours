@@ -1023,6 +1023,12 @@ class LEn extends L {
   String get healthOnThisDevice => 'On this device';
 
   @override
+  String get healthOpenHealthApp => 'Open the Health app';
+
+  @override
+  String get healthOpenHealthAppHint => 'Tap your profile picture, then Apps';
+
+  @override
   String get healthOpenSettings => 'Open settings';
 
   @override
@@ -1104,19 +1110,19 @@ class LEnCa extends LEn {
   String get logInTitle => 'Welcome Back';
 
   @override
-  String get logInBody => 'You\'ve already started something important.\nLet\'s keep going.';
+  String get logInBody => 'You\'ve already started something important.\r\nLet\'s keep going.';
 
   @override
   String get signUpTitle => 'Begin with Heart';
 
   @override
-  String get signUpBody => 'Every journey starts with one decision.\nThis one\'s yours.';
+  String get signUpBody => 'Every journey starts with one decision.\r\nThis one\'s yours.';
 
   @override
   String get recoverTitle => 'Still with You';
 
   @override
-  String get recoverBody => 'Your journey isn\'t lost.\nJust a moment of pause — we\'ll reset together.';
+  String get recoverBody => 'Your journey isn\'t lost.\r\nJust a moment of pause — we\'ll reset together.';
 
   @override
   String get logInWithGoogle => 'Log in with Google';
@@ -1195,10 +1201,10 @@ class LEnCa extends LEn {
 
   @override
   String get archiveConfirmBody =>
-      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won\'t affect any of your past workouts — your history stays intact.';
+      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won\'t affect any of your past workouts — your history stays intact.';
 
   @override
-  String get exerciseArchived => 'This exercise is archived\nand won\'t appear in your main library anymore.';
+  String get exerciseArchived => 'This exercise is archived\r\nand won\'t appear in your main library anymore.';
 
   @override
   String get deleteSet => 'Delete set';
@@ -1722,7 +1728,7 @@ class LEnCa extends LEn {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
+    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\r\n\r\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
   }
 
   @override
@@ -1765,7 +1771,7 @@ class LEnCa extends LEn {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'Your account has been scheduled for deletion on $date.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.';
+    return 'Your account has been scheduled for deletion on $date.\r\n\r\nIf you change your mind, you can restore your account anytime before this date.\r\n\r\nSimply click the button below to cancel the deletion and keep your account safe.';
   }
 
   @override
@@ -1862,7 +1868,7 @@ class LEnCa extends LEn {
 
   @override
   String get updateRequiredBody =>
-      'There\'s an important update waiting — one that keeps your app working as it should.\n\nYou\'ll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.';
+      'There\'s an important update waiting — one that keeps your app working as it should.\r\n\r\nYou\'ll need to install it before continuing.\r\nThanks for your patience — and sorry for the interruption.';
 
   @override
   String updateRequiredCta(String storeName) {
@@ -2055,6 +2061,12 @@ class LEnCa extends LEn {
 
   @override
   String get healthOnThisDevice => 'On this device';
+
+  @override
+  String get healthOpenHealthApp => 'Open the Health app';
+
+  @override
+  String get healthOpenHealthAppHint => 'Tap your profile picture, then Apps';
 
   @override
   String get healthOpenSettings => 'Open settings';
