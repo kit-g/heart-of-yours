@@ -20,7 +20,7 @@ class ChartThreshold {
 
   final Color? color;
 
-  const ChartThreshold({
+  const new({
     required this.value,
     this.label,
     this.reached = false,

@@ -42,7 +42,7 @@ class HistoryChart extends StatefulWidget {
   /// exists for.
   final List<ChartThreshold> thresholds;
 
-  HistoryChart({
+  new({
     super.key,
     required Iterable<Dot> series,
     this.bottomAxisLabelStyle,
@@ -81,7 +81,7 @@ class _HistoryChartState extends State<HistoryChart> {
     final scheme = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: series,
-      builder: (_, __) {
+      builder: (_, _) {
         final accent = widget.color;
         // a solid family hue when provided; otherwise the legacy 3-stop gradient
         final lineGradient = switch (accent) {
