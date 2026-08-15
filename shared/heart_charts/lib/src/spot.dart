@@ -7,7 +7,7 @@ class Dot {
   final double y;
   final String? tooltip;
 
-  const Dot(
+  const new(
     this.x,
     this.y, {
     this.tooltip,
@@ -26,7 +26,7 @@ class LineSeries with Iterable<Dot>, ChangeNotifier {
 
   final SplayTreeSet<int> _tooltipIndices;
 
-  LineSeries({required Iterable<Dot> dots})
+  new({required Iterable<Dot> dots})
       : _dots = dots.toList(),
         lowerBoundaryY = dots.lowerBoundaryY,
         upperBoundaryY = dots.upperBoundaryY,
