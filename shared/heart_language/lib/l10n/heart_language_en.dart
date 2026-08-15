@@ -978,6 +978,9 @@ class LEn extends L {
   String get healthBpm => 'bpm';
 
   @override
+  String get healthChecking => 'Looking for new readings…';
+
+  @override
   String get healthDelete => 'Delete health data';
 
   @override
@@ -986,10 +989,6 @@ class LEn extends L {
 
   @override
   String get healthDeleteTitle => 'Delete Heart\'s copy of your health data?';
-
-  @override
-  String get healthEmptyBody =>
-      'Nothing has arrived from your phone\'s health store. If you record health data with a watch or another app, Heart may need permission to read it.';
 
   @override
   String get healthHeartRateVariability => 'Heart rate variability';
@@ -1018,6 +1017,15 @@ class LEn extends L {
 
   @override
   String get healthMinutesShort => 'm';
+
+  @override
+  String get healthOffInHealthApp => 'In the Health app, tap your profile picture, then Apps, and let Heart read.';
+
+  @override
+  String get healthOffInSettings => 'Let Heart read your health data in your device’s health settings.';
+
+  @override
+  String get healthOffTitle => 'Heart isn’t reading any health data';
 
   @override
   String get healthOnThisDevice => 'On this device';
@@ -2018,6 +2026,9 @@ class LEnCa extends LEn {
   String get healthBpm => 'bpm';
 
   @override
+  String get healthChecking => 'Looking for new readings…';
+
+  @override
   String get healthDelete => 'Delete health data';
 
   @override
@@ -2026,10 +2037,6 @@ class LEnCa extends LEn {
 
   @override
   String get healthDeleteTitle => 'Delete Heart\'s copy of your health data?';
-
-  @override
-  String get healthEmptyBody =>
-      'Nothing has arrived from your phone\'s health store. If you record health data with a watch or another app, Heart may need permission to read it.';
 
   @override
   String get healthHeartRateVariability => 'Heart rate variability';
@@ -2058,6 +2065,15 @@ class LEnCa extends LEn {
 
   @override
   String get healthMinutesShort => 'm';
+
+  @override
+  String get healthOffInHealthApp => 'In the Health app, tap your profile picture, then Apps, and let Heart read.';
+
+  @override
+  String get healthOffInSettings => 'Let Heart read your health data in your device’s health settings.';
+
+  @override
+  String get healthOffTitle => 'Heart isn’t reading any health data';
 
   @override
   String get healthOnThisDevice => 'On this device';
