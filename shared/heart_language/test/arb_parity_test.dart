@@ -99,7 +99,8 @@ void main() {
     expect(
       enCaKeys.difference(enKeys),
       isEmpty,
-      reason: 'orphan keys in intl_en_CA.arb — remove keys that '
+      reason:
+          'orphan keys in intl_en_CA.arb — remove keys that '
           'no longer exist in intl_en.arb',
     );
   });
@@ -162,7 +163,8 @@ void main() {
       expect(
         row.length,
         header.length,
-        reason: 'row ${i + 2} has ${row.length} columns, '
+        reason:
+            'row ${i + 2} has ${row.length} columns, '
             'expected ${header.length}',
       );
       final id = row.first as String;

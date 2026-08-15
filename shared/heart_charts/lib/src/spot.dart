@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:collection';
+
 import 'package:flutter/material.dart';
 
 class Dot {
@@ -27,12 +28,12 @@ class LineSeries with Iterable<Dot>, ChangeNotifier {
   final SplayTreeSet<int> _tooltipIndices;
 
   new({required Iterable<Dot> dots})
-      : _dots = dots.toList(),
-        lowerBoundaryY = dots.lowerBoundaryY,
-        upperBoundaryY = dots.upperBoundaryY,
-        _tooltipIndices = SplayTreeSet.from(
-          dots.indexed.map((record) => record.$2.tooltip == null ? null : record.$1).nonNulls,
-        );
+    : _dots = dots.toList(),
+      lowerBoundaryY = dots.lowerBoundaryY,
+      upperBoundaryY = dots.upperBoundaryY,
+      _tooltipIndices = SplayTreeSet.from(
+        dots.indexed.map((record) => record.$2.tooltip == null ? null : record.$1).nonNulls,
+      );
 
   @override
   Iterator<Dot> get iterator => _dots.iterator;

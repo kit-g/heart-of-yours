@@ -56,18 +56,18 @@ double _niceNum(double range, {required bool round}) {
   final fraction = range / pow(10, exponent);
   final nice = round
       ? (fraction < 1.5
-          ? 1.0
-          : fraction < 3
-              ? 2.0
-              : fraction < 7
-                  ? 5.0
-                  : 10.0)
+            ? 1.0
+            : fraction < 3
+            ? 2.0
+            : fraction < 7
+            ? 5.0
+            : 10.0)
       : (fraction <= 1
-          ? 1.0
-          : fraction <= 2
-              ? 2.0
-              : fraction <= 5
-                  ? 5.0
-                  : 10.0);
+            ? 1.0
+            : fraction <= 2
+            ? 2.0
+            : fraction <= 5
+            ? 5.0
+            : 10.0);
   return nice * pow(10, exponent).toDouble();
 }
