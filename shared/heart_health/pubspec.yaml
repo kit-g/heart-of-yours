@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  health: ^13.3.1
+  health: ^13.3.2
   logging: ^1.3.0
 
 resolution: workspace

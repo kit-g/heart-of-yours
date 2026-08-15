@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart' as plugin;
+import 'package:logging/logging.dart';
 
 // `store.dart`'s conditional export resolves to the stub for static analysis,
 // so `DeviceHealthStore` and the real `healthStore()` are only visible by
@@ -303,6 +305,65 @@ void main() {
       );
     });
 
+    /// Captures everything logged while [action] runs.
+    Future<List<LogRecord>> logsFrom(Future<void> Function() action) async {
+      final records = <LogRecord>[];
+      final previous = Logger.root.level;
+      Logger.root.level = Level.ALL;
+      final subscription = Logger.root.onRecord.listen(records.add);
+
+      await action();
+
+      await subscription.cancel();
+      Logger.root.level = previous;
+      return records;
+    }
+
+    Future<void> readFailingWith(Object error) async {
+      when(health.isDataTypeAvailable(any)).thenReturn(true);
+      when(
+        health.getHealthDataFromTypes(
+          types: anyNamed('types'),
+          startTime: anyNamed('startTime'),
+          endTime: anyNamed('endTime'),
+        ),
+      ).thenAnswer((_) async => throw error);
+
+      final samples = await store.read(
+        metrics: {HealthMetric.steps},
+        from: DateTime.utc(2026, 8),
+        to: DateTime.utc(2026, 9),
+      );
+      expect(samples, isEmpty);
+    }
+
+    // On iOS this is what a launch looks like before anyone has been asked, and
+    // what it keeps looking like if they decline. Six of them at WARNING on
+    // every cold start is us reporting the ordinary case as a fault.
+    test('an unauthorized read is not a warning', () async {
+      final records = await logsFrom(
+        () => readFailingWith(
+          PlatformException(
+            code: 'HEALTH_ERROR',
+            message: 'Error getting health data: Authorization not determined',
+          ),
+        ),
+      );
+
+      expect(records.where((each) => each.level >= Level.WARNING), isEmpty);
+      expect(records, isNotEmpty, reason: 'still worth a trace when chasing why nothing arrived');
+    });
+
+    test('anything else still is', () async {
+      final records = await logsFrom(
+        () => readFailingWith(
+          PlatformException(code: 'HEALTH_ERROR', message: 'the store fell over'),
+        ),
+      );
+
+      expect(records.where((each) => each.level >= Level.WARNING), isNotEmpty);
+    });
+
     // The whole point of HealthAccess.unknown: HealthKit will not disclose read
     // permission, and reporting that as "denied" would put a reconnect button in
     // front of users who granted everything.
@@ -319,9 +380,33 @@ void main() {
     });
 
     test('a failed authorization is a false, not a throw', () async {
-      when(health.requestAuthorization(any)).thenThrow(Exception('nope'));
+      when(
+        health.requestAuthorization(any, permissions: anyNamed('permissions')),
+      ).thenThrow(Exception('nope'));
 
       expect(await store.requestAccess({HealthMetric.steps}), isFalse);
+    });
+
+    // Left to the plugin's default this is READ_WRITE, and iOS then asks to
+    // "access and update your Health data" — write access we have no code to
+    // use. Tier 1 widens it deliberately; until then, asking for it is both
+    // over-reach and a bad look on a feature selling restraint.
+    test('asks only to read', () async {
+      when(health.isDataTypeAvailable(any)).thenReturn(true);
+      when(
+        health.requestAuthorization(any, permissions: anyNamed('permissions')),
+      ).thenAnswer((_) async => true);
+
+      await store.requestAccess({HealthMetric.steps, HealthMetric.bodyMass});
+
+      final captured = verify(
+        health.requestAuthorization(captureAny, permissions: captureAnyNamed('permissions')),
+      ).captured;
+      final types = captured[0] as List<plugin.HealthDataType>;
+      final permissions = captured[1] as List<plugin.HealthDataAccess>;
+
+      expect(permissions, everyElement(plugin.HealthDataAccess.READ));
+      expect(permissions, hasLength(types.length), reason: 'the plugin throws when the lengths differ');
     });
 
     test('configures once, however many calls', () async {
