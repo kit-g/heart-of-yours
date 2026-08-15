@@ -1836,5 +1836,143 @@
     "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
     "type": "text",
     "placeholders": {}
+  },
+  "health": "Здоровье",
+  "@health": {
+    "description": "Header of the health section on the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthActiveEnergy": "Активные калории",
+  "@healthActiveEnergy": {
+    "description": "Name of a health metric: calories burned through activity",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthBodyMass": "Вес",
+  "@healthBodyMass": {
+    "description": "Name of a health metric: bodyweight",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthBpm": "уд/мин",
+  "@healthBpm": {
+    "description": "Unit abbreviation, beats per minute. Shown next to a heart rate",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDelete": "Удалить данные здоровья",
+  "@healthDelete": {
+    "description": "Settings row that deletes Heart's local copy of health data",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDeleteBody": "Это очистит то, что Heart прочитал на это устройство. В хранилище здоровья на телефоне ничего не изменится, и Heart прочитает данные снова при следующей синхронизации.",
+  "@healthDeleteBody": {
+    "description": "Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDeleteTitle": "Удалить копию данных здоровья в Heart?",
+  "@healthDeleteTitle": {
+    "description": "Confirmation title. Must say it is Heart's copy — a title reading like 'erase my heart rate history' would suggest years of data are about to be lost",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthEmptyBody": "Из хранилища здоровья на телефоне ничего не пришло. Если вы записываете данные часами или другим приложением, Heart может понадобиться разрешение на чтение.",
+  "@healthEmptyBody": {
+    "description": "Shown after the permission sheet when no health data came back. Covers two cases the app cannot tell apart — the user declined, and the user granted but has no data — so it must not assume either, and must not read as an error",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthHeartRateVariability": "Вариабельность пульса",
+  "@healthHeartRateVariability": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthHoursShort": "ч",
+  "@healthHoursShort": {
+    "description": "Single-letter abbreviation for hours, as in '7h 15m'. No space before it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteAction": "Показать мои данные",
+  "@healthInviteAction": {
+    "description": "Button that opens the operating system's health permission sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteBody": "Heart может показывать пульс в покое, сон, шаги и вес рядом с тренировками. Он читает их из хранилища здоровья на телефоне и хранит на этом устройстве.",
+  "@healthInviteBody": {
+    "description": "Body of the card offering to read health data. The last clause is a genuine selling point, not fine print — keep it plain and avoid words like private or secure",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteDismiss": "Не сейчас",
+  "@healthInviteDismiss": {
+    "description": "Tooltip on the button that dismisses the health invitation card",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteTitle": "Данные здоровья",
+  "@healthInviteTitle": {
+    "description": "Title of the card offering to read health data from the phone",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthKilocalories": "ккал",
+  "@healthKilocalories": {
+    "description": "Unit abbreviation, kilocalories. Shown next to active energy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthMilliseconds": "мс",
+  "@healthMilliseconds": {
+    "description": "Unit abbreviation, milliseconds. Shown next to heart rate variability",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthMinutesShort": "м",
+  "@healthMinutesShort": {
+    "description": "Single-letter abbreviation for minutes, as in '7h 15m'. No space before it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOnThisDevice": "На этом устройстве",
+  "@healthOnThisDevice": {
+    "description": "Subtitle under the Health header. States where health data is kept. Must not be softened into 'private' or 'secure' — workouts do sync to a server and only health data does not",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenSettings": "Открыть настройки",
+  "@healthOpenSettings": {
+    "description": "Button that opens the operating system's settings app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthRestingHeartRate": "Пульс в покое",
+  "@healthRestingHeartRate": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSettingsBody": "Heart читает пульс в покое, вариабельность пульса, сон, шаги, активные калории и вес из хранилища здоровья на телефоне. Они остаются на этом устройстве.",
+  "@healthSettingsBody": {
+    "description": "Settings section body. Names exactly what Heart reads and restates where it is kept. Say 'on this device', never 'private' or 'secure' — workouts do sync to a server and only health data does not",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSleep": "Сон",
+  "@healthSleep": {
+    "description": "Name of a health metric: time asleep",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSteps": "Шаги",
+  "@healthSteps": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
   }
 }

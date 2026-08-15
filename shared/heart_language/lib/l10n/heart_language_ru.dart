@@ -965,4 +965,77 @@ class LRu extends L {
 
   @override
   String get noExerciseSelectedBody => 'Выберите упражнение, чтобы увидеть технику, историю и рекорды.';
+
+  @override
+  String get health => 'Здоровье';
+
+  @override
+  String get healthActiveEnergy => 'Активные калории';
+
+  @override
+  String get healthBodyMass => 'Вес';
+
+  @override
+  String get healthBpm => 'уд/мин';
+
+  @override
+  String get healthDelete => 'Удалить данные здоровья';
+
+  @override
+  String get healthDeleteBody =>
+      'Это очистит то, что Heart прочитал на это устройство. В хранилище здоровья на телефоне ничего не изменится, и Heart прочитает данные снова при следующей синхронизации.';
+
+  @override
+  String get healthDeleteTitle => 'Удалить копию данных здоровья в Heart?';
+
+  @override
+  String get healthEmptyBody =>
+      'Из хранилища здоровья на телефоне ничего не пришло. Если вы записываете данные часами или другим приложением, Heart может понадобиться разрешение на чтение.';
+
+  @override
+  String get healthHeartRateVariability => 'Вариабельность пульса';
+
+  @override
+  String get healthHoursShort => 'ч';
+
+  @override
+  String get healthInviteAction => 'Показать мои данные';
+
+  @override
+  String get healthInviteBody =>
+      'Heart может показывать пульс в покое, сон, шаги и вес рядом с тренировками. Он читает их из хранилища здоровья на телефоне и хранит на этом устройстве.';
+
+  @override
+  String get healthInviteDismiss => 'Не сейчас';
+
+  @override
+  String get healthInviteTitle => 'Данные здоровья';
+
+  @override
+  String get healthKilocalories => 'ккал';
+
+  @override
+  String get healthMilliseconds => 'мс';
+
+  @override
+  String get healthMinutesShort => 'м';
+
+  @override
+  String get healthOnThisDevice => 'На этом устройстве';
+
+  @override
+  String get healthOpenSettings => 'Открыть настройки';
+
+  @override
+  String get healthRestingHeartRate => 'Пульс в покое';
+
+  @override
+  String get healthSettingsBody =>
+      'Heart читает пульс в покое, вариабельность пульса, сон, шаги, активные калории и вес из хранилища здоровья на телефоне. Они остаются на этом устройстве.';
+
+  @override
+  String get healthSleep => 'Сон';
+
+  @override
+  String get healthSteps => 'Шаги';
 }

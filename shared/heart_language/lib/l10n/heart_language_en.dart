@@ -963,6 +963,79 @@ class LEn extends L {
 
   @override
   String get noExerciseSelectedBody => 'Pick an exercise to see how it\'s done, plus your history and records.';
+
+  @override
+  String get health => 'Health';
+
+  @override
+  String get healthActiveEnergy => 'Active energy';
+
+  @override
+  String get healthBodyMass => 'Body mass';
+
+  @override
+  String get healthBpm => 'bpm';
+
+  @override
+  String get healthDelete => 'Delete health data';
+
+  @override
+  String get healthDeleteBody =>
+      'This clears what Heart has read onto this device. Nothing in your phone\'s health store changes, and Heart will read it again the next time it syncs.';
+
+  @override
+  String get healthDeleteTitle => 'Delete Heart\'s copy of your health data?';
+
+  @override
+  String get healthEmptyBody =>
+      'Nothing has arrived from your phone\'s health store. If you record health data with a watch or another app, Heart may need permission to read it.';
+
+  @override
+  String get healthHeartRateVariability => 'Heart rate variability';
+
+  @override
+  String get healthHoursShort => 'h';
+
+  @override
+  String get healthInviteAction => 'Show my health data';
+
+  @override
+  String get healthInviteBody =>
+      'Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone\'s health store, and keeps them on this device.';
+
+  @override
+  String get healthInviteDismiss => 'Not now';
+
+  @override
+  String get healthInviteTitle => 'Health data';
+
+  @override
+  String get healthKilocalories => 'kcal';
+
+  @override
+  String get healthMilliseconds => 'ms';
+
+  @override
+  String get healthMinutesShort => 'm';
+
+  @override
+  String get healthOnThisDevice => 'On this device';
+
+  @override
+  String get healthOpenSettings => 'Open settings';
+
+  @override
+  String get healthRestingHeartRate => 'Resting heart rate';
+
+  @override
+  String get healthSettingsBody =>
+      'Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone\'s health store. They stay on this device.';
+
+  @override
+  String get healthSleep => 'Sleep';
+
+  @override
+  String get healthSteps => 'Steps';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1924,4 +1997,77 @@ class LEnCa extends LEn {
 
   @override
   String get noExerciseSelectedBody => 'Pick an exercise to see how it\'s done, plus your history and records.';
+
+  @override
+  String get health => 'Health';
+
+  @override
+  String get healthActiveEnergy => 'Active energy';
+
+  @override
+  String get healthBodyMass => 'Body mass';
+
+  @override
+  String get healthBpm => 'bpm';
+
+  @override
+  String get healthDelete => 'Delete health data';
+
+  @override
+  String get healthDeleteBody =>
+      'This clears what Heart has read onto this device. Nothing in your phone\'s health store changes, and Heart will read it again the next time it syncs.';
+
+  @override
+  String get healthDeleteTitle => 'Delete Heart\'s copy of your health data?';
+
+  @override
+  String get healthEmptyBody =>
+      'Nothing has arrived from your phone\'s health store. If you record health data with a watch or another app, Heart may need permission to read it.';
+
+  @override
+  String get healthHeartRateVariability => 'Heart rate variability';
+
+  @override
+  String get healthHoursShort => 'h';
+
+  @override
+  String get healthInviteAction => 'Show my health data';
+
+  @override
+  String get healthInviteBody =>
+      'Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone\'s health store, and keeps them on this device.';
+
+  @override
+  String get healthInviteDismiss => 'Not now';
+
+  @override
+  String get healthInviteTitle => 'Health data';
+
+  @override
+  String get healthKilocalories => 'kcal';
+
+  @override
+  String get healthMilliseconds => 'ms';
+
+  @override
+  String get healthMinutesShort => 'm';
+
+  @override
+  String get healthOnThisDevice => 'On this device';
+
+  @override
+  String get healthOpenSettings => 'Open settings';
+
+  @override
+  String get healthRestingHeartRate => 'Resting heart rate';
+
+  @override
+  String get healthSettingsBody =>
+      'Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone\'s health store. They stay on this device.';
+
+  @override
+  String get healthSleep => 'Sleep';
+
+  @override
+  String get healthSteps => 'Steps';
 }
