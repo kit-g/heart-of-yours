@@ -869,11 +869,9 @@ void _response({
   };
 }
 
-class _Response extends http.Response {
-  _Response(
-    super.body,
-    super.statusCode, {
-    required super.request,
-    super.headers,
-  });
-}
+class _Response(
+  super.body,
+  super.statusCode, {
+  required super.request,
+  super.headers,
+}) extends http.Response;

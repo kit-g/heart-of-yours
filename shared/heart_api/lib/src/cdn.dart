@@ -11,9 +11,9 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
   @override
   Map<String, String>? defaultHeaders;
 
-  Cdn._();
+  new _();
 
-  factory Cdn({required String gateway}) {
+  factory({required String gateway}) {
     instance.gateway = gateway;
     return instance;
   }

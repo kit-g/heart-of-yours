@@ -23,9 +23,9 @@ class Api
   @override
   Map<String, String>? defaultHeaders;
 
-  Api._();
+  new _();
 
-  factory Api({
+  factory({
     required String gateway,
     http.Client? client,
     Response Function(Json)? onUnauthorized,
@@ -119,7 +119,7 @@ class Api
   Future<bool> uploadFile(
     PreSignedUrl cred,
     (String field, List<int> value, {String? filename, String? contentType}) file, {
-    final void Function(int bytes, int totalBytes)? onProgress,
+     void Function(int bytes, int totalBytes)? onProgress,
   }) {
     return uploadToBucket(cred, file, onProgress: onProgress);
   }
