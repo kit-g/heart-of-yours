@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:health/health.dart' as plugin;
 import 'package:heart_health/heart_health.dart';
 import 'package:logging/logging.dart';
@@ -71,7 +72,15 @@ class DeviceHealthStore implements HealthService {
     if (types.isEmpty) return false;
 
     try {
-      return await _plugin.requestAuthorization(types);
+      // Read, explicitly, for every type. The plugin defaults to READ_WRITE when
+      // `permissions` is omitted, which makes iOS ask to "access **and update**
+      // your Health data" — write access we have no code to use, on a feature
+      // whose entire pitch is restraint about the user's body. Tier 1 will widen
+      // this deliberately, and only for the workout type it actually writes.
+      return await _plugin.requestAuthorization(
+        types,
+        permissions: List.filled(types.length, plugin.HealthDataAccess.READ),
+      );
     } catch (error, stacktrace) {
       // Deliberately not reported upward: a permission failure is a normal
       // outcome, and the payload could name the health types being asked for.
@@ -101,9 +110,31 @@ class DeviceHealthStore implements HealthService {
       // A refusal surfaces here as an exception on some platforms. Empty is the
       // honest answer either way — we cannot distinguish "declined" from
       // "nothing recorded", and the UI must not pretend otherwise.
+      if (_isUnauthorized(error)) {
+        // Not a failure: this is what every launch looks like before the user
+        // has been asked, and what it keeps looking like if they say no. iOS
+        // will not answer [access] honestly, so attempting the read *is* how we
+        // find out — six of these at WARNING on a first run is us logging the
+        // normal case as a fault.
+        _logger.fine('Health read unauthorized', error);
+        return const [];
+      }
+
       _logger.warning('Health read failed', error, stacktrace);
       return const [];
     }
+  }
+
+  /// Whether [error] is the platform declining rather than something broken.
+  ///
+  /// Matched on the message because that is all either platform gives us —
+  /// HealthKit raises a generic `HEALTH_ERROR` whose text is the only thing
+  /// distinguishing "you never asked" from a genuine query failure. Narrow by
+  /// design: anything unrecognised stays a warning.
+  bool _isUnauthorized(Object error) {
+    if (error is! PlatformException) return false;
+    final message = (error.message ?? '').toLowerCase();
+    return message.contains('authorization not determined') || message.contains('not authorized');
   }
 
   @override
