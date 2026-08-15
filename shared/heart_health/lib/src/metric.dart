@@ -31,9 +31,9 @@ enum HealthMetric {
   /// stored rows never carry a mixed unit for one metric.
   final HealthUnit unit;
 
-  const HealthMetric(this.value, this.unit);
+  new(this.value, this.unit);
 
-  factory HealthMetric.fromString(String v) {
+  factory fromString(String v) {
     return switch (v) {
       'restingHeartRate' => restingHeartRate,
       'heartRate' => heartRate,
@@ -87,9 +87,9 @@ enum HealthUnit {
 
   final String value;
 
-  const HealthUnit(this.value);
+  new(this.value);
 
-  factory HealthUnit.fromString(String v) {
+  factory fromString(String v) {
     return switch (v) {
       'bpm' => bpm,
       'ms' => milliseconds,

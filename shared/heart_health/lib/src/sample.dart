@@ -40,7 +40,7 @@ class HealthSample {
   /// a conclusion from it.
   final bool isManual;
 
-  const HealthSample({
+  const new({
     required this.id,
     required this.metric,
     required this.value,
@@ -75,7 +75,7 @@ class HealthSample {
     };
   }
 
-  factory HealthSample.fromRow(Map<String, Object?> row) {
+  factory fromRow(Map<String, Object?> row) {
     return HealthSample(
       id: row['id']! as String,
       metric: HealthMetric.fromString(row['metric']! as String),
@@ -108,7 +108,7 @@ class HealthSource {
   /// Connect does not expose an equivalent and this is always null there.
   final String? deviceModel;
 
-  const HealthSource({
+  const new({
     required this.id,
     required this.name,
     this.deviceModel,

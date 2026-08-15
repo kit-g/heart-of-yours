@@ -18,7 +18,7 @@ class DeviceHealthStore implements HealthService {
   /// the caller's non-problem.
   Future<void>? _configured;
 
-  DeviceHealthStore({plugin.Health? health}) : _plugin = health ?? plugin.Health();
+  new({plugin.Health? health}) : _plugin = health ?? plugin.Health();
 
   @override
   bool get isSupported => true;
