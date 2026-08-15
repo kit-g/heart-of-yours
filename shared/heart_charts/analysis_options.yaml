@@ -1,2 +1,11 @@
 # Single source of truth: the root config carries the lint set and formatter.
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 include: ../../analysis_options.yaml
