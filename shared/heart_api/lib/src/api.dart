@@ -119,7 +119,7 @@ class Api
   Future<bool> uploadFile(
     PreSignedUrl cred,
     (String field, List<int> value, {String? filename, String? contentType}) file, {
-     void Function(int bytes, int totalBytes)? onProgress,
+    void Function(int bytes, int totalBytes)? onProgress,
   }) {
     return uploadToBucket(cred, file, onProgress: onProgress);
   }

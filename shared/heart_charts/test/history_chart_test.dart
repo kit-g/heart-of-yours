@@ -62,7 +62,11 @@ void main() {
     await pumpChart(
       tester,
       HistoryChart(
-        series: const [Dot(0, 10, tooltip: '10'), Dot(1, 12), Dot(2, 11)],
+        series: const [
+          Dot(0, 10, tooltip: '10'),
+          Dot(1, 12),
+          Dot(2, 11),
+        ],
         color: const Color(0xFFE34948),
         getLeftLabel: (y) => Text(y.toStringAsFixed(0)),
         getBottomLabel: (x) => 'd$x',
@@ -105,8 +109,10 @@ void main() {
 
       expect(tester.takeException(), isNull);
       // an axis label at or beyond the threshold proves the range grew to it
-      final labels =
-          tester.widgetList<Text>(find.byType(Text)).map((each) => double.tryParse(each.data ?? '')).nonNulls;
+      final labels = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((each) => double.tryParse(each.data ?? ''))
+          .nonNulls;
       expect(labels.any((each) => each >= 40), isTrue, reason: 'axis stopped short of the threshold');
     });
 
@@ -123,8 +129,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      final labels =
-          tester.widgetList<Text>(find.byType(Text)).map((each) => double.tryParse(each.data ?? '')).nonNulls;
+      final labels = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((each) => double.tryParse(each.data ?? ''))
+          .nonNulls;
       expect(labels.any((each) => each <= 200), isTrue, reason: 'axis stopped short of the threshold');
     });
 
