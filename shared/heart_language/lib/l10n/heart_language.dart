@@ -1855,6 +1855,144 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Pick an exercise to see how it\'s done, plus your history and records.'**
   String get noExerciseSelectedBody;
+
+  /// Header of the health section on the profile dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get health;
+
+  /// Name of a health metric: calories burned through activity
+  ///
+  /// In en, this message translates to:
+  /// **'Active energy'**
+  String get healthActiveEnergy;
+
+  /// Name of a health metric: bodyweight
+  ///
+  /// In en, this message translates to:
+  /// **'Body mass'**
+  String get healthBodyMass;
+
+  /// Unit abbreviation, beats per minute. Shown next to a heart rate
+  ///
+  /// In en, this message translates to:
+  /// **'bpm'**
+  String get healthBpm;
+
+  /// Settings row that deletes Heart's local copy of health data
+  ///
+  /// In en, this message translates to:
+  /// **'Delete health data'**
+  String get healthDelete;
+
+  /// Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync
+  ///
+  /// In en, this message translates to:
+  /// **'This clears what Heart has read onto this device. Nothing in your phone\'s health store changes, and Heart will read it again the next time it syncs.'**
+  String get healthDeleteBody;
+
+  /// Confirmation title. Must say it is Heart's copy — a title reading like 'erase my heart rate history' would suggest years of data are about to be lost
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Heart\'s copy of your health data?'**
+  String get healthDeleteTitle;
+
+  /// Shown after the permission sheet when no health data came back. Covers two cases the app cannot tell apart — the user declined, and the user granted but has no data — so it must not assume either, and must not read as an error
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing has arrived from your phone\'s health store. If you record health data with a watch or another app, Heart may need permission to read it.'**
+  String get healthEmptyBody;
+
+  /// Name of a health metric
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate variability'**
+  String get healthHeartRateVariability;
+
+  /// Single-letter abbreviation for hours, as in '7h 15m'. No space before it
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get healthHoursShort;
+
+  /// Button that opens the operating system's health permission sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Show my health data'**
+  String get healthInviteAction;
+
+  /// Body of the card offering to read health data. The last clause is a genuine selling point, not fine print — keep it plain and avoid words like private or secure
+  ///
+  /// In en, this message translates to:
+  /// **'Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone\'s health store, and keeps them on this device.'**
+  String get healthInviteBody;
+
+  /// Tooltip on the button that dismisses the health invitation card
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get healthInviteDismiss;
+
+  /// Title of the card offering to read health data from the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Health data'**
+  String get healthInviteTitle;
+
+  /// Unit abbreviation, kilocalories. Shown next to active energy
+  ///
+  /// In en, this message translates to:
+  /// **'kcal'**
+  String get healthKilocalories;
+
+  /// Unit abbreviation, milliseconds. Shown next to heart rate variability
+  ///
+  /// In en, this message translates to:
+  /// **'ms'**
+  String get healthMilliseconds;
+
+  /// Single-letter abbreviation for minutes, as in '7h 15m'. No space before it
+  ///
+  /// In en, this message translates to:
+  /// **'m'**
+  String get healthMinutesShort;
+
+  /// Subtitle under the Health header. States where health data is kept. Must not be softened into 'private' or 'secure' — workouts do sync to a server and only health data does not
+  ///
+  /// In en, this message translates to:
+  /// **'On this device'**
+  String get healthOnThisDevice;
+
+  /// Button that opens the operating system's settings app
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get healthOpenSettings;
+
+  /// Name of a health metric
+  ///
+  /// In en, this message translates to:
+  /// **'Resting heart rate'**
+  String get healthRestingHeartRate;
+
+  /// Settings section body. Names exactly what Heart reads and restates where it is kept. Say 'on this device', never 'private' or 'secure' — workouts do sync to a server and only health data does not
+  ///
+  /// In en, this message translates to:
+  /// **'Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone\'s health store. They stay on this device.'**
+  String get healthSettingsBody;
+
+  /// Name of a health metric: time asleep
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep'**
+  String get healthSleep;
+
+  /// Name of a health metric
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get healthSteps;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

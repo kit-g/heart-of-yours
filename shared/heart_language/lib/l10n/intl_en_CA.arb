@@ -1836,5 +1836,143 @@
     "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
     "type": "text",
     "placeholders": {}
+  },
+  "health": "Health",
+  "@health": {
+    "description": "Header of the health section on the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthActiveEnergy": "Active energy",
+  "@healthActiveEnergy": {
+    "description": "Name of a health metric: calories burned through activity",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthBodyMass": "Body mass",
+  "@healthBodyMass": {
+    "description": "Name of a health metric: bodyweight",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthBpm": "bpm",
+  "@healthBpm": {
+    "description": "Unit abbreviation, beats per minute. Shown next to a heart rate",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDelete": "Delete health data",
+  "@healthDelete": {
+    "description": "Settings row that deletes Heart's local copy of health data",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDeleteBody": "This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.",
+  "@healthDeleteBody": {
+    "description": "Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDeleteTitle": "Delete Heart's copy of your health data?",
+  "@healthDeleteTitle": {
+    "description": "Confirmation title. Must say it is Heart's copy — a title reading like 'erase my heart rate history' would suggest years of data are about to be lost",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthEmptyBody": "Nothing has arrived from your phone's health store. If you record health data with a watch or another app, Heart may need permission to read it.",
+  "@healthEmptyBody": {
+    "description": "Shown after the permission sheet when no health data came back. Covers two cases the app cannot tell apart — the user declined, and the user granted but has no data — so it must not assume either, and must not read as an error",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthHeartRateVariability": "Heart rate variability",
+  "@healthHeartRateVariability": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthHoursShort": "h",
+  "@healthHoursShort": {
+    "description": "Single-letter abbreviation for hours, as in '7h 15m'. No space before it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteAction": "Show my health data",
+  "@healthInviteAction": {
+    "description": "Button that opens the operating system's health permission sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteBody": "Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.",
+  "@healthInviteBody": {
+    "description": "Body of the card offering to read health data. The last clause is a genuine selling point, not fine print — keep it plain and avoid words like private or secure",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteDismiss": "Not now",
+  "@healthInviteDismiss": {
+    "description": "Tooltip on the button that dismisses the health invitation card",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteTitle": "Health data",
+  "@healthInviteTitle": {
+    "description": "Title of the card offering to read health data from the phone",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthKilocalories": "kcal",
+  "@healthKilocalories": {
+    "description": "Unit abbreviation, kilocalories. Shown next to active energy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthMilliseconds": "ms",
+  "@healthMilliseconds": {
+    "description": "Unit abbreviation, milliseconds. Shown next to heart rate variability",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthMinutesShort": "m",
+  "@healthMinutesShort": {
+    "description": "Single-letter abbreviation for minutes, as in '7h 15m'. No space before it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOnThisDevice": "On this device",
+  "@healthOnThisDevice": {
+    "description": "Subtitle under the Health header. States where health data is kept. Must not be softened into 'private' or 'secure' — workouts do sync to a server and only health data does not",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenSettings": "Open settings",
+  "@healthOpenSettings": {
+    "description": "Button that opens the operating system's settings app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthRestingHeartRate": "Resting heart rate",
+  "@healthRestingHeartRate": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSettingsBody": "Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone's health store. They stay on this device.",
+  "@healthSettingsBody": {
+    "description": "Settings section body. Names exactly what Heart reads and restates where it is kept. Say 'on this device', never 'private' or 'secure' — workouts do sync to a server and only health data does not",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSleep": "Sleep",
+  "@healthSleep": {
+    "description": "Name of a health metric: time asleep",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSteps": "Steps",
+  "@healthSteps": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
   }
 }
