@@ -18,10 +18,17 @@ class Health with ChangeNotifier implements SignOutStateSentry {
 
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
+  /// How stale the mirror has to be before a plain resume is worth a pass.
+  ///
+  /// A constructor argument only so tests can collapse it; nothing in the app
+  /// passes it.
+  final Duration resumeInterval;
+
   new({
     required this._device,
     required this._local,
     this.onError,
+    this.resumeInterval = const Duration(minutes: 15),
   });
 
   /// What we read. Deliberately small: every entry is a metric the app can
@@ -90,6 +97,8 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     _daily.clear();
     _initialized = false;
     _syncing = false;
+    _syncedAt = null;
+    _leftForPermissions = false;
   }
 
   /// Loads whatever is already mirrored, then tops it up from the device.
@@ -163,6 +172,39 @@ class Health with ChangeNotifier implements SignOutStateSentry {
 
   Future<void>? _inFlight;
 
+  /// When a pass last finished, whatever it found. Drives the resume throttle.
+  DateTime? _syncedAt;
+
+  /// Whether the user was last seen leaving for the platform's permission UI.
+  bool _leftForPermissions = false;
+
+  /// The app came back to the foreground.
+  ///
+  /// The reason this exists: changing health permissions means leaving Heart
+  /// for the platform's own UI, and nothing tells us what happened out there —
+  /// iOS will not disclose read access even after the fact (see
+  /// [HealthAccess.unknown]). Coming back is the only moment we can act on, and
+  /// re-reading is the only way to find out. Without it a user grants access,
+  /// returns, and sees the same empty card that sent them away.
+  ///
+  /// It also picks up plain staleness: an app left in the background over a
+  /// weekend comes forward showing Friday.
+  Future<void> onResume() {
+    // The trip out never waits its turn. It is the one case where the answer
+    // genuinely may have changed, and the user came back to look at the result.
+    if (_leftForPermissions) {
+      _leftForPermissions = false;
+      return sync();
+    }
+
+    return switch (_syncedAt) {
+      // Alt-tabbing is not new data. Re-reading six metrics every time the app
+      // comes forward costs a platform round trip each and finds nothing.
+      DateTime at when DateTime.now().difference(at) < resumeInterval => Future.value(),
+      _ => sync(),
+    };
+  }
+
   Future<void> _sync() async {
     _syncing = true;
     notifyListeners();
@@ -188,6 +230,9 @@ class Health with ChangeNotifier implements SignOutStateSentry {
       onError?.call(error, stacktrace: stacktrace);
     } finally {
       _syncing = false;
+      // Stamped even on a failed pass: the throttle is about how recently we
+      // asked the store, not about how much came back.
+      _syncedAt = DateTime.now();
       notifyListeners();
     }
   }
@@ -208,6 +253,13 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   /// The whole delete — there is no server copy to chase, which is the point of
   /// the device-only decision. Backs a user-facing "forget my health data";
   /// the OS store is untouched, so a later [sync] would rebuild the mirror.
+  ///
+  /// **Revoking a permission deliberately does not come here.** iOS never
+  /// reports a revocation — reads simply stop returning anything — so "they
+  /// turned it off" is indistinguishable from "they haven't worn the watch".
+  /// Deleting on that signal would throw away a year of history because someone
+  /// spent a weekend off their wrist. Erasing stays where the user put the
+  /// intent: this, and sign-out.
   Future<void> forget() async {
     if (userId case String id) {
       await _local.deleteHealthSamples(id);
@@ -226,5 +278,12 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   /// Sends the user where this platform keeps health permissions — on iOS the
   /// Health app, not Settings › Heart. False means there was nowhere to send
   /// them and the caller should fall back; see [HealthService.openPermissions].
-  Future<bool> openPermissions() => _device.openPermissions();
+  ///
+  /// Either way the user is about to leave, so [onResume] is armed regardless
+  /// of the answer: the fallback lands them somewhere they can change their
+  /// mind too.
+  Future<bool> openPermissions() {
+    _leftForPermissions = true;
+    return _device.openPermissions();
+  }
 }
