@@ -57,11 +57,11 @@ class HistoryChart extends StatefulWidget {
     Color? gradientColor2,
     Color? gradientColor3,
     Color? indicatorStrokeColor,
-  })  : series = LineSeries(dots: series),
-        gradientColor1 = gradientColor1 ?? ChartColors.contentColorBlue,
-        gradientColor2 = gradientColor2 ?? ChartColors.contentColorPink,
-        gradientColor3 = gradientColor3 ?? ChartColors.contentColorRed,
-        indicatorStrokeColor = indicatorStrokeColor ?? ChartColors.mainTextColor1;
+  }) : series = LineSeries(dots: series),
+       gradientColor1 = gradientColor1 ?? ChartColors.contentColorBlue,
+       gradientColor2 = gradientColor2 ?? ChartColors.contentColorPink,
+       gradientColor3 = gradientColor3 ?? ChartColors.contentColorRed,
+       indicatorStrokeColor = indicatorStrokeColor ?? ChartColors.mainTextColor1;
 
   @override
   State<HistoryChart> createState() => _HistoryChartState();
@@ -87,23 +87,23 @@ class _HistoryChartState extends State<HistoryChart> {
         final lineGradient = switch (accent) {
           Color color => LinearGradient(colors: [color, color], stops: const [0.0, 1.0]),
           null => LinearGradient(
-              colors: [widget.gradientColor1, widget.gradientColor2, widget.gradientColor3],
-              stops: const [0.1, 0.4, 0.9],
-            ),
+            colors: [widget.gradientColor1, widget.gradientColor2, widget.gradientColor3],
+            stops: const [0.1, 0.4, 0.9],
+          ),
         };
         final fillGradient = switch (accent) {
           Color color => LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0.0)],
-            ),
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0.0)],
+          ),
           null => LinearGradient(
-              colors: [
-                widget.gradientColor1.withValues(alpha: 0.4),
-                widget.gradientColor2.withValues(alpha: 0.4),
-                widget.gradientColor3.withValues(alpha: 0.4),
-              ],
-            ),
+            colors: [
+              widget.gradientColor1.withValues(alpha: 0.4),
+              widget.gradientColor2.withValues(alpha: 0.4),
+              widget.gradientColor3.withValues(alpha: 0.4),
+            ],
+          ),
         };
 
         final lineBarsData = [
@@ -211,11 +211,11 @@ class _HistoryChartState extends State<HistoryChart> {
                         dashArray: each.reached ? null : const [6, 4],
                         label: switch (each.label) {
                           final String text => HorizontalLineLabel(
-                              show: true,
-                              alignment: Alignment.topRight,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
-                              labelResolver: (_) => text,
-                            ),
+                            show: true,
+                            alignment: Alignment.topRight,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+                            labelResolver: (_) => text,
+                          ),
                           null => HorizontalLineLabel(),
                         },
                       );
@@ -230,12 +230,12 @@ class _HistoryChartState extends State<HistoryChart> {
                       interval: yAxis.interval,
                       getTitlesWidget: switch (widget.getLeftLabel) {
                         Widget Function(double) callback => (value, meta) {
-                            return SideTitleWidget(
-                              meta: meta,
-                              fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-                              child: callback(value),
-                            );
-                          },
+                          return SideTitleWidget(
+                            meta: meta,
+                            fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
+                            child: callback(value),
+                          );
+                        },
                         null => defaultGetTitle,
                       },
                       showTitles: true,
@@ -250,18 +250,18 @@ class _HistoryChartState extends State<HistoryChart> {
                       interval: 1,
                       getTitlesWidget: switch (widget.getBottomLabel) {
                         String Function(int) callback => (value, meta) {
-                            return SideTitleWidget(
-                              meta: meta,
-                              angle: -pi / 4,
-                              // nudge the first/last date inward so the rotated
-                              // label isn't clipped at the chart edge
-                              fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-                              child: Text(
-                                callback(value.toInt()),
-                                style: widget.bottomAxisLabelStyle,
-                              ),
-                            );
-                          },
+                          return SideTitleWidget(
+                            meta: meta,
+                            angle: -pi / 4,
+                            // nudge the first/last date inward so the rotated
+                            // label isn't clipped at the chart edge
+                            fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
+                            child: Text(
+                              callback(value.toInt()),
+                              style: widget.bottomAxisLabelStyle,
+                            ),
+                          );
+                        },
                         null => defaultGetTitle,
                       },
                       reservedSize: 30,
@@ -272,10 +272,10 @@ class _HistoryChartState extends State<HistoryChart> {
                   ),
                   topTitles: switch (widget.topLabel) {
                     Widget label => AxisTitles(
-                        axisNameWidget: label,
-                        axisNameSize: 22,
-                        sideTitles: const SideTitles(showTitles: true, reservedSize: 0),
-                      ),
+                      axisNameWidget: label,
+                      axisNameSize: 22,
+                      sideTitles: const SideTitles(showTitles: true, reservedSize: 0),
+                    ),
                     null => const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   },
                 ),
