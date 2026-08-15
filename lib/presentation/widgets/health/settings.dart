@@ -31,6 +31,14 @@ class const HealthSettings({super.key}) extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final asked = settings.healthAsked(health.userId);
 
+    // Colour as the closest thing to a "connected" light this feature is
+    // allowed to have. iOS will not disclose read access, so the heart follows
+    // [Health.hasData] — readings arriving is the only proof access exists.
+    final heart = Icon(
+      health.hasData ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+      color: health.hasData ? colorScheme.primary : null,
+    );
+
     return Column(
       crossAxisAlignment: .start,
       children: [
@@ -54,7 +62,7 @@ class const HealthSettings({super.key}) extends StatelessWidget {
         // the OS settings — see [openHealthPermissions].
         switch (asked) {
           false => ListTile(
-            leading: const Icon(Icons.favorite_border_rounded),
+            leading: heart,
             title: Text(l.healthInviteAction),
             onTap: () async {
               await health.connect();
@@ -62,7 +70,7 @@ class const HealthSettings({super.key}) extends StatelessWidget {
             },
           ),
           true => ListTile(
-            leading: const Icon(Icons.favorite_border_rounded),
+            leading: heart,
             title: Text(healthPermissionsLabel(l)),
             subtitle: switch (healthPermissionsHint(l)) {
               String hint => Text(hint),
