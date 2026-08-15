@@ -222,4 +222,9 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     _status = await _device.status();
     notifyListeners();
   }
+
+  /// Sends the user where this platform keeps health permissions — on iOS the
+  /// Health app, not Settings › Heart. False means there was nowhere to send
+  /// them and the caller should fall back; see [HealthService.openPermissions].
+  Future<bool> openPermissions() => _device.openPermissions();
 }
