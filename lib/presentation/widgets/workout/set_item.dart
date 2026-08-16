@@ -296,6 +296,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               color: color,
               errorState: _hasWeightError,
               formatters: _floatingPointFormatters,
+              semanticLabel: L.of(context).weightUnit,
             ),
           ),
           Expanded(
@@ -308,6 +309,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               keyboardType: TextInputType.number,
               errorState: _hasRepsError,
               formatters: _integerFormatters,
+              semanticLabel: L.of(context).reps,
             ),
           ),
         ];
@@ -322,6 +324,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               keyboardType: TextInputType.number,
               errorState: _hasRepsError,
               formatters: _integerFormatters,
+              semanticLabel: L.of(context).reps,
             ),
           ),
         ];
@@ -336,6 +339,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               keyboardType: TextInputType.number,
               errorState: _hasDurationError,
               formatters: [TimeFormatter()],
+              semanticLabel: L.of(context).duration,
             ),
           ),
         ];
@@ -366,6 +370,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                   keyboardType: TextInputType.number,
                   errorState: _hasDistanceError,
                   formatters: _floatingPointFormatters,
+                  semanticLabel: L.of(context).distanceUnit,
                 );
               },
             ),
@@ -379,6 +384,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               keyboardType: TextInputType.number,
               errorState: _hasDurationError,
               formatters: [TimeFormatter()],
+              semanticLabel: L.of(context).duration,
             ),
           ),
         ];
