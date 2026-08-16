@@ -241,6 +241,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2.0),
                 child: PrimaryButton.shrunk(
+                  key: WorkoutDetailKeys.doneFor(exercise.exercise.name, widget.index),
                   backgroundColor: color,
                   margin: EdgeInsets.zero,
                   onPressed: () {
@@ -285,6 +286,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         return [
           Expanded(
             child: _TextFieldButton(
+              key: WorkoutDetailKeys.weightFor(exercise.exercise.name, widget.index),
               focusNode: _weightFocus,
               isSetCompleted: set.isCompleted,
               controller: _weightController,
@@ -295,6 +297,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           ),
           Expanded(
             child: _TextFieldButton(
+              key: WorkoutDetailKeys.repsFor(exercise.exercise.name, widget.index),
               isSetCompleted: set.isCompleted,
               focusNode: _repsFocus,
               controller: _repsController,
@@ -471,7 +474,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
 
     if (timer == null) return;
 
-    return showCountdownDialog(context, timer, scheduleNotification: _scheduleNotification);
+    return showCountdownDialog(
+      context,
+      timer,
+      exerciseId: exercise.id,
+      scheduleNotification: _scheduleNotification,
+    );
   }
 
   Future<void> _scheduleNotification(DateTime when) {

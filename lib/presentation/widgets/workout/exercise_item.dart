@@ -76,8 +76,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                       Selector<Timers, int?>(
                         selector: (_, provider) => provider[exercise.exercise.name],
                         builder: (_, timer, _) {
-                          return Selector<Alarms, (ValueNotifier<int>?, num?)>(
-                            selector: (_, provider) => (provider.remainsInActiveExercise, provider.activeExerciseTotal),
+                          return Selector<Alarms, (ValueNotifier<int>?, num?, String?)>(
+                            selector: (_, provider) => (
+                              provider.remainsInActiveExercise,
+                              provider.activeExerciseTotal,
+                              provider.activeExerciseId,
+                            ),
                             builder: (_, alarm, _) {
                               return switch ((timer, alarm)) {
                                 (int timer, _) => AnimatedSwitcher(
@@ -85,7 +89,10 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                                   child: Stack(
                                     alignment: .center,
                                     children: [
-                                      if (alarm case (ValueNotifier<int> counter, num total))
+                                      // the one running countdown, drawn only on
+                                      // the exercise it belongs to
+                                      if (alarm case (ValueNotifier<int> counter, num total, String owner)
+                                          when owner == exercise.id)
                                         SizedBox(
                                           height: 32,
                                           width: 32,
@@ -109,16 +116,18 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                                         onPressed: () {
                                           // behaves differently
                                           switch (alarm) {
-                                            // no current countdown, show rest time picker
-                                            case (null, null):
-                                              _selectRestTime(context, initialValue: timer);
-                                            // active countdown, show it
-                                            case (ValueNotifier<int> remains, _):
+                                            // this exercise's countdown is running, show it
+                                            case (ValueNotifier<int> remains, _, String owner)
+                                                when owner == exercise.id:
                                               showCountdownDialog(
                                                 context,
                                                 remains.value,
+                                                exerciseId: exercise.id,
                                                 scheduleNotification: (_) {},
                                               );
+                                            // no countdown of its own, show the rest time picker
+                                            default:
+                                              _selectRestTime(context, initialValue: timer);
                                           }
                                         },
                                       ),

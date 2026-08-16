@@ -10,6 +10,7 @@ class _TextFieldButton extends StatelessWidget {
   final List<TextInputFormatter>? formatters;
 
   const new({
+    super.key,
     required this.focusNode,
     required this.errorState,
     this.color,
