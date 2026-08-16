@@ -36,13 +36,14 @@ class WorkoutDone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final L(:congratulations, :congratulationsBody, :okBang) = L.of(context);
+    final L(:congratulations, :congratulationsBody, :okBang, :close) = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
+          tooltip: close,
           onPressed: onQuit,
           icon: const Icon(Icons.close_rounded),
         ),
