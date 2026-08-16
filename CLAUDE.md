@@ -31,3 +31,16 @@ Reading the widget tree does not catch any of the above.
 Two traps worth knowing when driving the app: route builder closures are
 captured when `HeartRouter` is constructed, and an open dialog's page is
 cached by `ModalRoute` — changes to either need a hot restart, not a reload.
+
+## Accessibility
+Every interactive control announces itself — tooltip or semantic label, and
+labels are copy, so they go through the translations flow like any string.
+Screens keep their entries in `test/a11y_test.dart`'s screen×guideline
+matrix honest: enable what passes, skip what doesn't with a file:line
+reason. Patterns, the adoption rule, and what maps to WCAG: `docs/a11y.md`.
+
+## Definition of done
+`docs/handoff.md` is the submission checklist for any nontrivial change.
+Autonomous agents finish by writing `HANDOFF.md` (worktree root, gitignored)
+and, when dispatched from a GitHub issue, commenting the summary on it;
+interactive sessions just meet the list.
