@@ -755,6 +755,7 @@ class _FolderSection extends StatelessWidget {
           ],
         ),
         trailing: PopupMenuButton<VoidCallback>(
+          tooltip: L.of(context).moreOptions,
           style: const ButtonStyle(
             visualDensity: VisualDensity(vertical: -3, horizontal: -3),
           ),
