@@ -228,7 +228,7 @@ Future<void> scheduleExerciseNotification(
 
   final details = _details(title: title, body: body, subtitle: subtitle);
   return _plugin.zonedSchedule(
-    id: 0,
+    id: _currentExercise,
     title: title,
     body: body,
     scheduledDate: TZDateTime.from(time, local),
@@ -262,6 +262,13 @@ Future<void> scheduleWorkoutTimeoutNotification(
 
 Future<void> cancelWorkoutTimeoutNotification() {
   return _plugin.cancel(id: _workoutTimeout);
+}
+
+/// Withdraws the pending "rest complete" notification — the counterpart of a
+/// skipped rest timer. Narrower than [cancelAllNotifications] on purpose: the
+/// workout-timeout notification must survive a skip.
+Future<void> cancelExerciseNotification() {
+  return _plugin.cancel(id: _currentExercise);
 }
 
 Future<void> cancelAllNotifications() {

@@ -10,6 +10,7 @@ import 'package:heart_state/heart_state.dart';
 Future<void> showCountdownDialog(
   BuildContext context,
   int totalDuration, {
+  required String exerciseId,
   VoidCallback? onCountdown,
   required void Function(DateTime) scheduleNotification,
 }) {
@@ -26,6 +27,7 @@ Future<void> showCountdownDialog(
           children: [
             Countdown(
               total: totalDuration,
+              exerciseId: exerciseId,
               onCountdown: onCountdown,
               scheduleNotification: scheduleNotification,
             ),
@@ -38,12 +40,18 @@ Future<void> showCountdownDialog(
 
 class Countdown extends StatefulWidget {
   final int total;
+
+  /// The exercise this rest belongs to. A countdown already running for
+  /// another exercise is replaced — the most recent set wins — while one
+  /// running for this same exercise is simply shown.
+  final String exerciseId;
   final VoidCallback? onCountdown;
   final void Function(DateTime) scheduleNotification;
 
   const new({
     super.key,
     required this.total,
+    required this.exerciseId,
     this.onCountdown,
     required this.scheduleNotification,
   });
@@ -228,14 +236,22 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
   void afterFirstLayout(BuildContext context) {
     alarms = Alarms.of(context);
 
-    _total.value = math.max(widget.total, alarms.activeExerciseTotal?.toInt() ?? 0);
-
-    if (alarms.remainsInActiveExercise == null) {
-      alarms.startActiveExerciseTimer(
-        widget.total,
-        onComplete: widget.onCountdown,
-        scheduleNotification: widget.scheduleNotification,
-      );
+    final resumes = alarms.remainsInActiveExercise != null && alarms.activeExerciseId == widget.exerciseId;
+    switch (resumes) {
+      case true:
+        // already counting for this exercise (it may have been adjusted, so
+        // its total is the truth) — just show it
+        _total.value = alarms.activeExerciseTotal?.toInt() ?? widget.total;
+      case false:
+        // no countdown, or one owned by another exercise: the most recent
+        // set wins and the start replaces both the timer and its notification
+        _total.value = widget.total;
+        alarms.startActiveExerciseTimer(
+          widget.total,
+          exerciseId: widget.exerciseId,
+          onComplete: widget.onCountdown,
+          scheduleNotification: widget.scheduleNotification,
+        );
     }
     alarms.remainsInActiveExercise?.addListener(_tickerListener);
   }

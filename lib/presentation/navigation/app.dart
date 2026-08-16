@@ -158,7 +158,7 @@ class HeartApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<Alarms>(
-          create: (_) => Alarms(cancelRestTimerNotifications: cancelAllNotifications),
+          create: (_) => Alarms(cancelRestTimerNotifications: cancelExerciseNotification),
         ),
         Provider<Scrolls>(
           create: (_) => Scrolls(),
