@@ -43,6 +43,7 @@ class _ColorPickerState extends State<_ColorPicker> with HasHaptic<_ColorPicker>
                     child: Text(reset),
                   ),
                 IconButton(
+                  tooltip: customThemeColorSetting,
                   onPressed: () => _showColorPicker(context),
                   icon: Icon(
                     Icons.color_lens_rounded,
