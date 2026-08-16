@@ -10,15 +10,25 @@ void main() {
     late Alarms alarms;
     late int notifications;
     const tick = Duration(milliseconds: 10);
+    late DateTime clock;
 
+    /// Advances the countdown by [ticks], on a clock the test owns.
+    ///
+    /// The real delay is still needed — `Timer.periodic` fires on real time —
+    /// but the *remaining* count is recomputed from `end - now` on every tick,
+    /// so reading a real clock made the arithmetic depend on how punctual the
+    /// delay was. A loaded CI runner overshooting by one tick turned 499 into
+    /// 498 with nothing wrong. Moving the clock in exact steps removes that.
     Future<void> elapse(int ticks) async {
+      clock = clock.add(tick * ticks);
       // Add a small epsilon to ensure the periodic callback has time to run
       final total = tick * ticks + const Duration(milliseconds: 2);
       await Future.delayed(total);
     }
 
     setUp(() {
-      alarms = Alarms(tick: tick);
+      clock = DateTime.utc(2026, 1, 1);
+      alarms = Alarms(tick: tick, now: () => clock);
       notifications = 0;
       alarms.addListener(() => notifications++);
     });
