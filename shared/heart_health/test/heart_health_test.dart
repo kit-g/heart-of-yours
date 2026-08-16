@@ -456,6 +456,49 @@ void main() {
       await store.openInstaller();
       verify(health.installHealthConnect()).called(1);
     });
+
+    // The bug this whole method exists to prevent: the app used to offer "open
+    // settings" and land the user on Settings › Heart, which lists cellular
+    // data, Siri and search and nothing about health. HealthKit permissions are
+    // in the Health app or nowhere.
+    group('openPermissions', () {
+      final launched = <Uri>[];
+      late DeviceHealthStore store;
+
+      setUp(() {
+        launched.clear();
+        store = DeviceHealthStore(
+          health: health,
+          launch: (url) async {
+            launched.add(url);
+            return true;
+          },
+        );
+      });
+
+      test('sends an iOS user to the Health app, not to the app settings', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+        expect(await store.openPermissions(), isTrue);
+        expect(launched, [Uri.parse('x-apple-health://')]);
+      });
+
+      test('has nowhere to send anyone else', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+        expect(await store.openPermissions(), isFalse);
+        expect(launched, isEmpty);
+      });
+
+      // A simulator has no Health app, so this is the everyday path in testing
+      // and must leave the caller with a fallback rather than an exception.
+      test('reports a failure to open rather than throwing', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        final failing = DeviceHealthStore(health: health, launch: (_) async => throw Exception('no such app'));
+
+        expect(await failing.openPermissions(), isFalse);
+      });
+    });
   });
 
   group('healthStore()', () {
