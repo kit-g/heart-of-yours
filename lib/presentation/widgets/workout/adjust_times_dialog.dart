@@ -107,7 +107,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :brightness, :colorScheme, :platform) = Theme.of(context);
-    final L(:adjustTimes, :duration, :startTime, :endTime, :save) = L.of(context);
+    final L(:adjustTimes, :duration, :startTime, :endTime, :save, :close) = L.of(context);
     // iOS/macOS get the inline Cupertino wheel; everywhere else the Cupertino
     // date picker misbehaves, so fall back to Material's popup date + time pickers.
     final cupertino = switch (platform) {
@@ -130,6 +130,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                 return Row(
                   children: [
                     IconButton(
+                      tooltip: close,
                       icon: const Icon(Icons.close_rounded),
                       onPressed: saving ? null : () => Navigator.of(context).pop(),
                     ),
