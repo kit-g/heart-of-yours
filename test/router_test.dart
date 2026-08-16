@@ -142,6 +142,45 @@ void main() {
       expect(find.byType(ProfilePage), findsOneWidget);
     });
 
+    testWidgets('cold-start deep link is never dropped on the profile page', (tester) async {
+      final user = MockUser(uid: 'u1', email: 'u1@test');
+      final firebase = MockFirebaseAuth(mockUser: user, signedIn: true);
+
+      // A universal link opening the dead app: the platform reports the link
+      // as the initial route, before the exercise catalog has loaded. The
+      // redirect must park on the link until the catalog lands — bouncing to
+      // `/exercises?from=…` instead used to loop with the top-level `from`
+      // handler until go_router gave up and dumped the link on `/profile`.
+      tester.binding.platformDispatcher.defaultRouteNameTestValue = '/exercises/Bench%20Press%20(Barbell)';
+      addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+
+      final bench = Exercise(name: 'Bench Press (Barbell)', category: .barbell, target: .chest);
+      when(api.getExercises()).thenAnswer((_) async => [bench]);
+
+      final router = HeartRouter();
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: firebase,
+        router: router,
+        hasLocalNotifications: false,
+        settle: false,
+      );
+      await tester.pumpTimes();
+      // App startup runs in Zone.root (see _initApp), whose futures starve
+      // under the fake clock until the test body returns — the catalog can
+      // never land here, so ride the redirect's own timeout out instead. What
+      // matters is where the link ends up: on the exercise routes (parked,
+      // resolved, or timed out to the list), never dropped on the profile.
+      await tester.pump(const Duration(seconds: 11));
+
+      final location = router.config.routerDelegate.currentConfiguration.uri.toString();
+      expect(location, contains('exercises'));
+      expect(find.byType(ProfilePage), findsNothing);
+    });
+
     testWidgets('bottom navigation: tapping items by AppKeys switches stacks', (tester) async {
       final user = MockUser(uid: 'u1', email: 'u1@test');
       final firebase = MockFirebaseAuth(mockUser: user, signedIn: true);
