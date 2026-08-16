@@ -1458,6 +1458,48 @@
     "type": "text",
     "placeholders": {}
   },
+  "chartWeeklyAverage": "Среднее за неделю",
+  "@chartWeeklyAverage": {
+    "description": "Caption under a chart that is plotting one point per week rather than one per reading. Says what the line is, so a reader does not take a smoothed point for a single reading",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartMonthlyAverage": "Среднее за месяц",
+  "@chartMonthlyAverage": {
+    "description": "As chartWeeklyAverage, one point per calendar month",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartYearlyAverage": "Среднее за год",
+  "@chartYearlyAverage": {
+    "description": "As chartWeeklyAverage, one point per calendar year",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeMonth": "1М",
+  "@chartRangeMonth": {
+    "description": "Chip that sets a chart's window to the last month. Abbreviated because four of these sit in a row on a phone; use whatever short form is conventional for a finance or fitness chart in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeQuarter": "3М",
+  "@chartRangeQuarter": {
+    "description": "Chip that sets a chart's window to the last three months. Abbreviated, as chartRangeMonth",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeYear": "1Г",
+  "@chartRangeYear": {
+    "description": "Chip that sets a chart's window to the last year. Abbreviated, as chartRangeMonth",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeAll": "Всё",
+  "@chartRangeAll": {
+    "description": "Chip that sets a chart's window to everything recorded, however far back that goes. Keep it short — it sits beside 1M/3M/1Y",
+    "type": "text",
+    "placeholders": {}
+  },
   "charts": "Графики",
   "@charts": {
     "description": "Generic label",
@@ -1866,6 +1908,17 @@
     "description": "Shown on the health card while the app is reading the phone's health store, in place of the empty-state message. Mostly seen in the seconds after the user comes back from granting permission, so it must not sound like a result — it is what is happening, not what was found",
     "type": "text",
     "placeholders": {}
+  },
+  "healthLatestReading": "Последнее измерение · {when}",
+  "@healthLatestReading": {
+    "description": "Under the big number in the health detail dialog. The date on its own was cryptic — a bare \"08-13\" beside a heart rate reads as part of the measurement rather than as when it was taken. Says what the date is, and formats it with a month name so it cannot be mistaken for a number",
+    "type": "text",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "Aug 13"
+      }
+    }
   },
   "healthDelete": "Удалить данные здоровья",
   "@healthDelete": {
