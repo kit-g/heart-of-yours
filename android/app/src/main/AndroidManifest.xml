@@ -2,6 +2,25 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Health Connect, read-only, and exactly the six metrics `Health.tracked`
+         names. Every entry here is a permission the user is asked to grant, so
+         the list is a product decision rather than a convenience: no writes
+         (nothing writes yet), no background reads (nothing reads in the
+         background), nothing speculative. -->
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+
+    <!-- Without this, Health Connect serves only the 30 days before the moment
+         permission was granted, whatever window is asked for. The backfill would
+         run its whole chunked walk back to 2014 and come home with a month —
+         silently, because an empty window and a withheld one look identical.
+         Granted separately from the six above; see `DeviceHealthStore`. -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
@@ -32,6 +51,12 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Health Connect refuses to show the permission sheet at all
+                 unless the app can be asked why it wants the data. -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
 
             <!-- Only the paths go_router owns. The host also serves Firebase auth
@@ -103,6 +128,20 @@
                 <data android:scheme="heart" />
             </intent-filter>
         </activity>
+        <!-- Android 14 and up route "why does this app have my health data?"
+             here, from the system privacy screens. Same activity; the alias only
+             exists to carry the intent-filter. -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -123,5 +162,14 @@
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
+        <!-- Package visibility. Without these the app cannot resolve an
+             implicit intent into Health Connect and `startActivity` throws
+             ActivityNotFoundException — even though `adb shell cmd package
+             query-activities` finds the handler, because the shell sees every
+             package and the app sees a filtered view.
+             The package entry covers the standalone app of Android 13 and
+             earlier; the actions cover the platform component it became, which
+             lives in Settings and is not a package we can name. -->
+        <package android:name="com.google.android.apps.healthdata" />
     </queries>
 </manifest>
