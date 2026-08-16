@@ -310,22 +310,32 @@ class const _HealthCard({
     final latest = series.last;
     final (value, unit) = metric.display(latest.value, settings, l);
 
-    return Material(
-      color: Colors.transparent,
-      clipBehavior: .antiAlias,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: dividerColor, width: .5),
-        borderRadius: const .all(.circular(12)),
-      ),
-      child: InkWell(
-        // A single reading has no trend to open, and the sparkline beside it is
-        // already blank for the same reason. An inert card is honest; one that
-        // opens onto a lone dot is not.
-        onTap: switch (series.length) {
-          < 2 => null,
-          _ => () => showHealthMetricDetail(context, metric: metric, series: series),
-        },
-        child: _content(textTheme, colorScheme, value, unit, latest),
+0    return Semantics(
+      // An `InkWell` renders as its child — a label, a number and a painted
+      // line — and gets no button semantics for free, so a screen reader would
+      // read three unrelated fragments and never say the card can be opened.
+      // The label carries the whole card, and the children are excluded rather
+      // than announced a second time. See `docs/a11y.md`.
+      button: true,
+      label: l.healthCardSummary(metric.label(l), '$value $unit'.trim(), DateFormat.MMMd().format(latest.day)),
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        clipBehavior: .antiAlias,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: dividerColor, width: .5),
+          borderRadius: const .all(.circular(12)),
+        ),
+        child: InkWell(
+          // A single reading has no trend to open, and the sparkline beside it is
+          // already blank for the same reason. An inert card is honest; one that
+          // opens onto a lone dot is not.
+          onTap: switch (series.length) {
+            < 2 => null,
+            _ => () => showHealthMetricDetail(context, metric: metric, series: series),
+          },
+          child: _content(textTheme, colorScheme, value, unit, latest),
+        ),
       ),
     );
   }

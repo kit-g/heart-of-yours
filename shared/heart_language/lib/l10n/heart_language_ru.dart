@@ -797,6 +797,28 @@ class LRu extends L {
   String get chartRangeAll => 'Всё';
 
   @override
+  String get chartGenericLabel => 'График';
+
+  @override
+  String exerciseChartSummary(String metric, String start, String end, String latest, String trend) {
+    return '$metric с $start по $end. Последнее значение: $latest. Тенденция: $trend.';
+  }
+
+  @override
+  String get exerciseChartTrendUp => 'Рост';
+
+  @override
+  String get exerciseChartTrendDown => 'Снижение';
+
+  @override
+  String get exerciseChartTrendFlat => 'Без изменений';
+
+  @override
+  String healthCardSummary(String metric, String value, String when) {
+    return '$metric, $value, $when';
+  }
+
+  @override
   String get charts => 'Графики';
 
   @override

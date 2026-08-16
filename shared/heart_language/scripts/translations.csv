@@ -272,6 +272,12 @@ chartRangeMonth,Chip that sets a chart's window to the last month. Abbreviated b
 chartRangeQuarter,"Chip that sets a chart's window to the last three months. Abbreviated, as chartRangeMonth",3M,3M,3М
 chartRangeYear,"Chip that sets a chart's window to the last year. Abbreviated, as chartRangeMonth",1Y,1Y,1Г
 chartRangeAll,"Chip that sets a chart's window to everything recorded, however far back that goes. Keep it short — it sits beside 1M/3M/1Y",All,All,Всё
+chartGenericLabel,"Fallback metric name in the history chart accessibility summary, when the chart has no visible title",Chart,Chart,График
+exerciseChartSummary,"Accessibility summary of a history chart, replacing the plotted line with a sentence",{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} с {start} по {end}. Последнее значение: {latest}. Тенденция: {trend}.
+exerciseChartTrendUp,"Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown",Increasing,Increasing,Рост
+exerciseChartTrendDown,"Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown",Decreasing,Decreasing,Снижение
+exerciseChartTrendFlat,"Trend word in the history chart accessibility summary, when the latest value equals the earliest shown",Flat,Flat,Без изменений
+healthCardSummary,"Accessibility label for a tappable health card on the dashboard. The card is an InkWell around a label, a number and a sparkline, none of which announce themselves as a control — this is what a screen reader reads instead, so it has to carry the whole card","{metric}, {value}, {when}","{metric}, {value}, {when}","{metric}, {value}, {when}"
 charts,Generic label,Charts,Charts,Графики
 emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,Ghost Reps Detected 👻,Обнаружены призрачные повторения 👻
 emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!

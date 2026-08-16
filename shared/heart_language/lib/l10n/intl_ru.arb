@@ -1500,6 +1500,68 @@
     "type": "text",
     "placeholders": {}
   },
+  "chartGenericLabel": "График",
+  "@chartGenericLabel": {
+    "description": "Fallback metric name in the history chart accessibility summary, when the chart has no visible title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartSummary": "{metric} с {start} по {end}. Последнее значение: {latest}. Тенденция: {trend}.",
+  "@exerciseChartSummary": {
+    "description": "Accessibility summary of a history chart, replacing the plotted line with a sentence",
+    "type": "text",
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "latest": {
+        "type": "String"
+      },
+      "trend": {
+        "type": "String"
+      }
+    }
+  },
+  "exerciseChartTrendUp": "Рост",
+  "@exerciseChartTrendUp": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartTrendDown": "Снижение",
+  "@exerciseChartTrendDown": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartTrendFlat": "Без изменений",
+  "@exerciseChartTrendFlat": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value equals the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthCardSummary": "{metric}, {value}, {when}",
+  "@healthCardSummary": {
+    "description": "Accessibility label for a tappable health card on the dashboard. The card is an InkWell around a label, a number and a sparkline, none of which announce themselves as a control — this is what a screen reader reads instead, so it has to carry the whole card",
+    "type": "text",
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "charts": "Графики",
   "@charts": {
     "description": "Generic label",
