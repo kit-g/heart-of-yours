@@ -8,6 +8,7 @@ class _TextFieldButton extends StatelessWidget {
   final TextInputType keyboardType;
   final ValueNotifier<bool> errorState;
   final List<TextInputFormatter>? formatters;
+  final String semanticLabel;
 
   const new({
     super.key,
@@ -17,6 +18,7 @@ class _TextFieldButton extends StatelessWidget {
     required this.isSetCompleted,
     required this.controller,
     this.formatters,
+    required this.semanticLabel,
     this.keyboardType = const .numberWithOptions(decimal: true),
   });
 
@@ -74,38 +76,42 @@ class _TextFieldButton extends StatelessWidget {
                             },
                           ),
                         ),
-                        child: TextField(
-                          selectionControls: context.platformSpecificSelectionControls(),
-                          textInputAction: TextInputAction.done,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          controller: controller,
-                          inputFormatters: formatters,
-                          decoration: const InputDecoration.collapsed(hintText: _emptyValue),
-                          style: switch (hasError) {
-                            true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
-                            false => textTheme.bodyMedium,
-                          },
-                          textAlign: .center,
-                          cursorHeight: 16,
-                          textAlignVertical: switch (platform) {
-                            // rendered weird on macos
-                            .macOS => .top,
-                            // rendered fine, duh
-                            _ => TextAlignVertical.center,
-                          },
-                          maxLines: 1,
-                          minLines: 1,
-                          cursorColor: switch ((hasError, isSetCompleted)) {
-                            (true, _) => colorScheme.onError,
-                            (false, true) => colorScheme.onTertiaryFixed,
-                            (false, false) => colorScheme.onSurfaceVariant,
-                          },
-                          onSubmitted: (_) {
-                            FocusScope.of(context).unfocus();
-                          },
-                          onEditingComplete: () {},
-                          onTap: controller.selectAllText,
-                          onTapOutside: (_) => focusNode.unfocus(),
+                        child: Semantics(
+                          label: semanticLabel,
+                          textField: true,
+                          child: TextField(
+                            selectionControls: context.platformSpecificSelectionControls(),
+                            textInputAction: TextInputAction.done,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            controller: controller,
+                            inputFormatters: formatters,
+                            decoration: const InputDecoration.collapsed(hintText: _emptyValue),
+                            style: switch (hasError) {
+                              true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
+                              false => textTheme.bodyMedium,
+                            },
+                            textAlign: .center,
+                            cursorHeight: 16,
+                            textAlignVertical: switch (platform) {
+                              // rendered weird on macos
+                              .macOS => .top,
+                              // rendered fine, duh
+                              _ => TextAlignVertical.center,
+                            },
+                            maxLines: 1,
+                            minLines: 1,
+                            cursorColor: switch ((hasError, isSetCompleted)) {
+                              (true, _) => colorScheme.onError,
+                              (false, true) => colorScheme.onTertiaryFixed,
+                              (false, false) => colorScheme.onSurfaceVariant,
+                            },
+                            onSubmitted: (_) {
+                              FocusScope.of(context).unfocus();
+                            },
+                            onEditingComplete: () {},
+                            onTap: controller.selectAllText,
+                            onTapOutside: (_) => focusNode.unfocus(),
+                          ),
                         ),
                       ),
                     ),
