@@ -161,6 +161,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                   );
                 },
               ),
+              const SizedBox(height: 16),
+              const HealthSettings(),
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.info_outline_rounded),
