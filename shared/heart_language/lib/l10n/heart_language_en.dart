@@ -774,6 +774,27 @@ class LEn extends L {
   String get records => 'Records';
 
   @override
+  String get chartWeeklyAverage => 'Weekly average';
+
+  @override
+  String get chartMonthlyAverage => 'Monthly average';
+
+  @override
+  String get chartYearlyAverage => 'Yearly average';
+
+  @override
+  String get chartRangeMonth => '1M';
+
+  @override
+  String get chartRangeQuarter => '3M';
+
+  @override
+  String get chartRangeYear => '1Y';
+
+  @override
+  String get chartRangeAll => 'All';
+
+  @override
   String get charts => 'Charts';
 
   @override
@@ -979,6 +1000,11 @@ class LEn extends L {
 
   @override
   String get healthChecking => 'Looking for new readings…';
+
+  @override
+  String healthLatestReading(String when) {
+    return 'Latest reading · $when';
+  }
 
   @override
   String get healthDelete => 'Delete health data';
@@ -1822,6 +1848,27 @@ class LEnCa extends LEn {
   String get records => 'Records';
 
   @override
+  String get chartWeeklyAverage => 'Weekly average';
+
+  @override
+  String get chartMonthlyAverage => 'Monthly average';
+
+  @override
+  String get chartYearlyAverage => 'Yearly average';
+
+  @override
+  String get chartRangeMonth => '1M';
+
+  @override
+  String get chartRangeQuarter => '3M';
+
+  @override
+  String get chartRangeYear => '1Y';
+
+  @override
+  String get chartRangeAll => 'All';
+
+  @override
   String get charts => 'Charts';
 
   @override
@@ -2027,6 +2074,11 @@ class LEnCa extends LEn {
 
   @override
   String get healthChecking => 'Looking for new readings…';
+
+  @override
+  String healthLatestReading(String when) {
+    return 'Latest reading · $when';
+  }
 
   @override
   String get healthDelete => 'Delete health data';

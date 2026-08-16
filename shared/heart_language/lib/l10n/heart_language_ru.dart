@@ -776,6 +776,27 @@ class LRu extends L {
   String get records => 'Рекорды';
 
   @override
+  String get chartWeeklyAverage => 'Среднее за неделю';
+
+  @override
+  String get chartMonthlyAverage => 'Среднее за месяц';
+
+  @override
+  String get chartYearlyAverage => 'Среднее за год';
+
+  @override
+  String get chartRangeMonth => '1М';
+
+  @override
+  String get chartRangeQuarter => '3М';
+
+  @override
+  String get chartRangeYear => '1Г';
+
+  @override
+  String get chartRangeAll => 'Всё';
+
+  @override
   String get charts => 'Графики';
 
   @override
@@ -981,6 +1002,11 @@ class LRu extends L {
 
   @override
   String get healthChecking => 'Ищем новые показатели…';
+
+  @override
+  String healthLatestReading(String when) {
+    return 'Последнее измерение · $when';
+  }
 
   @override
   String get healthDelete => 'Удалить данные здоровья';
