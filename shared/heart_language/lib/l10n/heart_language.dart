@@ -1934,6 +1934,114 @@ abstract class L {
   /// **'Pick an exercise to see how it\'s done, plus your history and records.'**
   String get noExerciseSelectedBody;
 
+  /// Tooltip on an icon-only overflow menu button
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get moreOptions;
+
+  /// Tooltip on the icon button that opens a workout's attached progress photos
+  ///
+  /// In en, this message translates to:
+  /// **'View progress photos'**
+  String get viewProgressPhotos;
+
+  /// Tooltip on the checkmark button that dismisses the keyboard after editing a name field
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmEdit;
+
+  /// Accessibility label on the button that clears a search field's text
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearchTooltip;
+
+  /// Accessibility label on the editable avatar shown while editing an account
+  ///
+  /// In en, this message translates to:
+  /// **'Change profile photo'**
+  String get changeProfilePhoto;
+
+  /// Accessibility label on the profile page header, which opens account management
+  ///
+  /// In en, this message translates to:
+  /// **'Account details'**
+  String get viewAccountDetails;
+
+  /// Accessibility label on the avatar shown in the profile page header
+  ///
+  /// In en, this message translates to:
+  /// **'View profile photo'**
+  String get viewProfilePhoto;
+
+  /// Accessibility label on a single row of the rest-timer duration picker, tapped to select that duration directly
+  ///
+  /// In en, this message translates to:
+  /// **'Set rest timer to {duration}'**
+  String durationPickerSetTo(Object duration);
+
+  /// Accessibility label on the illustration shown when a workout has no exercises
+  ///
+  /// In en, this message translates to:
+  /// **'Empty workout'**
+  String get emptyWorkoutLabel;
+
+  /// Accessibility label on a progress photo in the gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Progress photo from {date}'**
+  String progressPhotoLabel(Object date);
+
+  /// Accessibility label on an exercise's thumbnail image
+  ///
+  /// In en, this message translates to:
+  /// **'{exerciseName} thumbnail'**
+  String exerciseThumbnailLabel(Object exerciseName);
+
+  /// Accessibility summary of a goal's ladder progress bar, replacing the painted rungs with a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'{achieved} of {total} targets reached. Current: {current}.'**
+  String goalLadderSummary(Object achieved, Object total, Object current);
+
+  /// Accessibility summary of a history chart, replacing the plotted line with a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.'**
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend);
+
+  /// Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown
+  ///
+  /// In en, this message translates to:
+  /// **'Increasing'**
+  String get exerciseChartTrendUp;
+
+  /// Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown
+  ///
+  /// In en, this message translates to:
+  /// **'Decreasing'**
+  String get exerciseChartTrendDown;
+
+  /// Trend word in the history chart accessibility summary, when the latest value equals the earliest shown
+  ///
+  /// In en, this message translates to:
+  /// **'Flat'**
+  String get exerciseChartTrendFlat;
+
+  /// Fallback metric name in the history chart accessibility summary, when the chart has no visible title
+  ///
+  /// In en, this message translates to:
+  /// **'Chart'**
+  String get chartGenericLabel;
+
+  /// Accessibility label on the rest-timer countdown ring, stating the remaining time as a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'Rest timer: {remaining} remaining'**
+  String restTimerRemaining(Object remaining);
+
   /// Header of the health section on the profile dashboard
   ///
   /// In en, this message translates to:

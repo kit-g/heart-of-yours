@@ -1009,6 +1009,72 @@ class LEn extends L {
   String get noExerciseSelectedBody => 'Pick an exercise to see how it\'s done, plus your history and records.';
 
   @override
+  String get moreOptions => 'More options';
+
+  @override
+  String get viewProgressPhotos => 'View progress photos';
+
+  @override
+  String get confirmEdit => 'Confirm';
+
+  @override
+  String get clearSearchTooltip => 'Clear search';
+
+  @override
+  String get changeProfilePhoto => 'Change profile photo';
+
+  @override
+  String get viewAccountDetails => 'Account details';
+
+  @override
+  String get viewProfilePhoto => 'View profile photo';
+
+  @override
+  String durationPickerSetTo(Object duration) {
+    return 'Set rest timer to $duration';
+  }
+
+  @override
+  String get emptyWorkoutLabel => 'Empty workout';
+
+  @override
+  String progressPhotoLabel(Object date) {
+    return 'Progress photo from $date';
+  }
+
+  @override
+  String exerciseThumbnailLabel(Object exerciseName) {
+    return '$exerciseName thumbnail';
+  }
+
+  @override
+  String goalLadderSummary(Object achieved, Object total, Object current) {
+    return '$achieved of $total targets reached. Current: $current.';
+  }
+
+  @override
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
+    return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
+  }
+
+  @override
+  String get exerciseChartTrendUp => 'Increasing';
+
+  @override
+  String get exerciseChartTrendDown => 'Decreasing';
+
+  @override
+  String get exerciseChartTrendFlat => 'Flat';
+
+  @override
+  String get chartGenericLabel => 'Chart';
+
+  @override
+  String restTimerRemaining(Object remaining) {
+    return 'Rest timer: $remaining remaining';
+  }
+
+  @override
   String get health => 'Health';
 
   @override
@@ -2113,6 +2179,72 @@ class LEnCa extends LEn {
 
   @override
   String get noExerciseSelectedBody => 'Pick an exercise to see how it\'s done, plus your history and records.';
+
+  @override
+  String get moreOptions => 'More options';
+
+  @override
+  String get viewProgressPhotos => 'View progress photos';
+
+  @override
+  String get confirmEdit => 'Confirm';
+
+  @override
+  String get clearSearchTooltip => 'Clear search';
+
+  @override
+  String get changeProfilePhoto => 'Change profile photo';
+
+  @override
+  String get viewAccountDetails => 'Account details';
+
+  @override
+  String get viewProfilePhoto => 'View profile photo';
+
+  @override
+  String durationPickerSetTo(Object duration) {
+    return 'Set rest timer to $duration';
+  }
+
+  @override
+  String get emptyWorkoutLabel => 'Empty workout';
+
+  @override
+  String progressPhotoLabel(Object date) {
+    return 'Progress photo from $date';
+  }
+
+  @override
+  String exerciseThumbnailLabel(Object exerciseName) {
+    return '$exerciseName thumbnail';
+  }
+
+  @override
+  String goalLadderSummary(Object achieved, Object total, Object current) {
+    return '$achieved of $total targets reached. Current: $current.';
+  }
+
+  @override
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
+    return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
+  }
+
+  @override
+  String get exerciseChartTrendUp => 'Increasing';
+
+  @override
+  String get exerciseChartTrendDown => 'Decreasing';
+
+  @override
+  String get exerciseChartTrendFlat => 'Flat';
+
+  @override
+  String get chartGenericLabel => 'Chart';
+
+  @override
+  String restTimerRemaining(Object remaining) {
+    return 'Rest timer: $remaining remaining';
+  }
 
   @override
   String get health => 'Health';
