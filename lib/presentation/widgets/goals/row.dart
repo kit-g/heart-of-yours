@@ -91,13 +91,15 @@ class _GoalRowState extends State<GoalRow> {
                       final num value => _convert(settings, value),
                       _ => null,
                     };
+                    final statusText = goalStatus(context, widget.goal, settings: settings, current: reading);
+                    final achievedCount = goal.stages.where((stage) => stage.isAchieved).length;
 
                     return Column(
                       crossAxisAlignment: .start,
                       spacing: 6,
                       children: [
                         Text(
-                          goalStatus(context, widget.goal, settings: settings, current: reading),
+                          statusText,
                           style: subdued,
                         ),
                         GoalLadderBar(
@@ -107,6 +109,9 @@ class _GoalRowState extends State<GoalRow> {
                           track: colorScheme.surfaceContainerHighest,
                           fill: colorScheme.primary,
                           achieved: goal.stages.map((stage) => stage.isAchieved).toList(),
+                          semanticLabel: goal.stages.isEmpty
+                              ? null
+                              : L.of(context).goalLadderSummary(achievedCount, goal.stages.length, statusText),
                         ),
                       ],
                     );
