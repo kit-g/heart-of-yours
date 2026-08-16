@@ -64,3 +64,5 @@ lib/firebase_options_prod.dart
 /.ai
 /.claude/worktrees
 **/build
+# Agent handoff notes (review material, never committed)
+HANDOFF.md
