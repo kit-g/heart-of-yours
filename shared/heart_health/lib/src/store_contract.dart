@@ -55,6 +55,36 @@ abstract interface class HealthSampleStore {
     required DateTime to,
   });
 
+  /// How far into the past [metric] has been walked, whatever was found there.
+  ///
+  /// Deliberately not the same question as "what is the oldest sample": a user
+  /// with nothing recorded before 2020 still needs us to remember that 2014 to
+  /// 2020 was searched and empty, or every launch re-reads six years of nothing
+  /// from the platform. Null means the walk has not started.
+  Future<DateTime?> healthBackfilledTo({
+    required String userId,
+    required HealthMetric metric,
+  });
+
+  /// Records that [metric] has been read back as far as [at].
+  ///
+  /// Written after each chunk rather than at the end, so a backfill interrupted
+  /// by the user closing the app resumes where it stopped instead of starting
+  /// over — which matters when the walk is years long.
+  Future<void> setHealthBackfilledTo(
+    DateTime at, {
+    required String userId,
+    required HealthMetric metric,
+  });
+
+  /// Forgets how far back every metric has been walked for [userId].
+  ///
+  /// Needed whenever the answer to "what can we read" may have changed under
+  /// us. A backfill that ran while access was denied read nothing and recorded
+  /// that it had searched the whole history — perfectly true, and worthless the
+  /// moment the user grants access, because the walk would never run again.
+  Future<void> clearHealthBackfill(String userId);
+
   /// Erases every stored sample for [userId].
   ///
   /// Health data is device-only, so this is the whole delete — there is no
