@@ -1998,9 +1998,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthOffInSettings": "Разрешите Heart читать данные о здоровье в настройках здоровья на устройстве.",
+  "healthOffInSettings": "Разрешите Heart читать данные о здоровье в настройках здоровья на устройстве. Разрешите и прошлые данные, иначе графики остановятся на последних 30 днях.",
   "@healthOffInSettings": {
-    "description": "Non-iOS fallback for healthOffInHealthApp. Same rules: an instruction, never an explanation, and neutral about why there is nothing to show",
+    "description": "Non-iOS fallback for healthOffInHealthApp. An instruction, never an explanation, and neutral about why there is nothing to show. The second sentence is Android-specific and load-bearing: Health Connect keeps past-data access as a separate switch away from the main permission list, and without it every read is capped at 30 days however far back the app asks. Say 'past data' — that is the platform's own wording for it",
     "type": "text",
     "placeholders": {}
   },
@@ -2025,6 +2025,12 @@
   "healthOpenHealthAppHint": "Нажмите фото профиля, затем «Приложения»",
   "@healthOpenHealthAppHint": {
     "description": "iOS only. Sits under the row that opens the Health app and says what to do once there, since Apple gives no way to link straight to Heart's row. An instruction only — it is not the place to explain why the permission lives outside Heart. Match the wording Apple's Health app uses in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenSettingsHint": "Разрешите также доступ к прошлым данным",
+  "@healthOpenSettingsHint": {
+    "description": "Non-iOS. Sits under the row that opens the device's health settings. Health Connect keeps past-data access apart from the main permission list, so a user who grants everything they can see is still capped at 30 days. An instruction, not an explanation of why. Deliberately echoes Health Connect's own prompt — \"Allow Heart to access past data?\" — so the words the user reads here are the words they then look for; match that prompt's wording in this locale rather than translating literally",
     "type": "text",
     "placeholders": {}
   },

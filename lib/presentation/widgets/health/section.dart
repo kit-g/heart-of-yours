@@ -167,7 +167,11 @@ class const _HealthHeader({
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme, :disabledColor) = Theme.of(context);
+    // The header greys out because the section is dormant. The control beside
+    // it does not: it is live, it is the only way back, and a disabled-looking
+    // button is one nobody presses.
     final subdued = off ? disabledColor : colorScheme.onSurfaceVariant;
+    final live = colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const .only(left: 16, right: 16, top: 20, bottom: 8),
@@ -198,7 +202,7 @@ class const _HealthHeader({
               triggerMode: .tap,
               child: SizedBox.square(
                 dimension: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: subdued),
+                child: CircularProgressIndicator(strokeWidth: 2, color: live),
               ),
             ),
             // A button, not a tooltip: the explanation is the smaller half of
@@ -207,7 +211,7 @@ class const _HealthHeader({
             (true, false) => IconButton(
               icon: const Icon(Icons.info_outline_rounded),
               iconSize: 20,
-              color: subdued,
+              color: live,
               tooltip: l.healthOffTitle,
               // Square and explicit. Left to the M3 defaults this button
               // inherits a 40pt minimum inside a 48pt tap target and lands as

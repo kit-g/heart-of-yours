@@ -233,15 +233,20 @@ class _TimelineChartState extends State<TimelineChart> {
             ),
             // Said, not assumed. A chart quietly plotting monthly means where
             // the caller shows a day's reading lies by omission.
-            if (_caption(grain, l) case String caption)
-              Padding(
-                padding: const .only(top: 4),
-                child: Text(
-                  caption,
-                  textAlign: .center,
-                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                ),
+            //
+            // The line is always here, empty at the day grain rather than
+            // absent. Letting it come and go changes the column's height, which
+            // inside a dialog resizes the dialog under the finger that just
+            // tapped a chip — one text line of jump, and the most distracting
+            // thing about switching ranges.
+            Padding(
+              padding: const .only(top: 4),
+              child: Text(
+                _caption(grain, l) ?? '',
+                textAlign: .center,
+                style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
+            ),
           ],
         );
       },
