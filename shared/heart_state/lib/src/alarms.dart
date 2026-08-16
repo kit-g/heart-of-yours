@@ -50,6 +50,11 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   /// countdown; this is what lets the UI draw it on that exercise alone.
   String? get activeExerciseId => _activeExercise?.exerciseId;
 
+  static DateTime _now() => DateTime.now();
+  /// The exercise the running countdown belongs to. There is only ever one
+  /// countdown; this is what lets the UI draw it on that exercise alone.
+  String? get activeExerciseId => _activeExercise?.exerciseId;
+
   void _stopActiveExerciseTimer() {
     _activeExercise
       ?..timer.cancel()
