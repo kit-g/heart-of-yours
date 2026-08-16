@@ -2109,5 +2109,17 @@
     "description": "Name of a health metric",
     "type": "text",
     "placeholders": {}
+  },
+  "deleteWorkoutTitle": "Do you want to delete this workout?",
+  "@deleteWorkoutTitle": {
+    "description": "Workout deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteWorkoutBody": "This cannot be undone",
+  "@deleteWorkoutBody": {
+    "description": "Workout deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
   }
 }

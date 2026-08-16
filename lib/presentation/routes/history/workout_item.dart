@@ -220,7 +220,7 @@ class WorkoutItem extends StatelessWidget {
   Future<void> _onTapOption(BuildContext context, _WorkoutOption option, Workout workout) async {
     switch (option) {
       case _WorkoutOption.delete:
-        return Workouts.of(context).deleteWorkout(workout.id).then((_) => onDeleteWorkout?.call(workout));
+        return _showDeleteWorkoutDialog(context, workout);
       case _WorkoutOption.repeat:
         final workouts = Workouts.of(context);
 
@@ -266,6 +266,67 @@ class WorkoutItem extends StatelessWidget {
       //     icon: const Icon(Icons.share, size: 16),
       //   ),
     };
+  }
+
+  Future<void> _showDeleteWorkoutDialog(BuildContext context, Workout workout) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final L(
+      :deleteWorkoutTitle,
+      :deleteWorkoutBody,
+      :cancel,
+      :deleteThis,
+      :deleted,
+    ) = L.of(
+      context,
+    );
+    return showBrandedDialog(
+      context,
+      title: Text(
+        deleteWorkoutTitle,
+        textAlign: TextAlign.center,
+      ),
+      content: Text(
+        deleteWorkoutBody,
+        textAlign: TextAlign.center,
+      ),
+      icon: Icon(
+        Icons.error_outline_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              child: Center(
+                child: Text(cancel),
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.errorContainer,
+              child: Center(
+                child: Text(
+                  deleteThis,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                ),
+              ),
+              onPressed: () async {
+                final scaffold = ScaffoldMessenger.of(context);
+                final workouts = Workouts.of(context);
+                Navigator.of(context, rootNavigator: true).pop();
+                await workouts.deleteWorkout(workout.id);
+                onDeleteWorkout?.call(workout);
+                scaffold.showSnackBar(SnackBar(content: Text(deleted)));
+              },
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   Future<void> _showCancelActiveWorkoutDialog(BuildContext context, Workout workout) {
