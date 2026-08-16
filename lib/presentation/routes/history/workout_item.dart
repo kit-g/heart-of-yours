@@ -57,6 +57,7 @@ class WorkoutItem extends StatelessWidget {
                     children: [
                       if (workout case Workout(:Map images) when images.isNotEmpty)
                         FeedbackButton(
+                          tooltip: l.viewProgressPhotos,
                           onPressed: () {
                             onTapImageIcon?.call(
                               [...images.values],
@@ -68,6 +69,7 @@ class WorkoutItem extends StatelessWidget {
                         ),
                       if (showsMenuButton)
                         PopupMenuButton<_WorkoutOption>(
+                          tooltip: l.moreOptions,
                           style: const ButtonStyle(
                             visualDensity: VisualDensity(vertical: -3, horizontal: -3),
                           ),
