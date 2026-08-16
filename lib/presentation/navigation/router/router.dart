@@ -150,10 +150,13 @@ final class HeartRouter {
       return _restoreAccountPath;
     }
 
-    // deep link from cold start
+    // deep link carried through the login flow
     if (state.uri.queryParameters case {'from': String from}) {
-      final link = Uri.tryParse(Uri.decodeComponent(from));
-      return link?.path;
+      return switch (Uri.tryParse(Uri.decodeComponent(from))) {
+        Uri(hasQuery: true, :final path, :final query) => '$path?$query',
+        Uri(:final path) => path,
+        null => null,
+      };
     }
 
     return null;

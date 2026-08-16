@@ -346,18 +346,14 @@ RouteBase _exercisesRoute() {
                 },
               );
             },
-            redirect: (context, state) {
+            // Resolves before deciding, like the history route: a deep link
+            // from a cold start arrives before the catalog loads. Bouncing to
+            // `/exercises?from=…` here fed the top-level `from` handler, which
+            // bounced straight back — go_router hit its redirect limit and the
+            // link died on the profile page.
+            redirect: (context, state) async {
               final exercises = Exercises.of(context);
-              // cold start from deep link
-              if (!exercises.isInitialized) {
-                return state.namedLocation(
-                  _exercisesName,
-                  queryParameters: {
-                    ...state.uri.queryParameters,
-                    'from': Uri.encodeComponent(state.uri.toString()),
-                  },
-                );
-              }
+              await _exercisesReady(exercises);
               return switch (state.pathParameters['exerciseId']) {
                 String id when exercises.lookup(id) != null => null,
                 _ => _exercisesPath,
@@ -617,6 +613,23 @@ RouteBase _galleryRoute() {
     },
     name: _galleryName,
   );
+}
+
+/// Resolves once the exercise catalog is initialized, or gives up after a
+/// timeout so a failed init (no network, empty catalog) cannot hold the
+/// navigation forever — the caller then falls back to the exercise list.
+Future<void> _exercisesReady(Exercises exercises) {
+  if (exercises.isInitialized) return Future<void>.value();
+
+  final ready = Completer<void>();
+  void onChange() {
+    if (exercises.isInitialized && !ready.isCompleted) ready.complete();
+  }
+
+  exercises.addListener(onChange);
+  return ready.future
+      .timeout(const Duration(seconds: 10), onTimeout: () {})
+      .whenComplete(() => exercises.removeListener(onChange));
 }
 
 Future<void> _onShareExercise(BuildContext context, Exercise exercise, String? tab) async {
