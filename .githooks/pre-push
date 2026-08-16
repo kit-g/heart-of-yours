@@ -3,5 +3,18 @@
 # Installed by `make bootstrap` via core.hooksPath.
 # Skip in an emergency with `git push --no-verify`.
 set -e
+
+# Git exports GIT_DIR, GIT_WORK_TREE and friends to every hook. Flutter reads
+# its *own* version by running `git describe` inside $FLUTTER_ROOT, and those
+# variables redirect that call at this repository instead — so the SDK reports
+# itself as `0.0.0-unknown` on `channel [user-branch]`, no constraint matches,
+# and every resolve fails with what looks like an SDK problem:
+#
+#   The current Flutter SDK version is 0.0.0-unknown.
+#   Because heart requires Flutter SDK version >=3.47.0, version solving failed.
+#
+# Nothing is wrong with the SDK. Unset them before anything calls flutter.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY
+
 cd "$(git rev-parse --show-toplevel)"
 make lint
