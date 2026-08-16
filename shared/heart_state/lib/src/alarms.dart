@@ -27,13 +27,17 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     return Provider.of<Alarms>(context, listen: true);
   }
 
-  ({Timer timer, ValueNotifier<int> remains, num total, DateTime end})? _activeExercise;
+  ({Timer timer, ValueNotifier<int> remains, num total, DateTime end, String exerciseId})? _activeExercise;
 
   Timer? get activeExerciseTimer => _activeExercise?.timer;
 
   ValueNotifier<int>? get remainsInActiveExercise => _activeExercise?.remains;
 
   num? get activeExerciseTotal => _activeExercise?.total;
+
+  /// The exercise the running countdown belongs to. There is only ever one
+  /// countdown; this is what lets the UI draw it on that exercise alone.
+  String? get activeExerciseId => _activeExercise?.exerciseId;
 
   static DateTime _now() => DateTime.now();
 
@@ -44,16 +48,24 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     _activeExercise = null;
   }
 
+  /// Abandons the countdown before it ran out — a skip or a sign-out — so the
+  /// pending "rest complete" notification is withdrawn along with it. Natural
+  /// completion never comes through here: cancelling right after the
+  /// notification fired would wipe it from the notification center.
   void stopActiveExerciseTimer() {
     _stopActiveExerciseTimer();
+    cancelRestTimerNotifications?.call();
     notifyListeners();
   }
 
   void startActiveExerciseTimer(
     int duration, {
+    required String exerciseId,
     void Function(DateTime)? scheduleNotification,
     VoidCallback? onComplete,
   }) {
+    // replaces any running countdown — the notification needs no explicit
+    // cancel, scheduling the new one overwrites it (single notification id)
     _stopActiveExerciseTimer();
     final endTime = _now().add(Duration(seconds: duration));
     scheduleNotification?.call(endTime);
@@ -74,12 +86,14 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
             if (timer.isActive) {
               onComplete?.call();
             }
-            stopActiveExerciseTimer();
+            _stopActiveExerciseTimer();
+            notifyListeners();
           }
         },
       ),
       total: duration,
       end: endTime,
+      exerciseId: exerciseId,
     );
     notifyListeners();
   }
@@ -89,7 +103,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     void Function(DateTime)? rescheduleNotification,
   }) {
     switch (_activeExercise) {
-      case (:Timer timer, :ValueNotifier<int> remains, :num total, :DateTime end):
+      case (:Timer timer, :ValueNotifier<int> remains, :num total, :DateTime end, :String exerciseId):
         final rescheduled = end.add(Duration(seconds: adjustment));
 
         rescheduleNotification?.call(rescheduled);
@@ -100,6 +114,7 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
           remains: remains..value = max(0, (newRemains / 1000).ceil()),
           total: max(0, total + adjustment),
           end: rescheduled,
+          exerciseId: exerciseId,
         );
         notifyListeners();
     }
