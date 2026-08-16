@@ -15,7 +15,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// (Api, ConfigApi, LocalDatabase) and with side-effectful
 /// features disabled by default (notifications, BetterFeedback).
 class TestAppHarness {
-  const TestAppHarness();
+  const new();
 
   /// Pumps a HeartApp instance with the provided dependencies.
   ///
