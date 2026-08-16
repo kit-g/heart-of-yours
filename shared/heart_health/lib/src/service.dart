@@ -1,5 +1,15 @@
 part of '../heart_health.dart';
 
+/// The channel the host app must answer for Android's health permissions.
+///
+/// Declared here and implemented in `MainActivity`, because the destination is
+/// an implicit Android intent rather than a URL: `url_launcher` cannot fire one
+/// and this package has no native side of its own. iOS needs nothing — its
+/// destination really is a URL.
+///
+/// One method, `openHealthConnectSettings`, returning whether the screen opened.
+const healthPlatformChannel = 'heart_health/platform';
+
 /// Read access to the device's health store — HealthKit on iOS, Health Connect
 /// on Android.
 ///
@@ -51,6 +61,20 @@ abstract interface class HealthService {
     required DateTime from,
     required DateTime to,
   });
+
+  /// Asks for access to data older than 30 days. Android only; true elsewhere.
+  ///
+  /// Health Connect answers every read with the last 30 days unless this is
+  /// *separately* granted — the manifest entry and the six data permissions do
+  /// nothing for it. Without it the backfill walks years in chunks and comes
+  /// home with a month, silently, because a withheld window and an empty one
+  /// are the same empty list.
+  ///
+  /// Separate from [requestAccess] because it is a separate prompt, and the
+  /// moment to show it is not always the moment the data permissions are asked
+  /// for: a user who granted through the platform's own settings never passes
+  /// through [requestAccess] at all.
+  Future<bool> requestHistoryAccess();
 
   /// Sends the user to install or update Health Connect. Android only; a no-op
   /// everywhere else.

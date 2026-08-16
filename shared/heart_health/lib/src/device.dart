@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show PlatformException;
+import 'package:flutter/services.dart' show MethodChannel, PlatformException;
 import 'package:health/health.dart' as plugin;
 import 'package:heart_health/heart_health.dart';
 import 'package:logging/logging.dart';
@@ -23,9 +23,13 @@ class DeviceHealthStore implements HealthService {
   /// *where* it sends the user, which is the part that was wrong.
   final Future<bool> Function(Uri url) _launch;
 
-  new({plugin.Health? health, Future<bool> Function(Uri url)? launch})
+  /// The host app's side of [healthPlatformChannel]. Android only.
+  final MethodChannel _channel;
+
+  new({plugin.Health? health, Future<bool> Function(Uri url)? launch, MethodChannel? channel})
     : _plugin = health ?? plugin.Health(),
-      _launch = launch ?? launchUrl;
+      _launch = launch ?? launchUrl,
+      _channel = channel ?? const MethodChannel(healthPlatformChannel);
 
   @override
   bool get isSupported => true;
@@ -145,6 +149,28 @@ class DeviceHealthStore implements HealthService {
   }
 
   @override
+  Future<bool> requestHistoryAccess() async {
+    if (defaultTargetPlatform != .android) return true;
+
+    try {
+      await _ensureConfigured();
+      if (!await _plugin.isHealthDataHistoryAvailable()) return false;
+      if (await _plugin.isHealthDataHistoryAuthorized()) return true;
+
+      final granted = await _plugin.requestHealthDataHistoryAuthorization();
+      if (!granted) {
+        _logger.info('Health history access declined; reads will not reach past 30 days');
+      }
+      return granted;
+    } catch (error, stacktrace) {
+      // Declined is survivable — a month of history is still a chart. Never
+      // asking is not, so this must not take the surrounding request down.
+      _logger.warning('Health history request failed', error, stacktrace);
+      return false;
+    }
+  }
+
+  @override
   Future<void> openInstaller() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       await _plugin.installHealthConnect();
@@ -153,10 +179,17 @@ class DeviceHealthStore implements HealthService {
 
   @override
   Future<bool> openPermissions() async {
-    // Android's equivalent is a Health Connect settings intent, which neither
-    // the plugin nor url_launcher can fire. False sends the caller to the app's
-    // settings page, which is at least in the right building on Android — on
-    // iOS it is not, which is the whole reason this method exists.
+    // Health Connect's permission screen is an implicit intent, not a URL, so
+    // it needs the host app to fire it — see [healthPlatformChannel].
+    if (defaultTargetPlatform == .android) {
+      try {
+        return await _channel.invokeMethod<bool>('openHealthConnectSettings') ?? false;
+      } catch (error, stacktrace) {
+        _logger.warning('Could not open Health Connect settings', error, stacktrace);
+        return false;
+      }
+    }
+
     if (defaultTargetPlatform != .iOS) return false;
 
     try {
