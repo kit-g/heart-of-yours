@@ -185,7 +185,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               flex: 3,
               child: Center(
                 child: switch (widget.previousValue) {
-                  Map<String, dynamic> m => PrimaryButton.shrunk(
+                  // only a previous that shows real values gets the tappable
+                  // pill — a legacy row missing its category's fields renders
+                  // a bare dash, same as no previous at all
+                  Map<String, dynamic> m when PreviousSet.represents(exercise.exercise, m) => PrimaryButton.shrunk(
                     backgroundColor: scaffoldBackgroundColor,
                     margin: const EdgeInsets.all(4),
                     child: PreviousSet(
@@ -225,7 +228,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                       }
                     },
                   ),
-                  null => const Text(_emptyValue),
+                  _ => const Text(_emptyValue),
                 },
               ),
             ),
