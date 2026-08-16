@@ -50,6 +50,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
                     ),
                   ),
                   PopupMenuButton<_TemplateOption>(
+                    tooltip: L.of(context).moreOptions,
                     style: const ButtonStyle(
                       visualDensity: VisualDensity(vertical: -3, horizontal: -3),
                     ),
