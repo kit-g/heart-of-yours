@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show PlatformException;
+import 'package:flutter/services.dart' show MethodChannel, PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart' as plugin;
 import 'package:logging/logging.dart';
@@ -43,6 +43,8 @@ plugin.HealthDataPoint _point({
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('HealthMetric', () {
     for (final metric in HealthMetric.values) {
       test('every value round-trips through fromString', () {
@@ -463,10 +465,24 @@ void main() {
     // in the Health app or nowhere.
     group('openPermissions', () {
       final launched = <Uri>[];
+      final invoked = <String>[];
       late DeviceHealthStore store;
+
+      /// The host app's side of [healthPlatformChannel]. Absent in tests unless
+      /// stubbed, which is itself the "Health Connect could not answer" case.
+      void answerChannel({bool? opened}) {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel(healthPlatformChannel),
+          (call) async {
+            invoked.add(call.method);
+            return opened;
+          },
+        );
+      }
 
       setUp(() {
         launched.clear();
+        invoked.clear();
         store = DeviceHealthStore(
           health: health,
           launch: (url) async {
@@ -476,6 +492,8 @@ void main() {
         );
       });
 
+      tearDown(answerChannel);
+
       test('sends an iOS user to the Health app, not to the app settings', () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
@@ -483,11 +501,31 @@ void main() {
         expect(launched, [Uri.parse('x-apple-health://')]);
       });
 
-      test('has nowhere to send anyone else', () async {
+      // Health Connect's permission screen is an implicit intent, not a URL, so
+      // it goes through the host app rather than through url_launcher.
+      test('sends an Android user to Health Connect, through the host app', () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        answerChannel(opened: true);
+
+        expect(await store.openPermissions(), isTrue);
+        expect(invoked, ['openHealthConnectSettings']);
+        expect(launched, isEmpty, reason: 'an intent is not a URL');
+      });
+
+      // Health Connect can be absent, or too old to answer the action at all.
+      test('reports an Android device that could not get there', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        answerChannel(opened: false);
+
+        expect(await store.openPermissions(), isFalse);
+      });
+
+      test('has nowhere to send anyone off a phone', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
 
         expect(await store.openPermissions(), isFalse);
         expect(launched, isEmpty);
+        expect(invoked, isEmpty);
       });
 
       // A simulator has no Health app, so this is the everyday path in testing
