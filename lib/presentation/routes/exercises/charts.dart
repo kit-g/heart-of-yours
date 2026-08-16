@@ -36,6 +36,7 @@ class _Charts extends StatelessWidget {
           // stay quiet so an empty exercise doesn't repeat it N times
           emptyState: index == 0 ? const _EmptyState() : const SizedBox.shrink(),
           callback: () => exercises.getChartExerciseMetics(type, exercise.name, limit: _exerciseHistoryLimit),
+          timeline: true,
           refreshKey: (type, exercise.name),
           label: type.title(context, prefs, unit: unit),
           converter: type.converter(prefs, unit: unit),
@@ -50,4 +51,10 @@ class _Charts extends StatelessWidget {
   }
 }
 
-const _exerciseHistoryLimit = 30;
+/// Sessions fetched for a per-exercise chart.
+///
+/// Was 30 — a few weeks for anyone training seriously, which made the chart a
+/// snapshot rather than a history. The chart travels through time now, so the
+/// cap only has to stay ahead of what anyone can plausibly have logged: five
+/// sessions a week for a decade is 2600.
+const _exerciseHistoryLimit = 5000;

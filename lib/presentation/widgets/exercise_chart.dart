@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:heart/presentation/widgets/timeline_chart.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
 
@@ -20,6 +21,13 @@ class ExerciseChart extends StatefulWidget {
   /// Values to mark across the plot. Already in display units — the chart is
   /// given converted numbers, so these have to arrive converted too.
   final List<ChartThreshold> thresholds;
+
+  /// Whether the chart can be travelled through — range chips and a drag that
+  /// widens the window, coarsening days into weeks and months as it goes.
+  ///
+  /// Off by default so a dashboard card stays a card: the controls need room,
+  /// and a small tile's job is the recent shape, not exploration.
+  final bool timeline;
 
   /// Identity of the data this chart shows. The [callback] is invoked once and
   /// the result is kept across rebuilds, so purely cosmetic rebuilds (theme,
@@ -42,6 +50,7 @@ class ExerciseChart extends StatefulWidget {
     this.yStepCandidates,
     this.color,
     this.thresholds = const [],
+    this.timeline = false,
     this.refreshKey,
   });
 
@@ -109,6 +118,35 @@ class _ExerciseChartState extends State<ExerciseChart> {
         if (nth % labelEvery == 0) index,
     };
 
+    // A plain string is a title and wants centring over the plot, which sits to
+    // the right of the y-axis labels — hence the inset. A [customLabel] is a
+    // row of its own furniture (the dashboard's drag handle, name and close
+    // button) that already spans the card, and insetting it shunts the whole
+    // row sideways.
+    final topLabel = switch ((widget.label, widget.customLabel)) {
+      (_, Widget label) => label,
+      (String label, _) => Padding(
+        padding: const .only(left: historyChartLeftAxisSize),
+        child: Text(label, style: textTheme.titleMedium),
+      ),
+      _ => null,
+    };
+
+    if (widget.timeline) {
+      return TimelineChart(
+        height: 300,
+        color: widget.color,
+        thresholds: widget.thresholds,
+        yStepCandidates: widget.yStepCandidates,
+        getLeftLabel: widget.getLeftLabel,
+        getTooltip: (y) => widget.getTooltip?.call(y) ?? _double(y),
+        topLabel: topLabel,
+        series: [
+          for (final (metric, at) in reversed) (at: at, value: widget.converter(metric)),
+        ],
+      );
+    }
+
     return SizedBox(
       height: 300,
       child: HistoryChart(
@@ -133,17 +171,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
           };
         },
         getLeftLabel: widget.getLeftLabel,
-        topLabel: switch ((widget.label, widget.customLabel)) {
-          (_, Widget l) => l,
-          // fl_chart centers the axis name over the whole chart width, but the
-          // plot sits to the right of the y-axis labels — pad by that reserved
-          // width so the title centers over the plot
-          (String l, _) => Padding(
-            padding: const .only(left: historyChartLeftAxisSize),
-            child: Text(l, style: textTheme.titleMedium),
-          ),
-          _ => null,
-        },
+        topLabel: topLabel,
         getTooltip: (_, y) => widget.getTooltip?.call(y) ?? _double(y),
       ),
     );

@@ -36,8 +36,10 @@ void main() {
       expect(find.byType(BetterFeedback), findsNothing);
 
       final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      // Validate supported locales
-      expect(app.supportedLocales, const [Locale('en')]);
+      // English only — the other translations are not ready. `en_CA` is not a
+      // translation though: same copy, Canadian date conventions, and leaving
+      // it out is what made a Canadian phone render June the 19th as "6/19".
+      expect(app.supportedLocales, const [Locale('en'), Locale('en', 'CA')]);
       // Validate localization delegates presence (names only since comparing instances can be brittle)
       final delegateTypes = app.localizationsDelegates!.map((d) => d.runtimeType.toString()).toList();
       expect(delegateTypes, contains('_LDelegate'));

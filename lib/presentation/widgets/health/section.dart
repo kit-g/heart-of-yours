@@ -4,8 +4,11 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
+import 'package:heart/presentation/widgets/health/detail.dart';
+import 'package:heart/presentation/widgets/health/metric.dart';
 import 'package:heart/presentation/widgets/health/permissions.dart';
 import 'package:heart/presentation/widgets/redacted.dart';
+import 'package:heart/presentation/widgets/timeline_chart.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart_health/heart_health.dart';
@@ -303,16 +306,69 @@ class const _HealthCard({
     final latest = series.last;
     final (value, unit) = metric.display(latest.value, settings, l);
 
-    return Container(
-      decoration: BoxDecoration(
-        border: .all(color: dividerColor, width: .5),
+    return Material(
+      color: Colors.transparent,
+      clipBehavior: .antiAlias,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: dividerColor, width: .5),
         borderRadius: const .all(.circular(12)),
       ),
+      child: InkWell(
+        // A single reading has no trend to open, and the sparkline beside it is
+        // already blank for the same reason. An inert card is honest; one that
+        // opens onto a lone dot is not.
+        onTap: switch (series.length) {
+          < 2 => null,
+          _ => () => showHealthMetricDetail(context, metric: metric, series: series),
+        },
+        child: _content(textTheme, colorScheme, value, unit, latest),
+      ),
+    );
+  }
+
+  /// The window the sparkline draws, and the one its detail opens on.
+  ///
+  /// Not the whole series: the mirror reaches as far back as the platform does,
+  /// and a thumbnail showing three years beside a detail showing three months
+  /// cannot agree about the shape of anything. Not a fixed window either —
+  /// [TimelineChart.openingRange] widens it for a metric recorded every few
+  /// weeks, because three months of body mass can be a single weigh-in and one
+  /// point draws nothing at all.
+  List<HealthDailyValue> get _recent {
+    final points = [for (final point in series) (at: point.day, value: point.value)];
+    final days = TimelineChart.openingRange(points).days;
+    if (days == null) return series;
+
+    final from = series.last.day.subtract(Duration(days: days));
+    final start = series.indexWhere((point) => !point.day.isBefore(from));
+    return switch (start) {
+      <= 0 => series,
+      _ => series.sublist(start),
+    };
+  }
+
+  Widget _content(
+    TextTheme textTheme,
+    ColorScheme colorScheme,
+    String value,
+    String unit,
+    HealthDailyValue latest,
+  ) {
+    final plotted = _recent;
+
+    return Padding(
       padding: const .all(12),
       child: Row(
         children: [
           Expanded(
-            flex: 5,
+            // A reading with no trend behind it gets the whole card. Reserving
+            // the plot's share of the width and putting a lone mark in it reads
+            // as a chart that failed, not as a metric with one day of history —
+            // and an empty right-hand third reads worse still.
+            flex: switch (plotted.length) {
+              < 2 => 9,
+              _ => 5,
+            },
             child: Column(
               crossAxisAlignment: .start,
               mainAxisAlignment: .center,
@@ -346,12 +402,13 @@ class const _HealthCard({
               ],
             ),
           ),
-          Expanded(
-            flex: 4,
-            child: RedactedInCapture(
-              child: _Sparkline(series: series, color: colorScheme.primary),
+          if (plotted.length >= 2)
+            Expanded(
+              flex: 4,
+              child: RedactedInCapture(
+                child: _Sparkline(series: plotted, color: colorScheme.primary),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -389,6 +446,9 @@ class const _Sparkline({required final List<HealthDailyValue> series, required f
 
   @override
   Widget build(BuildContext context) {
+    // One reading is not a trend. The card no longer reserves space for a plot
+    // it cannot draw — see [_HealthCard] — so there is nothing to fill here and
+    // nothing to apologise for.
     if (series.length < 2) return const SizedBox.shrink();
 
     final values = _plotted;
@@ -431,46 +491,5 @@ class const _Sparkline({required final List<HealthDailyValue> series, required f
         ],
       ),
     );
-  }
-}
-
-/// Copy and formatting for a metric.
-///
-/// Lives here rather than on [HealthMetric] because the enum carries
-/// identifiers, not words — the same split every other model in this app makes.
-extension on HealthMetric {
-  String label(L l) {
-    return switch (this) {
-      .restingHeartRate => l.healthRestingHeartRate,
-      .heartRateVariability => l.healthHeartRateVariability,
-      .sleepAsleep => l.healthSleep,
-      .steps => l.healthSteps,
-      .activeEnergy => l.healthActiveEnergy,
-      .bodyMass => l.healthBodyMass,
-      _ => l.health,
-    };
-  }
-
-  /// The value as shown, and its unit — separated so the unit can be set in a
-  /// smaller style beside the number.
-  (String, String) display(double value, Preferences settings, L l) {
-    return switch (this) {
-      .restingHeartRate => (value.round().toString(), l.healthBpm),
-      .heartRateVariability => (value.round().toString(), l.healthMilliseconds),
-      .steps => (NumberFormat.decimalPattern().format(value.round()), ''),
-      .activeEnergy => (value.round().toString(), l.healthKilocalories),
-      // Sleep arrives in minutes, and "451" is not a number anyone reads as a
-      // night's sleep.
-      .sleepAsleep => ('${value ~/ 60}${l.healthHoursShort} ${(value % 60).round()}${l.healthMinutesShort}', ''),
-      // Stored in kg like every other weight in the app, converted only here.
-      .bodyMass => (
-        settings.weight(value),
-        switch (settings.weightUnit) {
-          .imperial => l.lbs,
-          .metric => l.kg,
-        },
-      ),
-      _ => (value.round().toString(), ''),
-    };
   }
 }
