@@ -2113,6 +2113,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Steps'**
   String get healthSteps;
+
+  /// Workout deletion confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to delete this workout?'**
+  String get deleteWorkoutTitle;
+
+  /// Workout deletion confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone'**
+  String get deleteWorkoutBody;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
