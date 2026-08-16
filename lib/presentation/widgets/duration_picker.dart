@@ -141,16 +141,23 @@ class _Item extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.heavyImpact();
-        Navigator.pop(context, duration.inSeconds);
-      },
-      child: Center(
-        child: Text(
-          '${_pad(duration.inMinutes.remainder(60))}:${_pad(duration.inSeconds.remainder(60))}',
-          style: textStyle,
+    final formatted = '${_pad(duration.inMinutes.remainder(60))}:${_pad(duration.inSeconds.remainder(60))}';
+    return Semantics(
+      button: true,
+      label: L.of(context).durationPickerSetTo(formatted),
+      child: GestureDetector(
+        behavior: .opaque,
+        onTap: () {
+          HapticFeedback.heavyImpact();
+          Navigator.pop(context, duration.inSeconds);
+        },
+        child: Center(
+          child: ExcludeSemantics(
+            child: Text(
+              formatted,
+              style: textStyle,
+            ),
+          ),
         ),
       ),
     );
