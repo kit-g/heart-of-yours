@@ -61,6 +61,7 @@ class _GalleryPageState extends State<GalleryPage> {
         child: Scaffold(
           appBar: AppBar(
             leading: IconButton(
+              tooltip: L.of(context).close,
               onPressed: Navigator.of(context).pop,
               color: Colors.white,
               icon: const Icon(Icons.close_rounded),
@@ -97,10 +98,14 @@ class _GalleryPageState extends State<GalleryPage> {
             controller: _controller,
             children: widget.media.map(
               (file) {
+                final timestamp = file.timestamp;
                 return AppImage(
                   url: file.link,
                   bytes: file.bytes,
                   fit: .cover,
+                  semanticLabel: timestamp == null
+                      ? null
+                      : L.of(context).progressPhotoLabel(L.of(context).fullDate(timestamp)),
                 );
               },
             ).toList(),
