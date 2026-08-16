@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_charts/heart_charts.dart';
@@ -29,6 +30,30 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(HistoryChart), findsOneWidget);
     expect(find.text('d0'), findsWidgets); // bottom axis labels rendered
+  });
+
+  // Dots mark where a tap-to-pin lands, which is worth the clutter for a
+  // handful of sessions and not for months of daily readings.
+  group('showDots', () {
+    LineChartBarData barOf(WidgetTester tester) {
+      return tester.widget<LineChart>(find.byType(LineChart)).data.lineBarsData.first;
+    }
+
+    testWidgets('is on by default, so existing charts keep their points', (tester) async {
+      await pumpChart(tester, HistoryChart(series: const [Dot(0, 10), Dot(1, 12)]));
+      await tester.pumpAndSettle();
+
+      expect(barOf(tester).dotData.show, isTrue);
+    });
+
+    testWidgets('turns the points off without touching the line', (tester) async {
+      await pumpChart(tester, HistoryChart(series: const [Dot(0, 10), Dot(1, 12)], showDots: false));
+      await tester.pumpAndSettle();
+
+      final bar = barOf(tester);
+      expect(bar.dotData.show, isFalse);
+      expect(bar.spots, hasLength(2), reason: 'hiding a dot must not drop the reading behind it');
+    });
   });
 
   testWidgets('renders a single-point (flat) series without throwing', (tester) async {

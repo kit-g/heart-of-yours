@@ -34,6 +34,29 @@ class HistoryChart extends StatefulWidget {
   /// gradient (the `gradientColor*` args).
   final Color? color;
 
+  /// Stroke of the plotted line.
+  ///
+  /// The default suits a series of workout sessions. Dense data wants it
+  /// thinner: at 4pt a year of daily readings overlaps itself into a solid
+  /// block, and the shape it was drawn to show disappears inside its own line.
+  final double barWidth;
+
+  /// Width reserved for the y-axis labels.
+  ///
+  /// Defaults to [historyChartLeftAxisSize], which is sized for the longest
+  /// labels in the app (`1:30:00`). Charts with short labels can claw the
+  /// difference back for the plot — left at the default, the reserve reads as
+  /// the whole chart being pushed to the right.
+  final double leftAxisSize;
+
+  /// Whether every point wears a dot.
+  ///
+  /// On by default, because a dot is where a tap-to-pin lands and a series of
+  /// workout sessions is short enough for that to read. Turn it off for daily
+  /// data over months: ninety dots on a 4pt line stop marking anything and
+  /// merge into a thicker, noisier line. Tapping still works without them.
+  final bool showDots;
+
   /// Values to mark across the plot — a goal's rungs, say.
   ///
   /// They widen the y-axis as well as drawing: a target is normally *above*
@@ -52,6 +75,9 @@ class HistoryChart extends StatefulWidget {
     this.getTooltip,
     this.yStepCandidates,
     this.color,
+    this.showDots = true,
+    this.barWidth = 4,
+    this.leftAxisSize = historyChartLeftAxisSize,
     this.thresholds = const [],
     Color? gradientColor1,
     Color? gradientColor2,
@@ -112,10 +138,10 @@ class _HistoryChartState extends State<HistoryChart> {
             spots: series.map((each) => FlSpot(each.x, each.y)).toList(),
             isCurved: true,
             preventCurveOverShooting: true,
-            barWidth: 4,
+            barWidth: widget.barWidth,
             belowBarData: BarAreaData(show: true, gradient: fillGradient),
             // a dot on every point — they mark where the tap-to-pin targets are
-            dotData: const FlDotData(show: true),
+            dotData: FlDotData(show: widget.showDots),
             gradient: lineGradient,
           ),
         ];
@@ -239,7 +265,7 @@ class _HistoryChartState extends State<HistoryChart> {
                         null => defaultGetTitle,
                       },
                       showTitles: true,
-                      reservedSize: historyChartLeftAxisSize,
+                      reservedSize: widget.leftAxisSize,
                       maxIncluded: false,
                       minIncluded: false,
                     ),
