@@ -12,7 +12,7 @@ class _EmptyState extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: SizedBox.square(
           dimension: size,
-          child: const Vector(Assets.emptyWorkout, semanticsLabel: 'Empty workout'),
+          child: Vector(Assets.emptyWorkout, semanticsLabel: L.of(context).emptyWorkoutLabel),
         ),
       ),
     );
