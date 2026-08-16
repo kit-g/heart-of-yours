@@ -795,6 +795,28 @@ class LEn extends L {
   String get chartRangeAll => 'All';
 
   @override
+  String get chartGenericLabel => 'Chart';
+
+  @override
+  String exerciseChartSummary(String metric, String start, String end, String latest, String trend) {
+    return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
+  }
+
+  @override
+  String get exerciseChartTrendUp => 'Increasing';
+
+  @override
+  String get exerciseChartTrendDown => 'Decreasing';
+
+  @override
+  String get exerciseChartTrendFlat => 'Flat';
+
+  @override
+  String healthCardSummary(String metric, String value, String when) {
+    return '$metric, $value, $when';
+  }
+
+  @override
   String get charts => 'Charts';
 
   @override
@@ -1871,6 +1893,28 @@ class LEnCa extends LEn {
 
   @override
   String get chartRangeAll => 'All';
+
+  @override
+  String get chartGenericLabel => 'Chart';
+
+  @override
+  String exerciseChartSummary(String metric, String start, String end, String latest, String trend) {
+    return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
+  }
+
+  @override
+  String get exerciseChartTrendUp => 'Increasing';
+
+  @override
+  String get exerciseChartTrendDown => 'Decreasing';
+
+  @override
+  String get exerciseChartTrendFlat => 'Flat';
+
+  @override
+  String healthCardSummary(String metric, String value, String when) {
+    return '$metric, $value, $when';
+  }
 
   @override
   String get charts => 'Charts';

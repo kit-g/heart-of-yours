@@ -100,6 +100,7 @@ class const _HealthMetricDetail({
             const SizedBox(height: 12),
             TimelineChart(
               height: _chartHeight,
+              semanticName: metric.label(l),
               leftAxisSize: metric.axisWidth,
               yStepCandidates: metric.yStepCandidates,
               getLeftLabel: metric.leftLabel(textTheme.bodySmall, settings, l),

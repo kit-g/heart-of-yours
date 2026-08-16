@@ -1532,6 +1532,42 @@ abstract class L {
   /// **'All'**
   String get chartRangeAll;
 
+  /// Fallback metric name in the history chart accessibility summary, when the chart has no visible title
+  ///
+  /// In en, this message translates to:
+  /// **'Chart'**
+  String get chartGenericLabel;
+
+  /// Accessibility summary of a history chart, replacing the plotted line with a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.'**
+  String exerciseChartSummary(String metric, String start, String end, String latest, String trend);
+
+  /// Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown
+  ///
+  /// In en, this message translates to:
+  /// **'Increasing'**
+  String get exerciseChartTrendUp;
+
+  /// Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown
+  ///
+  /// In en, this message translates to:
+  /// **'Decreasing'**
+  String get exerciseChartTrendDown;
+
+  /// Trend word in the history chart accessibility summary, when the latest value equals the earliest shown
+  ///
+  /// In en, this message translates to:
+  /// **'Flat'**
+  String get exerciseChartTrendFlat;
+
+  /// Accessibility label for a tappable health card on the dashboard. The card is an InkWell around a label, a number and a sparkline, none of which announce themselves as a control — this is what a screen reader reads instead, so it has to carry the whole card
+  ///
+  /// In en, this message translates to:
+  /// **'{metric}, {value}, {when}'**
+  String healthCardSummary(String metric, String value, String when);
+
   /// Generic label
   ///
   /// In en, this message translates to:
