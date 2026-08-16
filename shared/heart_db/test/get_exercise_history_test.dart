@@ -32,7 +32,7 @@ void main() {
             ...set.toMap().map((k, v) => MapEntry(k.toSnake(), v)),
             'workout_id': 'w1',
             'workout_name': 'Push A',
-            'exercise_id': sanitizeId(act1.start!),
+            'exercise_id': act1.start!.toIso8601String(),
           },
         ),
         ...act2.map(
@@ -40,7 +40,7 @@ void main() {
             ...set.toMap().map((k, v) => MapEntry(k.toSnake(), v)),
             'workout_id': 'w2',
             'workout_name': 'Pull B',
-            'exercise_id': sanitizeId(act2.start!),
+            'exercise_id': act2.start!.toIso8601String(),
           },
         ),
       ];
