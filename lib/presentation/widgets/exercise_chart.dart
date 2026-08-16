@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:heart/presentation/widgets/timeline_chart.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
 
@@ -21,6 +22,13 @@ class ExerciseChart extends StatefulWidget {
   /// given converted numbers, so these have to arrive converted too.
   final List<ChartThreshold> thresholds;
 
+  /// Whether the chart can be travelled through — range chips and a drag that
+  /// widens the window, coarsening days into weeks and months as it goes.
+  ///
+  /// Off by default so a dashboard card stays a card: the controls need room,
+  /// and a small tile's job is the recent shape, not exploration.
+  final bool timeline;
+
   /// Identity of the data this chart shows. The [callback] is invoked once and
   /// the result is kept across rebuilds, so purely cosmetic rebuilds (theme,
   /// units, a sibling loading) don't flash the loading state. Change this when
@@ -28,7 +36,7 @@ class ExerciseChart extends StatefulWidget {
   /// re-fetch.
   final Object? refreshKey;
 
-  const ExerciseChart({
+  const new({
     super.key,
     required this.emptyState,
     required this.callback,
@@ -42,6 +50,7 @@ class ExerciseChart extends StatefulWidget {
     this.yStepCandidates,
     this.color,
     this.thresholds = const [],
+    this.timeline = false,
     this.refreshKey,
   });
 
@@ -109,42 +118,87 @@ class _ExerciseChartState extends State<ExerciseChart> {
         if (nth % labelEvery == 0) index,
     };
 
-    return SizedBox(
-      height: 300,
-      child: HistoryChart(
+    // A screen reader cannot perceive a plotted line, so it is given the same
+    // thing as a sentence — summary level, never per point. `docs/a11y.md`.
+    final l = L.of(context);
+    final firstValue = widget.converter(reversed.first.$1);
+    final lastValue = widget.converter(reversed.last.$1);
+    final trend = switch (lastValue.compareTo(firstValue)) {
+      > 0 => l.exerciseChartTrendUp,
+      < 0 => l.exerciseChartTrendDown,
+      _ => l.exerciseChartTrendFlat,
+    };
+    final summary = l.exerciseChartSummary(
+      widget.label ?? l.chartGenericLabel,
+      l.dayAndMonth(reversed.first.$2),
+      l.dayAndMonth(reversed.last.$2),
+      widget.getTooltip?.call(lastValue) ?? _double(lastValue),
+      trend,
+    );
+
+    // A plain string is a title and wants centring over the plot, which sits to
+    // the right of the y-axis labels — hence the inset. A [customLabel] is a
+    // row of its own furniture (the dashboard's drag handle, name and close
+    // button) that already spans the card, and insetting it shunts the whole
+    // row sideways.
+    final topLabel = switch ((widget.label, widget.customLabel)) {
+      (_, Widget label) => label,
+      (String label, _) => Padding(
+        padding: const .only(left: historyChartLeftAxisSize),
+        child: Text(label, style: textTheme.titleMedium),
+      ),
+      _ => null,
+    };
+
+    if (widget.timeline) {
+      return TimelineChart(
+        height: 300,
+        // Not wrapped in `Semantics` here, deliberately: `TimelineChart` builds
+        // its own summary from the window actually on screen, and that changes
+        // as the user zooms. An outer label describing the whole series would
+        // be announced alongside it and contradict it.
+        semanticName: widget.label ?? l.chartGenericLabel,
+        color: widget.color,
         thresholds: widget.thresholds,
         yStepCandidates: widget.yStepCandidates,
-        color: widget.color,
-        indicatorStrokeColor: colorScheme.surface,
-        bottomAxisLabelStyle: textTheme.bodySmall,
-        series: reversed.indexed.map(
-          (record) {
-            final (index, (metric, _)) = record;
-            return Dot(
-              index.toDouble(),
-              widget.converter(metric),
-            );
-          },
-        ),
-        getBottomLabel: (x) {
-          return switch (labelled.contains(x)) {
-            true => L.of(context).dayAndMonth(reversed[x].$2),
-            false => '',
-          };
-        },
         getLeftLabel: widget.getLeftLabel,
-        topLabel: switch ((widget.label, widget.customLabel)) {
-          (_, Widget l) => l,
-          // fl_chart centers the axis name over the whole chart width, but the
-          // plot sits to the right of the y-axis labels — pad by that reserved
-          // width so the title centers over the plot
-          (String l, _) => Padding(
-            padding: const .only(left: historyChartLeftAxisSize),
-            child: Text(l, style: textTheme.titleMedium),
+        getTooltip: (y) => widget.getTooltip?.call(y) ?? _double(y),
+        topLabel: topLabel,
+        series: [
+          for (final (metric, at) in reversed) (at: at, value: widget.converter(metric)),
+        ],
+      );
+    }
+
+    return Semantics(
+      label: summary,
+      child: SizedBox(
+        height: 300,
+        child: HistoryChart(
+          thresholds: widget.thresholds,
+          yStepCandidates: widget.yStepCandidates,
+          color: widget.color,
+          indicatorStrokeColor: colorScheme.surface,
+          bottomAxisLabelStyle: textTheme.bodySmall,
+          series: reversed.indexed.map(
+            (record) {
+              final (index, (metric, _)) = record;
+              return Dot(
+                index.toDouble(),
+                widget.converter(metric),
+              );
+            },
           ),
-          _ => null,
-        },
-        getTooltip: (_, y) => widget.getTooltip?.call(y) ?? _double(y),
+          getBottomLabel: (x) {
+            return switch (labelled.contains(x)) {
+              true => L.of(context).dayAndMonth(reversed[x].$2),
+              false => '',
+            };
+          },
+          getLeftLabel: widget.getLeftLabel,
+          topLabel: topLabel,
+          getTooltip: (_, y) => widget.getTooltip?.call(y) ?? _double(y),
+        ),
       ),
     );
   }
