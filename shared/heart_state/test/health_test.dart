@@ -235,6 +235,30 @@ void main() {
     });
   });
 
+  // Nothing here is awaited by the app: `init` is fired and forgotten, and the
+  // backfill it starts can run for minutes. A widget test that pumps a screen
+  // and moves on disposes the provider underneath all of it, and notifying a
+  // disposed ChangeNotifier throws — which in `flutter test` takes the whole
+  // shell process down rather than one test.
+  group('disposal', () {
+    test('a sync still in flight neither notifies nor keeps reading', () async {
+      device.gateFirstRead();
+      final syncing = sut.init();
+      await pumpEventQueue();
+
+      sut.dispose();
+      device.releaseGate();
+      await syncing;
+
+      expect(errors, isEmpty, reason: 'notifying a disposed notifier would have thrown');
+      // The walk stops rather than reading chunk after chunk for a screen that
+      // is gone.
+      final reads = device.reads.length;
+      await pumpEventQueue();
+      expect(device.reads, hasLength(reads));
+    });
+  });
+
   group('openPermissions', () {
     // Straight through, and it stays that way: only the device knows where its
     // permissions live, and the UI must not be tempted to guess.
