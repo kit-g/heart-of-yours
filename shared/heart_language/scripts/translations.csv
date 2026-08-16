@@ -265,6 +265,13 @@ clearFilters,Button that removes every active movement filter,Clear,Clear,Очи
 alsoTry,Substitution section on the exercise About tab,Also try,Also try,Попробуйте также
 about,Generic label,About,About,О приложении
 records,Generic label,Records,Records,Рекорды
+chartWeeklyAverage,"Caption under a chart that is plotting one point per week rather than one per reading. Says what the line is, so a reader does not take a smoothed point for a single reading",Weekly average,Weekly average,Среднее за неделю
+chartMonthlyAverage,"As chartWeeklyAverage, one point per calendar month",Monthly average,Monthly average,Среднее за месяц
+chartYearlyAverage,"As chartWeeklyAverage, one point per calendar year",Yearly average,Yearly average,Среднее за год
+chartRangeMonth,Chip that sets a chart's window to the last month. Abbreviated because four of these sit in a row on a phone; use whatever short form is conventional for a finance or fitness chart in this locale,1M,1M,1М
+chartRangeQuarter,"Chip that sets a chart's window to the last three months. Abbreviated, as chartRangeMonth",3M,3M,3М
+chartRangeYear,"Chip that sets a chart's window to the last year. Abbreviated, as chartRangeMonth",1Y,1Y,1Г
+chartRangeAll,"Chip that sets a chart's window to everything recorded, however far back that goes. Keep it short — it sits beside 1M/3M/1Y",All,All,Всё
 charts,Generic label,Charts,Charts,Графики
 emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,Ghost Reps Detected 👻,Обнаружены призрачные повторения 👻
 emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!
@@ -340,6 +347,7 @@ healthActiveEnergy,Name of a health metric: calories burned through activity,Act
 healthBodyMass,Name of a health metric: bodyweight,Body mass,Body mass,Вес
 healthBpm,"Unit abbreviation, beats per minute. Shown next to a heart rate",bpm,bpm,уд/мин
 healthChecking,"Shown on the health card while the app is reading the phone's health store, in place of the empty-state message. Mostly seen in the seconds after the user comes back from granting permission, so it must not sound like a result — it is what is happening, not what was found",Looking for new readings…,Looking for new readings…,Ищем новые показатели…
+healthLatestReading,"Under the big number in the health detail dialog. The date on its own was cryptic — a bare ""08-13"" beside a heart rate reads as part of the measurement rather than as when it was taken. Says what the date is, and formats it with a month name so it cannot be mistaken for a number",Latest reading · {when},Latest reading · {when},Последнее измерение · {when}
 healthDelete,Settings row that deletes Heart's local copy of health data,Delete health data,Delete health data,Удалить данные здоровья
 healthDeleteBody,Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync,"This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.","This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.","Это очистит то, что Heart прочитал на это устройство. В хранилище здоровья на телефоне ничего не изменится, и Heart прочитает данные снова при следующей синхронизации."
 healthDeleteTitle,Confirmation title. Must say it is Heart's copy — a title reading like 'erase my heart rate history' would suggest years of data are about to be lost,Delete Heart's copy of your health data?,Delete Heart's copy of your health data?,Удалить копию данных здоровья в Heart?

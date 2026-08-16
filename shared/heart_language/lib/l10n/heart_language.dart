@@ -1490,6 +1490,48 @@ abstract class L {
   /// **'Records'**
   String get records;
 
+  /// Caption under a chart that is plotting one point per week rather than one per reading. Says what the line is, so a reader does not take a smoothed point for a single reading
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly average'**
+  String get chartWeeklyAverage;
+
+  /// As chartWeeklyAverage, one point per calendar month
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly average'**
+  String get chartMonthlyAverage;
+
+  /// As chartWeeklyAverage, one point per calendar year
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly average'**
+  String get chartYearlyAverage;
+
+  /// Chip that sets a chart's window to the last month. Abbreviated because four of these sit in a row on a phone; use whatever short form is conventional for a finance or fitness chart in this locale
+  ///
+  /// In en, this message translates to:
+  /// **'1M'**
+  String get chartRangeMonth;
+
+  /// Chip that sets a chart's window to the last three months. Abbreviated, as chartRangeMonth
+  ///
+  /// In en, this message translates to:
+  /// **'3M'**
+  String get chartRangeQuarter;
+
+  /// Chip that sets a chart's window to the last year. Abbreviated, as chartRangeMonth
+  ///
+  /// In en, this message translates to:
+  /// **'1Y'**
+  String get chartRangeYear;
+
+  /// Chip that sets a chart's window to everything recorded, however far back that goes. Keep it short — it sits beside 1M/3M/1Y
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get chartRangeAll;
+
   /// Generic label
   ///
   /// In en, this message translates to:
@@ -1885,6 +1927,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Looking for new readings…'**
   String get healthChecking;
+
+  /// Under the big number in the health detail dialog. The date on its own was cryptic — a bare "08-13" beside a heart rate reads as part of the measurement rather than as when it was taken. Says what the date is, and formats it with a month name so it cannot be mistaken for a number
+  ///
+  /// In en, this message translates to:
+  /// **'Latest reading · {when}'**
+  String healthLatestReading(String when);
 
   /// Settings row that deletes Heart's local copy of health data
   ///
