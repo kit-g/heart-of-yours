@@ -121,6 +121,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 workouts: workouts,
                 emptyState: emptyState,
               ),
+              const HealthSection(),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const .symmetric(vertical: 6, horizontal: 16),
