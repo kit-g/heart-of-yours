@@ -35,7 +35,17 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
 
   @override
   Widget build(BuildContext context) {
-    final L(:logOut, :settings, :workoutsPerWeekTitle, :workoutsPerWeekBody, :newChart) = L.of(context);
+    final L(
+      :logOut,
+      :settings,
+      :workoutsPerWeekTitle,
+      :workoutsPerWeekBody,
+      :newChart,
+      :viewAccountDetails,
+      :viewProfilePhoto,
+    ) = L.of(
+      context,
+    );
     final ThemeData(:textTheme, :platform) = Theme.of(context);
 
     final auth = Auth.watch(context);
@@ -46,24 +56,32 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 64,
-        title: GestureDetector(
-          onTap: _toAccount,
-          child: Row(
-            spacing: 16,
-            children: [
-              GestureDetector(
-                onTap: _toAvatar,
-                child: Hero(
-                  tag: 'avatar',
-                  child: Avatar(
-                    remote: avatar,
-                    local: localAvatar,
-                    radius: 24,
+        title: Semantics(
+          button: true,
+          label: viewAccountDetails,
+          child: GestureDetector(
+            onTap: _toAccount,
+            child: Row(
+              spacing: 16,
+              children: [
+                Semantics(
+                  button: true,
+                  label: viewProfilePhoto,
+                  child: GestureDetector(
+                    onTap: _toAvatar,
+                    child: Hero(
+                      tag: 'avatar',
+                      child: Avatar(
+                        remote: avatar,
+                        local: localAvatar,
+                        radius: 24,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              Text(displayName ?? '?'),
-            ],
+                Text(displayName ?? '?'),
+              ],
+            ),
           ),
         ),
         actions: [
