@@ -370,7 +370,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
     ) = Theme.of(
       context,
     );
-    final L(:add) = L.of(context);
+    final L(:add, :close) = L.of(context);
     // captured before the dialog: the cleanup below outlives this State's context
     final allExercises = Exercises.of(context);
     return showDialog(
@@ -387,6 +387,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
+                      tooltip: close,
                       visualDensity: const VisualDensity(horizontal: -4, vertical: -1),
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(
@@ -923,29 +924,33 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                       child: Center(
                         child: SizedBox(
                           width: 180,
-                          child: TextField(
-                            inputFormatters: [
-                              LengthLimitingTextInputFormatter(18),
-                            ],
-                            selectionControls: context.platformSpecificSelectionControls(),
-                            focusNode: _workoutNameFocusNode,
-                            textCapitalization: TextCapitalization.words,
-                            textAlign: TextAlign.center,
-                            controller: _workoutNameController,
-                            style: textTheme.titleSmall,
-                            decoration: const InputDecoration.collapsed(hintText: ''),
-                            onEditingComplete: () {
-                              final text = _workoutNameController.text.trim();
-                              final name = switch (text.isEmpty) {
-                                true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
-                                false => text.trim(),
-                              };
-                              workouts.renameWorkout(name);
-                              _workoutNameFocusNode.unfocus();
-                            },
-                            onTapOutside: (_) {
-                              _workoutNameFocusNode.unfocus();
-                            },
+                          child: Semantics(
+                            label: L.of(context).workoutName,
+                            textField: true,
+                            child: TextField(
+                              inputFormatters: [
+                                LengthLimitingTextInputFormatter(18),
+                              ],
+                              selectionControls: context.platformSpecificSelectionControls(),
+                              focusNode: _workoutNameFocusNode,
+                              textCapitalization: TextCapitalization.words,
+                              textAlign: TextAlign.center,
+                              controller: _workoutNameController,
+                              style: textTheme.titleSmall,
+                              decoration: const InputDecoration.collapsed(hintText: ''),
+                              onEditingComplete: () {
+                                final text = _workoutNameController.text.trim();
+                                final name = switch (text.isEmpty) {
+                                  true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
+                                  false => text.trim(),
+                                };
+                                workouts.renameWorkout(name);
+                                _workoutNameFocusNode.unfocus();
+                              },
+                              onTapOutside: (_) {
+                                _workoutNameFocusNode.unfocus();
+                              },
+                            ),
                           ),
                         ),
                       ),
