@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
+import 'package:heart_language/heart_language.dart';
 
 class AppBarTextField extends StatelessWidget {
   final String hint;
@@ -36,6 +37,7 @@ class AppBarTextField extends StatelessWidget {
                 suffixIcon: switch (needsSuffix) {
                   false => null,
                   true => IconButton(
+                    tooltip: L.of(context).confirmEdit,
                     visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
                     onPressed: () {
                       focusNode.unfocus();
