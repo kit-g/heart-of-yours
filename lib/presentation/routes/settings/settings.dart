@@ -16,6 +16,7 @@ import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/health/settings.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/logo.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
