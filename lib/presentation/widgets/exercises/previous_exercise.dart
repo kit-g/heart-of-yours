@@ -15,6 +15,24 @@ class PreviousSet extends StatelessWidget {
     required this.prefs,
   });
 
+  /// Whether [previousValue] carries the fields this exercise's category
+  /// actually displays. Legacy rows miss them (a null weight, a category
+  /// mismatch) and would render as a bare dash — the caller uses this to
+  /// skip the tappable pill around it, since a dash is nothing to copy.
+  static bool represents(Exercise exercise, Map<String, dynamic> previousValue) {
+    return switch ((exercise.category, previousValue)) {
+      (
+        .barbell || .dumbbell || .machine || .assistedBodyWeight || .weightedBodyWeight,
+        {'reps': int _, 'weight': num _},
+      ) =>
+        true,
+      (.repsOnly, {'reps': int _}) => true,
+      (.duration, {'duration': num _}) => true,
+      (.cardio, {'duration': num _, 'distance': num _}) => true,
+      _ => false,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final L(:lbs, :kg, :reps, :milesPlural, :km) = L.of(context);
