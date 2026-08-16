@@ -75,7 +75,9 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
   @override
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-    final L(:skip, :addSeconds, :subtractSeconds, :restTimer, :restTimerSubtitle) = L.of(context);
+    final L(:skip, :addSeconds, :subtractSeconds, :restTimer, :restTimerSubtitle, :close, :restTimerRemaining) = L.of(
+      context,
+    );
 
     final alarms = Alarms.watch(context);
 
@@ -91,6 +93,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
+                  tooltip: close,
                   visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(
@@ -111,74 +114,85 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
           restTimerSubtitle,
           style: textTheme.bodyLarge,
         ),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            ValueListenableBuilder<int>(
-              valueListenable: _total,
-              builder: (_, total, _) {
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: switch (alarms.remainsInActiveExercise) {
-                    ValueNotifier<int> seconds => ValueListenableBuilder<int>(
-                      valueListenable: seconds,
-                      builder: (_, remaining, _) {
-                        final progress = remaining / total;
-                        return CustomPaint(
-                          size: const Size(200, 200),
-                          painter: CircularTimerPainter(
-                            progress: progress,
-                            strokeColor: colorScheme.primary,
-                            backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
-                          ),
-                        );
-                      },
-                    ),
-                    null => CustomPaint(
-                      size: const Size(200, 200),
-                      painter: CircularTimerPainter(
-                        progress: 0,
-                        strokeColor: colorScheme.primary,
-                        backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+        ValueListenableBuilder<int>(
+          valueListenable: alarms.remainsInActiveExercise ?? _total,
+          builder: (_, remaining, child) {
+            return Semantics(
+              label: restTimerRemaining(_format(remaining)),
+              liveRegion: true,
+              excludeSemantics: true,
+              child: child,
+            );
+          },
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              ValueListenableBuilder<int>(
+                valueListenable: _total,
+                builder: (_, total, _) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: switch (alarms.remainsInActiveExercise) {
+                      ValueNotifier<int> seconds => ValueListenableBuilder<int>(
+                        valueListenable: seconds,
+                        builder: (_, remaining, _) {
+                          final progress = remaining / total;
+                          return CustomPaint(
+                            size: const Size(200, 200),
+                            painter: CircularTimerPainter(
+                              progress: progress,
+                              strokeColor: colorScheme.primary,
+                              backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  },
-                );
-              },
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: switch (alarms.remainsInActiveExercise) {
-                    ValueNotifier<int> seconds => ValueListenableBuilder<int>(
-                      valueListenable: seconds,
-                      builder: (_, remaining, _) {
-                        return Text(
-                          _format(remaining),
-                          style: textTheme.headlineMedium,
-                        );
-                      },
-                    ),
-                    null => Text(
-                      _format(0),
-                      style: textTheme.headlineMedium,
-                    ),
-                  },
-                ),
-                ValueListenableBuilder<int>(
-                  valueListenable: _total,
-                  builder: (_, total, _) {
-                    return Text(
-                      _format(total),
-                      style: textTheme.bodyLarge?.copyWith(color: colorScheme.secondary),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
+                      null => CustomPaint(
+                        size: const Size(200, 200),
+                        painter: CircularTimerPainter(
+                          progress: 0,
+                          strokeColor: colorScheme.primary,
+                          backgroundColor: colorScheme.inversePrimary.withValues(alpha: .3),
+                        ),
+                      ),
+                    },
+                  );
+                },
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: switch (alarms.remainsInActiveExercise) {
+                      ValueNotifier<int> seconds => ValueListenableBuilder<int>(
+                        valueListenable: seconds,
+                        builder: (_, remaining, _) {
+                          return Text(
+                            _format(remaining),
+                            style: textTheme.headlineMedium,
+                          );
+                        },
+                      ),
+                      null => Text(
+                        _format(0),
+                        style: textTheme.headlineMedium,
+                      ),
+                    },
+                  ),
+                  ValueListenableBuilder<int>(
+                    valueListenable: _total,
+                    builder: (_, total, _) {
+                      return Text(
+                        _format(total),
+                        style: textTheme.bodyLarge?.copyWith(color: colorScheme.secondary),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 16.0, left: 16, right: 16),
