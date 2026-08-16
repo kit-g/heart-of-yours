@@ -35,6 +35,42 @@ mixin _Health on _LocalDatabase implements HealthSampleStore {
         .then((rows) => rows.map(HealthSample.fromRow).toList());
   }
 
+  /// Backfill progress lives in `syncs`, the table that already answers "how
+  /// far have we got with X" for the exercise catalog. Keyed per user as well
+  /// as per metric: signing into a second account on the same device must not
+  /// inherit the first one's "already searched" claim.
+  String _backfillKey(String userId, HealthMetric metric) => 'health_backfill:$userId:${metric.value}';
+
+  @override
+  Future<DateTime?> healthBackfilledTo({
+    required String userId,
+    required HealthMetric metric,
+  }) async {
+    final rows = await _db.query(
+      _syncs,
+      where: 'table_name = ?',
+      whereArgs: [_backfillKey(userId, metric)],
+    );
+
+    return switch (rows) {
+      [{'synced_at': String at}] => DateTime.tryParse(at),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<void> setHealthBackfilledTo(
+    DateTime at, {
+    required String userId,
+    required HealthMetric metric,
+  }) async {
+    await _db.insert(
+      _syncs,
+      {'table_name': _backfillKey(userId, metric), 'synced_at': at.toUtc().toIso8601String()},
+      conflictAlgorithm: .replace,
+    );
+  }
+
   @override
   Future<DateTime?> lastHealthSampleAt({
     required String userId,
@@ -80,6 +116,15 @@ mixin _Health on _LocalDatabase implements HealthSampleStore {
             .nonNulls
             .toList();
       },
+    );
+  }
+
+  @override
+  Future<void> clearHealthBackfill(String userId) async {
+    await _db.delete(
+      _syncs,
+      where: 'table_name LIKE ?',
+      whereArgs: ['health_backfill:$userId:%'],
     );
   }
 
