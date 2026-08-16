@@ -1048,7 +1048,8 @@ class LEn extends L {
   String get healthOffInHealthApp => 'In the Health app, tap your profile picture, then Apps, and let Heart read.';
 
   @override
-  String get healthOffInSettings => 'Let Heart read your health data in your device’s health settings.';
+  String get healthOffInSettings =>
+      'Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.';
 
   @override
   String get healthOffTitle => 'Heart isn’t reading any health data';
@@ -1061,6 +1062,9 @@ class LEn extends L {
 
   @override
   String get healthOpenHealthAppHint => 'Tap your profile picture, then Apps';
+
+  @override
+  String get healthOpenSettingsHint => 'Also allow access to past data';
 
   @override
   String get healthOpenSettings => 'Open settings';
@@ -2122,7 +2126,8 @@ class LEnCa extends LEn {
   String get healthOffInHealthApp => 'In the Health app, tap your profile picture, then Apps, and let Heart read.';
 
   @override
-  String get healthOffInSettings => 'Let Heart read your health data in your device’s health settings.';
+  String get healthOffInSettings =>
+      'Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.';
 
   @override
   String get healthOffTitle => 'Heart isn’t reading any health data';
@@ -2135,6 +2140,9 @@ class LEnCa extends LEn {
 
   @override
   String get healthOpenHealthAppHint => 'Tap your profile picture, then Apps';
+
+  @override
+  String get healthOpenSettingsHint => 'Also allow access to past data';
 
   @override
   String get healthOpenSettings => 'Open settings';

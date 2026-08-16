@@ -8,6 +8,7 @@ import 'package:heart/core/env/config.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/health/section.dart';
 import 'package:heart/presentation/widgets/redacted.dart';
+import 'package:heart/presentation/widgets/timeline_chart.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
@@ -110,8 +111,20 @@ void main() {
       expect(find.byType(PrimaryButton), findsNothing);
       expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
 
-      final title = tester.widget<Text>(find.text('Health'));
-      expect(title.style?.color, Theme.of(tester.element(find.text('Health'))).disabledColor);
+      final context = tester.element(find.text('Health'));
+      final theme = Theme.of(context);
+
+      expect(tester.widget<Text>(find.text('Health')).style?.color, theme.disabledColor);
+
+      // The header greys because the section is dormant. The button beside it
+      // does not: it is live, it is the only way back, and a button that looks
+      // disabled is one nobody presses.
+      final button = tester.widget<IconButton>(
+        find.ancestor(of: find.byIcon(Icons.info_outline_rounded), matching: find.byType(IconButton)),
+      );
+      expect(button.onPressed, isNotNull);
+      expect(button.color, isNot(theme.disabledColor));
+      expect(button.color, theme.colorScheme.onSurfaceVariant);
     });
 
     // Explaining is the smaller half. Knowing the permission lives in another
@@ -127,6 +140,9 @@ void main() {
 
       expect(find.textContaining('isn’t reading any health data'), findsOneWidget);
       expect(find.textContaining('Heart read'), findsOneWidget);
+      // The switch that is kept away from the permission list, and without
+      // which every read stops 30 days back however far the chart zooms out.
+      expect(find.textContaining('past data'), findsOneWidget);
 
       // The two cases this covers — declined, and granted but no watch — are
       // indistinguishable to us, so none of these may appear.
@@ -353,6 +369,32 @@ void main() {
         expect(find.text('All'), findsOneWidget);
         expect(find.text('3M'), findsNothing);
         expect(find.text('1Y'), findsNothing);
+      });
+
+      // The caption only applies at the coarse grains, and letting it come and
+      // go changed the column's height — so the dialog resized under the finger
+      // that had just tapped a chip.
+      testWidgets('does not change height when the grain does', (tester) async {
+        store.daily
+          ..clear()
+          ..[HealthMetric.steps] = [
+            for (var i = 0; i < 1095; i++)
+              (day: DateTime(2023, 8, 17).add(Duration(days: i)), value: 8000 + i.toDouble()),
+          ];
+        await health.init();
+        await pumpSection(tester);
+
+        await tester.tap(find.text('Steps'));
+        await tester.pumpAndSettle();
+
+        final daily = tester.getSize(find.byType(TimelineChart));
+        expect(find.text('Monthly average'), findsNothing, reason: 'opens on the quarter');
+
+        await tester.tap(find.text('All'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Monthly average'), findsOneWidget);
+        expect(tester.getSize(find.byType(TimelineChart)), daily);
       });
 
       testWidgets('plots body mass in the unit the card shows', (tester) async {

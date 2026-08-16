@@ -63,6 +63,17 @@ void main() {
     expect(find.text('Health'), findsNothing);
   });
 
+  // Health Connect keeps past-data access apart from the permission list, so a
+  // user who grants everything they can see is still capped at 30 days — and
+  // nothing on either screen said a second switch existed.
+  testWidgets('says that past data is a switch of its own', (tester) async {
+    await preferences.setHealthAsked(userId);
+    await health.init();
+    await pump(tester);
+
+    expect(find.text('Also allow access to past data'), findsOneWidget);
+  });
+
   testWidgets('offers to ask before it ever has, and settings after', (tester) async {
     await health.init();
     await pump(tester);

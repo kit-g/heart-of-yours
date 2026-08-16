@@ -1998,9 +1998,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthOffInSettings": "Let Heart read your health data in your device’s health settings.",
+  "healthOffInSettings": "Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.",
   "@healthOffInSettings": {
-    "description": "Non-iOS fallback for healthOffInHealthApp. Same rules: an instruction, never an explanation, and neutral about why there is nothing to show",
+    "description": "Non-iOS fallback for healthOffInHealthApp. An instruction, never an explanation, and neutral about why there is nothing to show. The second sentence is Android-specific and load-bearing: Health Connect keeps past-data access as a separate switch away from the main permission list, and without it every read is capped at 30 days however far back the app asks. Say 'past data' — that is the platform's own wording for it",
     "type": "text",
     "placeholders": {}
   },
@@ -2025,6 +2025,12 @@
   "healthOpenHealthAppHint": "Tap your profile picture, then Apps",
   "@healthOpenHealthAppHint": {
     "description": "iOS only. Sits under the row that opens the Health app and says what to do once there, since Apple gives no way to link straight to Heart's row. An instruction only — it is not the place to explain why the permission lives outside Heart. Match the wording Apple's Health app uses in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenSettingsHint": "Also allow access to past data",
+  "@healthOpenSettingsHint": {
+    "description": "Non-iOS. Sits under the row that opens the device's health settings. Health Connect keeps past-data access apart from the main permission list, so a user who grants everything they can see is still capped at 30 days. An instruction, not an explanation of why. Deliberately echoes Health Connect's own prompt — \"Allow Heart to access past data?\" — so the words the user reads here are the words they then look for; match that prompt's wording in this locale rather than translating literally",
     "type": "text",
     "placeholders": {}
   },

@@ -1051,7 +1051,8 @@ class LRu extends L {
       'В приложении «Здоровье» нажмите фото профиля, затем «Приложения» и разрешите Heart читать данные.';
 
   @override
-  String get healthOffInSettings => 'Разрешите Heart читать данные о здоровье в настройках здоровья на устройстве.';
+  String get healthOffInSettings =>
+      'Разрешите Heart читать данные о здоровье в настройках здоровья на устройстве. Разрешите и прошлые данные, иначе графики остановятся на последних 30 днях.';
 
   @override
   String get healthOffTitle => 'Heart не читает данные о здоровье';
@@ -1064,6 +1065,9 @@ class LRu extends L {
 
   @override
   String get healthOpenHealthAppHint => 'Нажмите фото профиля, затем «Приложения»';
+
+  @override
+  String get healthOpenSettingsHint => 'Разрешите также доступ к прошлым данным';
 
   @override
   String get healthOpenSettings => 'Открыть настройки';

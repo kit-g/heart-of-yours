@@ -25,15 +25,17 @@ String healthPermissionsLabel(L l) {
   };
 }
 
-/// The step still left to the user once they are there, or null where the
-/// destination is the app's own settings page and there is nothing to explain.
+/// The step still left to the user once they are there.
 ///
-/// Heart's row is two taps inside the Health app and neither is signposted from
-/// the summary screen it opens on. Apple offers no deep link to it.
+/// Different step on each platform, and neither is signposted from where the
+/// button lands. On iOS, Heart's row is two taps into the Health app and Apple
+/// publishes no deep link to it. On Android the row is easy enough to find, but
+/// past-data access is a separate switch kept away from the permission list —
+/// so a user who grants everything they can see is still capped at 30 days.
 String? healthPermissionsHint(L l) {
   return switch (defaultTargetPlatform) {
     .iOS => l.healthOpenHealthAppHint,
-    _ => null,
+    _ => l.healthOpenSettingsHint,
   };
 }
 
