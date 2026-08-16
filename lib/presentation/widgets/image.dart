@@ -13,6 +13,11 @@ class AppImage extends StatelessWidget {
   /// How long the loaded image crossfades in over the placeholder.
   final Duration fadeInDuration;
 
+  /// What the image shows, read aloud by a screen reader. Leave null for a
+  /// purely decorative image (an accompanying label already says what it is),
+  /// which excludes it from the semantics tree instead of announcing nothing.
+  final String? semanticLabel;
+
   const new({
     super.key,
     this.url,
@@ -21,14 +26,18 @@ class AppImage extends StatelessWidget {
     this.progressIndicatorBuilder,
     this.errorWidget,
     this.fadeInDuration = const Duration(milliseconds: 200),
+    this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDecorative = semanticLabel == null;
     return switch ((url, bytes)) {
       (_, Uint8List bytes) => Image.memory(
         bytes,
         fit: fit,
+        semanticLabel: semanticLabel,
+        excludeFromSemantics: isDecorative,
         errorBuilder: (context, error, _) {
           return errorWidget?.call(context, error) ?? const SizedBox.shrink();
         },
@@ -39,6 +48,8 @@ class AppImage extends StatelessWidget {
         headers: _headers,
         webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
         fit: fit,
+        semanticLabel: semanticLabel,
+        excludeFromSemantics: isDecorative,
         loadingBuilder: (context, child, progress) {
           return switch (progress) {
             ImageChunkEvent(:var expectedTotalBytes, :var cumulativeBytesLoaded) =>
@@ -59,15 +70,20 @@ class AppImage extends StatelessWidget {
           return errorWidget?.call(context, error) ?? const SizedBox.shrink();
         },
       ),
-      (String url, _) when url.startsWith('https') => CachedNetworkImage(
-        fadeInDuration: fadeInDuration,
-        httpHeaders: _headers,
-        imageUrl: url,
-        fit: fit,
-        progressIndicatorBuilder: progressIndicatorBuilder,
-        errorWidget: (context, _, error) {
-          return errorWidget?.call(context, error) ?? const SizedBox.shrink();
-        },
+      (String url, _) when url.startsWith('https') => Semantics(
+        label: semanticLabel,
+        image: !isDecorative,
+        excludeSemantics: true,
+        child: CachedNetworkImage(
+          fadeInDuration: fadeInDuration,
+          httpHeaders: _headers,
+          imageUrl: url,
+          fit: fit,
+          progressIndicatorBuilder: progressIndicatorBuilder,
+          errorWidget: (context, _, error) {
+            return errorWidget?.call(context, error) ?? const SizedBox.shrink();
+          },
+        ),
       ),
       _ => const SizedBox.shrink(),
     };
