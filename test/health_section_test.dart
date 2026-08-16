@@ -416,6 +416,35 @@ void main() {
       });
     });
 
+    // An InkWell renders as its child and gets no button semantics for free, so
+    // a screen reader would read three unrelated fragments and never say the
+    // card opens anything. `docs/a11y.md`.
+    testWidgets('the card announces itself as one control', (tester) async {
+      await health.init();
+      await pumpSection(tester);
+
+      final handle = tester.ensureSemantics();
+      expect(
+        find.bySemanticsLabel(RegExp('Resting heart rate, 61 bpm')),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    // A screen reader cannot perceive a painted line, so it is given the same
+    // thing as a sentence — summary level, never per point.
+    testWidgets('the detail chart is a sentence, not a line', (tester) async {
+      await health.init();
+      await pumpSection(tester);
+
+      await tester.tap(find.text('Resting heart rate'));
+      await tester.pumpAndSettle();
+
+      final handle = tester.ensureSemantics();
+      expect(find.bySemanticsLabel(RegExp('Resting heart rate from .* Trend:')), findsOneWidget);
+      handle.dispose();
+    });
+
     testWidgets('reads sleep as hours and minutes, not as 451', (tester) async {
       await health.init();
       await pumpSection(tester);

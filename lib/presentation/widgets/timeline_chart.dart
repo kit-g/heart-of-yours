@@ -66,6 +66,11 @@ class TimelineChart extends StatefulWidget {
   /// rather than over the chart's whole width.
   final Widget? topLabel;
 
+  /// What the plot measures, for the accessibility summary — a screen reader
+  /// cannot perceive a painted line, so it is given the same thing as a
+  /// sentence. Falls back to a generic word when the caller has no name for it.
+  final String? semanticName;
+
   const new({
     super.key,
     required this.series,
@@ -78,6 +83,7 @@ class TimelineChart extends StatefulWidget {
     this.initialRange,
     this.thresholds = const [],
     this.topLabel,
+    this.semanticName,
   });
 
   /// Fewest points worth calling a line. Below this a window is a dot or two
@@ -185,48 +191,53 @@ class _TimelineChartState extends State<TimelineChart> {
           children: [
             _ranges(l, days),
             const SizedBox(height: 8),
-            SizedBox(
-              height: widget.height,
-              // Room for the rotated date at each end. `fitInside` nudges a
-              // label back towards the plot but cannot invent space, so the
-              // last one hangs over whatever the chart is sitting in — which in
-              // a dialog means over the edge of the card.
-              child: Padding(
-                padding: const .symmetric(horizontal: 14),
-                child: GestureDetector(
-                  // Horizontal only, so the chart keeps its own tap-to-pin and a
-                  // vertical scroll still belongs to whatever is scrolling.
-                  onHorizontalDragUpdate: (details) => _zoom(details.delta.dx),
-                  child: HistoryChart(
-                    color: widget.color ?? colorScheme.primary,
-                    indicatorStrokeColor: colorScheme.surface,
-                    bottomAxisLabelStyle: textTheme.bodySmall,
-                    yStepCandidates: widget.yStepCandidates,
-                    leftAxisSize: widget.leftAxisSize,
-                    thresholds: widget.thresholds,
-                    topLabel: switch (widget.topLabel) {
-                      Widget label => Padding(
-                        padding: .only(left: widget.leftAxisSize),
-                        child: label,
-                      ),
-                      null => null,
-                    },
-                    showDots: points.length <= 45,
-                    barWidth: points.length <= 45 ? 4 : 2,
-                    series: [
-                      for (final (index, point) in points.indexed) Dot(index.toDouble(), point.value),
-                    ],
-                    getBottomLabel: (x) {
-                      return switch (labelled.contains(x)) {
-                        true => _axisLabel(points[x].at, grain, l, years: years),
-                        false => '',
-                      };
-                    },
-                    getLeftLabel: widget.getLeftLabel,
-                    getTooltip: switch (widget.getTooltip) {
-                      String Function(double) tooltip => (_, y) => tooltip(y),
-                      null => null,
-                    },
+            // Summary-level, not per-point: what it measures, over what span,
+            // where it ended up and which way it went. `docs/a11y.md`.
+            Semantics(
+              label: _summary(points, l),
+              child: SizedBox(
+                height: widget.height,
+                // Room for the rotated date at each end. `fitInside` nudges a
+                // label back towards the plot but cannot invent space, so the
+                // last one hangs over whatever the chart is sitting in — which in
+                // a dialog means over the edge of the card.
+                child: Padding(
+                  padding: const .symmetric(horizontal: 14),
+                  child: GestureDetector(
+                    // Horizontal only, so the chart keeps its own tap-to-pin and a
+                    // vertical scroll still belongs to whatever is scrolling.
+                    onHorizontalDragUpdate: (details) => _zoom(details.delta.dx),
+                    child: HistoryChart(
+                      color: widget.color ?? colorScheme.primary,
+                      indicatorStrokeColor: colorScheme.surface,
+                      bottomAxisLabelStyle: textTheme.bodySmall,
+                      yStepCandidates: widget.yStepCandidates,
+                      leftAxisSize: widget.leftAxisSize,
+                      thresholds: widget.thresholds,
+                      topLabel: switch (widget.topLabel) {
+                        Widget label => Padding(
+                          padding: .only(left: widget.leftAxisSize),
+                          child: label,
+                        ),
+                        null => null,
+                      },
+                      showDots: points.length <= 45,
+                      barWidth: points.length <= 45 ? 4 : 2,
+                      series: [
+                        for (final (index, point) in points.indexed) Dot(index.toDouble(), point.value),
+                      ],
+                      getBottomLabel: (x) {
+                        return switch (labelled.contains(x)) {
+                          true => _axisLabel(points[x].at, grain, l, years: years),
+                          false => '',
+                        };
+                      },
+                      getLeftLabel: widget.getLeftLabel,
+                      getTooltip: switch (widget.getTooltip) {
+                        String Function(double) tooltip => (_, y) => tooltip(y),
+                        null => null,
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -360,6 +371,29 @@ class _TimelineChartState extends State<TimelineChart> {
       },
       .year => DateFormat.y().format(at),
     };
+  }
+
+  /// The plot as a sentence — what it measures, the span on screen, where it
+  /// ended up and which way it went. A screen reader cannot perceive a painted
+  /// line, and per-point narration would be unusable even if it could.
+  String _summary(List<TimelinePoint> points, L l) {
+    if (points.length < 2) return widget.semanticName ?? l.chartGenericLabel;
+
+    final first = points.first.value;
+    final last = points.last.value;
+    final trend = switch (last.compareTo(first)) {
+      > 0 => l.exerciseChartTrendUp,
+      < 0 => l.exerciseChartTrendDown,
+      _ => l.exerciseChartTrendFlat,
+    };
+
+    return l.exerciseChartSummary(
+      widget.semanticName ?? l.chartGenericLabel,
+      l.dayAndMonth(points.first.at),
+      l.dayAndMonth(points.last.at),
+      widget.getTooltip?.call(last) ?? last.toStringAsFixed(0),
+      trend,
+    );
   }
 
   String? _caption(TimelineGrain grain, L l) {
