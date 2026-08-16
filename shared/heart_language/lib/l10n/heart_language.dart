@@ -2012,10 +2012,10 @@ abstract class L {
   /// **'In the Health app, tap your profile picture, then Apps, and let Heart read.'**
   String get healthOffInHealthApp;
 
-  /// Non-iOS fallback for healthOffInHealthApp. Same rules: an instruction, never an explanation, and neutral about why there is nothing to show
+  /// Non-iOS fallback for healthOffInHealthApp. An instruction, never an explanation, and neutral about why there is nothing to show. The second sentence is Android-specific and load-bearing: Health Connect keeps past-data access as a separate switch away from the main permission list, and without it every read is capped at 30 days however far back the app asks. Say 'past data' — that is the platform's own wording for it
   ///
   /// In en, this message translates to:
-  /// **'Let Heart read your health data in your device’s health settings.'**
+  /// **'Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.'**
   String get healthOffInSettings;
 
   /// Title of that dialog, and the tooltip on the button that opens it. States the fact and nothing else — the app cannot tell whether the user declined or simply has no readings, so it must not sound like a fault on either side
@@ -2041,6 +2041,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Tap your profile picture, then Apps'**
   String get healthOpenHealthAppHint;
+
+  /// Non-iOS. Sits under the row that opens the device's health settings. Health Connect keeps past-data access apart from the main permission list, so a user who grants everything they can see is still capped at 30 days. An instruction, not an explanation of why. Deliberately echoes Health Connect's own prompt — "Allow Heart to access past data?" — so the words the user reads here are the words they then look for; match that prompt's wording in this locale rather than translating literally
+  ///
+  /// In en, this message translates to:
+  /// **'Also allow access to past data'**
+  String get healthOpenSettingsHint;
 
   /// Button that opens the operating system's settings app. Non-iOS fallback for healthOpenHealthApp
   ///
