@@ -198,6 +198,30 @@ class _App extends StatefulWidget {
 }
 
 class _AppState extends State<_App> {
+  /// The app's only lifecycle hook, and it sits here because [_App] is the
+  /// highest widget that can still read the providers above it.
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _onResume);
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  /// Health is the one thing whose truth can change while Heart is in the
+  /// background: its permissions are granted in another app entirely, and the
+  /// platform never tells us what was decided there. See [Health.onResume],
+  /// which throttles itself — this fires on every alt-tab.
+  void _onResume() {
+    if (mounted) Health.of(context).onResume();
+  }
+
   @override
   Widget build(BuildContext context) {
     final light = switch (widget.theme.color) {
@@ -242,7 +266,12 @@ class _AppState extends State<_App> {
         child: child ?? const SizedBox.shrink(),
       ),
       // until data is localized
-      supportedLocales: [const Locale('en')],
+      // English only until the translations are ready — but `en_CA` is not a
+      // translation, it is the same copy under Canadian conventions, and
+      // leaving it out is what made a Canadian phone read June the 19th as
+      // "6/19". Every date in the app is `DateFormat(…, localeName)`, so the
+      // resolved locale is the whole of that behaviour.
+      supportedLocales: [const Locale('en'), const Locale('en', 'CA')],
       // supportedLocales: L.supportedLocales,
       localizationsDelegates: L.localizationsDelegates,
     );
