@@ -106,6 +106,28 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     return tracked.where((metric) => (_daily[metric] ?? const []).isNotEmpty);
   }
 
+  /// Whether the provider that owns this notifier has been torn down.
+  ///
+  /// Nothing here is awaited by the app — [init] is fired and forgotten on the
+  /// start-up path, and the backfill it kicks off can run for minutes. A widget
+  /// test that pumps a screen and moves on disposes the provider underneath all
+  /// of that, and `notifyListeners` on a disposed `ChangeNotifier` throws —
+  /// which in `flutter test` takes the whole shell process down, not just the
+  /// one test.
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  /// [notifyListeners], unless nobody is listening any more.
+  void _notify() {
+    if (_disposed) return;
+    notifyListeners();
+  }
+
   @override
   void onSignOut() {
     userId = null;
@@ -135,7 +157,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     }
 
     _initialized = true;
-    notifyListeners();
+    _notify();
 
     await sync();
   }
@@ -256,7 +278,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> _sync() async {
     _syncing = true;
-    notifyListeners();
+    _notify();
 
     try {
       final now = DateTime.now();
@@ -271,7 +293,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
       }
 
       await _loadLocal();
-      notifyListeners();
+      _notify();
 
       await _backfill(until: now);
     } catch (error, stacktrace) {
@@ -284,7 +306,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
       // Stamped even on a failed pass: the throttle is about how recently we
       // asked the store, not about how much came back.
       _syncedAt = DateTime.now();
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -292,7 +314,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   /// first, storing each as it lands.
   Future<void> _read(HealthMetric metric, {required DateTime from, required DateTime to}) async {
     var end = to;
-    while (end.isAfter(from)) {
+    while (!_disposed && end.isAfter(from)) {
       final start = switch (end.subtract(_chunk)) {
         DateTime candidate when candidate.isBefore(from) => from,
         DateTime candidate => candidate,
@@ -325,8 +347,9 @@ class Health with ChangeNotifier implements SignOutStateSentry {
       for (final metric in tracked) metric: await _local.healthBackfilledTo(userId: userId!, metric: metric) ?? until,
     };
 
-    while (floors.values.any((floor) => floor.isAfter(since))) {
+    while (!_disposed && floors.values.any((floor) => floor.isAfter(since))) {
       for (final metric in tracked) {
+        if (_disposed) return;
         final floor = floors[metric]!;
         if (!floor.isAfter(since)) continue;
 
@@ -347,7 +370,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
       // One reload per round, not per chunk: the charts deepen evenly as the
       // walk runs instead of jumping a metric at a time.
       await _loadLocal();
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -382,14 +405,14 @@ class Health with ChangeNotifier implements SignOutStateSentry {
       await _local.clearHealthBackfill(id);
     }
     _daily.clear();
-    notifyListeners();
+    _notify();
   }
 
   /// Sends the user to install or update Health Connect. Android only.
   Future<void> openInstaller() async {
     await _device.openInstaller();
     _status = await _device.status();
-    notifyListeners();
+    _notify();
   }
 
   /// Sends the user where this platform keeps health permissions — on iOS the
