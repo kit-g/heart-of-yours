@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:heart_language/heart_language.dart';
 
 import 'image.dart';
 
@@ -24,54 +25,58 @@ class EditableAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme) = Theme.of(context);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        children: [
-          if (progress case double progress)
-            SizedBox(
-              width: radius * 2,
-              height: radius * 2,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 4,
-                backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 0.3),
-                color: colorScheme.primaryContainer,
+    return Semantics(
+      button: true,
+      label: L.of(context).changeProfilePhoto,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Stack(
+          children: [
+            if (progress case double progress)
+              SizedBox(
+                width: radius * 2,
+                height: radius * 2,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 4,
+                  backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 0.3),
+                  color: colorScheme.primaryContainer,
+                ),
               ),
+            Avatar(
+              radius: radius,
+              local: local,
+              remote: remote,
             ),
-          Avatar(
-            radius: radius,
-            local: local,
-            remote: remote,
-          ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: colorScheme.onPrimaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(1),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: Icon(
-                      Icons.edit_rounded,
-                      color: colorScheme.onPrimaryContainer,
-                      size: 20,
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.onPrimaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(1),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(
+                        Icons.edit_rounded,
+                        color: colorScheme.onPrimaryContainer,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
