@@ -13,6 +13,11 @@ class GoalLadderBar extends StatelessWidget {
   final Color track;
   final Color fill;
 
+  /// A one-sentence readout of the same progress this paints — targets,
+  /// achieved count, current reading — for the benefit of a screen reader,
+  /// which cannot perceive the rungs.
+  final String? semanticLabel;
+
   const new({
     super.key,
     required this.targets,
@@ -21,22 +26,26 @@ class GoalLadderBar extends StatelessWidget {
     required this.lowerIsBetter,
     required this.track,
     required this.fill,
+    this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 12,
-      child: CustomPaint(
-        painter: _LadderPainter(
-          targets: targets,
-          achieved: achieved,
-          current: current,
-          lowerIsBetter: lowerIsBetter,
-          track: track,
-          fill: fill,
+    return Semantics(
+      label: semanticLabel,
+      child: SizedBox(
+        height: 12,
+        child: CustomPaint(
+          painter: _LadderPainter(
+            targets: targets,
+            achieved: achieved,
+            current: current,
+            lowerIsBetter: lowerIsBetter,
+            track: track,
+            fill: fill,
+          ),
+          size: const Size(double.infinity, 12),
         ),
-        size: const Size(double.infinity, 12),
       ),
     );
   }
