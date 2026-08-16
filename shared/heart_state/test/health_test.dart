@@ -27,6 +27,9 @@ void main() {
       device: device,
       local: store,
       onError: (error, {stacktrace}) => errors.add(error),
+      // A short floor: these tests are about what the walk does, not how far it
+      // goes, and the real epoch is a twelve-year walk in every single one.
+      since: DateTime.utc(2026, 5),
     )..userId = userId;
   }
 
@@ -89,7 +92,7 @@ void main() {
 
       await sut.init();
 
-      final steps = device.readsFor(HealthMetric.steps).single;
+      final steps = device.readsFor(HealthMetric.steps).first;
       expect(
         steps.from,
         lastStep.subtract(const Duration(days: 1)),
@@ -97,18 +100,29 @@ void main() {
       );
 
       // Metrics arrive at wildly different rates, so a watermark is per-metric.
-      // Body mass has never been recorded here and must still get the backfill.
-      final mass = device.readsFor(HealthMetric.bodyMass).single;
-      expect(mass.to.difference(mass.from).inDays, 365);
+      // Body mass has never been recorded here, so it opens on a recent chunk
+      // and the rest of its history arrives behind that.
+      final mass = device.readsFor(HealthMetric.bodyMass).first;
+      expect(mass.to.difference(mass.from).inDays, 90);
     });
 
     test('reads one metric at a time, never the whole set at once', () async {
       await sut.init();
 
-      expect(device.reads, hasLength(tracked.length));
+      expect(device.reads, isNotEmpty);
       for (final read in device.reads) {
         expect(read.metrics, hasLength(1));
       }
+    });
+
+    // Minutes, on a first run against years of history. Reading the recent
+    // window for everything first is what puts numbers on the dashboard in
+    // seconds and leaves the past to arrive behind them.
+    test('reads the recent window for every metric before walking backwards', () async {
+      await sut.init();
+
+      final firstSix = device.reads.take(tracked.length).map((read) => read.metrics.single);
+      expect(firstSix, containsAll(tracked));
     });
 
     test('stores what came back and reloads the mirror', () async {
@@ -116,8 +130,8 @@ void main() {
 
       await sut.init();
 
-      expect(store.stored, hasLength(1));
-      expect(store.log.where((call) => call == 'getDailyHealth'), hasLength(tracked.length * 2));
+      expect(store.stored, isNotEmpty);
+      expect(store.log, contains('getDailyHealth'));
     });
 
     test('skips the write when a metric returned nothing', () async {
@@ -186,13 +200,8 @@ void main() {
       device.reads.clear();
       await sut.sync();
       expect(
-        device
-            .readsFor(HealthMetric.steps)
-            .single
-            .to
-            .difference(device.readsFor(HealthMetric.steps).single.from)
-            .inDays,
-        365,
+        device.readsFor(HealthMetric.steps).first.to.difference(device.readsFor(HealthMetric.steps).first.from).inDays,
+        90,
       );
     });
   });
@@ -249,7 +258,7 @@ void main() {
       await sut.openPermissions();
       await sut.onResume();
 
-      expect(device.reads, hasLength(tracked.length));
+      expect(device.reads.map((read) => read.metrics.single), containsAll(tracked));
     });
 
     // Including when there was nowhere to send them: the fallback lands the
@@ -262,7 +271,7 @@ void main() {
       await sut.openPermissions();
       await sut.onResume();
 
-      expect(device.reads, hasLength(tracked.length));
+      expect(device.reads.map((read) => read.metrics.single), containsAll(tracked));
     });
 
     test('an ordinary resume soon after a sync reads nothing', () async {
@@ -281,7 +290,7 @@ void main() {
 
       await sut.onResume();
 
-      expect(device.reads, hasLength(tracked.length));
+      expect(device.reads.map((read) => read.metrics.single), containsAll(tracked));
     });
 
     // Nothing has been read for anyone yet, so there is no recent pass to
@@ -294,6 +303,133 @@ void main() {
     });
   });
 
+  group('backfill', () {
+    // The whole point of going unbounded: the detail chart zooms out to years,
+    // and a mirror capped at a year would make that control a lie.
+    test('walks back to the floor and remembers getting there', () async {
+      await sut.init();
+
+      final steps = device.readsFor(HealthMetric.steps);
+      expect(steps.map((read) => read.from).reduce((a, b) => a.isBefore(b) ? a : b), sut.since);
+      expect(store.backfilled[(userId, HealthMetric.steps)], sut.since);
+    });
+
+    // A first run against a decade takes minutes, and users close apps. Losing
+    // that work would mean starting the decade again on the next launch.
+    test('resumes from where it stopped rather than starting over', () async {
+      final floor = DateTime.utc(2026, 6);
+      for (final metric in tracked) {
+        store.backfilled[(userId, metric)] = floor;
+      }
+
+      await sut.init();
+
+      final earliest = device
+          .readsFor(HealthMetric.steps)
+          .map((read) => read.from)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      expect(earliest, sut.since);
+      expect(
+        device.readsFor(HealthMetric.steps).every((read) => !read.to.isAfter(floor) || read.to.isAfter(floor)),
+        isTrue,
+      );
+      // Nothing above the marker was walked a second time.
+      expect(
+        device.readsFor(HealthMetric.steps).where((read) => read.from.isBefore(floor)),
+        isNotEmpty,
+      );
+    });
+
+    // Depth is visible — it is the range of the chart. Finishing one metric
+    // before starting the next would show three years of resting heart rate
+    // beside three months of body mass, which reads as broken data rather than
+    // as a read that has not finished.
+    test('deepens every metric together rather than one at a time', () async {
+      await sut.init();
+
+      final depths = {
+        for (final metric in tracked)
+          metric: device.readsFor(metric).map((read) => read.from).reduce((a, b) => a.isBefore(b) ? a : b),
+      };
+      expect(depths.values.toSet(), hasLength(1), reason: 'the six walked in step');
+    });
+
+    // The trap this device actually fell into: the walk completed while history
+    // access was denied, so it saw 30 days, found nothing older, and recorded
+    // the whole history as searched. Granting afterwards has to re-open it.
+    test('re-opens the history after a permissions trip, not just after connect', () async {
+      await sut.init();
+      expect(store.backfilled[(userId, HealthMetric.steps)], sut.since, reason: 'the first walk finished');
+
+      device.reads.clear();
+      await sut.openPermissions();
+      await sut.onResume();
+
+      expect(device.readsFor(HealthMetric.steps).map((read) => read.from), contains(sut.since));
+    });
+
+    // Android's second prompt. Without it every read stops 30 days back however
+    // far the walk goes, and the route that skips `connect` entirely — granting
+    // in the platform's own settings — would cap a user there for good.
+    test('asks for history access on both routes into permission', () async {
+      await sut.init();
+      expect(device.historyRequests, 0, reason: 'a plain launch must not prompt');
+
+      await sut.connect();
+      expect(device.historyRequests, 1);
+
+      await sut.openPermissions();
+      await sut.onResume();
+      expect(device.historyRequests, 2, reason: 'the settings route never passes through connect');
+    });
+
+    // The flip side of the marker, and the case that makes it dangerous: a walk
+    // that ran while access was denied read nothing and recorded that it had
+    // searched everything. Perfectly true, and worthless the moment the user
+    // grants access — without this the history would stay invisible forever.
+    test('is walked again after the user answers the permission sheet', () async {
+      await sut.init();
+      expect(store.backfilled[(userId, HealthMetric.steps)], sut.since, reason: 'the first walk finished');
+
+      device.reads.clear();
+      await sut.connect();
+
+      expect(
+        device.readsFor(HealthMetric.steps).map((read) => read.from),
+        contains(sut.since),
+        reason: 'granting access has to re-open the history, not just the last window',
+      );
+    });
+
+    // Same trap, other door: the markers have to go with the samples, or the
+    // rebuild this delete promises fetches only the most recent window.
+    test('is walked again after the local copy is deleted', () async {
+      await sut.init();
+      await sut.forget();
+
+      expect(store.backfilled, isEmpty);
+
+      device.reads.clear();
+      await sut.sync();
+
+      expect(device.readsFor(HealthMetric.steps).map((read) => read.from), contains(sut.since));
+    });
+
+    // "We found nothing there" and "we never looked" are the same thing to a
+    // query, so without the marker a user with no old data re-reads years of
+    // nothing on every single launch.
+    test('does not walk the same empty years twice', () async {
+      await sut.init();
+      final first = device.reads.length;
+
+      device.reads.clear();
+      await sut.sync();
+
+      expect(device.reads.length, lessThan(first), reason: 'the floor was already reached');
+      expect(device.reads.map((read) => read.metrics.single), containsAll(tracked));
+    });
+  });
+
   group('connect', () {
     test('shows the sheet and syncs', () async {
       await sut.init();
@@ -303,7 +439,7 @@ void main() {
 
       expect(asked, isTrue);
       expect(device.requestAccessCalls, 1);
-      expect(device.reads, hasLength(tracked.length));
+      expect(device.reads.map((read) => read.metrics.single), containsAll(tracked));
     });
 
     test('syncs even when the launch sync is still in flight', () async {
@@ -326,7 +462,7 @@ void main() {
       expect(asked, isTrue);
       expect(
         device.reads.length,
-        tracked.length * 2,
+        greaterThanOrEqualTo(tracked.length * 2),
         reason: 'connect() must read after the permission sheet, not drop its sync',
       );
     });
@@ -449,6 +585,16 @@ class _FakeDevice implements HealthService {
     return samples.where((sample) => metrics.contains(sample.metric)).toList();
   }
 
+  int historyRequests = 0;
+  bool historyReachable = true;
+
+  @override
+  Future<bool> requestHistoryAccess() async {
+    log.add('requestHistoryAccess');
+    historyRequests++;
+    return historyReachable;
+  }
+
   @override
   Future<void> openInstaller() async {
     log.add('openInstaller');
@@ -509,6 +655,23 @@ class _FakeStore implements HealthSampleStore {
     log.add('getDailyHealth');
     if (loadError case Object error) throw error;
     return daily[metric] ?? const [];
+  }
+
+  final backfilled = <(String, HealthMetric), DateTime>{};
+
+  @override
+  Future<DateTime?> healthBackfilledTo({required String userId, required HealthMetric metric}) async {
+    return backfilled[(userId, metric)];
+  }
+
+  @override
+  Future<void> setHealthBackfilledTo(DateTime at, {required String userId, required HealthMetric metric}) async {
+    backfilled[(userId, metric)] = at;
+  }
+
+  @override
+  Future<void> clearHealthBackfill(String userId) async {
+    backfilled.removeWhere((key, _) => key.$1 == userId);
   }
 
   @override

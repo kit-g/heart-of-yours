@@ -24,12 +24,17 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   /// passes it.
   final Duration resumeInterval;
 
+  /// The floor the backfill walks down to. Defaults to [epoch]; a constructor
+  /// argument only so tests can ask for a short walk instead of twelve years.
+  final DateTime since;
+
   new({
     required this._device,
     required this._local,
     this.onError,
     this.resumeInterval = const Duration(minutes: 15),
-  });
+    DateTime? since,
+  }) : since = since ?? epoch;
 
   /// What we read. Deliberately small: every entry is a metric the app can
   /// actually show or reason about, and each one is a permission the user is
@@ -43,12 +48,22 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     .bodyMass,
   };
 
-  /// How far back the first sync reaches.
+  /// How far back Heart will ever look.
   ///
-  /// A year makes the very first chart worth looking at — a trend over three
-  /// weeks says nothing about training. Later syncs are incremental from the
-  /// stored watermark, so this cost is paid once.
-  static const _backfill = Duration(days: 365);
+  /// Everything the store has, in practice: HealthKit shipped with iOS 8 in
+  /// September 2014 and Health Connect is younger, so nothing predates this.
+  /// A floor rather than a window because the detail chart zooms out to years
+  /// — capping the mirror at a year would make that control a lie.
+  static final epoch = DateTime.utc(2014, 9);
+
+  /// How much history one device read asks for at a time.
+  ///
+  /// The store answers with every sample in the window at once, in memory. A
+  /// decade of step counts is hundreds of thousands of objects and would take
+  /// the app down, so the walk is chunked — and each chunk is persisted before
+  /// the next begins, which is also what makes an interrupted backfill
+  /// resumable rather than restartable.
+  static const _chunk = Duration(days: 90);
 
   static Health of(BuildContext context) => Provider.of<Health>(context, listen: false);
 
@@ -133,17 +148,31 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   Future<bool> connect() async {
     final asked = await _device.requestAccess(tracked);
 
+    // A second, separate prompt on Android: without it every read stops 30 days
+    // back, however far the backfill walks. Declining is survivable, so its
+    // answer does not change ours.
+    await _device.requestHistoryAccess();
+
     // Re-read the status rather than trusting the one taken at launch. If that
     // check threw, [_status] is stuck at its `unavailable` default and [sync]
     // returns early forever — and outside Android's [openInstaller] there is
     // nothing else that would ever reopen the gate.
     _status = await _device.status();
 
-    // The first sync backfills a year across every tracked metric, so the sheet
-    // is routinely answered while it is still running. Join that pass rather
-    // than racing it, then run a fresh one: the windows it already read were
-    // read before consent existed, so its results say nothing about what the
-    // user just granted.
+    // Everything already walked was walked under the old answer. A backfill
+    // that ran while access was denied read nothing and recorded that it had
+    // searched the whole history — true, and worthless now: without this the
+    // walk would never run again and years of history would stay invisible
+    // behind a permission the user has just granted.
+    if (userId case String id) {
+      await _local.clearHealthBackfill(id);
+    }
+
+    // The first sync walks years across every tracked metric, so the sheet is
+    // routinely answered while it is still running. Join that pass rather than
+    // racing it, then run a fresh one: the windows it already read were read
+    // before consent existed, so its results say nothing about what the user
+    // just granted.
     await _inFlight;
     await sync();
 
@@ -170,6 +199,26 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     return _inFlight ??= _sync().whenComplete(() => _inFlight = null);
   }
 
+  /// The return leg of a permissions trip.
+  ///
+  /// Asks for history access before reading, because the trip may well have
+  /// been the user granting the six data permissions in the platform's own
+  /// settings — a route that never passes through [connect], and so would leave
+  /// them capped at 30 days of history for good.
+  ///
+  /// Then forgets how far back each metric has been walked, for the same reason
+  /// [connect] does and one more: a walk that ran *before* history access was
+  /// granted saw only the last 30 days, found nothing older, and recorded the
+  /// whole history as searched. Proved on a Pixel 7 — permissions granted, the
+  /// walk already complete, and a store that would have stayed empty forever.
+  Future<void> _resync() async {
+    await _device.requestHistoryAccess();
+    if (userId case String id) {
+      await _local.clearHealthBackfill(id);
+    }
+    await sync();
+  }
+
   Future<void>? _inFlight;
 
   /// When a pass last finished, whatever it found. Drives the resume throttle.
@@ -194,7 +243,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     // genuinely may have changed, and the user came back to look at the result.
     if (_leftForPermissions) {
       _leftForPermissions = false;
-      return sync();
+      return _resync();
     }
 
     return switch (_syncedAt) {
@@ -212,17 +261,19 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     try {
       final now = DateTime.now();
 
+      // Recent first, every metric, before anything walks backwards. A first
+      // run against years of history takes minutes; this way the dashboard
+      // fills in seconds and the past arrives behind it.
       for (final metric in tracked) {
         final last = await _local.lastHealthSampleAt(userId: userId!, metric: metric);
-        final from = last?.subtract(const Duration(days: 1)) ?? now.subtract(_backfill);
-
-        final samples = await _device.read(metrics: {metric}, from: from, to: now);
-        if (samples.isNotEmpty) {
-          await _local.storeHealthSamples(samples, userId!);
-        }
+        final from = last?.subtract(const Duration(days: 1)) ?? now.subtract(_chunk);
+        await _read(metric, from: from, to: now);
       }
 
       await _loadLocal();
+      notifyListeners();
+
+      await _backfill(until: now);
     } catch (error, stacktrace) {
       // Reported without the samples themselves — see the note on onError in
       // the app's wiring. A failed sync is not worth surfacing to the user:
@@ -237,13 +288,75 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Reads `[from, to)` from the device in [_chunk]-sized windows, newest
+  /// first, storing each as it lands.
+  Future<void> _read(HealthMetric metric, {required DateTime from, required DateTime to}) async {
+    var end = to;
+    while (end.isAfter(from)) {
+      final start = switch (end.subtract(_chunk)) {
+        DateTime candidate when candidate.isBefore(from) => from,
+        DateTime candidate => candidate,
+      };
+
+      final samples = await _device.read(metrics: {metric}, from: start, to: end);
+      if (samples.isNotEmpty) {
+        await _local.storeHealthSamples(samples, userId!);
+      }
+
+      end = start;
+    }
+  }
+
+  /// Walks every metric backwards to [since], a chunk at a time, remembering
+  /// how far each got.
+  ///
+  /// All six advance together rather than one being finished before the next
+  /// begins. Depth is visible — it is the range of the chart — and a walk that
+  /// completed resting heart rate before it started body mass would show three
+  /// years of one beside three months of the other, which reads as broken data
+  /// rather than as an unfinished read.
+  ///
+  /// The markers are what stop this being work repeated forever. Someone whose
+  /// history starts last September would otherwise have eleven empty years
+  /// re-read on every launch, because "we found nothing there" and "we never
+  /// looked" are the same answer from a query.
+  Future<void> _backfill({required DateTime until}) async {
+    final floors = {
+      for (final metric in tracked) metric: await _local.healthBackfilledTo(userId: userId!, metric: metric) ?? until,
+    };
+
+    while (floors.values.any((floor) => floor.isAfter(since))) {
+      for (final metric in tracked) {
+        final floor = floors[metric]!;
+        if (!floor.isAfter(since)) continue;
+
+        final start = switch (floor.subtract(_chunk)) {
+          DateTime candidate when candidate.isBefore(since) => since,
+          DateTime candidate => candidate,
+        };
+
+        final samples = await _device.read(metrics: {metric}, from: start, to: floor);
+        if (samples.isNotEmpty) {
+          await _local.storeHealthSamples(samples, userId!);
+        }
+
+        floors[metric] = start;
+        await _local.setHealthBackfilledTo(start, userId: userId!, metric: metric);
+      }
+
+      // One reload per round, not per chunk: the charts deepen evenly as the
+      // walk runs instead of jumping a metric at a time.
+      await _loadLocal();
+      notifyListeners();
+    }
+  }
+
   Future<void> _loadLocal() async {
     if (userId case String id) {
       final now = DateTime.now();
-      final from = now.subtract(_backfill);
 
       for (final metric in tracked) {
-        _daily[metric] = await _local.getDailyHealth(userId: id, metric: metric, from: from, to: now);
+        _daily[metric] = await _local.getDailyHealth(userId: id, metric: metric, from: since, to: now);
       }
     }
   }
@@ -263,6 +376,10 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   Future<void> forget() async {
     if (userId case String id) {
       await _local.deleteHealthSamples(id);
+      // The progress markers go with the samples. Left behind they would claim
+      // the history had already been walked, and the rebuild this delete
+      // promises would fetch only the last ninety days.
+      await _local.clearHealthBackfill(id);
     }
     _daily.clear();
     notifyListeners();

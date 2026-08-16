@@ -150,6 +150,23 @@ class _NoHealthStore implements HealthSampleStore {
     required DateTime to,
   }) async => const [];
 
+  final backfilled = <(String, HealthMetric), DateTime>{};
+
+  @override
+  Future<DateTime?> healthBackfilledTo({required String userId, required HealthMetric metric}) async {
+    return backfilled[(userId, metric)];
+  }
+
+  @override
+  Future<void> setHealthBackfilledTo(DateTime at, {required String userId, required HealthMetric metric}) async {
+    backfilled[(userId, metric)] = at;
+  }
+
+  @override
+  Future<void> clearHealthBackfill(String userId) async {
+    backfilled.removeWhere((key, _) => key.$1 == userId);
+  }
+
   @override
   Future<void> deleteHealthSamples(String userId) async {}
 }
