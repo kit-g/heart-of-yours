@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
+import 'package:heart_language/heart_language.dart';
 
 class SearchField extends StatelessWidget {
   final FocusNode focusNode;
@@ -33,9 +34,13 @@ class SearchField extends StatelessWidget {
               size: 24,
             ),
             suffixIcon: switch (focusNode.hasFocus) {
-              true => GestureDetector(
-                onTap: onClear ?? _onClear,
-                child: const Icon(Icons.close_rounded),
+              true => Semantics(
+                button: true,
+                label: L.of(context).clearSearchTooltip,
+                child: GestureDetector(
+                  onTap: onClear ?? _onClear,
+                  child: const Icon(Icons.close_rounded),
+                ),
               ),
               false => null,
             },
