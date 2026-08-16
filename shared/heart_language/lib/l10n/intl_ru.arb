@@ -1941,6 +1941,132 @@
     "type": "text",
     "placeholders": {}
   },
+  "moreOptions": "Дополнительные действия",
+  "@moreOptions": {
+    "description": "Tooltip on an icon-only overflow menu button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "viewProgressPhotos": "Просмотреть фото прогресса",
+  "@viewProgressPhotos": {
+    "description": "Tooltip on the icon button that opens a workout's attached progress photos",
+    "type": "text",
+    "placeholders": {}
+  },
+  "confirmEdit": "Подтвердить",
+  "@confirmEdit": {
+    "description": "Tooltip on the checkmark button that dismisses the keyboard after editing a name field",
+    "type": "text",
+    "placeholders": {}
+  },
+  "clearSearchTooltip": "Очистить поиск",
+  "@clearSearchTooltip": {
+    "description": "Accessibility label on the button that clears a search field's text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "changeProfilePhoto": "Изменить фото профиля",
+  "@changeProfilePhoto": {
+    "description": "Accessibility label on the editable avatar shown while editing an account",
+    "type": "text",
+    "placeholders": {}
+  },
+  "viewAccountDetails": "Данные аккаунта",
+  "@viewAccountDetails": {
+    "description": "Accessibility label on the profile page header, which opens account management",
+    "type": "text",
+    "placeholders": {}
+  },
+  "viewProfilePhoto": "Просмотреть фото профиля",
+  "@viewProfilePhoto": {
+    "description": "Accessibility label on the avatar shown in the profile page header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "durationPickerSetTo": "Установить таймер отдыха на {duration}",
+  "@durationPickerSetTo": {
+    "description": "Accessibility label on a single row of the rest-timer duration picker, tapped to select that duration directly",
+    "type": "text",
+    "placeholders": {
+      "duration": {}
+    }
+  },
+  "emptyWorkoutLabel": "Пустая тренировка",
+  "@emptyWorkoutLabel": {
+    "description": "Accessibility label on the illustration shown when a workout has no exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "progressPhotoLabel": "Фото прогресса от {date}",
+  "@progressPhotoLabel": {
+    "description": "Accessibility label on a progress photo in the gallery",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "exerciseThumbnailLabel": "Миниатюра: {exerciseName}",
+  "@exerciseThumbnailLabel": {
+    "description": "Accessibility label on an exercise's thumbnail image",
+    "type": "text",
+    "placeholders": {
+      "exerciseName": {}
+    }
+  },
+  "goalLadderSummary": "Достигнуто целей: {achieved} из {total}. Текущее значение: {current}.",
+  "@goalLadderSummary": {
+    "description": "Accessibility summary of a goal's ladder progress bar, replacing the painted rungs with a sentence",
+    "type": "text",
+    "placeholders": {
+      "achieved": {},
+      "total": {},
+      "current": {}
+    }
+  },
+  "exerciseChartSummary": "{metric} с {start} по {end}. Последнее значение: {latest}. Тенденция: {trend}.",
+  "@exerciseChartSummary": {
+    "description": "Accessibility summary of a history chart, replacing the plotted line with a sentence",
+    "type": "text",
+    "placeholders": {
+      "metric": {},
+      "start": {},
+      "end": {},
+      "latest": {},
+      "trend": {}
+    }
+  },
+  "exerciseChartTrendUp": "Рост",
+  "@exerciseChartTrendUp": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartTrendDown": "Снижение",
+  "@exerciseChartTrendDown": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartTrendFlat": "Без изменений",
+  "@exerciseChartTrendFlat": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value equals the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartGenericLabel": "График",
+  "@chartGenericLabel": {
+    "description": "Fallback metric name in the history chart accessibility summary, when the chart has no visible title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restTimerRemaining": "Таймер отдыха: осталось {remaining}",
+  "@restTimerRemaining": {
+    "description": "Accessibility label on the rest-timer countdown ring, stating the remaining time as a sentence",
+    "type": "text",
+    "placeholders": {
+      "remaining": {}
+    }
+  },
   "health": "Здоровье",
   "@health": {
     "description": "Header of the health section on the profile dashboard",

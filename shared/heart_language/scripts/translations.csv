@@ -348,6 +348,24 @@ noWorkoutSelectedTitle,Placeholder shown in the detail pane on a tablet when no 
 noWorkoutSelectedBody,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Pick a workout to see what you did and make changes.,Pick a workout to see what you did and make changes.,"Выберите тренировку, чтобы посмотреть и изменить её."
 noExerciseSelectedTitle,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,Nothing selected,Nothing selected,Ничего не выбрано
 noExerciseSelectedBody,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,"Pick an exercise to see how it's done, plus your history and records.","Pick an exercise to see how it's done, plus your history and records.","Выберите упражнение, чтобы увидеть технику, историю и рекорды."
+moreOptions,Tooltip on an icon-only overflow menu button,More options,More options,Дополнительные действия
+viewProgressPhotos,Tooltip on the icon button that opens a workout's attached progress photos,View progress photos,View progress photos,Просмотреть фото прогресса
+confirmEdit,Tooltip on the checkmark button that dismisses the keyboard after editing a name field,Confirm,Confirm,Подтвердить
+clearSearchTooltip,Accessibility label on the button that clears a search field's text,Clear search,Clear search,Очистить поиск
+changeProfilePhoto,Accessibility label on the editable avatar shown while editing an account,Change profile photo,Change profile photo,Изменить фото профиля
+viewAccountDetails,"Accessibility label on the profile page header, which opens account management",Account details,Account details,Данные аккаунта
+viewProfilePhoto,Accessibility label on the avatar shown in the profile page header,View profile photo,View profile photo,Просмотреть фото профиля
+durationPickerSetTo,"Accessibility label on a single row of the rest-timer duration picker, tapped to select that duration directly",Set rest timer to {duration},Set rest timer to {duration},Установить таймер отдыха на {duration}
+emptyWorkoutLabel,Accessibility label on the illustration shown when a workout has no exercises,Empty workout,Empty workout,Пустая тренировка
+progressPhotoLabel,Accessibility label on a progress photo in the gallery,Progress photo from {date},Progress photo from {date},Фото прогресса от {date}
+exerciseThumbnailLabel,Accessibility label on an exercise's thumbnail image,{exerciseName} thumbnail,{exerciseName} thumbnail,Миниатюра: {exerciseName}
+goalLadderSummary,"Accessibility summary of a goal's ladder progress bar, replacing the painted rungs with a sentence",{achieved} of {total} targets reached. Current: {current}.,{achieved} of {total} targets reached. Current: {current}.,Достигнуто целей: {achieved} из {total}. Текущее значение: {current}.
+exerciseChartSummary,"Accessibility summary of a history chart, replacing the plotted line with a sentence",{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} с {start} по {end}. Последнее значение: {latest}. Тенденция: {trend}.
+exerciseChartTrendUp,"Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown",Increasing,Increasing,Рост
+exerciseChartTrendDown,"Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown",Decreasing,Decreasing,Снижение
+exerciseChartTrendFlat,"Trend word in the history chart accessibility summary, when the latest value equals the earliest shown",Flat,Flat,Без изменений
+chartGenericLabel,"Fallback metric name in the history chart accessibility summary, when the chart has no visible title",Chart,Chart,График
+restTimerRemaining,"Accessibility label on the rest-timer countdown ring, stating the remaining time as a sentence",Rest timer: {remaining} remaining,Rest timer: {remaining} remaining,Таймер отдыха: осталось {remaining}
 health,Header of the health section on the profile dashboard,Health,Health,Здоровье
 healthActiveEnergy,Name of a health metric: calories burned through activity,Active energy,Active energy,Активные калории
 healthBodyMass,Name of a health metric: bodyweight,Body mass,Body mass,Вес

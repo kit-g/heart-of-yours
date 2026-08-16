@@ -1011,6 +1011,72 @@ class LRu extends L {
   String get noExerciseSelectedBody => 'Выберите упражнение, чтобы увидеть технику, историю и рекорды.';
 
   @override
+  String get moreOptions => 'Дополнительные действия';
+
+  @override
+  String get viewProgressPhotos => 'Просмотреть фото прогресса';
+
+  @override
+  String get confirmEdit => 'Подтвердить';
+
+  @override
+  String get clearSearchTooltip => 'Очистить поиск';
+
+  @override
+  String get changeProfilePhoto => 'Изменить фото профиля';
+
+  @override
+  String get viewAccountDetails => 'Данные аккаунта';
+
+  @override
+  String get viewProfilePhoto => 'Просмотреть фото профиля';
+
+  @override
+  String durationPickerSetTo(Object duration) {
+    return 'Установить таймер отдыха на $duration';
+  }
+
+  @override
+  String get emptyWorkoutLabel => 'Пустая тренировка';
+
+  @override
+  String progressPhotoLabel(Object date) {
+    return 'Фото прогресса от $date';
+  }
+
+  @override
+  String exerciseThumbnailLabel(Object exerciseName) {
+    return 'Миниатюра: $exerciseName';
+  }
+
+  @override
+  String goalLadderSummary(Object achieved, Object total, Object current) {
+    return 'Достигнуто целей: $achieved из $total. Текущее значение: $current.';
+  }
+
+  @override
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
+    return '$metric с $start по $end. Последнее значение: $latest. Тенденция: $trend.';
+  }
+
+  @override
+  String get exerciseChartTrendUp => 'Рост';
+
+  @override
+  String get exerciseChartTrendDown => 'Снижение';
+
+  @override
+  String get exerciseChartTrendFlat => 'Без изменений';
+
+  @override
+  String get chartGenericLabel => 'График';
+
+  @override
+  String restTimerRemaining(Object remaining) {
+    return 'Таймер отдыха: осталось $remaining';
+  }
+
+  @override
   String get health => 'Здоровье';
 
   @override
