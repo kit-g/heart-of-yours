@@ -310,7 +310,7 @@ class const _HealthCard({
     final latest = series.last;
     final (value, unit) = metric.display(latest.value, settings, l);
 
-0    return Semantics(
+    return Semantics(
       // An `InkWell` renders as its child — a label, a number and a painted
       // line — and gets no button semantics for free, so a screen reader would
       // read three unrelated fragments and never say the card can be opened.
