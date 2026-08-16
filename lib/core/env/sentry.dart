@@ -70,12 +70,7 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
 /// An error whose payload was dropped before it could reach Sentry, leaving
 /// only what is safe: the original type, and the stack trace it came with.
 @visibleForTesting
-class RedactedError implements Exception {
-  final Type original;
-  final String domain;
-
-  const new(this.original, this.domain);
-
+class const RedactedError(final Type original, final String domain) implements Exception {
   @override
   String toString() => '$original in $domain (message withheld — $domain data stays on device)';
 }
