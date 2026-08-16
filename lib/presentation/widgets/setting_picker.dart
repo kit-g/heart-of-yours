@@ -28,7 +28,7 @@ class FixedLengthSettingPicker<T extends Object> extends StatelessWidget {
             title,
             style: textTheme.bodyLarge,
           ),
-          _Switcher(
+          SettingSwitcher(
             children: children,
             value: value,
             onValueChanged: onValueChanged,
@@ -39,7 +39,10 @@ class FixedLengthSettingPicker<T extends Object> extends StatelessWidget {
   }
 }
 
-class _Switcher<T extends Object> extends StatelessWidget {
+/// The app's segmented control: Cupertino on Apple platforms, [ToggleButtons]
+/// elsewhere. Public because it is the house language for "pick one of these
+/// few", and charts want it as much as settings rows do.
+class SettingSwitcher<T extends Object> extends StatelessWidget {
   final T value;
   final Map<T, Widget> children;
   final ValueChanged<T?> onValueChanged;
@@ -77,7 +80,7 @@ class _Switcher<T extends Object> extends StatelessWidget {
           children: children.values.map(
             (child) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const .symmetric(horizontal: 8.0),
                 child: child,
               );
             },
