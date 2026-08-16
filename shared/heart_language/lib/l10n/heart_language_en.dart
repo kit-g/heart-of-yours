@@ -798,7 +798,7 @@ class LEn extends L {
   String get chartGenericLabel => 'Chart';
 
   @override
-  String exerciseChartSummary(String metric, String start, String end, String latest, String trend) {
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
     return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
   }
 
@@ -1051,23 +1051,6 @@ class LEn extends L {
   String goalLadderSummary(Object achieved, Object total, Object current) {
     return '$achieved of $total targets reached. Current: $current.';
   }
-
-  @override
-  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
-    return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
-  }
-
-  @override
-  String get exerciseChartTrendUp => 'Increasing';
-
-  @override
-  String get exerciseChartTrendDown => 'Decreasing';
-
-  @override
-  String get exerciseChartTrendFlat => 'Flat';
-
-  @override
-  String get chartGenericLabel => 'Chart';
 
   @override
   String restTimerRemaining(Object remaining) {
@@ -1970,7 +1953,7 @@ class LEnCa extends LEn {
   String get chartGenericLabel => 'Chart';
 
   @override
-  String exerciseChartSummary(String metric, String start, String end, String latest, String trend) {
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
     return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
   }
 
@@ -2223,23 +2206,6 @@ class LEnCa extends LEn {
   String goalLadderSummary(Object achieved, Object total, Object current) {
     return '$achieved of $total targets reached. Current: $current.';
   }
-
-  @override
-  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
-    return '$metric from $start to $end. Latest: $latest. Trend: $trend.';
-  }
-
-  @override
-  String get exerciseChartTrendUp => 'Increasing';
-
-  @override
-  String get exerciseChartTrendDown => 'Decreasing';
-
-  @override
-  String get exerciseChartTrendFlat => 'Flat';
-
-  @override
-  String get chartGenericLabel => 'Chart';
 
   @override
   String restTimerRemaining(Object remaining) {

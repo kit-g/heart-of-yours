@@ -800,7 +800,7 @@ class LRu extends L {
   String get chartGenericLabel => 'График';
 
   @override
-  String exerciseChartSummary(String metric, String start, String end, String latest, String trend) {
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
     return '$metric с $start по $end. Последнее значение: $latest. Тенденция: $trend.';
   }
 
@@ -1053,23 +1053,6 @@ class LRu extends L {
   String goalLadderSummary(Object achieved, Object total, Object current) {
     return 'Достигнуто целей: $achieved из $total. Текущее значение: $current.';
   }
-
-  @override
-  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend) {
-    return '$metric с $start по $end. Последнее значение: $latest. Тенденция: $trend.';
-  }
-
-  @override
-  String get exerciseChartTrendUp => 'Рост';
-
-  @override
-  String get exerciseChartTrendDown => 'Снижение';
-
-  @override
-  String get exerciseChartTrendFlat => 'Без изменений';
-
-  @override
-  String get chartGenericLabel => 'График';
 
   @override
   String restTimerRemaining(Object remaining) {

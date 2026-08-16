@@ -1542,7 +1542,7 @@ abstract class L {
   ///
   /// In en, this message translates to:
   /// **'{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.'**
-  String exerciseChartSummary(String metric, String start, String end, String latest, String trend);
+  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend);
 
   /// Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown
   ///
@@ -2005,36 +2005,6 @@ abstract class L {
   /// In en, this message translates to:
   /// **'{achieved} of {total} targets reached. Current: {current}.'**
   String goalLadderSummary(Object achieved, Object total, Object current);
-
-  /// Accessibility summary of a history chart, replacing the plotted line with a sentence
-  ///
-  /// In en, this message translates to:
-  /// **'{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.'**
-  String exerciseChartSummary(Object metric, Object start, Object end, Object latest, Object trend);
-
-  /// Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown
-  ///
-  /// In en, this message translates to:
-  /// **'Increasing'**
-  String get exerciseChartTrendUp;
-
-  /// Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown
-  ///
-  /// In en, this message translates to:
-  /// **'Decreasing'**
-  String get exerciseChartTrendDown;
-
-  /// Trend word in the history chart accessibility summary, when the latest value equals the earliest shown
-  ///
-  /// In en, this message translates to:
-  /// **'Flat'**
-  String get exerciseChartTrendFlat;
-
-  /// Fallback metric name in the history chart accessibility summary, when the chart has no visible title
-  ///
-  /// In en, this message translates to:
-  /// **'Chart'**
-  String get chartGenericLabel;
 
   /// Accessibility label on the rest-timer countdown ring, stating the remaining time as a sentence
   ///
