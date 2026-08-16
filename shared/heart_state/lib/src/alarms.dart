@@ -9,10 +9,21 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   final VoidCallback? cancelRestTimerNotifications;
   final Duration _tick;
 
+  /// The clock the countdown measures against.
+  ///
+  /// Injectable because the remaining count is *derived* from it rather than
+  /// counted: each tick recomputes `end - now`. The tests drive real timers on
+  /// a 10ms tick and then assert an exact remaining value, so a loaded CI
+  /// runner that overshoots the delay by one tick makes the assertion fail —
+  /// 498 where 499 was expected — with nothing actually wrong. A clock the test
+  /// advances itself makes that arithmetic deterministic.
+  final DateTime Function() _now;
+
   new({
     this._tick = const Duration(seconds: 1),
     this.cancelRestTimerNotifications,
-  });
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
 
   @override
   void onSignOut() {
@@ -38,8 +49,6 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   /// The exercise the running countdown belongs to. There is only ever one
   /// countdown; this is what lets the UI draw it on that exercise alone.
   String? get activeExerciseId => _activeExercise?.exerciseId;
-
-  static DateTime _now() => DateTime.now();
 
   void _stopActiveExerciseTimer() {
     _activeExercise
