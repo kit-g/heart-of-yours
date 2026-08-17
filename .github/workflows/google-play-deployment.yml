@@ -93,3 +93,7 @@ jobs:
           releaseFiles: "build/app/outputs/bundle/${{ inputs.flavor }}Release/app-${{ inputs.flavor }}-release.aab"
           track: ${{ inputs.track }}
           status: draft
+          # Written by the `release-notes` skill. Files are named whatsnew-<locale>
+          # and capped at 500 characters each; the release lands as a draft, so
+          # they stay editable in the Play Console afterwards.
+          whatsNewDirectory: release_notes/whatsnew
