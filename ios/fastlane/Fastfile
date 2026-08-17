@@ -1,6 +1,40 @@
 default_platform(:ios)
 
+require 'json'
+
+def appstore_api_key
+  key_info = JSON.parse(File.read(File.join(__dir__, "appstore_key.json")))
+
+  app_store_connect_api_key(
+    key_id: key_info["keyId"],
+    issuer_id: key_info["issuerId"],
+    key_filepath: "fastlane/AuthKey_#{key_info["keyId"]}.p8",
+    duration: 1200,
+    in_house: false
+  )
+end
+
 platform :ios do
+  # Regenerate the App Store provisioning profile for one environment. Needed after a
+  # capability changes on the App ID — match caches profiles in S3 and `beta` reads them
+  # readonly, so a profile predating the capability is served forever until forced.
+  #
+  #   MATCH_S3_BUCKET=<bucket> bundle exec fastlane profiles env:prod
+  #
+  # Passing the API key is what stops match falling back to interactive Apple ID prompts.
+  desc "Force-regenerate the App Store provisioning profile after a capability change"
+  lane :profiles do |options|
+    app_id = options[:env] == 'prod' ? "me.heart-of.ios" : "me.heart-of.ios.dev"
+
+    match(
+      type: "appstore",
+      app_identifier: app_id,
+      api_key: appstore_api_key,
+      readonly: false,
+      force: true
+    )
+  end
+
   desc "Push a new build to TestFlight"
   # single lane and pass the environment (dev/prod) as an argument
   lane :beta do |options|
@@ -12,16 +46,7 @@ platform :ios do
 
     setup_ci
 
-    require 'json'
-    key_info = JSON.parse(File.read(File.join(__dir__, "appstore_key.json")))
-
-    api_key = app_store_connect_api_key(
-      key_id: key_info["keyId"],
-      issuer_id: key_info["issuerId"],
-      key_filepath: "fastlane/AuthKey_#{key_info["keyId"]}.p8",
-      duration: 1200,
-      in_house: false
-    )
+    api_key = appstore_api_key
 
     match(
       type: "appstore",
