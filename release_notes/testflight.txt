@@ -1,0 +1,27 @@
+Health data on your profile
+Heart can now read resting heart rate, heart rate variability, sleep, steps,
+active energy and body mass from Apple Health and chart them on your profile.
+It stays on this device — nothing is uploaded — and you can delete Heart's copy
+whenever you like. When you grant access, allow past data too, or the charts
+only reach back thirty days.
+
+Charts you can scroll
+Exercise and health charts now go back through your whole history instead of a
+few weeks. Switch between 1M, 3M, 1Y and All, drag to move through time, and tap
+any health card for the full chart with axes.
+
+VoiceOver
+Buttons, charts, timers and inputs across the app now announce themselves.
+
+Smaller things
+- Deleting a workout from your history asks first.
+- The rest timer follows the exercise you're actually resting on.
+- The Previous column no longer shows an empty pill.
+- Opening a Heart link from outside the app lands on the right page, even from
+  a cold start.
+
+What to test
+- Grant health access, revoke it in the Health app, then grant it again. The
+  profile should catch up on its own when you come back, with no restart.
+- Scroll a chart back past the point where your data runs out.
+- Turn VoiceOver on and walk through a workout, start to finish.
