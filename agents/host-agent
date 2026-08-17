@@ -1,0 +1,56 @@
+#!/bin/bash
+# Host-side agent for UI work: full macOS toolchain, simulators, screenshots.
+#
+#   agents/host-agent <name> [--task "..." | --issue N]
+#
+# Weaker isolation than the containers — it runs as you. Safety comes from
+# three layers: worktree isolation (edits outside the worktree are blocked),
+# acceptEdits mode plus the allowlist in .claude/settings.local.json (anything
+# unlisted still prompts), and the guard hook (no commit/push/destructive git,
+# even if a rule would allow it).
+#
+# Give it its own simulator so it never fights you for yours:
+#   xcrun simctl create agent-iphone "iPhone 17"
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$HERE/.." && pwd)"
+
+NAME="${1:?usage: agents/host-agent <name> [--task \"...\" | --issue N]}"
+shift
+
+TASK="" ISSUE=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --task)  TASK="$2"; shift 2 ;;
+    --issue) ISSUE="$2"; shift 2 ;;
+    *) echo "unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+if [[ -n "$ISSUE" ]]; then
+  TASK="$(gh -R "$(git -C "$REPO" remote get-url origin)" issue view "$ISSUE" \
+    --json number,title,body \
+    --template 'GitHub issue #{{.number}}: {{.title}}
+
+{{.body}}')"
+fi
+
+PROMPT_PREFIX="You are an autonomous agent in an isolated worktree of this repo.
+docs/handoff.md is your definition of done — work through its checklist and
+finish by writing HANDOFF.md at the worktree root. UI changes must be
+screenshot-verified on the 'agent-iphone' simulator (and an iPad if the
+surface has a two-pane layout) — never the user's own simulators. If this
+task came from a GitHub issue, post your closing summary as a comment on it
+('gh issue comment') — that one outward action is pre-authorized; nothing
+else outward is. Never commit or push. End with a short summary: what
+changed, verification, open ends."
+
+cd "$REPO"
+if [[ -n "$TASK" ]]; then
+  exec claude --worktree "$NAME" --permission-mode acceptEdits -p "$PROMPT_PREFIX
+
+$TASK"
+else
+  exec claude --worktree "$NAME" --permission-mode acceptEdits
+fi

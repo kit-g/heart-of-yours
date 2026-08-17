@@ -1,0 +1,129 @@
+#!/bin/bash
+# Launch a containerized autonomous agent in its own git worktree.
+#
+#   agents/agent <name> [--repo PATH] [--task "..." | --issue N]
+#                       [--aws] [--db] [--build] [--shell]
+#
+# With --task or --issue the agent runs headless to completion; without either
+# you get an interactive Claude session inside the container (good for
+# steering or inspecting). One terminal tab per agent works well.
+#
+#   --repo PATH   repo to work on (default: this repo; use ~/mine/heart-api)
+#   --aws         open egress to AWS ranges (ca-central-1) — pair with AWS
+#                 keys for the dedicated dev IAM user in the env file
+#   --db          allow reaching the dev Postgres on the host
+#                 (host.docker.internal:${HEART_DB_PORT:-5432})
+#   --build       (re)build the image first
+#   --shell       bash inside the container instead of claude
+#
+# Credentials come from ~/.config/heart-agents/<name>.env — deliberately
+# outside any repo so a mounted checkout never exposes them. See
+# agents/env.example for what goes in it.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+DEFAULT_REPO="$(cd "$HERE/.." && pwd)"
+
+NAME="${1:?usage: agents/agent <name> [--repo PATH] [--task \"...\" | --issue N] [--aws] [--db] [--build] [--shell]}"
+shift
+
+REPO="$DEFAULT_REPO" TASK="" ISSUE="" AWS=0 DB=0 BUILD=0 SHELL_MODE=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo)  REPO="$(cd "$2" && pwd)"; shift 2 ;;
+    --task)  TASK="$2"; shift 2 ;;
+    --issue) ISSUE="$2"; shift 2 ;;
+    --aws)   AWS=1; shift ;;
+    --db)    DB=1; shift ;;
+    --build) BUILD=1; shift ;;
+    --shell) SHELL_MODE=1; shift ;;
+    *) echo "unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+IMAGE=heart-agent
+# Per-agent env file if present, shared default.env otherwise.
+ENV_FILE="$HOME/.config/heart-agents/$NAME.env"
+[[ -f "$ENV_FILE" ]] || ENV_FILE="$HOME/.config/heart-agents/default.env"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "no ~/.config/heart-agents/$NAME.env or default.env — copy agents/env.example there and fill it in" >&2
+  exit 1
+fi
+
+if [[ $BUILD == 1 ]] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  docker build -t "$IMAGE" \
+    --build-arg FLUTTER_VERSION="$(cat "$DEFAULT_REPO/.flutter-version")" "$HERE"
+fi
+
+# Resolve the GitHub issue on the host, with your gh auth, before the
+# container starts — the agent's own PAT stays read-only.
+if [[ -n "$ISSUE" ]]; then
+  TASK="$(gh -R "$(git -C "$REPO" remote get-url origin)" issue view "$ISSUE" \
+    --json number,title,body \
+    --template 'GitHub issue #{{.number}}: {{.title}}
+
+{{.body}}')"
+fi
+
+# --aws: no static keys anywhere — assume the dev-account agent role with
+# your own profile and hand the container short-lived session creds only.
+AWS_ENV=()
+if [[ $AWS == 1 ]]; then
+  # shellcheck disable=SC1090  # only to read AGENT_AWS_* knobs
+  ROLE_ARN="$(. "$ENV_FILE" >/dev/null 2>&1; echo "${AGENT_AWS_ROLE_ARN:-}")"
+  PROFILE="$(. "$ENV_FILE" >/dev/null 2>&1; echo "${AGENT_AWS_PROFILE:-heart-dev}")"
+  DURATION="$(. "$ENV_FILE" >/dev/null 2>&1; echo "${AGENT_AWS_DURATION:-14400}")"
+  if [[ -z "$ROLE_ARN" ]]; then
+    echo "--aws needs AGENT_AWS_ROLE_ARN in $ENV_FILE" >&2
+    exit 1
+  fi
+  read -r KEY_ID SECRET TOKEN < <(aws sts assume-role \
+    --profile "$PROFILE" --role-arn "$ROLE_ARN" \
+    --role-session-name "heart-agent-$NAME" --duration-seconds "$DURATION" \
+    --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text)
+  AWS_ENV=(
+    -e "AWS_ACCESS_KEY_ID=$KEY_ID"
+    -e "AWS_SECRET_ACCESS_KEY=$SECRET"
+    -e "AWS_SESSION_TOKEN=$TOKEN"
+    -e "AWS_REGION=ca-central-1"
+  )
+  echo "assumed $ROLE_ARN for $((DURATION / 3600))h" >&2
+fi
+
+PROMPT_PREFIX="You are an autonomous agent in an isolated worktree of this repo.
+docs/handoff.md is your definition of done — work through its checklist and
+finish by writing HANDOFF.md at the worktree root. You have no simulator:
+flag UI work needing a visual pass there. If this task came from a GitHub
+issue, post your closing summary as a comment on it ('gh issue comment') —
+that one outward action is pre-authorized; nothing else outward is. Never
+commit or push. End with a short summary: what changed, verification, open
+ends."
+
+RUN_ARGS=(
+  run --rm --name "heart-agent-$NAME"
+  --cap-add NET_ADMIN --cap-add NET_RAW
+  --env-file "$ENV_FILE"
+  -e "AGENT_ALLOW_AWS=$AWS" -e "AGENT_ALLOW_HOST_DB=$DB"
+  # ${arr[@]+...}: macOS ships bash 3.2, where set -u chokes on empty arrays
+  ${AWS_ENV[@]+"${AWS_ENV[@]}"}
+  # Mount at the identical host path: worktree metadata in .git records
+  # absolute paths, so the tree must resolve the same inside and out.
+  -v "$REPO:$REPO"
+  -v "heart-agent-$NAME-claude:/home/agent/.claude"
+  -v "heart-agent-pub-cache:/home/agent/.pub-cache"
+  -w "$REPO"
+  --memory 8g --cpus 3
+)
+
+if [[ $SHELL_MODE == 1 ]]; then
+  exec docker "${RUN_ARGS[@]}" -it "$IMAGE" bash
+elif [[ -n "$TASK" ]]; then
+  exec docker "${RUN_ARGS[@]}" "$IMAGE" claude --worktree "$NAME" \
+    --permission-mode bypassPermissions \
+    -p "$PROMPT_PREFIX
+
+$TASK"
+else
+  exec docker "${RUN_ARGS[@]}" -it "$IMAGE" claude --worktree "$NAME" \
+    --permission-mode bypassPermissions
+fi
