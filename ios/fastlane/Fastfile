@@ -58,12 +58,24 @@ platform :ios do
       export_method: "app-store"
     )
 
+    # "What to Test", written by the `release-notes` skill. A missing file is not fatal —
+    # the build still ships, just without notes.
+    notes_path = File.join(__dir__, "..", "..", "release_notes", "testflight.txt")
+    changelog = File.exist?(notes_path) ? File.read(notes_path) : nil
+    UI.important("No release_notes/testflight.txt — uploading without What to Test") if changelog.nil?
+
+    # skip_waiting_for_build_processing is false so the lane waits out Apple's processing.
+    # Setting it to true would still set the changelog (pilot partially waits for that alone)
+    # but would stop the build reaching the groups below. Waiting is free on a public repo.
+    # The timeout is generous: on expiry pilot raises, which would fail an otherwise fine
+    # deploy — the build is already uploaded by then, only notes and distribution are lost.
     upload_to_testflight(
       api_key: api_key,
-      skip_waiting_for_build_processing: true,
+      skip_waiting_for_build_processing: false,
+      wait_processing_timeout_duration: 3600,
 #       distribute_external: true,
       groups: ["Primary Testers"],
-#       changelog: "Bug fixes and performance improvements."
+      changelog: changelog
     )
   end
 end
