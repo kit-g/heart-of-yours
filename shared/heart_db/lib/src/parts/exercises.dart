@@ -77,6 +77,11 @@ mixin _Exercises on _LocalDatabase
           // the shared catalog row — see setExerciseUnit / getExerciseUnits.
           row.remove('unit_system');
 
+          // The row is built from every key the model emits, so a field added
+          // in heart_models arrives here with no column behind it — see
+          // [_fitToSchema]. This is the write that made that fatal.
+          row = await _fitToSchema(txn, _exercises, row);
+
           final columns = row.keys.join(', ');
           final placeholders = List.filled(row.length, '?').join(', ');
           final updates = row.keys.where((k) => k != 'name').map((k) => '$k = EXCLUDED.$k').join(', ');
