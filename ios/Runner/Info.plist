@@ -58,7 +58,7 @@
         <key>NSHealthShareUsageDescription</key>
         <string>Heart shows your resting heart rate, sleep and body data alongside your training, so you can see how they move together. This data stays on your device — Heart never uploads it.</string>
         <key>NSHealthUpdateUsageDescription</key>
-        <string>Heart does not write to your health data. Nothing you record in Heart is saved to the Health app, and nothing leaves your device.</string>
+        <string>Heart saves each workout you finish to the Health app, so your rings credit your lifting. It writes how long you trained and that it was strength training — nothing else, and nothing leaves your device.</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>Allow photo library access to change your avatar.</string>
         <key>UIApplicationSceneManifest</key>
