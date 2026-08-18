@@ -189,9 +189,55 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
 
 Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   workouts.activeWorkout?.resolveName(L.of(context).defaultWorkoutName());
+
+  // Read before navigating: the screen this context belongs to is on its way
+  // out, and the mirror below runs long after it has gone.
+  final health = Health.of(context);
+
+  // Whether Heart may put a permission sheet in front of this user. True only
+  // once they have engaged with health at all — someone who never accepted the
+  // invitation should not meet a Health prompt because they finished a workout.
+  // See [Health.recordWorkout].
+  final mayAsk = Preferences.of(context).healthAsked(health.userId);
+
+  // **The session this device holds, not the one the finish resolves to.**
+  //
+  // `finishActiveWorkout` completes with the server's copy, because the server
+  // mints the id anything referring to the session afterwards must use. Its
+  // embedded exercises are not the catalogue's, though: they arrive without the
+  // library's health annotation, so reading the activity off them labelled
+  // every swim `other` in the Health app. Caught on a simulator, with the
+  // annotation sitting correctly in the local catalogue the whole time.
+  //
+  // This object is the one `finish()` mutates in place, so by the time the
+  // future below runs it carries the same start and end — and the exercises the
+  // user actually picked.
+  final session = workouts.activeWorkout;
+
   context.goToWorkoutDone(workouts.activeWorkout?.id);
   cancelAllNotifications();
-  return workouts.finishActiveWorkout();
+
+  final finishing = workouts.finishActiveWorkout();
+
+  // Mirror the session into the device's health store — deliberately not
+  // awaited. The user is already looking at the summary screen, and whether
+  // HealthKit accepted a courtesy copy is not something a finished workout
+  // should wait on, let alone fail on.
+  //
+  // Chained off the finish rather than fired beside it, so the write sees an
+  // ended workout with its empty sets already dropped.
+  unawaited(
+    finishing.then(
+      (_) async {
+        if (session case Workout finished) {
+          // The name is copy, and this is the layer that owns it.
+          await health.recordWorkout(finished, title: finished.name, mayAsk: mayAsk);
+        }
+      },
+    ),
+  );
+
+  return finishing;
 }
 
 Future<void> showDeleteImageDialog(

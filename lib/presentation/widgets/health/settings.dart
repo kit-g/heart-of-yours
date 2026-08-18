@@ -79,6 +79,40 @@ class const HealthSettings({super.key}) extends StatelessWidget {
             onTap: () => openHealthPermissions(health),
           ),
         },
+        // Write-back, and only once the user has engaged with health at all.
+        // Before that, [connect] asks for the write alongside everything else,
+        // so a second row here would be noise offering what the row above
+        // already covers.
+        //
+        // It has to be reachable, though, and that is the whole point of it:
+        // anyone who granted read access before Heart could write is never
+        // asked by [connect] again, and the platform's own permission screen
+        // lists only the types an app has requested — so without this row there
+        // is no toggle for them to find anywhere. See
+        // [Health.requestWorkoutWriteAccess].
+        //
+        // Two states, not three, because the platforms only report two: not
+        // granted covers a refusal and never having been asked alike. So the
+        // subtitle states the fact — it is off — rather than guessing at why,
+        // and the tap tries the ask before falling back to the OS screen.
+        if (asked)
+          switch (health.workoutWriteAccess) {
+            .granted => ListTile(
+              leading: Icon(Icons.fitness_center_rounded, color: colorScheme.primary),
+              title: Text(l.healthWriteWorkouts),
+              subtitle: Text(l.healthWriteWorkoutsOn),
+              // Turning it back off is the platform's to offer, not Heart's.
+              onTap: () => openHealthPermissions(health),
+            ),
+            .denied || .unknown => ListTile(
+              leading: const Icon(Icons.fitness_center_rounded),
+              title: Text(l.healthWriteWorkouts),
+              subtitle: Text(l.healthWriteWorkoutsOff),
+              onTap: () => _enableWriting(health),
+            ),
+            // Not read yet, or no store to read it from.
+            null => const SizedBox.shrink(),
+          },
         // Nothing read means nothing stored, and an enabled delete that clears
         // nothing is a button that lies about having done something.
         if (health.hasData)
@@ -89,6 +123,17 @@ class const HealthSettings({super.key}) extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  /// Turns write-back on, by whichever route this user still has.
+  ///
+  /// The ask first, because for anyone who has simply never been asked it is
+  /// one tap and done. If the permission was already refused no sheet appears
+  /// and nothing changes — and *that* is the case the fallback is for, since
+  /// the only place a refusal can be reversed is the platform's own screen.
+  Future<void> _enableWriting(Health health) async {
+    if (await health.requestWorkoutWriteAccess() case .granted) return;
+    await openHealthPermissions(health);
   }
 
   Future<void> _confirmDelete(BuildContext context, Health health, L l) async {
