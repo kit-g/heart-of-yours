@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/src/workout_activity.dart';
 import 'package:provider/provider.dart';
 
 /// Health readings from the device, mirrored locally so charts can be drawn
@@ -136,6 +137,8 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     _syncing = false;
     _syncedAt = null;
     _leftForPermissions = false;
+    _writeAccess = null;
+    _writeAsked = false;
   }
 
   /// Loads whatever is already mirrored, then tops it up from the device.
@@ -151,6 +154,14 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     // feature that renders empty, never a launch that dies.
     try {
       _status = await _device.status();
+
+      // Read, never ask. The settings row renders this, and a permission sheet
+      // on cold launch is exactly the interruption [_ensureWorkoutWriteAccess]
+      // exists to avoid.
+      if (_status == .available) {
+        _writeAccess = await _device.workoutWriteAccess();
+      }
+
       await _loadLocal();
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
@@ -201,6 +212,132 @@ class Health with ChangeNotifier implements SignOutStateSentry {
     return asked;
   }
 
+  /// Mirrors a finished session into the device's health store, so the user's
+  /// rings credit their lifting and every other app on the phone can see it
+  /// happened.
+  ///
+  /// Fire-and-forget by design: the caller is the finish path, and nothing about
+  /// finishing a workout should wait on — or fail because of — HealthKit. The
+  /// returned future says whether the store took it, for tests and for nothing
+  /// else.
+  ///
+  /// Three sessions are deliberately not written:
+  ///
+  /// - one still in progress, which has no end to write;
+  /// - one the user abandoned or that recorded nothing, because a zero-set
+  ///   workout is not a workout and putting it in Health makes the rings lie;
+  /// - one whose clock did not advance, which the store rejects anyway.
+  ///
+  /// Energy is not passed along, and [Workout.calories] is not a loophole — see
+  /// [HealthService.writeWorkout]. That field is read *out* of the store after
+  /// the fact; feeding it back in would be Heart reporting the Watch's own
+  /// number to the Watch.
+  Future<bool> recordWorkout(Workout workout, {String? title, bool mayAsk = false}) async {
+    if (_status != .available) return false;
+    if (workout.end case final DateTime end) {
+      if (!workout.isStarted) return false;
+
+      try {
+        if (mayAsk && !await _ensureWorkoutWriteAccess()) return false;
+
+        return await _device.writeWorkout(
+          // What the user actually did, not what Heart mostly logs. See
+          // [activityOf] — a swim written as strength training is a wrong
+          // label sitting in the user's own health record.
+          activity: activityOf(workout),
+          start: workout.start,
+          end: end,
+          title: title,
+        );
+      } catch (error, stacktrace) {
+        // The write is the least important thing happening at this moment. The
+        // workout is saved; this is a courtesy to the rest of the phone.
+        onError?.call(error, stacktrace: stacktrace);
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  /// Whether workouts may be written, asking once if nobody ever has been.
+  ///
+  /// This exists because of a gap that only shows up on a real device. Write
+  /// access is requested by [connect], and [connect] runs exactly once per
+  /// user — the settings row stops offering it the moment the sheet has been
+  /// shown. So every user who granted read access before Heart could write
+  /// would never be asked, and worse, has no way to volunteer: the platform's
+  /// permission screen lists only the types an app has requested, so the
+  /// toggle they would need is not there to find.
+  ///
+  /// The result was a feature that silently did nothing for exactly the users
+  /// most likely to want it. Verified on a simulator whose HealthKit store had
+  /// six authorization rows — the six metrics Heart reads — and no row at all
+  /// for the workout type.
+  ///
+  /// Asked at the finish rather than on launch because that is the moment it is
+  /// about, and it happens once: an answered permission is never re-asked by
+  /// either platform.
+  Future<bool> _ensureWorkoutWriteAccess() async {
+    if (_writeAccess == .granted) return true;
+
+    _writeAccess = await _device.workoutWriteAccess();
+    if (_writeAccess case .granted) return true;
+
+    // Not granted cannot be read as "the user said no" — the platforms report
+    // a refusal and never having been asked as the same answer, so treating it
+    // as final is what would leave everyone unasked. Asking anyway is safe:
+    // the sheet appears only if the permission is genuinely undetermined.
+    //
+    // Once per launch, though. If the user did decline, this is a channel hop
+    // that shows nothing, and repeating it on every finish is pure waste.
+    if (_writeAsked) return false;
+    _writeAsked = true;
+
+    await _device.requestWorkoutWriteAccess();
+    _writeAccess = await _device.workoutWriteAccess();
+    _notify();
+
+    return _writeAccess == .granted;
+  }
+
+  /// Whether the write permission has been asked for this launch. See
+  /// [_ensureWorkoutWriteAccess] for why it is not persisted: the platform
+  /// forgets nothing, and a sheet that will not appear costs nothing to attempt.
+  bool _writeAsked = false;
+
+  /// What the store last said about writing workouts. Cached because the answer
+  /// only changes when the user changes it, and [recordWorkout] would otherwise
+  /// ask the platform on every finish.
+  HealthAccess? _writeAccess;
+
+  /// Whether Heart may save finished workouts to the store.
+  ///
+  /// Null until something has asked. Drives the settings row, which is the only
+  /// route back for a user who declined.
+  HealthAccess? get workoutWriteAccess => _writeAccess;
+
+  /// Reads what the store says about writing workouts, without asking for it.
+  Future<HealthAccess> refreshWorkoutWriteAccess() async {
+    if (_status != .available) return .denied;
+    _writeAccess = await _device.workoutWriteAccess();
+    _notify();
+    return _writeAccess!;
+  }
+
+  /// Asks for permission to save workouts, from the settings row.
+  ///
+  /// The recoverable path: a user who declined at the finish, or who wants to
+  /// turn it off and on, has nowhere else to go — see [_ensureWorkoutWriteAccess].
+  Future<HealthAccess> requestWorkoutWriteAccess() async {
+    if (_status != .available) return .denied;
+
+    await _device.requestWorkoutWriteAccess();
+    _writeAccess = await _device.workoutWriteAccess();
+    _notify();
+    return _writeAccess!;
+  }
+
   /// Reads everything recorded since the last sample we hold, per metric.
   ///
   /// Each metric carries its own watermark because they arrive at wildly
@@ -234,6 +371,7 @@ class Health with ChangeNotifier implements SignOutStateSentry {
   /// whole history as searched. Proved on a Pixel 7 — permissions granted, the
   /// walk already complete, and a store that would have stayed empty forever.
   Future<void> _resync() async {
+    await refreshWorkoutWriteAccess();
     await _device.requestHistoryAccess();
     if (userId case String id) {
       await _local.clearHealthBackfill(id);
