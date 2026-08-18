@@ -107,6 +107,75 @@ void main() {
     },
   );
 
+  // The activity a session is written to HealthKit / Health Connect as. It
+  // reaches the app through this column, so a decode that quietly drops it
+  // sends every swim to the health store labelled `other` — which is exactly
+  // what happened on the simulator before this test existed.
+  test(
+    'should decode the stored health blob',
+    () async {
+      final row = {
+        ...exercise(name: 'Swimming').toMap().map((k, v) => MapEntry(k.toSnake(), v)),
+        'category': 'Cardio',
+        'health': jsonEncode({'activity': 'swimming'}),
+      };
+
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => [row]);
+
+      when(
+        txn.query(
+          syncsTable,
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final (_, exercises) = await local.getExercises();
+
+      expect(exercises.first.activity, HealthActivity.swimming);
+    },
+  );
+
+  // Most exercises carry no annotation, and every user-created one. The
+  // category fallback is what covers them — and for a cardio exercise it must
+  // never answer strength.
+  test(
+    'should read a null health column as the category fallback',
+    () async {
+      final row = {
+        ...exercise(name: 'Assault Bike').toMap().map((k, v) => MapEntry(k.toSnake(), v)),
+        'category': 'Cardio',
+        'health': null,
+      };
+
+      when(
+        txn.query(
+          'exercises',
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => [row]);
+
+      when(
+        txn.query(
+          syncsTable,
+          where: anyNamed('where'),
+          whereArgs: anyNamed('whereArgs'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final (_, exercises) = await local.getExercises();
+
+      expect(exercises.first.activity, HealthActivity.other);
+    },
+  );
+
   test(
     'should read a null movement column as an empty movement',
     () async {
