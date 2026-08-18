@@ -13,7 +13,7 @@ import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
-import 'package:heart_models/heart_models.dart';
+import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 
