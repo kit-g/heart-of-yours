@@ -138,7 +138,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 9);
+          expect(await userVersion(db), 10);
           expect(
             await tables(db),
             {
@@ -178,6 +178,8 @@ void main() {
           expect(await indexesOn(db, 'charts'), containsAll({'user_idx', 'charts_unique_idx'}));
           // v5
           expect(await columns(db, 'exercises'), contains('movement'));
+          // v10
+          expect(await columns(db, 'exercises'), contains('health'));
 
           expect(await indexesOn(db, 'template_exercises'), {'template_idx'});
           // `exercise_idx` is claimed three times in 0001.dart (workout_exercises,
@@ -402,7 +404,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 9);
+          expect(await userVersion(db), 10);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
