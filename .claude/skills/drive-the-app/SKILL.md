@@ -41,8 +41,19 @@ Two paths, and the difference matters:
 Requires the app launched with the driver entrypoint:
 
 ```
-flutter run -t lib/main_driver.dart
+flutter run -t lib/main_driver.dart --flavor dev --dart-define-from-file="env/new-dev.json"
 ```
+
+**Both flags are load-bearing and neither failure names itself.** Without `--flavor dev` the
+Xcode build dies on `None of the input catalogs contained a matching ... "AppIcon"`. Without the
+config the app builds, launches, and then throws `UnimplementedError: Valid environments are:
+[Env.dev, Env.test, Env.prod]` before `runApp` — so the driver answers `get_health` with
+`status: ok` and every command after it fails on *"No root widget is attached"*. `env/` is
+gitignored, so none of this is discoverable from the repo.
+
+**Kill the running app first.** `flutter run` builds and installs happily over a running
+instance, then fails to launch and exits, leaving the old process up and the new binary
+installed — which reads as "the build did nothing".
 
 `lib/main_driver.dart` calls `enableFlutterDriverExtension()` and then delegates to `app.main()`.
 
@@ -54,6 +65,22 @@ flutter run -t lib/main_driver.dart
 Check with `command: get_health` (expect `status: ok`). If it reports the extension is not
 enabled, the app is running the plain entrypoint — fall back to simctl for screenshots, and ask
 the user to relaunch if you need to interact.
+
+### Driving an app that GoLand did not launch
+
+An app started any other way (`simctl launch`, your own `flutter run`) never registers with DTD,
+so `listDtdUris` will not show it. It is still drivable: take the VM service URI the app logs at
+startup and connect to it directly.
+
+```
+xcrun simctl spawn <UDID> log show --last 1m --predicate 'processImagePath CONTAINS "Runner"' \
+  | grep "Dart VM service is listening"
+```
+
+Then `mcp__dart__vm_service` with `command: connect` and that URI **rewritten as
+`ws://…/ws`** — the logged `http://` form is rejected. Afterwards every
+`flutter_driver_command` works, passing the same URI as `appUri`. `hot_reload`/`hot_restart` do
+**not**: they need the flutter tool, and fail with `Method not found`.
 
 Finders that work well here:
 
@@ -69,6 +96,21 @@ Finders that work well here:
 Driver commands work over the VM service, which `flutter run` forwards over USB, so tap/scroll/
 screenshot all behave the same on a physical phone. Debug or profile builds only — release has no
 VM service. `xcrun simctl` does not apply; use the driver screenshot.
+
+## A hot restart does not re-open the database
+
+`sqflite` keeps the database open on the platform side, which a Dart-only restart never touches.
+So `LocalDatabase.init` gets the cached handle and **a new migration does not run** — the schema
+stays at the old `user_version` however many times you hot restart. Anything touching
+`heart_db/lib/src/migrations/` needs a full relaunch to be verified at all.
+
+Check what actually happened rather than trusting the app; a reinstall also moves the data
+container, so re-resolve the path instead of reusing one:
+
+```
+C=$(xcrun simctl get_app_container <UDID> me.heart-of.ios.dev data)
+sqlite3 "$C/Documents/heart.db" "pragma user_version;"
+```
 
 ## Why bother
 
