@@ -7,7 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 final _logger = Logger('Health');
 
-/// Reads the device's health store through the `health` plugin.
+/// Reads the device's health store through the `health` plugin, and writes
+/// finished workouts back to it.
 ///
 /// The plugin's vocabulary stops here: nothing outside this file mentions
 /// `HealthDataType`, so swapping the plugin is a one-file change and the app's
@@ -82,16 +83,21 @@ class DeviceHealthStore implements HealthService {
     final types = _typesFor(metrics);
     if (types.isEmpty) return false;
 
+    // Read, explicitly, for every metric. The plugin defaults to READ_WRITE when
+    // `permissions` is omitted, which would make iOS ask to "access **and
+    // update** your Health data" for all of it — write access we have no code
+    // to use, on a feature whose entire pitch is restraint about the user's
+    // body. So the two lists are built in step: one access per type, and the
+    // only WRITE in it belongs to the workout.
+    final permissions = List<plugin.HealthDataAccess>.filled(types.length, .READ, growable: true);
+
+    if (_plugin.isDataTypeAvailable(_workoutType)) {
+      types.add(_workoutType);
+      permissions.add(.WRITE);
+    }
+
     try {
-      // Read, explicitly, for every type. The plugin defaults to READ_WRITE when
-      // `permissions` is omitted, which makes iOS ask to "access **and update**
-      // your Health data" — write access we have no code to use, on a feature
-      // whose entire pitch is restraint about the user's body. Tier 1 will widen
-      // this deliberately, and only for the workout type it actually writes.
-      return await _plugin.requestAuthorization(
-        types,
-        permissions: List.filled(types.length, plugin.HealthDataAccess.READ),
-      );
+      return await _plugin.requestAuthorization(types, permissions: permissions);
     } catch (error, stacktrace) {
       // Deliberately not reported upward: a permission failure is a normal
       // outcome, and the payload could name the health types being asked for.
@@ -146,6 +152,89 @@ class DeviceHealthStore implements HealthService {
     if (error is! PlatformException) return false;
     final message = (error.message ?? '').toLowerCase();
     return message.contains('authorization not determined') || message.contains('not authorized');
+  }
+
+  @override
+  Future<HealthAccess> workoutWriteAccess() async {
+    await _ensureConfigured();
+    if (!_plugin.isDataTypeAvailable(_workoutType)) return .denied;
+
+    try {
+      return switch (await _plugin.hasPermissions(
+        [_workoutType],
+        permissions: [.WRITE],
+      )) {
+        true => .granted,
+        // Covers a refusal *and* never having asked — the bridge returns
+        // `status == .sharingAuthorized`, so the two are one answer. See
+        // [HealthService.workoutWriteAccess].
+        false => .denied,
+        // Reserved for reads on this platform; a write always answers.
+        null => .unknown,
+      };
+    } catch (error, stacktrace) {
+      _logger.warning('Could not read workout write access', error, stacktrace);
+      return .denied;
+    }
+  }
+
+  @override
+  Future<bool> requestWorkoutWriteAccess() async {
+    await _ensureConfigured();
+    if (!_plugin.isDataTypeAvailable(_workoutType)) return false;
+
+    try {
+      return await _plugin.requestAuthorization(
+        [_workoutType],
+        permissions: [.WRITE],
+      );
+    } catch (error, stacktrace) {
+      _logger.warning('Workout write authorization failed', error, stacktrace);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> writeWorkout({
+    required WorkoutActivity activity,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+  }) async {
+    await _ensureConfigured();
+
+    // The store rejects a zero-length or inverted session, and a workout with
+    // no elapsed time is not one the user did — catch it here rather than let
+    // the platform throw across a channel.
+    if (!end.isAfter(start)) {
+      _logger.fine('Not writing a workout that did not elapse');
+      return false;
+    }
+
+    try {
+      return await _plugin.writeWorkoutData(
+        activityType: _activityType(activity),
+        start: start,
+        end: end,
+        title: title,
+        // Energy stays nil, on purpose. There is no measurement of it without a
+        // watch session, and an estimate that disagrees with the Watch's own
+        // reading is worse than an absence. Same for distance, which lifting
+        // does not have. See [HealthService.writeWorkout].
+      );
+    } catch (error, stacktrace) {
+      // Never fatal to finishing a workout. The session is already saved in
+      // Heart's own database and on the server; the mirror in Health is the
+      // part the user can live without, and a refused permission arrives here
+      // looking exactly like a real failure.
+      if (_isUnauthorized(error)) {
+        _logger.fine('Health write unauthorized', error);
+        return false;
+      }
+
+      _logger.warning('Health workout write failed', error, stacktrace);
+      return false;
+    }
   }
 
   @override
@@ -253,6 +342,65 @@ class DeviceHealthStore implements HealthService {
       isManual: point.recordingMethod == plugin.RecordingMethod.manual,
     );
   }
+}
+
+/// What a Heart session is, in the platform's vocabulary.
+///
+/// Not a [HealthMetric] and deliberately not made one: [HealthMetric] is the
+/// vocabulary of things Heart *reads and charts*, and a workout is neither — it
+/// is the one thing written out.
+const _workoutType = plugin.HealthDataType.WORKOUT;
+
+/// Heart's activity as the platform in front of us spells it.
+///
+/// The two stores overlap but do not agree, and the plugin enforces the
+/// difference: an activity a platform does not know throws `HealthException`
+/// rather than degrading, so every branch here has to land on something that
+/// platform actually accepts. The disagreements are not exotic — they cover
+/// most of what Heart logs:
+///
+/// - **Lifting.** `STRENGTH_TRAINING` is Health Connect's; Apple splits it in
+///   two, where *functional* is bodyweight and kettlebell work and
+///   *traditional* is machines and free weights, which is what Heart logs.
+/// - **Swimming.** `SWIMMING` is iOS-only; Health Connect wants a pool or open
+///   water, and a Heart session is the pool.
+/// - **Indoor variants.** Apple does not distinguish a stationary bike or a
+///   treadmill from the real thing; Health Connect does.
+/// - **iOS-only ideas.** `CROSS_TRAINING`, `MIXED_CARDIO`, `CORE_TRAINING`,
+///   `FLEXIBILITY` and `JUMP_ROPE` have no Health Connect equivalent worth
+///   pretending to, so they fall to `OTHER` rather than to a neighbouring
+///   activity that would be a small lie in the user's own health record.
+///   `JUMP_ROPE` is the one to be careful about: the plugin's enum lists it
+///   under a comment saying "Both", and only `_isOnAndroid` — the list that
+///   actually throws — reveals it is not.
+plugin.HealthWorkoutActivityType _activityType(WorkoutActivity activity) {
+  final isIos = defaultTargetPlatform == TargetPlatform.iOS;
+
+  return switch (activity) {
+    .strength => isIos ? .TRADITIONAL_STRENGTH_TRAINING : .STRENGTH_TRAINING,
+    .crossTraining => isIos ? .CROSS_TRAINING : .OTHER,
+    .mixedCardio => isIos ? .MIXED_CARDIO : .OTHER,
+    .cycling => .BIKING,
+    .cyclingIndoor => isIos ? .BIKING : .BIKING_STATIONARY,
+    .elliptical => .ELLIPTICAL,
+    .hiking => .HIKING,
+    .rowing => isIos ? .ROWING : .ROWING_MACHINE,
+    .running => .RUNNING,
+    .runningTreadmill => isIos ? .RUNNING : .RUNNING_TREADMILL,
+    .skating => .SKATING,
+    .skiing => .DOWNHILL_SKIING,
+    .snowboarding => .SNOWBOARDING,
+    .swimming => isIos ? .SWIMMING : .SWIMMING_POOL,
+    .walking => .WALKING,
+    .climbing => isIos ? .CLIMBING : .ROCK_CLIMBING,
+    .coreTraining => isIos ? .CORE_TRAINING : .CALISTHENICS,
+    .flexibility => isIos ? .FLEXIBILITY : .OTHER,
+    .yoga => .YOGA,
+    .cardioDance => .CARDIO_DANCE,
+    .highIntensity => .HIGH_INTENSITY_INTERVAL_TRAINING,
+    .jumpRope => isIos ? .JUMP_ROPE : .OTHER,
+    .other => .OTHER,
+  };
 }
 
 /// Our metric to the platform's quantity.
