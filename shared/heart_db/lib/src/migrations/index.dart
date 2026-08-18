@@ -60,4 +60,7 @@ const _migrations = <int, List<String>>{
     healthSamples,
     healthSamplesIndex,
   ],
+  10: [
+    addExerciseHealth,
+  ],
 };
