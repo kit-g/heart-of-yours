@@ -29,6 +29,13 @@ mixin _Exercises on _LocalDatabase
                 each['movement'] = {};
             }
 
+            switch (each['health']) {
+              case String s:
+                each['health'] = jsonDecode(s);
+              case null:
+                each['health'] = {};
+            }
+
             return Exercise.fromJson(each);
           },
         );
@@ -53,7 +60,7 @@ mixin _Exercises on _LocalDatabase
     String? userId,
   }) async {
     return _db.transaction(
-      (txn) {
+      (txn) async {
         final batch = txn.batch();
         for (final each in exercises) {
           var row = {
@@ -65,6 +72,7 @@ mixin _Exercises on _LocalDatabase
           // unconditionally — the row is built generically from its keys, and a
           // missing one would leave the column untouched on conflict-update.
           row['movement'] = jsonEncode(each.movement.toMap());
+          row['health'] = jsonEncode(each.health.toMap());
           // the unit preference is per-user (exercise_details), not a column on
           // the shared catalog row — see setExerciseUnit / getExerciseUnits.
           row.remove('unit_system');
@@ -87,7 +95,7 @@ mixin _Exercises on _LocalDatabase
           'table_name': _exercises,
         }, conflictAlgorithm: .replace);
 
-        return batch.commit(noResult: true);
+        await batch.commit(noResult: true);
       },
     );
   }
