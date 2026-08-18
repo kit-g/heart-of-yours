@@ -8,6 +8,7 @@
 /// Importing `heart_health.dart` gives you all of this plus the store.
 library;
 
+part 'src/activity.dart';
 part 'src/metric.dart';
 part 'src/sample.dart';
 part 'src/store_contract.dart';
