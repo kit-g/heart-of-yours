@@ -1,5 +1,6 @@
-/// Read-only access to the device's health store — HealthKit on iOS, Health
-/// Connect on Android.
+/// Access to the device's health store — HealthKit on iOS, Health Connect on
+/// Android. Six metrics read; one thing written, the workout the user just
+/// finished.
 ///
 /// **Health data read through this package is device-only.** It is never sent
 /// to heart-api: not raw samples, not aggregates, not rollups. The OS store is
