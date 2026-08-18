@@ -2194,6 +2194,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "healthWriteWorkouts": "Сохранять тренировки в Здоровье",
+  "@healthWriteWorkouts": {
+    "description": "Settings row title. Heart writing a finished workout back to the phone's health store, so the user's activity rings credit their lifting",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthWriteWorkoutsOn": "Сохраняется только длительность тренировки",
+  "@healthWriteWorkoutsOn": {
+    "description": "Settings row subtitle when Heart may write. States the limit as the reassurance: duration and activity type only. Never claim Heart records calories — it deliberately does not, because without a watch there is no measurement, only a guess",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthWriteWorkoutsOff": "Выключено · Heart не сохраняет ваши тренировки",
+  "@healthWriteWorkoutsOff": {
+    "description": "Settings row subtitle when write access was declined. Neutral — declining is a normal choice, not an error to scold",
+    "type": "text",
+    "placeholders": {}
+  },
   "healthSleep": "Сон",
   "@healthSleep": {
     "description": "Name of a health metric: time asleep",

@@ -1148,6 +1148,15 @@ class LEn extends L {
       'Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone\'s health store. They stay on this device.';
 
   @override
+  String get healthWriteWorkouts => 'Save workouts to Health';
+
+  @override
+  String get healthWriteWorkoutsOn => 'Saving how long you train, and nothing else';
+
+  @override
+  String get healthWriteWorkoutsOff => 'Off · Heart is not saving your workouts';
+
+  @override
   String get healthSleep => 'Sleep';
 
   @override
@@ -2301,6 +2310,15 @@ class LEnCa extends LEn {
   @override
   String get healthSettingsBody =>
       'Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone\'s health store. They stay on this device.';
+
+  @override
+  String get healthWriteWorkouts => 'Save workouts to Health';
+
+  @override
+  String get healthWriteWorkoutsOn => 'Saving how long you train, and nothing else';
+
+  @override
+  String get healthWriteWorkoutsOff => 'Off · Heart is not saving your workouts';
 
   @override
   String get healthSleep => 'Sleep';
