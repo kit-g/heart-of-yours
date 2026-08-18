@@ -2,17 +2,27 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Health Connect, read-only, and exactly the six metrics `Health.tracked`
-         names. Every entry here is a permission the user is asked to grant, so
-         the list is a product decision rather than a convenience: no writes
-         (nothing writes yet), no background reads (nothing reads in the
-         background), nothing speculative. -->
+    <!-- Health Connect, and exactly the six metrics `Health.tracked` names.
+         Every entry here is a permission the user is asked to grant, so the
+         list is a product decision rather than a convenience: no background
+         reads (nothing reads in the background), nothing speculative. -->
     <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+
+    <!-- The only thing Heart writes: the session the user just finished, as an
+         ExerciseSessionRecord. Note there is no matching READ_EXERCISE — Heart
+         does not read workouts back, from itself or from anything else, and
+         asking for a read it would never use is exactly the kind of overreach
+         the list above avoids. Deliberately not accompanied by a calorie write
+         either: without a watch session there is no measurement of energy, and
+         an estimate that disagrees with the watch's own is worse than none.
+         Writing this requires the Play Console health data declaration to
+         cover writing, not just reading. -->
+    <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
 
     <!-- Without this, Health Connect serves only the 30 days before the moment
          permission was granted, whatever window is asked for. The backfill would
