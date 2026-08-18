@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_health/heart_health.dart';
+import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/src/health.dart';
+import 'package:heart_state/src/workout_activity.dart';
 import 'package:provider/provider.dart';
 
 import 'test_utils.dart';
@@ -507,6 +509,287 @@ void main() {
     });
   });
 
+  group('recordWorkout', () {
+    final bench = ex('Bench Press');
+
+    /// A session that actually happened: one exercise, one set ticked off, and
+    /// an end.
+    Workout done({
+      DateTime? start,
+      DateTime? end,
+      String? name,
+      bool worked = true,
+    }) {
+      final workout = Workout.fromExercises([wEx(bench)], name: name);
+      workout.start = start ?? DateTime.utc(2026, 8, 17, 18);
+      if (worked) workout.completeAllSets();
+      if (end case DateTime at) workout.finish(at);
+      return workout;
+    }
+
+    setUp(() async {
+      await sut.init();
+      device.log.clear();
+    });
+
+    test('mirrors a finished session into the store', () async {
+      final workout = done(end: DateTime.utc(2026, 8, 17, 19, 12), name: 'Push Day');
+
+      expect(await sut.recordWorkout(workout, title: workout.name), isTrue);
+
+      expect(device.written, hasLength(1));
+      final [written] = device.written;
+      expect(written.start, DateTime.utc(2026, 8, 17, 18));
+      expect(written.end, DateTime.utc(2026, 8, 17, 19, 12));
+      expect(written.title, 'Push Day');
+    });
+
+    // The rings would otherwise credit a session the user walked away from.
+    test('writes nothing for a workout still in progress', () async {
+      expect(await sut.recordWorkout(done()), isFalse);
+      expect(device.written, isEmpty);
+    });
+
+    test('writes nothing for a workout that recorded no set', () async {
+      final abandoned = done(end: DateTime.utc(2026, 8, 17, 19), worked: false);
+
+      expect(await sut.recordWorkout(abandoned), isFalse);
+      expect(device.written, isEmpty);
+    });
+
+    test('writes nothing when there is no store to write to', () async {
+      device.storeStatus = HealthStoreStatus.unavailable;
+      await sut.init();
+
+      expect(await sut.recordWorkout(done(end: DateTime.utc(2026, 8, 17, 19))), isFalse);
+      expect(device.written, isEmpty);
+    });
+
+    test('reports the store refusing it', () async {
+      device.writeAccepted = false;
+
+      expect(await sut.recordWorkout(done(end: DateTime.utc(2026, 8, 17, 19))), isFalse);
+    });
+
+    // Finishing a workout is the caller. Nothing here may take that path down.
+    test('a broken write is reported, not thrown', () async {
+      device.writeError = StateError('channel is gone');
+
+      expect(await sut.recordWorkout(done(end: DateTime.utc(2026, 8, 17, 19))), isFalse);
+      expect(errors, hasLength(1));
+    });
+  });
+
+  // The regression this group exists for: write access is requested by
+  // [connect], which a user who granted read access before Heart could write
+  // never passes through again. Without a top-up the feature is silently dead
+  // for exactly them, and the platform gives them no toggle to find either.
+  group('workout write access', () {
+    final bench = ex('Bench Press');
+
+    Workout done() {
+      final workout = Workout.fromExercises([wEx(bench)], name: 'Push Day');
+      workout.start = DateTime.utc(2026, 8, 17, 18);
+      workout.completeAllSets();
+      workout.finish(DateTime.utc(2026, 8, 17, 19));
+      return workout;
+    }
+
+    setUp(() async {
+      await sut.init();
+      device.log.clear();
+    });
+
+    test('asks once when nobody ever has, then writes', () async {
+      expect(device.writeAccess, HealthAccess.denied, reason: 'a device that predates the write path');
+
+      expect(await sut.recordWorkout(done(), mayAsk: true), isTrue);
+
+      expect(device.writeAccessRequests, 1);
+      expect(device.written, hasLength(1));
+      expect(sut.workoutWriteAccess, HealthAccess.granted);
+    });
+
+    test('does not ask again once the answer is known', () async {
+      await sut.recordWorkout(done(), mayAsk: true);
+      await sut.recordWorkout(done(), mayAsk: true);
+      await sut.recordWorkout(done(), mayAsk: true);
+
+      expect(device.writeAccessRequests, 1, reason: 'a granted permission is not re-asked');
+      expect(device.written, hasLength(3));
+    });
+
+    test('writes nothing when the sheet is declined', () async {
+      device.writeAccessAfterAsking = HealthAccess.denied;
+
+      expect(await sut.recordWorkout(done(), mayAsk: true), isFalse);
+
+      expect(device.writeAccessRequests, 1);
+      expect(device.written, isEmpty);
+    });
+
+    // The regression that made the first cut of this useless: not-granted was
+    // read as "the user said no", and since the platforms report a refusal and
+    // never having been asked identically, that meant nobody was ever asked.
+    // A device reporting denied must still get exactly one sheet.
+    test('a refusal and never having asked are the same answer, so it asks', () async {
+      device.writeAccess = HealthAccess.denied;
+      device.writeAccessAfterAsking = HealthAccess.granted;
+
+      expect(await sut.recordWorkout(done(), mayAsk: true), isTrue);
+
+      expect(device.writeAccessRequests, 1);
+      expect(device.written, hasLength(1));
+    });
+
+    // The other half of that: a user who genuinely declined gets one no-op
+    // attempt this launch, not one per workout.
+    test('asks at most once a launch when the answer stays no', () async {
+      device.writeAccessAfterAsking = HealthAccess.denied;
+
+      await sut.recordWorkout(done(), mayAsk: true);
+      await sut.recordWorkout(done(), mayAsk: true);
+      await sut.recordWorkout(done(), mayAsk: true);
+
+      expect(device.writeAccessRequests, 1);
+      expect(device.written, isEmpty);
+    });
+
+    // Someone who never accepted the invitation should not meet a Health sheet
+    // because they finished a workout.
+    test('never asks a user who has not engaged with health', () async {
+      expect(await sut.recordWorkout(done()), isTrue);
+
+      expect(device.writeAccessRequests, 0);
+      expect(device.log, isNot(contains('workoutWriteAccess')));
+    });
+
+    test('the settings row can ask outright', () async {
+      expect(await sut.requestWorkoutWriteAccess(), HealthAccess.granted);
+
+      expect(device.writeAccessRequests, 1);
+      expect(sut.workoutWriteAccess, HealthAccess.granted);
+    });
+
+    test('reads the current answer without asking for it', () async {
+      device.writeAccess = HealthAccess.granted;
+
+      expect(await sut.refreshWorkoutWriteAccess(), HealthAccess.granted);
+
+      expect(device.writeAccessRequests, 0);
+    });
+
+    test('forgets the answer on sign-out', () async {
+      await sut.recordWorkout(done(), mayAsk: true);
+      expect(sut.workoutWriteAccess, HealthAccess.granted);
+
+      sut.onSignOut();
+
+      expect(sut.workoutWriteAccess, isNull);
+    });
+  });
+
+  // Heart logs cycling, swimming, rowing and a dozen more, so labelling every
+  // session strength training would put a wrong label in the user's own health
+  // record — next to whatever their watch recorded for the same hour.
+  // Heart logs cycling, swimming, rowing and a dozen more, so labelling every
+  // session strength training would put a wrong label in the user's own health
+  // record — next to whatever their watch recorded for the same hour.
+  group('activityOf', () {
+    /// An exercise carrying a library annotation, in wire shape.
+    Exercise annotated(String name, HealthActivity activity, {Category category = .cardio}) {
+      return Exercise.fromJson({
+        'name': name,
+        'category': category.value,
+        'target': 'Cardio',
+        'archived': false,
+        'health': {'activity': activity.value},
+      });
+    }
+
+    /// An exercise with no annotation — a custom one, or anything the library
+    /// has not needed to annotate.
+    Exercise unannotated(String name, Category category) {
+      return Exercise.fromJson({
+        'name': name,
+        'category': category.value,
+        'target': category == Category.cardio ? 'Cardio' : 'Chest',
+        'archived': false,
+      });
+    }
+
+    Workout sessionOf(List<Exercise> exercises, {bool worked = true}) {
+      final workout = Workout.fromExercises(exercises.map(wEx).toList());
+      if (worked) workout.completeAllSets();
+      return workout;
+    }
+
+    test('a lifting session is strength', () {
+      final workout = sessionOf([ex('Bench Press'), ex('Squat')]);
+
+      expect(activityOf(workout), WorkoutActivity.strength);
+    });
+
+    test('names the cardio the user actually did', () {
+      expect(activityOf(sessionOf([annotated('Swimming', .swimming)])), WorkoutActivity.swimming);
+      expect(activityOf(sessionOf([annotated('Rowing (Machine)', .rowing)])), WorkoutActivity.rowing);
+      expect(activityOf(sessionOf([annotated('Yoga', .yoga, category: .duration)])), WorkoutActivity.yoga);
+    });
+
+    // The regression this whole design exists for. `Exercise.name` is localized
+    // copy — the library is keyed by exercise id with an i18n map per locale —
+    // so an activity derived from the name silently collapsed for every
+    // non-English user. The annotation travels with the exercise instead.
+    test('does not depend on the name, in any locale', () {
+      final english = sessionOf([annotated('Swimming', .swimming)]);
+      final russian = sessionOf([annotated('Плавание', .swimming)]);
+
+      expect(activityOf(russian), WorkoutActivity.swimming);
+      expect(activityOf(russian), activityOf(english));
+    });
+
+    test('lifting plus cardio is cross training', () {
+      final workout = sessionOf([ex('Bench Press'), annotated('Running', .running)]);
+
+      expect(activityOf(workout), WorkoutActivity.crossTraining);
+    });
+
+    test('several kinds of cardio and no lifting is mixed cardio', () {
+      final workout = sessionOf([annotated('Running', .running), annotated('Cycling', .cycling)]);
+
+      expect(activityOf(workout), WorkoutActivity.mixedCardio);
+    });
+
+    // An exercise sitting untouched in the session did not happen, and must not
+    // get to rename the workout.
+    test('ignores an exercise the user never worked', () {
+      final workout = Workout.fromExercises([wEx(ex('Bench Press')), wEx(annotated('Running', .running))]);
+      // Only the lifting gets a completed set.
+      for (final set in workout.first) {
+        set.isCompleted = true;
+      }
+
+      expect(activityOf(workout), WorkoutActivity.strength);
+    });
+
+    // A user's own exercise has no library entry at all. The category fallback
+    // is what carries it, and for cardio it must never say strength training.
+    test('falls back for an exercise with no annotation', () {
+      expect(activityOf(sessionOf([unannotated('Zercher Carry', .barbell)])), WorkoutActivity.strength);
+      expect(activityOf(sessionOf([unannotated('Assault Bike', .cardio)])), WorkoutActivity.other);
+    });
+
+    test('the written session carries the activity', () async {
+      await sut.init();
+      final workout = sessionOf([annotated('Swimming', .swimming)]);
+      workout.finish(DateTime.utc(2026, 8, 17, 19));
+
+      await sut.recordWorkout(workout);
+
+      expect(device.written.single.activity, WorkoutActivity.swimming);
+    });
+  });
+
   group('providers', () {
     testWidgets('of() and watch() resolve the same instance', (tester) async {
       await tester.pumpWidget(
@@ -611,6 +894,54 @@ class _FakeDevice implements HealthService {
 
   int historyRequests = 0;
   bool historyReachable = true;
+
+  /// What the store says about writing workouts.
+  ///
+  /// Starts denied, which is what a device that predates the write path
+  /// reports — and, indistinguishably, what a device whose user refused
+  /// reports. The platforms collapse the two, so the fake does too.
+  HealthAccess writeAccess = HealthAccess.denied;
+
+  /// What the user picks when the sheet is shown.
+  HealthAccess writeAccessAfterAsking = HealthAccess.granted;
+
+  int writeAccessRequests = 0;
+
+  @override
+  Future<HealthAccess> workoutWriteAccess() async {
+    log.add('workoutWriteAccess');
+    return writeAccess;
+  }
+
+  @override
+  Future<bool> requestWorkoutWriteAccess() async {
+    log.add('requestWorkoutWriteAccess');
+    writeAccessRequests++;
+    writeAccess = writeAccessAfterAsking;
+    return writeAccess == HealthAccess.granted;
+  }
+
+  /// Every session handed to [writeWorkout], in order.
+  final written = <({WorkoutActivity activity, DateTime start, DateTime end, String? title})>[];
+
+  /// What the store says to the next write.
+  bool writeAccepted = true;
+
+  /// Set to have the next write blow up the way a channel does.
+  Object? writeError;
+
+  @override
+  Future<bool> writeWorkout({
+    required WorkoutActivity activity,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+  }) async {
+    log.add('writeWorkout');
+    if (writeError case Object error) throw error;
+    written.add((activity: activity, start: start, end: end, title: title));
+    return writeAccepted;
+  }
 
   @override
   Future<bool> requestHistoryAccess() async {
