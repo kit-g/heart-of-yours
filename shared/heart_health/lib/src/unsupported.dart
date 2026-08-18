@@ -3,9 +3,9 @@ part of '../heart_health.dart';
 /// A [HealthService] for platforms with no health store — web, and any
 /// `dart:io` platform that isn't iOS or Android.
 ///
-/// Every read is empty and every request is a refusal, so callers need no
-/// platform checks of their own: ask for data, get none, render the same empty
-/// state a user who declined would see.
+/// Every read is empty, every write is dropped and every request is a refusal,
+/// so callers need no platform checks of their own: ask for data, get none,
+/// render the same empty state a user who declined would see.
 ///
 /// Lives in the library proper rather than behind the conditional export in
 /// `store.dart` because it depends on nothing — both branches need it, and web
@@ -32,6 +32,22 @@ class UnsupportedHealthStore implements HealthService {
     required DateTime to,
   }) async {
     return const [];
+  }
+
+  @override
+  Future<HealthAccess> workoutWriteAccess() async => HealthAccess.denied;
+
+  @override
+  Future<bool> requestWorkoutWriteAccess() async => false;
+
+  @override
+  Future<bool> writeWorkout({
+    required WorkoutActivity activity,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+  }) async {
+    return false;
   }
 
   @override
