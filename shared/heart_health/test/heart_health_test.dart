@@ -393,7 +393,21 @@ void main() {
     // "access and update your Health data" — write access we have no code to
     // use. Tier 1 widens it deliberately; until then, asking for it is both
     // over-reach and a bad look on a feature selling restraint.
-    test('asks only to read', () async {
+    // The permission ask is the whole promise the feature makes about itself:
+    // Heart reads the body's data and writes back only the session it watched
+    // the user do. A metric quietly acquiring WRITE here is the regression this
+    // group exists to catch.
+    ({List<plugin.HealthDataType> types, List<plugin.HealthDataAccess> permissions}) requestedAccess() {
+      final captured = verify(
+        health.requestAuthorization(captureAny, permissions: captureAnyNamed('permissions')),
+      ).captured;
+      return (
+        types: captured[0] as List<plugin.HealthDataType>,
+        permissions: captured[1] as List<plugin.HealthDataAccess>,
+      );
+    }
+
+    test('asks to read every metric and to write nothing but the workout', () async {
       when(health.isDataTypeAvailable(any)).thenReturn(true);
       when(
         health.requestAuthorization(any, permissions: anyNamed('permissions')),
@@ -401,14 +415,36 @@ void main() {
 
       await store.requestAccess({HealthMetric.steps, HealthMetric.bodyMass});
 
-      final captured = verify(
-        health.requestAuthorization(captureAny, permissions: captureAnyNamed('permissions')),
-      ).captured;
-      final types = captured[0] as List<plugin.HealthDataType>;
-      final permissions = captured[1] as List<plugin.HealthDataAccess>;
+      final (:types, :permissions) = requestedAccess();
 
-      expect(permissions, everyElement(plugin.HealthDataAccess.READ));
       expect(permissions, hasLength(types.length), reason: 'the plugin throws when the lengths differ');
+
+      final asked = Map.fromIterables(types, permissions);
+      expect(asked[plugin.HealthDataType.STEPS], plugin.HealthDataAccess.READ);
+      expect(asked[plugin.HealthDataType.WEIGHT], plugin.HealthDataAccess.READ);
+      expect(asked[plugin.HealthDataType.WORKOUT], plugin.HealthDataAccess.WRITE);
+
+      // The one that matters: nothing about the user's body is writable.
+      expect(
+        asked.entries.where((e) => e.value != plugin.HealthDataAccess.READ).map((e) => e.key),
+        [plugin.HealthDataType.WORKOUT],
+      );
+    });
+
+    test('skips the workout type where the platform has none', () async {
+      when(health.isDataTypeAvailable(any)).thenReturn(true);
+      when(health.isDataTypeAvailable(plugin.HealthDataType.WORKOUT)).thenReturn(false);
+      when(
+        health.requestAuthorization(any, permissions: anyNamed('permissions')),
+      ).thenAnswer((_) async => true);
+
+      await store.requestAccess({HealthMetric.steps});
+
+      final (:types, :permissions) = requestedAccess();
+
+      expect(types, isNot(contains(plugin.HealthDataType.WORKOUT)));
+      expect(permissions, everyElement(plugin.HealthDataAccess.READ));
+      expect(permissions, hasLength(types.length));
     });
 
     test('configures once, however many calls', () async {
@@ -463,6 +499,226 @@ void main() {
     // settings" and land the user on Settings › Heart, which lists cellular
     // data, Siri and search and nothing about health. HealthKit permissions are
     // in the Health app or nowhere.
+    group('writeWorkout', () {
+      Future<bool> write({
+        WorkoutActivity activity = WorkoutActivity.strength,
+        DateTime? start,
+        DateTime? end,
+        String? title,
+      }) {
+        return store.writeWorkout(
+          activity: activity,
+          start: start ?? DateTime.utc(2026, 8, 17, 18),
+          end: end ?? DateTime.utc(2026, 8, 17, 19, 12),
+          title: title,
+        );
+      }
+
+      void stubWrite({bool accepted = true}) {
+        when(
+          health.writeWorkoutData(
+            activityType: anyNamed('activityType'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+            totalEnergyBurned: anyNamed('totalEnergyBurned'),
+            totalEnergyBurnedUnit: anyNamed('totalEnergyBurnedUnit'),
+            totalDistance: anyNamed('totalDistance'),
+            totalDistanceUnit: anyNamed('totalDistanceUnit'),
+            title: anyNamed('title'),
+            recordingMethod: anyNamed('recordingMethod'),
+          ),
+        ).thenAnswer((_) async => accepted);
+      }
+
+      // Every activity, on both platforms, pinned to the exact value the store
+      // accepts. This table is the guard on the trap that makes this mapping
+      // necessary at all: the plugin throws `HealthException` for an activity
+      // the platform does not know rather than degrading, so a wrong entry is
+      // a crash the moment a user finishes that kind of session.
+      //
+      // The platform columns were derived from the plugin's own `_isOnIOS` and
+      // `_isOnAndroid` lists (`health_plugin.dart`), which is where to re-check
+      // them after a dependency bump. They cannot be asserted against here —
+      // the plugin gates on `dart:io`'s `Platform`, which is neither iOS nor
+      // Android under `flutter test`, so its validation never runs.
+      const expected = <WorkoutActivity, (plugin.HealthWorkoutActivityType, plugin.HealthWorkoutActivityType)>{
+        // activity: (iOS, Android)
+        .strength: (.TRADITIONAL_STRENGTH_TRAINING, .STRENGTH_TRAINING),
+        .crossTraining: (.CROSS_TRAINING, .OTHER),
+        .mixedCardio: (.MIXED_CARDIO, .OTHER),
+        .cycling: (.BIKING, .BIKING),
+        .cyclingIndoor: (.BIKING, .BIKING_STATIONARY),
+        .elliptical: (.ELLIPTICAL, .ELLIPTICAL),
+        .hiking: (.HIKING, .HIKING),
+        .rowing: (.ROWING, .ROWING_MACHINE),
+        .running: (.RUNNING, .RUNNING),
+        .runningTreadmill: (.RUNNING, .RUNNING_TREADMILL),
+        .skating: (.SKATING, .SKATING),
+        .skiing: (.DOWNHILL_SKIING, .DOWNHILL_SKIING),
+        .snowboarding: (.SNOWBOARDING, .SNOWBOARDING),
+        .swimming: (.SWIMMING, .SWIMMING_POOL),
+        .walking: (.WALKING, .WALKING),
+        .climbing: (.CLIMBING, .ROCK_CLIMBING),
+        .coreTraining: (.CORE_TRAINING, .CALISTHENICS),
+        .flexibility: (.FLEXIBILITY, .OTHER),
+        .yoga: (.YOGA, .YOGA),
+        .cardioDance: (.CARDIO_DANCE, .CARDIO_DANCE),
+        .highIntensity: (.HIGH_INTENSITY_INTERVAL_TRAINING, .HIGH_INTENSITY_INTERVAL_TRAINING),
+        // The enum declares JUMP_ROPE under a comment saying "Both". It is not:
+        // only `_isOnAndroid` — the list that throws — settles it.
+        .jumpRope: (.JUMP_ROPE, .OTHER),
+        .other: (.OTHER, .OTHER),
+      };
+
+      Future<plugin.HealthWorkoutActivityType> activityWritten(WorkoutActivity activity) async {
+        await write(activity: activity);
+
+        final captured = verify(
+          health.writeWorkoutData(
+            activityType: captureAnyNamed('activityType'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+            totalEnergyBurned: anyNamed('totalEnergyBurned'),
+            totalEnergyBurnedUnit: anyNamed('totalEnergyBurnedUnit'),
+            totalDistance: anyNamed('totalDistance'),
+            totalDistanceUnit: anyNamed('totalDistanceUnit'),
+            title: anyNamed('title'),
+            recordingMethod: anyNamed('recordingMethod'),
+          ),
+        ).captured;
+
+        return captured.last as plugin.HealthWorkoutActivityType;
+      }
+
+      test('every activity has a value on iOS', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        stubWrite();
+
+        for (final MapEntry(key: activity, value: (ios, _)) in expected.entries) {
+          expect(await activityWritten(activity), ios, reason: '$activity on iOS');
+        }
+      });
+
+      test('every activity has a value on Android', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        stubWrite();
+
+        for (final MapEntry(key: activity, value: (_, android)) in expected.entries) {
+          expect(await activityWritten(activity), android, reason: '$activity on Android');
+        }
+      });
+
+      // A new activity with no entry above is a value nobody has checked either
+      // platform accepts — which is exactly how the iOS-only ones got in.
+      test('no activity is left unmapped', () {
+        expect(expected.keys, containsAll(WorkoutActivity.values));
+      });
+
+      // The constraint the whole feature is built around: without a watch
+      // session there is no measurement of energy, only an estimate from
+      // bodyweight and duration, and a number Heart invented sitting next to
+      // the Watch's own reading is worse than an absence. This test is the
+      // guard on that, and it should outlive any refactor of the file.
+      test('never reports energy, because there is none to report', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        stubWrite();
+
+        await write();
+
+        final captured = verify(
+          health.writeWorkoutData(
+            activityType: anyNamed('activityType'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+            totalEnergyBurned: captureAnyNamed('totalEnergyBurned'),
+            totalEnergyBurnedUnit: anyNamed('totalEnergyBurnedUnit'),
+            totalDistance: captureAnyNamed('totalDistance'),
+            totalDistanceUnit: anyNamed('totalDistanceUnit'),
+            title: anyNamed('title'),
+            recordingMethod: anyNamed('recordingMethod'),
+          ),
+        ).captured;
+
+        expect(captured[0], isNull, reason: 'estimated calories are a fabrication');
+        expect(captured[1], isNull, reason: 'lifting has no distance');
+      });
+
+      test('passes the session name through as the title', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        stubWrite();
+
+        await write(title: 'Evening Workout');
+
+        final captured = verify(
+          health.writeWorkoutData(
+            activityType: anyNamed('activityType'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+            totalEnergyBurned: anyNamed('totalEnergyBurned'),
+            totalEnergyBurnedUnit: anyNamed('totalEnergyBurnedUnit'),
+            totalDistance: anyNamed('totalDistance'),
+            totalDistanceUnit: anyNamed('totalDistanceUnit'),
+            title: captureAnyNamed('title'),
+            recordingMethod: anyNamed('recordingMethod'),
+          ),
+        ).captured;
+
+        expect(captured.single, 'Evening Workout');
+      });
+
+      test('reports the store refusing it', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        stubWrite(accepted: false);
+
+        expect(await write(), isFalse);
+      });
+
+      // A session with no elapsed time is not one the user did, and the store
+      // rejects it anyway — better caught here than thrown across a channel.
+      test('does not write a workout that did not elapse', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        stubWrite();
+
+        final at = DateTime.utc(2026, 8, 17, 18);
+        expect(await write(start: at, end: at), isFalse);
+        expect(await write(start: at, end: at.subtract(const Duration(minutes: 1))), isFalse);
+
+        verifyNever(
+          health.writeWorkoutData(
+            activityType: anyNamed('activityType'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+            totalEnergyBurned: anyNamed('totalEnergyBurned'),
+            totalEnergyBurnedUnit: anyNamed('totalEnergyBurnedUnit'),
+            totalDistance: anyNamed('totalDistance'),
+            totalDistanceUnit: anyNamed('totalDistanceUnit'),
+            title: anyNamed('title'),
+            recordingMethod: anyNamed('recordingMethod'),
+          ),
+        );
+      });
+
+      // Finishing a workout must not be able to fail because HealthKit did.
+      test('a refused or broken write is a false, not a throw', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        when(
+          health.writeWorkoutData(
+            activityType: anyNamed('activityType'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+            totalEnergyBurned: anyNamed('totalEnergyBurned'),
+            totalEnergyBurnedUnit: anyNamed('totalEnergyBurnedUnit'),
+            totalDistance: anyNamed('totalDistance'),
+            totalDistanceUnit: anyNamed('totalDistanceUnit'),
+            title: anyNamed('title'),
+            recordingMethod: anyNamed('recordingMethod'),
+          ),
+        ).thenThrow(PlatformException(code: 'HEALTH_ERROR', message: 'Authorization not determined'));
+
+        expect(await write(), isFalse);
+      });
+    });
+
     group('openPermissions', () {
       final launched = <Uri>[];
       final invoked = <String>[];
