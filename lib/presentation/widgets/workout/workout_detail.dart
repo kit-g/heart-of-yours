@@ -28,7 +28,7 @@ import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
-import 'package:heart_models/heart_models.dart';
+import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 
 import 'timer.dart';
