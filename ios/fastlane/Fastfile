@@ -98,7 +98,6 @@ platform :ios do
       skip_waiting_for_build_processing: false,
       wait_processing_timeout_duration: 3600,
       submit_beta_review: false,
-      groups: ["Primary Testers"],
       changelog: changelog
     )
   end
