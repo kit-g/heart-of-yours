@@ -7,6 +7,62 @@ const _clearDatabase = bool.fromEnvironment('CLEAR_DATABASE');
 
 abstract class _LocalDatabase {
   Database get _db;
+
+  /// What each table's columns actually are.
+  ///
+  /// Cached for the life of the connection: every migration runs inside [init],
+  /// so the schema cannot change under a query afterwards.
+  final _tableColumns = <String, Set<String>>{};
+
+  Future<Set<String>> _columnsOf(DatabaseExecutor db, String table) async {
+    if (_tableColumns[table] case Set<String> cached) return cached;
+
+    final rows = await db.rawQuery('PRAGMA table_info($table)');
+    return _tableColumns[table] = {for (final row in rows) row['name'] as String};
+  }
+
+  /// [row], minus anything [table] has no column for.
+  ///
+  /// Rows written here are built from model code — `toRow()`, `toMap()` — and
+  /// those models live in a different repository, arriving by git dependency. A
+  /// field added there shows up as a key with no column behind it, and SQLite
+  /// rejects **the whole statement** with `no such column`.
+  ///
+  /// That failure is far worse than it looks. It took down the catalogue write,
+  /// which took down `Exercises.init`, which leaves the app on its loading
+  /// spinner forever — the exercises are sitting in memory, and the flag that
+  /// says so is never set. A missing migration bricked start-up.
+  ///
+  /// Dropping the key degrades to exactly how the app behaved before the field
+  /// existed: the value is not mirrored, and the reader falls back the way it
+  /// already does for a null column. The log is [Level.SEVERE] because it always
+  /// means a migration is missing, and it names the column to add.
+  Future<Map<String, Object?>> _fitToSchema(
+    DatabaseExecutor db,
+    String table,
+    Map<String, Object?> row,
+  ) async {
+    final columns = await _columnsOf(db, table);
+
+    // No columns means the schema could not be read, never that the table has
+    // none. Narrowing against it would drop every key and write an empty row —
+    // silently losing the data this method exists to protect. Pass the row
+    // through and let SQLite answer for it, which is the behaviour we had.
+    if (columns.isEmpty) return row;
+
+    final unknown = row.keys.where((key) => !columns.contains(key));
+    if (unknown.isEmpty) return row;
+
+    _logger.severe(
+      'No column on `$table` for ${unknown.join(', ')} — not persisting it. '
+      'A model field was added without a migration; add one so the value survives a restart.',
+    );
+
+    return {
+      for (final MapEntry(:key, :value) in row.entries)
+        if (columns.contains(key)) key: value,
+    };
+  }
 }
 
 class LocalDatabase extends _LocalDatabase
@@ -29,7 +85,7 @@ class LocalDatabase extends _LocalDatabase
 
   new _(this._db);
 
-  static Future<LocalDatabase> init({int version = 9, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 10, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';
