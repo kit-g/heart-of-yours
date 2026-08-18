@@ -10,8 +10,11 @@ part of '../heart_health.dart';
 /// One method, `openHealthConnectSettings`, returning whether the screen opened.
 const healthPlatformChannel = 'heart_health/platform';
 
-/// Read access to the device's health store — HealthKit on iOS, Health Connect
-/// on Android.
+/// Access to the device's health store — HealthKit on iOS, Health Connect on
+/// Android.
+///
+/// Reads six metrics; writes exactly one thing, a finished workout. See
+/// [writeWorkout] for why that asymmetry is deliberate and where it stops.
 ///
 /// An interface so state and tests never touch the plugin. The only
 /// implementations are [DeviceHealthStore] and [UnsupportedHealthStore]; pick
@@ -19,8 +22,9 @@ const healthPlatformChannel = 'heart_health/platform';
 ///
 /// **Nothing read through here may be sent to a server.** Health data is
 /// device-only by decision — the OS store is already the system of record and
-/// already backed up, so copying it up buys nothing but liability. See
-/// `docs/2026-08-02.wearables.md`.
+/// already backed up, so copying it up buys nothing but liability. The write
+/// does not qualify that: it goes to the user's own device store, never
+/// outward. See `docs/2026-08-02.wearables.md`.
 abstract interface class HealthService {
   /// Whether this platform has a health store at all. False on web and desktop,
   /// where every other method is a no-op returning empty.
@@ -39,12 +43,19 @@ abstract interface class HealthService {
   /// iOS the honest answer is almost always "unknown", and that is not a bug.
   Future<HealthAccess> access(Set<HealthMetric> metrics);
 
-  /// Shows the OS permission sheet for [metrics].
+  /// Shows the OS permission sheet for [metrics], plus write access for
+  /// workouts.
+  ///
+  /// Read for every metric, write for the workout type and nothing else. The
+  /// asymmetry is the point: Heart reads the body's data and writes back only
+  /// the session it just watched the user do. One sheet, because the platforms
+  /// only give us one and asking twice for a feature this small is worse than
+  /// asking once for both.
   ///
   /// Returns whether the sheet was presented without error — **not** whether
   /// the user granted anything. On iOS those are genuinely different questions
   /// and only the first is answerable. Call [read] afterwards and see whether
-  /// data arrives.
+  /// data arrives; for the write, see whether [writeWorkout] returns true.
   Future<bool> requestAccess(Set<HealthMetric> metrics);
 
   /// Every sample of [metrics] overlapping `[from, to)`.
@@ -60,6 +71,71 @@ abstract interface class HealthService {
     required Set<HealthMetric> metrics,
     required DateTime from,
     required DateTime to,
+  });
+
+  /// Whether the store will accept a workout write.
+  ///
+  /// Only ever [HealthAccess.granted] or [HealthAccess.denied], and *denied
+  /// does not mean the user said no*. HealthKit distinguishes `notDetermined`
+  /// from `sharingDenied`, but the plugin's iOS bridge collapses both into one
+  /// false (`status == .sharingAuthorized`), and Health Connect reports only
+  /// the set of permissions granted. So "never asked" and "asked and refused"
+  /// are the same answer here, on both platforms.
+  ///
+  /// The consequence is the whole shape of [requestWorkoutWriteAccess]: since
+  /// a refusal cannot be told apart from silence, not-granted has to be treated
+  /// as worth asking about, and it is the platform — not this code — that
+  /// decides whether a sheet actually appears.
+  Future<HealthAccess> workoutWriteAccess();
+
+  /// Asks for permission to write workouts, and nothing else.
+  ///
+  /// Separate from [requestAccess] because the two are asked at different
+  /// moments and, for anyone who granted read access before Heart could write,
+  /// [requestAccess] will never run again — the settings row stops offering it
+  /// once the sheet has been shown once. Without this method those users have
+  /// no route to write access at all: the platform's own permission screen
+  /// lists only the types an app has actually requested, so the toggle they
+  /// would need does not exist until Heart asks for it here.
+  ///
+  /// Safe to call when the user has already refused: both platforms show a
+  /// sheet only for an undetermined permission, so a second ask is a no-op
+  /// rather than nagging. That is what makes it usable despite
+  /// [workoutWriteAccess] being unable to tell refusal from silence — but it
+  /// also means a true reports the sheet was presented without error, never
+  /// that anything was granted. Read [workoutWriteAccess] afterwards for that.
+  Future<bool> requestWorkoutWriteAccess();
+
+  /// Saves a finished strength-training session to the store.
+  ///
+  /// The one thing this package writes. Everything else is read-only, and the
+  /// permission [requestAccess] asks for reflects that: write is requested for
+  /// the workout type alone.
+  ///
+  /// **Energy is deliberately absent, and must stay absent.** Without a watch
+  /// session there is no measurement of what the user burned, only an estimate
+  /// from bodyweight and duration. A number Heart invented, sitting next to the
+  /// Watch's own reading and disagreeing with it, is worse than no number —
+  /// so the session carries its duration and its activity type and nothing
+  /// else. See `docs/2026-08-02.wearables.md` §"Tier 1".
+  ///
+  /// [activity] is what the user actually did — see [WorkoutActivity], and
+  /// note that deciding it is the caller's job, because only the caller knows
+  /// which exercises the session contained.
+  ///
+  /// [title] is copy and comes from the caller; this package does not name
+  /// things. Health Connect shows it, HealthKit ignores it.
+  ///
+  /// Returns whether the store accepted it. False covers a refused permission
+  /// as well as a genuine failure — the platforms do not distinguish, and the
+  /// caller's response to both is the same: nothing. A workout that failed to
+  /// write is not retried, because by the time we could the user has moved on
+  /// and a session appearing in Health hours late is its own bug.
+  Future<bool> writeWorkout({
+    required WorkoutActivity activity,
+    required DateTime start,
+    required DateTime end,
+    String? title,
   });
 
   /// Asks for access to data older than 30 days. Android only; true elsewhere.
