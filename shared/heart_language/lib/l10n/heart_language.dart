@@ -2180,6 +2180,24 @@ abstract class L {
   /// **'Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone\'s health store. They stay on this device.'**
   String get healthSettingsBody;
 
+  /// Settings row title. Heart writing a finished workout back to the phone's health store, so the user's activity rings credit their lifting
+  ///
+  /// In en, this message translates to:
+  /// **'Save workouts to Health'**
+  String get healthWriteWorkouts;
+
+  /// Settings row subtitle when Heart may write. States the limit as the reassurance: duration and activity type only. Never claim Heart records calories — it deliberately does not, because without a watch there is no measurement, only a guess
+  ///
+  /// In en, this message translates to:
+  /// **'Saving how long you train, and nothing else'**
+  String get healthWriteWorkoutsOn;
+
+  /// Settings row subtitle when write access was declined. Neutral — declining is a normal choice, not an error to scold
+  ///
+  /// In en, this message translates to:
+  /// **'Off · Heart is not saving your workouts'**
+  String get healthWriteWorkoutsOff;
+
   /// Name of a health metric: time asleep
   ///
   /// In en, this message translates to:

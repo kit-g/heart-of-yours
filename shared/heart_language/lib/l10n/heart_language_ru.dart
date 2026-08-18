@@ -1151,6 +1151,15 @@ class LRu extends L {
       'Heart читает пульс в покое, вариабельность пульса, сон, шаги, активные калории и вес из хранилища здоровья на телефоне. Они остаются на этом устройстве.';
 
   @override
+  String get healthWriteWorkouts => 'Сохранять тренировки в Здоровье';
+
+  @override
+  String get healthWriteWorkoutsOn => 'Сохраняется только длительность тренировки';
+
+  @override
+  String get healthWriteWorkoutsOff => 'Выключено · Heart не сохраняет ваши тренировки';
+
+  @override
   String get healthSleep => 'Сон';
 
   @override
