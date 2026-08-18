@@ -52,6 +52,26 @@ class FakeHealthDevice implements HealthService {
   int historyRequests = 0;
 
   @override
+  Future<HealthAccess> workoutWriteAccess() async => HealthAccess.granted;
+
+  @override
+  Future<bool> requestWorkoutWriteAccess() async {
+    log.add('requestWorkoutWriteAccess');
+    return true;
+  }
+
+  @override
+  Future<bool> writeWorkout({
+    required WorkoutActivity activity,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+  }) async {
+    log.add('writeWorkout');
+    return true;
+  }
+
+  @override
   Future<bool> requestHistoryAccess() async {
     log.add('requestHistoryAccess');
     historyRequests++;

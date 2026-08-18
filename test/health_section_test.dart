@@ -12,7 +12,7 @@ import 'package:heart/presentation/widgets/timeline_chart.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
-import 'package:heart_models/heart_models.dart';
+import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 
 import 'support/health_fakes.dart';
