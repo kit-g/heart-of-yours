@@ -19,4 +19,5 @@ export 'src/previous.dart';
 export 'src/stats.dart';
 export 'src/templates.dart';
 export 'src/timers.dart';
+export 'src/workout_activity.dart';
 export 'src/workouts.dart';
