@@ -52,6 +52,11 @@ const _schema = [
   templateFolders,
   templateFoldersIndex,
   addTemplateFolderId,
+  // v9
+  healthSamples,
+  healthSamplesIndex,
+  // v10
+  addExerciseHealth,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -61,7 +66,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 8,
+      version: 10,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
