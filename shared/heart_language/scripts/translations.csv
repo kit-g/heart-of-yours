@@ -396,3 +396,24 @@ healthSleep,Name of a health metric: time asleep,Sleep,Sleep,Сон
 healthSteps,Name of a health metric,Steps,Steps,Шаги
 deleteWorkoutTitle,Workout deletion confirmation dialog,Do you want to delete this workout?,Do you want to delete this workout?,Хотите удалить эту тренировку?
 deleteWorkoutBody,Workout deletion confirmation dialog,This cannot be undone,This cannot be undone,Это действие нельзя отменить
+importData,Settings item and title of the import page,Import workout history,Import workout history,Импорт истории тренировок
+importExplainerStrong,"Import page, explains where the Strong export file comes from","Lifted with Strong before? Bring your history along.
+
+In the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.","Lifted with Strong before? Bring your history along.
+
+In the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.","Тренировались в Strong? Забирайте историю с собой.
+
+В приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь."
+importSafeToRetry,"Import page, reassurance below the explainer","Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.","Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.","Переедет всё: тренировки, подходы, упражнения. Импортировать один и тот же файл повторно безопасно — всё, что уже есть, будет пропущено, а не задвоено."
+chooseFile,"Import page, the button that opens the file picker",Choose file,Choose file,Выбрать файл
+csvFiles,File-type label shown in the platform file picker,CSV files,CSV files,CSV-файлы
+importInFlight,"Import page, progress label while the file is uploading",Importing — hang tight…,Importing — hang tight…,Импортируем — минутку…
+importFailedHeadline,"Import page, friendly headline when the server rejects the file",That file didn't work,That file didn't work,Этот файл не подошёл
+importFailedBody,"Import page, body of the rejected-file error state",It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.,It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.,Не получилось прочитать его как экспорт Strong. Выберите CSV-файл из письма Strong и попробуйте ещё раз.
+importReportTitle,"Import page, heading of the success report",Imported!,Imported!,Готово!
+importedWorkouts,"Import report line, how many workouts were created","{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}","{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}","{count, plural, =0{Новых тренировок нет} one{{count} тренировка импортирована} few{{count} тренировки импортированы} many{{count} тренировок импортировано} other{{count} тренировки импортировано}}"
+importSkippedWorkouts,"Import report line, workouts skipped as previously imported","{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}","{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}","{count, plural, one{{count} тренировка уже была здесь — пропущена} few{{count} тренировки уже были здесь — пропущены} many{{count} тренировок уже было здесь — пропущено} other{{count} тренировки уже были здесь — пропущены}}"
+importedSets,"Import report line, total sets created","{count, plural, =1{1 set} other{{count} sets}} in all","{count, plural, =1{1 set} other{{count} sets}} in all","Всего {count, plural, one{{count} подход} few{{count} подхода} many{{count} подходов} other{{count} подхода}}"
+importSkippedRows,"Import report line, malformed rows the server could not repair","{count, plural, =1{1 row} other{{count} rows}} couldn't be read","{count, plural, =1{1 row} other{{count} rows}} couldn't be read","{count, plural, one{{count} строку не удалось прочитать} few{{count} строки не удалось прочитать} many{{count} строк не удалось прочитать} other{{count} строки не удалось прочитать}}"
+importNewExercisesHeader,"Import report, heading above the list of exercises created as the user's customs",New custom exercises,New custom exercises,Новые упражнения
+importNewExercisesBody,"Import report, explains the list of created custom exercises","These didn't match anything in the library, so they came over as your custom exercises:","These didn't match anything in the library, so they came over as your custom exercises:","Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:"

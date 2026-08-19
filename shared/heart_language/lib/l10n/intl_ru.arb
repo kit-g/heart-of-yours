@@ -2235,5 +2235,111 @@
     "description": "Workout deletion confirmation dialog",
     "type": "text",
     "placeholders": {}
+  },
+  "importData": "Импорт истории тренировок",
+  "@importData": {
+    "description": "Settings item and title of the import page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importExplainerStrong": "Тренировались в Strong? Забирайте историю с собой.\n\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.",
+  "@importExplainerStrong": {
+    "description": "Import page, explains where the Strong export file comes from",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importSafeToRetry": "Переедет всё: тренировки, подходы, упражнения. Импортировать один и тот же файл повторно безопасно — всё, что уже есть, будет пропущено, а не задвоено.",
+  "@importSafeToRetry": {
+    "description": "Import page, reassurance below the explainer",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chooseFile": "Выбрать файл",
+  "@chooseFile": {
+    "description": "Import page, the button that opens the file picker",
+    "type": "text",
+    "placeholders": {}
+  },
+  "csvFiles": "CSV-файлы",
+  "@csvFiles": {
+    "description": "File-type label shown in the platform file picker",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importInFlight": "Импортируем — минутку…",
+  "@importInFlight": {
+    "description": "Import page, progress label while the file is uploading",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedHeadline": "Этот файл не подошёл",
+  "@importFailedHeadline": {
+    "description": "Import page, friendly headline when the server rejects the file",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedBody": "Не получилось прочитать его как экспорт Strong. Выберите CSV-файл из письма Strong и попробуйте ещё раз.",
+  "@importFailedBody": {
+    "description": "Import page, body of the rejected-file error state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importReportTitle": "Готово!",
+  "@importReportTitle": {
+    "description": "Import page, heading of the success report",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importedWorkouts": "{count, plural, =0{Новых тренировок нет} one{{count} тренировка импортирована} few{{count} тренировки импортированы} many{{count} тренировок импортировано} other{{count} тренировки импортировано}}",
+  "@importedWorkouts": {
+    "description": "Import report line, how many workouts were created",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importSkippedWorkouts": "{count, plural, one{{count} тренировка уже была здесь — пропущена} few{{count} тренировки уже были здесь — пропущены} many{{count} тренировок уже было здесь — пропущено} other{{count} тренировки уже были здесь — пропущены}}",
+  "@importSkippedWorkouts": {
+    "description": "Import report line, workouts skipped as previously imported",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importedSets": "Всего {count, plural, one{{count} подход} few{{count} подхода} many{{count} подходов} other{{count} подхода}}",
+  "@importedSets": {
+    "description": "Import report line, total sets created",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importSkippedRows": "{count, plural, one{{count} строку не удалось прочитать} few{{count} строки не удалось прочитать} many{{count} строк не удалось прочитать} other{{count} строки не удалось прочитать}}",
+  "@importSkippedRows": {
+    "description": "Import report line, malformed rows the server could not repair",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importNewExercisesHeader": "Новые упражнения",
+  "@importNewExercisesHeader": {
+    "description": "Import report, heading above the list of exercises created as the user's customs",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importNewExercisesBody": "Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:",
+  "@importNewExercisesBody": {
+    "description": "Import report, explains the list of created custom exercises",
+    "type": "text",
+    "placeholders": {}
   }
 }
