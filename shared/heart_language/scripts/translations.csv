@@ -397,6 +397,9 @@ healthSteps,Name of a health metric,Steps,Steps,Шаги
 deleteWorkoutTitle,Workout deletion confirmation dialog,Do you want to delete this workout?,Do you want to delete this workout?,Хотите удалить эту тренировку?
 deleteWorkoutBody,Workout deletion confirmation dialog,This cannot be undone,This cannot be undone,Это действие нельзя отменить
 importData,Settings item and title of the import page,Import workout history,Import workout history,Импорт истории тренировок
+yourData,"Settings section header over data import (and, later, export)",Your data,Your data,Ваши данные
+account,Settings section header over account management,Account,Account,Аккаунт
+app,"Settings section header over notifications, about, and feedback",App,App,Приложение
 importExplainerStrong,"Import page, explains where the Strong export file comes from","Lifted with Strong before? Bring your history along.
 
 In the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.","Lifted with Strong before? Bring your history along.
