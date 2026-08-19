@@ -2228,6 +2228,24 @@ abstract class L {
   /// **'Import workout history'**
   String get importData;
 
+  /// Settings section header over data import (and, later, export)
+  ///
+  /// In en, this message translates to:
+  /// **'Your data'**
+  String get yourData;
+
+  /// Settings section header over account management
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// Settings section header over notifications, about, and feedback
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get app;
+
   /// Import page, explains where the Strong export file comes from
   ///
   /// In en, this message translates to:
