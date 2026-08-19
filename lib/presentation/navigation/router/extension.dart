@@ -35,6 +35,10 @@ extension on BuildContext {
     return goNamed(_accountManagementName);
   }
 
+  void goToImportData() {
+    return goNamed(_importDataName);
+  }
+
   void goToAvatar() {
     return goNamed(_avatarName);
   }
