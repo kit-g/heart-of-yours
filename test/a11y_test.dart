@@ -29,7 +29,7 @@ const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_i
 /// A screen the matrix sweeps. Each maps to a path through the real app —
 /// see [_pumpTo] — rather than a page pumped in isolation, so the check sees
 /// the same chrome (app bar, nav) the guideline actually has to pass on.
-enum _Screen { login, profile, workout, history, exercises, settings }
+enum _Screen { login, profile, workout, history, exercises, settings, importData }
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
 /// [textContrastGuideline] against the *same* const — the color scheme is
@@ -141,20 +141,10 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
-  (
-    _Screen.settings,
-    _Guideline.labeledTapTarget,
-    'settings/page.dart:106 reads Preferences.weightUnit with no isInitialized guard (unlike goals/row.dart) and '
-        "crashes before the app's own startup sequence finishes initializing it under this harness's mocked "
-        'Auth/Cdn — needs harness work to drive that sequence to completion, out of scope for this pass',
-  ),
-  (
-    _Screen.settings,
-    _Guideline.textContrastLight,
-    'settings/page.dart:106 reads Preferences.weightUnit with no isInitialized guard (unlike goals/row.dart) and '
-        "crashes before the app's own startup sequence finishes initializing it under this harness's mocked "
-        'Auth/Cdn — needs harness work to drive that sequence to completion, out of scope for this pass',
-  ),
+  // the unit pickers now hold back until Preferences.isInitialized (the
+  // goals/row.dart pattern), so the screen renders under this harness
+  (_Screen.settings, _Guideline.labeledTapTarget, null),
+  (_Screen.settings, _Guideline.textContrastLight, null),
   (
     _Screen.settings,
     _Guideline.textContrastDark,
@@ -170,6 +160,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'the custom-theme-color IconButton and switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
+
+  (_Screen.importData, _Guideline.labeledTapTarget, null),
+  (_Screen.importData, _Guideline.textContrastLight, null),
+  (_Screen.importData, _Guideline.textContrastDark, null),
+  (_Screen.importData, _Guideline.androidTapTarget, null),
+  (_Screen.importData, _Guideline.iosTapTarget, null),
 ];
 
 void main() {
@@ -272,6 +268,10 @@ void main() {
         await tester.tapByKey(AppKeys.exercisesStack);
       case _Screen.settings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
+      case _Screen.importData:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.tap(find.byIcon(Icons.upload_file_rounded));
     }
     await tester.pumpTimes();
   }
