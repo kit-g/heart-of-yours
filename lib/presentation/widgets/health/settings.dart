@@ -44,7 +44,11 @@ class const HealthSettings({super.key}) extends StatelessWidget {
       children: [
         Padding(
           padding: const .symmetric(horizontal: 16),
-          child: Text(l.health, style: textTheme.titleMedium),
+          // a real header to assistive tech, like the settings-page sections
+          child: Semantics(
+            header: true,
+            child: Text(l.health, style: textTheme.titleMedium),
+          ),
         ),
         const SizedBox(height: 8),
         Padding(
