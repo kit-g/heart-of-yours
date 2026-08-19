@@ -2235,5 +2235,111 @@
     "description": "Workout deletion confirmation dialog",
     "type": "text",
     "placeholders": {}
+  },
+  "importData": "Import workout history",
+  "@importData": {
+    "description": "Settings item and title of the import page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importExplainerStrong": "Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.",
+  "@importExplainerStrong": {
+    "description": "Import page, explains where the Strong export file comes from",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importSafeToRetry": "Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.",
+  "@importSafeToRetry": {
+    "description": "Import page, reassurance below the explainer",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chooseFile": "Choose file",
+  "@chooseFile": {
+    "description": "Import page, the button that opens the file picker",
+    "type": "text",
+    "placeholders": {}
+  },
+  "csvFiles": "CSV files",
+  "@csvFiles": {
+    "description": "File-type label shown in the platform file picker",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importInFlight": "Importing — hang tight…",
+  "@importInFlight": {
+    "description": "Import page, progress label while the file is uploading",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedHeadline": "That file didn't work",
+  "@importFailedHeadline": {
+    "description": "Import page, friendly headline when the server rejects the file",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedBody": "It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.",
+  "@importFailedBody": {
+    "description": "Import page, body of the rejected-file error state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importReportTitle": "Imported!",
+  "@importReportTitle": {
+    "description": "Import page, heading of the success report",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importedWorkouts": "{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}",
+  "@importedWorkouts": {
+    "description": "Import report line, how many workouts were created",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importSkippedWorkouts": "{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}",
+  "@importSkippedWorkouts": {
+    "description": "Import report line, workouts skipped as previously imported",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importedSets": "{count, plural, =1{1 set} other{{count} sets}} in all",
+  "@importedSets": {
+    "description": "Import report line, total sets created",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importSkippedRows": "{count, plural, =1{1 row} other{{count} rows}} couldn't be read",
+  "@importSkippedRows": {
+    "description": "Import report line, malformed rows the server could not repair",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importNewExercisesHeader": "New custom exercises",
+  "@importNewExercisesHeader": {
+    "description": "Import report, heading above the list of exercises created as the user's customs",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importNewExercisesBody": "These didn't match anything in the library, so they came over as your custom exercises:",
+  "@importNewExercisesBody": {
+    "description": "Import report, explains the list of created custom exercises",
+    "type": "text",
+    "placeholders": {}
   }
 }

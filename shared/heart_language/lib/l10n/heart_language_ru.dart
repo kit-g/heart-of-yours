@@ -1170,4 +1170,93 @@ class LRu extends L {
 
   @override
   String get deleteWorkoutBody => 'Это действие нельзя отменить';
+
+  @override
+  String get importData => 'Импорт истории тренировок';
+
+  @override
+  String get importExplainerStrong =>
+      'Тренировались в Strong? Забирайте историю с собой.\n\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.';
+
+  @override
+  String get importSafeToRetry =>
+      'Переедет всё: тренировки, подходы, упражнения. Импортировать один и тот же файл повторно безопасно — всё, что уже есть, будет пропущено, а не задвоено.';
+
+  @override
+  String get chooseFile => 'Выбрать файл';
+
+  @override
+  String get csvFiles => 'CSV-файлы';
+
+  @override
+  String get importInFlight => 'Импортируем — минутку…';
+
+  @override
+  String get importFailedHeadline => 'Этот файл не подошёл';
+
+  @override
+  String get importFailedBody =>
+      'Не получилось прочитать его как экспорт Strong. Выберите CSV-файл из письма Strong и попробуйте ещё раз.';
+
+  @override
+  String get importReportTitle => 'Готово!';
+
+  @override
+  String importedWorkouts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count тренировки импортировано',
+      many: '$count тренировок импортировано',
+      few: '$count тренировки импортированы',
+      one: '$count тренировка импортирована',
+      zero: 'Новых тренировок нет',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importSkippedWorkouts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count тренировки уже были здесь — пропущены',
+      many: '$count тренировок уже было здесь — пропущено',
+      few: '$count тренировки уже были здесь — пропущены',
+      one: '$count тренировка уже была здесь — пропущена',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importedSets(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода',
+      many: '$count подходов',
+      few: '$count подхода',
+      one: '$count подход',
+    );
+    return 'Всего $_temp0';
+  }
+
+  @override
+  String importSkippedRows(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count строки не удалось прочитать',
+      many: '$count строк не удалось прочитать',
+      few: '$count строки не удалось прочитать',
+      one: '$count строку не удалось прочитать',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importNewExercisesHeader => 'Новые упражнения';
+
+  @override
+  String get importNewExercisesBody => 'Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:';
 }

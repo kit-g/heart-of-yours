@@ -2221,6 +2221,96 @@ abstract class L {
   /// In en, this message translates to:
   /// **'This cannot be undone'**
   String get deleteWorkoutBody;
+
+  /// Settings item and title of the import page
+  ///
+  /// In en, this message translates to:
+  /// **'Import workout history'**
+  String get importData;
+
+  /// Import page, explains where the Strong export file comes from
+  ///
+  /// In en, this message translates to:
+  /// **'Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.'**
+  String get importExplainerStrong;
+
+  /// Import page, reassurance below the explainer
+  ///
+  /// In en, this message translates to:
+  /// **'Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.'**
+  String get importSafeToRetry;
+
+  /// Import page, the button that opens the file picker
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get chooseFile;
+
+  /// File-type label shown in the platform file picker
+  ///
+  /// In en, this message translates to:
+  /// **'CSV files'**
+  String get csvFiles;
+
+  /// Import page, progress label while the file is uploading
+  ///
+  /// In en, this message translates to:
+  /// **'Importing — hang tight…'**
+  String get importInFlight;
+
+  /// Import page, friendly headline when the server rejects the file
+  ///
+  /// In en, this message translates to:
+  /// **'That file didn\'t work'**
+  String get importFailedHeadline;
+
+  /// Import page, body of the rejected-file error state
+  ///
+  /// In en, this message translates to:
+  /// **'It couldn\'t be read as a Strong export. Pick the CSV file from Strong\'s export email and try again.'**
+  String get importFailedBody;
+
+  /// Import page, heading of the success report
+  ///
+  /// In en, this message translates to:
+  /// **'Imported!'**
+  String get importReportTitle;
+
+  /// Import report line, how many workouts were created
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}'**
+  String importedWorkouts(int count);
+
+  /// Import report line, workouts skipped as previously imported
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}'**
+  String importSkippedWorkouts(int count);
+
+  /// Import report line, total sets created
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 set} other{{count} sets}} in all'**
+  String importedSets(int count);
+
+  /// Import report line, malformed rows the server could not repair
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 row} other{{count} rows}} couldn\'t be read'**
+  String importSkippedRows(int count);
+
+  /// Import report, heading above the list of exercises created as the user's customs
+  ///
+  /// In en, this message translates to:
+  /// **'New custom exercises'**
+  String get importNewExercisesHeader;
+
+  /// Import report, explains the list of created custom exercises
+  ///
+  /// In en, this message translates to:
+  /// **'These didn\'t match anything in the library, so they came over as your custom exercises:'**
+  String get importNewExercisesBody;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
