@@ -366,13 +366,18 @@ const _workoutType = plugin.HealthDataType.WORKOUT;
 ///   water, and a Heart session is the pool.
 /// - **Indoor variants.** Apple does not distinguish a stationary bike or a
 ///   treadmill from the real thing; Health Connect does.
-/// - **iOS-only ideas.** `CROSS_TRAINING`, `MIXED_CARDIO`, `CORE_TRAINING`,
-///   `FLEXIBILITY` and `JUMP_ROPE` have no Health Connect equivalent worth
-///   pretending to, so they fall to `OTHER` rather than to a neighbouring
-///   activity that would be a small lie in the user's own health record.
-///   `JUMP_ROPE` is the one to be careful about: the plugin's enum lists it
-///   under a comment saying "Both", and only `_isOnAndroid` — the list that
-///   actually throws — reveals it is not.
+/// - **iOS-only ideas.** `CROSS_TRAINING`, `MIXED_CARDIO` and `FLEXIBILITY` have
+///   no Health Connect equivalent, and no neighbour close enough to be worth a
+///   small lie in the user's own health record, so they fall to `OTHER`.
+///   `JUMP_ROPE` is iOS-only too — the plugin's enum lists it under a comment
+///   saying "Both", and only `_isOnAndroid`, the list that actually throws,
+///   says otherwise — but it does have an honest neighbour, so it takes one.
+///
+/// The line between those two: a neighbour is worth taking when it keeps what
+/// the session *was*. Skipping is conditioning, so it reads as interval work
+/// rather than as nothing; planks are bodyweight, so they read as calisthenics.
+/// A stretch is neither cardio nor strength, and mixed cardio is several things
+/// at once — for those, `OTHER` is the honest answer and not a cop-out.
 plugin.HealthWorkoutActivityType _activityType(WorkoutActivity activity) {
   final isIos = defaultTargetPlatform == TargetPlatform.iOS;
 
@@ -398,7 +403,11 @@ plugin.HealthWorkoutActivityType _activityType(WorkoutActivity activity) {
     .yoga => .YOGA,
     .cardioDance => .CARDIO_DANCE,
     .highIntensity => .HIGH_INTENSITY_INTERVAL_TRAINING,
-    .jumpRope => isIos ? .JUMP_ROPE : .OTHER,
+    // Health Connect has no jump rope. `OTHER` would be the cautious answer and
+    // is the wrong one: it discards the only true thing we know, that this was
+    // conditioning work. Skipping lands with battle ropes, which is where the
+    // user would look for it.
+    .jumpRope => isIos ? .JUMP_ROPE : .HIGH_INTENSITY_INTERVAL_TRAINING,
     .other => .OTHER,
   };
 }
