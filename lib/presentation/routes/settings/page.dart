@@ -2,10 +2,12 @@ part of 'settings.dart';
 
 class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
+  final VoidCallback onImportData;
 
   const new({
     super.key,
     required this.onAccountManagement,
+    required this.onImportData,
   });
 
   @override
@@ -25,6 +27,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :cancel,
       :toFeedback,
       :leaveFeedbackBody,
+      :importData,
     ) = L.of(
       context,
     );
@@ -101,47 +104,64 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                   style: textTheme.titleMedium,
                 ),
               ),
+              // Preferences loads from disk without being awaited at startup,
+              // and its unit fields are `late` — reading one before
+              // [Preferences.isInitialized] throws (same hazard as
+              // goals/row.dart), so both pickers hold back until it lands;
+              // the Selector brings us straight back when it does.
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Selector<Preferences, MeasurementUnit>(
-                  selector: (_, provider) => provider.weightUnit,
+                child: Selector<Preferences, MeasurementUnit?>(
+                  selector: (_, provider) => switch (provider.isInitialized) {
+                    true => provider.weightUnit,
+                    false => null,
+                  },
                   builder: (_, weight, _) {
-                    return FixedLengthSettingPicker<MeasurementUnit>(
-                      title: weightUnit,
-                      value: weight,
-                      onValueChanged: (unit) {
-                        buzz();
-                        if (unit != null) {
-                          Preferences.of(context).setWeightUnit(unit);
-                        }
-                      },
-                      children: {
-                        MeasurementUnit.imperial: Text(imperial),
-                        MeasurementUnit.metric: Text(metric),
-                      },
-                    );
+                    return switch (weight) {
+                      null => const SizedBox.shrink(),
+                      MeasurementUnit value => FixedLengthSettingPicker<MeasurementUnit>(
+                        title: weightUnit,
+                        value: value,
+                        onValueChanged: (unit) {
+                          buzz();
+                          if (unit != null) {
+                            Preferences.of(context).setWeightUnit(unit);
+                          }
+                        },
+                        children: {
+                          .imperial: Text(imperial),
+                          .metric: Text(metric),
+                        },
+                      ),
+                    };
                   },
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Selector<Preferences, MeasurementUnit>(
-                  selector: (_, provider) => provider.distanceUnit,
+                child: Selector<Preferences, MeasurementUnit?>(
+                  selector: (_, provider) => switch (provider.isInitialized) {
+                    true => provider.distanceUnit,
+                    false => null,
+                  },
                   builder: (_, distance, _) {
-                    return FixedLengthSettingPicker<MeasurementUnit>(
-                      title: distanceUnit,
-                      value: distance,
-                      onValueChanged: (unit) {
-                        buzz();
-                        if (unit != null) {
-                          Preferences.of(context).setDistanceUnit(unit);
-                        }
-                      },
-                      children: {
-                        MeasurementUnit.imperial: Text(imperial),
-                        MeasurementUnit.metric: Text(metric),
-                      },
-                    );
+                    return switch (distance) {
+                      null => const SizedBox.shrink(),
+                      MeasurementUnit value => FixedLengthSettingPicker<MeasurementUnit>(
+                        title: distanceUnit,
+                        value: value,
+                        onValueChanged: (unit) {
+                          buzz();
+                          if (unit != null) {
+                            Preferences.of(context).setDistanceUnit(unit);
+                          }
+                        },
+                        children: {
+                          .imperial: Text(imperial),
+                          .metric: Text(metric),
+                        },
+                      ),
+                    };
                   },
                 ),
               ),
@@ -163,6 +183,12 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               ),
               const SizedBox(height: 16),
               const HealthSettings(),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.upload_file_rounded),
+                title: Text(importData),
+                onTap: onImportData,
+              ),
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.info_outline_rounded),
