@@ -20,6 +20,7 @@ dependencies:
   app_settings: ^8.0.3
   cached_network_image: ^3.4.1
   feedback: ^3.1.0
+  file_selector: ^1.0.3
   firebase_analytics: 12.4.6
   firebase_auth: 6.5.7
   firebase_core: 4.13.0
@@ -60,6 +61,9 @@ dev_dependencies:
   build_runner: ^2.16.0
   # imported by lib/main_driver.dart, a debug-only entrypoint — never by main.dart
   integration_test: { sdk: flutter }
+  # both back the fake file picker in test/import_flow_test.dart
+  file_selector_platform_interface: any
+  plugin_platform_interface: any
   firebase_auth_mocks: ^0.15.0
   flutter_launcher_icons: ^0.14.3
   flutter_test: { sdk: flutter }
