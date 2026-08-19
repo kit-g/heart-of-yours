@@ -1167,6 +1167,88 @@ class LEn extends L {
 
   @override
   String get deleteWorkoutBody => 'This cannot be undone';
+
+  @override
+  String get importData => 'Import workout history';
+
+  @override
+  String get importExplainerStrong =>
+      'Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.';
+
+  @override
+  String get importSafeToRetry =>
+      'Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.';
+
+  @override
+  String get chooseFile => 'Choose file';
+
+  @override
+  String get csvFiles => 'CSV files';
+
+  @override
+  String get importInFlight => 'Importing — hang tight…';
+
+  @override
+  String get importFailedHeadline => 'That file didn\'t work';
+
+  @override
+  String get importFailedBody =>
+      'It couldn\'t be read as a Strong export. Pick the CSV file from Strong\'s export email and try again.';
+
+  @override
+  String get importReportTitle => 'Imported!';
+
+  @override
+  String importedWorkouts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts imported',
+      one: '1 workout imported',
+      zero: 'No new workouts',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importSkippedWorkouts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts were already here — skipped',
+      one: '1 workout was already here — skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importedSets(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$_temp0 in all';
+  }
+
+  @override
+  String importSkippedRows(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows',
+      one: '1 row',
+    );
+    return '$_temp0 couldn\'t be read';
+  }
+
+  @override
+  String get importNewExercisesHeader => 'New custom exercises';
+
+  @override
+  String get importNewExercisesBody =>
+      'These didn\'t match anything in the library, so they came over as your custom exercises:';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -2331,4 +2413,86 @@ class LEnCa extends LEn {
 
   @override
   String get deleteWorkoutBody => 'This cannot be undone';
+
+  @override
+  String get importData => 'Import workout history';
+
+  @override
+  String get importExplainerStrong =>
+      'Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.';
+
+  @override
+  String get importSafeToRetry =>
+      'Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.';
+
+  @override
+  String get chooseFile => 'Choose file';
+
+  @override
+  String get csvFiles => 'CSV files';
+
+  @override
+  String get importInFlight => 'Importing — hang tight…';
+
+  @override
+  String get importFailedHeadline => 'That file didn\'t work';
+
+  @override
+  String get importFailedBody =>
+      'It couldn\'t be read as a Strong export. Pick the CSV file from Strong\'s export email and try again.';
+
+  @override
+  String get importReportTitle => 'Imported!';
+
+  @override
+  String importedWorkouts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts imported',
+      one: '1 workout imported',
+      zero: 'No new workouts',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importSkippedWorkouts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts were already here — skipped',
+      one: '1 workout was already here — skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importedSets(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$_temp0 in all';
+  }
+
+  @override
+  String importSkippedRows(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rows',
+      one: '1 row',
+    );
+    return '$_temp0 couldn\'t be read';
+  }
+
+  @override
+  String get importNewExercisesHeader => 'New custom exercises';
+
+  @override
+  String get importNewExercisesBody =>
+      'These didn\'t match anything in the library, so they came over as your custom exercises:';
 }
