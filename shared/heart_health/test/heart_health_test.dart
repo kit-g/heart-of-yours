@@ -565,8 +565,10 @@ void main() {
         .cardioDance: (.CARDIO_DANCE, .CARDIO_DANCE),
         .highIntensity: (.HIGH_INTENSITY_INTERVAL_TRAINING, .HIGH_INTENSITY_INTERVAL_TRAINING),
         // The enum declares JUMP_ROPE under a comment saying "Both". It is not:
-        // only `_isOnAndroid` — the list that throws — settles it.
-        .jumpRope: (.JUMP_ROPE, .OTHER),
+        // only `_isOnAndroid` — the list that throws — settles it. Android takes
+        // the nearest honest neighbour rather than `OTHER`, so a skipping
+        // session still reads as conditioning.
+        .jumpRope: (.JUMP_ROPE, .HIGH_INTENSITY_INTERVAL_TRAINING),
         .other: (.OTHER, .OTHER),
       };
 
