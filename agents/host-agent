@@ -48,9 +48,15 @@ changed, verification, open ends."
 
 cd "$REPO"
 if [[ -n "$TASK" ]]; then
-  exec claude --worktree "$NAME" --permission-mode acceptEdits -p "$PROMPT_PREFIX
+  # Plain -p is silent until the run ends. Stream the session instead and
+  # render it with the same filter `watch` uses; the raw event stream
+  # survives in $LOG for post-mortems.
+  LOG="${TMPDIR:-/tmp}/heart-agent-$NAME.jsonl"
+  echo "narrating; raw stream: $LOG" >&2
+  claude --worktree "$NAME" --permission-mode acceptEdits \
+    --output-format stream-json --verbose -p "$PROMPT_PREFIX
 
-$TASK"
+$TASK" | tee "$LOG" | jq -rj -f "$HERE/narrate.jq"
 else
   exec claude --worktree "$NAME" --permission-mode acceptEdits
 fi
