@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
+import 'package:heart_api/src/imports.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:http/http.dart' as http;
+import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
@@ -734,6 +736,129 @@ void main() {
 
       final result = await api.getWorkoutGallery();
       expect(result.images, isEmpty);
+    });
+  });
+
+  group('imports', () {
+    const csv =
+        'Date,"Workout Name","Exercise Name"\n'
+        '2024-01-01 10:00:00,"Push Day, heavy","Bench Press (Barbell)"';
+
+    Map<String, dynamic> report() {
+      return {
+        'source': 'strong',
+        'workoutsFound': 537,
+        'workoutsCreated': 530,
+        'workoutsSkipped': 7,
+        'setsCreated': 14210,
+        'exercisesMatched': 61,
+        'exercisesCreated': ['Bench Press (Barbell)'],
+        'rowsSkipped': 3,
+      };
+    }
+
+    test('importWorkouts sends the CSV as-is — jsonEncode would wrap it in quotes', () async {
+      api.authenticate({'Authorization': 'Bearer token-1'});
+      addTearDown(() => api.defaultHeaders = null);
+
+      final query = {'source': 'strong', 'unit': 'imperial', 'tzOffset': '-04:00'};
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: query,
+        statusCode: 200,
+        body: report(),
+      );
+
+      final result = await api.importWorkouts(
+        csv,
+        unit: MeasurementUnit.imperial,
+        tzOffset: const Duration(hours: -4),
+      );
+
+      expect(result.workoutsFound, 537);
+      expect(result.workoutsCreated, 530);
+      expect(result.workoutsSkipped, 7);
+      expect(result.setsCreated, 14210);
+      expect(result.exercisesMatched, 61);
+      expect(result.exercisesCreated, ['Bench Press (Barbell)']);
+      expect(result.rowsSkipped, 3);
+
+      final [headers, body] = verify(
+        client.post(
+          Uri.https('api.example.com', Router.workoutImports, query),
+          headers: captureAnyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured;
+      // the raw file, not jsonEncode's quoted-and-escaped copy of it
+      expect(body, same(csv));
+      expect(headers, containsPair('Authorization', 'Bearer token-1'));
+      expect(headers, containsPair('Content-Type', 'text/csv'));
+    });
+
+    test('importWorkouts sends only the source when unit and offset are not given', () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'strong'},
+        statusCode: 200,
+        body: report(),
+      );
+
+      final result = await api.importWorkouts(csv);
+      expect(result.workoutsFound, 537);
+    });
+
+    test('importWorkouts zero-pads a positive half-hour offset', () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'strong', 'tzOffset': '+05:30'},
+        statusCode: 200,
+        body: report(),
+      );
+
+      final result = await api.importWorkouts(
+        csv,
+        tzOffset: const Duration(hours: 5, minutes: 30),
+      );
+      expect(result.workoutsCreated, 530);
+    });
+
+    test('importWorkouts throws ImportRejected with the reason on a 400', () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'strong'},
+        statusCode: 400,
+        body: {'reason': 'not a Strong export: missing "Workout Name" column'},
+      );
+
+      expect(
+        () => api.importWorkouts(csv),
+        throwsA(
+          isA<ImportRejected>().having((e) => e.reason, 'reason', contains('Workout Name')),
+        ),
+      );
+    });
+
+    test('importWorkouts survives a plain-text error body — the gateway 401 is not JSON', () async {
+      final uri = Uri.https('api.example.com', Router.workoutImports, {'source': 'strong'});
+      when(
+        client.post(uri, headers: anyNamed('headers'), body: anyNamed('body')),
+      ).thenAnswer(
+        (_) async => _Response('Unauthorized', 401, request: http.Request('POST', uri)),
+      );
+
+      expect(
+        () => api.importWorkouts(csv),
+        throwsA(isA<NetworkException>().having((e) => e.statusCode, 'statusCode', 401)),
+      );
     });
   });
 
