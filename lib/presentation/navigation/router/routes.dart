@@ -36,6 +36,7 @@ RouteBase _profileRoute() {
         builder: (context, _) {
           return SettingsPage(
             onAccountManagement: context.goToAccountManagement,
+            onImportData: context.goToImportData,
           );
         },
         name: _settingsName,
@@ -44,6 +45,11 @@ RouteBase _profileRoute() {
             path: _accountManagementPath,
             builder: (_, _) => const AccountManagementPage(onError: reportToSentry),
             name: _accountManagementName,
+          ),
+          GoRoute(
+            path: _importDataPath,
+            builder: (_, _) => const ImportDataPage(onError: reportToSentry),
+            name: _importDataName,
           ),
         ],
       ),
