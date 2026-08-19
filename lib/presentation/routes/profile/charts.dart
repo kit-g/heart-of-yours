@@ -11,6 +11,12 @@ const _maxChartHeight = 360.0;
 /// to their natural heights the two blocks below them start on different lines.
 const _tileHeaderHeight = 44.0;
 
+/// Width of one `MM-DD` label on the weekly chart's x axis, and of the gutter the
+/// y-axis labels sit in. Together they decide how many dates the axis can show
+/// without them touching — see `_labelStride`.
+const _xLabelWidth = 44.0;
+const _yAxisWidth = 28.0;
+
 /// Widest a dashboard chart card gets before the grid adds a column instead.
 ///
 /// These cards are summaries — the detail lives behind a tap — so the
@@ -86,60 +92,68 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                         child: ValueListenableBuilder<int>(
                           valueListenable: _pointedAtBar,
                           builder: (_, _, _) {
-                            return BarChart(
-                              duration: animDuration,
-                              BarChartData(
-                                maxY: widget.workouts.max.toDouble() + 1,
-                                minY: 0,
-                                barTouchData: BarTouchData(
-                                  touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (_) => Colors.transparent,
-                                    tooltipHorizontalAlignment: FLHorizontalAlignment.center,
-                                    tooltipMargin: 0,
-                                    getTooltipItem: _tooltip,
-                                  ),
-                                  touchCallback: _onTouch,
-                                ),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  rightTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  topTitles: const AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: _xTitles,
-                                      reservedSize: 32,
+                            // Measured, not assumed: how many date labels fit is a
+                            // question about the width this chart was handed, and on a
+                            // tablet that is a pane rather than the window.
+                            return LayoutBuilder(
+                              builder: (context, constraints) {
+                                final stride = _labelStride(constraints.maxWidth);
+                                return BarChart(
+                                  duration: animDuration,
+                                  BarChartData(
+                                    maxY: widget.workouts.max.toDouble() + 1,
+                                    minY: 0,
+                                    barTouchData: BarTouchData(
+                                      touchTooltipData: BarTouchTooltipData(
+                                        getTooltipColor: (_) => Colors.transparent,
+                                        tooltipHorizontalAlignment: FLHorizontalAlignment.center,
+                                        tooltipMargin: 0,
+                                        getTooltipItem: _tooltip,
+                                      ),
+                                      touchCallback: _onTouch,
+                                    ),
+                                    titlesData: FlTitlesData(
+                                      show: true,
+                                      rightTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      topTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          getTitlesWidget: (value, meta) => _xTitles(value, meta, stride),
+                                          reservedSize: 32,
+                                        ),
+                                      ),
+                                      leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          interval: 1.0,
+                                          reservedSize: 28,
+                                          minIncluded: false,
+                                          maxIncluded: true,
+                                          getTitlesWidget: _yTitles,
+                                        ),
+                                      ),
+                                    ),
+                                    borderData: FlBorderData(show: false),
+                                    barGroups: widget.workouts.indexed.map(
+                                      (record) {
+                                        final (index, summary) = record;
+                                        return _bar(index, summary);
+                                      },
+                                    ).toList(),
+                                    gridData: FlGridData(
+                                      show: true,
+                                      drawHorizontalLine: true,
+                                      drawVerticalLine: false,
+                                      checkToShowHorizontalLine: (v) => v % 1 == 0,
                                     ),
                                   ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      interval: 1.0,
-                                      reservedSize: 28,
-                                      minIncluded: false,
-                                      maxIncluded: true,
-                                      getTitlesWidget: _yTitles,
-                                    ),
-                                  ),
-                                ),
-                                borderData: FlBorderData(show: false),
-                                barGroups: widget.workouts.indexed.map(
-                                  (record) {
-                                    final (index, summary) = record;
-                                    return _bar(index, summary);
-                                  },
-                                ).toList(),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawHorizontalLine: true,
-                                  drawVerticalLine: false,
-                                  checkToShowHorizontalLine: (v) => v % 1 == 0,
-                                ),
-                              ),
+                                );
+                              },
                             );
                           },
                         ),
@@ -206,9 +220,31 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
     );
   }
 
-  Widget _xTitles(double value, TitleMeta meta) {
+  /// How many weeks share one date label.
+  ///
+  /// Eight weeks of `MM-DD` in a phone-width card leaves about 41pt a bar, and
+  /// the label wants [_xLabelWidth]. The boxes overlapped, so the dates ran into
+  /// each other and the axis read as one long smear.
+  int _labelStride(double width) {
+    final weeks = widget.workouts.length;
+    if (weeks == 0) return 1;
+
+    final slot = (width - _yAxisWidth) / weeks;
+    if (slot <= 0) return 1;
+
+    return (_xLabelWidth / slot).ceil().clamp(1, weeks);
+  }
+
+  Widget _xTitles(double value, TitleMeta meta, int stride) {
     final index = value.toInt();
-    final summary = widget.workouts.toList()[index];
+    final weeks = widget.workouts.toList();
+
+    // Thinned from the most recent week backwards, so the newest bar keeps its
+    // label whatever the stride — it is the one the user came to read, and
+    // counting from the left would drop it exactly when the axis is tightest.
+    if ((weeks.length - 1 - index) % stride != 0) return const SizedBox.shrink();
+
+    final summary = weeks[index];
     return SideTitleWidget(
       meta: meta,
       space: 12,
