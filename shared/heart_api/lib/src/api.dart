@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:heart_models/heart_models.dart' hide PreSignedUrl;
 import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
+
+import 'imports.dart';
 
 class Api
     with Requests
@@ -527,6 +530,78 @@ class Api
     final (json, _) = await get('${Router.workouts}/images', query: {'cursor': ?cursor});
     return ProgressGalleryResponse.fromJson(json);
   }
+
+  /// Uploads a raw workout-history [export] and returns the server's tally.
+  ///
+  /// The server does all parsing, unit normalization, exercise matching and
+  /// dedup, and the import is idempotent — re-sending the same file is a safe
+  /// no-op. [unit] is only a fallback for rows that carry no unit columns of
+  /// their own; [tzOffset] anchors the export's naive local timestamps and
+  /// goes on the wire as `±HH:MM`.
+  ///
+  /// Talks to the [client] directly rather than through [Requests.post],
+  /// which runs every body through jsonEncode — the CSV must arrive as-is,
+  /// not as one quoted JSON string. The trade is the mixin's private
+  /// 401-reauthenticate-and-retry wrapper: an expired token fails the call
+  /// (the token heals on other traffic, and retrying is free).
+  Future<WorkoutImportReport> importWorkouts(
+    String export, {
+    ImportSource source = .strong,
+    MeasurementUnit? unit,
+    Duration? tzOffset,
+  }) async {
+    final url = Uri.https(
+      gateway,
+      Router.workoutImports,
+      {
+        'source': source.name,
+        'unit': ?unit?.name,
+        'tzOffset': ?_formatOffset(tzOffset),
+      },
+    );
+    final response = await (client?.post ?? http.post)(
+      url,
+      headers: {...?defaultHeaders, 'Content-Type': 'text/csv'},
+      body: export,
+    );
+    final json = _tryDecode(response.body);
+    return switch ((response.statusCode, json)) {
+      (200, Map json) => WorkoutImportReport.fromJson(json),
+      (400, {'reason': String reason}) => throw ImportRejected(reason: reason),
+      _ => throw NetworkException(
+        statusCode: response.statusCode,
+        body: switch (json) {
+          Map m => m,
+          _ => null,
+        },
+      ),
+    };
+  }
+
+  /// The gateway rejects a bad auth header with a *plain-text* body (see
+  /// [reauthenticate]) — classify by status instead of letting jsonDecode's
+  /// FormatException escape as the error.
+  static Object? _tryDecode(String body) {
+    try {
+      return jsonDecode(body);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// `±HH:MM`, e.g. `-04:00` — the query-parameter shape the import endpoint
+  /// expects for [DateTime.timeZoneOffset].
+  static String? _formatOffset(Duration? offset) {
+    if (offset == null) return null;
+    final sign = switch (offset.isNegative) {
+      true => '-',
+      false => '+',
+    };
+    final minutes = offset.abs().inMinutes;
+    final hh = '${minutes ~/ 60}'.padLeft(2, '0');
+    final mm = '${minutes % 60}'.padLeft(2, '0');
+    return '$sign$hh:$mm';
+  }
 }
 
 abstract final class Router {
@@ -538,6 +613,7 @@ abstract final class Router {
   static const templates = 'v1/templates';
   static const templateFolders = 'v1/template-folders';
   static const workouts = 'v1/workouts';
+  static const workoutImports = '$workouts/imports';
 
   static String goal(String goalId) {
     return '$goals/$goalId';
