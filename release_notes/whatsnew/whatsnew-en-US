@@ -1,11 +1,7 @@
-Health on your profile
-Heart now reads resting heart rate, HRV, sleep, steps, active energy and body mass from Health Connect and charts them. It stays on your phone.
+Workouts in Health Connect
+Finished workouts now save to Health Connect. Heart writes how long you trained and what kind of session it was — a swim logs as a swim, a lift as strength training. It never estimates calories.
 
-Charts you can scroll
-Exercise and health charts go back through your whole history — 1M, 3M, 1Y or All. Drag through time, tap a card for the full chart.
-
-TalkBack
-Buttons, charts and timers now announce themselves.
+Turn it on when Heart asks after your next workout, or from Health in Heart's settings.
 
 Fixes
-Deleting a workout asks first. The rest timer follows the right exercise. Links open the right page.
+The weekly chart on your profile no longer runs its dates together.
