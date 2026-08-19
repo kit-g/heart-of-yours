@@ -65,6 +65,7 @@ jobs:
           channel: 'stable'
           version: ${{ steps.flutter.outputs.version }}
           cache: true
+          cache-key: pub-${{ hashFiles('pubspec.lock') }}
 
       # sqlite3 3.x bundles its native lib via Dart build hooks
       - name: "Enable native asset bundling"
