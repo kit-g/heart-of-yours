@@ -95,6 +95,10 @@ auth before the container starts, so agent PATs stay minimal.
   apply there; agents fall back to grep. The host agent has the full setup.
 - **Firewall staleness**: allowed IPs are resolved at container start; big
   CDNs rotate. If egress starts failing mid-run, restart the container.
+- **Following along**: containers stream via `agents/watch <name>`; the
+  host agent narrates to its own terminal (same rendering — both go through
+  `agents/narrate.jq`), with the raw event stream kept in
+  `$TMPDIR/heart-agent-<name>.jsonl` for post-mortems.
 - **Simulator ownership**: the host agent uses `agent-iphone` only. Your
   iPad simulator is yours; its prompt says so explicitly.
 - **Docker Desktop resources**: 2 agents × (3 CPUs, 8 GB) — check Docker

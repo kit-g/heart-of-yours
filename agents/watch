@@ -8,13 +8,7 @@
 set -euo pipefail
 
 NAME="${1:?usage: agents/watch <name>}"
+HERE="$(cd "$(dirname "$0")" && pwd)"
 
 exec docker exec "heart-agent-$NAME" sh -c \
-  'tail -f -n +1 "$CLAUDE_CONFIG_DIR"/projects/*/*.jsonl' | jq -rj '
-  select(.type == "assistant") | .message.content[]? |
-    if .type == "text" then .text + "\n"
-    elif .type == "tool_use" then
-      "  → " + .name + "  " +
-      ((.input.description // .input.command // .input.file_path // .input.prompt // "")
-        | tostring | gsub("\\n"; " ") | .[0:140]) + "\n"
-    else empty end'
+  'tail -f -n +1 "$CLAUDE_CONFIG_DIR"/projects/*/*.jsonl' | jq -rj -f "$HERE/narrate.jq"
