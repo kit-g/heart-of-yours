@@ -2272,6 +2272,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "yourData": "Your data",
+  "@yourData": {
+    "description": "Settings section header over data import (and, later, export)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "account": "Account",
+  "@account": {
+    "description": "Settings section header over account management",
+    "type": "text",
+    "placeholders": {}
+  },
+  "app": "App",
+  "@app": {
+    "description": "Settings section header over notifications, about, and feedback",
+    "type": "text",
+    "placeholders": {}
+  },
   "importExplainerStrong": "Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.",
   "@importExplainerStrong": {
     "description": "Import page, explains where the Strong export file comes from",
