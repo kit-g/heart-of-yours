@@ -253,6 +253,42 @@ void main() {
     expect(find.text('•  Zercher Squat'), findsOneWidget);
   });
 
+  testWidgets('deselect all clears the list; select all takes everything back', (tester) async {
+    FileSelectorPlatform.instance = _FakePicker(
+      XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+    );
+    serveImport(
+      preview: {
+        'source': 'strong',
+        'workoutsFound': 5,
+        'workoutsAlreadyImported': 0,
+        'setsFound': 43,
+        'exercisesMatched': 4,
+        'exercisesUnmatched': [
+          {'name': 'Zercher Squat', 'sets': 12},
+          {'name': 'Building Climbing', 'sets': 3},
+        ],
+        'rowsSkipped': 0,
+      },
+      report: {'source': 'strong'},
+    );
+
+    await pumpImportPage(tester);
+    await tester.tap(find.text('Choose file'));
+    await tester.pumpTimes();
+
+    // everything starts approved, so the toggle offers the clean slate
+    expect(find.text('Deselect all'), findsOneWidget);
+    await tester.tap(find.text('Deselect all'));
+    await tester.pump();
+    expect(find.text('Select all'), findsOneWidget);
+
+    // committing the clean slate is decline-all: an empty allowlist, sent as-is
+    await tester.tap(find.text('Import'));
+    await tester.pumpTimes();
+    expect(jsonDecode(requests.last.body), containsPair('createCustom', isEmpty));
+  });
+
   testWidgets('a full re-upload says nothing is new, not that everything is coming over', (tester) async {
     FileSelectorPlatform.instance = _FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
