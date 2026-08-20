@@ -2228,6 +2228,84 @@ abstract class L {
   /// **'Import workout history'**
   String get importData;
 
+  /// Import page, heading of the preview/consent step
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to import'**
+  String get importPreviewTitle;
+
+  /// Import preview line, what the file holds
+  ///
+  /// In en, this message translates to:
+  /// **'{workouts, plural, =1{1 workout} other{{workouts} workouts}} and {sets, plural, =1{1 set} other{{sets} sets}} ready to come over'**
+  String importPreviewSummary(num workouts, num sets);
+
+  /// Import preview line when part of the file was imported before — only the new workouts are announced
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 workout is new} other{{count} workouts are new}}'**
+  String importPreviewSummaryPartial(num count);
+
+  /// Import preview line when every workout in the file was imported before
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing new — {count, plural, =1{the 1 workout in this file is} other{all {count} workouts in this file are}} already here'**
+  String importPreviewNothingNew(num count);
+
+  /// Import preview line, exercises that resolved against the stock catalog or existing customs
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 exercise already matches the library} other{{count} exercises already match the library}}'**
+  String importPreviewMatched(num count);
+
+  /// Import preview line, workouts a commit would skip as previously imported
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 workout is already here — it will be skipped} other{{count} workouts are already here — they will be skipped}}'**
+  String importPreviewAlreadyHere(num count);
+
+  /// Button over a checkbox list, checks every item
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectAll;
+
+  /// Button over a checkbox list, unchecks every item
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get deselectAll;
+
+  /// Import page, heading of the consent step over unmatched exercises
+  ///
+  /// In en, this message translates to:
+  /// **'New exercises found'**
+  String get importConsentTitle;
+
+  /// Import page, explains the consent checkboxes over unmatched exercises
+  ///
+  /// In en, this message translates to:
+  /// **'These didn\'t match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.'**
+  String get importConsentBody;
+
+  /// Import page, the button that commits the import after the consent step
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get importAction;
+
+  /// Import consent step, how many sets ride on an unmatched exercise
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 set} other{{count} sets}}'**
+  String importSetsCount(num count);
+
+  /// Import report line, sets not imported because their exercise was declined
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 set stayed behind} other{{count} sets stayed behind}} with the exercises you declined'**
+  String importSkippedSets(num count);
+
   /// Settings section header over data import (and, later, export)
   ///
   /// In en, this message translates to:
