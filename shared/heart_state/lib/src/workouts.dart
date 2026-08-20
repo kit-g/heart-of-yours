@@ -92,7 +92,20 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
         return map..putIfAbsent(monthKey, () => []).add(workout);
       },
-    )..forEach((key, workouts) => workouts.sort((one, two) => two.id.compareTo(one.id)));
+    )..forEach(
+      // by recency, stated directly — ids only break ties for a stable
+      // order. Id-order *currently* matches start-order (uuid v7, and since
+      // heart-api#56 imports backdate theirs to the workout's start), but
+      // that is a server invariant this code cannot see, and the one time it
+      // broke, months rendered shuffled. Recency is what this list means, so
+      // recency is what it sorts by.
+      (key, workouts) => workouts.sort(
+        (one, two) => switch (two.start.compareTo(one.start)) {
+          0 => two.id.compareTo(one.id),
+          final byStart => byStart,
+        },
+      ),
+    );
   }
 
   List<WorkoutImage> get images => UnmodifiableListView(_progress);
