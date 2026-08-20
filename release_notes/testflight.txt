@@ -1,23 +1,20 @@
-Your workouts in Apple Health
+Bring your Strong history
 
-Finished workouts now save to Apple Health, so your rings credit your lifting.
-Heart writes how long you trained and what kind of session it was — a swim logs
-as a swim, a lift as strength training — and nothing else.
-
-It never estimates calories. Without a watch there is no measurement, only a
-guess, and a made-up number sitting next to your watch's own reading is worse
-than no number at all.
-
-If you have already connected Apple Health, Heart asks once, right after you
-finish a workout. There's a "Save workouts to Health" row in Heart's settings
-to turn it on or off later.
+Lifted with Strong before? Import your whole history: Settings → Your data →
+Import workout history. Pick the CSV file from Strong's export email and Heart
+brings over your workouts, sets and exercises. Before anything is written you
+see what the file holds — and exercises that don't match Heart's library are
+yours to approve one by one, so junk names stay behind. Importing the same
+file twice is safe: anything already here is skipped, never duplicated.
 
 Smaller things
-- The weekly chart on your profile no longer runs its dates together.
+- Settings are organized into sections — appearance, units, health, your data,
+  account and app each have their own place, and the section headers announce
+  themselves to VoiceOver.
 
 What to test
-- Finish a workout and allow the prompt, then look in Apple Health under
-  Browse › Activity › Workouts for the session and its length.
-- Finish a cardio session — a swim, run or cycle — and check it is labelled as
-  that rather than as strength training.
-- Decline the prompt, then turn it back on from Heart's settings.
+- Settings → Your data → Import workout history, pick your Strong CSV. Uncheck
+  one suggested exercise before importing, then check History lands everything
+  in the right months and the report matches what you chose.
+- Import the same file again — it should say nothing is new and add nothing.
+- Cancel out of the exercise-approval step — nothing should be imported.
