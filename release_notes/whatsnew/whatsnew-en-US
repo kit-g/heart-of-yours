@@ -1,7 +1,4 @@
-Workouts in Health Connect
-Finished workouts now save to Health Connect. Heart writes how long you trained and what kind of session it was — a swim logs as a swim, a lift as strength training. It never estimates calories.
+Bring your Strong history
+Import workouts from a Strong CSV export: Settings → Your data → Import workout history. You see what the file holds first, choose which new exercises come over as your own, and re-importing the same file never duplicates anything.
 
-Turn it on when Heart asks after your next workout, or from Health in Heart's settings.
-
-Fixes
-The weekly chart on your profile no longer runs its dates together.
+Also: settings are organized into sections, with headers TalkBack can navigate by.

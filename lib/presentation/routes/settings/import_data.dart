@@ -248,7 +248,9 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
         exercises
             .init()
             .then((_) => workouts.initHistory())
-            .catchError((e, s) => widget.onError?.call(e, stacktrace: s)),
+            .catchError(
+              (e, s) => widget.onError?.call(e, stacktrace: s),
+            ),
       );
     } on ImportRejected catch (e) {
       _outcome.value = _Rejected(e.reason);
@@ -403,13 +405,11 @@ class _ImportConsentViewState extends State<_ImportConsentView> {
                     subtitle: Text(importSetsCount(sets)),
                     controlAffinity: ListTileControlAffinity.trailing,
                     dense: true,
-                    visualDensity: VisualDensity.compact,
+                    visualDensity: .compact,
                     // a slim inset keeps the ink from running flush against
                     // the text column; the shape rounds it like the pickers
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
+                    contentPadding: const .symmetric(horizontal: 8),
+                    shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
                   ),
               ],
             );
@@ -423,7 +423,7 @@ class _ImportConsentViewState extends State<_ImportConsentView> {
             Expanded(
               child: PrimaryButton.wide(
                 backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
-                margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 14),
+                margin: const .symmetric(horizontal: 8.0, vertical: 14),
                 onPressed: widget.onCancel,
                 child: Center(
                   child: Text(cancel),
@@ -433,7 +433,7 @@ class _ImportConsentViewState extends State<_ImportConsentView> {
             Expanded(
               child: PrimaryButton.wide(
                 backgroundColor: colorScheme.primaryContainer,
-                margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 14),
+                margin: const .symmetric(horizontal: 8.0, vertical: 14),
                 onPressed: () {
                   // in export order, not tap order
                   widget.onImport([
