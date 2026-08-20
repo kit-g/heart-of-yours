@@ -2272,6 +2272,99 @@
     "type": "text",
     "placeholders": {}
   },
+  "importPreviewTitle": "Ready to import",
+  "@importPreviewTitle": {
+    "description": "Import page, heading of the preview/consent step",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importPreviewSummary": "{workouts, plural, =1{1 workout} other{{workouts} workouts}} and {sets, plural, =1{1 set} other{{sets} sets}} ready to come over",
+  "@importPreviewSummary": {
+    "description": "Import preview line, what the file holds",
+    "type": "text",
+    "placeholders": {
+      "workouts": {},
+      "sets": {}
+    }
+  },
+  "importPreviewSummaryPartial": "{count, plural, =1{1 workout is new} other{{count} workouts are new}}",
+  "@importPreviewSummaryPartial": {
+    "description": "Import preview line when part of the file was imported before — only the new workouts are announced",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewNothingNew": "Nothing new — {count, plural, =1{the 1 workout in this file is} other{all {count} workouts in this file are}} already here",
+  "@importPreviewNothingNew": {
+    "description": "Import preview line when every workout in the file was imported before",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewMatched": "{count, plural, =1{1 exercise already matches the library} other{{count} exercises already match the library}}",
+  "@importPreviewMatched": {
+    "description": "Import preview line, exercises that resolved against the stock catalog or existing customs",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewAlreadyHere": "{count, plural, =1{1 workout is already here — it will be skipped} other{{count} workouts are already here — they will be skipped}}",
+  "@importPreviewAlreadyHere": {
+    "description": "Import preview line, workouts a commit would skip as previously imported",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "selectAll": "Select all",
+  "@selectAll": {
+    "description": "Button over a checkbox list, checks every item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deselectAll": "Deselect all",
+  "@deselectAll": {
+    "description": "Button over a checkbox list, unchecks every item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importConsentTitle": "New exercises found",
+  "@importConsentTitle": {
+    "description": "Import page, heading of the consent step over unmatched exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importConsentBody": "These didn't match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.",
+  "@importConsentBody": {
+    "description": "Import page, explains the consent checkboxes over unmatched exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importAction": "Import",
+  "@importAction": {
+    "description": "Import page, the button that commits the import after the consent step",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importSetsCount": "{count, plural, =1{1 set} other{{count} sets}}",
+  "@importSetsCount": {
+    "description": "Import consent step, how many sets ride on an unmatched exercise",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importSkippedSets": "{count, plural, =1{1 set stayed behind} other{{count} sets stayed behind}} with the exercises you declined",
+  "@importSkippedSets": {
+    "description": "Import report line, sets not imported because their exercise was declined",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
   "yourData": "Your data",
   "@yourData": {
     "description": "Settings section header over data import (and, later, export)",

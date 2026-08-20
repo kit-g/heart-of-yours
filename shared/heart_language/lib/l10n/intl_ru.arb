@@ -2242,6 +2242,99 @@
     "type": "text",
     "placeholders": {}
   },
+  "importPreviewTitle": "Готово к импорту",
+  "@importPreviewTitle": {
+    "description": "Import page, heading of the preview/consent step",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importPreviewSummary": "{workouts, plural, one{{workouts} тренировка} few{{workouts} тренировки} many{{workouts} тренировок} other{{workouts} тренировки}} и {sets, plural, one{{sets} подход} few{{sets} подхода} many{{sets} подходов} other{{sets} подхода}} готовы к переезду",
+  "@importPreviewSummary": {
+    "description": "Import preview line, what the file holds",
+    "type": "text",
+    "placeholders": {
+      "workouts": {},
+      "sets": {}
+    }
+  },
+  "importPreviewSummaryPartial": "{count, plural, one{{count} новая тренировка} few{{count} новые тренировки} many{{count} новых тренировок} other{{count} новые тренировки}}",
+  "@importPreviewSummaryPartial": {
+    "description": "Import preview line when part of the file was imported before — only the new workouts are announced",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewNothingNew": "Ничего нового — {count, plural, one{{count} тренировка из этого файла уже здесь} few{все {count} тренировки из этого файла уже здесь} many{все {count} тренировок из этого файла уже здесь} other{все {count} тренировки из этого файла уже здесь}}",
+  "@importPreviewNothingNew": {
+    "description": "Import preview line when every workout in the file was imported before",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewMatched": "{count, plural, one{{count} упражнение уже есть в каталоге} few{{count} упражнения уже есть в каталоге} many{{count} упражнений уже есть в каталоге} other{{count} упражнения уже есть в каталоге}}",
+  "@importPreviewMatched": {
+    "description": "Import preview line, exercises that resolved against the stock catalog or existing customs",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewAlreadyHere": "{count, plural, one{{count} тренировка уже здесь — она будет пропущена} few{{count} тренировки уже здесь — они будут пропущены} many{{count} тренировок уже здесь — они будут пропущены} other{{count} тренировки уже здесь — они будут пропущены}}",
+  "@importPreviewAlreadyHere": {
+    "description": "Import preview line, workouts a commit would skip as previously imported",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "selectAll": "Выбрать все",
+  "@selectAll": {
+    "description": "Button over a checkbox list, checks every item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deselectAll": "Снять выбор",
+  "@deselectAll": {
+    "description": "Button over a checkbox list, unchecks every item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importConsentTitle": "Найдены новые упражнения",
+  "@importConsentTitle": {
+    "description": "Import page, heading of the consent step over unmatched exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importConsentBody": "Они не нашлись в каталоге. Отметьте те, что заберёте как ваши собственные упражнения, — неотмеченные останутся позади вместе со своими подходами.",
+  "@importConsentBody": {
+    "description": "Import page, explains the consent checkboxes over unmatched exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importAction": "Импортировать",
+  "@importAction": {
+    "description": "Import page, the button that commits the import after the consent step",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importSetsCount": "{count, plural, one{{count} подход} few{{count} подхода} many{{count} подходов} other{{count} подхода}}",
+  "@importSetsCount": {
+    "description": "Import consent step, how many sets ride on an unmatched exercise",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importSkippedSets": "{count, plural, one{{count} подход не переехал} few{{count} подхода не переехали} many{{count} подходов не переехало} other{{count} подхода не переехало}} — вместе с упражнениями, которые вы отклонили",
+  "@importSkippedSets": {
+    "description": "Import report line, sets not imported because their exercise was declined",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
   "yourData": "Ваши данные",
   "@yourData": {
     "description": "Settings section header over data import (and, later, export)",
