@@ -74,15 +74,21 @@ void main() {
     ).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
   });
 
-  /// The page calls the [Api] singleton; point its HTTP layer at [body].
-  void serveImport(int statusCode, Map<String, dynamic> body) {
+  /// The page calls the [Api] singleton; point its HTTP layer at canned
+  /// bodies — [preview] answers the dry run, [report] the commit.
+  void serveImport({
+    int statusCode = 200,
+    Map<String, dynamic> preview = const {},
+    Map<String, dynamic> report = const {},
+  }) {
     Api(
       gateway: 'api.example.com',
       client: MockClient(
         (request) async {
           requests.add(request);
+          final dryRun = request.url.queryParameters['dryRun'] == 'true';
           return http.Response(
-            jsonEncode(body),
+            jsonEncode(dryRun ? preview : report),
             statusCode,
             headers: {'content-type': 'application/json'},
             request: request,
@@ -118,31 +124,50 @@ void main() {
     await tester.pumpTimes();
   }
 
-  testWidgets('picking a file uploads it raw and renders the report', (tester) async {
+  testWidgets('nothing unmatched: the preview flows straight into the commit and the report', (tester) async {
     FileSelectorPlatform.instance = _FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
     );
-    serveImport(200, {
-      'source': 'strong',
-      'workoutsFound': 5,
-      'workoutsCreated': 3,
-      'workoutsSkipped': 2,
-      'setsCreated': 40,
-      'exercisesMatched': 4,
-      'exercisesCreated': ['Zercher Squat'],
-      'rowsSkipped': 1,
-    });
+    serveImport(
+      preview: {
+        'source': 'strong',
+        'workoutsFound': 5,
+        'workoutsAlreadyImported': 2,
+        'setsFound': 41,
+        'exercisesMatched': 4,
+        'exercisesUnmatched': [],
+        'rowsSkipped': 1,
+      },
+      report: {
+        'source': 'strong',
+        'workoutsFound': 5,
+        'workoutsCreated': 3,
+        'workoutsSkipped': 2,
+        'setsCreated': 40,
+        'exercisesMatched': 4,
+        'exercisesCreated': [],
+        'rowsSkipped': 1,
+      },
+    );
 
     await pumpImportPage(tester);
     await tester.tap(find.text('Choose file'));
     await tester.pumpTimes();
 
-    // transport: the raw CSV, not a JSON-quoted copy of it
-    final request = requests.single;
-    expect(request.method, 'POST');
-    expect(request.url.path, '/v1/workouts/imports');
-    expect(request.url.queryParameters['source'], 'strong');
-    expect(request.body, _csv);
+    // two trips: the dry run, then the commit — both carrying the raw CSV,
+    // not a JSON-quoted copy of it
+    expect(requests, hasLength(2));
+    final [preview, commit] = requests;
+    expect(preview.method, 'POST');
+    expect(preview.url.path, '/v1/workouts/imports');
+    expect(preview.url.queryParameters['source'], 'strong');
+    expect(preview.url.queryParameters['dryRun'], 'true');
+    expect(preview.body, _csv);
+    expect(commit.url.queryParameters, isNot(contains('dryRun')));
+    expect(commit.body, _csv);
+
+    // no consent step — there was nothing to decide
+    expect(find.text('New exercises found'), findsNothing);
 
     // the report, in words
     expect(find.text('Imported!'), findsOneWidget);
@@ -150,20 +175,156 @@ void main() {
     expect(find.text('40 sets in all'), findsOneWidget);
     expect(find.text('2 workouts were already here — skipped'), findsOneWidget);
     expect(find.text("1 row couldn't be read"), findsOneWidget);
-    expect(find.text('New custom exercises'), findsOneWidget);
+    expect(find.text('New custom exercises'), findsNothing);
+  });
+
+  testWidgets('unmatched exercises are each their own checkbox; unchecked ones stay behind', (tester) async {
+    FileSelectorPlatform.instance = _FakePicker(
+      XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+    );
+    serveImport(
+      preview: {
+        'source': 'strong',
+        'workoutsFound': 5,
+        'workoutsAlreadyImported': 2,
+        'setsFound': 43,
+        'exercisesMatched': 4,
+        'exercisesUnmatched': [
+          {'name': 'Zercher Squat', 'sets': 12},
+          {'name': 'Building Climbing', 'sets': 3},
+        ],
+        'rowsSkipped': 0,
+      },
+      report: {
+        'source': 'strong',
+        'workoutsFound': 5,
+        'workoutsCreated': 3,
+        'workoutsSkipped': 2,
+        'setsCreated': 40,
+        'setsSkipped': 3,
+        'exercisesMatched': 4,
+        'exercisesCreated': ['Zercher Squat'],
+        'exercisesSkipped': ['Building Climbing'],
+        'rowsSkipped': 0,
+      },
+    );
+
+    await pumpImportPage(tester);
+    await tester.tap(find.text('Choose file'));
+    await tester.pumpTimes();
+
+    // the consent step: nothing written yet, the stock side of the story told,
+    // each unmatched name its own decision with the cost of declining spelled
+    // out — and no second file until this one is settled
+    expect(requests, hasLength(1));
+    expect(find.text('Ready to import'), findsOneWidget);
+    // 2 of the 5 were imported before — the headline counts only the new,
+    // never the whole file over again
+    expect(find.text('3 workouts are new'), findsOneWidget);
+    expect(find.text('4 exercises already match the library'), findsOneWidget);
+    expect(find.text('2 workouts are already here — they will be skipped'), findsOneWidget);
+    expect(find.text('New exercises found'), findsOneWidget);
+    expect(find.text('Zercher Squat'), findsOneWidget);
+    expect(find.text('Building Climbing'), findsOneWidget);
+    expect(find.text('12 sets'), findsOneWidget);
+    expect(find.text('3 sets'), findsOneWidget);
+    expect(find.text('Choose file'), findsNothing);
+
+    // decline one, commit the rest
+    await tester.tap(find.text('Building Climbing'));
+    await tester.pump();
+    await tester.tap(find.text('Import'));
+    await tester.pumpTimes();
+
+    // the commit carries the allowlist in the JSON envelope
+    final commit = requests.last;
+    expect(commit.headers['content-type'], startsWith('application/json'));
+    expect(
+      jsonDecode(commit.body),
+      {
+        'csv': _csv,
+        'createCustom': ['Zercher Squat'],
+      },
+    );
+
+    // the report counts what declining cost
+    expect(find.text('Imported!'), findsOneWidget);
+    expect(find.text('3 sets stayed behind with the exercises you declined'), findsOneWidget);
     expect(find.text('•  Zercher Squat'), findsOneWidget);
+  });
+
+  testWidgets('a full re-upload says nothing is new, not that everything is coming over', (tester) async {
+    FileSelectorPlatform.instance = _FakePicker(
+      XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+    );
+    serveImport(
+      preview: {
+        'source': 'strong',
+        'workoutsFound': 537,
+        'workoutsAlreadyImported': 537,
+        'setsFound': 10467,
+        'exercisesMatched': 61,
+        'exercisesUnmatched': [
+          {'name': 'Zercher Squat', 'sets': 12},
+        ],
+        'rowsSkipped': 0,
+      },
+    );
+
+    await pumpImportPage(tester);
+    await tester.tap(find.text('Choose file'));
+    await tester.pumpTimes();
+
+    expect(find.text('Nothing new — all 537 workouts in this file are already here'), findsOneWidget);
+    // the one line says it all; neither half of the contradiction renders
+    expect(find.textContaining('ready to come over'), findsNothing);
+    expect(find.textContaining('they will be skipped'), findsNothing);
+  });
+
+  testWidgets('cancelling the consent step walks away without writing anything', (tester) async {
+    FileSelectorPlatform.instance = _FakePicker(
+      XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+    );
+    serveImport(
+      preview: {
+        'source': 'strong',
+        'workoutsFound': 5,
+        'workoutsAlreadyImported': 0,
+        'setsFound': 43,
+        'exercisesMatched': 4,
+        'exercisesUnmatched': [
+          {'name': 'Zercher Squat', 'sets': 12},
+        ],
+        'rowsSkipped': 0,
+      },
+    );
+
+    await pumpImportPage(tester);
+    await tester.tap(find.text('Choose file'));
+    await tester.pumpTimes();
+    expect(find.text('Ready to import'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpTimes();
+
+    // the dry run stays the only trip; the page is back where it started
+    expect(requests, hasLength(1));
+    expect(find.text('Ready to import'), findsNothing);
+    expect(find.text('Imported!'), findsNothing);
+    expect(find.text('Choose file'), findsOneWidget);
   });
 
   testWidgets('a rejected file gets the friendly headline with the reason as detail', (tester) async {
     FileSelectorPlatform.instance = _FakePicker(
       XFile.fromData(utf8.encode('not,a,strong,export'), name: 'random.csv'),
     );
-    serveImport(400, {'reason': 'missing "Workout Name" column'});
+    serveImport(statusCode: 400, preview: {'reason': 'missing "Workout Name" column'});
 
     await pumpImportPage(tester);
     await tester.tap(find.text('Choose file'));
     await tester.pumpTimes();
 
+    expect(requests, hasLength(1));
     expect(find.text("That file didn't work"), findsOneWidget);
     expect(find.text('missing "Workout Name" column'), findsOneWidget);
     expect(find.text('Imported!'), findsNothing);
@@ -171,7 +332,7 @@ void main() {
 
   testWidgets('backing out of the picker is a non-event', (tester) async {
     FileSelectorPlatform.instance = _FakePicker(null);
-    serveImport(200, const {});
+    serveImport();
 
     await pumpImportPage(tester);
     await tester.tap(find.text('Choose file'));

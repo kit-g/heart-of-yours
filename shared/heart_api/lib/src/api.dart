@@ -539,34 +539,85 @@ class Api
   /// their own; [tzOffset] anchors the export's naive local timestamps and
   /// goes on the wire as `±HH:MM`.
   ///
-  /// Talks to the [client] directly rather than through [Requests.post],
-  /// which runs every body through jsonEncode — the CSV must arrive as-is,
-  /// not as one quoted JSON string. The trade is the mixin's private
-  /// 401-reauthenticate-and-retry wrapper: an expired token fails the call
-  /// (the token heals on other traffic, and retrying is free).
+  /// The dry run: parses and resolves the export server-side, writes nothing,
+  /// and reports what a commit would do — most importantly, which exercise
+  /// names would become the user's custom exercises ([WorkoutImportPreview]).
+  Future<WorkoutImportPreview> previewImportedWorkouts(
+    String export, {
+    ImportSource source = .strong,
+    MeasurementUnit? unit,
+    Duration? tzOffset,
+  }) async {
+    final json = await _postImport(
+      export,
+      source: source,
+      unit: unit,
+      tzOffset: tzOffset,
+      dryRun: true,
+    );
+    return WorkoutImportPreview.fromJson(json);
+  }
+
+  /// The commit. [createCustom] is the allowlist of unmatched exercise names
+  /// the user approved: null means create them all (the one-shot import),
+  /// present — even empty — means exactly those and no others; sets on a
+  /// declined name are skipped and counted, never silently dropped.
   Future<WorkoutImportReport> importWorkouts(
     String export, {
     ImportSource source = .strong,
     MeasurementUnit? unit,
     Duration? tzOffset,
+    List<String>? createCustom,
+  }) async {
+    final json = await _postImport(
+      export,
+      source: source,
+      unit: unit,
+      tzOffset: tzOffset,
+      createCustom: createCustom,
+    );
+    return WorkoutImportReport.fromJson(json);
+  }
+
+  /// The body is raw CSV — except when carrying [createCustom], which rides a
+  /// JSON envelope (`{"csv": …, "createCustom": […]}`), the shape the server
+  /// keys off the content type.
+  ///
+  /// Talks to the [client] directly rather than through [Requests.post],
+  /// which runs every body through jsonEncode — the CSV must arrive as-is,
+  /// not as one quoted JSON string. The trade is the mixin's private
+  /// 401-reauthenticate-and-retry wrapper: an expired token fails the call
+  /// (the token heals on other traffic, and retrying is free).
+  Future<Map> _postImport(
+    String export, {
+    required ImportSource source,
+    MeasurementUnit? unit,
+    Duration? tzOffset,
+    bool dryRun = false,
+    List<String>? createCustom,
   }) async {
     final url = Uri.https(
       gateway,
       Router.workoutImports,
       {
         'source': source.name,
+        if (dryRun) 'dryRun': 'true',
         'unit': ?unit?.name,
         'tzOffset': ?_formatOffset(tzOffset),
       },
     );
+    final (contentType, body) = switch (createCustom) {
+      null => ('text/csv', export),
+      List<String> names => ('application/json', jsonEncode({'csv': export, 'createCustom': names})),
+    };
     final response = await (client?.post ?? http.post)(
       url,
-      headers: {...?defaultHeaders, 'Content-Type': 'text/csv'},
-      body: export,
+      headers: {...?defaultHeaders, 'Content-Type': contentType},
+      body: body,
     );
     final json = _tryDecode(response.body);
     return switch ((response.statusCode, json)) {
-      (200, Map json) => WorkoutImportReport.fromJson(json),
+      (200, Map json) => json,
       (400, {'reason': String reason}) => throw ImportRejected(reason: reason),
       _ => throw NetworkException(
         statusCode: response.statusCode,
