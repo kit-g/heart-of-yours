@@ -847,6 +847,114 @@ void main() {
       );
     });
 
+    test('previewImportedWorkouts asks for the dry run and reads the unmatched names', () async {
+      final query = {'source': 'strong', 'dryRun': 'true', 'tzOffset': '-04:00'};
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: query,
+        statusCode: 200,
+        body: {
+          'source': 'strong',
+          'workoutsFound': 537,
+          'workoutsAlreadyImported': 7,
+          'setsFound': 14210,
+          'exercisesMatched': 61,
+          'exercisesUnmatched': [
+            {'name': 'Bench Press (Barbell)', 'sets': 412},
+            {'name': 'Building Climbing', 'sets': 3},
+          ],
+          'rowsSkipped': 3,
+        },
+      );
+
+      final preview = await api.previewImportedWorkouts(
+        csv,
+        tzOffset: const Duration(hours: -4),
+      );
+
+      expect(preview.workoutsFound, 537);
+      expect(preview.workoutsAlreadyImported, 7);
+      expect(preview.setsFound, 14210);
+      expect(preview.exercisesMatched, 61);
+      expect(preview.exercisesUnmatched, [
+        (name: 'Bench Press (Barbell)', sets: 412),
+        (name: 'Building Climbing', sets: 3),
+      ]);
+      expect(preview.rowsSkipped, 3);
+
+      // still the raw file — a preview is the same request, minus the write
+      final [_, body] = verify(
+        client.post(
+          Uri.https('api.example.com', Router.workoutImports, query),
+          headers: captureAnyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured;
+      expect(body, same(csv));
+    });
+
+    test('importWorkouts carries the consent allowlist in a JSON envelope', () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'strong'},
+        statusCode: 200,
+        body: {
+          ...report(),
+          'setsSkipped': 3,
+          'exercisesSkipped': ['Building Climbing'],
+        },
+      );
+
+      final result = await api.importWorkouts(
+        csv,
+        createCustom: const ['Bench Press (Barbell)'],
+      );
+      expect(result.setsSkipped, 3);
+      expect(result.exercisesSkipped, ['Building Climbing']);
+
+      final [headers, body] = verify(
+        client.post(
+          Uri.https('api.example.com', Router.workoutImports, {'source': 'strong'}),
+          headers: captureAnyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured;
+      expect(headers, containsPair('Content-Type', 'application/json'));
+      expect(
+        jsonDecode(body),
+        {
+          'csv': csv,
+          'createCustom': ['Bench Press (Barbell)'],
+        },
+      );
+    });
+
+    test('importWorkouts sends an empty allowlist as-is — decline-all is a real choice', () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'strong'},
+        statusCode: 200,
+        body: report(),
+      );
+
+      await api.importWorkouts(csv, createCustom: const []);
+
+      final [_, body] = verify(
+        client.post(
+          Uri.https('api.example.com', Router.workoutImports, {'source': 'strong'}),
+          headers: captureAnyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured;
+      expect(jsonDecode(body), containsPair('createCustom', isEmpty));
+    });
+
     test('importWorkouts survives a plain-text error body — the gateway 401 is not JSON', () async {
       final uri = Uri.https('api.example.com', Router.workoutImports, {'source': 'strong'});
       when(
