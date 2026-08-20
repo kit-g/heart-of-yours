@@ -1172,6 +1172,108 @@ class LEn extends L {
   String get importData => 'Import workout history';
 
   @override
+  String get importPreviewTitle => 'Ready to import';
+
+  @override
+  String importPreviewSummary(num workouts, num sets) {
+    String _temp0 = intl.Intl.pluralLogic(
+      workouts,
+      locale: localeName,
+      other: '$workouts workouts',
+      one: '1 workout',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      sets,
+      locale: localeName,
+      other: '$sets sets',
+      one: '1 set',
+    );
+    return '$_temp0 and $_temp1 ready to come over';
+  }
+
+  @override
+  String importPreviewSummaryPartial(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts are new',
+      one: '1 workout is new',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPreviewNothingNew(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'all $count workouts in this file are',
+      one: 'the 1 workout in this file is',
+    );
+    return 'Nothing new — $_temp0 already here';
+  }
+
+  @override
+  String importPreviewMatched(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count exercises already match the library',
+      one: '1 exercise already matches the library',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPreviewAlreadyHere(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts are already here — they will be skipped',
+      one: '1 workout is already here — it will be skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectAll => 'Select all';
+
+  @override
+  String get deselectAll => 'Deselect all';
+
+  @override
+  String get importConsentTitle => 'New exercises found';
+
+  @override
+  String get importConsentBody =>
+      'These didn\'t match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.';
+
+  @override
+  String get importAction => 'Import';
+
+  @override
+  String importSetsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importSkippedSets(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets stayed behind',
+      one: '1 set stayed behind',
+    );
+    return '$_temp0 with the exercises you declined';
+  }
+
+  @override
   String get yourData => 'Your data';
 
   @override
@@ -2425,6 +2527,108 @@ class LEnCa extends LEn {
 
   @override
   String get importData => 'Import workout history';
+
+  @override
+  String get importPreviewTitle => 'Ready to import';
+
+  @override
+  String importPreviewSummary(num workouts, num sets) {
+    String _temp0 = intl.Intl.pluralLogic(
+      workouts,
+      locale: localeName,
+      other: '$workouts workouts',
+      one: '1 workout',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      sets,
+      locale: localeName,
+      other: '$sets sets',
+      one: '1 set',
+    );
+    return '$_temp0 and $_temp1 ready to come over';
+  }
+
+  @override
+  String importPreviewSummaryPartial(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts are new',
+      one: '1 workout is new',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPreviewNothingNew(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'all $count workouts in this file are',
+      one: 'the 1 workout in this file is',
+    );
+    return 'Nothing new — $_temp0 already here';
+  }
+
+  @override
+  String importPreviewMatched(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count exercises already match the library',
+      one: '1 exercise already matches the library',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPreviewAlreadyHere(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts are already here — they will be skipped',
+      one: '1 workout is already here — it will be skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectAll => 'Select all';
+
+  @override
+  String get deselectAll => 'Deselect all';
+
+  @override
+  String get importConsentTitle => 'New exercises found';
+
+  @override
+  String get importConsentBody =>
+      'These didn\'t match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.';
+
+  @override
+  String get importAction => 'Import';
+
+  @override
+  String importSetsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importSkippedSets(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets stayed behind',
+      one: '1 set stayed behind',
+    );
+    return '$_temp0 with the exercises you declined';
+  }
 
   @override
   String get yourData => 'Your data';
