@@ -1175,6 +1175,124 @@ class LRu extends L {
   String get importData => 'Импорт истории тренировок';
 
   @override
+  String get importPreviewTitle => 'Готово к импорту';
+
+  @override
+  String importPreviewSummary(num workouts, num sets) {
+    String _temp0 = intl.Intl.pluralLogic(
+      workouts,
+      locale: localeName,
+      other: '$workouts тренировки',
+      many: '$workouts тренировок',
+      few: '$workouts тренировки',
+      one: '$workouts тренировка',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      sets,
+      locale: localeName,
+      other: '$sets подхода',
+      many: '$sets подходов',
+      few: '$sets подхода',
+      one: '$sets подход',
+    );
+    return '$_temp0 и $_temp1 готовы к переезду';
+  }
+
+  @override
+  String importPreviewSummaryPartial(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count новые тренировки',
+      many: '$count новых тренировок',
+      few: '$count новые тренировки',
+      one: '$count новая тренировка',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPreviewNothingNew(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'все $count тренировки из этого файла уже здесь',
+      many: 'все $count тренировок из этого файла уже здесь',
+      few: 'все $count тренировки из этого файла уже здесь',
+      one: '$count тренировка из этого файла уже здесь',
+    );
+    return 'Ничего нового — $_temp0';
+  }
+
+  @override
+  String importPreviewMatched(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count упражнения уже есть в каталоге',
+      many: '$count упражнений уже есть в каталоге',
+      few: '$count упражнения уже есть в каталоге',
+      one: '$count упражнение уже есть в каталоге',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPreviewAlreadyHere(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count тренировки уже здесь — они будут пропущены',
+      many: '$count тренировок уже здесь — они будут пропущены',
+      few: '$count тренировки уже здесь — они будут пропущены',
+      one: '$count тренировка уже здесь — она будет пропущена',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectAll => 'Выбрать все';
+
+  @override
+  String get deselectAll => 'Снять выбор';
+
+  @override
+  String get importConsentTitle => 'Найдены новые упражнения';
+
+  @override
+  String get importConsentBody =>
+      'Они не нашлись в каталоге. Отметьте те, что заберёте как ваши собственные упражнения, — неотмеченные останутся позади вместе со своими подходами.';
+
+  @override
+  String get importAction => 'Импортировать';
+
+  @override
+  String importSetsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода',
+      many: '$count подходов',
+      few: '$count подхода',
+      one: '$count подход',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importSkippedSets(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода не переехало',
+      many: '$count подходов не переехало',
+      few: '$count подхода не переехали',
+      one: '$count подход не переехал',
+    );
+    return '$_temp0 — вместе с упражнениями, которые вы отклонили';
+  }
+
+  @override
   String get yourData => 'Ваши данные';
 
   @override
