@@ -66,7 +66,15 @@ mixin _Exercises on _LocalDatabase
           var row = {
             for (final MapEntry(:key, :value) in each.toMap().entries) key.toSnake(): value,
           };
-          if (each.isMine) row['user_id'] = userId;
+          // unconditional for the same reason as the blobs below — and it has
+          // to clear as well as set: an exercise promoted from someone's
+          // custom into the shared catalog must shed its old owner on the
+          // conflict-update, or the row lands on own = 0 with a stale
+          // user_id and trips CHECK (own = 1 OR user_id IS NULL).
+          row['user_id'] = switch (each.isMine) {
+            true => userId,
+            false => null,
+          };
           row['muscles'] = jsonEncode(each.muscles.toMap());
           // both blobs are omitted by `toMap()` when empty, so set them
           // unconditionally — the row is built generically from its keys, and a
