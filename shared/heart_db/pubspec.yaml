@@ -26,7 +26,7 @@ dependencies:
   # sqlite3 3.x bundles the native SQLite (JSON1 enabled) via Dart build hooks,
   # replacing the deprecated sqlite3_flutter_libs. sqflite_common_ffi opens
   # through this, so the FFI path uses the bundled lib, not the OS one.
-  sqlite3: ^3.0.0
+  sqlite3: ^3.5.2
 
 resolution: workspace
 
