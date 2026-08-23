@@ -17,7 +17,7 @@ workspace:
   - "shared/heart_state"
 
 dependencies:
-  app_settings: ^8.0.3
+  app_settings: ^9.0.0
   cached_network_image: ^3.4.1
   feedback: ^3.1.0
   file_selector: ^1.0.3
