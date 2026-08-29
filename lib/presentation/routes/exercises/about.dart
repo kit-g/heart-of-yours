@@ -91,8 +91,11 @@ class _About extends StatelessWidget {
           if (!muscles.isEmpty)
             Builder(
               builder: (context) {
-                final primaryMuscles = _colorMapping(muscles.primary, colorScheme.onTertiaryContainer);
-                final secondaryMuscles = _colorMapping(muscles.secondary, colorScheme.tertiaryContainer);
+                // Two intensities of the one accent hue: tertiary is the
+                // accent kept legible against the ground in either
+                // brightness, and the faded copy reads as "assists".
+                final primaryMuscles = _colorMapping(muscles.primary, colorScheme.tertiary);
+                final secondaryMuscles = _colorMapping(muscles.secondary, colorScheme.tertiary.withValues(alpha: .35));
                 final colors = {...primaryMuscles, ...secondaryMuscles};
 
                 Widget panel(AtlasAsset view) {
