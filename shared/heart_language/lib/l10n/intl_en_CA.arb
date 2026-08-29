@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "You've already started something important.\r\nLet's keep going.",
+  "logInBody": "You've already started something important.\nLet's keep going.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Every journey starts with one decision.\r\nThis one's yours.",
+  "signUpBody": "Every journey starts with one decision.\nThis one's yours.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Your journey isn't lost.\r\nJust a moment of pause — we'll reset together.",
+  "recoverBody": "Your journey isn't lost.\nJust a moment of pause — we'll reset together.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -296,13 +296,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won't affect any of your past workouts — your history stays intact.",
+  "archiveConfirmBody": "This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won't affect any of your past workouts — your history stays intact.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "This exercise is archived\r\nand won't appear in your main library anymore.",
+  "exerciseArchived": "This exercise is archived\nand won't appear in your main library anymore.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -628,15 +628,33 @@
     "type": "text",
     "placeholders": {}
   },
-  "customThemeColorSetting": "Custom theme colour",
-  "@customThemeColorSetting": {
-    "description": "Setting item name",
+  "themePresetSetting": "Theme",
+  "@themePresetSetting": {
+    "description": "Setting item name for picking the app's visual theme preset",
     "type": "text",
     "placeholders": {}
   },
-  "customThemeColorSettingSubtitle": "Used to generate a new theme",
-  "@customThemeColorSettingSubtitle": {
-    "description": "Setting item subtitle",
+  "themePresetSettingSubtitle": "Presets tuned for both light and dark",
+  "@themePresetSettingSubtitle": {
+    "description": "Setting item subtitle explaining that each theme preset covers light and dark mode",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetForge": "Forge",
+  "@themePresetForge": {
+    "description": "Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetInk": "Ink",
+  "@themePresetInk": {
+    "description": "Name of the light-first, paper-and-ink theme preset with a cobalt accent",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetUtility": "Utility",
+  "@themePresetUtility": {
+    "description": "Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",
     "type": "text",
     "placeholders": {}
   },
@@ -1296,7 +1314,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\r\n\r\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
+  "leaveFeedbackBody": "Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1378,7 +1396,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\r\n\r\nIf you change your mind, you can restore your account anytime before this date.\r\n\r\nSimply click the button below to cancel the deletion and keep your account safe.",
+  "accountDeletedBody": "Your account has been scheduled for deletion on {date}.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
@@ -1654,7 +1672,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredBody": "There's an important update waiting — one that keeps your app working as it should.\r\n\r\nYou'll need to install it before continuing.\r\nThanks for your patience — and sorry for the interruption.",
+  "updateRequiredBody": "There's an important update waiting — one that keeps your app working as it should.\n\nYou'll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.",
   "@updateRequiredBody": {
     "description": "Force update screen, body",
     "type": "text",
@@ -2353,7 +2371,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importExplainerStrong": "Lifted with Strong before? Bring your history along.\r\n\r\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.",
+  "importExplainerStrong": "Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.",
   "@importExplainerStrong": {
     "description": "Import page, explains where the Strong export file comes from",
     "type": "text",
