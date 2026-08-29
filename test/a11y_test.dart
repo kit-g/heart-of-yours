@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/theme/state.dart';
+import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -32,9 +33,9 @@ const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_i
 enum _Screen { login, profile, workout, history, exercises, settings, importData }
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
-/// [textContrastGuideline] against the *same* const — the color scheme is
-/// seed-derived at runtime (`app.dart:227`), so light and dark are only
-/// distinguishable by which one the test switches to before asserting.
+/// [textContrastGuideline]; which token set it sees is the preset and mode
+/// the test switches to before asserting — contrast entries sweep every
+/// [Preset], since each preset carries its own hand-tuned values.
 enum _Guideline { labeledTapTarget, textContrastLight, textContrastDark, androidTapTarget, iosTapTarget }
 
 extension on _Guideline {
@@ -71,11 +72,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 
   (_Screen.profile, _Guideline.labeledTapTarget, null),
   (_Screen.profile, _Guideline.textContrastLight, null),
-  (
-    _Screen.profile,
-    _Guideline.textContrastDark,
-    'nav-bar outline labels and outlineVariant.withValues(alpha: .5) fills read under 4.5:1 in dark — theme contrast fix, out of scope',
-  ),
+  (_Screen.profile, _Guideline.textContrastDark, null),
   (
     _Screen.profile,
     _Guideline.androidTapTarget,
@@ -89,11 +86,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
   (_Screen.workout, _Guideline.textContrastLight, null),
-  (
-    _Screen.workout,
-    _Guideline.textContrastDark,
-    'nav-bar outline labels and outlineVariant.withValues(alpha: .5) fills read under 4.5:1 in dark — theme contrast fix, out of scope',
-  ),
+  (_Screen.workout, _Guideline.textContrastDark, null),
   (
     _Screen.workout,
     _Guideline.androidTapTarget,
@@ -107,11 +100,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
-  (
-    _Screen.history,
-    _Guideline.textContrastDark,
-    'nav-bar outline labels and outlineVariant.withValues(alpha: .5) fills read under 4.5:1 in dark — theme contrast fix, out of scope',
-  ),
+  (_Screen.history, _Guideline.textContrastDark, null),
   (
     _Screen.history,
     _Guideline.androidTapTarget,
@@ -125,11 +114,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
 
   (_Screen.exercises, _Guideline.labeledTapTarget, null),
   (_Screen.exercises, _Guideline.textContrastLight, null),
-  (
-    _Screen.exercises,
-    _Guideline.textContrastDark,
-    'nav-bar outline labels and outlineVariant.withValues(alpha: .5) fills read under 4.5:1 in dark — theme contrast fix, out of scope',
-  ),
+  (_Screen.exercises, _Guideline.textContrastDark, null),
   (
     _Screen.exercises,
     _Guideline.androidTapTarget,
@@ -145,20 +130,16 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   // goals/row.dart pattern), so the screen renders under this harness
   (_Screen.settings, _Guideline.labeledTapTarget, null),
   (_Screen.settings, _Guideline.textContrastLight, null),
-  (
-    _Screen.settings,
-    _Guideline.textContrastDark,
-    'disabled-token text and outlineVariant.withValues(alpha: .5) fills read under 4.5:1 in dark — theme contrast fix, out of scope',
-  ),
+  (_Screen.settings, _Guideline.textContrastDark, null),
   (
     _Screen.settings,
     _Guideline.androidTapTarget,
-    'the custom-theme-color IconButton and switch rows are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+    'switch rows are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
   (
     _Screen.settings,
     _Guideline.iosTapTarget,
-    'the custom-theme-color IconButton and switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+    'switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
   (_Screen.importData, _Guideline.labeledTapTarget, null),
@@ -281,21 +262,35 @@ void main() {
       String r => '${screen.name} meets ${guideline.name} (skipped: $r)',
       null => '${screen.name} meets ${guideline.name}',
     };
-    testWidgets(
-      description,
-      (tester) async {
-        await pumpTo(tester, screen);
+    // Contrast is a property of a preset's tokens, so those guidelines sweep
+    // every preset; tap targets and labels are geometry and run once.
+    final presets = switch (guideline.rule == textContrastGuideline && reason == null) {
+      true => Preset.values,
+      false => const [Preset.forge],
+    };
+    for (final preset in presets) {
+      final suffix = switch (presets.length > 1) {
+        true => ' in ${preset.name}',
+        false => '',
+      };
+      testWidgets(
+        '$description$suffix',
+        (tester) async {
+          await pumpTo(tester, screen);
 
-        if (guideline.isDark) {
-          AppTheme.of(tester.element(find.byType(MaterialApp))).toDark();
+          final theme = AppTheme.of(tester.element(find.byType(MaterialApp)));
+          theme.preset = preset;
+          if (guideline.isDark) {
+            theme.toDark();
+          }
           await tester.pumpTimes();
-        }
 
-        final handle = tester.ensureSemantics();
-        await expectLater(tester, meetsGuideline(guideline.rule));
-        handle.dispose();
-      },
-      skip: reason != null,
-    );
+          final handle = tester.ensureSemantics();
+          await expectLater(tester, meetsGuideline(guideline.rule));
+          handle.dispose();
+        },
+        skip: reason != null,
+      );
+    }
   }
 }
