@@ -356,6 +356,9 @@ class LRu extends L {
   String get themePresetUtility => 'Инструмент';
 
   @override
+  String get themePresetEmber => 'Жар';
+
+  @override
   String get aboutApp => 'О приложении';
 
   @override

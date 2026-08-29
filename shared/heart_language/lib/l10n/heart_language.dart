@@ -728,6 +728,12 @@ abstract class L {
   /// **'Utility'**
   String get themePresetUtility;
 
+  /// Name of the warm theme preset with a true-orange accent; a glowing coal
+  ///
+  /// In en, this message translates to:
+  /// **'Ember'**
+  String get themePresetEmber;
+
   /// Setting item title
   ///
   /// In en, this message translates to:

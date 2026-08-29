@@ -120,6 +120,7 @@ themePresetSettingSubtitle,Setting item subtitle explaining that each theme pres
 themePresetForge,Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge,Forge,Forge,Кузница
 themePresetInk,"Name of the light-first, paper-and-ink theme preset with a cobalt accent",Ink,Ink,Чернила
 themePresetUtility,"Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",Utility,Utility,Инструмент
+themePresetEmber,Name of the warm theme preset with a true-orange accent; a glowing coal,Ember,Ember,Жар
 aboutApp,Setting item title,About app,About app,О приложении
 congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!
 congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!

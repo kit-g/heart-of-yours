@@ -163,6 +163,39 @@ class Tokens {
     destructive: Color(0xFFFF7365),
   );
 
+  // Ember: heat — true orange on warm neutrals, amber glow in the dark.
+  // The accentInk is burnt deep enough to read on white, and destructive
+  // stays crimson so orange can never be mistaken for danger.
+  static const emberLight = Tokens(
+    brightness: .light,
+    ground: Color(0xFFFFFFFF),
+    surface: Color(0xFFFFFFFF),
+    fill: Color(0xFFF7F2EA),
+    ink: Color(0xFF191510),
+    muted: Color(0xFF5F584D),
+    faint: Color(0xFF99917F),
+    border: Color(0xFFE8E0D2),
+    accent: Color(0xFFF07514),
+    onAccent: Color(0xFF1F1206),
+    accentInk: Color(0xFF9A4A00),
+    destructive: Color(0xFFB3261E),
+  );
+
+  static const emberDark = Tokens(
+    brightness: .dark,
+    ground: Color(0xFF14100C),
+    surface: Color(0xFF1F1913),
+    fill: Color(0xFF2B241C),
+    ink: Color(0xFFF4EFE6),
+    muted: Color(0xFFA69C8C),
+    faint: Color(0xFF746A5C),
+    border: Color(0xFF332B21),
+    accent: Color(0xFFFF9E3D),
+    onAccent: Color(0xFF211204),
+    accentInk: Color(0xFFFF9E3D),
+    destructive: Color(0xFFFF7361),
+  );
+
   /// Maps the vocabulary onto Material roles so widgets without an explicit
   /// component theme still land on token colors. The mapping is the whole
   /// contract: no tonal palettes, no seed derivation.
@@ -250,6 +283,15 @@ enum Preset {
     textFont: 'Golos Text',
     titleFont: 'Golos Text',
     displayFont: 'Golos Text',
+    headlineSize: 28,
+    headlineWeight: .w700,
+  ),
+  ember(
+    light: Tokens.emberLight,
+    dark: Tokens.emberDark,
+    textFont: 'Rubik',
+    titleFont: 'Rubik',
+    displayFont: 'Rubik',
     headlineSize: 28,
     headlineWeight: .w700,
   );
