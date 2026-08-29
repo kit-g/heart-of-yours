@@ -9,6 +9,7 @@ import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
+import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
@@ -224,34 +225,10 @@ class _AppState extends State<_App> {
 
   @override
   Widget build(BuildContext context) {
-    final light = switch (widget.theme.color) {
-      Color color => theme(
-        ColorScheme.fromSeed(
-          seedColor: color,
-          brightness: .light,
-        ),
-      ),
-      null => theme(
-        ColorScheme.fromSeed(
-          seedColor: AppTheme.colorFromHex(widget.config.themeColorHex) ?? Colors.white,
-          brightness: .light,
-        ),
-      ),
-    };
-    final dark = switch (widget.theme.color) {
-      Color color => theme(
-        ColorScheme.fromSeed(
-          seedColor: color,
-          brightness: .dark,
-        ),
-      ),
-      null => theme(
-        ColorScheme.fromSeed(
-          seedColor: AppTheme.colorFromHex(widget.config.themeColorHex) ?? Colors.white,
-          brightness: .dark,
-        ),
-      ),
-    };
+    // Both brightnesses come from the picked preset's hand-tuned token sets;
+    // the seed-color machinery (user-picked and remote-config) is retired.
+    final light = theme(widget.theme.preset, .light);
+    final dark = theme(widget.theme.preset, .dark);
 
     final app = MaterialApp.router(
       theme: light,
@@ -479,7 +456,7 @@ Future<void> _initApp(
     if (!context.mounted) return;
 
     theme
-      ..color = AppTheme.colorFromHex(prefs.getBaseColor(userId))
+      ..preset = Preset.fromStored(prefs.getBaseColor(userId))
       ..toMode(prefs.themeMode);
 
     // `onUserChange` has already set the id — it runs before this — so the only
