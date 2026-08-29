@@ -85,7 +85,10 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadius.all(Radius.circular(12)),
-                        color: colorScheme.primaryContainer,
+                        // the fill tone, like the goals panel below: visible
+                        // as the same quiet inset in both brightnesses,
+                        // where a surface panel vanished on the light ground
+                        color: colorScheme.surfaceContainer,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
