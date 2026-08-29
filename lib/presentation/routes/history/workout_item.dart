@@ -31,27 +31,49 @@ class WorkoutItem extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final l = L.of(context);
     final prefs = Preferences.watch(context);
+    // The hero slot: total volume when the workout has one, else the best
+    // set of its first exercise — labeled by the exercise itself.
+    final (String heroValue, String heroLabel) = switch ((workout.total?.toInt(), prefs.weightUnit)) {
+      (int total, MeasurementUnit.imperial) when total > 0 => (l.lb(total.asPounds.toInt()), l.totalVolume),
+      (int total, MeasurementUnit.metric) when total > 0 => ('$total ${l.kg}', l.totalVolume),
+      _ => switch (workout.firstOrNull) {
+        null => ('-', l.totalVolume),
+        var exercise => (
+          _formatSet(
+            context,
+            exercise.best,
+            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.weightUnit,
+            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.distanceUnit,
+          ),
+          exercise.exercise.name,
+        ),
+      },
+    };
     return Card(
       color: switch (highlighted) {
         true => colorScheme.secondaryContainer,
-        false => colorScheme.surfaceContainer,
+        false => null,
       },
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      shape: _shape,
       child: InkWell(
-        customBorder: _shape,
+        // matches the card theme's corner
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
         onTap: () => onTap?.call(workout),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.fromLTRB(16, 10, 10, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    workout.name ?? '?',
-                    style: textTheme.titleMedium,
+                  Expanded(
+                    child: Text(
+                      workout.name ?? '?',
+                      style: textTheme.titleLarge?.copyWith(fontSize: 17),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   Row(
                     children: [
@@ -104,69 +126,63 @@ class WorkoutItem extends StatelessWidget {
               ),
               Text(
                 L.of(context).fullDate(workout.start),
+                style: textTheme.bodySmall,
               ),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
-                    child: Row(
-                      spacing: 8,
-                      children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          size: 18,
-                        ),
-                        Text(workout.duration?.formatted(context) ?? '-'),
-                      ],
+                    child: _Stat(
+                      value: workout.duration?.formatted(context) ?? '-',
+                      label: l.duration,
                     ),
                   ),
                   Expanded(
-                    child: Row(
-                      spacing: 8,
-                      children: [
-                        const Icon(
-                          Icons.fitness_center_rounded,
-                          size: 18,
-                        ),
-                        Text(
-                          switch ((workout.total?.toInt(), prefs.weightUnit)) {
-                            (int total, MeasurementUnit.imperial) when total > 0 => l.lb(total.asPounds.toInt()),
-                            (int total, MeasurementUnit.metric) when total > 0 => '$total ${l.kg}',
-                            _ => '-',
-                          },
-                        ),
-                      ],
+                    child: _Stat(
+                      value: heroValue,
+                      label: heroLabel,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              ...workout.map(
-                (exercise) {
-                  final override = Exercises.of(context).unitFor(exercise.exercise.name);
-                  return Row(
-                    spacing: 12,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${exercise.where((set) => set.isCompleted).length} x ${exercise.exercise.name}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 12),
+              ColoredBox(
+                color: colorScheme.outlineVariant,
+                child: const SizedBox(height: 1, width: double.infinity),
+              ),
+              const SizedBox(height: 8),
+              Column(
+                spacing: 4,
+                children: [
+                  for (final exercise in workout)
+                    Row(
+                      spacing: 12,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${exercise.exercise.name} ×${exercise.where((set) => set.isCompleted).length}',
+                            style: textTheme.bodySmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
+                        Text(
                           _formatSet(
                             context,
                             exercise.best,
-                            override ?? prefs.weightUnit,
-                            override ?? prefs.distanceUnit,
+                            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.weightUnit,
+                            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.distanceUnit,
                           ),
-                          style: textTheme.titleSmall,
+                          // the result column reads in full ink and lines up
+                          // digit-for-digit
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    ),
+                ],
               ),
             ],
           ),
@@ -300,7 +316,7 @@ class WorkoutItem extends StatelessWidget {
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(cancel),
               ),
@@ -360,7 +376,7 @@ class WorkoutItem extends StatelessWidget {
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(
                   keepCurrentAccount,
@@ -423,7 +439,7 @@ class WorkoutItem extends StatelessWidget {
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(
                   cancel,
@@ -435,11 +451,9 @@ class WorkoutItem extends StatelessWidget {
               },
             ),
             PrimaryButton.wide(
-              backgroundColor: colorScheme.primaryContainer,
               child: Center(
                 child: Text(
                   startWorkout,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -458,9 +472,37 @@ class WorkoutItem extends StatelessWidget {
 
 typedef _WorkoutOptionBundle = ({String copy, TextStyle? style, Widget icon});
 
-const _shape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.all(Radius.circular(8)),
-);
+/// One number worth reading at a glance, in the preset's display face, with
+/// a quiet label under it.
+class _Stat extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const new({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
+      children: [
+        Text(
+          value,
+          style: textTheme.headlineMedium?.copyWith(fontSize: 17, color: colorScheme.tertiary),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          label.toUpperCase(),
+          style: textTheme.labelSmall,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
 
 enum _WorkoutOption {
   // share,
