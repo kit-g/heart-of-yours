@@ -95,6 +95,42 @@ flutter:
         - asset: assets/fonts/Lato/Lato-Light.ttf
           weight: 200
 
+    - family: "Onest"
+      fonts:
+        - asset: assets/fonts/Onest/Onest-400.ttf
+          weight: 400
+        - asset: assets/fonts/Onest/Onest-500.ttf
+          weight: 500
+        - asset: assets/fonts/Onest/Onest-600.ttf
+          weight: 600
+        - asset: assets/fonts/Onest/Onest-700.ttf
+          weight: 700
+
+    - family: "Unbounded"
+      fonts:
+        - asset: assets/fonts/Unbounded/Unbounded-500.ttf
+          weight: 500
+        - asset: assets/fonts/Unbounded/Unbounded-700.ttf
+          weight: 700
+
+    - family: "Literata"
+      fonts:
+        - asset: assets/fonts/Literata/Literata-500.ttf
+          weight: 500
+        - asset: assets/fonts/Literata/Literata-600.ttf
+          weight: 600
+
+    - family: "IBM Plex Sans"
+      fonts:
+        - asset: assets/fonts/IBM_Plex_Sans/IBM_Plex_Sans-400.ttf
+          weight: 400
+        - asset: assets/fonts/IBM_Plex_Sans/IBM_Plex_Sans-500.ttf
+          weight: 500
+        - asset: assets/fonts/IBM_Plex_Sans/IBM_Plex_Sans-600.ttf
+          weight: 600
+        - asset: assets/fonts/IBM_Plex_Sans/IBM_Plex_Sans-700.ttf
+          weight: 700
+
     - family: "Noto Sans"
       fonts:
         - asset: assets/fonts/Noto_Sans/NotoSans-VariableFont_wdth,wght.ttf
