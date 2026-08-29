@@ -88,3 +88,7 @@ $(filter-out test-heart_language,$(TEST_TARGETS)): test-%: codegen-%
 
 test-app: codegen-app
 	$(call suite_test,,app)
+
+# just the screen×guideline accessibility matrix, for quick local runs
+a11y: codegen-app
+	flutter test test/a11y_test.dart
