@@ -132,7 +132,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                         spacing: 8,
                         children: [
                           PrimaryButton.wide(
-                            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                            backgroundColor: colorScheme.surfaceContainerHighest,
                             child: Center(
                               child: Text(
                                 cancel,
@@ -144,7 +144,6 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                             },
                           ),
                           PrimaryButton.wide(
-                            backgroundColor: colorScheme.primaryContainer,
                             child: Center(
                               child: Text(
                                 ok,
@@ -291,7 +290,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(deleteAccountCancelMessage),
               ),
@@ -362,7 +361,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(cancel),
               ),
