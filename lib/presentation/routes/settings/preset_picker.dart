@@ -15,24 +15,29 @@ class _PresetPickerState extends State<_PresetPicker> with HasHaptic<_PresetPick
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 12,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              themePresetSetting,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            Text(
-              themePresetSettingSubtitle,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                themePresetSetting,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Text(
+                themePresetSettingSubtitle,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
         ),
         Consumer<AppTheme>(
           builder: (context, theme, _) {
-            // the roster outgrew a phone row; the strip scrolls
+            // the roster outgrew a phone row; the strip scrolls to the
+            // screen edge, with the page inset on its content
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 spacing: 12,
                 children: [
