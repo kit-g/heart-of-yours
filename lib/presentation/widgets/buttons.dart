@@ -133,15 +133,29 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    // On the default (accent) fill the ambient text color cannot be trusted
+    // — pale ink on the accent is illegible in dark mode — so the button owns
+    // its content color. Callers passing a background keep owning theirs.
+    final content = switch (backgroundColor) {
+      null => DefaultTextStyle.merge(
+        style: TextStyle(color: colorScheme.onTertiaryContainer),
+        child: IconTheme.merge(
+          data: IconThemeData(color: colorScheme.onTertiaryContainer),
+          child: child,
+        ),
+      ),
+      _ => child,
+    };
     return SizedBox(
       width: wide ? double.infinity : null,
       child: InkButton.rounded(
         border: border,
         onPressed: onPressed == null ? null : _onPressed,
-        backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.tertiaryContainer,
+        backgroundColor: backgroundColor ?? colorScheme.tertiaryContainer,
         child: Padding(
           padding: margin,
-          child: child,
+          child: content,
         ),
       ),
     );
