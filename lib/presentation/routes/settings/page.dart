@@ -90,10 +90,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                     child: _ThemeModePicker(),
                   ),
                   SizedBox(height: 16),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _PresetPicker(),
-                  ),
+                  // no page padding: the swatch strip scrolls to the screen
+                  // edge and carries the inset itself
+                  _PresetPicker(),
                 ],
               ),
               const SizedBox(height: 24),
