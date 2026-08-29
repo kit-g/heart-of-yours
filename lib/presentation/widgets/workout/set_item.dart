@@ -108,7 +108,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       :textTheme,
       colorScheme: ColorScheme(
         :tertiaryContainer,
-        :outlineVariant,
+        :onTertiaryContainer,
+        :surfaceContainerHighest,
+        :onSurfaceVariant,
         :error,
         :onError,
       ),
@@ -117,7 +119,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       context,
     );
     final L(:deleteSet) = L.of(context);
-    final color = set.isCompleted ? tertiaryContainer : outlineVariant.withValues(alpha: .5);
+    // Values sit on the quiet fill whether done or not — the check button
+    // alone wears the accent, so a finished workout doesn't read as a wall
+    // of accent pills with ink drowning on them.
+    final fill = surfaceContainerHighest;
 
     // builds the background for the dismissed set
     // based on the direction of the swipe
@@ -171,7 +176,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           children: [
             PrimaryButton.shrunk(
               margin: EdgeInsets.zero,
-              backgroundColor: color,
+              backgroundColor: fill,
               child: SizedBox(
                 width: _fixedColumnWidth,
                 height: _fixedButtonHeight,
@@ -235,7 +240,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
             Expanded(
               flex: 2,
               child: Row(
-                children: _buttons(color),
+                children: _buttons(fill),
               ),
             ),
             SizedBox(
@@ -245,7 +250,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                 padding: const EdgeInsets.symmetric(horizontal: 2.0),
                 child: PrimaryButton.shrunk(
                   key: WorkoutDetailKeys.doneFor(exercise.exercise.name, widget.index),
-                  backgroundColor: color,
+                  backgroundColor: switch (set.isCompleted) {
+                    true => tertiaryContainer,
+                    false => fill,
+                  },
                   margin: EdgeInsets.zero,
                   onPressed: () {
                     if (!widget.isLocked) {
@@ -259,9 +267,13 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                   child: Center(
                     child: Opacity(
                       opacity: widget.isLocked ? .5 : 1,
-                      child: const Icon(
+                      child: Icon(
                         Icons.done,
                         size: 18,
+                        color: switch (set.isCompleted) {
+                          true => onTertiaryContainer,
+                          false => onSurfaceVariant,
+                        },
                       ),
                     ),
                   ),
