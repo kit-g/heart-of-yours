@@ -123,6 +123,17 @@ flutter:
         - asset: assets/fonts/Golos_Text/Golos_Text-700.ttf
           weight: 700
 
+    - family: "Rubik"
+      fonts:
+        - asset: assets/fonts/Rubik/Rubik-400.ttf
+          weight: 400
+        - asset: assets/fonts/Rubik/Rubik-500.ttf
+          weight: 500
+        - asset: assets/fonts/Rubik/Rubik-600.ttf
+          weight: 600
+        - asset: assets/fonts/Rubik/Rubik-700.ttf
+          weight: 700
+
     - family: "Literata"
       fonts:
         - asset: assets/fonts/Literata/Literata-500.ttf

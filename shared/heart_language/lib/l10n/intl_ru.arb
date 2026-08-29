@@ -658,6 +658,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "themePresetEmber": "Жар",
+  "@themePresetEmber": {
+    "description": "Name of the warm theme preset with a true-orange accent; a glowing coal",
+    "type": "text",
+    "placeholders": {}
+  },
   "aboutApp": "О приложении",
   "@aboutApp": {
     "description": "Setting item title",

@@ -30,21 +30,25 @@ class _PresetPickerState extends State<_PresetPicker> with HasHaptic<_PresetPick
         ),
         Consumer<AppTheme>(
           builder: (context, theme, _) {
-            return Row(
-              spacing: 12,
-              children: [
-                for (final preset in Preset.values)
-                  _PresetSwatch(
-                    preset: preset,
-                    selected: theme.preset == preset,
-                    onPressed: () {
-                      buzz();
-                      final auth = Auth.of(context);
-                      theme.preset = preset;
-                      Preferences.of(context).setBaseColor(auth.user?.id, preset.name);
-                    },
-                  ),
-              ],
+            // the roster outgrew a phone row; the strip scrolls
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                spacing: 12,
+                children: [
+                  for (final preset in Preset.values)
+                    _PresetSwatch(
+                      preset: preset,
+                      selected: theme.preset == preset,
+                      onPressed: () {
+                        buzz();
+                        final auth = Auth.of(context);
+                        theme.preset = preset;
+                        Preferences.of(context).setBaseColor(auth.user?.id, preset.name);
+                      },
+                    ),
+                ],
+              ),
             );
           },
         ),
@@ -67,6 +71,7 @@ class _PresetSwatch extends StatelessWidget {
       .forge => L.of(context).themePresetForge,
       .ink => L.of(context).themePresetInk,
       .utility => L.of(context).themePresetUtility,
+      .ember => L.of(context).themePresetEmber,
     };
     // Each half shows the preset in one brightness — its ground with its
     // accent sitting on it — so the swatch is the theme in miniature.

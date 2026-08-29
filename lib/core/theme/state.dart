@@ -58,6 +58,7 @@ class AppTheme with ChangeNotifier implements SignOutStateSentry {
       .forge => '💚',
       .ink => '💙',
       .utility => '🩶',
+      .ember => '🧡',
     };
   }
 
