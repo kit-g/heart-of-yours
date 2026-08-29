@@ -698,17 +698,35 @@ abstract class L {
   /// **'Notifications are off, so you won\'t get rest-timer alerts.'**
   String get notificationsDisabledReminder;
 
-  /// Setting item name
+  /// Setting item name for picking the app's visual theme preset
   ///
   /// In en, this message translates to:
-  /// **'Custom theme color'**
-  String get customThemeColorSetting;
+  /// **'Theme'**
+  String get themePresetSetting;
 
-  /// Setting item subtitle
+  /// Setting item subtitle explaining that each theme preset covers light and dark mode
   ///
   /// In en, this message translates to:
-  /// **'Used to generate a new theme'**
-  String get customThemeColorSettingSubtitle;
+  /// **'Presets tuned for both light and dark'**
+  String get themePresetSettingSubtitle;
+
+  /// Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge
+  ///
+  /// In en, this message translates to:
+  /// **'Forge'**
+  String get themePresetForge;
+
+  /// Name of the light-first, paper-and-ink theme preset with a cobalt accent
+  ///
+  /// In en, this message translates to:
+  /// **'Ink'**
+  String get themePresetInk;
+
+  /// Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool
+  ///
+  /// In en, this message translates to:
+  /// **'Utility'**
+  String get themePresetUtility;
 
   /// Setting item title
   ///
