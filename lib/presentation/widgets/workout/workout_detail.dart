@@ -870,6 +870,8 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                   key: _optionsButtonKey,
                                   child: PrimaryButton.shrunk(
                                     key: WorkoutDetailKeys.options,
+                                    // quiet: the accent fill belongs to Finish,
+                                    // the one primary action on this bar
                                     child: Icon(
                                       switch (platform) {
                                         .iOS || .macOS => Icons.more_horiz_rounded,
@@ -902,7 +904,15 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                 WorkoutTimer(
                                   key: WorkoutDetailKeys.timer,
                                   start: start,
-                                  style: textTheme.titleSmall,
+                                  style: textTheme.titleSmall?.copyWith(
+                                    color: colorScheme.tertiary,
+                                    // the preset's display face carries the
+                                    // numbers worth a shout
+                                    fontFamily: textTheme.headlineMedium?.fontFamily,
+                                    // ticks every second; keep the digits from
+                                    // jostling the row as they change
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                  ),
                                   initValue: workouts.activeWorkout?.elapsed(),
                                 ),
                               ],
@@ -913,7 +923,6 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                               onPressed: () {
                                 showFinishWorkoutDialog(context, workouts);
                               },
-                              backgroundColor: colorScheme.primaryContainer,
                               child: Text(L.of(context).finish),
                             ),
                         ],
