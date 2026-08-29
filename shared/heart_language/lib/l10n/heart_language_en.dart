@@ -356,6 +356,9 @@ class LEn extends L {
   String get themePresetUtility => 'Utility';
 
   @override
+  String get themePresetEmber => 'Ember';
+
+  @override
   String get aboutApp => 'About app';
 
   @override
@@ -1720,6 +1723,9 @@ class LEnCa extends LEn {
 
   @override
   String get themePresetUtility => 'Utility';
+
+  @override
+  String get themePresetEmber => 'Ember';
 
   @override
   String get aboutApp => 'About app';
