@@ -78,7 +78,7 @@ Future<void> showHealthOffDialog(BuildContext context, Health health, L l) {
             child: Center(child: Text(healthPermissionsLabel(l))),
           ),
           PrimaryButton.wide(
-            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            backgroundColor: colorScheme.surfaceContainerHighest,
             onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
             child: Center(child: Text(l.cancel)),
           ),

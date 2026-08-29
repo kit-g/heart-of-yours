@@ -70,7 +70,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
       spacing: 8,
       children: [
         PrimaryButton.wide(
-          backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+          backgroundColor: colorScheme.surfaceContainerHighest,
           child: Center(
             child: Text(notReadyToFinish),
           ),
@@ -79,7 +79,6 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
           },
         ),
         PrimaryButton.wide(
-          backgroundColor: colorScheme.primaryContainer,
           child: Center(
             child: Text(readyToFinish),
           ),
@@ -157,7 +156,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
         spacing: 8,
         children: [
           PrimaryButton.wide(
-            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            backgroundColor: colorScheme.surfaceContainerHighest,
             child: Center(
               child: Text(resumeWorkout),
             ),
@@ -272,7 +271,7 @@ Future<void> showDeleteImageDialog(
         spacing: 8,
         children: [
           PrimaryButton.wide(
-            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            backgroundColor: colorScheme.surfaceContainerHighest,
             child: Center(
               child: Text(cancel),
             ),

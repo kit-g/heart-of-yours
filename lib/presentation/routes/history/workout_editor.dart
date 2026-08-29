@@ -267,7 +267,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(stayHere),
               ),
@@ -318,7 +318,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
         spacing: 8,
         children: [
           PrimaryButton.wide(
-            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            backgroundColor: colorScheme.surfaceContainerHighest,
             child: Center(
               child: Text(notReadyToFinish),
             ),
@@ -327,7 +327,6 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
             },
           ),
           PrimaryButton.wide(
-            backgroundColor: colorScheme.primaryContainer,
             child: Center(
               child: Text(readyToFinish),
             ),

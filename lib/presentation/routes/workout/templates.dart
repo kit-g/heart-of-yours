@@ -382,7 +382,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(cancel),
               ),
@@ -444,7 +444,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(cancel),
               ),
@@ -528,7 +528,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           spacing: 8,
           children: [
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(cancel),
               ),
@@ -538,7 +538,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             ),
             if (allowsEditing)
               PrimaryButton.wide(
-                backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                backgroundColor: colorScheme.surfaceContainerHighest,
                 child: Center(
                   child: Text(editTemplate),
                 ),
@@ -549,11 +549,9 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                 },
               ),
             PrimaryButton.wide(
-              backgroundColor: colorScheme.primaryContainer,
               child: Center(
                 child: Text(
                   startWorkout,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
                 ),
               ),
               onPressed: () async {
@@ -937,9 +935,9 @@ class _DragPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     return Material(
-      elevation: 4,
       color: colorScheme.secondaryContainer,
-      shape: _shape,
+      // no shadow: a border keeps the drag proxy defined over content
+      shape: _shape.copyWith(side: BorderSide(color: colorScheme.outline)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
@@ -1137,7 +1135,7 @@ class _FolderNameFormState extends State<_FolderNameForm> {
               ),
             ),
             PrimaryButton.wide(
-              backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
                 child: Text(cancel),
               ),
@@ -1146,18 +1144,12 @@ class _FolderNameFormState extends State<_FolderNameForm> {
               },
             ),
             PrimaryButton.wide(
-              backgroundColor: colorScheme.primaryContainer,
               onPressed: enabled ? _submit : null,
               child: Center(
-                child: Text(
-                  save,
-                  // the explicit color would paint over InkButton's dimmed
-                  // disabled foreground, so it applies only when enabled
-                  style: switch (enabled) {
-                    true => textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
-                    false => textTheme.bodyMedium,
-                  },
-                ),
+                // no explicit color: the button paints its own content color
+                // on the accent fill, and the disabled dimming still wins
+                // because InkButton merges it closer to the text
+                child: Text(save, style: textTheme.bodyMedium),
               ),
             ),
           ],
