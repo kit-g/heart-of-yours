@@ -120,7 +120,6 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                             ],
                           ),
                           false => PrimaryButton.wide(
-                            backgroundColor: colorScheme.primaryContainer,
                             // the default padding renders 32pt tall; the primary
                             // action on this page should make a 48pt tap target
                             margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 14),
@@ -422,7 +421,7 @@ class _ImportConsentViewState extends State<_ImportConsentView> {
           children: [
             Expanded(
               child: PrimaryButton.wide(
-                backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                backgroundColor: colorScheme.surfaceContainerHighest,
                 margin: const .symmetric(horizontal: 8.0, vertical: 14),
                 onPressed: widget.onCancel,
                 child: Center(
@@ -432,7 +431,6 @@ class _ImportConsentViewState extends State<_ImportConsentView> {
             ),
             Expanded(
               child: PrimaryButton.wide(
-                backgroundColor: colorScheme.primaryContainer,
                 margin: const .symmetric(horizontal: 8.0, vertical: 14),
                 onPressed: () {
                   // in export order, not tap order

@@ -92,7 +92,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                   SizedBox(height: 16),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _ColorPicker(),
+                    child: _PresetPicker(),
                   ),
                 ],
               ),
