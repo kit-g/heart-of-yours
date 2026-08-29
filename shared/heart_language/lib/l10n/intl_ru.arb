@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "Вы уже начали что-то важное.\r\nДавайте продолжим!",
+  "logInBody": "Вы уже начали что-то важное.\nДавайте продолжим!",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Каждое путешествие начинается с одного решения.\r\nЭто — ваше.",
+  "signUpBody": "Каждое путешествие начинается с одного решения.\nЭто — ваше.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.",
+  "recoverBody": "Ваш путь не потерян.\nПросто небольшая пауза — давайте начнем заново.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -296,13 +296,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\r\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.",
+  "archiveConfirmBody": "Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "Это упражнение находится в архиве\r\nи больше не будет отображаться в основной библиотеке.",
+  "exerciseArchived": "Это упражнение находится в архиве\nи больше не будет отображаться в основной библиотеке.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -628,15 +628,33 @@
     "type": "text",
     "placeholders": {}
   },
-  "customThemeColorSetting": "Пользовательский цвет темы",
-  "@customThemeColorSetting": {
-    "description": "Setting item name",
+  "themePresetSetting": "Тема",
+  "@themePresetSetting": {
+    "description": "Setting item name for picking the app's visual theme preset",
     "type": "text",
     "placeholders": {}
   },
-  "customThemeColorSettingSubtitle": "Используется для создания новой темы",
-  "@customThemeColorSettingSubtitle": {
-    "description": "Setting item subtitle",
+  "themePresetSettingSubtitle": "Пресеты, подобранные для светлого и тёмного режима",
+  "@themePresetSettingSubtitle": {
+    "description": "Setting item subtitle explaining that each theme preset covers light and dark mode",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetForge": "Кузница",
+  "@themePresetForge": {
+    "description": "Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetInk": "Чернила",
+  "@themePresetInk": {
+    "description": "Name of the light-first, paper-and-ink theme preset with a cobalt accent",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetUtility": "Инструмент",
+  "@themePresetUtility": {
+    "description": "Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",
     "type": "text",
     "placeholders": {}
   },
@@ -1296,7 +1314,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\r\n\r\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. {emoji}",
+  "leaveFeedbackBody": "Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\n\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1378,7 +1396,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "Ваш аккаунт запланирован на удаление {date}.\r\n\r\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\r\n\r\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.",
+  "accountDeletedBody": "Ваш аккаунт запланирован на удаление {date}.\n\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\n\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
@@ -1654,7 +1672,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredBody": "Доступно важное обновление — оно необходимо для правильной работы приложения.\r\n\r\nВам нужно установить его, чтобы продолжить.\r\nСпасибо за терпение — и извините за прерывание.",
+  "updateRequiredBody": "Доступно важное обновление — оно необходимо для правильной работы приложения.\n\nВам нужно установить его, чтобы продолжить.\nСпасибо за терпение — и извините за прерывание.",
   "@updateRequiredBody": {
     "description": "Force update screen, body",
     "type": "text",
@@ -2353,7 +2371,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importExplainerStrong": "Тренировались в Strong? Забирайте историю с собой.\r\n\r\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.",
+  "importExplainerStrong": "Тренировались в Strong? Забирайте историю с собой.\n\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.",
   "@importExplainerStrong": {
     "description": "Import page, explains where the Strong export file comes from",
     "type": "text",

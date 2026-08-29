@@ -628,15 +628,33 @@
     "type": "text",
     "placeholders": {}
   },
-  "customThemeColorSetting": "Custom theme color",
-  "@customThemeColorSetting": {
-    "description": "Setting item name",
+  "themePresetSetting": "Theme",
+  "@themePresetSetting": {
+    "description": "Setting item name for picking the app's visual theme preset",
     "type": "text",
     "placeholders": {}
   },
-  "customThemeColorSettingSubtitle": "Used to generate a new theme",
-  "@customThemeColorSettingSubtitle": {
-    "description": "Setting item subtitle",
+  "themePresetSettingSubtitle": "Presets tuned for both light and dark",
+  "@themePresetSettingSubtitle": {
+    "description": "Setting item subtitle explaining that each theme preset covers light and dark mode",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetForge": "Forge",
+  "@themePresetForge": {
+    "description": "Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetInk": "Ink",
+  "@themePresetInk": {
+    "description": "Name of the light-first, paper-and-ink theme preset with a cobalt accent",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetUtility": "Utility",
+  "@themePresetUtility": {
+    "description": "Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",
     "type": "text",
     "placeholders": {}
   },
