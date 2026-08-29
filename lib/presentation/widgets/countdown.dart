@@ -202,7 +202,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
             children: [
               Expanded(
                 child: PrimaryButton.wide(
-                  backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
                   onPressed: () {
                     alarms.adjustActiveExerciseTime(-10, rescheduleNotification: widget.scheduleNotification);
                     _total.value = math.max(_total.value - 10, 0);
@@ -214,7 +214,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
               ),
               Expanded(
                 child: PrimaryButton.wide(
-                  backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
                   onPressed: () {
                     alarms.adjustActiveExerciseTime(10, rescheduleNotification: widget.scheduleNotification);
                     _total.value += 10;

@@ -185,9 +185,9 @@ class _Button extends StatelessWidget {
 
   const new({
     required this.copy,
-    required this.color,
-    required this.style,
     required this.onPressed,
+    this.color,
+    this.style,
   });
 
   @override
@@ -234,12 +234,10 @@ class _OkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-
+    // no color or style: the CTA wears the accent fill and the button
+    // paints its own content color on it
     return _Button(
       copy: L.of(context).setTimer,
-      color: colorScheme.primaryContainer,
-      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimaryContainer),
       onPressed: () {
         HapticFeedback.heavyImpact();
         Navigator.pop(context, (currentValue.value ?? 0) * 5 + 5);

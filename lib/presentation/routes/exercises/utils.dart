@@ -164,7 +164,7 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
         spacing: 8,
         children: [
           PrimaryButton.wide(
-            backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+            backgroundColor: colorScheme.surfaceContainerHighest,
             child: Center(
               child: Text(cancel),
             ),

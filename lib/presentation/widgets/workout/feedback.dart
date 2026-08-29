@@ -12,17 +12,20 @@ class _Feedback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const .symmetric(horizontal: 8.0),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width - 16,
         ),
         child: Material(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          elevation: 3,
-          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          // no shadow: a border keeps the drag proxy defined over content
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+          ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+            padding: const .symmetric(horizontal: 8.0, vertical: 4),
             child: Row(
               children: [
                 Expanded(

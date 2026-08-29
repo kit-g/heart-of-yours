@@ -240,7 +240,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         padding: const EdgeInsets.all(8.0),
                         child: PrimaryButton.wide(
                           key: WorkoutDetailKeys.addSet,
-                          backgroundColor: colorScheme.outlineVariant.withValues(alpha: .5),
+                          backgroundColor: colorScheme.surfaceContainerHighest,
                           margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
                           child: Center(
                             child: Row(

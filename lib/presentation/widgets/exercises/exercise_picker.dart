@@ -91,13 +91,23 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                             left: 0,
                             child: Icon(
                               Icons.filter_alt_rounded,
-                              color: colorScheme.onSurfaceVariant,
+                              // an active filter sits on the accent fill,
+                              // where the muted grey blends away
+                              color: switch (exercises.targets.isEmpty) {
+                                true => colorScheme.onSurfaceVariant,
+                                false => colorScheme.onTertiaryContainer,
+                              },
                             ),
                           ),
                           Center(
                             child: Text(
                               target,
-                              style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                              style: textTheme.titleSmall?.copyWith(
+                                color: switch (exercises.targets.isEmpty) {
+                                  true => colorScheme.onSurfaceVariant,
+                                  false => colorScheme.onTertiaryContainer,
+                                },
+                              ),
                             ),
                           ),
                         ],
@@ -153,13 +163,21 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                             left: 0,
                             child: Icon(
                               Icons.filter_alt_rounded,
-                              color: colorScheme.onSurfaceVariant,
+                              color: switch (exercises.categories.isEmpty) {
+                                true => colorScheme.onSurfaceVariant,
+                                false => colorScheme.onTertiaryContainer,
+                              },
                             ),
                           ),
                           Center(
                             child: Text(
                               category,
-                              style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                              style: textTheme.titleSmall?.copyWith(
+                                color: switch (exercises.categories.isEmpty) {
+                                  true => colorScheme.onSurfaceVariant,
+                                  false => colorScheme.onTertiaryContainer,
+                                },
+                              ),
                             ),
                           ),
                         ],
