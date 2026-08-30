@@ -13,11 +13,12 @@ const pushUpMovement = {
 Exercise exercise({
   String name = 'Push Up',
   String target = 'Chest',
+  String category = 'Weighted Body Weight',
   Map<String, dynamic>? movement,
 }) {
   return Exercise.fromJson({
     'name': name,
-    'category': 'Weighted Body Weight',
+    'category': category,
     'target': target,
     'asset': 'https://dev.media.heart-of.me/exercises/$name/asset.gif',
     'assetWidth': 1080,
