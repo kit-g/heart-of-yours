@@ -9,6 +9,7 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
   final String? initialTab;
   final void Function(ExerciseFilter)? onFilter;
   final void Function(Exercise)? onTapAlternative;
+  final Future<void> Function(Exercise)? onAddToWorkout;
 
   const new({
     required this.exercise,
@@ -19,6 +20,7 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
     this.initialTab,
     this.onFilter,
     this.onTapAlternative,
+    this.onAddToWorkout,
   });
 
   @override
@@ -64,6 +66,7 @@ class _CupertinoExerciseDetailPageState extends State<_CupertinoExerciseDetailPa
         title: widget.exercise.archivedAppBarTitle(context),
         leading: widget.leading,
         actions: [
+          _AddToWorkoutAction(exercise: widget.exercise, onAdd: widget.onAddToWorkout),
           if (widget.allowOptions) ...[
             if (widget.exercise.isMine)
               IconButton(

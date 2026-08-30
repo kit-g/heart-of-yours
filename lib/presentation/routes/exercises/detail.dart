@@ -18,6 +18,13 @@ class ExerciseDetailPage extends StatelessWidget {
   /// Opens a substitute suggested by the "also try" section.
   final void Function(Exercise)? onTapAlternative;
 
+  /// Appends this exercise to the workout in progress. Injected, like the
+  /// other actions, so the composition root decides where the affordance
+  /// exists at all — the dialog a workout opens over itself never gets one.
+  /// Even when set, the button only shows while a workout is actually active
+  /// (see [_AddToWorkoutAction]).
+  final Future<void> Function(Exercise)? onAddToWorkout;
+
   const new({
     super.key,
     required this.exercise,
@@ -28,6 +35,7 @@ class ExerciseDetailPage extends StatelessWidget {
     this.initialTab,
     this.onFilter,
     this.onTapAlternative,
+    this.onAddToWorkout,
   });
 
   @override
@@ -42,6 +50,7 @@ class ExerciseDetailPage extends StatelessWidget {
         initialTab: initialTab,
         onFilter: onFilter,
         onTapAlternative: onTapAlternative,
+        onAddToWorkout: onAddToWorkout,
       ),
       _ => _MaterialExerciseDetailPage(
         exercise: exercise,
@@ -52,7 +61,37 @@ class ExerciseDetailPage extends StatelessWidget {
         initialTab: initialTab,
         onFilter: onFilter,
         onTapAlternative: onTapAlternative,
+        onAddToWorkout: onAddToWorkout,
       ),
+    };
+  }
+}
+
+/// App-bar action that appends the exercise to the workout in progress.
+///
+/// The action arrives injected (see [ExerciseDetailPage.onAddToWorkout]); this
+/// widget supplies the liveness — it watches [Workouts] so the button appears
+/// and disappears with the active workout while the page stays open.
+class _AddToWorkoutAction extends StatelessWidget {
+  final Exercise exercise;
+  final Future<void> Function(Exercise)? onAdd;
+
+  const new({required this.exercise, required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    // no injected action, no provider lookup: a page that was never given the
+    // affordance must not require [Workouts] above it (tests pump it bare)
+    return switch (onAdd) {
+      null => const SizedBox.shrink(),
+      final add => switch (Workouts.watch(context).hasActiveWorkout) {
+        false => const SizedBox.shrink(),
+        true => IconButton(
+          tooltip: L.of(context).addToActiveWorkout,
+          onPressed: () => add(exercise),
+          icon: const Icon(Icons.playlist_add_rounded),
+        ),
+      },
     };
   }
 }
