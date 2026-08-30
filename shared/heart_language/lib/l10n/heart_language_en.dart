@@ -930,6 +930,12 @@ class LEn extends L {
   String get addChartToProfile => 'Add to profile';
 
   @override
+  String get addToActiveWorkout => 'Add to workout';
+
+  @override
+  String get exerciseAddedToWorkout => 'Added to workout';
+
+  @override
   String get chartAddedToProfile => 'Added to profile';
 
   @override
@@ -2306,6 +2312,12 @@ class LEnCa extends LEn {
 
   @override
   String get addChartToProfile => 'Add to profile';
+
+  @override
+  String get addToActiveWorkout => 'Add to workout';
+
+  @override
+  String get exerciseAddedToWorkout => 'Added to workout';
 
   @override
   String get chartAddedToProfile => 'Added to profile';

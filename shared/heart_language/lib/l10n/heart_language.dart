@@ -1784,6 +1784,18 @@ abstract class L {
   /// **'Add to profile'**
   String get addChartToProfile;
 
+  /// Tooltip on the exercise detail page; adds the exercise to the workout in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Add to workout'**
+  String get addToActiveWorkout;
+
+  /// Snackbar confirmation after adding the exercise to the workout in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Added to workout'**
+  String get exerciseAddedToWorkout;
+
   /// Snackbar confirmation after adding a chart to the profile dashboard
   ///
   /// In en, this message translates to:
