@@ -1606,6 +1606,74 @@
     "type": "text",
     "placeholders": {}
   },
+  "bestSetVolume": "Лучший объём за подход",
+  "@bestSetVolume": {
+    "description": "Record tile on the exercise records tab: highest weight × reps in a single set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "mostReps": "Больше всего повторений",
+  "@mostReps": {
+    "description": "Record tile on the exercise records tab",
+    "type": "text",
+    "placeholders": {}
+  },
+  "bestPace": "Лучший темп",
+  "@bestPace": {
+    "description": "Record tile on the exercise records tab, cardio exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "leastAssistance": "Наименьшая поддержка",
+  "@leastAssistance": {
+    "description": "Record tile on the exercise records tab, assisted body-weight exercises: the lightest counterweight used",
+    "type": "text",
+    "placeholders": {}
+  },
+  "repMaxes": "Максимумы по повторениям",
+  "@repMaxes": {
+    "description": "Title of the records-tab table listing the best weight lifted at each rep count",
+    "type": "text",
+    "placeholders": {}
+  },
+  "repMaxCount": "{reps, plural, one{{reps} повторение} few{{reps} повторения} many{{reps} повторений} other{{reps} повторения}}",
+  "@repMaxCount": {
+    "description": "Left column of the rep-maxes table: the rep count the weight was lifted for",
+    "type": "text",
+    "placeholders": {
+      "reps": {}
+    }
+  },
+  "allTime": "За всё время",
+  "@allTime": {
+    "description": "Title of the records-tab section with lifetime totals",
+    "type": "text",
+    "placeholders": {}
+  },
+  "sessions": "Тренировки",
+  "@sessions": {
+    "description": "Lifetime row on the records tab: how many workouts included this exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "firstPerformed": "Впервые выполнено",
+  "@firstPerformed": {
+    "description": "Lifetime row on the records tab: date of the first session with this exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalTime": "Общее время",
+  "@totalTime": {
+    "description": "Lifetime row on the records tab",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalDistance": "Общая дистанция",
+  "@totalDistance": {
+    "description": "Lifetime row on the records tab",
+    "type": "text",
+    "placeholders": {}
+  },
   "personalRecords": "Личные рекорды",
   "@personalRecords": {
     "description": "Records screen, title",
