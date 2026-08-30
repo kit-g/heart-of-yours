@@ -588,6 +588,17 @@ RouteBase _workoutDoneRoute() {
 
             return [...stamped, ...carried];
           },
+          // Same contract as the goals: wait out the write, then ask which
+          // records now credit this session. The fold ties records to the
+          // first session that set them, so an equalled-not-beaten value
+          // stays with its original owner and is not re-celebrated here.
+          recordsCallback: () async {
+            final workouts = Workouts.of(context);
+            final exercises = Exercises.of(context);
+
+            final finished = await workouts.finishing ?? workout;
+            return recordsSetBy(finished.id, finished, lookup: exercises.getExerciseRecords);
+          },
         );
       } catch (e) {
         throw GoException('$e');
