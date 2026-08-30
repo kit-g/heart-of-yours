@@ -927,6 +927,15 @@ class LEn extends L {
   String get newChart => 'New chart';
 
   @override
+  String get addChartToProfile => 'Add to profile';
+
+  @override
+  String get chartAddedToProfile => 'Added to profile';
+
+  @override
+  String get removeChartFromProfile => 'Remove from profile';
+
+  @override
   String get emptyChartStateTitle => 'Looks a little empty here';
 
   @override
@@ -2294,6 +2303,15 @@ class LEnCa extends LEn {
 
   @override
   String get newChart => 'New chart';
+
+  @override
+  String get addChartToProfile => 'Add to profile';
+
+  @override
+  String get chartAddedToProfile => 'Added to profile';
+
+  @override
+  String get removeChartFromProfile => 'Remove from profile';
 
   @override
   String get emptyChartStateTitle => 'Looks a little empty here';

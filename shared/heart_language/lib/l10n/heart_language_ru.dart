@@ -929,6 +929,15 @@ class LRu extends L {
   String get newChart => 'Новый график';
 
   @override
+  String get addChartToProfile => 'Добавить в профиль';
+
+  @override
+  String get chartAddedToProfile => 'Добавлено в профиль';
+
+  @override
+  String get removeChartFromProfile => 'Убрать из профиля';
+
+  @override
   String get emptyChartStateTitle => 'Тут немного пусто';
 
   @override
