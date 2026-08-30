@@ -19,6 +19,7 @@ const _historyEditName = 'edit';
 const _exercisesName = 'exercises';
 const _exercisesPath = '/$_exercisesName';
 const _exerciseDetailName = 'exerciseDetail';
+const _exerciseWorkoutName = 'exerciseWorkout';
 const _exerciseArchivedDetailName = 'exerciseArchivedDetail';
 const _exerciseArchive = 'archive';
 const _doneName = 'done';

@@ -339,7 +339,7 @@ RouteBase _exercisesRoute() {
                   return Workouts.of(context).fetchWorkout(workoutId).then<void>(
                     (_) {
                       if (!context.mounted) return;
-                      context.goToWorkoutEditor(workoutId);
+                      context.goToExerciseWorkout(exerciseId, workoutId);
                     },
                   );
                 },
@@ -366,6 +366,49 @@ RouteBase _exercisesRoute() {
                 _ => _exercisesPath,
               };
             },
+            routes: [
+              // A workout opened from the exercise's history. Same editor the
+              // history stack builds, hosted here so the reader never leaves
+              // the exercises stack (or, on a tablet, its pane).
+              GoRoute(
+                path: 'workout/:workoutId',
+                name: _exerciseWorkoutName,
+                builder: (context, state) {
+                  try {
+                    final workoutId = state.pathParameters['workoutId']!;
+                    final exerciseId = state.pathParameters['exerciseId']!;
+                    final workout = Workouts.of(context).lookup(workoutId);
+                    return WorkoutEditor(
+                      copy: workout!,
+                      onTapImage: context.goToGallery,
+                      // compact is pushed, so the default back arrow returns
+                      // to the exercise; the wide pane has no stack behind it,
+                      // so close swaps the exercise detail back in
+                      onClose: switch (LayoutProvider.of(context)) {
+                        .compact => null,
+                        .wide => () => context.goToExerciseDetail(exerciseId),
+                      },
+                    );
+                  } catch (e) {
+                    throw GoException(e.toString());
+                  }
+                },
+                // Resolves before deciding, like the history editor: the
+                // mirror holds only what has been paged in.
+                redirect: (context, state) async {
+                  final workouts = Workouts.of(context);
+                  final detailPath = '$_exercisesPath/${state.pathParameters['exerciseId']}';
+                  return switch (state.pathParameters['workoutId']) {
+                    String id when workouts.lookup(id) != null => null,
+                    String id => switch (await workouts.fetchWorkout(id)) {
+                      true => null,
+                      false => detailPath,
+                    },
+                    _ => detailPath,
+                  };
+                },
+              ),
+            ],
           ),
         ],
       ),
