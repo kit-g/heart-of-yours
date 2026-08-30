@@ -112,16 +112,28 @@ ThemeData theme(Preset preset, Brightness brightness) {
     ),
     toggleButtonsTheme: const ToggleButtonsThemeData(borderRadius: .all(.circular(4))),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: colorScheme.inverseSurface,
+      // Not the Material inverse-surface slab. Not `surface` either: in light
+      // that is white floating over the white ground, and the hairline alone
+      // is too little for a strip this small — so it wears `fill`, the same
+      // quiet tone as inputs and chips, with the border on top (floating with
+      // no scrim, same law as menus).
+      backgroundColor: tokens.fill,
       contentTextStyle: TextStyle(
         fontFamily: font,
         fontSize: 14,
-        color: colorScheme.onInverseSurface,
+        color: tokens.ink,
         fontWeight: .w400,
       ),
+      actionTextColor: colorScheme.primary,
       behavior: .floating,
       elevation: 0,
-      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(4))),
+      // default .25 stacks any action wider than a quarter of the bar under
+      // the text, turning a one-liner into a tall box; keep them side by side
+      actionOverflowThreshold: .6,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: tokens.border),
+        borderRadius: _widerBorderRadius,
+      ),
     ),
     textButtonTheme: TextButtonThemeData(
       // Matched to PrimaryButton, which text buttons sit beside in every dialog
