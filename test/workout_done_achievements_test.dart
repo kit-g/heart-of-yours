@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -47,7 +48,11 @@ void main() {
     await preferences.init();
   });
 
-  Future<void> pump(WidgetTester tester, Future<List<GoalAchievement>> Function() achievements) {
+  Future<void> pump(
+    WidgetTester tester,
+    Future<List<GoalAchievement>> Function() achievements, {
+    Future<List<AchievedRecord>> Function()? records,
+  }) {
     return tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -62,6 +67,7 @@ void main() {
             onQuit: () {},
             workoutsThisWeekCallback: () async => 0,
             achievementsCallback: achievements,
+            recordsCallback: records ?? () async => const [],
           ),
         ),
       ),
@@ -149,6 +155,61 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('reached'), findsNothing);
+  });
+
+  testWidgets('states the record the session set, with its value', (tester) async {
+    await pump(
+      tester,
+      () async => const [],
+      records: () async => [
+        (
+          exercise: bench,
+          kind: RecordKind.maxWeight,
+          record: {'weight': 100.0, 'reps': 5, 'workoutId': 'w1', 'at': '2026-08-30T10:00:00Z'},
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('New record'), findsOneWidget);
+    expect(find.textContaining('Bench Press (Barbell)'), findsOneWidget);
+    expect(find.textContaining('Max weight 100 kg'), findsOneWidget);
+  });
+
+  testWidgets("strings one exercise's records into a single line", (tester) async {
+    // twelve one-record lines read as a ledger, not a celebration
+    await pump(
+      tester,
+      () async => const [],
+      records: () async => [
+        (
+          exercise: bench,
+          kind: RecordKind.maxWeight,
+          record: {'weight': 100.0, 'reps': 5, 'workoutId': 'w1', 'at': '2026-08-30T10:00:00Z'},
+        ),
+        (
+          exercise: bench,
+          kind: RecordKind.oneRepMax,
+          record: {'value': 112.5, 'weight': 100.0, 'reps': 5, 'workoutId': 'w1', 'at': '2026-08-30T10:00:00Z'},
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('New records'), findsOneWidget);
+    final line = find.textContaining('Bench Press (Barbell)');
+    expect(line, findsOneWidget);
+    final copy = tester.widget<Text>(line).data!;
+    expect(copy, contains('Max weight'));
+    expect(copy, contains('Estimated 1RM'));
+  });
+
+  testWidgets('says nothing when no record fell', (tester) async {
+    // most sessions — same rule as the goals block
+    await pump(tester, () async => const []);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('record'), findsNothing);
   });
 
   testWidgets('shows nothing while the observation is still running', (tester) async {
