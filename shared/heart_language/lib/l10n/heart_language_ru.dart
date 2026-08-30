@@ -848,6 +848,49 @@ class LRu extends L {
       'Похоже, приложение споткнулось о свои шнурки. Попробуйте снова, и мы обещаем завязать их крепче в следующий раз!';
 
   @override
+  String get bestSetVolume => 'Лучший объём за подход';
+
+  @override
+  String get mostReps => 'Больше всего повторений';
+
+  @override
+  String get bestPace => 'Лучший темп';
+
+  @override
+  String get leastAssistance => 'Наименьшая поддержка';
+
+  @override
+  String get repMaxes => 'Максимумы по повторениям';
+
+  @override
+  String repMaxCount(num reps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      reps,
+      locale: localeName,
+      other: '$reps повторения',
+      many: '$reps повторений',
+      few: '$reps повторения',
+      one: '$reps повторение',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get allTime => 'За всё время';
+
+  @override
+  String get sessions => 'Тренировки';
+
+  @override
+  String get firstPerformed => 'Впервые выполнено';
+
+  @override
+  String get totalTime => 'Общее время';
+
+  @override
+  String get totalDistance => 'Общая дистанция';
+
+  @override
   String get personalRecords => 'Личные рекорды';
 
   @override

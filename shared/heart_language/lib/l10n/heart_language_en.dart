@@ -846,6 +846,47 @@ class LEn extends L {
       'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!';
 
   @override
+  String get bestSetVolume => 'Best set volume';
+
+  @override
+  String get mostReps => 'Most reps';
+
+  @override
+  String get bestPace => 'Best pace';
+
+  @override
+  String get leastAssistance => 'Least assistance';
+
+  @override
+  String get repMaxes => 'Rep maxes';
+
+  @override
+  String repMaxCount(num reps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      reps,
+      locale: localeName,
+      other: '$reps reps',
+      one: '$reps rep',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get allTime => 'All time';
+
+  @override
+  String get sessions => 'Sessions';
+
+  @override
+  String get firstPerformed => 'First performed';
+
+  @override
+  String get totalTime => 'Total time';
+
+  @override
+  String get totalDistance => 'Total distance';
+
+  @override
   String get personalRecords => 'Personal records';
 
   @override
@@ -2228,6 +2269,47 @@ class LEnCa extends LEn {
   @override
   String get errorExerciseHistoryBody =>
       'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!';
+
+  @override
+  String get bestSetVolume => 'Best set volume';
+
+  @override
+  String get mostReps => 'Most reps';
+
+  @override
+  String get bestPace => 'Best pace';
+
+  @override
+  String get leastAssistance => 'Least assistance';
+
+  @override
+  String get repMaxes => 'Rep maxes';
+
+  @override
+  String repMaxCount(num reps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      reps,
+      locale: localeName,
+      other: '$reps reps',
+      one: '$reps rep',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get allTime => 'All time';
+
+  @override
+  String get sessions => 'Sessions';
+
+  @override
+  String get firstPerformed => 'First performed';
+
+  @override
+  String get totalTime => 'Total time';
+
+  @override
+  String get totalDistance => 'Total distance';
 
   @override
   String get personalRecords => 'Personal records';
