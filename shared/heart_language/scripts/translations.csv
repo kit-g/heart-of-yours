@@ -470,3 +470,65 @@ importSkippedRows,"Import report line, malformed rows the server could not repai
 importNewExercisesHeader,"Import report, heading above the list of exercises created as the user's customs",New custom exercises,New custom exercises,Новые упражнения,Nuevos ejercicios personalizados,Nouveaux exercices personnalisés
 importNewExercisesBody,"Import report, explains the list of created custom exercises","These didn't match anything in the library, so they came over as your custom exercises:","These didn't match anything in the library, so they came over as your custom exercises:","Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:","Estos no coincidieron con nada en la biblioteca, así que llegaron como tus ejercicios personalizados:","Ceux-ci ne correspondaient à rien dans la bibliothèque, ils ont donc été importés comme vos exercices personnalisés :"
 machineTranslatedCopy,Small provenance mark above exercise instructions whose copy for the current language is machine-authored and not yet human-reviewed (Exercise.validated == false),Machine-translated,Machine-translated,Машинный перевод,Traducción automática,Traduction automatique
+categoryWeightedBodyWeight,Exercise category (equipment/measurement kind) label,Weighted Body Weight,Weighted Body Weight,Свой вес с отягощением,Peso corporal lastrado,Poids du corps lesté
+categoryAssistedBodyWeight,Exercise category (equipment/measurement kind) label,Assisted Body Weight,Assisted Body Weight,Свой вес с поддержкой,Peso corporal asistido,Poids du corps assisté
+categoryRepsOnly,Exercise category (equipment/measurement kind) label,Reps Only,Reps Only,Только повторы,Solo repeticiones,Répétitions seules
+categoryCardio,Exercise category (equipment/measurement kind) label,Cardio,Cardio,Кардио,Cardio,Cardio
+categoryDuration,Exercise category (equipment/measurement kind) label,Duration,Duration,Время,Duración,Durée
+categoryMachine,Exercise category (equipment/measurement kind) label,Machine,Machine,Тренажёр,Máquina,Machine
+categoryDumbbell,Exercise category (equipment/measurement kind) label,Dumbbell,Dumbbell,Гантели,Mancuernas,Haltères
+categoryBarbell,Exercise category (equipment/measurement kind) label,Barbell,Barbell,Штанга,Barra,Barre
+targetCore,Exercise target (body part) label,Core,Core,Кор,Core,Core
+targetArms,Exercise target (body part) label,Arms,Arms,Руки,Brazos,Bras
+targetBack,Exercise target (body part) label,Back,Back,Спина,Espalda,Dos
+targetChest,Exercise target (body part) label,Chest,Chest,Грудь,Pecho,Pectoraux
+targetLegs,Exercise target (body part) label,Legs,Legs,Ноги,Piernas,Jambes
+targetShoulders,Exercise target (body part) label,Shoulders,Shoulders,Плечи,Hombros,Épaules
+targetOther,Exercise target (body part) label,Other,Other,Другое,Otro,Autre
+targetOlympic,Exercise target (body part) label,Olympic,Olympic,Олимпийские,Olímpico,Olympique
+targetFullBody,Exercise target (body part) label,Full Body,Full Body,Всё тело,Cuerpo completo,Corps entier
+targetCardio,Exercise target (body part) label,Cardio,Cardio,Кардио,Cardio,Cardio
+skillLow,"Skill-demand level, in the movement filter sheet",Low,Low,Низкий,Bajo,Faible
+skillModerate,"Skill-demand level, in the movement filter sheet",Moderate,Moderate,Средний,Medio,Modéré
+skillHigh,"Skill-demand level, in the movement filter sheet",High,High,Высокий,Alto,Élevé
+stabilityFree,"Movement-path stability, in the movement filter sheet",Free,Free,Свободный вес,Peso libre,Charge libre
+stabilitySupported,"Movement-path stability, in the movement filter sheet",Supported,Supported,С опорой,Con apoyo,Avec appui
+stabilityMachine,"Movement-path stability, in the movement filter sheet",Machine,Machine,Тренажёр,Máquina,Machine
+patternCalfRaise,Movement pattern label (filter sheet chip and About-tab chip),Calf Raise,Calf Raise,Подъём на носки,Elevación de talones,Extension des mollets
+patternCardioSteady,Movement pattern label (filter sheet chip and About-tab chip),Steady-State Cardio,Steady-State Cardio,Равномерное кардио,Cardio constante,Cardio continu
+patternChestDip,Movement pattern label (filter sheet chip and About-tab chip),Chest Dip,Chest Dip,Брусья,Fondos en paralelas,Dips
+patternChestFly,Movement pattern label (filter sheet chip and About-tab chip),Chest Fly,Chest Fly,Разводка,Aperturas de pecho,Écartés
+patternCoreBracing,Movement pattern label (filter sheet chip and About-tab chip),Core Bracing,Core Bracing,Стабилизация кора,Estabilización del core,Gainage
+patternDeadliftFloor,Movement pattern label (filter sheet chip and About-tab chip),Deadlift from Floor,Deadlift from Floor,Становая тяга с пола,Peso muerto desde el suelo,Soulevé de terre au sol
+patternDeclinePress,Movement pattern label (filter sheet chip and About-tab chip),Decline Press,Decline Press,Жим на наклонной вниз,Press declinado,Développé décliné
+patternElbowExtension,Movement pattern label (filter sheet chip and About-tab chip),Elbow Extension,Elbow Extension,Разгибание локтя,Extensión de codo,Extension du coude
+patternElbowFlexion,Movement pattern label (filter sheet chip and About-tab chip),Elbow Flexion,Elbow Flexion,Сгибание локтя,Flexión de codo,Flexion du coude
+patternForearm,Movement pattern label (filter sheet chip and About-tab chip),Forearm,Forearm,Предплечья,Antebrazo,Avant-bras
+patternFrontRaise,Movement pattern label (filter sheet chip and About-tab chip),Front Raise,Front Raise,Подъём перед собой,Elevación frontal,Élévation frontale
+patternFullBodyConditioning,Movement pattern label (filter sheet chip and About-tab chip),Full-Body Conditioning,Full-Body Conditioning,Общая подготовка,Acondicionamiento general,Conditionnement complet
+patternGluteIsolation,Movement pattern label (filter sheet chip and About-tab chip),Glute Isolation,Glute Isolation,Изоляция ягодиц,Aislamiento de glúteos,Isolation des fessiers
+patternHipAbduction,Movement pattern label (filter sheet chip and About-tab chip),Hip Abduction,Hip Abduction,Отведение бедра,Abducción de cadera,Abduction de hanche
+patternHipAdduction,Movement pattern label (filter sheet chip and About-tab chip),Hip Adduction,Hip Adduction,Приведение бедра,Aducción de cadera,Adduction de hanche
+patternHipExtensionBridge,Movement pattern label (filter sheet chip and About-tab chip),Hip Bridge,Hip Bridge,Ягодичный мост,Puente de glúteos,Pont fessier
+patternHipFlexionHanging,Movement pattern label (filter sheet chip and About-tab chip),Hanging Leg Raise,Hanging Leg Raise,Подъём ног в висе,Elevación de piernas colgado,Relevé de jambes suspendu
+patternHipHingeStifflegged,Movement pattern label (filter sheet chip and About-tab chip),Stiff-Legged Hinge,Stiff-Legged Hinge,Наклон на прямых ногах,Peso muerto piernas rígidas,Soulevé jambes tendues
+patternHorizontalPress,Movement pattern label (filter sheet chip and About-tab chip),Horizontal Press,Horizontal Press,Горизонтальный жим,Press horizontal,Développé horizontal
+patternHorizontalRow,Movement pattern label (filter sheet chip and About-tab chip),Horizontal Row,Horizontal Row,Горизонтальная тяга,Remo horizontal,Rowing horizontal
+patternInclinePress,Movement pattern label (filter sheet chip and About-tab chip),Incline Press,Incline Press,Жим на наклонной,Press inclinado,Développé incliné
+patternKneeExtension,Movement pattern label (filter sheet chip and About-tab chip),Knee Extension,Knee Extension,Разгибание колена,Extensión de rodilla,Extension du genou
+patternKneeFlexion,Movement pattern label (filter sheet chip and About-tab chip),Knee Flexion,Knee Flexion,Сгибание колена,Flexión de rodilla,Flexion du genou
+patternLateralRaise,Movement pattern label (filter sheet chip and About-tab chip),Lateral Raise,Lateral Raise,Махи в стороны,Elevación lateral,Élévation latérale
+patternLungeSplit,Movement pattern label (filter sheet chip and About-tab chip),Lunge & Split Squat,Lunge & Split Squat,Выпады,Zancadas,Fentes
+patternMobility,Movement pattern label (filter sheet chip and About-tab chip),Mobility,Mobility,Мобильность,Movilidad,Mobilité
+patternOlympicLift,Movement pattern label (filter sheet chip and About-tab chip),Olympic Lift,Olympic Lift,Тяжёлая атлетика,Levantamiento olímpico,Mouvement olympique
+patternPlyometricLower,Movement pattern label (filter sheet chip and About-tab chip),Lower-Body Plyometrics,Lower-Body Plyometrics,Плиометрика ног,Pliometría de piernas,Pliométrie bas du corps
+patternPullover,Movement pattern label (filter sheet chip and About-tab chip),Pullover,Pullover,Пуловер,Pullover,Pull-over
+patternRearDelt,Movement pattern label (filter sheet chip and About-tab chip),Rear Delt,Rear Delt,Задняя дельта,Deltoide posterior,Deltoïde postérieur
+patternShrug,Movement pattern label (filter sheet chip and About-tab chip),Shrug,Shrug,Шраги,Encogimientos,Shrugs
+patternSpinalExtension,Movement pattern label (filter sheet chip and About-tab chip),Spinal Extension,Spinal Extension,Разгибание спины,Extensión lumbar,Extension lombaire
+patternSquatBilateral,Movement pattern label (filter sheet chip and About-tab chip),Squat,Squat,Приседания,Sentadilla,Squat
+patternTrunkFlexion,Movement pattern label (filter sheet chip and About-tab chip),Trunk Flexion,Trunk Flexion,Скручивания,Flexión de tronco,Flexion du tronc
+patternTrunkLateralRotation,Movement pattern label (filter sheet chip and About-tab chip),Trunk Rotation,Trunk Rotation,Повороты корпуса,Rotación de tronco,Rotation du tronc
+patternUprightRow,Movement pattern label (filter sheet chip and About-tab chip),Upright Row,Upright Row,Тяга к подбородку,Remo al mentón,Rowing menton
+patternVerticalPress,Movement pattern label (filter sheet chip and About-tab chip),Vertical Press,Vertical Press,Вертикальный жим,Press vertical,Développé vertical
+patternVerticalPull,Movement pattern label (filter sheet chip and About-tab chip),Vertical Pull,Vertical Pull,Вертикальная тяга,Jalón vertical,Tirage vertical

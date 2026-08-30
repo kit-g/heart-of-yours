@@ -2482,5 +2482,377 @@
     "description": "Small provenance mark above exercise instructions whose copy for the current language is machine-authored and not yet human-reviewed (Exercise.validated == false)",
     "type": "text",
     "placeholders": {}
+  },
+  "categoryWeightedBodyWeight": "Poids du corps lesté",
+  "@categoryWeightedBodyWeight": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryAssistedBodyWeight": "Poids du corps assisté",
+  "@categoryAssistedBodyWeight": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryRepsOnly": "Répétitions seules",
+  "@categoryRepsOnly": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryCardio": "Cardio",
+  "@categoryCardio": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryDuration": "Durée",
+  "@categoryDuration": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryMachine": "Machine",
+  "@categoryMachine": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryDumbbell": "Haltères",
+  "@categoryDumbbell": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryBarbell": "Barre",
+  "@categoryBarbell": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetCore": "Core",
+  "@targetCore": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetArms": "Bras",
+  "@targetArms": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetBack": "Dos",
+  "@targetBack": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetChest": "Pectoraux",
+  "@targetChest": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetLegs": "Jambes",
+  "@targetLegs": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetShoulders": "Épaules",
+  "@targetShoulders": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetOther": "Autre",
+  "@targetOther": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetOlympic": "Olympique",
+  "@targetOlympic": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetFullBody": "Corps entier",
+  "@targetFullBody": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetCardio": "Cardio",
+  "@targetCardio": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillLow": "Faible",
+  "@skillLow": {
+    "description": "Skill-demand level, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillModerate": "Modéré",
+  "@skillModerate": {
+    "description": "Skill-demand level, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillHigh": "Élevé",
+  "@skillHigh": {
+    "description": "Skill-demand level, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilityFree": "Charge libre",
+  "@stabilityFree": {
+    "description": "Movement-path stability, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilitySupported": "Avec appui",
+  "@stabilitySupported": {
+    "description": "Movement-path stability, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilityMachine": "Machine",
+  "@stabilityMachine": {
+    "description": "Movement-path stability, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternCalfRaise": "Extension des mollets",
+  "@patternCalfRaise": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternCardioSteady": "Cardio continu",
+  "@patternCardioSteady": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternChestDip": "Dips",
+  "@patternChestDip": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternChestFly": "Écartés",
+  "@patternChestFly": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternCoreBracing": "Gainage",
+  "@patternCoreBracing": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternDeadliftFloor": "Soulevé de terre au sol",
+  "@patternDeadliftFloor": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternDeclinePress": "Développé décliné",
+  "@patternDeclinePress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternElbowExtension": "Extension du coude",
+  "@patternElbowExtension": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternElbowFlexion": "Flexion du coude",
+  "@patternElbowFlexion": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternForearm": "Avant-bras",
+  "@patternForearm": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternFrontRaise": "Élévation frontale",
+  "@patternFrontRaise": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternFullBodyConditioning": "Conditionnement complet",
+  "@patternFullBodyConditioning": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternGluteIsolation": "Isolation des fessiers",
+  "@patternGluteIsolation": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipAbduction": "Abduction de hanche",
+  "@patternHipAbduction": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipAdduction": "Adduction de hanche",
+  "@patternHipAdduction": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipExtensionBridge": "Pont fessier",
+  "@patternHipExtensionBridge": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipFlexionHanging": "Relevé de jambes suspendu",
+  "@patternHipFlexionHanging": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipHingeStifflegged": "Soulevé jambes tendues",
+  "@patternHipHingeStifflegged": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHorizontalPress": "Développé horizontal",
+  "@patternHorizontalPress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHorizontalRow": "Rowing horizontal",
+  "@patternHorizontalRow": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternInclinePress": "Développé incliné",
+  "@patternInclinePress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternKneeExtension": "Extension du genou",
+  "@patternKneeExtension": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternKneeFlexion": "Flexion du genou",
+  "@patternKneeFlexion": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternLateralRaise": "Élévation latérale",
+  "@patternLateralRaise": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternLungeSplit": "Fentes",
+  "@patternLungeSplit": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternMobility": "Mobilité",
+  "@patternMobility": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternOlympicLift": "Mouvement olympique",
+  "@patternOlympicLift": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternPlyometricLower": "Pliométrie bas du corps",
+  "@patternPlyometricLower": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternPullover": "Pull-over",
+  "@patternPullover": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternRearDelt": "Deltoïde postérieur",
+  "@patternRearDelt": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternShrug": "Shrugs",
+  "@patternShrug": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternSpinalExtension": "Extension lombaire",
+  "@patternSpinalExtension": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternSquatBilateral": "Squat",
+  "@patternSquatBilateral": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternTrunkFlexion": "Flexion du tronc",
+  "@patternTrunkFlexion": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternTrunkLateralRotation": "Rotation du tronc",
+  "@patternTrunkLateralRotation": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternUprightRow": "Rowing menton",
+  "@patternUprightRow": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternVerticalPress": "Développé vertical",
+  "@patternVerticalPress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternVerticalPull": "Tirage vertical",
+  "@patternVerticalPull": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
   }
 }

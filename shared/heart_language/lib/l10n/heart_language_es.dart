@@ -1378,4 +1378,190 @@ class LEs extends L {
 
   @override
   String get machineTranslatedCopy => 'Traducción automática';
+
+  @override
+  String get categoryWeightedBodyWeight => 'Peso corporal lastrado';
+
+  @override
+  String get categoryAssistedBodyWeight => 'Peso corporal asistido';
+
+  @override
+  String get categoryRepsOnly => 'Solo repeticiones';
+
+  @override
+  String get categoryCardio => 'Cardio';
+
+  @override
+  String get categoryDuration => 'Duración';
+
+  @override
+  String get categoryMachine => 'Máquina';
+
+  @override
+  String get categoryDumbbell => 'Mancuernas';
+
+  @override
+  String get categoryBarbell => 'Barra';
+
+  @override
+  String get targetCore => 'Core';
+
+  @override
+  String get targetArms => 'Brazos';
+
+  @override
+  String get targetBack => 'Espalda';
+
+  @override
+  String get targetChest => 'Pecho';
+
+  @override
+  String get targetLegs => 'Piernas';
+
+  @override
+  String get targetShoulders => 'Hombros';
+
+  @override
+  String get targetOther => 'Otro';
+
+  @override
+  String get targetOlympic => 'Olímpico';
+
+  @override
+  String get targetFullBody => 'Cuerpo completo';
+
+  @override
+  String get targetCardio => 'Cardio';
+
+  @override
+  String get skillLow => 'Bajo';
+
+  @override
+  String get skillModerate => 'Medio';
+
+  @override
+  String get skillHigh => 'Alto';
+
+  @override
+  String get stabilityFree => 'Peso libre';
+
+  @override
+  String get stabilitySupported => 'Con apoyo';
+
+  @override
+  String get stabilityMachine => 'Máquina';
+
+  @override
+  String get patternCalfRaise => 'Elevación de talones';
+
+  @override
+  String get patternCardioSteady => 'Cardio constante';
+
+  @override
+  String get patternChestDip => 'Fondos en paralelas';
+
+  @override
+  String get patternChestFly => 'Aperturas de pecho';
+
+  @override
+  String get patternCoreBracing => 'Estabilización del core';
+
+  @override
+  String get patternDeadliftFloor => 'Peso muerto desde el suelo';
+
+  @override
+  String get patternDeclinePress => 'Press declinado';
+
+  @override
+  String get patternElbowExtension => 'Extensión de codo';
+
+  @override
+  String get patternElbowFlexion => 'Flexión de codo';
+
+  @override
+  String get patternForearm => 'Antebrazo';
+
+  @override
+  String get patternFrontRaise => 'Elevación frontal';
+
+  @override
+  String get patternFullBodyConditioning => 'Acondicionamiento general';
+
+  @override
+  String get patternGluteIsolation => 'Aislamiento de glúteos';
+
+  @override
+  String get patternHipAbduction => 'Abducción de cadera';
+
+  @override
+  String get patternHipAdduction => 'Aducción de cadera';
+
+  @override
+  String get patternHipExtensionBridge => 'Puente de glúteos';
+
+  @override
+  String get patternHipFlexionHanging => 'Elevación de piernas colgado';
+
+  @override
+  String get patternHipHingeStifflegged => 'Peso muerto piernas rígidas';
+
+  @override
+  String get patternHorizontalPress => 'Press horizontal';
+
+  @override
+  String get patternHorizontalRow => 'Remo horizontal';
+
+  @override
+  String get patternInclinePress => 'Press inclinado';
+
+  @override
+  String get patternKneeExtension => 'Extensión de rodilla';
+
+  @override
+  String get patternKneeFlexion => 'Flexión de rodilla';
+
+  @override
+  String get patternLateralRaise => 'Elevación lateral';
+
+  @override
+  String get patternLungeSplit => 'Zancadas';
+
+  @override
+  String get patternMobility => 'Movilidad';
+
+  @override
+  String get patternOlympicLift => 'Levantamiento olímpico';
+
+  @override
+  String get patternPlyometricLower => 'Pliometría de piernas';
+
+  @override
+  String get patternPullover => 'Pullover';
+
+  @override
+  String get patternRearDelt => 'Deltoide posterior';
+
+  @override
+  String get patternShrug => 'Encogimientos';
+
+  @override
+  String get patternSpinalExtension => 'Extensión lumbar';
+
+  @override
+  String get patternSquatBilateral => 'Sentadilla';
+
+  @override
+  String get patternTrunkFlexion => 'Flexión de tronco';
+
+  @override
+  String get patternTrunkLateralRotation => 'Rotación de tronco';
+
+  @override
+  String get patternUprightRow => 'Remo al mentón';
+
+  @override
+  String get patternVerticalPress => 'Press vertical';
+
+  @override
+  String get patternVerticalPull => 'Jalón vertical';
 }
