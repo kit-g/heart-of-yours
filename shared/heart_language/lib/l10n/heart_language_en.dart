@@ -368,6 +368,22 @@ class LEn extends L {
   String get congratulationsBody => 'Your workout is complete!';
 
   @override
+  String recordsAchievedHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'New records',
+      one: 'New record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recordAchievedLine(String exercise, String records) {
+    return '$exercise · $records';
+  }
+
+  @override
   String goalsAchievedHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1791,6 +1807,22 @@ class LEnCa extends LEn {
 
   @override
   String get congratulationsBody => 'Your workout is complete!';
+
+  @override
+  String recordsAchievedHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'New records',
+      one: 'New record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recordAchievedLine(String exercise, String records) {
+    return '$exercise · $records';
+  }
 
   @override
   String goalsAchievedHeading(int count) {

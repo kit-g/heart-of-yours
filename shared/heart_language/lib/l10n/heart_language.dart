@@ -752,6 +752,18 @@ abstract class L {
   /// **'Your workout is complete!'**
   String get congratulationsBody;
 
+  /// Workout complete screen, heading above the personal records this session set
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{New record} other{New records}}'**
+  String recordsAchievedHeading(int count);
+
+  /// Workout complete screen, one exercise's new records: the exercise name and its record values
+  ///
+  /// In en, this message translates to:
+  /// **'{exercise} · {records}'**
+  String recordAchievedLine(String exercise, String records);
+
   /// Workout complete screen, heading above the goal rungs this session earned
   ///
   /// In en, this message translates to:
