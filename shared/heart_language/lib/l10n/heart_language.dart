@@ -1778,6 +1778,24 @@ abstract class L {
   /// **'New chart'**
   String get newChart;
 
+  /// Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Add to profile'**
+  String get addChartToProfile;
+
+  /// Snackbar confirmation after adding a chart to the profile dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Added to profile'**
+  String get chartAddedToProfile;
+
+  /// Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from profile'**
+  String get removeChartFromProfile;
+
   /// Empty state for chart widget
   ///
   /// In en, this message translates to:
