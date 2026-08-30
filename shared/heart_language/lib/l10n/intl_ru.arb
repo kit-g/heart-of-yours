@@ -1767,6 +1767,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "addChartToProfile": "Добавить в профиль",
+  "@addChartToProfile": {
+    "description": "Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartAddedToProfile": "Добавлено в профиль",
+  "@chartAddedToProfile": {
+    "description": "Snackbar confirmation after adding a chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeChartFromProfile": "Убрать из профиля",
+  "@removeChartFromProfile": {
+    "description": "Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
   "emptyChartStateTitle": "Тут немного пусто",
   "@emptyChartStateTitle": {
     "description": "Empty state for chart widget",

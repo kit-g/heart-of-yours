@@ -1761,6 +1761,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "addChartToProfile": "Add to profile",
+  "@addChartToProfile": {
+    "description": "Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartAddedToProfile": "Added to profile",
+  "@chartAddedToProfile": {
+    "description": "Snackbar confirmation after adding a chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeChartFromProfile": "Remove from profile",
+  "@removeChartFromProfile": {
+    "description": "Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
   "emptyChartStateTitle": "Looks a little empty here",
   "@emptyChartStateTitle": {
     "description": "Empty state for chart widget",

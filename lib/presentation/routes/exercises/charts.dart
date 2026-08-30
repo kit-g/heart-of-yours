@@ -12,7 +12,8 @@ class _Charts extends StatelessWidget {
     final unit = Exercises.watch(context).unitFor(exercise.name);
     // watched: reaching a rung redraws the line on the chart that measures it
     final goals = Goals.watch(context);
-    final style = Theme.of(context).textTheme.bodySmall;
+    final ThemeData(:textTheme) = Theme.of(context);
+    final style = textTheme.bodySmall;
 
     // Every metric relevant to this exercise's category — the same set the
     // dashboard offers when adding a chart, now surfaced per exercise.
@@ -24,6 +25,7 @@ class _Charts extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (_, index) {
         final type = types[index];
+        final title = type.title(context, prefs, unit: unit);
         return ExerciseChart(
           // the rung being worked toward, for every goal on this exercise and
           // metric. Converted with this exercise's own unit, the one the series
@@ -38,7 +40,17 @@ class _Charts extends StatelessWidget {
           callback: () => exercises.getChartExerciseMetics(type, exercise.name, limit: _exerciseHistoryLimit),
           timeline: true,
           refreshKey: (type, exercise.name),
-          label: type.title(context, prefs, unit: unit),
+          // the string still travels as [label] — it feeds the chart's
+          // spoken summary — while the row adds the dashboard toggle
+          label: title,
+          customLabel: Row(
+            children: [
+              Expanded(
+                child: Text(title, style: textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
+              ),
+              _DashboardToggle(exercise: exercise, type: type),
+            ],
+          ),
           converter: type.converter(prefs, unit: unit),
           getLeftLabel: type.leftLabel(style),
           getTooltip: type.tooltip,
@@ -48,6 +60,53 @@ class _Charts extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// Puts this exercise+metric chart on the profile dashboard, or takes it back
+/// off — the same [ChartPreference] the profile's "New chart" dialog builds,
+/// minus the two-step picker, offered right where the metric is on screen.
+class _DashboardToggle extends StatelessWidget {
+  final Exercise exercise;
+  final ChartPreferenceType type;
+
+  const new({required this.exercise, required this.type});
+
+  @override
+  Widget build(BuildContext context) {
+    // watched: adding or removing the card flips this button in place
+    final charts = Charts.watch(context);
+    final L(:addChartToProfile, :removeChartFromProfile, :chartAddedToProfile) = L.of(context);
+
+    // the dashboard card this chart would duplicate, if it is already there
+    final existing = charts.where((each) => each.exerciseName == exercise.name && each.type == type).firstOrNull;
+
+    return switch (existing) {
+      null => FeedbackButton.circular(
+        tooltip: addChartToProfile,
+        onPressed: () {
+          charts.addPreference(.exercise(exercise.name, type));
+          // the result lives on another tab, so confirm it landed
+          snack(context, chartAddedToProfile);
+        },
+        child: const Padding(
+          padding: .all(2.0),
+          child: Icon(Icons.addchart_rounded, size: 20),
+        ),
+      ),
+      final preference => FeedbackButton.circular(
+        tooltip: removeChartFromProfile,
+        onPressed: () => charts.removePreference(preference),
+        child: Padding(
+          padding: const .all(2.0),
+          child: Icon(
+            Icons.check_circle_rounded,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+    };
   }
 }
 

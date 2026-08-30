@@ -322,6 +322,9 @@ removePhoto,Menu item that allows to remove photo from a workout,Remove photo,Re
 aboutExercise,Menu item that opens exercise details,About exercise,About exercise,Об упражнении
 myDashboard,Title of the dashboard screen with performance charts,My Dashboard,My Dashboard,Моя панель
 newChart,Button that allows to create a new chart,New chart,New chart,Новый график
+addChartToProfile,"Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard",Add to profile,Add to profile,Добавить в профиль
+chartAddedToProfile,Snackbar confirmation after adding a chart to the profile dashboard,Added to profile,Added to profile,Добавлено в профиль
+removeChartFromProfile,"Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard",Remove from profile,Remove from profile,Убрать из профиля
 emptyChartStateTitle,Empty state for chart widget,Looks a little empty here,Looks a little empty here,Тут немного пусто
 emptyChartStateBody,Empty state for chart widget,Add your first set to start tracking real progress,Add your first set to start tracking real progress,Добавьте первый подход чтобы начать отслеживать реальный прогресс
 topSetWeight,"For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",Top set weight,Top set weight,Вес топового подхода
