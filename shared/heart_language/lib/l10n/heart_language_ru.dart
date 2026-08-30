@@ -469,7 +469,7 @@ class LRu extends L {
   String get restComplete => 'Отдых завершен!';
 
   @override
-  String get workoutsPerWeek => 'Workouts per week';
+  String get workoutsPerWeek => 'Тренировки в неделю';
 
   @override
   String get workoutsPerWeekTitle => 'Ваши тренировки будут отображаться здесь';
@@ -782,7 +782,7 @@ class LRu extends L {
   String get alsoTry => 'Попробуйте также';
 
   @override
-  String get about => 'О приложении';
+  String get about => 'Описание';
 
   @override
   String get records => 'Рекорды';
@@ -1398,4 +1398,193 @@ class LRu extends L {
 
   @override
   String get importNewExercisesBody => 'Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:';
+
+  @override
+  String get machineTranslatedCopy => 'Машинный перевод';
+
+  @override
+  String get categoryWeightedBodyWeight => 'Свой вес с отягощением';
+
+  @override
+  String get categoryAssistedBodyWeight => 'Свой вес с поддержкой';
+
+  @override
+  String get categoryRepsOnly => 'Только повторы';
+
+  @override
+  String get categoryCardio => 'Кардио';
+
+  @override
+  String get categoryDuration => 'Время';
+
+  @override
+  String get categoryMachine => 'Тренажёр';
+
+  @override
+  String get categoryDumbbell => 'Гантели';
+
+  @override
+  String get categoryBarbell => 'Штанга';
+
+  @override
+  String get targetCore => 'Кор';
+
+  @override
+  String get targetArms => 'Руки';
+
+  @override
+  String get targetBack => 'Спина';
+
+  @override
+  String get targetChest => 'Грудь';
+
+  @override
+  String get targetLegs => 'Ноги';
+
+  @override
+  String get targetShoulders => 'Плечи';
+
+  @override
+  String get targetOther => 'Другое';
+
+  @override
+  String get targetOlympic => 'Олимпийские';
+
+  @override
+  String get targetFullBody => 'Всё тело';
+
+  @override
+  String get targetCardio => 'Кардио';
+
+  @override
+  String get skillLow => 'Низкий';
+
+  @override
+  String get skillModerate => 'Средний';
+
+  @override
+  String get skillHigh => 'Высокий';
+
+  @override
+  String get stabilityFree => 'Свободный вес';
+
+  @override
+  String get stabilitySupported => 'С опорой';
+
+  @override
+  String get stabilityMachine => 'Тренажёр';
+
+  @override
+  String get patternCalfRaise => 'Подъём на носки';
+
+  @override
+  String get patternCardioSteady => 'Равномерное кардио';
+
+  @override
+  String get patternChestDip => 'Брусья';
+
+  @override
+  String get patternChestFly => 'Разводка';
+
+  @override
+  String get patternCoreBracing => 'Стабилизация кора';
+
+  @override
+  String get patternDeadliftFloor => 'Становая тяга с пола';
+
+  @override
+  String get patternDeclinePress => 'Жим на наклонной вниз';
+
+  @override
+  String get patternElbowExtension => 'Разгибание локтя';
+
+  @override
+  String get patternElbowFlexion => 'Сгибание локтя';
+
+  @override
+  String get patternForearm => 'Предплечья';
+
+  @override
+  String get patternFrontRaise => 'Подъём перед собой';
+
+  @override
+  String get patternFullBodyConditioning => 'Общая подготовка';
+
+  @override
+  String get patternGluteIsolation => 'Изоляция ягодиц';
+
+  @override
+  String get patternHipAbduction => 'Отведение бедра';
+
+  @override
+  String get patternHipAdduction => 'Приведение бедра';
+
+  @override
+  String get patternHipExtensionBridge => 'Ягодичный мост';
+
+  @override
+  String get patternHipFlexionHanging => 'Подъём ног в висе';
+
+  @override
+  String get patternHipHingeStifflegged => 'Наклон на прямых ногах';
+
+  @override
+  String get patternHorizontalPress => 'Горизонтальный жим';
+
+  @override
+  String get patternHorizontalRow => 'Горизонтальная тяга';
+
+  @override
+  String get patternInclinePress => 'Жим на наклонной';
+
+  @override
+  String get patternKneeExtension => 'Разгибание колена';
+
+  @override
+  String get patternKneeFlexion => 'Сгибание колена';
+
+  @override
+  String get patternLateralRaise => 'Махи в стороны';
+
+  @override
+  String get patternLungeSplit => 'Выпады';
+
+  @override
+  String get patternMobility => 'Мобильность';
+
+  @override
+  String get patternOlympicLift => 'Тяжёлая атлетика';
+
+  @override
+  String get patternPlyometricLower => 'Плиометрика ног';
+
+  @override
+  String get patternPullover => 'Пуловер';
+
+  @override
+  String get patternRearDelt => 'Задняя дельта';
+
+  @override
+  String get patternShrug => 'Шраги';
+
+  @override
+  String get patternSpinalExtension => 'Разгибание спины';
+
+  @override
+  String get patternSquatBilateral => 'Приседания';
+
+  @override
+  String get patternTrunkFlexion => 'Скручивания';
+
+  @override
+  String get patternTrunkLateralRotation => 'Повороты корпуса';
+
+  @override
+  String get patternUprightRow => 'Тяга к подбородку';
+
+  @override
+  String get patternVerticalPress => 'Вертикальный жим';
+
+  @override
+  String get patternVerticalPull => 'Вертикальная тяга';
 }

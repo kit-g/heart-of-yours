@@ -867,7 +867,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "workoutsPerWeek": "Workouts per week",
+  "workoutsPerWeek": "Тренировки в неделю",
   "@workoutsPerWeek": {
     "description": "Chart label",
     "type": "text",
@@ -1470,9 +1470,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "about": "О приложении",
+  "about": "Описание",
   "@about": {
-    "description": "Generic label",
+    "description": "Exercise detail tab: overview and technique of the exercise (not about the app)",
     "type": "text",
     "placeholders": {}
   },
@@ -2474,6 +2474,384 @@
   "importNewExercisesBody": "Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:",
   "@importNewExercisesBody": {
     "description": "Import report, explains the list of created custom exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "machineTranslatedCopy": "Машинный перевод",
+  "@machineTranslatedCopy": {
+    "description": "Small provenance mark above exercise instructions whose copy for the current language is machine-authored and not yet human-reviewed (Exercise.validated == false)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryWeightedBodyWeight": "Свой вес с отягощением",
+  "@categoryWeightedBodyWeight": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryAssistedBodyWeight": "Свой вес с поддержкой",
+  "@categoryAssistedBodyWeight": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryRepsOnly": "Только повторы",
+  "@categoryRepsOnly": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryCardio": "Кардио",
+  "@categoryCardio": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryDuration": "Время",
+  "@categoryDuration": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryMachine": "Тренажёр",
+  "@categoryMachine": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryDumbbell": "Гантели",
+  "@categoryDumbbell": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryBarbell": "Штанга",
+  "@categoryBarbell": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetCore": "Кор",
+  "@targetCore": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetArms": "Руки",
+  "@targetArms": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetBack": "Спина",
+  "@targetBack": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetChest": "Грудь",
+  "@targetChest": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetLegs": "Ноги",
+  "@targetLegs": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetShoulders": "Плечи",
+  "@targetShoulders": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetOther": "Другое",
+  "@targetOther": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetOlympic": "Олимпийские",
+  "@targetOlympic": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetFullBody": "Всё тело",
+  "@targetFullBody": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "targetCardio": "Кардио",
+  "@targetCardio": {
+    "description": "Exercise target (body part) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillLow": "Низкий",
+  "@skillLow": {
+    "description": "Skill-demand level, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillModerate": "Средний",
+  "@skillModerate": {
+    "description": "Skill-demand level, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillHigh": "Высокий",
+  "@skillHigh": {
+    "description": "Skill-demand level, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilityFree": "Свободный вес",
+  "@stabilityFree": {
+    "description": "Movement-path stability, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilitySupported": "С опорой",
+  "@stabilitySupported": {
+    "description": "Movement-path stability, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilityMachine": "Тренажёр",
+  "@stabilityMachine": {
+    "description": "Movement-path stability, in the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternCalfRaise": "Подъём на носки",
+  "@patternCalfRaise": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternCardioSteady": "Равномерное кардио",
+  "@patternCardioSteady": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternChestDip": "Брусья",
+  "@patternChestDip": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternChestFly": "Разводка",
+  "@patternChestFly": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternCoreBracing": "Стабилизация кора",
+  "@patternCoreBracing": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternDeadliftFloor": "Становая тяга с пола",
+  "@patternDeadliftFloor": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternDeclinePress": "Жим на наклонной вниз",
+  "@patternDeclinePress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternElbowExtension": "Разгибание локтя",
+  "@patternElbowExtension": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternElbowFlexion": "Сгибание локтя",
+  "@patternElbowFlexion": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternForearm": "Предплечья",
+  "@patternForearm": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternFrontRaise": "Подъём перед собой",
+  "@patternFrontRaise": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternFullBodyConditioning": "Общая подготовка",
+  "@patternFullBodyConditioning": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternGluteIsolation": "Изоляция ягодиц",
+  "@patternGluteIsolation": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipAbduction": "Отведение бедра",
+  "@patternHipAbduction": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipAdduction": "Приведение бедра",
+  "@patternHipAdduction": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipExtensionBridge": "Ягодичный мост",
+  "@patternHipExtensionBridge": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipFlexionHanging": "Подъём ног в висе",
+  "@patternHipFlexionHanging": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHipHingeStifflegged": "Наклон на прямых ногах",
+  "@patternHipHingeStifflegged": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHorizontalPress": "Горизонтальный жим",
+  "@patternHorizontalPress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHorizontalRow": "Горизонтальная тяга",
+  "@patternHorizontalRow": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternInclinePress": "Жим на наклонной",
+  "@patternInclinePress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternKneeExtension": "Разгибание колена",
+  "@patternKneeExtension": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternKneeFlexion": "Сгибание колена",
+  "@patternKneeFlexion": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternLateralRaise": "Махи в стороны",
+  "@patternLateralRaise": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternLungeSplit": "Выпады",
+  "@patternLungeSplit": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternMobility": "Мобильность",
+  "@patternMobility": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternOlympicLift": "Тяжёлая атлетика",
+  "@patternOlympicLift": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternPlyometricLower": "Плиометрика ног",
+  "@patternPlyometricLower": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternPullover": "Пуловер",
+  "@patternPullover": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternRearDelt": "Задняя дельта",
+  "@patternRearDelt": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternShrug": "Шраги",
+  "@patternShrug": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternSpinalExtension": "Разгибание спины",
+  "@patternSpinalExtension": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternSquatBilateral": "Приседания",
+  "@patternSquatBilateral": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternTrunkFlexion": "Скручивания",
+  "@patternTrunkFlexion": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternTrunkLateralRotation": "Повороты корпуса",
+  "@patternTrunkLateralRotation": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternUprightRow": "Тяга к подбородку",
+  "@patternUprightRow": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternVerticalPress": "Вертикальный жим",
+  "@patternVerticalPress": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternVerticalPull": "Вертикальная тяга",
+  "@patternVerticalPull": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
     "type": "text",
     "placeholders": {}
   }
