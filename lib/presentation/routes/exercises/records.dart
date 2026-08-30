@@ -100,7 +100,7 @@ class _Content extends StatelessWidget {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
     final unit = Exercises.watch(context).unitFor(exercise.name);
-    final formats = _Formats(l: l, prefs: prefs, unit: unit);
+    final formats = RecordFormats(l: l, prefs: prefs, unit: unit);
 
     final tiles = _tiles(l, formats);
     final lifetime = _lifetime(l, formats);
@@ -166,7 +166,7 @@ class _Content extends StatelessWidget {
     );
   }
 
-  List<_RecordTile> _tiles(L l, _Formats formats) {
+  List<_RecordTile> _tiles(L l, RecordFormats formats) {
     _RecordTile? tile(
       String key,
       String label,
@@ -232,7 +232,7 @@ class _Content extends StatelessWidget {
     ];
   }
 
-  List<(String, String)> _lifetime(L l, _Formats formats) {
+  List<(String, String)> _lifetime(L l, RecordFormats formats) {
     return [
       if (records['sessions'] case num sessions) (l.sessions, '${sessions.toInt()}'),
       if (records['totalVolume'] case num volume) (l.totalVolume, formats.weight(volume)),
@@ -241,49 +241,6 @@ class _Content extends StatelessWidget {
       if (records['totalDistance'] case num distance) (l.totalDistance, formats.distance(distance)),
       if (records['firstAt'] case String at) (l.firstPerformed, formats.date(at)),
     ];
-  }
-}
-
-/// Unit-aware value rendering, shared by every tile and row on the tab.
-class _Formats {
-  final L l;
-  final Preferences prefs;
-  final MeasurementUnit? unit;
-
-  const new({required this.l, required this.prefs, required this.unit});
-
-  String weight(num value) {
-    final suffix = switch (unit ?? prefs.weightUnit) {
-      .imperial => l.lbs,
-      .metric => l.kg,
-    };
-    return '${prefs.weight(value.toDouble(), unit: unit)} $suffix';
-  }
-
-  String distance(num value) {
-    final suffix = switch (unit ?? prefs.distanceUnit) {
-      .imperial => l.milesPlural,
-      .metric => l.km,
-    };
-    return '${prefs.distance(value.toDouble(), unit: unit)} $suffix';
-  }
-
-  String time(num seconds) => Duration(seconds: seconds.round()).formatted();
-
-  /// [secondsPerKm] → clock time per the display distance unit.
-  String pace(num secondsPerKm) {
-    final (seconds, suffix) = switch (unit ?? prefs.distanceUnit) {
-      .imperial => (secondsPerKm * 1.609344, l.milesPlural),
-      .metric => (secondsPerKm.toDouble(), l.km),
-    };
-    return '${Duration(seconds: seconds.round()).formatted()} / $suffix';
-  }
-
-  String date(String at) {
-    return switch (DateTime.tryParse(at)) {
-      DateTime parsed => DateFormat.yMMMd(l.localeName).format(parsed.toLocal()),
-      null => '',
-    };
   }
 }
 
