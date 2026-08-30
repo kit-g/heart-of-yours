@@ -350,6 +350,7 @@ RouteBase _exercisesRoute() {
                 onTapAlternative: (alternative) {
                   context.goToExerciseDetail(alternative.name);
                 },
+                onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
               );
             },
             // Resolves before deciding, like the history route: a deep link
@@ -636,6 +637,25 @@ Future<void> _exercisesReady(Exercises exercises) {
   return ready.future
       .timeout(const Duration(seconds: 10), onTimeout: () {})
       .whenComplete(() => exercises.removeListener(onChange));
+}
+
+/// Appends [exercise] to the workout in progress and confirms with a snack —
+/// the workout lives on another tab, so the action offers the way there too.
+Future<void> _onAddToWorkout(BuildContext context, Exercise exercise) async {
+  await Workouts.of(context).startExercise(exercise);
+  if (!context.mounted) return;
+
+  final L(:exerciseAddedToWorkout, :goToWorkout) = L.of(context);
+  snack(
+    context,
+    exerciseAddedToWorkout,
+    action: SnackBarAction(
+      label: goToWorkout,
+      onPressed: () {
+        if (context.mounted) context.goToActiveWorkout();
+      },
+    ),
+  );
 }
 
 Future<void> _onShareExercise(BuildContext context, Exercise exercise, String? tab) async {

@@ -12,8 +12,11 @@ void snack(
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(content),
-      showCloseIcon: true,
       action: action,
+      // an action flips SnackBar's `persist` default to true — the bar then
+      // stays until tapped and blocks every queued snack behind it. Ours are
+      // passing confirmations, so they always time out, action or not.
+      persist: false,
       duration: duration = const Duration(seconds: 4),
     ),
   );
@@ -28,8 +31,9 @@ extension ScaffoldMessengerStateExtension on ScaffoldMessengerState {
     return showSnackBar(
       SnackBar(
         content: Text(content),
-        showCloseIcon: true,
         action: action,
+        // see `snack` above: never persist, action or not
+        persist: false,
         duration: duration = const Duration(seconds: 4),
       ),
     );
