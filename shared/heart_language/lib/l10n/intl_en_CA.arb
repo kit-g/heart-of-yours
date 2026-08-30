@@ -1773,6 +1773,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "addToActiveWorkout": "Add to workout",
+  "@addToActiveWorkout": {
+    "description": "Tooltip on the exercise detail page; adds the exercise to the workout in progress",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseAddedToWorkout": "Added to workout",
+  "@exerciseAddedToWorkout": {
+    "description": "Snackbar confirmation after adding the exercise to the workout in progress",
+    "type": "text",
+    "placeholders": {}
+  },
   "chartAddedToProfile": "Added to profile",
   "@chartAddedToProfile": {
     "description": "Snackbar confirmation after adding a chart to the profile dashboard",

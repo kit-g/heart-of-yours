@@ -932,6 +932,12 @@ class LRu extends L {
   String get addChartToProfile => 'Добавить в профиль';
 
   @override
+  String get addToActiveWorkout => 'Добавить в тренировку';
+
+  @override
+  String get exerciseAddedToWorkout => 'Добавлено в тренировку';
+
+  @override
   String get chartAddedToProfile => 'Добавлено в профиль';
 
   @override

@@ -323,6 +323,8 @@ aboutExercise,Menu item that opens exercise details,About exercise,About exercis
 myDashboard,Title of the dashboard screen with performance charts,My Dashboard,My Dashboard,Моя панель
 newChart,Button that allows to create a new chart,New chart,New chart,Новый график
 addChartToProfile,"Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard",Add to profile,Add to profile,Добавить в профиль
+addToActiveWorkout,Tooltip on the exercise detail page; adds the exercise to the workout in progress,Add to workout,Add to workout,Добавить в тренировку
+exerciseAddedToWorkout,Snackbar confirmation after adding the exercise to the workout in progress,Added to workout,Added to workout,Добавлено в тренировку
 chartAddedToProfile,Snackbar confirmation after adding a chart to the profile dashboard,Added to profile,Added to profile,Добавлено в профиль
 removeChartFromProfile,"Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard",Remove from profile,Remove from profile,Убрать из профиля
 emptyChartStateTitle,Empty state for chart widget,Looks a little empty here,Looks a little empty here,Тут немного пусто
