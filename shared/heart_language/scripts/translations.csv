@@ -287,6 +287,17 @@ emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,
 emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!
 errorExerciseHistoryTitle,Exercise history empty state,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️,Упс! Кто-то пропустил день данных 🤷‍♀️
 errorExerciseHistoryBody,Exercise history empty state,"Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Похоже, приложение споткнулось о свои шнурки. Попробуйте снова, и мы обещаем завязать их крепче в следующий раз!"
+bestSetVolume,Record tile on the exercise records tab: highest weight × reps in a single set,Best set volume,Best set volume,Лучший объём за подход
+mostReps,Record tile on the exercise records tab,Most reps,Most reps,Больше всего повторений
+bestPace,"Record tile on the exercise records tab, cardio exercises",Best pace,Best pace,Лучший темп
+leastAssistance,"Record tile on the exercise records tab, assisted body-weight exercises: the lightest counterweight used",Least assistance,Least assistance,Наименьшая поддержка
+repMaxes,Title of the records-tab table listing the best weight lifted at each rep count,Rep maxes,Rep maxes,Максимумы по повторениям
+repMaxCount,Left column of the rep-maxes table: the rep count the weight was lifted for,"{reps, plural, one{{reps} rep} other{{reps} reps}}","{reps, plural, one{{reps} rep} other{{reps} reps}}","{reps, plural, one{{reps} повторение} few{{reps} повторения} many{{reps} повторений} other{{reps} повторения}}"
+allTime,Title of the records-tab section with lifetime totals,All time,All time,За всё время
+sessions,Lifetime row on the records tab: how many workouts included this exercise,Sessions,Sessions,Тренировки
+firstPerformed,Lifetime row on the records tab: date of the first session with this exercise,First performed,First performed,Впервые выполнено
+totalTime,Lifetime row on the records tab,Total time,Total time,Общее время
+totalDistance,Lifetime row on the records tab,Total distance,Total distance,Общая дистанция
 personalRecords,"Records screen, title",Personal records,Personal records,Личные рекорды
 maxDuration,"Records screen, metric name",Max duration,Max duration,Макс. длительность
 maxDistance,"Records screen, metric name",Max distance,Max distance,Макс. дистанция

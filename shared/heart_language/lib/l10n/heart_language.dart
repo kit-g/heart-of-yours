@@ -1622,6 +1622,72 @@ abstract class L {
   /// **'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!'**
   String get errorExerciseHistoryBody;
 
+  /// Record tile on the exercise records tab: highest weight × reps in a single set
+  ///
+  /// In en, this message translates to:
+  /// **'Best set volume'**
+  String get bestSetVolume;
+
+  /// Record tile on the exercise records tab
+  ///
+  /// In en, this message translates to:
+  /// **'Most reps'**
+  String get mostReps;
+
+  /// Record tile on the exercise records tab, cardio exercises
+  ///
+  /// In en, this message translates to:
+  /// **'Best pace'**
+  String get bestPace;
+
+  /// Record tile on the exercise records tab, assisted body-weight exercises: the lightest counterweight used
+  ///
+  /// In en, this message translates to:
+  /// **'Least assistance'**
+  String get leastAssistance;
+
+  /// Title of the records-tab table listing the best weight lifted at each rep count
+  ///
+  /// In en, this message translates to:
+  /// **'Rep maxes'**
+  String get repMaxes;
+
+  /// Left column of the rep-maxes table: the rep count the weight was lifted for
+  ///
+  /// In en, this message translates to:
+  /// **'{reps, plural, one{{reps} rep} other{{reps} reps}}'**
+  String repMaxCount(num reps);
+
+  /// Title of the records-tab section with lifetime totals
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get allTime;
+
+  /// Lifetime row on the records tab: how many workouts included this exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessions;
+
+  /// Lifetime row on the records tab: date of the first session with this exercise
+  ///
+  /// In en, this message translates to:
+  /// **'First performed'**
+  String get firstPerformed;
+
+  /// Lifetime row on the records tab
+  ///
+  /// In en, this message translates to:
+  /// **'Total time'**
+  String get totalTime;
+
+  /// Lifetime row on the records tab
+  ///
+  /// In en, this message translates to:
+  /// **'Total distance'**
+  String get totalDistance;
+
   /// Records screen, title
   ///
   /// In en, this message translates to:
