@@ -1,0 +1,2486 @@
+{
+  "@@locale": "es",
+  "appearance": "Apariencia",
+  "@appearance": {
+    "description": "Label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "units": "Unidades",
+  "@units": {
+    "description": "Label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "motto": "Cada latido cuenta.",
+  "@motto": {
+    "description": "App's motto",
+    "type": "text",
+    "placeholders": {}
+  },
+  "toLightMode": "Claro",
+  "@toLightMode": {
+    "description": "tooltip",
+    "type": "text",
+    "placeholders": {}
+  },
+  "toDarkMode": "Oscuro",
+  "@toDarkMode": {
+    "description": "tooltip",
+    "type": "text",
+    "placeholders": {}
+  },
+  "toSystemMode": "Sistema",
+  "@toSystemMode": {
+    "description": "tooltip",
+    "type": "text",
+    "placeholders": {}
+  },
+  "email": "Correo",
+  "@email": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "yourEmail": "Tu correo",
+  "@yourEmail": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cropAvatar": "Recortar avatar",
+  "@cropAvatar": {
+    "description": "Label in the image cropper",
+    "type": "text",
+    "placeholders": {}
+  },
+  "nameOptional": "Nombre (opcional)",
+  "@nameOptional": {
+    "description": "Field hint",
+    "type": "text",
+    "placeholders": {}
+  },
+  "name": "Nombre",
+  "@name": {
+    "description": "Field hint",
+    "type": "text",
+    "placeholders": {}
+  },
+  "saveName": "Guardar nombre",
+  "@saveName": {
+    "description": "Hint",
+    "type": "text",
+    "placeholders": {}
+  },
+  "changeName": "Cambiar nombre",
+  "@changeName": {
+    "description": "Hint",
+    "type": "text",
+    "placeholders": {}
+  },
+  "save": "Guardar",
+  "@save": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "settings": "Ajustes",
+  "@settings": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "archive": "Archivar",
+  "@archive": {
+    "description": "CTA, verb",
+    "type": "text",
+    "placeholders": {}
+  },
+  "unarchive": "Desarchivar",
+  "@unarchive": {
+    "description": "CTA, verb",
+    "type": "text",
+    "placeholders": {}
+  },
+  "password": "Contraseña",
+  "@password": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "logIn": "Iniciar sesión",
+  "@logIn": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "logInTitle": "Hola de nuevo",
+  "@logInTitle": {
+    "description": "Login page copy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "logInBody": "Ya empezaste algo importante. \nSigamos adelante.",
+  "@logInBody": {
+    "description": "Login page copy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "signUpTitle": "Empieza con Heart",
+  "@signUpTitle": {
+    "description": "Sign up page copy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "signUpBody": "Todo camino empieza con una decisión. \nEsta es tuya.",
+  "@signUpBody": {
+    "description": "Sign up page copy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "recoverTitle": "Seguimos contigo",
+  "@recoverTitle": {
+    "description": "Recover page copy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "recoverBody": "Tu camino no está perdido. \nSolo es una pausa — lo restableceremos juntos.",
+  "@recoverBody": {
+    "description": "Recover page copy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "logInWithGoogle": "Iniciar sesión con Google",
+  "@logInWithGoogle": {
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "signUpWithGoogle": "Registrarse con Google",
+  "@signUpWithGoogle": {
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "logInWithApple": "Iniciar sesión con Apple",
+  "@logInWithApple": {
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "signUpWithApple": "Registrarse con Apple",
+  "@signUpWithApple": {
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "logOut": "Cerrar sesión",
+  "@logOut": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "profile": "Perfil",
+  "@profile": {
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workout": "Entrenamiento",
+  "@workout": {
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
+  },
+  "history": "Historial",
+  "@history": {
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exercises": "Ejercicios",
+  "@exercises": {
+    "description": "Generic label, e.g. bottom nav bar",
+    "type": "text",
+    "placeholders": {}
+  },
+  "search": "Buscar",
+  "@search": {
+    "description": "Generic label, e.g. bin the search bar",
+    "type": "text",
+    "placeholders": {}
+  },
+  "startNewWorkout": "Empezar un nuevo entrenamiento",
+  "@startNewWorkout": {
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancelCurrentWorkoutTitle": "¿Cancelar el entrenamiento actual?",
+  "@cancelCurrentWorkoutTitle": {
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancelCurrentWorkoutBody": "Tienes un entrenamiento en curso. ¿Quieres cancelarlo y empezar uno nuevo?",
+  "@cancelCurrentWorkoutBody": {
+    "description": "Button label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "startNewWorkoutFromTemplate": "¿Empezar un nuevo entrenamiento con esta plantilla?",
+  "@startNewWorkoutFromTemplate": {
+    "description": "Alert dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "startWorkout": "Empezar entrenamiento",
+  "@startWorkout": {
+    "description": "App bar title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancelWorkout": "Cancelar entrenamiento",
+  "@cancelWorkout": {
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addExercises": "Agregar ejercicios",
+  "@addExercises": {
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addSet": "Agregar serie",
+  "@addSet": {
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newExercise": "Nuevo ejercicio",
+  "@newExercise": {
+    "description": "Button tooltip",
+    "type": "text",
+    "placeholders": {}
+  },
+  "createNewExercise": "Crear nuevo ejercicio",
+  "@createNewExercise": {
+    "description": "Dialog header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseOptions": "Opciones del ejercicio",
+  "@exerciseOptions": {
+    "description": "Button tooltip",
+    "type": "text",
+    "placeholders": {}
+  },
+  "showArchived": "Mostrar archivados",
+  "@showArchived": {
+    "description": "Menu button, as in \"Show archived exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "archivedExercises": "Ejercicios archivados",
+  "@archivedExercises": {
+    "description": "App bar",
+    "type": "text",
+    "placeholders": {}
+  },
+  "archiveConfirmTitle": "¿Archivar {exerciseName}?",
+  "@archiveConfirmTitle": {
+    "description": "Dialog title, e.g., \"Archive Push ups?\"",
+    "type": "text",
+    "placeholders": {
+      "exerciseName": {}
+    }
+  },
+  "archiveConfirmBody": "Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).\n Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.",
+  "@archiveConfirmBody": {
+    "description": "Dialog body",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseArchived": "Este ejercicio está archivado \ny ya no aparecerá en tu biblioteca principal.",
+  "@exerciseArchived": {
+    "description": "Tooltip over archived icon",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteSet": "Eliminar serie",
+  "@deleteSet": {
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "set": "Serie",
+  "@set": {
+    "description": "Workout table, column header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "sets": "Series",
+  "@sets": {
+    "description": "Card header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "previous": "Anterior",
+  "@previous": {
+    "description": "Workout table, column header, as in \"previous exercise\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "reps": "Reps",
+  "@reps": {
+    "description": "Workout table, column header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "time": "Tiempo",
+  "@time": {
+    "description": "Workout table, column header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "kg": "kg",
+  "@kg": {
+    "description": "Generic label, kilograms",
+    "type": "text",
+    "placeholders": {}
+  },
+  "mile": "milla",
+  "@mile": {
+    "description": "Generic label, miles",
+    "type": "text",
+    "placeholders": {}
+  },
+  "km": "km",
+  "@km": {
+    "description": "Generic label, km",
+    "type": "text",
+    "placeholders": {}
+  },
+  "milesPlural": "millas",
+  "@milesPlural": {
+    "description": "Generic label, miles",
+    "type": "text",
+    "placeholders": {}
+  },
+  "miles": "{howMany,plural, =1{{howMany} milla}other{{howMany} millas}}",
+  "@miles": {
+    "description": "Generic label, miles",
+    "type": "text",
+    "placeholders": {
+      "howMany": {}
+    }
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "edit": "Editar",
+  "@edit": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "delete": "Eliminar",
+  "@delete": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "repeat": "Repetir",
+  "@repeat": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "add": "Agregar",
+  "@add": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "share": "Compartir",
+  "@share": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "okBang": "¡Ok!",
+  "@okBang": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancel": "Cancelar",
+  "@cancel": {
+    "description": "Generic label, \"cancel\" button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "finish": "Terminar",
+  "@finish": {
+    "description": "Generic label, \"finish workout\" button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "reset": "Restablecer",
+  "@reset": {
+    "description": "Generic label, \"Reset\" button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "h": "h",
+  "@h": {
+    "description": "Abbreviation for hours",
+    "type": "text",
+    "placeholders": {}
+  },
+  "min": "min",
+  "@min": {
+    "description": "Abbreviation for minutes",
+    "type": "text",
+    "placeholders": {}
+  },
+  "sec": "seg",
+  "@sec": {
+    "description": "Abbreviation for seconds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lbs": "lbs",
+  "@lbs": {
+    "description": "Generic label, pounds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skip": "Omitir",
+  "@skip": {
+    "description": "Generic label, verb",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lb": "{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}",
+  "@lb": {
+    "description": "Generic label, pounds",
+    "type": "text",
+    "placeholders": {
+      "howMany": {}
+    }
+  },
+  "saveAsTemplate": "Guardar como plantilla",
+  "@saveAsTemplate": {
+    "description": "Workout set option, \"save this workout as a template\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addNote": "Agregar una nota",
+  "@addNote": {
+    "description": "Exercise set option, \"add a note to this set\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "replaceExercise": "Reemplazar ejercicio",
+  "@replaceExercise": {
+    "description": "Exercise set option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "weightUnit": "Peso",
+  "@weightUnit": {
+    "description": "Exercise set option, \"choose weight unit for this set\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "distanceUnit": "Distancia",
+  "@distanceUnit": {
+    "description": "Exercise set option, \"choose distance unit for this set\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "duration": "Duración",
+  "@duration": {
+    "description": "Duration label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "imperial": "Imperial",
+  "@imperial": {
+    "description": "Measurement unit setting",
+    "type": "text",
+    "placeholders": {}
+  },
+  "metric": "Métrico",
+  "@metric": {
+    "description": "Measurement unit setting",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restTimer": "Temporizador de descanso",
+  "@restTimer": {
+    "description": "Exercise set option, \"Set the rest timer for this exercise\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancelTimer": "Cancelar temporizador",
+  "@cancelTimer": {
+    "description": "Button text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeExercise": "Quitar ejercicio",
+  "@removeExercise": {
+    "description": "Exercise set option, \"Remove this exercise from workout\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "morningWorkout": "{when}, por la mañana",
+  "@morningWorkout": {
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "eveningWorkout": "{when}, por la noche",
+  "@eveningWorkout": {
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "nightWorkout": "{when}, de madrugada",
+  "@nightWorkout": {
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "afternoonWorkout": "{when}, por la tarde",
+  "@afternoonWorkout": {
+    "description": "Default workout name",
+    "type": "text",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyHistoryTitle": "Tus entrenamientos completados aparecerán aquí",
+  "@emptyHistoryTitle": {
+    "description": "emptyHistoryTitle",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emptyHistoryBody": "¡Ve por ellos!",
+  "@emptyHistoryBody": {
+    "description": "emptyHistoryBody",
+    "type": "text",
+    "placeholders": {}
+  },
+  "historyEndReached": "Llegaste al final",
+  "@historyEndReached": {
+    "description": "Footer at the bottom of the workout history list once every workout has loaded",
+    "type": "text",
+    "placeholders": {}
+  },
+  "historyLoadMoreError": "No se pudieron cargar más entrenamientos",
+  "@historyLoadMoreError": {
+    "description": "Footer shown when loading the next page of workout history fails",
+    "type": "text",
+    "placeholders": {}
+  },
+  "retry": "Reintentar",
+  "@retry": {
+    "description": "Button to retry a failed action",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutTimeoutTitle": "¿Sigues entrenando?",
+  "@workoutTimeoutTitle": {
+    "description": "Title of the notification sent when an active workout has been idle for a while",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutTimeoutBody": "Tu entrenamiento lleva un rato en pausa — retómalo o dale cierre.",
+  "@workoutTimeoutBody": {
+    "description": "Body of the notification sent when an active workout has been idle for a while",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsDisabledReminder": "Las notificaciones están desactivadas, así que no recibirás avisos del temporizador de descanso.",
+  "@notificationsDisabledReminder": {
+    "description": "Snackbar reminding the user that notifications are disabled while rest timers are set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetSetting": "Tema",
+  "@themePresetSetting": {
+    "description": "Setting item name for picking the app's visual theme preset",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetSettingSubtitle": "Estilos afinados para claro y oscuro",
+  "@themePresetSettingSubtitle": {
+    "description": "Setting item subtitle explaining that each theme preset covers light and dark mode",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetForge": "Forja",
+  "@themePresetForge": {
+    "description": "Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetInk": "Tinta",
+  "@themePresetInk": {
+    "description": "Name of the light-first, paper-and-ink theme preset with a cobalt accent",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetUtility": "Utilitario",
+  "@themePresetUtility": {
+    "description": "Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",
+    "type": "text",
+    "placeholders": {}
+  },
+  "themePresetEmber": "Brasa",
+  "@themePresetEmber": {
+    "description": "Name of the warm theme preset with a true-orange accent; a glowing coal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "aboutApp": "Acerca de la app",
+  "@aboutApp": {
+    "description": "Setting item title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "congratulations": "¡Felicidades!",
+  "@congratulations": {
+    "description": "Workout complete screen, title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "congratulationsBody": "¡Completaste tu entrenamiento!",
+  "@congratulationsBody": {
+    "description": "Workout complete screen, body",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalsAchievedHeading": "{count, plural, one{Meta alcanzada} other{Metas alcanzadas}}",
+  "@goalsAchievedHeading": {
+    "description": "Workout complete screen, heading above the goal rungs this session earned",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalAchievedTarget": "{goal} · {target}",
+  "@goalAchievedTarget": {
+    "description": "Workout complete screen, one earned rung: the goal's name and the target that was met",
+    "type": "text",
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "finishWorkoutTitle": "¿Terminar el entrenamiento?",
+  "@finishWorkoutTitle": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "finishWorkoutWarningTitle": "¿Completar tu entrenamiento?",
+  "@finishWorkoutWarningTitle": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "finishWorkoutWarningBody": "Las series vacías o inválidas se descartarán, y todas las series válidas se marcarán como completadas.",
+  "@finishWorkoutWarningBody": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "finishWorkoutBody": "¿Todo listo para terminar este entrenamiento?",
+  "@finishWorkoutBody": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancelWorkoutBody": "Se perderá todo el progreso realizado hasta ahora.",
+  "@cancelWorkoutBody": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancelWorkoutTitle": "¿Quieres cancelar este entrenamiento?",
+  "@cancelWorkoutTitle": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "readyToFinish": "¡Sí, ya terminé!",
+  "@readyToFinish": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "keepCurrentAccount": "No, mantener el entrenamiento actual",
+  "@keepCurrentAccount": {
+    "description": "Workout start confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cancelAndStartNewWorkout": "Sí, cancelarlo y empezar uno nuevo",
+  "@cancelAndStartNewWorkout": {
+    "description": "Workout start confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "resumeWorkout": "No, reanudar entrenamiento",
+  "@resumeWorkout": {
+    "description": "Workout cancellation confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteThis": "Sí, eliminarlo",
+  "@deleteThis": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleted": "Eliminado",
+  "@deleted": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notReadyToFinish": "¡No, una serie más!",
+  "@notReadyToFinish": {
+    "description": "Workout completion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteTemplateTitle": "¿Quieres eliminar esta plantilla de entrenamiento?",
+  "@deleteTemplateTitle": {
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteTemplateBody": "Esto no se puede deshacer",
+  "@deleteTemplateBody": {
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "quitEditing": "¿Salir de la edición?",
+  "@quitEditing": {
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "changesWillBeLost": "Se perderán todos los cambios",
+  "@changesWillBeLost": {
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "quitPage": "Salir de esta página",
+  "@quitPage": {
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stayHere": "Quedarme aquí",
+  "@stayHere": {
+    "description": "Template deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationSettings": "Ajustes de notificaciones",
+  "@notificationSettings": {
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "selected": "{count} seleccionados",
+  "@selected": {
+    "description": "Selected 4 exercises",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "forExercise": "para {exercise}",
+  "@forExercise": {
+    "description": "As in Rest timer for bicep curl",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      }
+    }
+  },
+  "restTimerSubtitle": "Ajusta la duración con los botones +/-.",
+  "@restTimerSubtitle": {
+    "description": "Rest timer",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addSeconds": "+10s",
+  "@addSeconds": {
+    "description": "Rest timer",
+    "type": "text",
+    "placeholders": {}
+  },
+  "subtractSeconds": "-10s",
+  "@subtractSeconds": {
+    "description": "Rest timer",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restComplete": "¡Descanso terminado!",
+  "@restComplete": {
+    "description": "Rest notification banner",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutsPerWeek": "Entrenamientos por semana",
+  "@workoutsPerWeek": {
+    "description": "Chart label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutsPerWeekTitle": "Tus entrenamientos se mostrarán aquí",
+  "@workoutsPerWeekTitle": {
+    "description": "Chart label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutsPerWeekBody": "¡Ve por ellos!",
+  "@workoutsPerWeekBody": {
+    "description": "Chart label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goals": "Metas",
+  "@goals": {
+    "description": "Title of the goals card on the profile screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addGoal": "Agregar meta",
+  "@addGoal": {
+    "description": "Button that starts creating a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noGoalsYet": "Aún no hay metas",
+  "@noGoalsYet": {
+    "description": "Empty state of the goals card",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workouts": "Entrenamientos",
+  "@workouts": {
+    "description": "The whole-workout goal metric, as opposed to a per-exercise one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newGoal": "Nueva meta",
+  "@newGoal": {
+    "description": "Title of the dialog that creates a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalTarget": "Objetivo",
+  "@goalTarget": {
+    "description": "Title of the dialog where the user types a goal's target number",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalPerWeek": "por semana",
+  "@goalPerWeek": {
+    "description": "Suffix on a goal that repeats weekly, as in '3 / 4 per week'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalPerMonth": "por mes",
+  "@goalPerMonth": {
+    "description": "Suffix on a goal that repeats monthly, as in '12 / 16 per month'",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalDue": "Vence {date}",
+  "@goalDue": {
+    "description": "The deadline of a goal milestone",
+    "type": "text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "goalComplete": "Completada",
+  "@goalComplete": {
+    "description": "Shown on a goal whose every milestone has been achieved",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalMilestone": "Hito",
+  "@goalMilestone": {
+    "description": "Goal shape: a one-off target rather than a repeating one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalWeekly": "Semanal",
+  "@goalWeekly": {
+    "description": "Goal shape: a target that repeats every week",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalMonthly": "Mensual",
+  "@goalMonthly": {
+    "description": "Goal shape: a target that repeats every month",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalLadder": "Hitos",
+  "@goalLadder": {
+    "description": "Heading over the list of a goal's staged targets",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalAddRung": "Agregar hito",
+  "@goalAddRung": {
+    "description": "Button that adds another staged target to a goal",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalAchievedOn": "Alcanzado el {date}",
+  "@goalAchievedOn": {
+    "description": "When a milestone's target was first met",
+    "type": "text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "goalNoDeadline": "Sin fecha límite",
+  "@goalNoDeadline": {
+    "description": "Shown on a milestone the user has not given a date to",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalSetDeadline": "Fijar una fecha límite",
+  "@goalSetDeadline": {
+    "description": "Button that opens the date picker for a milestone",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalClearDeadline": "Quitar fecha límite",
+  "@goalClearDeadline": {
+    "description": "Button that removes a milestone's date",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalsViewAchieved": "Logradas",
+  "@goalsViewAchieved": {
+    "description": "Button on the goals card that flips it over to show goals already achieved",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalsAchievedTitle": "Logradas",
+  "@goalsAchievedTitle": {
+    "description": "Heading on the back of the goals card, above the goals already achieved",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalsViewActive": "Volver",
+  "@goalsViewActive": {
+    "description": "Button on the back of the goals card that flips it to the goals still being worked on",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalOpenWorkout": "Ver la sesión",
+  "@goalOpenWorkout": {
+    "description": "Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalWorkoutGone": "Esa sesión ya no está en este dispositivo",
+  "@goalWorkoutGone": {
+    "description": "Shown when the workout credited with a goal rung can no longer be found",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goalsAtCapacity": "Ya tienes todas las metas que Heart guarda. Elimina una para hacerle espacio a otra.",
+  "@goalsAtCapacity": {
+    "description": "Tooltip explaining why the add-goal button is missing",
+    "type": "text",
+    "placeholders": {}
+  },
+  "category": "Categoría",
+  "@category": {
+    "description": "Label button that allows to choose Exercise category",
+    "type": "text",
+    "placeholders": {}
+  },
+  "target": "Músculo",
+  "@target": {
+    "description": "Label button that allows to choose Exercise target muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeFilter": "Quitar filtro",
+  "@removeFilter": {
+    "description": "Tooltip on the button that removes exercise filter",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restCompleteBody": "Siguiente: {exercise}",
+  "@restCompleteBody": {
+    "description": "Rest notification banner",
+    "type": "text",
+    "placeholders": {
+      "exercise": {}
+    }
+  },
+  "weightedSetRepresentation": "{weight} x {reps}",
+  "@weightedSetRepresentation": {
+    "description": "Rest notification banner",
+    "type": "text",
+    "placeholders": {
+      "weight": {},
+      "reps": {}
+    }
+  },
+  "templates": "Plantillas",
+  "@templates": {
+    "description": "Workout templates section header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exampleTemplates": "Plantillas de ejemplo",
+  "@exampleTemplates": {
+    "description": "Workout templates section header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "template": "Plantilla",
+  "@template": {
+    "description": "A single workout template",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newTemplate": "Nueva plantilla",
+  "@newTemplate": {
+    "description": "New template form header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newFolder": "Nueva carpeta",
+  "@newFolder": {
+    "description": "Button and dialog title for creating a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "folderName": "Nombre de la carpeta",
+  "@folderName": {
+    "description": "Label of the folder name text field",
+    "type": "text",
+    "placeholders": {}
+  },
+  "renameFolder": "Renombrar carpeta",
+  "@renameFolder": {
+    "description": "Menu item and dialog title for renaming a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteFolder": "Eliminar carpeta",
+  "@deleteFolder": {
+    "description": "Menu item and dialog title for deleting a template folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteFolderBody": "Las plantillas que contiene se conservarán",
+  "@deleteFolderBody": {
+    "description": "Reassurance in the delete-folder dialog: deleting a folder never deletes its templates",
+    "type": "text",
+    "placeholders": {}
+  },
+  "moveToFolder": "Mover a carpeta",
+  "@moveToFolder": {
+    "description": "Template menu item and dialog title for filing a template into a folder",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noFolder": "Sin carpeta",
+  "@noFolder": {
+    "description": "Option in the move-to-folder dialog that unfiles the template",
+    "type": "text",
+    "placeholders": {}
+  },
+  "folderNameTaken": "Ya tienes una carpeta con este nombre",
+  "@folderNameTaken": {
+    "description": "Error shown when creating or renaming a folder to a name already in use",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editTemplate": "Editar plantilla",
+  "@editTemplate": {
+    "description": "Edit template form header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editWorkout": "Editar entrenamiento",
+  "@editWorkout": {
+    "description": "Edit workout form header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateName": "Nombre de la plantilla",
+  "@templateName": {
+    "description": "Edit template text field hint",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutName": "Nombre del entrenamiento",
+  "@workoutName": {
+    "description": "Edit workout text field hint",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cannotBeEmpty": "No puede estar vacío",
+  "@cannotBeEmpty": {
+    "description": "Form validation message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "showPassword": "Mostrar contraseña",
+  "@showPassword": {
+    "description": "Tooltip message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "hidePassword": "Ocultar contraseña",
+  "@hidePassword": {
+    "description": "Tooltip message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "yourPassword": "Tu contraseña",
+  "@yourPassword": {
+    "description": "Tooltip message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "resetPassword": "Restablecer contraseña",
+  "@resetPassword": {
+    "description": "Button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "resetPasswordBody": "Te enviaremos un enlace de restablecimiento a tu correo más rápido de lo que tardas en decir “olvidé mi contraseña”. Después de esto no hay vuelta atrás… a menos que canceles, claro. 😌",
+  "@resetPasswordBody": {
+    "description": "Button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "orConnector": "- o -",
+  "@orConnector": {
+    "description": "Connects two widgets, this OR that",
+    "type": "text",
+    "placeholders": {}
+  },
+  "invalidCredentials": "¡Vaya, eso no funcionó! Revisa tus datos, ¿sí?",
+  "@invalidCredentials": {
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "weakPassword": "¡Ya casi! Prueba una contraseña más fuerte para mantener tu cuenta segura.",
+  "@weakPassword": {
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "forgotPassword": "¿Olvidaste tu contraseña?",
+  "@forgotPassword": {
+    "description": "Login button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noConnectivity": "¡Uy! El internet se tropezó con una mancuerna. 🏋️‍♂️ ¡Inténtalo de nuevo en un momento!",
+  "@noConnectivity": {
+    "description": "Error message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "signUp": "Registrarse",
+  "@signUp": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "sendResetLink": "Enviar enlace",
+  "@sendResetLink": {
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
+  },
+  "recoveryLinkMessage": "Si existe una cuenta con este correo, recibirás un enlace de restablecimiento en breve. Revisa tu bandeja de entrada y la carpeta de spam.",
+  "@recoveryLinkMessage": {
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
+  },
+  "recoveryLinkMessageSent": "💌¡Tu correo para configurar la contraseña va en camino! Revisa tu bandeja de entrada (o quizá la carpeta de spam — le gusta esconderse).",
+  "@recoveryLinkMessageSent": {
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emailExistsTitle": "El correo ya existe",
+  "@emailExistsTitle": {
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emailExistsOkButton": "¡Sí, iniciar sesión!",
+  "@emailExistsOkButton": {
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emailExistsCancelButton": "No, yo me encargo",
+  "@emailExistsCancelButton": {
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emailExistsBody": "Ya existe una cuenta con {address}. ¿Quieres iniciar sesión en su lugar?",
+  "@emailExistsBody": {
+    "description": "Email exists dialog",
+    "type": "text",
+    "placeholders": {
+      "address": {}
+    }
+  },
+  "sendResetLinkBody": "Escribe tu correo y te ayudaremos a restablecer tu contraseña",
+  "@sendResetLinkBody": {
+    "description": "Password recovery flow",
+    "type": "text",
+    "placeholders": {}
+  },
+  "userDisabled": "Esta cuenta está deshabilitada",
+  "@userDisabled": {
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "unknownError": "Ocurrió un error desconocido",
+  "@unknownError": {
+    "description": "Login error message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "accountControl": "Control de la cuenta",
+  "@accountControl": {
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "leaveFeedback": "Enviar comentarios",
+  "@leaveFeedback": {
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "leaveFeedbackBody": "Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.\n\nNos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. {emoji}",
+  "@leaveFeedbackBody": {
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {
+      "emoji": {}
+    }
+  },
+  "feedbackReceived": "¡Recibimos tus comentarios, gracias!",
+  "@feedbackReceived": {
+    "description": "Confirmation snack message",
+    "type": "text",
+    "placeholders": {}
+  },
+  "toFeedback": "¡A comentar!",
+  "@toFeedback": {
+    "description": "Action button on a dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "dangerZone": "Zona de peligro",
+  "@dangerZone": {
+    "description": "Settings header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteAccount": "Eliminar cuenta",
+  "@deleteAccount": {
+    "description": "Settings item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteAccountTitle": "¿Seguro que quieres eliminar tu cuenta?",
+  "@deleteAccountTitle": {
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteAccountBody": "Tu cuenta quedará programada para eliminarse en {deadline} días. Durante ese tiempo, aún puedes iniciar sesión y revertir esta decisión. Una vez pasado el plazo, tu cuenta y tus datos personales se eliminarán de forma permanente.",
+  "@deleteAccountBody": {
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {
+      "deadline": {}
+    }
+  },
+  "deleteAccountCancelMessage": "¡Ay no, me gusta estar aquí!",
+  "@deleteAccountCancelMessage": {
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteAccountConfirmMessage": "¡Sí, sigan sin mí!",
+  "@deleteAccountConfirmMessage": {
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "confirmDeleteAccountTitle": "Confirma la eliminación de tu cuenta",
+  "@confirmDeleteAccountTitle": {
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "confirmDeleteAccountCancelMessage": "Cambié de opinión, cancelar",
+  "@confirmDeleteAccountCancelMessage": {
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "confirmDeleteAccountOkMessage": "¡Adiós!",
+  "@confirmDeleteAccountOkMessage": {
+    "description": "Delete account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "accountDeleted": "Cuenta eliminada",
+  "@accountDeleted": {
+    "description": "Delete account page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "accountDeletedBody": "Tu cuenta quedó programada para eliminarse el {date}.\n\nSi cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.\n\nSolo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.",
+  "@accountDeletedBody": {
+    "description": "Delete account page",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "accountDeletedAction": "🔥🏆 Deshacer la despedida 🥇🔥",
+  "@accountDeletedAction": {
+    "description": "Delete account page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "movement": "Movimiento",
+  "@movement": {
+    "description": "Title of the movement filter sheet in the exercise library",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pattern": "Patrón",
+  "@pattern": {
+    "description": "Movement filter section listing movement patterns, e.g. Horizontal Press",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stability": "Estabilidad",
+  "@stability": {
+    "description": "Movement filter section for how constrained the movement path is",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillAtMost": "Técnica máxima",
+  "@skillAtMost": {
+    "description": "Movement filter section capping how technical an exercise may be",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternHelp": "El movimiento en sí — más general que el equipo, más específico que la parte del cuerpo. Los ejercicios que comparten un patrón pueden sustituirse entre sí.",
+  "@patternHelp": {
+    "description": "Help tooltip on the Pattern section of the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stabilityHelp": "Cuánto sostiene el equipo la trayectoria por ti. Libre significa que tú equilibras el peso; máquina, que la trayectoria es fija.",
+  "@stabilityHelp": {
+    "description": "Help tooltip on the Stability section of the movement filter sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "skillAtMostHelp": "Cuánta técnica exige un ejercicio antes de poder cargarlo con seguridad. Elegir Moderada también incluye Baja.",
+  "@skillAtMostHelp": {
+    "description": "Help tooltip on the Skill section of the movement filter sheet, explaining that the choice is a ceiling",
+    "type": "text",
+    "placeholders": {}
+  },
+  "clearFilters": "Limpiar",
+  "@clearFilters": {
+    "description": "Button that removes every active movement filter",
+    "type": "text",
+    "placeholders": {}
+  },
+  "alsoTry": "Prueba también",
+  "@alsoTry": {
+    "description": "Substitution section on the exercise About tab",
+    "type": "text",
+    "placeholders": {}
+  },
+  "about": "Descripción",
+  "@about": {
+    "description": "Exercise detail tab: overview and technique of the exercise (not about the app)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "records": "Récords",
+  "@records": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartWeeklyAverage": "Promedio semanal",
+  "@chartWeeklyAverage": {
+    "description": "Caption under a chart that is plotting one point per week rather than one per reading. Says what the line is, so a reader does not take a smoothed point for a single reading",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartMonthlyAverage": "Promedio mensual",
+  "@chartMonthlyAverage": {
+    "description": "As chartWeeklyAverage, one point per calendar month",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartYearlyAverage": "Promedio anual",
+  "@chartYearlyAverage": {
+    "description": "As chartWeeklyAverage, one point per calendar year",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeMonth": "1M",
+  "@chartRangeMonth": {
+    "description": "Chip that sets a chart's window to the last month. Abbreviated because four of these sit in a row on a phone; use whatever short form is conventional for a finance or fitness chart in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeQuarter": "3M",
+  "@chartRangeQuarter": {
+    "description": "Chip that sets a chart's window to the last three months. Abbreviated, as chartRangeMonth",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeYear": "1A",
+  "@chartRangeYear": {
+    "description": "Chip that sets a chart's window to the last year. Abbreviated, as chartRangeMonth",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartRangeAll": "Todo",
+  "@chartRangeAll": {
+    "description": "Chip that sets a chart's window to everything recorded, however far back that goes. Keep it short — it sits beside 1M/3M/1Y",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartGenericLabel": "Gráfico",
+  "@chartGenericLabel": {
+    "description": "Fallback metric name in the history chart accessibility summary, when the chart has no visible title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartSummary": "{metric} de {start} a {end}. Último valor: {latest}. Tendencia: {trend}.",
+  "@exerciseChartSummary": {
+    "description": "Accessibility summary of a history chart, replacing the plotted line with a sentence",
+    "type": "text",
+    "placeholders": {
+      "metric": {},
+      "start": {},
+      "end": {},
+      "latest": {},
+      "trend": {}
+    }
+  },
+  "exerciseChartTrendUp": "En aumento",
+  "@exerciseChartTrendUp": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartTrendDown": "En descenso",
+  "@exerciseChartTrendDown": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseChartTrendFlat": "Estable",
+  "@exerciseChartTrendFlat": {
+    "description": "Trend word in the history chart accessibility summary, when the latest value equals the earliest shown",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthCardSummary": "{metric}, {value}, {when}",
+  "@healthCardSummary": {
+    "description": "Accessibility label for a tappable health card on the dashboard. The card is an InkWell around a label, a number and a sparkline, none of which announce themselves as a control — this is what a screen reader reads instead, so it has to carry the whole card",
+    "type": "text",
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "charts": "Gráficos",
+  "@charts": {
+    "description": "Generic label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emptyExerciseHistoryTitle": "Reps fantasma detectadas 👻",
+  "@emptyExerciseHistoryTitle": {
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emptyExerciseHistoryBody": "Tu historial de este ejercicio está más vacío que un gimnasio un lunes por la mañana. ¡Hora de llenarlo con unos PR gloriosos!",
+  "@emptyExerciseHistoryBody": {
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "errorExerciseHistoryTitle": "¡Ups! Alguien se saltó el día de datos 🤷‍♀️",
+  "@errorExerciseHistoryTitle": {
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "errorExerciseHistoryBody": "Parece que la app se tropezó con sus propios cordones. Inténtalo de nuevo, ¡y prometemos atarlos más fuerte la próxima vez!",
+  "@errorExerciseHistoryBody": {
+    "description": "Exercise history empty state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "personalRecords": "Récords personales",
+  "@personalRecords": {
+    "description": "Records screen, title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "maxDuration": "Duración máxima",
+  "@maxDuration": {
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "maxDistance": "Distancia máxima",
+  "@maxDistance": {
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "maxWeight": "Peso máximo",
+  "@maxWeight": {
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "maxReps": "Reps máximas",
+  "@maxReps": {
+    "description": "Records screen, metric name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "capturePhoto": "Tomar una foto nueva",
+  "@capturePhoto": {
+    "description": "Image picker menu",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chooseFromGallery": "Elegir de la galería",
+  "@chooseFromGallery": {
+    "description": "Image picker menu",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeCurrentPhoto": "Quitar foto actual",
+  "@removeCurrentPhoto": {
+    "description": "Image picker menu",
+    "type": "text",
+    "placeholders": {}
+  },
+  "mine": "Míos",
+  "@mine": {
+    "description": "Possessive pronoun, as in \"My exercises\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "goToWorkout": "Ir al entrenamiento",
+  "@goToWorkout": {
+    "description": "Label for button that pulls up active workout UI",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTimer": "Poner temporizador",
+  "@setTimer": {
+    "description": "Label for button that adds a rest timer to an exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "updateRequiredTitle": "Ups. Esta es culpa nuestra",
+  "@updateRequiredTitle": {
+    "description": "Force update screen, title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "updateRequiredBody": "Hay una actualización importante esperando — una que mantiene la app funcionando como debe.\n\nNecesitas instalarla antes de continuar.\nGracias por tu paciencia — y perdón por la interrupción.",
+  "@updateRequiredBody": {
+    "description": "Force update screen, body",
+    "type": "text",
+    "placeholders": {}
+  },
+  "updateRequiredCta": "Actualizar en {storeName}",
+  "@updateRequiredCta": {
+    "description": "Force update screen, CTA",
+    "type": "text",
+    "placeholders": {
+      "storeName": {
+        "type": "String",
+        "example": "App Store"
+      }
+    }
+  },
+  "addPhoto": "Agregar foto",
+  "@addPhoto": {
+    "description": "Menu item that allows to add photo to a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editWorkoutName": "Editar nombre del entrenamiento",
+  "@editWorkoutName": {
+    "description": "Menu item that allows to edit workout name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editWorkoutTimes": "Editar horas",
+  "@editWorkoutTimes": {
+    "description": "Menu item that allows editing a workout's start and end times",
+    "type": "text",
+    "placeholders": {}
+  },
+  "adjustTimes": "Ajustar hora de inicio/fin",
+  "@adjustTimes": {
+    "description": "Title of the dialog for editing a workout's start and end times",
+    "type": "text",
+    "placeholders": {}
+  },
+  "startTime": "Hora de inicio",
+  "@startTime": {
+    "description": "Label for a workout's start time",
+    "type": "text",
+    "placeholders": {}
+  },
+  "endTime": "Hora de fin",
+  "@endTime": {
+    "description": "Label for a workout's end time",
+    "type": "text",
+    "placeholders": {}
+  },
+  "endBeforeStart": "La hora de fin no puede ser anterior a la de inicio.",
+  "@endBeforeStart": {
+    "description": "Validation shown when a workout's chosen end time precedes its start time",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cropImage": "Recortar imagen",
+  "@cropImage": {
+    "description": "Label in the image cropper",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removePhoto": "Quitar foto",
+  "@removePhoto": {
+    "description": "Menu item that allows to remove photo from a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "aboutExercise": "Acerca del ejercicio",
+  "@aboutExercise": {
+    "description": "Menu item that opens exercise details",
+    "type": "text",
+    "placeholders": {}
+  },
+  "myDashboard": "Mi panel",
+  "@myDashboard": {
+    "description": "Title of the dashboard screen with performance charts",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newChart": "Nuevo gráfico",
+  "@newChart": {
+    "description": "Button that allows to create a new chart",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emptyChartStateTitle": "Esto se ve un poco vacío",
+  "@emptyChartStateTitle": {
+    "description": "Empty state for chart widget",
+    "type": "text",
+    "placeholders": {}
+  },
+  "emptyChartStateBody": "Agrega tu primera serie para empezar a ver progreso real",
+  "@emptyChartStateBody": {
+    "description": "Empty state for chart widget",
+    "type": "text",
+    "placeholders": {}
+  },
+  "topSetWeight": "Peso de la mejor serie",
+  "@topSetWeight": {
+    "description": "For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "estimatedOneRepMax": "1RM estimado",
+  "@estimatedOneRepMax": {
+    "description": "An estimated one-repetition maximum calculated from the best set in a workout (weight + reps) using a standard 1RM formula. Displayed as a trend line, not a guaranteed true max.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalVolume": "Volumen total",
+  "@totalVolume": {
+    "description": "Total work performed for an exercise in a session or time window, computed as the sum of (weight × reps) across all sets. Useful for tracking training load over time.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "averageWorkingWeight": "Peso promedio de trabajo",
+  "@averageWorkingWeight": {
+    "description": "Average weight used across working sets for an exercise, typically weighted by reps or sets. Helps smooth out noise from a single heavy or light set when charting progress.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "assistanceWeight": "Peso de asistencia",
+  "@assistanceWeight": {
+    "description": "For assisted bodyweight exercises, the amount of assistance provided (e.g., machine counterweight or band assistance). Lower values typically indicate progression toward unassisted reps.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "maxRepsInSet": "Máx. de reps en una serie",
+  "@maxRepsInSet": {
+    "description": "Highest number of repetitions completed in any single set for the selected exercise within a workout or time window. Used to track capacity improvements on reps-only movements.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalReps": "Reps totales",
+  "@totalReps": {
+    "description": "Total repetitions completed for an exercise within a workout or time window, summed across all sets. Useful for reps-only exercises and high-rep accessory work.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cardioDistance": "Distancia",
+  "@cardioDistance": {
+    "description": "For cardio exercises, total distance completed in a session (e.g., kilometers or miles depending on user units). Often charted per workout to show endurance progression.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "cardioDuration": "Duración",
+  "@cardioDuration": {
+    "description": "For cardio exercises, total time spent in the session. Can be charted alone or paired with distance to derive pace when both are available.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "averagePace": "Ritmo promedio",
+  "@averagePace": {
+    "description": "For cardio exercises, average pace computed from distance and duration (time per unit distance, e.g., min/km). Only valid when both distance and duration are present and reliable.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalTimeUnderTension": "Tiempo total bajo tensión",
+  "@totalTimeUnderTension": {
+    "description": "For duration-based exercises, total accumulated time across all sets in a session or time window. Used to chart consistency and gradual increases for holds or mobility work.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "passwordPolicyTitle": "Hagamos una contraseña que levante pesado:",
+  "@passwordPolicyTitle": {
+    "description": "Title for password requirements section shown during sign-up. Sets a friendly, motivational tone for the password creation rules that follow.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "passwordPolicyMinLength": "al menos {minLength} caracteres",
+  "@passwordPolicyMinLength": {
+    "description": "Password requirement: minimum character count. Displayed as a bullet point in the password policy list to inform users of the minimum length constraint.",
+    "type": "text",
+    "placeholders": {
+      "minLength": {
+        "type": "int"
+      }
+    }
+  },
+  "passwordPolicyMaxLength": "no más de {maxLength} (creemos en los límites)",
+  "@passwordPolicyMaxLength": {
+    "description": "Password requirement: maximum character count. Displayed as a bullet point in the password policy list with a playful note about reasonable boundaries.",
+    "type": "text",
+    "placeholders": {
+      "maxLength": {
+        "type": "int"
+      }
+    }
+  },
+  "passwordPolicyUpperCase": "una letra mayúscula",
+  "@passwordPolicyUpperCase": {
+    "description": "Password requirement: must contain at least one uppercase letter (A-Z). Shown as a validation rule in the password policy checklist.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "passwordPolicyLowerCase": "una letra minúscula",
+  "@passwordPolicyLowerCase": {
+    "description": "Password requirement: must contain at least one lowercase letter (a-z). Shown as a validation rule in the password policy checklist.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "passwordPolicyDigit": "un número por ahí",
+  "@passwordPolicyDigit": {
+    "description": "Password requirement: must contain at least one numeric digit (0-9). Displayed as a validation rule in the password policy checklist with casual phrasing.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteImageDialogTitle": "¿Quitar esta imagen?",
+  "@deleteImageDialogTitle": {
+    "description": "Confirmation dialog title when user attempts to delete an image from a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteImageDialogBody": "No afectará el entrenamiento — solo quita la imagen",
+  "@deleteImageDialogBody": {
+    "description": "Confirmation dialog body explaining that removing the image won't delete workout data",
+    "type": "text",
+    "placeholders": {}
+  },
+  "myProgression": "Mi progreso",
+  "@myProgression": {
+    "description": "Photo gallery title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "copiedToClipboard": "Copiado al portapapeles",
+  "@copiedToClipboard": {
+    "description": "Snack message when user copies text to clipboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "weightUnitLabel": "Unidad de peso",
+  "@weightUnitLabel": {
+    "description": "Weight unit label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "distanceUnitLabel": "Unidad de distancia",
+  "@distanceUnitLabel": {
+    "description": "Distance unit label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "close": "Cerrar",
+  "@close": {
+    "description": "Tooltip on a button that dismisses a dialog or a detail pane",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noWorkoutSelectedTitle": "Nada seleccionado",
+  "@noWorkoutSelectedTitle": {
+    "description": "Placeholder shown in the detail pane on a tablet when no workout is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noWorkoutSelectedBody": "Elige un entrenamiento para ver lo que hiciste y hacer cambios.",
+  "@noWorkoutSelectedBody": {
+    "description": "Placeholder shown in the detail pane on a tablet when no workout is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noExerciseSelectedTitle": "Nada seleccionado",
+  "@noExerciseSelectedTitle": {
+    "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noExerciseSelectedBody": "Elige un ejercicio para ver cómo se hace, junto con tu historial y tus récords.",
+  "@noExerciseSelectedBody": {
+    "description": "Placeholder shown in the detail pane on a tablet when no exercise is selected yet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "moreOptions": "Más opciones",
+  "@moreOptions": {
+    "description": "Tooltip on an icon-only overflow menu button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "viewProgressPhotos": "Ver fotos de progreso",
+  "@viewProgressPhotos": {
+    "description": "Tooltip on the icon button that opens a workout's attached progress photos",
+    "type": "text",
+    "placeholders": {}
+  },
+  "confirmEdit": "Confirmar",
+  "@confirmEdit": {
+    "description": "Tooltip on the checkmark button that dismisses the keyboard after editing a name field",
+    "type": "text",
+    "placeholders": {}
+  },
+  "clearSearchTooltip": "Borrar búsqueda",
+  "@clearSearchTooltip": {
+    "description": "Accessibility label on the button that clears a search field's text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "changeProfilePhoto": "Cambiar foto de perfil",
+  "@changeProfilePhoto": {
+    "description": "Accessibility label on the editable avatar shown while editing an account",
+    "type": "text",
+    "placeholders": {}
+  },
+  "viewAccountDetails": "Detalles de la cuenta",
+  "@viewAccountDetails": {
+    "description": "Accessibility label on the profile page header, which opens account management",
+    "type": "text",
+    "placeholders": {}
+  },
+  "viewProfilePhoto": "Ver foto de perfil",
+  "@viewProfilePhoto": {
+    "description": "Accessibility label on the avatar shown in the profile page header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "durationPickerSetTo": "Poner el temporizador de descanso en {duration}",
+  "@durationPickerSetTo": {
+    "description": "Accessibility label on a single row of the rest-timer duration picker, tapped to select that duration directly",
+    "type": "text",
+    "placeholders": {
+      "duration": {}
+    }
+  },
+  "emptyWorkoutLabel": "Entrenamiento vacío",
+  "@emptyWorkoutLabel": {
+    "description": "Accessibility label on the illustration shown when a workout has no exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "progressPhotoLabel": "Foto de progreso del {date}",
+  "@progressPhotoLabel": {
+    "description": "Accessibility label on a progress photo in the gallery",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "exerciseThumbnailLabel": "Miniatura de {exerciseName}",
+  "@exerciseThumbnailLabel": {
+    "description": "Accessibility label on an exercise's thumbnail image",
+    "type": "text",
+    "placeholders": {
+      "exerciseName": {}
+    }
+  },
+  "goalLadderSummary": "{achieved} de {total} objetivos alcanzados. Actual: {current}.",
+  "@goalLadderSummary": {
+    "description": "Accessibility summary of a goal's ladder progress bar, replacing the painted rungs with a sentence",
+    "type": "text",
+    "placeholders": {
+      "achieved": {},
+      "total": {},
+      "current": {}
+    }
+  },
+  "restTimerRemaining": "Temporizador de descanso: quedan {remaining}",
+  "@restTimerRemaining": {
+    "description": "Accessibility label on the rest-timer countdown ring, stating the remaining time as a sentence",
+    "type": "text",
+    "placeholders": {
+      "remaining": {}
+    }
+  },
+  "health": "Salud",
+  "@health": {
+    "description": "Header of the health section on the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthActiveEnergy": "Energía activa",
+  "@healthActiveEnergy": {
+    "description": "Name of a health metric: calories burned through activity",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthBodyMass": "Masa corporal",
+  "@healthBodyMass": {
+    "description": "Name of a health metric: bodyweight",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthBpm": "lpm",
+  "@healthBpm": {
+    "description": "Unit abbreviation, beats per minute. Shown next to a heart rate",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthChecking": "Buscando lecturas nuevas…",
+  "@healthChecking": {
+    "description": "Shown on the health card while the app is reading the phone's health store, in place of the empty-state message. Mostly seen in the seconds after the user comes back from granting permission, so it must not sound like a result — it is what is happening, not what was found",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthLatestReading": "Última lectura · {when}",
+  "@healthLatestReading": {
+    "description": "Under the big number in the health detail dialog. The date on its own was cryptic — a bare \"08-13\" beside a heart rate reads as part of the measurement rather than as when it was taken. Says what the date is, and formats it with a month name so it cannot be mistaken for a number",
+    "type": "text",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "Aug 13"
+      }
+    }
+  },
+  "healthDelete": "Eliminar datos de salud",
+  "@healthDelete": {
+    "description": "Settings row that deletes Heart's local copy of health data",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDeleteBody": "Esto borra lo que Heart ha leído en este dispositivo. Nada cambia en el almacén de salud de tu teléfono, y Heart volverá a leerlo la próxima vez que sincronice.",
+  "@healthDeleteBody": {
+    "description": "Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthDeleteTitle": "¿Eliminar la copia de Heart de tus datos de salud?",
+  "@healthDeleteTitle": {
+    "description": "Confirmation title. Must say it is Heart's copy — a title reading like 'erase my heart rate history' would suggest years of data are about to be lost",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthHeartRateVariability": "Variabilidad de la frecuencia cardiaca",
+  "@healthHeartRateVariability": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthHoursShort": "h",
+  "@healthHoursShort": {
+    "description": "Single-letter abbreviation for hours, as in '7h 15m'. No space before it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteAction": "Mostrar mis datos de salud",
+  "@healthInviteAction": {
+    "description": "Button that opens the operating system's health permission sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteBody": "Heart puede mostrar tu frecuencia cardiaca en reposo, sueño, pasos y masa corporal junto a tus entrenamientos. Los lee del almacén de salud de tu teléfono y los guarda en este dispositivo.",
+  "@healthInviteBody": {
+    "description": "Body of the card offering to read health data. The last clause is a genuine selling point, not fine print — keep it plain and avoid words like private or secure",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteDismiss": "Ahora no",
+  "@healthInviteDismiss": {
+    "description": "Tooltip on the button that dismisses the health invitation card",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthInviteTitle": "Datos de salud",
+  "@healthInviteTitle": {
+    "description": "Title of the card offering to read health data from the phone",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthKilocalories": "kcal",
+  "@healthKilocalories": {
+    "description": "Unit abbreviation, kilocalories. Shown next to active energy",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthMilliseconds": "ms",
+  "@healthMilliseconds": {
+    "description": "Unit abbreviation, milliseconds. Shown next to heart rate variability",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthMinutesShort": "m",
+  "@healthMinutesShort": {
+    "description": "Single-letter abbreviation for minutes, as in '7h 15m'. No space before it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOffInHealthApp": "En la app Salud, toca tu foto de perfil, luego Apps, y permite que Heart lea tus datos.",
+  "@healthOffInHealthApp": {
+    "description": "iOS only. Body of the dialog behind the info button on the greyed-out Health header, shown once the user has been asked and nothing is being read. The dialog's button opens the Health app; this is what to do on arrival, since Apple gives no way to link straight to Heart's row. An instruction, not an explanation — do not add why the permission is there rather than in Heart. Match the wording Apple's Health app uses in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOffInSettings": "Permite que Heart lea tus datos de salud en los ajustes de salud de tu dispositivo. Permite también el acceso a datos anteriores, o los gráficos se quedarán en los últimos 30 días.",
+  "@healthOffInSettings": {
+    "description": "Non-iOS fallback for healthOffInHealthApp. An instruction, never an explanation, and neutral about why there is nothing to show. The second sentence is Android-specific and load-bearing: Health Connect keeps past-data access as a separate switch away from the main permission list, and without it every read is capped at 30 days however far back the app asks. Say 'past data' — that is the platform's own wording for it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOffTitle": "Heart no está leyendo ningún dato de salud",
+  "@healthOffTitle": {
+    "description": "Title of that dialog, and the tooltip on the button that opens it. States the fact and nothing else — the app cannot tell whether the user declined or simply has no readings, so it must not sound like a fault on either side",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOnThisDevice": "En este dispositivo",
+  "@healthOnThisDevice": {
+    "description": "Subtitle under the Health header. States where health data is kept. Must not be softened into 'private' or 'secure' — workouts do sync to a server and only health data does not",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenHealthApp": "Abrir la app Salud",
+  "@healthOpenHealthApp": {
+    "description": "iOS only. Button that opens Apple's Health app, which is where read permissions live — the app's own page in iOS Settings has no health toggle at all. 'Health' here is the name of Apple's app and should keep whatever name it has in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenHealthAppHint": "Toca tu foto de perfil, luego Apps",
+  "@healthOpenHealthAppHint": {
+    "description": "iOS only. Sits under the row that opens the Health app and says what to do once there, since Apple gives no way to link straight to Heart's row. An instruction only — it is not the place to explain why the permission lives outside Heart. Match the wording Apple's Health app uses in this locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenSettingsHint": "Permite también el acceso a datos anteriores",
+  "@healthOpenSettingsHint": {
+    "description": "Non-iOS. Sits under the row that opens the device's health settings. Health Connect keeps past-data access apart from the main permission list, so a user who grants everything they can see is still capped at 30 days. An instruction, not an explanation of why. Deliberately echoes Health Connect's own prompt — \"Allow Heart to access past data?\" — so the words the user reads here are the words they then look for; match that prompt's wording in this locale rather than translating literally",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthOpenSettings": "Abrir ajustes",
+  "@healthOpenSettings": {
+    "description": "Button that opens the operating system's settings app. Non-iOS fallback for healthOpenHealthApp",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthRestingHeartRate": "Frecuencia cardiaca en reposo",
+  "@healthRestingHeartRate": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSettingsBody": "Heart lee la frecuencia cardiaca en reposo, la variabilidad de la frecuencia cardiaca, el sueño, los pasos, la energía activa y la masa corporal del almacén de salud de tu teléfono. Se quedan en este dispositivo.",
+  "@healthSettingsBody": {
+    "description": "Settings section body. Names exactly what Heart reads and restates where it is kept. Say 'on this device', never 'private' or 'secure' — workouts do sync to a server and only health data does not",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthWriteWorkouts": "Guardar entrenamientos en Salud",
+  "@healthWriteWorkouts": {
+    "description": "Settings row title. Heart writing a finished workout back to the phone's health store, so the user's activity rings credit their lifting",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthWriteWorkoutsOn": "Se guarda cuánto tiempo entrenas, y nada más",
+  "@healthWriteWorkoutsOn": {
+    "description": "Settings row subtitle when Heart may write. States the limit as the reassurance: duration and activity type only. Never claim Heart records calories — it deliberately does not, because without a watch there is no measurement, only a guess",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthWriteWorkoutsOff": "Desactivado · Heart no está guardando tus entrenamientos",
+  "@healthWriteWorkoutsOff": {
+    "description": "Settings row subtitle when write access was declined. Neutral — declining is a normal choice, not an error to scold",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSleep": "Sueño",
+  "@healthSleep": {
+    "description": "Name of a health metric: time asleep",
+    "type": "text",
+    "placeholders": {}
+  },
+  "healthSteps": "Pasos",
+  "@healthSteps": {
+    "description": "Name of a health metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteWorkoutTitle": "¿Quieres eliminar este entrenamiento?",
+  "@deleteWorkoutTitle": {
+    "description": "Workout deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deleteWorkoutBody": "Esto no se puede deshacer",
+  "@deleteWorkoutBody": {
+    "description": "Workout deletion confirmation dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importData": "Importar historial de entrenamientos",
+  "@importData": {
+    "description": "Settings item and title of the import page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importPreviewTitle": "Todo listo para importar",
+  "@importPreviewTitle": {
+    "description": "Import page, heading of the preview/consent step",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importPreviewSummary": "{workouts, plural, =1{1 entrenamiento} other{{workouts} entrenamientos}} y {sets, plural, =1{1 serie} other{{sets} series}} listos para importar",
+  "@importPreviewSummary": {
+    "description": "Import preview line, what the file holds",
+    "type": "text",
+    "placeholders": {
+      "workouts": {},
+      "sets": {}
+    }
+  },
+  "importPreviewSummaryPartial": "{count, plural, =1{1 entrenamiento es nuevo} other{{count} entrenamientos son nuevos}}",
+  "@importPreviewSummaryPartial": {
+    "description": "Import preview line when part of the file was imported before — only the new workouts are announced",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewNothingNew": "Nada nuevo — {count, plural, =1{el entrenamiento de este archivo ya está} other{los {count} entrenamientos de este archivo ya están}} aquí",
+  "@importPreviewNothingNew": {
+    "description": "Import preview line when every workout in the file was imported before",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewMatched": "{count, plural, =1{1 ejercicio ya coincide con la biblioteca} other{{count} ejercicios ya coinciden con la biblioteca}}",
+  "@importPreviewMatched": {
+    "description": "Import preview line, exercises that resolved against the stock catalog or existing customs",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importPreviewAlreadyHere": "{count, plural, =1{1 entrenamiento ya está aquí — se omitirá} other{{count} entrenamientos ya están aquí — se omitirán}}",
+  "@importPreviewAlreadyHere": {
+    "description": "Import preview line, workouts a commit would skip as previously imported",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "selectAll": "Seleccionar todo",
+  "@selectAll": {
+    "description": "Button over a checkbox list, checks every item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "deselectAll": "Deseleccionar todo",
+  "@deselectAll": {
+    "description": "Button over a checkbox list, unchecks every item",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importConsentTitle": "Nuevos ejercicios encontrados",
+  "@importConsentTitle": {
+    "description": "Import page, heading of the consent step over unmatched exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importConsentBody": "Estos no coincidieron con nada en la biblioteca. Marca los que quieras traer como tus ejercicios personalizados — lo que quede sin marcar se queda fuera, junto con sus series.",
+  "@importConsentBody": {
+    "description": "Import page, explains the consent checkboxes over unmatched exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importAction": "Importar",
+  "@importAction": {
+    "description": "Import page, the button that commits the import after the consent step",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importSetsCount": "{count, plural, =1{1 serie} other{{count} series}}",
+  "@importSetsCount": {
+    "description": "Import consent step, how many sets ride on an unmatched exercise",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importSkippedSets": "{count, plural, =1{1 serie se quedó fuera} other{{count} series se quedaron fuera}} con los ejercicios que descartaste",
+  "@importSkippedSets": {
+    "description": "Import report line, sets not imported because their exercise was declined",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "yourData": "Tus datos",
+  "@yourData": {
+    "description": "Settings section header over data import (and, later, export)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "account": "Cuenta",
+  "@account": {
+    "description": "Settings section header over account management",
+    "type": "text",
+    "placeholders": {}
+  },
+  "app": "App",
+  "@app": {
+    "description": "Settings section header over notifications, about, and feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importExplainerStrong": "¿Entrenabas con Strong? Trae tu historial contigo.\n\nEn la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.",
+  "@importExplainerStrong": {
+    "description": "Import page, explains where the Strong export file comes from",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importSafeToRetry": "Todo se importa — entrenamientos, series, ejercicios. Importar el mismo archivo dos veces es seguro: lo que ya está aquí se omite, nunca se duplica.",
+  "@importSafeToRetry": {
+    "description": "Import page, reassurance below the explainer",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chooseFile": "Elegir archivo",
+  "@chooseFile": {
+    "description": "Import page, the button that opens the file picker",
+    "type": "text",
+    "placeholders": {}
+  },
+  "csvFiles": "Archivos CSV",
+  "@csvFiles": {
+    "description": "File-type label shown in the platform file picker",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importInFlight": "Importando — un momento…",
+  "@importInFlight": {
+    "description": "Import page, progress label while the file is uploading",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedHeadline": "Ese archivo no funcionó",
+  "@importFailedHeadline": {
+    "description": "Import page, friendly headline when the server rejects the file",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedBody": "No se pudo leer como una exportación de Strong. Elige el archivo CSV del correo de exportación de Strong e inténtalo de nuevo.",
+  "@importFailedBody": {
+    "description": "Import page, body of the rejected-file error state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importReportTitle": "¡Importado!",
+  "@importReportTitle": {
+    "description": "Import page, heading of the success report",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importedWorkouts": "{count, plural, =0{Ningún entrenamiento nuevo} =1{1 entrenamiento importado} other{{count} entrenamientos importados}}",
+  "@importedWorkouts": {
+    "description": "Import report line, how many workouts were created",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importSkippedWorkouts": "{count, plural, =1{1 entrenamiento ya estaba aquí — omitido} other{{count} entrenamientos ya estaban aquí — omitidos}}",
+  "@importSkippedWorkouts": {
+    "description": "Import report line, workouts skipped as previously imported",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importedSets": "{count, plural, =1{1 serie} other{{count} series}} en total",
+  "@importedSets": {
+    "description": "Import report line, total sets created",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importSkippedRows": "{count, plural, =1{1 fila no se pudo leer} other{{count} filas no se pudieron leer}}",
+  "@importSkippedRows": {
+    "description": "Import report line, malformed rows the server could not repair",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importNewExercisesHeader": "Nuevos ejercicios personalizados",
+  "@importNewExercisesHeader": {
+    "description": "Import report, heading above the list of exercises created as the user's customs",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importNewExercisesBody": "Estos no coincidieron con nada en la biblioteca, así que llegaron como tus ejercicios personalizados:",
+  "@importNewExercisesBody": {
+    "description": "Import report, explains the list of created custom exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "machineTranslatedCopy": "Traducción automática",
+  "@machineTranslatedCopy": {
+    "description": "Small provenance mark above exercise instructions whose copy for the current language is machine-authored and not yet human-reviewed (Exercise.validated == false)",
+    "type": "text",
+    "placeholders": {}
+  }
+}
