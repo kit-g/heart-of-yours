@@ -172,7 +172,13 @@ class _TimelineChartState extends State<TimelineChart> {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final l = L.of(context);
 
-    if (widget.series.length < 2) return SizedBox(height: widget.height);
+    // Only a truly empty series has nothing to show (and `_window` cannot
+    // even index it). One point is a real reading: the axis pads a band
+    // around it (see niceYAxis), the range chips hide themselves, and the
+    // drag clamps to a no-op — guarding `< 2` here used to render a blank
+    // 300pt box per chart, which made a one-session exercise's whole Charts
+    // tab read as broken.
+    if (widget.series.isEmpty) return SizedBox(height: widget.height);
 
     return ValueListenableBuilder<double>(
       valueListenable: _days,

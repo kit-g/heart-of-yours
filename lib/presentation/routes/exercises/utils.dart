@@ -86,6 +86,7 @@ class _Page extends StatelessWidget {
         .records => _Records(
           exercise: exercise,
           recordsLookup: Exercises.of(context).getExerciseRecords,
+          onTapWorkout: onTapWorkout,
         ),
         .history => _History(
           exercise: exercise,
