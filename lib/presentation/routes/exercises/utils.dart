@@ -99,8 +99,6 @@ class _Page extends StatelessWidget {
   }
 }
 
-const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));
-
 extension on Duration {
   String formatted() {
     final minutes = _pad(inMinutes.remainder(60));
