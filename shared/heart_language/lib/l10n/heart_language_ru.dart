@@ -368,6 +368,22 @@ class LRu extends L {
   String get congratulationsBody => 'Ваша тренировка завершена!';
 
   @override
+  String recordsAchievedHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Новые рекорды',
+      one: 'Новый рекорд',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recordAchievedLine(String exercise, String records) {
+    return '$exercise · $records';
+  }
+
+  @override
   String goalsAchievedHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

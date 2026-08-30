@@ -682,6 +682,29 @@
     "type": "text",
     "placeholders": {}
   },
+  "recordsAchievedHeading": "{count, plural, one{Новый рекорд} other{Новые рекорды}}",
+  "@recordsAchievedHeading": {
+    "description": "Workout complete screen, heading above the personal records this session set",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recordAchievedLine": "{exercise} · {records}",
+  "@recordAchievedLine": {
+    "description": "Workout complete screen, one exercise's new records: the exercise name and its record values",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      },
+      "records": {
+        "type": "String"
+      }
+    }
+  },
   "goalsAchievedHeading": "{count, plural, one{Цель взята} few{Цели взяты} many{Целей взято} other{Цели взяты}}",
   "@goalsAchievedHeading": {
     "description": "Workout complete screen, heading above the goal rungs this session earned",
