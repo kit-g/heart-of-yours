@@ -124,6 +124,8 @@ themePresetEmber,Name of the warm theme preset with a true-orange accent; a glow
 aboutApp,Setting item title,About app,About app,О приложении
 congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!
 congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!
+recordsAchievedHeading,"Workout complete screen, heading above the personal records this session set","{count, plural, one{New record} other{New records}}","{count, plural, one{New record} other{New records}}","{count, plural, one{Новый рекорд} other{Новые рекорды}}"
+recordAchievedLine,"Workout complete screen, one exercise's new records: the exercise name and its record values",{exercise} · {records},{exercise} · {records},{exercise} · {records}
 goalsAchievedHeading,"Workout complete screen, heading above the goal rungs this session earned","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Цель взята} few{Цели взяты} many{Целей взято} other{Цели взяты}}"
 goalAchievedTarget,"Workout complete screen, one earned rung: the goal's name and the target that was met",{goal} · {target},{goal} · {target},{goal} · {target}
 finishWorkoutTitle,Workout completion confirmation dialog,Finish Workout?,Finish Workout?,Завершить тренировку?
