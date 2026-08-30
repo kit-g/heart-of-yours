@@ -72,11 +72,12 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ExerciseAct(:workoutName, :start) = act;
-    final ThemeData(:textTheme) = Theme.of(context);
+    final ThemeData(:textTheme, :cardTheme) = Theme.of(context);
+    // no shape override: the theme's card shape carries the border that keeps
+    // a white card visible on the white ground
     return Card(
-      shape: _shape,
       child: InkWell(
-        customBorder: _shape,
+        customBorder: cardTheme.shape,
         onTap: () => onTapWorkout(act.workoutId),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
