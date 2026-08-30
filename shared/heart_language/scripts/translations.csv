@@ -1,249 +1,263 @@
-id,description,en,en_CA,ru
-appearance,Label,Appearance,Appearance,Внешний вид
-units,Label,Units,Units,Единицы измерения
-motto,App's motto,Every beat counts.,Every beat counts.,Every beat counts.
-toLightMode,tooltip,Light,Light,Светлая
-toDarkMode,tooltip,Dark,Dark,Темная
-toSystemMode,tooltip,System,System,Системная
-email,Generic label,Email,Email,Эл. почта
-yourEmail,Generic label,Your email,Your email,Ваш email
-cropAvatar,Label in the image cropper,Crop avatar,Crop avatar,Обрезать аватар
-nameOptional,Field hint,Name (optional),Name (optional),Имя (необязательно)
-name,Field hint,Name,Name,Имя
-saveName,Hint,Save name,Save name,Сохранить имя
-changeName,Hint,Change name,Change name,Изменить имя
-save,Generic label,Save,Save,Сохранить
-settings,Generic label,Settings,Settings,Настройки
-archive,"CTA, verb",Archive,Archive,Архивировать
-unarchive,"CTA, verb",Unarchive,Unarchive,Разархивировать
-password,Generic label,Password,Password,Пароль
-logIn,Generic label,Log in,Log in,Войти
-logInTitle,Login page copy,Welcome Back,Welcome Back,С возвращением!
+id,description,en,en_CA,ru,es,fr
+appearance,Label,Appearance,Appearance,Внешний вид,Apariencia,Apparence
+units,Label,Units,Units,Единицы измерения,Unidades,Unités
+motto,App's motto,Every beat counts.,Every beat counts.,Every beat counts.,Cada latido cuenta.,Chaque battement compte.
+toLightMode,tooltip,Light,Light,Светлая,Claro,Clair
+toDarkMode,tooltip,Dark,Dark,Темная,Oscuro,Sombre
+toSystemMode,tooltip,System,System,Системная,Sistema,Système
+email,Generic label,Email,Email,Эл. почта,Correo,E-mail
+yourEmail,Generic label,Your email,Your email,Ваш email,Tu correo,Votre e-mail
+cropAvatar,Label in the image cropper,Crop avatar,Crop avatar,Обрезать аватар,Recortar avatar,Recadrer l’avatar
+nameOptional,Field hint,Name (optional),Name (optional),Имя (необязательно),Nombre (opcional),Nom (facultatif)
+name,Field hint,Name,Name,Имя,Nombre,Nom
+saveName,Hint,Save name,Save name,Сохранить имя,Guardar nombre,Enregistrer le nom
+changeName,Hint,Change name,Change name,Изменить имя,Cambiar nombre,Modifier le nom
+save,Generic label,Save,Save,Сохранить,Guardar,Enregistrer
+settings,Generic label,Settings,Settings,Настройки,Ajustes,Paramètres
+archive,"CTA, verb",Archive,Archive,Архивировать,Archivar,Archiver
+unarchive,"CTA, verb",Unarchive,Unarchive,Разархивировать,Desarchivar,Désarchiver
+password,Generic label,Password,Password,Пароль,Contraseña,Mot de passe
+logIn,Generic label,Log in,Log in,Войти,Iniciar sesión,Se connecter
+logInTitle,Login page copy,Welcome Back,Welcome Back,С возвращением!,Hola de nuevo,Ravi de vous revoir
 logInBody,Login page copy,"You've already started something important. 
 Let's keep going.","You've already started something important.
 Let's keep going.","Вы уже начали что-то важное.
-Давайте продолжим!"
-signUpTitle,Sign up page copy,Begin with Heart,Begin with Heart,Начните с Heart
+Давайте продолжим!","Ya empezaste algo importante. 
+Sigamos adelante.","Vous avez déjà commencé quelque chose d’important. 
+Continuons sur cette lancée."
+signUpTitle,Sign up page copy,Begin with Heart,Begin with Heart,Начните с Heart,Empieza con Heart,Commencez avec Heart
 signUpBody,Sign up page copy,"Every journey starts with one decision. 
 This one's yours.","Every journey starts with one decision.
 This one's yours.","Каждое путешествие начинается с одного решения.
-Это — ваше."
-recoverTitle,Recover page copy,Still with You,Still with You,Все еще с вами
+Это — ваше.","Todo camino empieza con una decisión. 
+Esta es tuya.","Chaque parcours commence par une décision. 
+Celle-ci vous appartient."
+recoverTitle,Recover page copy,Still with You,Still with You,Все еще с вами,Seguimos contigo,Toujours là pour vous
 recoverBody,Recover page copy,"Your journey isn't lost. 
 Just a moment of pause — we'll reset together.","Your journey isn't lost.
 Just a moment of pause — we'll reset together.","Ваш путь не потерян.
-Просто небольшая пауза — давайте начнем заново."
-logInWithGoogle,Button label,Log in with Google,Log in with Google,Войти через Google
-signUpWithGoogle,Button label,Sign up with Google,Sign up with Google,Зарегистрироваться через Google
-logInWithApple,Button label,Log in with Apple,Log in with Apple,Войти через Apple
-signUpWithApple,Button label,Sign up with Apple,Sign up with Apple,Зарегистрироваться через Apple
-logOut,Generic label,Log out,Log out,Выйти
-profile,"Generic label, e.g. bottom nav bar",Profile,Profile,Профиль
-workout,"Generic label, e.g. bottom nav bar",Workout,Workout,Тренировка
-history,"Generic label, e.g. bottom nav bar",History,History,История
-exercises,"Generic label, e.g. bottom nav bar",Exercises,Exercises,Упражнения
-search,"Generic label, e.g. bin the search bar",Search,Search,Поиск
-startNewWorkout,Button label,Start a new workout,Start a new workout,Начать новую тренировку
-cancelCurrentWorkoutTitle,Button label,Cancel current workout?,Cancel current workout?,Отменить текущую тренировку?
-cancelCurrentWorkoutBody,Button label,You have a workout in progress. Do you want to cancel it and start a new one?,You have a workout in progress. Do you want to cancel it and start a new one?,У вас есть незавершенная тренировка. Хотите отменить её и начать новую?
-startNewWorkoutFromTemplate,Alert dialog,Start a new workout from this template?,Start a new workout from this template?,Начать новую тренировку по этому шаблону?
-startWorkout,App bar title,Start workout,Start workout,Начать тренировку
-cancelWorkout,Button text,Cancel workout,Cancel workout,Отменить тренировку
-addExercises,Button text,Add exercises,Add exercises,Добавить упражнения
-addSet,Button text,Add set,Add set,Добавить подход
-newExercise,Button tooltip,New exercise,New exercise,Новое упражнение
-createNewExercise,Dialog header,Create new exercise,Create new exercise,Создать новое упражнение
-exerciseOptions,Button tooltip,Exercise options,Exercise options,Настройки упражнения
-showArchived,"Menu button, as in ""Show archived exercises",Show archived,Show archived,Показать архивные
-archivedExercises,App bar,Archived exercises,Archived exercises,Архивные упражнения
-archiveConfirmTitle,"Dialog title, e.g., ""Archive Push ups?""",Archive {exerciseName}?,Archive {exerciseName}?,Архивировать {exerciseName}?
+Просто небольшая пауза — давайте начнем заново.","Tu camino no está perdido. 
+Solo es una pausa — lo restableceremos juntos.","Votre parcours n’est pas perdu. 
+Juste une pause — on repart ensemble."
+logInWithGoogle,Button label,Log in with Google,Log in with Google,Войти через Google,Iniciar sesión con Google,Se connecter avec Google
+signUpWithGoogle,Button label,Sign up with Google,Sign up with Google,Зарегистрироваться через Google,Registrarse con Google,S’inscrire avec Google
+logInWithApple,Button label,Log in with Apple,Log in with Apple,Войти через Apple,Iniciar sesión con Apple,Se connecter avec Apple
+signUpWithApple,Button label,Sign up with Apple,Sign up with Apple,Зарегистрироваться через Apple,Registrarse con Apple,S’inscrire avec Apple
+logOut,Generic label,Log out,Log out,Выйти,Cerrar sesión,Se déconnecter
+profile,"Generic label, e.g. bottom nav bar",Profile,Profile,Профиль,Perfil,Profil
+workout,"Generic label, e.g. bottom nav bar",Workout,Workout,Тренировка,Entrenamiento,Séance
+history,"Generic label, e.g. bottom nav bar",History,History,История,Historial,Historique
+exercises,"Generic label, e.g. bottom nav bar",Exercises,Exercises,Упражнения,Ejercicios,Exercices
+search,"Generic label, e.g. bin the search bar",Search,Search,Поиск,Buscar,Rechercher
+startNewWorkout,Button label,Start a new workout,Start a new workout,Начать новую тренировку,Empezar un nuevo entrenamiento,Commencer une nouvelle séance
+cancelCurrentWorkoutTitle,Button label,Cancel current workout?,Cancel current workout?,Отменить текущую тренировку?,¿Cancelar el entrenamiento actual?,Annuler la séance en cours ?
+cancelCurrentWorkoutBody,Button label,You have a workout in progress. Do you want to cancel it and start a new one?,You have a workout in progress. Do you want to cancel it and start a new one?,У вас есть незавершенная тренировка. Хотите отменить её и начать новую?,Tienes un entrenamiento en curso. ¿Quieres cancelarlo y empezar uno nuevo?,Vous avez une séance en cours. Voulez-vous l’annuler et en commencer une nouvelle ?
+startNewWorkoutFromTemplate,Alert dialog,Start a new workout from this template?,Start a new workout from this template?,Начать новую тренировку по этому шаблону?,¿Empezar un nuevo entrenamiento con esta plantilla?,Commencer une nouvelle séance à partir de ce modèle ?
+startWorkout,App bar title,Start workout,Start workout,Начать тренировку,Empezar entrenamiento,Commencer la séance
+cancelWorkout,Button text,Cancel workout,Cancel workout,Отменить тренировку,Cancelar entrenamiento,Annuler la séance
+addExercises,Button text,Add exercises,Add exercises,Добавить упражнения,Agregar ejercicios,Ajouter des exercices
+addSet,Button text,Add set,Add set,Добавить подход,Agregar serie,Ajouter une série
+newExercise,Button tooltip,New exercise,New exercise,Новое упражнение,Nuevo ejercicio,Nouvel exercice
+createNewExercise,Dialog header,Create new exercise,Create new exercise,Создать новое упражнение,Crear nuevo ejercicio,Créer un nouvel exercice
+exerciseOptions,Button tooltip,Exercise options,Exercise options,Настройки упражнения,Opciones del ejercicio,Options de l’exercice
+showArchived,"Menu button, as in ""Show archived exercises",Show archived,Show archived,Показать архивные,Mostrar archivados,Voir les archivés
+archivedExercises,App bar,Archived exercises,Archived exercises,Архивные упражнения,Ejercicios archivados,Exercices archivés
+archiveConfirmTitle,"Dialog title, e.g., ""Archive Push ups?""",Archive {exerciseName}?,Archive {exerciseName}?,Архивировать {exerciseName}?,¿Archivar {exerciseName}?,Archiver {exerciseName} ?
 archiveConfirmBody,Dialog body,"This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).
  Archiving won't affect any of your past workouts — your history stays intact.","This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).
  Archiving won't affect any of your past workouts — your history stays intact.","Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).
- Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений."
+ Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.","Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).
+ Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.","Cet exercice sera déplacé vers les exercices archivés (retrouvez-le dans Exercices → Plus → Voir les archivés).
+ L’archivage n’affecte aucune de vos séances passées — votre historique reste intact."
 exerciseArchived,Tooltip over archived icon,"This exercise is archived 
 and won't appear in your main library anymore.","This exercise is archived
 and won't appear in your main library anymore.","Это упражнение находится в архиве
-и больше не будет отображаться в основной библиотеке."
-deleteSet,Button text,Delete set,Delete set,Удалить подход
-set,"Workout table, column header",Set,Set,Подход
-sets,Card header,Sets,Sets,Подходы
-previous,"Workout table, column header, as in ""previous exercise""",Previous,Previous,Предыдущий
-reps,"Workout table, column header",Reps,Reps,Повторения
-time,"Workout table, column header",Time,Time,Время
-kg,"Generic label, kilograms",kg,kg,кг
-mile,"Generic label, miles",mile,mile,миля
-km,"Generic label, km",km,km,км
-milesPlural,"Generic label, miles",miles,miles,мили
-miles,"Generic label, miles","{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}","{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}","{howMany,plural, =1{{howMany} миля}other{{howMany} мили}}"
-ok,Generic label,OK,OK,OK
-edit,Generic label,Edit,Edit,Изменить
-delete,Generic label,Delete,Delete,Удалить
-repeat,Generic label,Repeat,Repeat,Повторить
-add,Generic label,Add,Add,Добавить
-share,Generic label,Share,Share,Поделиться
-okBang,Generic label,Ok!,Ok!,Ок!
-cancel,"Generic label, ""cancel"" button",Cancel,Cancel,Отмена
-finish,"Generic label, ""finish workout"" button",Finish,Finish,Завершить
-reset,"Generic label, ""Reset"" button",Reset,Reset,Сбросить
-h,Abbreviation for hours,h,h,ч
-min,Abbreviation for minutes,min,min,мин
-sec,Abbreviation for seconds,sec,sec,сек
-lbs,"Generic label, pounds",lbs,lbs,фнт
-skip,"Generic label, verb",Skip,Skip,Пропустить
-lb,"Generic label, pounds","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} фнт}other{{howMany} фнт}}"
-saveAsTemplate,"Workout set option, ""save this workout as a template""",Save as template,Save as template,Сохранить как шаблон
-addNote,"Exercise set option, ""add a note to this set""",Add a note,Add a note,Добавить заметку
-replaceExercise,Exercise set option,Replace exercise,Replace exercise,Заменить упражнение
-weightUnit,"Exercise set option, ""choose weight unit for this set""",Weight,Weight,Вес
-distanceUnit,"Exercise set option, ""choose distance unit for this set""",Distance,Distance,Расстояние
-duration,Duration label,Duration,Duration,Длительность
-imperial,Measurement unit setting,Imperial,Imperial,Имперская
-metric,Measurement unit setting,Metric,Metric,Метрическая
-restTimer,"Exercise set option, ""Set the rest timer for this exercise""",Rest timer,Rest timer,Таймер отдыха
-cancelTimer,Button text,Cancel timer,Cancel timer,Отменить таймер
-removeExercise,"Exercise set option, ""Remove this exercise from workout""",Remove exercise,Remove exercise,Удалить упражнение
-morningWorkout,Default workout name,"{when}, Morning","{when}, Morning","{when}, утро"
-eveningWorkout,Default workout name,"{when}, Evening","{when}, Evening","{when}, вечер"
-nightWorkout,Default workout name,"{when}, Night","{when}, Night","{when}, ночь"
-afternoonWorkout,Default workout name,"{when}, Afternoon","{when}, Afternoon","{when}, день"
-emptyHistoryTitle,emptyHistoryTitle,Your completed workouts will be here,Your completed workouts will be here,Здесь будут ваши завершенные тренировки
-emptyHistoryBody,emptyHistoryBody,Go get them done!,Go get them done!,Вперед за тренировками!
-historyEndReached,Footer at the bottom of the workout history list once every workout has loaded,You've reached the end,You've reached the end,Вы достигли конца
-historyLoadMoreError,Footer shown when loading the next page of workout history fails,Couldn't load more workouts,Couldn't load more workouts,Не удалось загрузить больше тренировок
-retry,Button to retry a failed action,Retry,Retry,Повторить
-workoutTimeoutTitle,Title of the notification sent when an active workout has been idle for a while,Still working out?,Still working out?,Ещё тренируетесь?
-workoutTimeoutBody,Body of the notification sent when an active workout has been idle for a while,Your workout's been idle for a while — jump back in or wrap it up.,Your workout's been idle for a while — jump back in or wrap it up.,Тренировка простаивает уже какое-то время — вернитесь к ней или завершите её
-notificationsDisabledReminder,Snackbar reminding the user that notifications are disabled while rest timers are set,"Notifications are off, so you won't get rest-timer alerts.","Notifications are off, so you won't get rest-timer alerts.",Уведомления выключены — оповещения таймера отдыха не придут
-themePresetSetting,Setting item name for picking the app's visual theme preset,Theme,Theme,Тема
-themePresetSettingSubtitle,Setting item subtitle explaining that each theme preset covers light and dark mode,Presets tuned for both light and dark,Presets tuned for both light and dark,"Пресеты, подобранные для светлого и тёмного режима"
-themePresetForge,Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge,Forge,Forge,Кузница
-themePresetInk,"Name of the light-first, paper-and-ink theme preset with a cobalt accent",Ink,Ink,Чернила
-themePresetUtility,"Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",Utility,Utility,Инструмент
-themePresetEmber,Name of the warm theme preset with a true-orange accent; a glowing coal,Ember,Ember,Жар
-aboutApp,Setting item title,About app,About app,О приложении
-congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!
-congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!
-goalsAchievedHeading,"Workout complete screen, heading above the goal rungs this session earned","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Цель взята} few{Цели взяты} many{Целей взято} other{Цели взяты}}"
-goalAchievedTarget,"Workout complete screen, one earned rung: the goal's name and the target that was met",{goal} · {target},{goal} · {target},{goal} · {target}
-finishWorkoutTitle,Workout completion confirmation dialog,Finish Workout?,Finish Workout?,Завершить тренировку?
-finishWorkoutWarningTitle,Workout completion confirmation dialog,Complete Your Workout?,Complete Your Workout?,Завершить тренировку?
-finishWorkoutWarningBody,Workout completion confirmation dialog,"Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные."
-finishWorkoutBody,Workout completion confirmation dialog,Ready to finish this workout?,Ready to finish this workout?,Готовы завершить эту тренировку?
-cancelWorkoutBody,Workout completion confirmation dialog,All progress made so far will be lost.,All progress made so far will be lost.,Весь достигнутый прогресс будет потерян.
-cancelWorkoutTitle,Workout completion confirmation dialog,Do you want to cancel this workout?,Do you want to cancel this workout?,Хотите отменить эту тренировку?
-readyToFinish,Workout completion confirmation dialog,"Yes, I'm done!","Yes, I'm done!","Да, я закончил!"
-keepCurrentAccount,Workout start confirmation dialog,"No, keep current workout","No, keep current workout","Нет, продолжить текущую тренировку"
-cancelAndStartNewWorkout,Workout start confirmation dialog,"Yes, cancel that one and start a new workout","Yes, cancel that one and start a new workout","Да, отменить ту и начать новую тренировку"
-resumeWorkout,Workout cancellation confirmation dialog,"No, resume workout","No, resume workout","Нет, продолжить тренировку"
-deleteThis,Generic label,"Yes, delete this","Yes, delete this","Да, удалить"
-deleted,Generic label,Deleted,Deleted,Удалено
-notReadyToFinish,Workout completion confirmation dialog,"No, one more set!","No, one more set!","Нет, ещё один подход!"
-deleteTemplateTitle,Template deletion confirmation dialog,Do you want to delete this workout template?,Do you want to delete this workout template?,Хотите удалить этот шаблон тренировки?
-deleteTemplateBody,Template deletion confirmation dialog,This cannot be undone,This cannot be undone,Это действие нельзя отменить
-quitEditing,Template deletion confirmation dialog,Quit editing?,Quit editing?,Выйти из редактирования?
-changesWillBeLost,Template deletion confirmation dialog,All changes will be lost,All changes will be lost,Все изменения будут потеряны
-quitPage,Template deletion confirmation dialog,Quit this page,Quit this page,Покинуть страницу
-stayHere,Template deletion confirmation dialog,Stay here,Stay here,Остаться здесь
-notificationSettings,Settings item,Notification settings,Notification settings,Настройки уведомлений
-selected,Selected 4 exercises,Selected {count},Selected {count},Выбрано {count}
-forExercise,As in Rest timer for bicep curl,for {exercise},for {exercise},для {exercise}
-restTimerSubtitle,Rest timer,Adjust duration via the +/- buttons.,Adjust duration via the +/- buttons.,Настройте длительность с помощью кнопок +/-.
-addSeconds,Rest timer,+10s,+10s,+10с
-subtractSeconds,Rest timer,-10s,-10s,-10с
-restComplete,Rest notification banner,Rest complete!,Rest complete!,Отдых завершен!
-workoutsPerWeek,Chart label,Workouts per week,Workouts per week,Workouts per week
-workoutsPerWeekTitle,Chart label,Your workouts will be presented here,Your workouts will be presented here,Ваши тренировки будут отображаться здесь
-workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Вперед за тренировками!
-goals,Title of the goals card on the profile screen,Goals,Goals,Цели
-addGoal,Button that starts creating a goal,Add goal,Add goal,Добавить цель
-noGoalsYet,Empty state of the goals card,No goals yet,No goals yet,Целей пока нет
-workouts,"The whole-workout goal metric, as opposed to a per-exercise one",Workouts,Workouts,Тренировки
-newGoal,Title of the dialog that creates a goal,New goal,New goal,Новая цель
-goalTarget,Title of the dialog where the user types a goal's target number,Target,Target,Целевое значение
-goalPerWeek,"Suffix on a goal that repeats weekly, as in '3 / 4 per week'",per week,per week,в неделю
-goalPerMonth,"Suffix on a goal that repeats monthly, as in '12 / 16 per month'",per month,per month,в месяц
-goalDue,The deadline of a goal milestone,Due {date},Due {date},До {date}
-goalComplete,Shown on a goal whose every milestone has been achieved,Complete,Complete,Выполнено
-goalMilestone,Goal shape: a one-off target rather than a repeating one,Milestone,Milestone,Разовая
-goalWeekly,Goal shape: a target that repeats every week,Weekly,Weekly,Еженедельная
-goalMonthly,Goal shape: a target that repeats every month,Monthly,Monthly,Ежемесячная
-goalLadder,Heading over the list of a goal's staged targets,Milestones,Milestones,Этапы
-goalAddRung,Button that adds another staged target to a goal,Add milestone,Add milestone,Добавить этап
-goalAchievedOn,When a milestone's target was first met,Achieved {date},Achieved {date},Достигнуто {date}
-goalNoDeadline,Shown on a milestone the user has not given a date to,No deadline,No deadline,Без срока
-goalSetDeadline,Button that opens the date picker for a milestone,Set a deadline,Set a deadline,Указать срок
-goalClearDeadline,Button that removes a milestone's date,Clear deadline,Clear deadline,Убрать срок
-goalsViewAchieved,Button on the goals card that flips it over to show goals already achieved,Achieved,Achieved,Достигнутые
-goalsAchievedTitle,"Heading on the back of the goals card, above the goals already achieved",Achieved,Achieved,Достигнутые
-goalsViewActive,Button on the back of the goals card that flips it to the goals still being worked on,Back,Back,Назад
-goalOpenWorkout,"Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it",View the session,View the session,Открыть тренировку
-goalWorkoutGone,Shown when the workout credited with a goal rung can no longer be found,That session is no longer on this device,That session is no longer on this device,Этой тренировки больше нет на устройстве
-goalsAtCapacity,Tooltip explaining why the add-goal button is missing,You have as many goals as Heart keeps. Delete one to make room for another.,You have as many goals as Heart keeps. Delete one to make room for another.,Больше целей Heart не хранит. Удалите одну
-category,Label button that allows to choose Exercise category,Category,Category,Категория
-target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель
-removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Удалить фильтр
-restCompleteBody,Rest notification banner,Next: {exercise},Next: {exercise},Следующее: {exercise}
-weightedSetRepresentation,Rest notification banner,{weight} x {reps},{weight} x {reps},{weight} x {reps}
-templates,Workout templates section header,Templates,Templates,Шаблоны
-exampleTemplates,Workout templates section header,Example templates,Example templates,Примеры шаблонов
-template,A single workout template,Template,Template,Шаблон
-newTemplate,New template form header,New Template,New Template,Новый шаблон
-newFolder,Button and dialog title for creating a template folder,New folder,New folder,Новая папка
-folderName,Label of the folder name text field,Folder name,Folder name,Название папки
-renameFolder,Menu item and dialog title for renaming a template folder,Rename folder,Rename folder,Переименовать папку
-deleteFolder,Menu item and dialog title for deleting a template folder,Delete folder,Delete folder,Удалить папку
-deleteFolderBody,Reassurance in the delete-folder dialog: deleting a folder never deletes its templates,The templates inside will be kept,The templates inside will be kept,Шаблоны внутри останутся
-moveToFolder,Template menu item and dialog title for filing a template into a folder,Move to folder,Move to folder,Переместить в папку
-noFolder,Option in the move-to-folder dialog that unfiles the template,No folder,No folder,Без папки
-folderNameTaken,Error shown when creating or renaming a folder to a name already in use,You already have a folder with this name,You already have a folder with this name,У вас уже есть папка с таким названием
-editTemplate,Edit template form header,Edit Template,Edit Template,Редактировать шаблон
-editWorkout,Edit workout form header,Edit Workout,Edit Workout,Редактировать тренировку
-templateName,Edit template text field hint,Template name,Template name,Название шаблона
-workoutName,Edit workout text field hint,Workout name,Workout name,Название тренировки
-cannotBeEmpty,Form validation message,Cannot be empty,Cannot be empty,Не может быть пустым
-showPassword,Tooltip message,Show password,Show password,Показать пароль
-hidePassword,Tooltip message,Hide password,Hide password,Скрыть пароль
-yourPassword,Tooltip message,Your password,Your password,Ваш пароль
-resetPassword,Button,Reset password,Reset password,Сбросить пароль
-resetPasswordBody,Button,"We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","Мы отправим ссылку для сброса пароля на ваш email быстрее, чем вы успеете сказать ""забыл пароль"". Назад пути нет — если только вы не отмените, конечно. 😌"
-orConnector,"Connects two widgets, this OR that",- or -,- or -,- или -
-invalidCredentials,Login error message,"Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?",Что-то пошло не так! Проверьте ваши данные еще раз!
-weakPassword,Login error message,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.,Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.
-forgotPassword,Login button,Forgot password?,Forgot password?,Забыли пароль?
-noConnectivity,Error message,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!
-signUp,Generic label,Sign up,Sign up,Регистрация
-sendResetLink,Password recovery flow,Send Reset Link,Send Reset Link,Отправить ссылку для сброса
-recoveryLinkMessage,Password recovery flow,"If an account exists for this email, you'll receive a reset link shortly. Check your inbox and spam folder.","If an account exists for this email, you'll receive a reset link shortly. Check your inbox and spam folder.","Если аккаунт с этим email существует, вы получите ссылку для сброса. Проверьте папку входящих и спам."
-recoveryLinkMessageSent,Password recovery flow,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Письмо для настройки пароля уже в пути! Проверьте входящие (или папку спам — оно любит там прятаться).
-emailExistsTitle,Email exists dialog,Email already exists,Email already exists,Email уже существует
-emailExistsOkButton,Email exists dialog,"Yes, sign me in!","Yes, sign me in!","Да, войти!"
-emailExistsCancelButton,Email exists dialog,"No, I got this","No, I got this","Нет, я разберусь"
-emailExistsBody,Email exists dialog,An account with {address} already exists. Would you like to log in instead?,An account with {address} already exists. Would you like to log in instead?,Аккаунт с {address} уже существует. Хотите войти?
-sendResetLinkBody,Password recovery flow,Enter you email and we'll help you reset your password,Enter you email and we'll help you reset your password,Введите ваш email и мы поможем сбросить пароль
-userDisabled,Login error message,This account is disabled,This account is disabled,Этот аккаунт отключен
-unknownError,Login error message,Unknown error occurred,Unknown error occurred,Произошла неизвестная ошибка
-accountControl,Settings item,Account control,Account control,Управление аккаунтом
-leaveFeedback,Settings item,Leave feedback,Leave feedback,Оставить отзыв
+и больше не будет отображаться в основной библиотеке.","Este ejercicio está archivado 
+y ya no aparecerá en tu biblioteca principal.","Cet exercice est archivé 
+et n’apparaîtra plus dans votre bibliothèque principale."
+deleteSet,Button text,Delete set,Delete set,Удалить подход,Eliminar serie,Supprimer la série
+set,"Workout table, column header",Set,Set,Подход,Serie,Série
+sets,Card header,Sets,Sets,Подходы,Series,Séries
+previous,"Workout table, column header, as in ""previous exercise""",Previous,Previous,Предыдущий,Anterior,Précédent
+reps,"Workout table, column header",Reps,Reps,Повторения,Reps,Reps
+time,"Workout table, column header",Time,Time,Время,Tiempo,Temps
+kg,"Generic label, kilograms",kg,kg,кг,kg,kg
+mile,"Generic label, miles",mile,mile,миля,milla,mile
+km,"Generic label, km",km,km,км,km,km
+milesPlural,"Generic label, miles",miles,miles,мили,millas,miles
+miles,"Generic label, miles","{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}","{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}","{howMany,plural, =1{{howMany} миля}other{{howMany} мили}}","{howMany,plural, =1{{howMany} milla}other{{howMany} millas}}","{howMany,plural, =1{{howMany} mile}other{{howMany} miles}}"
+ok,Generic label,OK,OK,OK,OK,OK
+edit,Generic label,Edit,Edit,Изменить,Editar,Modifier
+delete,Generic label,Delete,Delete,Удалить,Eliminar,Supprimer
+repeat,Generic label,Repeat,Repeat,Повторить,Repetir,Répéter
+add,Generic label,Add,Add,Добавить,Agregar,Ajouter
+share,Generic label,Share,Share,Поделиться,Compartir,Partager
+okBang,Generic label,Ok!,Ok!,Ок!,¡Ok!,Ok !
+cancel,"Generic label, ""cancel"" button",Cancel,Cancel,Отмена,Cancelar,Annuler
+finish,"Generic label, ""finish workout"" button",Finish,Finish,Завершить,Terminar,Terminer
+reset,"Generic label, ""Reset"" button",Reset,Reset,Сбросить,Restablecer,Réinitialiser
+h,Abbreviation for hours,h,h,ч,h,h
+min,Abbreviation for minutes,min,min,мин,min,min
+sec,Abbreviation for seconds,sec,sec,сек,seg,s
+lbs,"Generic label, pounds",lbs,lbs,фнт,lbs,lb
+skip,"Generic label, verb",Skip,Skip,Пропустить,Omitir,Passer
+lb,"Generic label, pounds","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} фнт}other{{howMany} фнт}}","{howMany,plural, =1{{howMany} lb}other{{howMany} lbs}}","{howMany,plural, =1{{howMany} lb}other{{howMany} lb}}"
+saveAsTemplate,"Workout set option, ""save this workout as a template""",Save as template,Save as template,Сохранить как шаблон,Guardar como plantilla,Enregistrer comme modèle
+addNote,"Exercise set option, ""add a note to this set""",Add a note,Add a note,Добавить заметку,Agregar una nota,Ajouter une note
+replaceExercise,Exercise set option,Replace exercise,Replace exercise,Заменить упражнение,Reemplazar ejercicio,Remplacer l’exercice
+weightUnit,"Exercise set option, ""choose weight unit for this set""",Weight,Weight,Вес,Peso,Poids
+distanceUnit,"Exercise set option, ""choose distance unit for this set""",Distance,Distance,Расстояние,Distancia,Distance
+duration,Duration label,Duration,Duration,Длительность,Duración,Durée
+imperial,Measurement unit setting,Imperial,Imperial,Имперская,Imperial,Impérial
+metric,Measurement unit setting,Metric,Metric,Метрическая,Métrico,Métrique
+restTimer,"Exercise set option, ""Set the rest timer for this exercise""",Rest timer,Rest timer,Таймер отдыха,Temporizador de descanso,Minuteur de repos
+cancelTimer,Button text,Cancel timer,Cancel timer,Отменить таймер,Cancelar temporizador,Annuler le minuteur
+removeExercise,"Exercise set option, ""Remove this exercise from workout""",Remove exercise,Remove exercise,Удалить упражнение,Quitar ejercicio,Retirer l’exercice
+morningWorkout,Default workout name,"{when}, Morning","{when}, Morning","{when}, утро","{when}, por la mañana","{when}, matin"
+eveningWorkout,Default workout name,"{when}, Evening","{when}, Evening","{when}, вечер","{when}, por la noche","{when}, soir"
+nightWorkout,Default workout name,"{when}, Night","{when}, Night","{when}, ночь","{when}, de madrugada","{when}, nuit"
+afternoonWorkout,Default workout name,"{when}, Afternoon","{when}, Afternoon","{when}, день","{when}, por la tarde","{when}, après-midi"
+emptyHistoryTitle,emptyHistoryTitle,Your completed workouts will be here,Your completed workouts will be here,Здесь будут ваши завершенные тренировки,Tus entrenamientos completados aparecerán aquí,Vos séances terminées apparaîtront ici
+emptyHistoryBody,emptyHistoryBody,Go get them done!,Go get them done!,Вперед за тренировками!,¡Ve por ellos!,"Allez, on s’y met !"
+historyEndReached,Footer at the bottom of the workout history list once every workout has loaded,You've reached the end,You've reached the end,Вы достигли конца,Llegaste al final,Vous avez atteint la fin
+historyLoadMoreError,Footer shown when loading the next page of workout history fails,Couldn't load more workouts,Couldn't load more workouts,Не удалось загрузить больше тренировок,No se pudieron cargar más entrenamientos,Impossible de charger plus de séances
+retry,Button to retry a failed action,Retry,Retry,Повторить,Reintentar,Réessayer
+workoutTimeoutTitle,Title of the notification sent when an active workout has been idle for a while,Still working out?,Still working out?,Ещё тренируетесь?,¿Sigues entrenando?,Toujours en train de vous entraîner ?
+workoutTimeoutBody,Body of the notification sent when an active workout has been idle for a while,Your workout's been idle for a while — jump back in or wrap it up.,Your workout's been idle for a while — jump back in or wrap it up.,Тренировка простаивает уже какое-то время — вернитесь к ней или завершите её,Tu entrenamiento lleva un rato en pausa — retómalo o dale cierre.,Votre séance est inactive depuis un moment — reprenez-la ou terminez-la.
+notificationsDisabledReminder,Snackbar reminding the user that notifications are disabled while rest timers are set,"Notifications are off, so you won't get rest-timer alerts.","Notifications are off, so you won't get rest-timer alerts.",Уведомления выключены — оповещения таймера отдыха не придут,"Las notificaciones están desactivadas, así que no recibirás avisos del temporizador de descanso.","Les notifications sont désactivées, vous ne recevrez donc pas les alertes du minuteur de repos."
+themePresetSetting,Setting item name for picking the app's visual theme preset,Theme,Theme,Тема,Tema,Thème
+themePresetSettingSubtitle,Setting item subtitle explaining that each theme preset covers light and dark mode,Presets tuned for both light and dark,Presets tuned for both light and dark,"Пресеты, подобранные для светлого и тёмного режима",Estilos afinados para claro y oscuro,Des préréglages pensés pour le clair comme le sombre
+themePresetForge,Name of the dark-first theme preset with a volt-green accent; named after a blacksmith's forge,Forge,Forge,Кузница,Forja,Forge
+themePresetInk,"Name of the light-first, paper-and-ink theme preset with a cobalt accent",Ink,Ink,Чернила,Tinta,Encre
+themePresetUtility,"Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",Utility,Utility,Инструмент,Utilitario,Utilitaire
+themePresetEmber,Name of the warm theme preset with a true-orange accent; a glowing coal,Ember,Ember,Жар,Brasa,Braise
+aboutApp,Setting item title,About app,About app,О приложении,Acerca de la app,À propos de l’app
+congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!,¡Felicidades!,Félicitations !
+congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!,¡Completaste tu entrenamiento!,Votre séance est terminée !
+goalsAchievedHeading,"Workout complete screen, heading above the goal rungs this session earned","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Goal reached} other{Goals reached}}","{count, plural, one{Цель взята} few{Цели взяты} many{Целей взято} other{Цели взяты}}","{count, plural, one{Meta alcanzada} other{Metas alcanzadas}}","{count, plural, one{Objectif atteint} other{Objectifs atteints}}"
+goalAchievedTarget,"Workout complete screen, one earned rung: the goal's name and the target that was met",{goal} · {target},{goal} · {target},{goal} · {target},{goal} · {target},{goal} · {target}
+finishWorkoutTitle,Workout completion confirmation dialog,Finish Workout?,Finish Workout?,Завершить тренировку?,¿Terminar el entrenamiento?,Terminer la séance ?
+finishWorkoutWarningTitle,Workout completion confirmation dialog,Complete Your Workout?,Complete Your Workout?,Завершить тренировку?,¿Completar tu entrenamiento?,Terminer votre séance ?
+finishWorkoutWarningBody,Workout completion confirmation dialog,"Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.","Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные.","Las series vacías o inválidas se descartarán, y todas las series válidas se marcarán como completadas.","Les séries vides ou invalides seront supprimées, et toutes les séries valides seront marquées comme terminées."
+finishWorkoutBody,Workout completion confirmation dialog,Ready to finish this workout?,Ready to finish this workout?,Готовы завершить эту тренировку?,¿Todo listo para terminar este entrenamiento?,On termine cette séance ?
+cancelWorkoutBody,Workout completion confirmation dialog,All progress made so far will be lost.,All progress made so far will be lost.,Весь достигнутый прогресс будет потерян.,Se perderá todo el progreso realizado hasta ahora.,Tous les progrès réalisés jusqu’ici seront perdus.
+cancelWorkoutTitle,Workout completion confirmation dialog,Do you want to cancel this workout?,Do you want to cancel this workout?,Хотите отменить эту тренировку?,¿Quieres cancelar este entrenamiento?,Voulez-vous annuler cette séance ?
+readyToFinish,Workout completion confirmation dialog,"Yes, I'm done!","Yes, I'm done!","Да, я закончил!","¡Sí, ya terminé!","Oui, j’ai terminé !"
+keepCurrentAccount,Workout start confirmation dialog,"No, keep current workout","No, keep current workout","Нет, продолжить текущую тренировку","No, mantener el entrenamiento actual","Non, garder la séance en cours"
+cancelAndStartNewWorkout,Workout start confirmation dialog,"Yes, cancel that one and start a new workout","Yes, cancel that one and start a new workout","Да, отменить ту и начать новую тренировку","Sí, cancelarlo y empezar uno nuevo","Oui, annuler celle-là et en commencer une nouvelle"
+resumeWorkout,Workout cancellation confirmation dialog,"No, resume workout","No, resume workout","Нет, продолжить тренировку","No, reanudar entrenamiento","Non, reprendre la séance"
+deleteThis,Generic label,"Yes, delete this","Yes, delete this","Да, удалить","Sí, eliminarlo","Oui, supprimer"
+deleted,Generic label,Deleted,Deleted,Удалено,Eliminado,Supprimé
+notReadyToFinish,Workout completion confirmation dialog,"No, one more set!","No, one more set!","Нет, ещё один подход!","¡No, una serie más!","Non, encore une série !"
+deleteTemplateTitle,Template deletion confirmation dialog,Do you want to delete this workout template?,Do you want to delete this workout template?,Хотите удалить этот шаблон тренировки?,¿Quieres eliminar esta plantilla de entrenamiento?,Voulez-vous supprimer ce modèle de séance ?
+deleteTemplateBody,Template deletion confirmation dialog,This cannot be undone,This cannot be undone,Это действие нельзя отменить,Esto no se puede deshacer,Cette action est irréversible
+quitEditing,Template deletion confirmation dialog,Quit editing?,Quit editing?,Выйти из редактирования?,¿Salir de la edición?,Quitter l’édition ?
+changesWillBeLost,Template deletion confirmation dialog,All changes will be lost,All changes will be lost,Все изменения будут потеряны,Se perderán todos los cambios,Toutes les modifications seront perdues
+quitPage,Template deletion confirmation dialog,Quit this page,Quit this page,Покинуть страницу,Salir de esta página,Quitter cette page
+stayHere,Template deletion confirmation dialog,Stay here,Stay here,Остаться здесь,Quedarme aquí,Rester ici
+notificationSettings,Settings item,Notification settings,Notification settings,Настройки уведомлений,Ajustes de notificaciones,Paramètres de notification
+selected,Selected 4 exercises,Selected {count},Selected {count},Выбрано {count},{count} seleccionados,Sélection : {count}
+forExercise,As in Rest timer for bicep curl,for {exercise},for {exercise},для {exercise},para {exercise},pour {exercise}
+restTimerSubtitle,Rest timer,Adjust duration via the +/- buttons.,Adjust duration via the +/- buttons.,Настройте длительность с помощью кнопок +/-.,Ajusta la duración con los botones +/-.,Ajustez la durée avec les boutons +/-.
+addSeconds,Rest timer,+10s,+10s,+10с,+10s,+10s
+subtractSeconds,Rest timer,-10s,-10s,-10с,-10s,-10s
+restComplete,Rest notification banner,Rest complete!,Rest complete!,Отдых завершен!,¡Descanso terminado!,Repos terminé !
+workoutsPerWeek,Chart label,Workouts per week,Workouts per week,Тренировки в неделю,Entrenamientos por semana,Séances par semaine
+workoutsPerWeekTitle,Chart label,Your workouts will be presented here,Your workouts will be presented here,Ваши тренировки будут отображаться здесь,Tus entrenamientos se mostrarán aquí,Vos séances seront présentées ici
+workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Вперед за тренировками!,¡Ve por ellos!,"Allez, on s’y met !"
+goals,Title of the goals card on the profile screen,Goals,Goals,Цели,Metas,Objectifs
+addGoal,Button that starts creating a goal,Add goal,Add goal,Добавить цель,Agregar meta,Ajouter un objectif
+noGoalsYet,Empty state of the goals card,No goals yet,No goals yet,Целей пока нет,Aún no hay metas,Aucun objectif pour l’instant
+workouts,"The whole-workout goal metric, as opposed to a per-exercise one",Workouts,Workouts,Тренировки,Entrenamientos,Séances
+newGoal,Title of the dialog that creates a goal,New goal,New goal,Новая цель,Nueva meta,Nouvel objectif
+goalTarget,Title of the dialog where the user types a goal's target number,Target,Target,Целевое значение,Objetivo,Cible
+goalPerWeek,"Suffix on a goal that repeats weekly, as in '3 / 4 per week'",per week,per week,в неделю,por semana,par semaine
+goalPerMonth,"Suffix on a goal that repeats monthly, as in '12 / 16 per month'",per month,per month,в месяц,por mes,par mois
+goalDue,The deadline of a goal milestone,Due {date},Due {date},До {date},Vence {date},Échéance {date}
+goalComplete,Shown on a goal whose every milestone has been achieved,Complete,Complete,Выполнено,Completada,Atteint
+goalMilestone,Goal shape: a one-off target rather than a repeating one,Milestone,Milestone,Разовая,Hito,Ponctuel
+goalWeekly,Goal shape: a target that repeats every week,Weekly,Weekly,Еженедельная,Semanal,Hebdomadaire
+goalMonthly,Goal shape: a target that repeats every month,Monthly,Monthly,Ежемесячная,Mensual,Mensuel
+goalLadder,Heading over the list of a goal's staged targets,Milestones,Milestones,Этапы,Hitos,Paliers
+goalAddRung,Button that adds another staged target to a goal,Add milestone,Add milestone,Добавить этап,Agregar hito,Ajouter un palier
+goalAchievedOn,When a milestone's target was first met,Achieved {date},Achieved {date},Достигнуто {date},Alcanzado el {date},Atteint le {date}
+goalNoDeadline,Shown on a milestone the user has not given a date to,No deadline,No deadline,Без срока,Sin fecha límite,Sans échéance
+goalSetDeadline,Button that opens the date picker for a milestone,Set a deadline,Set a deadline,Указать срок,Fijar una fecha límite,Définir une échéance
+goalClearDeadline,Button that removes a milestone's date,Clear deadline,Clear deadline,Убрать срок,Quitar fecha límite,Supprimer l’échéance
+goalsViewAchieved,Button on the goals card that flips it over to show goals already achieved,Achieved,Achieved,Достигнутые,Logradas,Atteints
+goalsAchievedTitle,"Heading on the back of the goals card, above the goals already achieved",Achieved,Achieved,Достигнутые,Logradas,Atteints
+goalsViewActive,Button on the back of the goals card that flips it to the goals still being worked on,Back,Back,Назад,Volver,Retour
+goalOpenWorkout,"Tooltip on the achieved date of a goal rung, opening the workout credited with meeting it",View the session,View the session,Открыть тренировку,Ver la sesión,Voir la séance
+goalWorkoutGone,Shown when the workout credited with a goal rung can no longer be found,That session is no longer on this device,That session is no longer on this device,Этой тренировки больше нет на устройстве,Esa sesión ya no está en este dispositivo,Cette séance n’est plus sur cet appareil
+goalsAtCapacity,Tooltip explaining why the add-goal button is missing,You have as many goals as Heart keeps. Delete one to make room for another.,You have as many goals as Heart keeps. Delete one to make room for another.,Больше целей Heart не хранит. Удалите одну,Ya tienes todas las metas que Heart guarda. Elimina una para hacerle espacio a otra.,Vous avez autant d’objectifs que Heart peut en garder. Supprimez-en un pour faire de la place.
+category,Label button that allows to choose Exercise category,Category,Category,Категория,Categoría,Catégorie
+target,Label button that allows to choose Exercise target muscle group,Target,Target,Цель,Músculo,Cible
+removeFilter,Tooltip on the button that removes exercise filter,Remove filter,Remove filter,Удалить фильтр,Quitar filtro,Retirer le filtre
+restCompleteBody,Rest notification banner,Next: {exercise},Next: {exercise},Следующее: {exercise},Siguiente: {exercise},Suivant : {exercise}
+weightedSetRepresentation,Rest notification banner,{weight} x {reps},{weight} x {reps},{weight} x {reps},{weight} x {reps},{weight} x {reps}
+templates,Workout templates section header,Templates,Templates,Шаблоны,Plantillas,Modèles
+exampleTemplates,Workout templates section header,Example templates,Example templates,Примеры шаблонов,Plantillas de ejemplo,Exemples de modèles
+template,A single workout template,Template,Template,Шаблон,Plantilla,Modèle
+newTemplate,New template form header,New Template,New Template,Новый шаблон,Nueva plantilla,Nouveau modèle
+newFolder,Button and dialog title for creating a template folder,New folder,New folder,Новая папка,Nueva carpeta,Nouveau dossier
+folderName,Label of the folder name text field,Folder name,Folder name,Название папки,Nombre de la carpeta,Nom du dossier
+renameFolder,Menu item and dialog title for renaming a template folder,Rename folder,Rename folder,Переименовать папку,Renombrar carpeta,Renommer le dossier
+deleteFolder,Menu item and dialog title for deleting a template folder,Delete folder,Delete folder,Удалить папку,Eliminar carpeta,Supprimer le dossier
+deleteFolderBody,Reassurance in the delete-folder dialog: deleting a folder never deletes its templates,The templates inside will be kept,The templates inside will be kept,Шаблоны внутри останутся,Las plantillas que contiene se conservarán,Les modèles qu’il contient seront conservés
+moveToFolder,Template menu item and dialog title for filing a template into a folder,Move to folder,Move to folder,Переместить в папку,Mover a carpeta,Déplacer vers un dossier
+noFolder,Option in the move-to-folder dialog that unfiles the template,No folder,No folder,Без папки,Sin carpeta,Aucun dossier
+folderNameTaken,Error shown when creating or renaming a folder to a name already in use,You already have a folder with this name,You already have a folder with this name,У вас уже есть папка с таким названием,Ya tienes una carpeta con este nombre,Vous avez déjà un dossier portant ce nom
+editTemplate,Edit template form header,Edit Template,Edit Template,Редактировать шаблон,Editar plantilla,Modifier le modèle
+editWorkout,Edit workout form header,Edit Workout,Edit Workout,Редактировать тренировку,Editar entrenamiento,Modifier la séance
+templateName,Edit template text field hint,Template name,Template name,Название шаблона,Nombre de la plantilla,Nom du modèle
+workoutName,Edit workout text field hint,Workout name,Workout name,Название тренировки,Nombre del entrenamiento,Nom de la séance
+cannotBeEmpty,Form validation message,Cannot be empty,Cannot be empty,Не может быть пустым,No puede estar vacío,Ne peut pas être vide
+showPassword,Tooltip message,Show password,Show password,Показать пароль,Mostrar contraseña,Afficher le mot de passe
+hidePassword,Tooltip message,Hide password,Hide password,Скрыть пароль,Ocultar contraseña,Masquer le mot de passe
+yourPassword,Tooltip message,Your password,Your password,Ваш пароль,Tu contraseña,Votre mot de passe
+resetPassword,Button,Reset password,Reset password,Сбросить пароль,Restablecer contraseña,Réinitialiser le mot de passe
+resetPasswordBody,Button,"We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","We’ll send a reset link to your email faster than you can say “forgot my password.” No turning back after this—unless you cancel, of course. 😌","Мы отправим ссылку для сброса пароля на ваш email быстрее, чем вы успеете сказать ""забыл пароль"". Назад пути нет — если только вы не отмените, конечно. 😌","Te enviaremos un enlace de restablecimiento a tu correo más rápido de lo que tardas en decir “olvidé mi contraseña”. Después de esto no hay vuelta atrás… a menos que canceles, claro. 😌","Nous vous enverrons un lien de réinitialisation par e-mail plus vite qu’il n’en faut pour dire « mot de passe oublié ». Pas de retour en arrière après ça — sauf si vous annulez, bien sûr. 😌"
+orConnector,"Connects two widgets, this OR that",- or -,- or -,- или -,- o -,- ou -
+invalidCredentials,Login error message,"Well, that didn't work! Double-check your details, eh?","Well, that didn't work! Double-check your details, eh?",Что-то пошло не так! Проверьте ваши данные еще раз!,"¡Vaya, eso no funcionó! Revisa tus datos, ¿sí?","Hmm, ça n’a pas marché ! Vérifiez vos identifiants, d’accord ?"
+weakPassword,Login error message,Almost there! Try a stronger password to keep your account safe.,Almost there! Try a stronger password to keep your account safe.,Почти готово! Попробуйте более надежный пароль для безопасности вашего аккаунта.,¡Ya casi! Prueba una contraseña más fuerte para mantener tu cuenta segura.,Presque ! Essayez un mot de passe plus costaud pour protéger votre compte.
+forgotPassword,Login button,Forgot password?,Forgot password?,Забыли пароль?,¿Olvidaste tu contraseña?,Mot de passe oublié ?
+noConnectivity,Error message,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Uh-oh! The internet tripped over a dumbbell. 🏋️‍♂️ Try again in a sec!,Ой! Интернет споткнулся о гантелю. 🏋️‍♂️ Попробуйте снова через секунду!,¡Uy! El internet se tropezó con una mancuerna. 🏋️‍♂️ ¡Inténtalo de nuevo en un momento!,Oh non ! Internet a trébuché sur un haltère. 🏋️‍♂️ Réessayez dans un instant !
+signUp,Generic label,Sign up,Sign up,Регистрация,Registrarse,S’inscrire
+sendResetLink,Password recovery flow,Send Reset Link,Send Reset Link,Отправить ссылку для сброса,Enviar enlace,Envoyer le lien de réinitialisation
+recoveryLinkMessage,Password recovery flow,"If an account exists for this email, you'll receive a reset link shortly. Check your inbox and spam folder.","If an account exists for this email, you'll receive a reset link shortly. Check your inbox and spam folder.","Если аккаунт с этим email существует, вы получите ссылку для сброса. Проверьте папку входящих и спам.","Si existe una cuenta con este correo, recibirás un enlace de restablecimiento en breve. Revisa tu bandeja de entrada y la carpeta de spam.","Si un compte existe pour cet e-mail, vous recevrez un lien de réinitialisation sous peu. Vérifiez votre boîte de réception et vos spams."
+recoveryLinkMessageSent,Password recovery flow,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Your password setup email is on its way! Check your inbox (or maybe your spam folder—it likes to hide).,💌Письмо для настройки пароля уже в пути! Проверьте входящие (или папку спам — оно любит там прятаться).,💌¡Tu correo para configurar la contraseña va en camino! Revisa tu bandeja de entrada (o quizá la carpeta de spam — le gusta esconderse).,💌Votre e-mail de configuration du mot de passe est en route ! Vérifiez votre boîte de réception (ou vos spams — il aime bien s’y cacher).
+emailExistsTitle,Email exists dialog,Email already exists,Email already exists,Email уже существует,El correo ya existe,Cet e-mail existe déjà
+emailExistsOkButton,Email exists dialog,"Yes, sign me in!","Yes, sign me in!","Да, войти!","¡Sí, iniciar sesión!","Oui, me connecter !"
+emailExistsCancelButton,Email exists dialog,"No, I got this","No, I got this","Нет, я разберусь","No, yo me encargo","Non, je gère"
+emailExistsBody,Email exists dialog,An account with {address} already exists. Would you like to log in instead?,An account with {address} already exists. Would you like to log in instead?,Аккаунт с {address} уже существует. Хотите войти?,Ya existe una cuenta con {address}. ¿Quieres iniciar sesión en su lugar?,Un compte avec {address} existe déjà. Voulez-vous plutôt vous connecter ?
+sendResetLinkBody,Password recovery flow,Enter you email and we'll help you reset your password,Enter you email and we'll help you reset your password,Введите ваш email и мы поможем сбросить пароль,Escribe tu correo y te ayudaremos a restablecer tu contraseña,Saisissez votre e-mail et nous vous aiderons à réinitialiser votre mot de passe
+userDisabled,Login error message,This account is disabled,This account is disabled,Этот аккаунт отключен,Esta cuenta está deshabilitada,Ce compte est désactivé
+unknownError,Login error message,Unknown error occurred,Unknown error occurred,Произошла неизвестная ошибка,Ocurrió un error desconocido,Une erreur inconnue s’est produite
+accountControl,Settings item,Account control,Account control,Управление аккаунтом,Control de la cuenta,Gestion du compte
+leaveFeedback,Settings item,Leave feedback,Leave feedback,Оставить отзыв,Enviar comentarios,Donner votre avis
 leaveFeedbackBody,Settings item,"Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
 
 We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you're at it.
 
 We love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. {emoji}","Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.
 
-Мы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. {emoji}"
-feedbackReceived,Confirmation snack message,"Your feedback was received, thank you!","Your feedback was received, thank you!","Ваш отзыв получен, спасибо!"
-toFeedback,Action button on a dialog,To feedback!,To feedback!,К отзыву!
-dangerZone,Settings header,Danger zone,Danger zone,Опасная зона
-deleteAccount,Settings item,Delete account,Delete account,Удалить аккаунт
-deleteAccountTitle,Delete account dialog,Are you sure you want to delete your account?,Are you sure you want to delete your account?,"Вы уверены, что хотите удалить свой аккаунт?"
-deleteAccountBody,Delete account dialog,"Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.",Ваш аккаунт запланирован на удаление через {deadline} дней. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда.
-deleteAccountCancelMessage,Delete account dialog,"Oh no, I like it here!","Oh no, I like it here!","О нет, мне здесь нравится!"
-deleteAccountConfirmMessage,Delete account dialog,"Yep, go on without me!","Yep, go on without me!","Да, продолжайте без меня!"
-confirmDeleteAccountTitle,Delete account dialog,Confirm your account deletion,Confirm your account deletion,Подтвердите удаление аккаунта
-confirmDeleteAccountCancelMessage,Delete account dialog,"Changed my mind, cancel","Changed my mind, cancel","Передумал, отмена"
-confirmDeleteAccountOkMessage,Delete account dialog,Farewell!,Farewell!,Прощайте!
-accountDeleted,Delete account page,Account deleted,Account deleted,Аккаунт удален
+Мы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. {emoji}","Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.
+
+Nos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. {emoji}","Prenez une capture d’écran, gribouillez vos impressions et laissez-nous un mot. Vous pouvez continuer à naviguer dans l’app pendant ce temps.
+
+On adore les retours. Chaque gribouillis et chaque commentaire nous aide à améliorer l’app — pour vous et pour tout le monde. Alors merci. Sincèrement. {emoji}"
+feedbackReceived,Confirmation snack message,"Your feedback was received, thank you!","Your feedback was received, thank you!","Ваш отзыв получен, спасибо!","¡Recibimos tus comentarios, gracias!","Votre retour a bien été reçu, merci !"
+toFeedback,Action button on a dialog,To feedback!,To feedback!,К отзыву!,¡A comentar!,C’est parti !
+dangerZone,Settings header,Danger zone,Danger zone,Опасная зона,Zona de peligro,Zone de danger
+deleteAccount,Settings item,Delete account,Delete account,Удалить аккаунт,Eliminar cuenta,Supprimer le compte
+deleteAccountTitle,Delete account dialog,Are you sure you want to delete your account?,Are you sure you want to delete your account?,"Вы уверены, что хотите удалить свой аккаунт?",¿Seguro que quieres eliminar tu cuenta?,Voulez-vous vraiment supprimer votre compte ?
+deleteAccountBody,Delete account dialog,"Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.","Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.",Ваш аккаунт запланирован на удаление через {deadline} дней. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда.,"Tu cuenta quedará programada para eliminarse en {deadline} días. Durante ese tiempo, aún puedes iniciar sesión y revertir esta decisión. Una vez pasado el plazo, tu cuenta y tus datos personales se eliminarán de forma permanente.","La suppression de votre compte est programmée dans {deadline} jours. D’ici là, vous pouvez toujours vous connecter et revenir sur votre décision. Une fois le délai passé, votre compte et vos données personnelles seront définitivement supprimés."
+deleteAccountCancelMessage,Delete account dialog,"Oh no, I like it here!","Oh no, I like it here!","О нет, мне здесь нравится!","¡Ay no, me gusta estar aquí!","Oh non, je me plais ici !"
+deleteAccountConfirmMessage,Delete account dialog,"Yep, go on without me!","Yep, go on without me!","Да, продолжайте без меня!","¡Sí, sigan sin mí!","Oui, continuez sans moi !"
+confirmDeleteAccountTitle,Delete account dialog,Confirm your account deletion,Confirm your account deletion,Подтвердите удаление аккаунта,Confirma la eliminación de tu cuenta,Confirmez la suppression de votre compte
+confirmDeleteAccountCancelMessage,Delete account dialog,"Changed my mind, cancel","Changed my mind, cancel","Передумал, отмена","Cambié de opinión, cancelar","J’ai changé d’avis, annuler"
+confirmDeleteAccountOkMessage,Delete account dialog,Farewell!,Farewell!,Прощайте!,¡Adiós!,Adieu !
+accountDeleted,Delete account page,Account deleted,Account deleted,Аккаунт удален,Cuenta eliminada,Compte supprimé
 accountDeletedBody,Delete account page,"Your account has been scheduled for deletion on {date}.
 
 If you change your mind, you can restore your account anytime before this date.
@@ -256,49 +270,57 @@ Simply click the button below to cancel the deletion and keep your account safe.
 
 Если вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.
 
-Просто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт."
-accountDeletedAction,Delete account page,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Отменить удаление 🥇🔥
-movement,Title of the movement filter sheet in the exercise library,Movement,Movement,Движение
-pattern,"Movement filter section listing movement patterns, e.g. Horizontal Press",Pattern,Pattern,Паттерн
-stability,Movement filter section for how constrained the movement path is,Stability,Stability,Стабильность
-skillAtMost,Movement filter section capping how technical an exercise may be,Skill at most,Skill at most,Сложность не выше
-patternHelp,Help tooltip on the Pattern section of the movement filter sheet,"The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.","The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.","Само движение — шире, чем оборудование, и точнее, чем часть тела. Упражнения с общим паттерном взаимозаменяемы."
-stabilityHelp,Help tooltip on the Stability section of the movement filter sheet,How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.,How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.,"Насколько траекторию задаёт оборудование. «Свободно» — вы балансируете вес сами, «тренажёр» — траектория закреплена."
-skillAtMostHelp,"Help tooltip on the Skill section of the movement filter sheet, explaining that the choice is a ceiling",How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.,How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.,"Сколько техники требует упражнение, прежде чем его можно безопасно нагружать. «Средняя» включает и «низкую»."
-clearFilters,Button that removes every active movement filter,Clear,Clear,Очистить
-alsoTry,Substitution section on the exercise About tab,Also try,Also try,Попробуйте также
-about,Generic label,About,About,О приложении
-records,Generic label,Records,Records,Рекорды
-chartWeeklyAverage,"Caption under a chart that is plotting one point per week rather than one per reading. Says what the line is, so a reader does not take a smoothed point for a single reading",Weekly average,Weekly average,Среднее за неделю
-chartMonthlyAverage,"As chartWeeklyAverage, one point per calendar month",Monthly average,Monthly average,Среднее за месяц
-chartYearlyAverage,"As chartWeeklyAverage, one point per calendar year",Yearly average,Yearly average,Среднее за год
-chartRangeMonth,Chip that sets a chart's window to the last month. Abbreviated because four of these sit in a row on a phone; use whatever short form is conventional for a finance or fitness chart in this locale,1M,1M,1М
-chartRangeQuarter,"Chip that sets a chart's window to the last three months. Abbreviated, as chartRangeMonth",3M,3M,3М
-chartRangeYear,"Chip that sets a chart's window to the last year. Abbreviated, as chartRangeMonth",1Y,1Y,1Г
-chartRangeAll,"Chip that sets a chart's window to everything recorded, however far back that goes. Keep it short — it sits beside 1M/3M/1Y",All,All,Всё
-chartGenericLabel,"Fallback metric name in the history chart accessibility summary, when the chart has no visible title",Chart,Chart,График
-exerciseChartSummary,"Accessibility summary of a history chart, replacing the plotted line with a sentence",{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} с {start} по {end}. Последнее значение: {latest}. Тенденция: {trend}.
-exerciseChartTrendUp,"Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown",Increasing,Increasing,Рост
-exerciseChartTrendDown,"Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown",Decreasing,Decreasing,Снижение
-exerciseChartTrendFlat,"Trend word in the history chart accessibility summary, when the latest value equals the earliest shown",Flat,Flat,Без изменений
-healthCardSummary,"Accessibility label for a tappable health card on the dashboard. The card is an InkWell around a label, a number and a sparkline, none of which announce themselves as a control — this is what a screen reader reads instead, so it has to carry the whole card","{metric}, {value}, {when}","{metric}, {value}, {when}","{metric}, {value}, {when}"
-charts,Generic label,Charts,Charts,Графики
-emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,Ghost Reps Detected 👻,Обнаружены призрачные повторения 👻
-emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!
-errorExerciseHistoryTitle,Exercise history empty state,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️,Упс! Кто-то пропустил день данных 🤷‍♀️
-errorExerciseHistoryBody,Exercise history empty state,"Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Похоже, приложение споткнулось о свои шнурки. Попробуйте снова, и мы обещаем завязать их крепче в следующий раз!"
-personalRecords,"Records screen, title",Personal records,Personal records,Личные рекорды
-maxDuration,"Records screen, metric name",Max duration,Max duration,Макс. длительность
-maxDistance,"Records screen, metric name",Max distance,Max distance,Макс. дистанция
-maxWeight,"Records screen, metric name",Max weight,Max weight,Макс. вес
-maxReps,"Records screen, metric name",Max reps,Max reps,Макс. повторений
-capturePhoto,Image picker menu,Take a new photo,Take a new photo,Сделать новое фото
-chooseFromGallery,Image picker menu,Choose from library,Choose from library,Выбрать из галереи
-removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Удалить текущее фото
-mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Мои
-goToWorkout,Label for button that pulls up active workout UI,Go to Workout,Go to Workout,К тренировке
-setTimer,Label for button that adds a rest timer to an exercise,Set timer,Set timer,Установить таймер
-updateRequiredTitle,"Force update screen, title",Oops. That one’s on us,Oops. That one's on us,Упс! Это наша вина
+Просто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.","Tu cuenta quedó programada para eliminarse el {date}.
+
+Si cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.
+
+Solo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.","La suppression de votre compte est programmée pour le {date}.
+
+Si vous changez d’avis, vous pouvez restaurer votre compte à tout moment avant cette date.
+
+Appuyez simplement sur le bouton ci-dessous pour annuler la suppression et garder votre compte."
+accountDeletedAction,Delete account page,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Undo the Goodbye 🥇🔥,🔥🏆 Отменить удаление 🥇🔥,🔥🏆 Deshacer la despedida 🥇🔥,🔥🏆 Annuler les adieux 🥇🔥
+movement,Title of the movement filter sheet in the exercise library,Movement,Movement,Движение,Movimiento,Mouvement
+pattern,"Movement filter section listing movement patterns, e.g. Horizontal Press",Pattern,Pattern,Паттерн,Patrón,Schéma
+stability,Movement filter section for how constrained the movement path is,Stability,Stability,Стабильность,Estabilidad,Stabilité
+skillAtMost,Movement filter section capping how technical an exercise may be,Skill at most,Skill at most,Сложность не выше,Técnica máxima,Technicité max
+patternHelp,Help tooltip on the Pattern section of the movement filter sheet,"The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.","The movement itself — coarser than equipment, finer than body part. Exercises that share a pattern can stand in for one another.","Само движение — шире, чем оборудование, и точнее, чем часть тела. Упражнения с общим паттерном взаимозаменяемы.","El movimiento en sí — más general que el equipo, más específico que la parte del cuerpo. Los ejercicios que comparten un patrón pueden sustituirse entre sí.","Le mouvement lui-même — plus large que le matériel, plus fin que le groupe musculaire. Les exercices qui partagent un schéma peuvent se remplacer l’un l’autre."
+stabilityHelp,Help tooltip on the Stability section of the movement filter sheet,How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.,How much the equipment holds the path for you. Free means you balance the weight yourself; machine means the path is fixed.,"Насколько траекторию задаёт оборудование. «Свободно» — вы балансируете вес сами, «тренажёр» — траектория закреплена.","Cuánto sostiene el equipo la trayectoria por ti. Libre significa que tú equilibras el peso; máquina, que la trayectoria es fija.",À quel point le matériel guide la trajectoire à votre place. Libre : vous équilibrez la charge vous-même ; machine : la trajectoire est fixe.
+skillAtMostHelp,"Help tooltip on the Skill section of the movement filter sheet, explaining that the choice is a ceiling",How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.,How much technique an exercise demands before it can be loaded safely. Choosing Moderate also includes Low.,"Сколько техники требует упражнение, прежде чем его можно безопасно нагружать. «Средняя» включает и «низкую».",Cuánta técnica exige un ejercicio antes de poder cargarlo con seguridad. Elegir Moderada también incluye Baja.,Le niveau de technique qu’un exercice exige avant de pouvoir être chargé en toute sécurité. Choisir Modéré inclut aussi Faible.
+clearFilters,Button that removes every active movement filter,Clear,Clear,Очистить,Limpiar,Effacer
+alsoTry,Substitution section on the exercise About tab,Also try,Also try,Попробуйте также,Prueba también,À essayer aussi
+about,Exercise detail tab: overview and technique of the exercise (not about the app),About,About,Описание,Descripción,Description
+records,Generic label,Records,Records,Рекорды,Récords,Records
+chartWeeklyAverage,"Caption under a chart that is plotting one point per week rather than one per reading. Says what the line is, so a reader does not take a smoothed point for a single reading",Weekly average,Weekly average,Среднее за неделю,Promedio semanal,Moyenne hebdomadaire
+chartMonthlyAverage,"As chartWeeklyAverage, one point per calendar month",Monthly average,Monthly average,Среднее за месяц,Promedio mensual,Moyenne mensuelle
+chartYearlyAverage,"As chartWeeklyAverage, one point per calendar year",Yearly average,Yearly average,Среднее за год,Promedio anual,Moyenne annuelle
+chartRangeMonth,Chip that sets a chart's window to the last month. Abbreviated because four of these sit in a row on a phone; use whatever short form is conventional for a finance or fitness chart in this locale,1M,1M,1М,1M,1M
+chartRangeQuarter,"Chip that sets a chart's window to the last three months. Abbreviated, as chartRangeMonth",3M,3M,3М,3M,3M
+chartRangeYear,"Chip that sets a chart's window to the last year. Abbreviated, as chartRangeMonth",1Y,1Y,1Г,1A,1A
+chartRangeAll,"Chip that sets a chart's window to everything recorded, however far back that goes. Keep it short — it sits beside 1M/3M/1Y",All,All,Всё,Todo,Tout
+chartGenericLabel,"Fallback metric name in the history chart accessibility summary, when the chart has no visible title",Chart,Chart,График,Gráfico,Graphique
+exerciseChartSummary,"Accessibility summary of a history chart, replacing the plotted line with a sentence",{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} from {start} to {end}. Latest: {latest}. Trend: {trend}.,{metric} с {start} по {end}. Последнее значение: {latest}. Тенденция: {trend}.,{metric} de {start} a {end}. Último valor: {latest}. Tendencia: {trend}.,{metric} du {start} au {end}. Dernière valeur : {latest}. Tendance : {trend}.
+exerciseChartTrendUp,"Trend word in the history chart accessibility summary, when the latest value is higher than the earliest shown",Increasing,Increasing,Рост,En aumento,En hausse
+exerciseChartTrendDown,"Trend word in the history chart accessibility summary, when the latest value is lower than the earliest shown",Decreasing,Decreasing,Снижение,En descenso,En baisse
+exerciseChartTrendFlat,"Trend word in the history chart accessibility summary, when the latest value equals the earliest shown",Flat,Flat,Без изменений,Estable,Stable
+healthCardSummary,"Accessibility label for a tappable health card on the dashboard. The card is an InkWell around a label, a number and a sparkline, none of which announce themselves as a control — this is what a screen reader reads instead, so it has to carry the whole card","{metric}, {value}, {when}","{metric}, {value}, {when}","{metric}, {value}, {when}","{metric}, {value}, {when}","{metric}, {value}, {when}"
+charts,Generic label,Charts,Charts,Графики,Gráficos,Graphiques
+emptyExerciseHistoryTitle,Exercise history empty state,Ghost Reps Detected 👻,Ghost Reps Detected 👻,Обнаружены призрачные повторения 👻,Reps fantasma detectadas 👻,Reps fantômes détectées 👻
+emptyExerciseHistoryBody,Exercise history empty state,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Your exercise history is emptier than a gym on a Monday morning. Time to fill it up with some glorious PRs!,Ваша история тренировок пуста как спортзал в понедельник утром. Пора заполнить ее личными рекордами!,Tu historial de este ejercicio está más vacío que un gimnasio un lunes por la mañana. ¡Hora de llenarlo con unos PR gloriosos!,Votre historique d’exercices est plus vide qu’une salle de sport un lundi matin. Il est temps de le remplir avec de glorieux records !
+errorExerciseHistoryTitle,Exercise history empty state,Oops! Someone Skipped the Data Day 🤷‍♀️,Oops! Someone Skipped the Data Day 🤷‍♀️,Упс! Кто-то пропустил день данных 🤷‍♀️,¡Ups! Alguien se saltó el día de datos 🤷‍♀️,Oups ! Quelqu’un a séché le jour des données 🤷‍♀️
+errorExerciseHistoryBody,Exercise history empty state,"Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!","Похоже, приложение споткнулось о свои шнурки. Попробуйте снова, и мы обещаем завязать их крепче в следующий раз!","Parece que la app se tropezó con sus propios cordones. Inténtalo de nuevo, ¡y prometemos atarlos más fuerte la próxima vez!","On dirait que l’app s’est pris les pieds dans ses lacets. Réessayez, promis, on les serrera mieux la prochaine fois !"
+personalRecords,"Records screen, title",Personal records,Personal records,Личные рекорды,Récords personales,Records personnels
+maxDuration,"Records screen, metric name",Max duration,Max duration,Макс. длительность,Duración máxima,Durée max
+maxDistance,"Records screen, metric name",Max distance,Max distance,Макс. дистанция,Distancia máxima,Distance max
+maxWeight,"Records screen, metric name",Max weight,Max weight,Макс. вес,Peso máximo,Charge max
+maxReps,"Records screen, metric name",Max reps,Max reps,Макс. повторений,Reps máximas,Reps max
+capturePhoto,Image picker menu,Take a new photo,Take a new photo,Сделать новое фото,Tomar una foto nueva,Prendre une nouvelle photo
+chooseFromGallery,Image picker menu,Choose from library,Choose from library,Выбрать из галереи,Elegir de la galería,Choisir dans la galerie
+removeCurrentPhoto,Image picker menu,Remove current photo,Remove current photo,Удалить текущее фото,Quitar foto actual,Supprimer la photo actuelle
+mine,"Possessive pronoun, as in ""My exercises""",Mine,Mine,Мои,Míos,Les miens
+goToWorkout,Label for button that pulls up active workout UI,Go to Workout,Go to Workout,К тренировке,Ir al entrenamiento,Aller à la séance
+setTimer,Label for button that adds a rest timer to an exercise,Set timer,Set timer,Установить таймер,Poner temporizador,Régler le minuteur
+updateRequiredTitle,"Force update screen, title",Oops. That one’s on us,Oops. That one's on us,Упс! Это наша вина,Ups. Esta es culpa nuestra,Oups. C’est de notre faute
 updateRequiredBody,"Force update screen, body","There’s an important update waiting — one that keeps your app working as it should.
 
 You’ll need to install it before continuing.
@@ -308,132 +330,143 @@ You'll need to install it before continuing.
 Thanks for your patience — and sorry for the interruption.","Доступно важное обновление — оно необходимо для правильной работы приложения.
 
 Вам нужно установить его, чтобы продолжить.
-Спасибо за терпение — и извините за прерывание."
-updateRequiredCta,"Force update screen, CTA",Update on the {storeName},Update on the {storeName},Обновить в {storeName}
-addPhoto,Menu item that allows to add photo to a workout,Add photo,Add photo,Добавить фото
-editWorkoutName,Menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки
-editWorkoutTimes,Menu item that allows editing a workout's start and end times,Edit times,Edit times,Изменить время
-adjustTimes,Title of the dialog for editing a workout's start and end times,Adjust Start/End Time,Adjust Start/End Time,Изменить время начала и конца
-startTime,Label for a workout's start time,Start time,Start time,Время начала
-endTime,Label for a workout's end time,End time,End time,Время окончания
-endBeforeStart,Validation shown when a workout's chosen end time precedes its start time,End time can't be before the start time.,End time can't be before the start time.,Время окончания не может быть раньше времени начала.
-cropImage,Label in the image cropper,Crop image,Crop image,Обрезать изображение
-removePhoto,Menu item that allows to remove photo from a workout,Remove photo,Remove photo,Удалить фото
-aboutExercise,Menu item that opens exercise details,About exercise,About exercise,Об упражнении
-myDashboard,Title of the dashboard screen with performance charts,My Dashboard,My Dashboard,Моя панель
-newChart,Button that allows to create a new chart,New chart,New chart,Новый график
-emptyChartStateTitle,Empty state for chart widget,Looks a little empty here,Looks a little empty here,Тут немного пусто
-emptyChartStateBody,Empty state for chart widget,Add your first set to start tracking real progress,Add your first set to start tracking real progress,Добавьте первый подход чтобы начать отслеживать реальный прогресс
-topSetWeight,"For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",Top set weight,Top set weight,Вес топового подхода
-estimatedOneRepMax,"An estimated one-repetition maximum calculated from the best set in a workout (weight + reps) using a standard 1RM formula. Displayed as a trend line, not a guaranteed true max.",Estimated 1RM,Estimated 1RM,Расчетный 1ПМ
-totalVolume,"Total work performed for an exercise in a session or time window, computed as the sum of (weight × reps) across all sets. Useful for tracking training load over time.",Total volume,Total volume,Общий объем
-averageWorkingWeight,"Average weight used across working sets for an exercise, typically weighted by reps or sets. Helps smooth out noise from a single heavy or light set when charting progress.",Average working weight,Average working weight,Средний рабочий вес
-assistanceWeight,"For assisted bodyweight exercises, the amount of assistance provided (e.g., machine counterweight or band assistance). Lower values typically indicate progression toward unassisted reps.",Assistance weight,Assistance weight,Вес помощи
-maxRepsInSet,Highest number of repetitions completed in any single set for the selected exercise within a workout or time window. Used to track capacity improvements on reps-only movements.,Max reps in a set,Max reps in a set,Макс. повторений в подходе
-totalReps,"Total repetitions completed for an exercise within a workout or time window, summed across all sets. Useful for reps-only exercises and high-rep accessory work.",Total reps,Total reps,Всего повторений
-cardioDistance,"For cardio exercises, total distance completed in a session (e.g., kilometers or miles depending on user units). Often charted per workout to show endurance progression.",Distance,Distance,Дистанция
-cardioDuration,"For cardio exercises, total time spent in the session. Can be charted alone or paired with distance to derive pace when both are available.",Duration,Duration,Длительность
-averagePace,"For cardio exercises, average pace computed from distance and duration (time per unit distance, e.g., min/km). Only valid when both distance and duration are present and reliable.",Average pace,Average pace,Средний темп
-totalTimeUnderTension,"For duration-based exercises, total accumulated time across all sets in a session or time window. Used to chart consistency and gradual increases for holds or mobility work.",Total time under tension,Total time under tension,Общее время под нагрузкой
-passwordPolicyTitle,"Title for password requirements section shown during sign-up. Sets a friendly, motivational tone for the password creation rules that follow.",Let's make a password that lifts:,Let's make a password that lifts:,"Давайте создадим пароль, который качает:"
-passwordPolicyMinLength,Password requirement: minimum character count. Displayed as a bullet point in the password policy list to inform users of the minimum length constraint.,at least {minLength} characters,at least {minLength} characters,минимум {minLength} символов
-passwordPolicyMaxLength,Password requirement: maximum character count. Displayed as a bullet point in the password policy list with a playful note about reasonable boundaries.,no more than {maxLength} (we believe in limits),no more than {maxLength} (we believe in limits),не больше {maxLength} (мы верим в границы)
-passwordPolicyUpperCase,Password requirement: must contain at least one uppercase letter (A-Z). Shown as a validation rule in the password policy checklist.,one uppercase letter,one uppercase letter,одна заглавная буква
-passwordPolicyLowerCase,Password requirement: must contain at least one lowercase letter (a-z). Shown as a validation rule in the password policy checklist.,one lowercase letter,one lowercase letter,одна строчная буква
-passwordPolicyDigit,Password requirement: must contain at least one numeric digit (0-9). Displayed as a validation rule in the password policy checklist with casual phrasing.,one number somewhere in there,one number somewhere in there,одна цифра где-нибудь там
-deleteImageDialogTitle,Confirmation dialog title when user attempts to delete an image from a workout,Remove this image?,Remove this image?,Удалить это изображение?
-deleteImageDialogBody,Confirmation dialog body explaining that removing the image won't delete workout data,It won't affect the workout — just clears the picture,It won't affect the workout — just clears the picture,Это не повлияет на тренировку — просто удалит фотографию
-myProgression,Photo gallery title,My progression,My progression,Мой прогресс
-copiedToClipboard,Snack message when user copies text to clipboard,Copied to clipboard,Copied to clipboard,Скопировано в буфер обмена
-weightUnitLabel,Weight unit label,Weight unit,Weight unit,Единица веса
-distanceUnitLabel,Distance unit label,Distance unit,Distance unit,Единица расстояния
-close,Tooltip on a button that dismisses a dialog or a detail pane,Close,Close,Закрыть
-noWorkoutSelectedTitle,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Nothing selected,Nothing selected,Ничего не выбрано
-noWorkoutSelectedBody,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Pick a workout to see what you did and make changes.,Pick a workout to see what you did and make changes.,"Выберите тренировку, чтобы посмотреть и изменить её."
-noExerciseSelectedTitle,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,Nothing selected,Nothing selected,Ничего не выбрано
-noExerciseSelectedBody,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,"Pick an exercise to see how it's done, plus your history and records.","Pick an exercise to see how it's done, plus your history and records.","Выберите упражнение, чтобы увидеть технику, историю и рекорды."
-moreOptions,Tooltip on an icon-only overflow menu button,More options,More options,Дополнительные действия
-viewProgressPhotos,Tooltip on the icon button that opens a workout's attached progress photos,View progress photos,View progress photos,Просмотреть фото прогресса
-confirmEdit,Tooltip on the checkmark button that dismisses the keyboard after editing a name field,Confirm,Confirm,Подтвердить
-clearSearchTooltip,Accessibility label on the button that clears a search field's text,Clear search,Clear search,Очистить поиск
-changeProfilePhoto,Accessibility label on the editable avatar shown while editing an account,Change profile photo,Change profile photo,Изменить фото профиля
-viewAccountDetails,"Accessibility label on the profile page header, which opens account management",Account details,Account details,Данные аккаунта
-viewProfilePhoto,Accessibility label on the avatar shown in the profile page header,View profile photo,View profile photo,Просмотреть фото профиля
-durationPickerSetTo,"Accessibility label on a single row of the rest-timer duration picker, tapped to select that duration directly",Set rest timer to {duration},Set rest timer to {duration},Установить таймер отдыха на {duration}
-emptyWorkoutLabel,Accessibility label on the illustration shown when a workout has no exercises,Empty workout,Empty workout,Пустая тренировка
-progressPhotoLabel,Accessibility label on a progress photo in the gallery,Progress photo from {date},Progress photo from {date},Фото прогресса от {date}
-exerciseThumbnailLabel,Accessibility label on an exercise's thumbnail image,{exerciseName} thumbnail,{exerciseName} thumbnail,Миниатюра: {exerciseName}
-goalLadderSummary,"Accessibility summary of a goal's ladder progress bar, replacing the painted rungs with a sentence",{achieved} of {total} targets reached. Current: {current}.,{achieved} of {total} targets reached. Current: {current}.,Достигнуто целей: {achieved} из {total}. Текущее значение: {current}.
-restTimerRemaining,"Accessibility label on the rest-timer countdown ring, stating the remaining time as a sentence",Rest timer: {remaining} remaining,Rest timer: {remaining} remaining,Таймер отдыха: осталось {remaining}
-health,Header of the health section on the profile dashboard,Health,Health,Здоровье
-healthActiveEnergy,Name of a health metric: calories burned through activity,Active energy,Active energy,Активные калории
-healthBodyMass,Name of a health metric: bodyweight,Body mass,Body mass,Вес
-healthBpm,"Unit abbreviation, beats per minute. Shown next to a heart rate",bpm,bpm,уд/мин
-healthChecking,"Shown on the health card while the app is reading the phone's health store, in place of the empty-state message. Mostly seen in the seconds after the user comes back from granting permission, so it must not sound like a result — it is what is happening, not what was found",Looking for new readings…,Looking for new readings…,Ищем новые показатели…
-healthLatestReading,"Under the big number in the health detail dialog. The date on its own was cryptic — a bare ""08-13"" beside a heart rate reads as part of the measurement rather than as when it was taken. Says what the date is, and formats it with a month name so it cannot be mistaken for a number",Latest reading · {when},Latest reading · {when},Последнее измерение · {when}
-healthDelete,Settings row that deletes Heart's local copy of health data,Delete health data,Delete health data,Удалить данные здоровья
-healthDeleteBody,Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync,"This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.","This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.","Это очистит то, что Heart прочитал на это устройство. В хранилище здоровья на телефоне ничего не изменится, и Heart прочитает данные снова при следующей синхронизации."
-healthDeleteTitle,Confirmation title. Must say it is Heart's copy — a title reading like 'erase my heart rate history' would suggest years of data are about to be lost,Delete Heart's copy of your health data?,Delete Heart's copy of your health data?,Удалить копию данных здоровья в Heart?
-healthHeartRateVariability,Name of a health metric,Heart rate variability,Heart rate variability,Вариабельность пульса
-healthHoursShort,"Single-letter abbreviation for hours, as in '7h 15m'. No space before it",h,h,ч
-healthInviteAction,Button that opens the operating system's health permission sheet,Show my health data,Show my health data,Показать мои данные
-healthInviteBody,"Body of the card offering to read health data. The last clause is a genuine selling point, not fine print — keep it plain and avoid words like private or secure","Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.","Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.","Heart может показывать пульс в покое, сон, шаги и вес рядом с тренировками. Он читает их из хранилища здоровья на телефоне и хранит на этом устройстве."
-healthInviteDismiss,Tooltip on the button that dismisses the health invitation card,Not now,Not now,Не сейчас
-healthInviteTitle,Title of the card offering to read health data from the phone,Health data,Health data,Данные здоровья
-healthKilocalories,"Unit abbreviation, kilocalories. Shown next to active energy",kcal,kcal,ккал
-healthMilliseconds,"Unit abbreviation, milliseconds. Shown next to heart rate variability",ms,ms,мс
-healthMinutesShort,"Single-letter abbreviation for minutes, as in '7h 15m'. No space before it",m,m,м
-healthOffInHealthApp,"iOS only. Body of the dialog behind the info button on the greyed-out Health header, shown once the user has been asked and nothing is being read. The dialog's button opens the Health app; this is what to do on arrival, since Apple gives no way to link straight to Heart's row. An instruction, not an explanation — do not add why the permission is there rather than in Heart. Match the wording Apple's Health app uses in this locale","In the Health app, tap your profile picture, then Apps, and let Heart read.","In the Health app, tap your profile picture, then Apps, and let Heart read.","В приложении «Здоровье» нажмите фото профиля, затем «Приложения» и разрешите Heart читать данные."
-healthOffInSettings,"Non-iOS fallback for healthOffInHealthApp. An instruction, never an explanation, and neutral about why there is nothing to show. The second sentence is Android-specific and load-bearing: Health Connect keeps past-data access as a separate switch away from the main permission list, and without it every read is capped at 30 days however far back the app asks. Say 'past data' — that is the platform's own wording for it","Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.","Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.","Разрешите Heart читать данные о здоровье в настройках здоровья на устройстве. Разрешите и прошлые данные, иначе графики остановятся на последних 30 днях."
-healthOffTitle,"Title of that dialog, and the tooltip on the button that opens it. States the fact and nothing else — the app cannot tell whether the user declined or simply has no readings, so it must not sound like a fault on either side",Heart isn’t reading any health data,Heart isn’t reading any health data,Heart не читает данные о здоровье
-healthOnThisDevice,Subtitle under the Health header. States where health data is kept. Must not be softened into 'private' or 'secure' — workouts do sync to a server and only health data does not,On this device,On this device,На этом устройстве
-healthOpenHealthApp,"iOS only. Button that opens Apple's Health app, which is where read permissions live — the app's own page in iOS Settings has no health toggle at all. 'Health' here is the name of Apple's app and should keep whatever name it has in this locale",Open the Health app,Open the Health app,Открыть приложение «Здоровье»
-healthOpenHealthAppHint,"iOS only. Sits under the row that opens the Health app and says what to do once there, since Apple gives no way to link straight to Heart's row. An instruction only — it is not the place to explain why the permission lives outside Heart. Match the wording Apple's Health app uses in this locale","Tap your profile picture, then Apps","Tap your profile picture, then Apps","Нажмите фото профиля, затем «Приложения»"
-healthOpenSettingsHint,"Non-iOS. Sits under the row that opens the device's health settings. Health Connect keeps past-data access apart from the main permission list, so a user who grants everything they can see is still capped at 30 days. An instruction, not an explanation of why. Deliberately echoes Health Connect's own prompt — ""Allow Heart to access past data?"" — so the words the user reads here are the words they then look for; match that prompt's wording in this locale rather than translating literally",Also allow access to past data,Also allow access to past data,Разрешите также доступ к прошлым данным
-healthOpenSettings,Button that opens the operating system's settings app. Non-iOS fallback for healthOpenHealthApp,Open settings,Open settings,Открыть настройки
-healthRestingHeartRate,Name of a health metric,Resting heart rate,Resting heart rate,Пульс в покое
-healthSettingsBody,"Settings section body. Names exactly what Heart reads and restates where it is kept. Say 'on this device', never 'private' or 'secure' — workouts do sync to a server and only health data does not","Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone's health store. They stay on this device.","Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone's health store. They stay on this device.","Heart читает пульс в покое, вариабельность пульса, сон, шаги, активные калории и вес из хранилища здоровья на телефоне. Они остаются на этом устройстве."
-healthWriteWorkouts,"Settings row title. Heart writing a finished workout back to the phone's health store, so the user's activity rings credit their lifting",Save workouts to Health,Save workouts to Health,Сохранять тренировки в Здоровье
-healthWriteWorkoutsOn,"Settings row subtitle when Heart may write. States the limit as the reassurance: duration and activity type only. Never claim Heart records calories — it deliberately does not, because without a watch there is no measurement, only a guess","Saving how long you train, and nothing else","Saving how long you train, and nothing else",Сохраняется только длительность тренировки
-healthWriteWorkoutsOff,"Settings row subtitle when write access was declined. Neutral — declining is a normal choice, not an error to scold",Off · Heart is not saving your workouts,Off · Heart is not saving your workouts,Выключено · Heart не сохраняет ваши тренировки
-healthSleep,Name of a health metric: time asleep,Sleep,Sleep,Сон
-healthSteps,Name of a health metric,Steps,Steps,Шаги
-deleteWorkoutTitle,Workout deletion confirmation dialog,Do you want to delete this workout?,Do you want to delete this workout?,Хотите удалить эту тренировку?
-deleteWorkoutBody,Workout deletion confirmation dialog,This cannot be undone,This cannot be undone,Это действие нельзя отменить
-importData,Settings item and title of the import page,Import workout history,Import workout history,Импорт истории тренировок
-importPreviewTitle,"Import page, heading of the preview/consent step",Ready to import,Ready to import,Готово к импорту
-importPreviewSummary,"Import preview line, what the file holds","{workouts, plural, =1{1 workout} other{{workouts} workouts}} and {sets, plural, =1{1 set} other{{sets} sets}} ready to come over","{workouts, plural, =1{1 workout} other{{workouts} workouts}} and {sets, plural, =1{1 set} other{{sets} sets}} ready to come over","{workouts, plural, one{{workouts} тренировка} few{{workouts} тренировки} many{{workouts} тренировок} other{{workouts} тренировки}} и {sets, plural, one{{sets} подход} few{{sets} подхода} many{{sets} подходов} other{{sets} подхода}} готовы к переезду"
-importPreviewSummaryPartial,Import preview line when part of the file was imported before — only the new workouts are announced,"{count, plural, =1{1 workout is new} other{{count} workouts are new}}","{count, plural, =1{1 workout is new} other{{count} workouts are new}}","{count, plural, one{{count} новая тренировка} few{{count} новые тренировки} many{{count} новых тренировок} other{{count} новые тренировки}}"
-importPreviewNothingNew,Import preview line when every workout in the file was imported before,"Nothing new — {count, plural, =1{the 1 workout in this file is} other{all {count} workouts in this file are}} already here","Nothing new — {count, plural, =1{the 1 workout in this file is} other{all {count} workouts in this file are}} already here","Ничего нового — {count, plural, one{{count} тренировка из этого файла уже здесь} few{все {count} тренировки из этого файла уже здесь} many{все {count} тренировок из этого файла уже здесь} other{все {count} тренировки из этого файла уже здесь}}"
-importPreviewMatched,"Import preview line, exercises that resolved against the stock catalog or existing customs","{count, plural, =1{1 exercise already matches the library} other{{count} exercises already match the library}}","{count, plural, =1{1 exercise already matches the library} other{{count} exercises already match the library}}","{count, plural, one{{count} упражнение уже есть в каталоге} few{{count} упражнения уже есть в каталоге} many{{count} упражнений уже есть в каталоге} other{{count} упражнения уже есть в каталоге}}"
-importPreviewAlreadyHere,"Import preview line, workouts a commit would skip as previously imported","{count, plural, =1{1 workout is already here — it will be skipped} other{{count} workouts are already here — they will be skipped}}","{count, plural, =1{1 workout is already here — it will be skipped} other{{count} workouts are already here — they will be skipped}}","{count, plural, one{{count} тренировка уже здесь — она будет пропущена} few{{count} тренировки уже здесь — они будут пропущены} many{{count} тренировок уже здесь — они будут пропущены} other{{count} тренировки уже здесь — они будут пропущены}}"
-selectAll,"Button over a checkbox list, checks every item",Select all,Select all,Выбрать все
-deselectAll,"Button over a checkbox list, unchecks every item",Deselect all,Deselect all,Снять выбор
-importConsentTitle,"Import page, heading of the consent step over unmatched exercises",New exercises found,New exercises found,Найдены новые упражнения
-importConsentBody,"Import page, explains the consent checkboxes over unmatched exercises","These didn't match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.","These didn't match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.","Они не нашлись в каталоге. Отметьте те, что заберёте как ваши собственные упражнения, — неотмеченные останутся позади вместе со своими подходами."
-importAction,"Import page, the button that commits the import after the consent step",Import,Import,Импортировать
-importSetsCount,"Import consent step, how many sets ride on an unmatched exercise","{count, plural, =1{1 set} other{{count} sets}}","{count, plural, =1{1 set} other{{count} sets}}","{count, plural, one{{count} подход} few{{count} подхода} many{{count} подходов} other{{count} подхода}}"
-importSkippedSets,"Import report line, sets not imported because their exercise was declined","{count, plural, =1{1 set stayed behind} other{{count} sets stayed behind}} with the exercises you declined","{count, plural, =1{1 set stayed behind} other{{count} sets stayed behind}} with the exercises you declined","{count, plural, one{{count} подход не переехал} few{{count} подхода не переехали} many{{count} подходов не переехало} other{{count} подхода не переехало}} — вместе с упражнениями, которые вы отклонили"
-yourData,"Settings section header over data import (and, later, export)",Your data,Your data,Ваши данные
-account,Settings section header over account management,Account,Account,Аккаунт
-app,"Settings section header over notifications, about, and feedback",App,App,Приложение
+Спасибо за терпение — и извините за прерывание.","Hay una actualización importante esperando — una que mantiene la app funcionando como debe.
+
+Necesitas instalarla antes de continuar.
+Gracias por tu paciencia — y perdón por la interrupción.","Une mise à jour importante vous attend — elle garantit le bon fonctionnement de votre app.
+
+Vous devrez l’installer avant de continuer.
+Merci de votre patience — et désolé pour l’interruption."
+updateRequiredCta,"Force update screen, CTA",Update on the {storeName},Update on the {storeName},Обновить в {storeName},Actualizar en {storeName},Mettre à jour sur {storeName}
+addPhoto,Menu item that allows to add photo to a workout,Add photo,Add photo,Добавить фото,Agregar foto,Ajouter une photo
+editWorkoutName,Menu item that allows to edit workout name,Edit workout name,Edit workout name,Изменить название тренировки,Editar nombre del entrenamiento,Modifier le nom de la séance
+editWorkoutTimes,Menu item that allows editing a workout's start and end times,Edit times,Edit times,Изменить время,Editar horas,Modifier les horaires
+adjustTimes,Title of the dialog for editing a workout's start and end times,Adjust Start/End Time,Adjust Start/End Time,Изменить время начала и конца,Ajustar hora de inicio/fin,Ajuster les heures de début/fin
+startTime,Label for a workout's start time,Start time,Start time,Время начала,Hora de inicio,Heure de début
+endTime,Label for a workout's end time,End time,End time,Время окончания,Hora de fin,Heure de fin
+endBeforeStart,Validation shown when a workout's chosen end time precedes its start time,End time can't be before the start time.,End time can't be before the start time.,Время окончания не может быть раньше времени начала.,La hora de fin no puede ser anterior a la de inicio.,L’heure de fin ne peut pas précéder l’heure de début.
+cropImage,Label in the image cropper,Crop image,Crop image,Обрезать изображение,Recortar imagen,Recadrer l’image
+removePhoto,Menu item that allows to remove photo from a workout,Remove photo,Remove photo,Удалить фото,Quitar foto,Supprimer la photo
+aboutExercise,Menu item that opens exercise details,About exercise,About exercise,Об упражнении,Acerca del ejercicio,À propos de l’exercice
+myDashboard,Title of the dashboard screen with performance charts,My Dashboard,My Dashboard,Моя панель,Mi panel,Mon tableau de bord
+newChart,Button that allows to create a new chart,New chart,New chart,Новый график,Nuevo gráfico,Nouveau graphique
+emptyChartStateTitle,Empty state for chart widget,Looks a little empty here,Looks a little empty here,Тут немного пусто,Esto se ve un poco vacío,C’est un peu vide par ici
+emptyChartStateBody,Empty state for chart widget,Add your first set to start tracking real progress,Add your first set to start tracking real progress,Добавьте первый подход чтобы начать отслеживать реальный прогресс,Agrega tu primera serie para empezar a ver progreso real,Ajoutez votre première série pour commencer à suivre vos vrais progrès
+topSetWeight,"For a given exercise session, the heaviest weight used in any single working set (ignoring warmups if you tag them). Used as a simple strength-progression chart over time.",Top set weight,Top set weight,Вес топового подхода,Peso de la mejor serie,Charge de la meilleure série
+estimatedOneRepMax,"An estimated one-repetition maximum calculated from the best set in a workout (weight + reps) using a standard 1RM formula. Displayed as a trend line, not a guaranteed true max.",Estimated 1RM,Estimated 1RM,Расчетный 1ПМ,1RM estimado,1RM estimé
+totalVolume,"Total work performed for an exercise in a session or time window, computed as the sum of (weight × reps) across all sets. Useful for tracking training load over time.",Total volume,Total volume,Общий объем,Volumen total,Volume total
+averageWorkingWeight,"Average weight used across working sets for an exercise, typically weighted by reps or sets. Helps smooth out noise from a single heavy or light set when charting progress.",Average working weight,Average working weight,Средний рабочий вес,Peso promedio de trabajo,Charge moyenne de travail
+assistanceWeight,"For assisted bodyweight exercises, the amount of assistance provided (e.g., machine counterweight or band assistance). Lower values typically indicate progression toward unassisted reps.",Assistance weight,Assistance weight,Вес помощи,Peso de asistencia,Charge d’assistance
+maxRepsInSet,Highest number of repetitions completed in any single set for the selected exercise within a workout or time window. Used to track capacity improvements on reps-only movements.,Max reps in a set,Max reps in a set,Макс. повторений в подходе,Máx. de reps en una serie,Reps max sur une série
+totalReps,"Total repetitions completed for an exercise within a workout or time window, summed across all sets. Useful for reps-only exercises and high-rep accessory work.",Total reps,Total reps,Всего повторений,Reps totales,Total de reps
+cardioDistance,"For cardio exercises, total distance completed in a session (e.g., kilometers or miles depending on user units). Often charted per workout to show endurance progression.",Distance,Distance,Дистанция,Distancia,Distance
+cardioDuration,"For cardio exercises, total time spent in the session. Can be charted alone or paired with distance to derive pace when both are available.",Duration,Duration,Длительность,Duración,Durée
+averagePace,"For cardio exercises, average pace computed from distance and duration (time per unit distance, e.g., min/km). Only valid when both distance and duration are present and reliable.",Average pace,Average pace,Средний темп,Ritmo promedio,Allure moyenne
+totalTimeUnderTension,"For duration-based exercises, total accumulated time across all sets in a session or time window. Used to chart consistency and gradual increases for holds or mobility work.",Total time under tension,Total time under tension,Общее время под нагрузкой,Tiempo total bajo tensión,Temps sous tension total
+passwordPolicyTitle,"Title for password requirements section shown during sign-up. Sets a friendly, motivational tone for the password creation rules that follow.",Let's make a password that lifts:,Let's make a password that lifts:,"Давайте создадим пароль, который качает:",Hagamos una contraseña que levante pesado:,Créons un mot de passe qui soulève lourd :
+passwordPolicyMinLength,Password requirement: minimum character count. Displayed as a bullet point in the password policy list to inform users of the minimum length constraint.,at least {minLength} characters,at least {minLength} characters,минимум {minLength} символов,al menos {minLength} caracteres,au moins {minLength} caractères
+passwordPolicyMaxLength,Password requirement: maximum character count. Displayed as a bullet point in the password policy list with a playful note about reasonable boundaries.,no more than {maxLength} (we believe in limits),no more than {maxLength} (we believe in limits),не больше {maxLength} (мы верим в границы),no más de {maxLength} (creemos en los límites),pas plus de {maxLength} (on croit aux limites)
+passwordPolicyUpperCase,Password requirement: must contain at least one uppercase letter (A-Z). Shown as a validation rule in the password policy checklist.,one uppercase letter,one uppercase letter,одна заглавная буква,una letra mayúscula,une lettre majuscule
+passwordPolicyLowerCase,Password requirement: must contain at least one lowercase letter (a-z). Shown as a validation rule in the password policy checklist.,one lowercase letter,one lowercase letter,одна строчная буква,una letra minúscula,une lettre minuscule
+passwordPolicyDigit,Password requirement: must contain at least one numeric digit (0-9). Displayed as a validation rule in the password policy checklist with casual phrasing.,one number somewhere in there,one number somewhere in there,одна цифра где-нибудь там,un número por ahí,un chiffre quelque part là-dedans
+deleteImageDialogTitle,Confirmation dialog title when user attempts to delete an image from a workout,Remove this image?,Remove this image?,Удалить это изображение?,¿Quitar esta imagen?,Supprimer cette image ?
+deleteImageDialogBody,Confirmation dialog body explaining that removing the image won't delete workout data,It won't affect the workout — just clears the picture,It won't affect the workout — just clears the picture,Это не повлияет на тренировку — просто удалит фотографию,No afectará el entrenamiento — solo quita la imagen,La séance ne sera pas affectée — seule l’image sera effacée
+myProgression,Photo gallery title,My progression,My progression,Мой прогресс,Mi progreso,Ma progression
+copiedToClipboard,Snack message when user copies text to clipboard,Copied to clipboard,Copied to clipboard,Скопировано в буфер обмена,Copiado al portapapeles,Copié dans le presse-papiers
+weightUnitLabel,Weight unit label,Weight unit,Weight unit,Единица веса,Unidad de peso,Unité de poids
+distanceUnitLabel,Distance unit label,Distance unit,Distance unit,Единица расстояния,Unidad de distancia,Unité de distance
+close,Tooltip on a button that dismisses a dialog or a detail pane,Close,Close,Закрыть,Cerrar,Fermer
+noWorkoutSelectedTitle,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Nothing selected,Nothing selected,Ничего не выбрано,Nada seleccionado,Aucune sélection
+noWorkoutSelectedBody,Placeholder shown in the detail pane on a tablet when no workout is selected yet,Pick a workout to see what you did and make changes.,Pick a workout to see what you did and make changes.,"Выберите тренировку, чтобы посмотреть и изменить её.",Elige un entrenamiento para ver lo que hiciste y hacer cambios.,Choisissez une séance pour voir ce que vous avez fait et la modifier.
+noExerciseSelectedTitle,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,Nothing selected,Nothing selected,Ничего не выбрано,Nada seleccionado,Aucune sélection
+noExerciseSelectedBody,Placeholder shown in the detail pane on a tablet when no exercise is selected yet,"Pick an exercise to see how it's done, plus your history and records.","Pick an exercise to see how it's done, plus your history and records.","Выберите упражнение, чтобы увидеть технику, историю и рекорды.","Elige un ejercicio para ver cómo se hace, junto con tu historial y tus récords.","Choisissez un exercice pour voir comment le faire, ainsi que votre historique et vos records."
+moreOptions,Tooltip on an icon-only overflow menu button,More options,More options,Дополнительные действия,Más opciones,Plus d’options
+viewProgressPhotos,Tooltip on the icon button that opens a workout's attached progress photos,View progress photos,View progress photos,Просмотреть фото прогресса,Ver fotos de progreso,Voir les photos de progression
+confirmEdit,Tooltip on the checkmark button that dismisses the keyboard after editing a name field,Confirm,Confirm,Подтвердить,Confirmar,Confirmer
+clearSearchTooltip,Accessibility label on the button that clears a search field's text,Clear search,Clear search,Очистить поиск,Borrar búsqueda,Effacer la recherche
+changeProfilePhoto,Accessibility label on the editable avatar shown while editing an account,Change profile photo,Change profile photo,Изменить фото профиля,Cambiar foto de perfil,Changer la photo de profil
+viewAccountDetails,"Accessibility label on the profile page header, which opens account management",Account details,Account details,Данные аккаунта,Detalles de la cuenta,Détails du compte
+viewProfilePhoto,Accessibility label on the avatar shown in the profile page header,View profile photo,View profile photo,Просмотреть фото профиля,Ver foto de perfil,Voir la photo de profil
+durationPickerSetTo,"Accessibility label on a single row of the rest-timer duration picker, tapped to select that duration directly",Set rest timer to {duration},Set rest timer to {duration},Установить таймер отдыха на {duration},Poner el temporizador de descanso en {duration},Régler le minuteur de repos sur {duration}
+emptyWorkoutLabel,Accessibility label on the illustration shown when a workout has no exercises,Empty workout,Empty workout,Пустая тренировка,Entrenamiento vacío,Séance vide
+progressPhotoLabel,Accessibility label on a progress photo in the gallery,Progress photo from {date},Progress photo from {date},Фото прогресса от {date},Foto de progreso del {date},Photo de progression du {date}
+exerciseThumbnailLabel,Accessibility label on an exercise's thumbnail image,{exerciseName} thumbnail,{exerciseName} thumbnail,Миниатюра: {exerciseName},Miniatura de {exerciseName},Vignette de {exerciseName}
+goalLadderSummary,"Accessibility summary of a goal's ladder progress bar, replacing the painted rungs with a sentence",{achieved} of {total} targets reached. Current: {current}.,{achieved} of {total} targets reached. Current: {current}.,Достигнуто целей: {achieved} из {total}. Текущее значение: {current}.,{achieved} de {total} objetivos alcanzados. Actual: {current}.,{achieved} cibles atteintes sur {total}. En cours : {current}.
+restTimerRemaining,"Accessibility label on the rest-timer countdown ring, stating the remaining time as a sentence",Rest timer: {remaining} remaining,Rest timer: {remaining} remaining,Таймер отдыха: осталось {remaining},Temporizador de descanso: quedan {remaining},Minuteur de repos : il reste {remaining}
+health,Header of the health section on the profile dashboard,Health,Health,Здоровье,Salud,Santé
+healthActiveEnergy,Name of a health metric: calories burned through activity,Active energy,Active energy,Активные калории,Energía activa,Énergie active
+healthBodyMass,Name of a health metric: bodyweight,Body mass,Body mass,Вес,Masa corporal,Poids corporel
+healthBpm,"Unit abbreviation, beats per minute. Shown next to a heart rate",bpm,bpm,уд/мин,lpm,bpm
+healthChecking,"Shown on the health card while the app is reading the phone's health store, in place of the empty-state message. Mostly seen in the seconds after the user comes back from granting permission, so it must not sound like a result — it is what is happening, not what was found",Looking for new readings…,Looking for new readings…,Ищем новые показатели…,Buscando lecturas nuevas…,Recherche de nouvelles mesures…
+healthLatestReading,"Under the big number in the health detail dialog. The date on its own was cryptic — a bare ""08-13"" beside a heart rate reads as part of the measurement rather than as when it was taken. Says what the date is, and formats it with a month name so it cannot be mistaken for a number",Latest reading · {when},Latest reading · {when},Последнее измерение · {when},Última lectura · {when},Dernière mesure · {when}
+healthDelete,Settings row that deletes Heart's local copy of health data,Delete health data,Delete health data,Удалить данные здоровья,Eliminar datos de salud,Supprimer les données de santé
+healthDeleteBody,Confirmation body. Reassures that the operating system health store is untouched and the data comes back on the next sync,"This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.","This clears what Heart has read onto this device. Nothing in your phone's health store changes, and Heart will read it again the next time it syncs.","Это очистит то, что Heart прочитал на это устройство. В хранилище здоровья на телефоне ничего не изменится, и Heart прочитает данные снова при следующей синхронизации.","Esto borra lo que Heart ha leído en este dispositivo. Nada cambia en el almacén de salud de tu teléfono, y Heart volverá a leerlo la próxima vez que sincronice.","Cela efface ce que Heart a lu sur cet appareil. Rien ne change dans les données de santé de votre téléphone, et Heart les relira à la prochaine synchronisation."
+healthDeleteTitle,Confirmation title. Must say it is Heart's copy — a title reading like 'erase my heart rate history' would suggest years of data are about to be lost,Delete Heart's copy of your health data?,Delete Heart's copy of your health data?,Удалить копию данных здоровья в Heart?,¿Eliminar la copia de Heart de tus datos de salud?,Supprimer la copie que Heart garde de vos données de santé ?
+healthHeartRateVariability,Name of a health metric,Heart rate variability,Heart rate variability,Вариабельность пульса,Variabilidad de la frecuencia cardiaca,Variabilité de la fréquence cardiaque
+healthHoursShort,"Single-letter abbreviation for hours, as in '7h 15m'. No space before it",h,h,ч,h,h
+healthInviteAction,Button that opens the operating system's health permission sheet,Show my health data,Show my health data,Показать мои данные,Mostrar mis datos de salud,Afficher mes données de santé
+healthInviteBody,"Body of the card offering to read health data. The last clause is a genuine selling point, not fine print — keep it plain and avoid words like private or secure","Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.","Heart can show your resting heart rate, sleep, steps and body mass next to your workouts. It reads them from your phone's health store, and keeps them on this device.","Heart может показывать пульс в покое, сон, шаги и вес рядом с тренировками. Он читает их из хранилища здоровья на телефоне и хранит на этом устройстве.","Heart puede mostrar tu frecuencia cardiaca en reposo, sueño, pasos y masa corporal junto a tus entrenamientos. Los lee del almacén de salud de tu teléfono y los guarda en este dispositivo.","Heart peut afficher votre fréquence cardiaque au repos, votre sommeil, vos pas et votre poids à côté de vos séances. Il les lit depuis les données de santé de votre téléphone et les garde sur cet appareil."
+healthInviteDismiss,Tooltip on the button that dismisses the health invitation card,Not now,Not now,Не сейчас,Ahora no,Pas maintenant
+healthInviteTitle,Title of the card offering to read health data from the phone,Health data,Health data,Данные здоровья,Datos de salud,Données de santé
+healthKilocalories,"Unit abbreviation, kilocalories. Shown next to active energy",kcal,kcal,ккал,kcal,kcal
+healthMilliseconds,"Unit abbreviation, milliseconds. Shown next to heart rate variability",ms,ms,мс,ms,ms
+healthMinutesShort,"Single-letter abbreviation for minutes, as in '7h 15m'. No space before it",m,m,м,m,min
+healthOffInHealthApp,"iOS only. Body of the dialog behind the info button on the greyed-out Health header, shown once the user has been asked and nothing is being read. The dialog's button opens the Health app; this is what to do on arrival, since Apple gives no way to link straight to Heart's row. An instruction, not an explanation — do not add why the permission is there rather than in Heart. Match the wording Apple's Health app uses in this locale","In the Health app, tap your profile picture, then Apps, and let Heart read.","In the Health app, tap your profile picture, then Apps, and let Heart read.","В приложении «Здоровье» нажмите фото профиля, затем «Приложения» и разрешите Heart читать данные.","En la app Salud, toca tu foto de perfil, luego Apps, y permite que Heart lea tus datos.","Dans l’app Santé, touchez votre photo de profil, puis Apps, et autorisez la lecture pour Heart."
+healthOffInSettings,"Non-iOS fallback for healthOffInHealthApp. An instruction, never an explanation, and neutral about why there is nothing to show. The second sentence is Android-specific and load-bearing: Health Connect keeps past-data access as a separate switch away from the main permission list, and without it every read is capped at 30 days however far back the app asks. Say 'past data' — that is the platform's own wording for it","Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.","Let Heart read your health data in your device’s health settings. Allow past data too, or charts stop at the last 30 days.","Разрешите Heart читать данные о здоровье в настройках здоровья на устройстве. Разрешите и прошлые данные, иначе графики остановятся на последних 30 днях.","Permite que Heart lea tus datos de salud en los ajustes de salud de tu dispositivo. Permite también el acceso a datos anteriores, o los gráficos se quedarán en los últimos 30 días.","Autorisez Heart à lire vos données de santé dans les réglages santé de votre appareil. Autorisez aussi les données antérieures, sinon les graphiques s’arrêtent aux 30 derniers jours."
+healthOffTitle,"Title of that dialog, and the tooltip on the button that opens it. States the fact and nothing else — the app cannot tell whether the user declined or simply has no readings, so it must not sound like a fault on either side",Heart isn’t reading any health data,Heart isn’t reading any health data,Heart не читает данные о здоровье,Heart no está leyendo ningún dato de salud,Heart ne lit aucune donnée de santé
+healthOnThisDevice,Subtitle under the Health header. States where health data is kept. Must not be softened into 'private' or 'secure' — workouts do sync to a server and only health data does not,On this device,On this device,На этом устройстве,En este dispositivo,Sur cet appareil
+healthOpenHealthApp,"iOS only. Button that opens Apple's Health app, which is where read permissions live — the app's own page in iOS Settings has no health toggle at all. 'Health' here is the name of Apple's app and should keep whatever name it has in this locale",Open the Health app,Open the Health app,Открыть приложение «Здоровье»,Abrir la app Salud,Ouvrir l’app Santé
+healthOpenHealthAppHint,"iOS only. Sits under the row that opens the Health app and says what to do once there, since Apple gives no way to link straight to Heart's row. An instruction only — it is not the place to explain why the permission lives outside Heart. Match the wording Apple's Health app uses in this locale","Tap your profile picture, then Apps","Tap your profile picture, then Apps","Нажмите фото профиля, затем «Приложения»","Toca tu foto de perfil, luego Apps","Touchez votre photo de profil, puis Apps"
+healthOpenSettingsHint,"Non-iOS. Sits under the row that opens the device's health settings. Health Connect keeps past-data access apart from the main permission list, so a user who grants everything they can see is still capped at 30 days. An instruction, not an explanation of why. Deliberately echoes Health Connect's own prompt — ""Allow Heart to access past data?"" — so the words the user reads here are the words they then look for; match that prompt's wording in this locale rather than translating literally",Also allow access to past data,Also allow access to past data,Разрешите также доступ к прошлым данным,Permite también el acceso a datos anteriores,Autorisez aussi l’accès aux données antérieures
+healthOpenSettings,Button that opens the operating system's settings app. Non-iOS fallback for healthOpenHealthApp,Open settings,Open settings,Открыть настройки,Abrir ajustes,Ouvrir les paramètres
+healthRestingHeartRate,Name of a health metric,Resting heart rate,Resting heart rate,Пульс в покое,Frecuencia cardiaca en reposo,Fréquence cardiaque au repos
+healthSettingsBody,"Settings section body. Names exactly what Heart reads and restates where it is kept. Say 'on this device', never 'private' or 'secure' — workouts do sync to a server and only health data does not","Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone's health store. They stay on this device.","Heart reads resting heart rate, heart rate variability, sleep, steps, active energy and body mass from your phone's health store. They stay on this device.","Heart читает пульс в покое, вариабельность пульса, сон, шаги, активные калории и вес из хранилища здоровья на телефоне. Они остаются на этом устройстве.","Heart lee la frecuencia cardiaca en reposo, la variabilidad de la frecuencia cardiaca, el sueño, los pasos, la energía activa y la masa corporal del almacén de salud de tu teléfono. Se quedan en este dispositivo.","Heart lit la fréquence cardiaque au repos, la variabilité de la fréquence cardiaque, le sommeil, les pas, l’énergie active et le poids depuis les données de santé de votre téléphone. Ces données restent sur cet appareil."
+healthWriteWorkouts,"Settings row title. Heart writing a finished workout back to the phone's health store, so the user's activity rings credit their lifting",Save workouts to Health,Save workouts to Health,Сохранять тренировки в Здоровье,Guardar entrenamientos en Salud,Enregistrer les séances dans Santé
+healthWriteWorkoutsOn,"Settings row subtitle when Heart may write. States the limit as the reassurance: duration and activity type only. Never claim Heart records calories — it deliberately does not, because without a watch there is no measurement, only a guess","Saving how long you train, and nothing else","Saving how long you train, and nothing else",Сохраняется только длительность тренировки,"Se guarda cuánto tiempo entrenas, y nada más","Enregistre la durée de vos entraînements, et rien d’autre"
+healthWriteWorkoutsOff,"Settings row subtitle when write access was declined. Neutral — declining is a normal choice, not an error to scold",Off · Heart is not saving your workouts,Off · Heart is not saving your workouts,Выключено · Heart не сохраняет ваши тренировки,Desactivado · Heart no está guardando tus entrenamientos,Désactivé · Heart n’enregistre pas vos séances
+healthSleep,Name of a health metric: time asleep,Sleep,Sleep,Сон,Sueño,Sommeil
+healthSteps,Name of a health metric,Steps,Steps,Шаги,Pasos,Pas
+deleteWorkoutTitle,Workout deletion confirmation dialog,Do you want to delete this workout?,Do you want to delete this workout?,Хотите удалить эту тренировку?,¿Quieres eliminar este entrenamiento?,Voulez-vous supprimer cette séance ?
+deleteWorkoutBody,Workout deletion confirmation dialog,This cannot be undone,This cannot be undone,Это действие нельзя отменить,Esto no se puede deshacer,Cette action est irréversible
+importData,Settings item and title of the import page,Import workout history,Import workout history,Импорт истории тренировок,Importar historial de entrenamientos,Importer l’historique de séances
+importPreviewTitle,"Import page, heading of the preview/consent step",Ready to import,Ready to import,Готово к импорту,Todo listo para importar,Prêt à importer
+importPreviewSummary,"Import preview line, what the file holds","{workouts, plural, =1{1 workout} other{{workouts} workouts}} and {sets, plural, =1{1 set} other{{sets} sets}} ready to come over","{workouts, plural, =1{1 workout} other{{workouts} workouts}} and {sets, plural, =1{1 set} other{{sets} sets}} ready to come over","{workouts, plural, one{{workouts} тренировка} few{{workouts} тренировки} many{{workouts} тренировок} other{{workouts} тренировки}} и {sets, plural, one{{sets} подход} few{{sets} подхода} many{{sets} подходов} other{{sets} подхода}} готовы к переезду","{workouts, plural, =1{1 entrenamiento} other{{workouts} entrenamientos}} y {sets, plural, =1{1 serie} other{{sets} series}} listos para importar","{workouts, plural, =1{1 séance} other{{workouts} séances}} et {sets, plural, =1{1 série} other{{sets} séries}} prêtes à être importées"
+importPreviewSummaryPartial,Import preview line when part of the file was imported before — only the new workouts are announced,"{count, plural, =1{1 workout is new} other{{count} workouts are new}}","{count, plural, =1{1 workout is new} other{{count} workouts are new}}","{count, plural, one{{count} новая тренировка} few{{count} новые тренировки} many{{count} новых тренировок} other{{count} новые тренировки}}","{count, plural, =1{1 entrenamiento es nuevo} other{{count} entrenamientos son nuevos}}","{count, plural, =1{1 séance est nouvelle} other{{count} séances sont nouvelles}}"
+importPreviewNothingNew,Import preview line when every workout in the file was imported before,"Nothing new — {count, plural, =1{the 1 workout in this file is} other{all {count} workouts in this file are}} already here","Nothing new — {count, plural, =1{the 1 workout in this file is} other{all {count} workouts in this file are}} already here","Ничего нового — {count, plural, one{{count} тренировка из этого файла уже здесь} few{все {count} тренировки из этого файла уже здесь} many{все {count} тренировок из этого файла уже здесь} other{все {count} тренировки из этого файла уже здесь}}","Nada nuevo — {count, plural, =1{el entrenamiento de este archivo ya está} other{los {count} entrenamientos de este archivo ya están}} aquí","Rien de nouveau — {count, plural, =1{l’unique séance de ce fichier est} other{les {count} séances de ce fichier sont}} déjà là"
+importPreviewMatched,"Import preview line, exercises that resolved against the stock catalog or existing customs","{count, plural, =1{1 exercise already matches the library} other{{count} exercises already match the library}}","{count, plural, =1{1 exercise already matches the library} other{{count} exercises already match the library}}","{count, plural, one{{count} упражнение уже есть в каталоге} few{{count} упражнения уже есть в каталоге} many{{count} упражнений уже есть в каталоге} other{{count} упражнения уже есть в каталоге}}","{count, plural, =1{1 ejercicio ya coincide con la biblioteca} other{{count} ejercicios ya coinciden con la biblioteca}}","{count, plural, =1{1 exercice correspond déjà à la bibliothèque} other{{count} exercices correspondent déjà à la bibliothèque}}"
+importPreviewAlreadyHere,"Import preview line, workouts a commit would skip as previously imported","{count, plural, =1{1 workout is already here — it will be skipped} other{{count} workouts are already here — they will be skipped}}","{count, plural, =1{1 workout is already here — it will be skipped} other{{count} workouts are already here — they will be skipped}}","{count, plural, one{{count} тренировка уже здесь — она будет пропущена} few{{count} тренировки уже здесь — они будут пропущены} many{{count} тренировок уже здесь — они будут пропущены} other{{count} тренировки уже здесь — они будут пропущены}}","{count, plural, =1{1 entrenamiento ya está aquí — se omitirá} other{{count} entrenamientos ya están aquí — se omitirán}}","{count, plural, =1{1 séance est déjà là — elle sera ignorée} other{{count} séances sont déjà là — elles seront ignorées}}"
+selectAll,"Button over a checkbox list, checks every item",Select all,Select all,Выбрать все,Seleccionar todo,Tout sélectionner
+deselectAll,"Button over a checkbox list, unchecks every item",Deselect all,Deselect all,Снять выбор,Deseleccionar todo,Tout désélectionner
+importConsentTitle,"Import page, heading of the consent step over unmatched exercises",New exercises found,New exercises found,Найдены новые упражнения,Nuevos ejercicios encontrados,Nouveaux exercices trouvés
+importConsentBody,"Import page, explains the consent checkboxes over unmatched exercises","These didn't match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.","These didn't match anything in the library. Check the ones to bring over as your own custom exercises — anything unchecked stays behind, along with its sets.","Они не нашлись в каталоге. Отметьте те, что заберёте как ваши собственные упражнения, — неотмеченные останутся позади вместе со своими подходами.","Estos no coincidieron con nada en la biblioteca. Marca los que quieras traer como tus ejercicios personalizados — lo que quede sin marcar se queda fuera, junto con sus series.","Ceux-ci ne correspondent à rien dans la bibliothèque. Cochez ceux à importer comme vos propres exercices personnalisés — tout ce qui n’est pas coché reste de côté, avec ses séries."
+importAction,"Import page, the button that commits the import after the consent step",Import,Import,Импортировать,Importar,Importer
+importSetsCount,"Import consent step, how many sets ride on an unmatched exercise","{count, plural, =1{1 set} other{{count} sets}}","{count, plural, =1{1 set} other{{count} sets}}","{count, plural, one{{count} подход} few{{count} подхода} many{{count} подходов} other{{count} подхода}}","{count, plural, =1{1 serie} other{{count} series}}","{count, plural, =1{1 série} other{{count} séries}}"
+importSkippedSets,"Import report line, sets not imported because their exercise was declined","{count, plural, =1{1 set stayed behind} other{{count} sets stayed behind}} with the exercises you declined","{count, plural, =1{1 set stayed behind} other{{count} sets stayed behind}} with the exercises you declined","{count, plural, one{{count} подход не переехал} few{{count} подхода не переехали} many{{count} подходов не переехало} other{{count} подхода не переехало}} — вместе с упражнениями, которые вы отклонили","{count, plural, =1{1 serie se quedó fuera} other{{count} series se quedaron fuera}} con los ejercicios que descartaste","{count, plural, =1{1 série est restée de côté} other{{count} séries sont restées de côté}} avec les exercices que vous avez refusés"
+yourData,"Settings section header over data import (and, later, export)",Your data,Your data,Ваши данные,Tus datos,Vos données
+account,Settings section header over account management,Account,Account,Аккаунт,Cuenta,Compte
+app,"Settings section header over notifications, about, and feedback",App,App,Приложение,App,Application
 importExplainerStrong,"Import page, explains where the Strong export file comes from","Lifted with Strong before? Bring your history along.
 
 In the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.","Lifted with Strong before? Bring your history along.
 
 In the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.","Тренировались в Strong? Забирайте историю с собой.
 
-В приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь."
-importSafeToRetry,"Import page, reassurance below the explainer","Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.","Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.","Переедет всё: тренировки, подходы, упражнения. Импортировать один и тот же файл повторно безопасно — всё, что уже есть, будет пропущено, а не задвоено."
-chooseFile,"Import page, the button that opens the file picker",Choose file,Choose file,Выбрать файл
-csvFiles,File-type label shown in the platform file picker,CSV files,CSV files,CSV-файлы
-importInFlight,"Import page, progress label while the file is uploading",Importing — hang tight…,Importing — hang tight…,Импортируем — минутку…
-importFailedHeadline,"Import page, friendly headline when the server rejects the file",That file didn't work,That file didn't work,Этот файл не подошёл
-importFailedBody,"Import page, body of the rejected-file error state",It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.,It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.,Не получилось прочитать его как экспорт Strong. Выберите CSV-файл из письма Strong и попробуйте ещё раз.
-importReportTitle,"Import page, heading of the success report",Imported!,Imported!,Готово!
-importedWorkouts,"Import report line, how many workouts were created","{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}","{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}","{count, plural, =0{Новых тренировок нет} one{{count} тренировка импортирована} few{{count} тренировки импортированы} many{{count} тренировок импортировано} other{{count} тренировки импортировано}}"
-importSkippedWorkouts,"Import report line, workouts skipped as previously imported","{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}","{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}","{count, plural, one{{count} тренировка уже была здесь — пропущена} few{{count} тренировки уже были здесь — пропущены} many{{count} тренировок уже было здесь — пропущено} other{{count} тренировки уже были здесь — пропущены}}"
-importedSets,"Import report line, total sets created","{count, plural, =1{1 set} other{{count} sets}} in all","{count, plural, =1{1 set} other{{count} sets}} in all","Всего {count, plural, one{{count} подход} few{{count} подхода} many{{count} подходов} other{{count} подхода}}"
-importSkippedRows,"Import report line, malformed rows the server could not repair","{count, plural, =1{1 row} other{{count} rows}} couldn't be read","{count, plural, =1{1 row} other{{count} rows}} couldn't be read","{count, plural, one{{count} строку не удалось прочитать} few{{count} строки не удалось прочитать} many{{count} строк не удалось прочитать} other{{count} строки не удалось прочитать}}"
-importNewExercisesHeader,"Import report, heading above the list of exercises created as the user's customs",New custom exercises,New custom exercises,Новые упражнения
-importNewExercisesBody,"Import report, explains the list of created custom exercises","These didn't match anything in the library, so they came over as your custom exercises:","These didn't match anything in the library, so they came over as your custom exercises:","Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:"
+В приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.","¿Entrenabas con Strong? Trae tu historial contigo.
+
+En la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.","Vous souleviez avec Strong ? Emportez votre historique avec vous.
+
+Dans l’app Strong, allez dans Profile → Settings → Export Strong Data. Vous recevrez un fichier CSV par e-mail — enregistrez-le, puis choisissez-le ici."
+importSafeToRetry,"Import page, reassurance below the explainer","Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.","Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.","Переедет всё: тренировки, подходы, упражнения. Импортировать один и тот же файл повторно безопасно — всё, что уже есть, будет пропущено, а не задвоено.","Todo se importa — entrenamientos, series, ejercicios. Importar el mismo archivo dos veces es seguro: lo que ya está aquí se omite, nunca se duplica.","Tout est transféré — séances, séries, exercices. Importer deux fois le même fichier est sans risque : ce qui est déjà là est ignoré, jamais dupliqué."
+chooseFile,"Import page, the button that opens the file picker",Choose file,Choose file,Выбрать файл,Elegir archivo,Choisir un fichier
+csvFiles,File-type label shown in the platform file picker,CSV files,CSV files,CSV-файлы,Archivos CSV,Fichiers CSV
+importInFlight,"Import page, progress label while the file is uploading",Importing — hang tight…,Importing — hang tight…,Импортируем — минутку…,Importando — un momento…,Importation en cours — un instant…
+importFailedHeadline,"Import page, friendly headline when the server rejects the file",That file didn't work,That file didn't work,Этот файл не подошёл,Ese archivo no funcionó,Ce fichier n’a pas fonctionné
+importFailedBody,"Import page, body of the rejected-file error state",It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.,It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.,Не получилось прочитать его как экспорт Strong. Выберите CSV-файл из письма Strong и попробуйте ещё раз.,No se pudo leer como una exportación de Strong. Elige el archivo CSV del correo de exportación de Strong e inténtalo de nuevo.,Impossible de le lire comme un export Strong. Choisissez le fichier CSV de l’e-mail d’export de Strong et réessayez.
+importReportTitle,"Import page, heading of the success report",Imported!,Imported!,Готово!,¡Importado!,Importé !
+importedWorkouts,"Import report line, how many workouts were created","{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}","{count, plural, =0{No new workouts} =1{1 workout imported} other{{count} workouts imported}}","{count, plural, =0{Новых тренировок нет} one{{count} тренировка импортирована} few{{count} тренировки импортированы} many{{count} тренировок импортировано} other{{count} тренировки импортировано}}","{count, plural, =0{Ningún entrenamiento nuevo} =1{1 entrenamiento importado} other{{count} entrenamientos importados}}","{count, plural, =0{Aucune nouvelle séance} =1{1 séance importée} other{{count} séances importées}}"
+importSkippedWorkouts,"Import report line, workouts skipped as previously imported","{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}","{count, plural, =1{1 workout was already here — skipped} other{{count} workouts were already here — skipped}}","{count, plural, one{{count} тренировка уже была здесь — пропущена} few{{count} тренировки уже были здесь — пропущены} many{{count} тренировок уже было здесь — пропущено} other{{count} тренировки уже были здесь — пропущены}}","{count, plural, =1{1 entrenamiento ya estaba aquí — omitido} other{{count} entrenamientos ya estaban aquí — omitidos}}","{count, plural, =1{1 séance était déjà là — ignorée} other{{count} séances étaient déjà là — ignorées}}"
+importedSets,"Import report line, total sets created","{count, plural, =1{1 set} other{{count} sets}} in all","{count, plural, =1{1 set} other{{count} sets}} in all","Всего {count, plural, one{{count} подход} few{{count} подхода} many{{count} подходов} other{{count} подхода}}","{count, plural, =1{1 serie} other{{count} series}} en total","{count, plural, =1{1 série} other{{count} séries}} au total"
+importSkippedRows,"Import report line, malformed rows the server could not repair","{count, plural, =1{1 row} other{{count} rows}} couldn't be read","{count, plural, =1{1 row} other{{count} rows}} couldn't be read","{count, plural, one{{count} строку не удалось прочитать} few{{count} строки не удалось прочитать} many{{count} строк не удалось прочитать} other{{count} строки не удалось прочитать}}","{count, plural, =1{1 fila no se pudo leer} other{{count} filas no se pudieron leer}}","{count, plural, =1{1 ligne n’a pas pu être lue} other{{count} lignes n’ont pas pu être lues}}"
+importNewExercisesHeader,"Import report, heading above the list of exercises created as the user's customs",New custom exercises,New custom exercises,Новые упражнения,Nuevos ejercicios personalizados,Nouveaux exercices personnalisés
+importNewExercisesBody,"Import report, explains the list of created custom exercises","These didn't match anything in the library, so they came over as your custom exercises:","These didn't match anything in the library, so they came over as your custom exercises:","Они не нашлись в каталоге, поэтому переехали как ваши собственные упражнения:","Estos no coincidieron con nada en la biblioteca, así que llegaron como tus ejercicios personalizados:","Ceux-ci ne correspondaient à rien dans la bibliothèque, ils ont donc été importés comme vos exercices personnalisés :"
+machineTranslatedCopy,Small provenance mark above exercise instructions whose copy for the current language is machine-authored and not yet human-reviewed (Exercise.validated == false),Machine-translated,Machine-translated,Машинный перевод,Traducción automática,Traduction automatique
