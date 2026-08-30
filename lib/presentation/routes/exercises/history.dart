@@ -1,6 +1,6 @@
 part of 'exercises.dart';
 
-class _History extends StatelessWidget {
+class _History extends StatefulWidget {
   final Exercise exercise;
   final Future<Iterable<ExerciseAct>> Function(Exercise exercise, {int? pageSize, String? anchor}) historyLookup;
   final Future<void> Function(String) onTapWorkout;
@@ -12,44 +12,83 @@ class _History extends StatelessWidget {
   });
 
   @override
+  State<_History> createState() => _HistoryState();
+}
+
+class _HistoryState extends State<_History> {
+  /// null until the first lookup lands; then either the error or the sorted
+  /// acts. Kept in a notifier so a refetch swaps the list in place.
+  final _query = ValueNotifier<(Object?, List<ExerciseAct>?)?>(null);
+  Workouts? _workouts;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The lookup reads the local mirror, but edits write through [Workouts] —
+    // the editor this list opens sits right on top of it, and backing out
+    // must not land on a card the edit already outdated. So every [Workouts]
+    // notification re-runs the query.
+    final workouts = Workouts.of(context);
+    if (!identical(_workouts, workouts)) {
+      _workouts?.removeListener(_refetch);
+      _workouts = workouts..addListener(_refetch);
+      _refetch();
+    }
+  }
+
+  @override
+  void dispose() {
+    _workouts?.removeListener(_refetch);
+    _query.dispose();
+
+    super.dispose();
+  }
+
+  Future<void> _refetch() async {
+    try {
+      final acts = await widget.historyLookup(widget.exercise);
+      if (!mounted) return;
+      _query.value = (null, acts.toList()..sort());
+    } catch (error) {
+      if (!mounted) return;
+      // a failed *refresh* keeps the list the user is reading; only a failed
+      // first load has nothing better to show than the error state
+      if (_query.value?.$2 == null) {
+        _query.value = (error, null);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final prefs = Preferences.watch(context);
-    final unit = Exercises.watch(context).unitFor(exercise.name);
-    return FutureBuilder<Iterable<ExerciseAct>>(
-      future: historyLookup(exercise),
-      builder: (_, future) {
-        final AsyncSnapshot(connectionState: state, :error, :data) = future;
-        return switch ((state, error, data)) {
-          (.waiting, _, _) => const Center(
+    final unit = Exercises.watch(context).unitFor(widget.exercise.name);
+
+    return ValueListenableBuilder(
+      valueListenable: _query,
+      builder: (_, query, _) {
+        return switch (query) {
+          null || (null, null) => const Center(
             child: CircularProgressIndicator(),
           ),
-          (_, Object _, _) => const _ErrorState(),
-          (.done, null, Iterable<ExerciseAct> query) => Builder(
-            builder: (_) {
-              if (query.isEmpty) {
-                return const Column(
-                  children: [
-                    _EmptyState(),
-                  ],
-                );
-              }
-
-              final acts = query.toList()..sort();
-              return ListView.builder(
-                itemCount: acts.length,
-                itemBuilder: (_, index) {
-                  final act = acts[index];
-                  return _Card(
-                    act: act,
-                    onTapWorkout: onTapWorkout,
-                    prefs: prefs,
-                    unit: unit,
-                  );
-                },
+          (Object _, _) => const _ErrorState(),
+          (null, List<ExerciseAct> acts) when acts.isEmpty => const Column(
+            children: [
+              _EmptyState(),
+            ],
+          ),
+          (null, List<ExerciseAct> acts) => ListView.builder(
+            itemCount: acts.length,
+            itemBuilder: (_, index) {
+              final act = acts[index];
+              return _Card(
+                act: act,
+                onTapWorkout: widget.onTapWorkout,
+                prefs: prefs,
+                unit: unit,
               );
             },
           ),
-          _ => const SizedBox.shrink(),
         };
       },
     );
