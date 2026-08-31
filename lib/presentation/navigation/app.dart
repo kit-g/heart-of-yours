@@ -198,7 +198,7 @@ class _App extends StatefulWidget {
   State<_App> createState() => _AppState();
 }
 
-class _AppState extends State<_App> {
+class _AppState extends State<_App> with WidgetsBindingObserver {
   /// The app's only lifecycle hook, and it sits here because [_App] is the
   /// highest widget that can still read the providers above it.
   late final AppLifecycleListener _lifecycle;
@@ -207,10 +207,13 @@ class _AppState extends State<_App> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _onResume);
+    // for didChangeLocales; the AppLifecycleListener above cannot carry it
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _lifecycle.dispose();
     super.dispose();
   }
@@ -221,6 +224,17 @@ class _AppState extends State<_App> {
   /// which throttles itself — this fires on every alt-tab.
   void _onResume() {
     if (mounted) Health.of(context).onResume();
+  }
+
+  /// Localized backend content (the exercise catalog) is served per request
+  /// from `Accept-Language`, so a device language change makes every cached
+  /// localized string stale: restate the header, then re-fetch. Order matters
+  /// — the re-fetch must go out under the new tag.
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    final tag = languageTag(locales?.firstOrNull);
+    Api.instance.localize(tag);
+    if (mounted) Exercises.of(context).onLocaleChanged(tag);
   }
 
   @override
@@ -242,14 +256,14 @@ class _AppState extends State<_App> {
         enabled: widget.hasLocalNotifications,
         child: child ?? const SizedBox.shrink(),
       ),
-      // until data is localized
-      // English only until the translations are ready — but `en_CA` is not a
-      // translation, it is the same copy under Canadian conventions, and
-      // leaving it out is what made a Canadian phone read June the 19th as
-      // "6/19". Every date in the app is `DateFormat(…, localeName)`, so the
-      // resolved locale is the whole of that behaviour.
-      supportedLocales: [const Locale('en'), const Locale('en', 'CA')],
-      // supportedLocales: L.supportedLocales,
+      // Every locale heart_language ships — the backend serves exercise
+      // content per request from `Accept-Language` (which states the raw
+      // device locale, see `languageTag()`), so content can even lead the
+      // chrome: a locale with translated exercises but no ARB yet still gets
+      // localized content under English chrome. Every date in the app is
+      // `DateFormat(…, localeName)`, so the resolved locale also carries
+      // regional conventions (the `en_CA` "6/19" lesson).
+      supportedLocales: L.supportedLocales,
       localizationsDelegates: L.localizationsDelegates,
     );
 
@@ -477,7 +491,7 @@ Future<void> _initApp(
       // never-granted permission simply yields nothing.
       health.init();
 
-      init(lastSync: config.exercisesLastSynced).then<void>(
+      init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
         (hasExercises) {
           // everything below reads or writes against the exercise catalog —
           // templates and workouts persist rows with a foreign key onto

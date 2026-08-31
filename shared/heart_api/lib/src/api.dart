@@ -68,6 +68,16 @@ class Api
     };
   }
 
+  /// Re-states what language the user speaks, mid-session.
+  ///
+  /// `Accept-Language` is set on every request via [defaultHeaders], built
+  /// once at startup — but the device locale can change under a running app
+  /// (in-app settings on iOS 13+, a returning foregrounded app on Android).
+  /// Same single-key mutation shape as [reauthenticate].
+  void localize(String languageTag) {
+    instance.defaultHeaders?['Accept-Language'] = languageTag;
+  }
+
   @override
   bool get isAuthenticated {
     return switch (defaultHeaders) {
