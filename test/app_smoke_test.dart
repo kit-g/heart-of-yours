@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/theme/state.dart';
+import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
 import 'mocks.mocks.dart';
@@ -36,10 +37,9 @@ void main() {
       expect(find.byType(BetterFeedback), findsNothing);
 
       final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      // English only — the other translations are not ready. `en_CA` is not a
-      // translation though: same copy, Canadian date conventions, and leaving
-      // it out is what made a Canadian phone render June the 19th as "6/19".
-      expect(app.supportedLocales, const [Locale('en'), Locale('en', 'CA')]);
+      // every locale heart_language ships — the list grows with the ARBs,
+      // so assert through the same source rather than a hardcoded copy
+      expect(app.supportedLocales, L.supportedLocales);
       // Validate localization delegates presence (names only since comparing instances can be brittle)
       final delegateTypes = app.localizationsDelegates!.map((d) => d.runtimeType.toString()).toList();
       expect(delegateTypes, contains('_LDelegate'));
