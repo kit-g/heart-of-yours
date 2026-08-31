@@ -699,6 +699,7 @@ void main() {
     /// An exercise carrying a library annotation, in wire shape.
     Exercise annotated(String name, HealthActivity activity, {Category category = .cardio}) {
       return Exercise.fromJson({
+        'id': 'id-$name',
         'name': name,
         'category': category.value,
         'target': 'Cardio',
@@ -711,6 +712,7 @@ void main() {
     /// has not needed to annotate.
     Exercise unannotated(String name, Category category) {
       return Exercise.fromJson({
+        'id': 'id-$name',
         'name': name,
         'category': category.value,
         'target': category == Category.cardio ? 'Cardio' : 'Chest',

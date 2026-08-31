@@ -12,13 +12,18 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final _filters = <ExerciseFilter>{};
   final _exercises = <ExerciseId, Exercise>{};
 
-  /// Per-exercise unit overrides for the current user, keyed by exercise name.
+  /// Per-exercise unit overrides for the current user, keyed by exercise id.
   /// In-memory source of truth for [unitFor]; backed per-user by
   /// `exercise_details` locally and `exercise_preferences` remotely.
   final _units = <ExerciseId, MeasurementUnit>{};
 
   bool isInitialized = false;
   String? userId;
+
+  /// The `Accept-Language` tag the catalog was last requested under. Localized
+  /// copy is only as fresh as this tag — it is the cache key [onLocaleChanged]
+  /// compares against.
+  String? _catalogLocale;
 
   bool _showingMine = false;
 
@@ -39,6 +44,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   void onSignOut() {
     userId = null;
     isInitialized = false;
+    _catalogLocale = null;
     _exercises.clear();
     _selectedExercises.clear();
     _units.clear();
@@ -100,14 +106,15 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// Loads the exercise catalog, reporting whether it ended up populated.
   ///
   /// The answer matters to the caller: templates and workouts both persist rows
-  /// with a foreign key onto `exercises.name`, so they cannot be initialized
+  /// with a foreign key onto `exercises.id`, so they cannot be initialized
   /// against an empty catalog. Swallowing the error here and resolving normally
   /// let them run anyway — a locked database at startup surfaced as a
   /// `FOREIGN KEY constraint failed` half a second later, in the chained init.
   ///
   /// A local cache counts: the remote sync failing is survivable, the catalog
   /// being empty is not.
-  Future<bool> init({DateTime? lastSync}) async {
+  Future<bool> init({DateTime? lastSync, String? locale}) async {
+    _catalogLocale = locale;
     try {
       final (localSync, local) = await _service.getExercises(userId: userId);
 
@@ -116,39 +123,63 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       }
 
       if (local.isNotEmpty) {
-        _exercises.addAll(Map.fromEntries(local.map((each) => MapEntry(each.name, each))));
+        _exercises.addAll(local.byId);
         isInitialized = true;
         notifyListeners();
       }
 
-      final [ex, own] = await Future.wait<Iterable<Exercise>>([
-        _remoteService.getExercises(),
-        _remoteService.getOwnExercises(),
-      ]);
-
-      final all = [...ex, ...own]..sort();
-      _exercises.addAll(Map.fromEntries(all.map((each) => MapEntry(each.name, each))));
-      // awaited: everything chained behind this init writes rows referencing
-      // `exercises.name`, and letting the catalog write stay in flight leaves
-      // them racing a parent row that is not committed yet.
-      await _service.storeExercises(_exercises.values, userId: userId);
-
-      // the server is the source of truth for unit prefs (it joins them onto the
-      // exercise list per authenticated user); mirror them into the local cache.
-      if (userId case String id) {
-        for (final each in all) {
-          if (each.unitSystem case MeasurementUnit u) {
-            _units[each.name] = u;
-            await _service.setExerciseUnit(exerciseName: each.name, userId: id, unit: u);
-          }
-        }
-      }
+      await _syncRemote();
       isInitialized = true;
       notifyListeners();
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
     return isInitialized;
+  }
+
+  /// The device locale changed mid-session. The server resolves localized
+  /// catalog copy per request from `Accept-Language`, so the content already
+  /// fetched is stale in the new language — re-fetch and overwrite in place.
+  ///
+  /// The caller refreshes the API client's headers first; this only re-runs
+  /// the sync. A change arriving before [init] is just recorded — init fetches
+  /// under the new header anyway.
+  Future<void> onLocaleChanged(String locale) async {
+    if (locale == _catalogLocale) return;
+    _catalogLocale = locale;
+    if (!isInitialized) return;
+
+    try {
+      await _syncRemote();
+      notifyListeners();
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+    }
+  }
+
+  Future<void> _syncRemote() async {
+    final [ex, own] = await Future.wait<Iterable<Exercise>>([
+      _remoteService.getExercises(),
+      _remoteService.getOwnExercises(),
+    ]);
+
+    final all = [...ex, ...own]..sort();
+    _exercises.addAll(all.byId);
+    // awaited: everything chained behind this init writes rows referencing
+    // `exercises.id`, and letting the catalog write stay in flight leaves
+    // them racing a parent row that is not committed yet.
+    await _service.storeExercises(_exercises.values, userId: userId);
+
+    // the server is the source of truth for unit prefs (it joins them onto the
+    // exercise list per authenticated user); mirror them into the local cache.
+    if (userId case String id) {
+      for (final each in all) {
+        if (each.unitSystem case MeasurementUnit u) {
+          _units[each.id] = u;
+          await _service.setExerciseUnit(exerciseName: each.id, userId: id, unit: u);
+        }
+      }
+    }
   }
 
   Iterable<Exercise> search(String query, {bool filters = false, bool isMine = false}) {
@@ -170,10 +201,21 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return _exercises[id];
   }
 
+  /// Resolves the env-stable content slug ([Exercise.key]) — what shared
+  /// deep links carry, because a uuid only resolves in the database that
+  /// minted it. Null for slugs the library doesn't know; user-created
+  /// exercises have no slug at all.
+  Exercise? lookupByKey(String key) {
+    for (final each in _exercises.values) {
+      if (each.key == key) return each;
+    }
+    return null;
+  }
+
   /// Library exercises that train the same movement pattern as [exercise] and
   /// so can stand in for it, nearest first.
   ///
-  /// [exercise] is re-resolved from the library by name: workout and template
+  /// [exercise] is re-resolved from the library by id: workout and template
   /// payloads embed a minimal exercise stub that carries no annotation, so the
   /// caller's copy is not necessarily the annotated one.
   ///
@@ -183,11 +225,11 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// friends). Exercises with no annotation neither offer nor accept
   /// substitutions, so this is empty for user-created ones.
   Iterable<Exercise> alternativesTo(Exercise exercise) {
-    final source = lookup(exercise.name) ?? exercise;
+    final source = lookup(exercise.id) ?? exercise;
     if (source.movement.isEmpty) return const [];
 
     bool substitutes(Exercise other) {
-      return other.name != source.name && !other.isArchived && source.movement.sharesPatternWith(other.movement);
+      return other.id != source.id && !other.isArchived && source.movement.sharesPatternWith(other.movement);
     }
 
     return _exercises.values.where(substitutes).toList()..sort(
@@ -204,9 +246,9 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   /// The per-exercise unit preference for the current user, or `null` when the
   /// exercise has no override and the caller should fall back to the global
-  /// setting. Keyed by exercise name.
-  MeasurementUnit? unitFor(ExerciseId name) {
-    return _units[name];
+  /// setting. Keyed by exercise id.
+  MeasurementUnit? unitFor(ExerciseId id) {
+    return _units[id];
   }
 
   /// Sets (or clears, when [unit] is null) the unit preference for [exercise],
@@ -214,21 +256,21 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   Future<void> setUnit(Exercise exercise, MeasurementUnit? unit) async {
     switch (unit) {
       case MeasurementUnit u:
-        _units[exercise.name] = u;
+        _units[exercise.id] = u;
       case null:
-        _units.remove(exercise.name);
+        _units.remove(exercise.id);
     }
     notifyListeners();
 
     if (userId case String id) {
-      await _service.setExerciseUnit(exerciseName: exercise.name, userId: id, unit: unit);
+      await _service.setExerciseUnit(exerciseName: exercise.id, userId: id, unit: unit);
     }
 
-    switch ((exercise.id, unit)) {
-      case (String id, MeasurementUnit u):
-        await _remoteService.saveUnitPreference(id, u);
-      case (String id, null):
-        await _remoteService.deleteUnitPreference(id);
+    switch (unit) {
+      case MeasurementUnit u:
+        await _remoteService.saveUnitPreference(exercise.id, u);
+      case null:
+        await _remoteService.deleteUnitPreference(exercise.id);
     }
   }
 
@@ -316,46 +358,54 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   Future<void> makeExercise(Exercise exercise) async {
     await _remoteService.makeExercise(exercise);
-    _exercises[exercise.name] = exercise;
+    _exercises[exercise.id] = exercise;
     await _storeLocalExercise(exercise);
     notifyListeners();
   }
 
   Future<void> editExercise(Exercise exercise) async {
     await _remoteService.editExercise(exercise);
-    _exercises[exercise.name] = exercise;
+    _exercises[exercise.id] = exercise;
     await _storeLocalExercise(exercise);
     notifyListeners();
   }
 
   Future<void> archive(Exercise exercise) async {
     final archived = exercise.copyWith(isArchived: true);
-    _exercises[exercise.name] = archived;
+    _exercises[exercise.id] = archived;
     final remote = await _remoteService.editExercise(archived);
     _service.storeExercises([remote], userId: userId);
-    _exercises[exercise.name] = remote;
+    _exercises[remote.id] = remote;
     notifyListeners();
   }
 
   Future<void> unarchive(Exercise exercise) async {
     final unarchived = exercise.copyWith(isArchived: false);
-    _exercises[exercise.name] = unarchived;
+    _exercises[exercise.id] = unarchived;
     final remote = await _remoteService.editExercise(unarchived);
     _service.storeExercises([remote], userId: userId);
-    _exercises[exercise.name] = remote;
+    _exercises[remote.id] = remote;
     notifyListeners();
   }
 
   Future<List<(num, DateTime)>?> getChartExerciseMetics(
     ChartPreferenceType type,
-    String exerciseName, {
+    ExerciseId exerciseId, {
     int limit = 8,
   }) async {
     if (userId case String id) {
-      return _service.getExerciseMetics(id, type, exerciseName, limit: limit);
+      return _service.getExerciseMetics(id, type, exerciseId, limit: limit);
     }
 
     return null;
+  }
+}
+
+extension on Iterable<Exercise> {
+  /// Keyed by the uuid id — the identity that survives localization; `name`
+  /// is display copy.
+  Map<ExerciseId, Exercise> get byId {
+    return {for (final each in this) each.id: each};
   }
 }
 
