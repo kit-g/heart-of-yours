@@ -11,10 +11,10 @@ import 'mocks.mocks.dart';
 
 /// Goal rungs drawn across the dashboard's charts.
 ///
-/// The join is the fiddly part: a chart is addressed by exercise *name* and a
-/// goal by exercise *id*, and the target is stored in one unit while the series
-/// is plotted in another. Both are the kind of mistake that renders — a line in
-/// the wrong place looks exactly like a line in the right place.
+/// Charts and goals both address exercises by the server id since schema v11,
+/// so the match is direct — but the target is stored in one unit while the
+/// series is plotted in another, which is the kind of mistake that renders: a
+/// line in the wrong place looks exactly like a line in the right place.
 void main() {
   late Exercises exercises;
   late Preferences preferences;
@@ -77,21 +77,18 @@ void main() {
     test('matches a goal to the chart of its own exercise and metric', () {
       final matching = goalsOnChart(
         [goal()],
-        exerciseName: 'Bench press',
+        exerciseId: bench.id,
         metric: .topSetWeight,
-        exercises: exercises,
       );
 
       expect(matching, hasLength(1));
     });
 
     test('leaves another exercise alone', () {
-      // the id is what ties a goal to an exercise; the chart only knows the name
       final matching = goalsOnChart(
         [goal(exerciseId: squat.id)],
-        exerciseName: 'Bench press',
+        exerciseId: bench.id,
         metric: .topSetWeight,
-        exercises: exercises,
       );
 
       expect(matching, isEmpty);
@@ -100,9 +97,8 @@ void main() {
     test('leaves another metric on the same exercise alone', () {
       final matching = goalsOnChart(
         [goal(metric: .estimatedOneRepMax)],
-        exerciseName: 'Bench press',
+        exerciseId: bench.id,
         metric: .topSetWeight,
-        exercises: exercises,
       );
 
       expect(matching, isEmpty);
@@ -113,20 +109,8 @@ void main() {
       // line the points are not measured against
       final matching = goalsOnChart(
         [goal(cadence: .week)],
-        exerciseName: 'Bench press',
+        exerciseId: bench.id,
         metric: .topSetWeight,
-        exercises: exercises,
-      );
-
-      expect(matching, isEmpty);
-    });
-
-    test('skips a goal whose exercise the catalog has not loaded yet', () {
-      final matching = goalsOnChart(
-        [goal(exerciseId: 'never-seen')],
-        exerciseName: 'Bench press',
-        metric: .topSetWeight,
-        exercises: exercises,
       );
 
       expect(matching, isEmpty);

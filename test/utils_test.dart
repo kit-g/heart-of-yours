@@ -192,6 +192,7 @@ void main() {
       return WorkoutExercise(
         starter: ExerciseSet(
           Exercise.fromJson({
+            'id': 'id-$name',
             'name': name,
             'category': 'Barbell',
             'target': 'Chest',

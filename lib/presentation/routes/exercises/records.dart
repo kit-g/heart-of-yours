@@ -21,7 +21,7 @@ class _Records extends StatelessWidget {
           (_, Object _, _) => const _ErrorState(),
           (.done, null, Map? records) => Builder(
             builder: (_) {
-              final unit = Exercises.watch(context).unitFor(exercise.name);
+              final unit = Exercises.watch(context).unitFor(exercise.id);
               final weightUnit = switch (unit ?? prefs.weightUnit) {
                 .imperial => l.lbs,
                 .metric => l.kg,

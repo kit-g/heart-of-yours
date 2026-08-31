@@ -253,7 +253,7 @@ RouteBase _exercisesRoute() {
             null => null,
             _ => detail,
           },
-          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.name),
+          onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
@@ -270,7 +270,7 @@ RouteBase _exercisesRoute() {
           return switch (LayoutProvider.of(context)) {
             .wide => const SizedBox.shrink(), // already rendered by the builder
             .compact => ExercisesPage(
-              onExercise: (exercise, _) => context.goToExerciseDetail(exercise.name),
+              onExercise: (exercise, _) => context.goToExerciseDetail(exercise.id),
               onShowArchived: context.goToExerciseArchive,
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
@@ -285,7 +285,7 @@ RouteBase _exercisesRoute() {
             builder: (context, _) {
               return ExerciseArchive(
                 onExercise: (exercise, _) {
-                  context.goToExerciseDetail(exercise.name);
+                  context.goToExerciseDetail(exercise.id);
                 },
               );
             },
@@ -305,7 +305,7 @@ RouteBase _exercisesRoute() {
                     },
                     onFilter: context.goToFilteredExercises,
                     onTapAlternative: (alternative) {
-                      context.goToExerciseDetail(alternative.name);
+                      context.goToExerciseDetail(alternative.id);
                     },
                   );
                 },
@@ -318,7 +318,7 @@ RouteBase _exercisesRoute() {
             name: _exerciseDetailName,
             builder: (context, state) {
               final exerciseId = state.pathParameters['exerciseId']!;
-              final exercise = Exercises.of(context).lookup(exerciseId);
+              final exercise = _resolveExercise(Exercises.of(context), exerciseId);
 
               return ExerciseDetailPage(
                 exercise: exercise!,
@@ -348,7 +348,7 @@ RouteBase _exercisesRoute() {
                 },
                 onFilter: context.goToFilteredExercises,
                 onTapAlternative: (alternative) {
-                  context.goToExerciseDetail(alternative.name);
+                  context.goToExerciseDetail(alternative.id);
                 },
               );
             },
@@ -361,7 +361,7 @@ RouteBase _exercisesRoute() {
               final exercises = Exercises.of(context);
               await _exercisesReady(exercises);
               return switch (state.pathParameters['exerciseId']) {
-                String id when exercises.lookup(id) != null => null,
+                String id when _resolveExercise(exercises, id) != null => null,
                 _ => _exercisesPath,
               };
             },
@@ -638,10 +638,21 @@ Future<void> _exercisesReady(Exercises exercises) {
       .whenComplete(() => exercises.removeListener(onChange));
 }
 
+/// A shared link crosses environments and installs, and a uuid only resolves
+/// in the database that minted it — so library links carry the env-stable
+/// content slug ([Exercise.key]). Customs have no slug (and nothing to
+/// resolve to elsewhere), so their link keeps the id and works on this
+/// device's own install.
+/// A deep-link reference to an exercise: the uuid for internal navigation,
+/// or the env-stable slug from a shared link — see [_onShareExercise].
+Exercise? _resolveExercise(Exercises exercises, String reference) {
+  return exercises.lookup(reference) ?? exercises.lookupByKey(reference);
+}
+
 Future<void> _onShareExercise(BuildContext context, Exercise exercise, String? tab) async {
   final link = Uri.https(
     AppConfig.of(context).appDomain,
-    'exercises/${exercise.name}',
+    'exercises/${exercise.key ?? exercise.id}',
     switch (tab) {
       String value => {'tab': value},
       null => null,

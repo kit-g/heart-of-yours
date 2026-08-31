@@ -54,7 +54,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   /// Per-exercise unit override for this set's exercise, or null to fall back to
   /// the global weight/distance setting. Single source of truth for both input
   /// parsing and display so they never disagree.
-  MeasurementUnit? get _unitOverride => Exercises.of(context).unitFor(widget.exercise.exercise.name);
+  MeasurementUnit? get _unitOverride => Exercises.of(context).unitFor(widget.exercise.exercise.id);
 
   @override
   void initState() {
@@ -249,7 +249,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2.0),
                 child: PrimaryButton.shrunk(
-                  key: WorkoutDetailKeys.doneFor(exercise.exercise.name, widget.index),
+                  key: WorkoutDetailKeys.doneFor(exercise.exercise.id, widget.index),
                   backgroundColor: switch (set.isCompleted) {
                     true => tertiaryContainer,
                     false => fill,
@@ -301,7 +301,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         return [
           Expanded(
             child: _TextFieldButton(
-              key: WorkoutDetailKeys.weightFor(exercise.exercise.name, widget.index),
+              key: WorkoutDetailKeys.weightFor(exercise.exercise.id, widget.index),
               focusNode: _weightFocus,
               isSetCompleted: set.isCompleted,
               controller: _weightController,
@@ -313,7 +313,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           ),
           Expanded(
             child: _TextFieldButton(
-              key: WorkoutDetailKeys.repsFor(exercise.exercise.name, widget.index),
+              key: WorkoutDetailKeys.repsFor(exercise.exercise.id, widget.index),
               isSetCompleted: set.isCompleted,
               focusNode: _repsFocus,
               controller: _repsController,
@@ -491,7 +491,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
 
   Future<void> _startTimer(BuildContext context) async {
     final timers = Timers.of(context);
-    final timer = timers[exercise.exercise.name];
+    final timer = timers[exercise.exercise.id];
 
     if (timer == null) return;
 
@@ -510,8 +510,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     // Honour the next exercise's per-exercise unit, falling back to the global
     // weight setting — the notification used to always emit the raw metric
     // value with an "lbs" label regardless of preference.
-    final unit = switch (next?.$1.exercise.name) {
-      String name => Exercises.of(context).unitFor(name) ?? prefs.weightUnit,
+    final unit = switch (next?.$1.exercise.id) {
+      String id => Exercises.of(context).unitFor(id) ?? prefs.weightUnit,
       null => prefs.weightUnit,
     };
     final body = switch (next?.$2) {

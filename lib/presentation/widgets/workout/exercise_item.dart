@@ -74,7 +74,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                   Row(
                     children: [
                       Selector<Timers, int?>(
-                        selector: (_, provider) => provider[exercise.exercise.name],
+                        selector: (_, provider) => provider[exercise.exercise.id],
                         builder: (_, timer, _) {
                           return Selector<Alarms, (ValueNotifier<int>?, num?, String?)>(
                             selector: (_, provider) => (
@@ -144,7 +144,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         style: _menuStyle(),
                         builder: (context, controller, _) {
                           return IconButton(
-                            key: WorkoutDetailKeys.exerciseOptionsFor(exercise.exercise.name),
+                            key: WorkoutDetailKeys.exerciseOptionsFor(exercise.exercise.id),
                             tooltip: L.of(context).exerciseOptions,
                             style: const ButtonStyle(
                               visualDensity: VisualDensity(vertical: 0, horizontal: -2),
@@ -232,7 +232,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             onRemoveSet: onRemoveSet,
                             isLocked: !allowCompleting,
                             onSetDone: onSetDone,
-                            previousValue: previous.at(exercise.exercise.name, set.$1),
+                            previousValue: previous.at(exercise.exercise.id, set.$1),
                           );
                         },
                       ),
@@ -277,7 +277,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   List<Widget> _buttonsHeader(BuildContext context) {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
-    final override = Exercises.watch(context).unitFor(exercise.exercise.name);
+    final override = Exercises.watch(context).unitFor(exercise.exercise.id);
 
     String weightUnit() {
       return switch (override ?? prefs.weightUnit) {
@@ -411,7 +411,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     final isCardio = exercise.exercise.category == Category.cardio;
     // fall back to the global setting for this dimension when there's no
     // explicit per-exercise override, so the menu always check-marks something.
-    final current = exercises.unitFor(exercise.exercise.name) ?? (isCardio ? prefs.distanceUnit : prefs.weightUnit);
+    final current = exercises.unitFor(exercise.exercise.id) ?? (isCardio ? prefs.distanceUnit : prefs.weightUnit);
     final label = isCardio ? l.distanceUnitLabel : l.weightUnitLabel;
     return SubmenuButton(
       menuStyle: _menuStyle(),
@@ -473,7 +473,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       case .autoRestTimer:
         return _selectRestTime(
           context,
-          initialValue: Timers.of(context)[exercise.exercise.name],
+          initialValue: Timers.of(context)[exercise.exercise.id],
         );
       case .inspectExercise:
         return onTapExercise(exercise.exercise);
@@ -481,19 +481,20 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   }
 
   Future<void> _selectRestTime(BuildContext context, {int? initialValue}) async {
-    final name = exercise.exercise.name;
+    // the timer is keyed by the exercise's id; its name is only copy here
+    final id = exercise.exercise.id;
     final timers = Timers.of(context);
     final restInSeconds = await showDurationPicker(
       context,
       initialValue: initialValue,
-      subtitle: L.of(context).forExercise(name),
+      subtitle: L.of(context).forExercise(exercise.exercise.name),
     );
 
     switch (restInSeconds) {
       case 0: // special Cancel signal
-        timers.remove(name);
+        timers.remove(id);
       case int seconds when seconds > 0:
-        timers.setRestTimer(name, seconds);
+        timers.setRestTimer(id, seconds);
         // A rest timer is only useful if we may notify — ask now, the first
         // time one is set, rather than up front at launch.
         if (context.mounted) _ensureNotifications(context);

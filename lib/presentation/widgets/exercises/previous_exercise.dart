@@ -36,7 +36,7 @@ class PreviousSet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final L(:lbs, :kg, :reps, :milesPlural, :km) = L.of(context);
-    final override = Exercises.of(context).unitFor(exercise.name);
+    final override = Exercises.of(context).unitFor(exercise.id);
 
     switch (exercise.category) {
       case Category.barbell:
