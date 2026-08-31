@@ -373,50 +373,26 @@ WHERE we.exercise_id = ?
 ;
 ''';
 
-const weightRecord = '''
+/// Every completed set of one exercise with its workout's identity and start
+/// — the raw material [LocalDatabase.getRecord] folds into the records map.
+/// One query instead of per-metric aggregates so a record can carry the *set*
+/// it happened on (its own reps, its own date), never two independent maxima
+/// glued together.
+const recordSets = '''
 SELECT
-    max(reps) AS reps,
-    max(weight) AS weight
+    sets.weight,
+    sets.reps,
+    sets.duration,
+    sets.distance,
+    workouts.id AS workout_id,
+    workouts.start AS start
 FROM sets
 INNER JOIN workout_exercises we ON sets.exercise_id = we.id
 INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
-  AND sets.completed;
-''';
-
-const distanceRecord = '''
-SELECT
-    max(duration) AS duration,
-    max(distance) AS distance
-FROM sets
-INNER JOIN workout_exercises we ON sets.exercise_id = we.id
-INNER JOIN workouts ON we.workout_id = workouts.id
-WHERE workouts.user_id = ?
-  AND we.exercise_id = ?
-  AND sets.completed;
-''';
-
-const durationRecord = '''
-SELECT
-    max(duration) AS duration
-FROM sets
-INNER JOIN workout_exercises we ON sets.exercise_id = we.id
-INNER JOIN workouts ON we.workout_id = workouts.id
-WHERE workouts.user_id = ?
-  AND we.exercise_id = ?
-  AND sets.completed;
-''';
-
-const repsRecord = '''
-SELECT
-    max(reps) AS reps
-FROM sets
-INNER JOIN workout_exercises we ON sets.exercise_id = we.id
-INNER JOIN workouts ON we.workout_id = workouts.id
-WHERE workouts.user_id = ?
-  AND we.exercise_id = ?
-  AND sets.completed;
+  AND sets.completed
+ORDER BY workouts.start;
 ''';
 
 const getWeightHistory = '''

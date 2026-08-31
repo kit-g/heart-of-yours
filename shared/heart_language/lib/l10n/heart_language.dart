@@ -760,6 +760,18 @@ abstract class L {
   /// **'Your workout is complete!'**
   String get congratulationsBody;
 
+  /// Workout complete screen, heading above the personal records this session set
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{New record} other{New records}}'**
+  String recordsAchievedHeading(int count);
+
+  /// Workout complete screen, one exercise's new records: the exercise name and its record values
+  ///
+  /// In en, this message translates to:
+  /// **'{exercise} · {records}'**
+  String recordAchievedLine(String exercise, String records);
+
   /// Workout complete screen, heading above the goal rungs this session earned
   ///
   /// In en, this message translates to:
@@ -1630,6 +1642,72 @@ abstract class L {
   /// **'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!'**
   String get errorExerciseHistoryBody;
 
+  /// Record tile on the exercise records tab: highest weight × reps in a single set
+  ///
+  /// In en, this message translates to:
+  /// **'Best set volume'**
+  String get bestSetVolume;
+
+  /// Record tile on the exercise records tab
+  ///
+  /// In en, this message translates to:
+  /// **'Most reps'**
+  String get mostReps;
+
+  /// Record tile on the exercise records tab, cardio exercises
+  ///
+  /// In en, this message translates to:
+  /// **'Best pace'**
+  String get bestPace;
+
+  /// Record tile on the exercise records tab, assisted body-weight exercises: the lightest counterweight used
+  ///
+  /// In en, this message translates to:
+  /// **'Least assistance'**
+  String get leastAssistance;
+
+  /// Title of the records-tab table listing the best weight lifted at each rep count
+  ///
+  /// In en, this message translates to:
+  /// **'Rep maxes'**
+  String get repMaxes;
+
+  /// Left column of the rep-maxes table: the rep count the weight was lifted for
+  ///
+  /// In en, this message translates to:
+  /// **'{reps, plural, one{{reps} rep} other{{reps} reps}}'**
+  String repMaxCount(num reps);
+
+  /// Title of the records-tab section with lifetime totals
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get allTime;
+
+  /// Lifetime row on the records tab: how many workouts included this exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessions;
+
+  /// Lifetime row on the records tab: date of the first session with this exercise
+  ///
+  /// In en, this message translates to:
+  /// **'First performed'**
+  String get firstPerformed;
+
+  /// Lifetime row on the records tab
+  ///
+  /// In en, this message translates to:
+  /// **'Total time'**
+  String get totalTime;
+
+  /// Lifetime row on the records tab
+  ///
+  /// In en, this message translates to:
+  /// **'Total distance'**
+  String get totalDistance;
+
   /// Records screen, title
   ///
   /// In en, this message translates to:
@@ -1785,6 +1863,36 @@ abstract class L {
   /// In en, this message translates to:
   /// **'New chart'**
   String get newChart;
+
+  /// Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Add to profile'**
+  String get addChartToProfile;
+
+  /// Tooltip on the exercise detail page; adds the exercise to the workout in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Add to workout'**
+  String get addToActiveWorkout;
+
+  /// Snackbar confirmation after adding the exercise to the workout in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Added to workout'**
+  String get exerciseAddedToWorkout;
+
+  /// Snackbar confirmation after adding a chart to the profile dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Added to profile'**
+  String get chartAddedToProfile;
+
+  /// Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from profile'**
+  String get removeChartFromProfile;
 
   /// Empty state for chart widget
   ///

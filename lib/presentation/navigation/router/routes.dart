@@ -339,7 +339,7 @@ RouteBase _exercisesRoute() {
                   return Workouts.of(context).fetchWorkout(workoutId).then<void>(
                     (_) {
                       if (!context.mounted) return;
-                      context.goToWorkoutEditor(workoutId);
+                      context.goToExerciseWorkout(exerciseId, workoutId);
                     },
                   );
                 },
@@ -350,6 +350,7 @@ RouteBase _exercisesRoute() {
                 onTapAlternative: (alternative) {
                   context.goToExerciseDetail(alternative.id);
                 },
+                onAddToWorkout: (exercise) => _onAddToWorkout(context, exercise),
               );
             },
             // Resolves before deciding, like the history route: a deep link
@@ -365,6 +366,49 @@ RouteBase _exercisesRoute() {
                 _ => _exercisesPath,
               };
             },
+            routes: [
+              // A workout opened from the exercise's history. Same editor the
+              // history stack builds, hosted here so the reader never leaves
+              // the exercises stack (or, on a tablet, its pane).
+              GoRoute(
+                path: 'workout/:workoutId',
+                name: _exerciseWorkoutName,
+                builder: (context, state) {
+                  try {
+                    final workoutId = state.pathParameters['workoutId']!;
+                    final exerciseId = state.pathParameters['exerciseId']!;
+                    final workout = Workouts.of(context).lookup(workoutId);
+                    return WorkoutEditor(
+                      copy: workout!,
+                      onTapImage: context.goToGallery,
+                      // compact is pushed, so the default back arrow returns
+                      // to the exercise; the wide pane has no stack behind it,
+                      // so close swaps the exercise detail back in
+                      onClose: switch (LayoutProvider.of(context)) {
+                        .compact => null,
+                        .wide => () => context.goToExerciseDetail(exerciseId),
+                      },
+                    );
+                  } catch (e) {
+                    throw GoException(e.toString());
+                  }
+                },
+                // Resolves before deciding, like the history editor: the
+                // mirror holds only what has been paged in.
+                redirect: (context, state) async {
+                  final workouts = Workouts.of(context);
+                  final detailPath = '$_exercisesPath/${state.pathParameters['exerciseId']}';
+                  return switch (state.pathParameters['workoutId']) {
+                    String id when workouts.lookup(id) != null => null,
+                    String id => switch (await workouts.fetchWorkout(id)) {
+                      true => null,
+                      false => detailPath,
+                    },
+                    _ => detailPath,
+                  };
+                },
+              ),
+            ],
           ),
         ],
       ),
@@ -544,6 +588,17 @@ RouteBase _workoutDoneRoute() {
 
             return [...stamped, ...carried];
           },
+          // Same contract as the goals: wait out the write, then ask which
+          // records now credit this session. The fold ties records to the
+          // first session that set them, so an equalled-not-beaten value
+          // stays with its original owner and is not re-celebrated here.
+          recordsCallback: () async {
+            final workouts = Workouts.of(context);
+            final exercises = Exercises.of(context);
+
+            final finished = await workouts.finishing ?? workout;
+            return recordsSetBy(finished.id, finished, lookup: exercises.getExerciseRecords);
+          },
         );
       } catch (e) {
         throw GoException('$e');
@@ -638,17 +693,36 @@ Future<void> _exercisesReady(Exercises exercises) {
       .whenComplete(() => exercises.removeListener(onChange));
 }
 
-/// A shared link crosses environments and installs, and a uuid only resolves
-/// in the database that minted it — so library links carry the env-stable
-/// content slug ([Exercise.key]). Customs have no slug (and nothing to
-/// resolve to elsewhere), so their link keeps the id and works on this
-/// device's own install.
 /// A deep-link reference to an exercise: the uuid for internal navigation,
 /// or the env-stable slug from a shared link — see [_onShareExercise].
 Exercise? _resolveExercise(Exercises exercises, String reference) {
   return exercises.lookup(reference) ?? exercises.lookupByKey(reference);
 }
 
+/// Appends [exercise] to the workout in progress and confirms with a snack —
+/// the workout lives on another tab, so the action offers the way there too.
+Future<void> _onAddToWorkout(BuildContext context, Exercise exercise) async {
+  await Workouts.of(context).startExercise(exercise);
+  if (!context.mounted) return;
+
+  final L(:exerciseAddedToWorkout, :goToWorkout) = L.of(context);
+  snack(
+    context,
+    exerciseAddedToWorkout,
+    action: SnackBarAction(
+      label: goToWorkout,
+      onPressed: () {
+        if (context.mounted) context.goToActiveWorkout();
+      },
+    ),
+  );
+}
+
+/// A shared link crosses environments and installs, and a uuid only resolves
+/// in the database that minted it — so library links carry the env-stable
+/// content slug ([Exercise.key]). Customs have no slug (and nothing to
+/// resolve to elsewhere), so their link keeps the id and works on this
+/// device's own install.
 Future<void> _onShareExercise(BuildContext context, Exercise exercise, String? tab) async {
   final link = Uri.https(
     AppConfig.of(context).appDomain,

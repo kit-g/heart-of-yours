@@ -86,6 +86,7 @@ class _Page extends StatelessWidget {
         .records => _Records(
           exercise: exercise,
           recordsLookup: Exercises.of(context).getExerciseRecords,
+          onTapWorkout: onTapWorkout,
         ),
         .history => _History(
           exercise: exercise,
@@ -98,8 +99,6 @@ class _Page extends StatelessWidget {
     );
   }
 }
-
-const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));
 
 extension on Duration {
   String formatted() {

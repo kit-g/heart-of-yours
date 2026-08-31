@@ -9,6 +9,7 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
   final String? initialTab;
   final void Function(ExerciseFilter)? onFilter;
   final void Function(Exercise)? onTapAlternative;
+  final Future<void> Function(Exercise)? onAddToWorkout;
 
   const new({
     required this.exercise,
@@ -19,6 +20,7 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
     this.initialTab,
     this.onFilter,
     this.onTapAlternative,
+    this.onAddToWorkout,
   });
 
   @override
@@ -62,6 +64,7 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
     return Scaffold(
       appBar: AppBar(
         actions: [
+          _AddToWorkoutAction(exercise: widget.exercise, onAdd: widget.onAddToWorkout),
           if (widget.allowOptions)
             if (widget.exercise.isMine)
               IconButton(
