@@ -138,16 +138,18 @@ class _Chart extends StatelessWidget {
 
   Widget _chart(BuildContext context) {
     final ThemeData(:textTheme, :dividerColor) = Theme.of(context);
-    final exerciseName = preference.exerciseName!;
+    // the getter keeps its stale name until the next heart_models major: the
+    // value is the exercise id, which is what the metrics queries key on
+    final exerciseId = preference.exerciseName!;
     final converter = _converter(preference.type, settings);
 
-    // A chart's data is keyed by exercise *name* (see the metrics queries), not
-    // the exercise catalog — which is remote-authoritative and can lag a launch
-    // behind on first run. So never block the card on the lookup: fall back to a
-    // name-only placeholder that just backs the empty/error decorations (the
-    // ghost service ignores its other fields). Once the catalog arrives, the
-    // watch rebuild swaps in the real exercise.
-    final exercise = exercises.lookup(exerciseName) ?? Exercise(name: exerciseName, category: .barbell, target: .other);
+    // The catalog is remote-authoritative and can lag a launch behind on first
+    // run, so never block the card on the lookup: fall back to a placeholder
+    // that just backs the empty/error decorations (the ghost service ignores
+    // its other fields). Once the catalog arrives, the watch rebuild swaps in
+    // the real exercise.
+    final resolved = exercises.lookup(exerciseId);
+    final exercise = resolved ?? Exercise(name: exerciseId, category: .barbell, target: .other);
 
     return ExerciseChart(
       // the rung being worked toward, per goal on this exercise and metric.
@@ -156,9 +158,8 @@ class _Chart extends StatelessWidget {
       thresholds: [
         for (final goal in goalsOnChart(
           goals,
-          exerciseName: exerciseName,
+          exerciseId: exerciseId,
           metric: preference.type,
-          exercises: exercises,
         ))
           ...goalThresholds(context, goal, metric: preference.type, settings: settings, nextOnly: true),
       ],
@@ -173,8 +174,8 @@ class _Chart extends StatelessWidget {
         axisConverter: converter,
         dragWrap: dragWrap,
       ),
-      callback: () => exercises.getChartExerciseMetics(preference.type, exerciseName),
-      refreshKey: (exerciseName, preference.type),
+      callback: () => exercises.getChartExerciseMetics(preference.type, exerciseId),
+      refreshKey: (exerciseId, preference.type),
       customLabel: Row(
         children: [
           if (dragWrap case final wrap?) ...[
@@ -183,7 +184,9 @@ class _Chart extends StatelessWidget {
           ],
           Expanded(
             child: Text(
-              '$exerciseName - ${preference.type.title(context, settings)}',
+              // before the catalog resolves there is no name worth showing —
+              // an id is not copy
+              '${resolved?.name ?? '…'} - ${preference.type.title(context, settings)}',
               maxLines: 1,
               overflow: .ellipsis,
             ),

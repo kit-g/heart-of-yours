@@ -153,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                           final returned = await _showNewChartDialog(context, _searchController, _focus);
                           switch (returned) {
                             case (Exercise ex, ChartPreferenceType type):
-                              final preference = ChartPreference.exercise(ex.name, type);
+                              final preference = ChartPreference.exercise(ex.id, type);
                               await charts.addPreference(preference);
                               await Future.delayed(const Duration(milliseconds: 100));
                               scrolls.scrollProfileToBottom();

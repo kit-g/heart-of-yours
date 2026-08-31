@@ -15,14 +15,15 @@ class WorkoutDetailKeys {
   /// The per-exercise overflow menu inside a workout.
   ///
   /// Every exercise in a workout renders one, so a finder needs the exercise
-  /// too — [exerciseOptionsFor] scopes it by name.
-  static Key exerciseOptionsFor(String exerciseName) => Key('WorkoutDetail.exerciseOptions.$exerciseName');
+  /// too — [exerciseOptionsFor] scopes it by the exercise id: names are
+  /// localized display copy and change with the device language, ids don't.
+  static Key exerciseOptionsFor(String exerciseId) => Key('WorkoutDetail.exerciseOptions.$exerciseId');
 
-  /// Per-set controls, scoped by exercise name and the set's position —
+  /// Per-set controls, scoped by exercise id and the set's position —
   /// the two coordinates a driver test can know up front.
-  static Key doneFor(String exerciseName, int index) => Key('WorkoutDetail.done.$exerciseName.$index');
+  static Key doneFor(String exerciseId, int index) => Key('WorkoutDetail.done.$exerciseId.$index');
 
-  static Key weightFor(String exerciseName, int index) => Key('WorkoutDetail.weight.$exerciseName.$index');
+  static Key weightFor(String exerciseId, int index) => Key('WorkoutDetail.weight.$exerciseId.$index');
 
-  static Key repsFor(String exerciseName, int index) => Key('WorkoutDetail.reps.$exerciseName.$index');
+  static Key repsFor(String exerciseId, int index) => Key('WorkoutDetail.reps.$exerciseId.$index');
 }

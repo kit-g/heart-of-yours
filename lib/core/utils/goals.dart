@@ -109,7 +109,7 @@ Future<num?> currentGoalValue(
     // The metric queries return a row per session; the period is cut here
     // rather than in SQL so that what "per week" means for each dimension stays
     // in one readable place instead of spread across eleven statements.
-    final history = await exercises.getChartExerciseMetics(metric, exercise.name, limit: _sessionsPerPeriod);
+    final history = await exercises.getChartExerciseMetics(metric, exercise.id, limit: _sessionsPerPeriod);
     final inPeriod = [
       for (final (value, at) in history ?? const <(num, DateTime)>[])
         if (!at.isBefore(from) && at.isBefore(to))
@@ -133,7 +133,7 @@ Future<num?> currentGoalValue(
   // on an exercise topping out at 2880 showed 2025, because that was simply the
   // last session logged — and it contradicted the rungs beside it, which stay
   // stamped once cleared.
-  final history = await exercises.getChartExerciseMetics(metric, exercise.name, limit: _milestoneHistory);
+  final history = await exercises.getChartExerciseMetics(metric, exercise.id, limit: _milestoneHistory);
   final values = [for (final (value, _) in history ?? const <(num, DateTime)>[]) value];
   if (values.isEmpty) return null;
 
@@ -186,13 +186,11 @@ Future<int> Function(GoalCadence?) workoutCounter(Stats stats, {DateTime? asOf})
   };
 }
 
-/// Goals address an exercise by its server id while the app's catalog is keyed
-/// by name, so this is a scan rather than a lookup.
+/// Goals address an exercise by its server id, which since schema v11 is also
+/// what the catalog is keyed by.
 Exercise? goalExercise(Goal goal, Exercises exercises) {
-  if (goal.exerciseId case final String id) {
-    for (final exercise in exercises) {
-      if (exercise.id == id) return exercise;
-    }
-  }
-  return null;
+  return switch (goal.exerciseId) {
+    String id => exercises.lookup(id),
+    null => null,
+  };
 }

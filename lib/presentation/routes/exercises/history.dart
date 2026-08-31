@@ -14,7 +14,7 @@ class _History extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prefs = Preferences.watch(context);
-    final unit = Exercises.watch(context).unitFor(exercise.name);
+    final unit = Exercises.watch(context).unitFor(exercise.id);
     return FutureBuilder<Iterable<ExerciseAct>>(
       future: historyLookup(exercise),
       builder: (_, future) {
