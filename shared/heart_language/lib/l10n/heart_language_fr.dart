@@ -369,6 +369,22 @@ class LFr extends L {
   String get congratulationsBody => 'Votre séance est terminée !';
 
   @override
+  String recordsAchievedHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nouveaux records',
+      one: 'Nouveau record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recordAchievedLine(String exercise, String records) {
+    return '$exercise · $records';
+  }
+
+  @override
   String goalsAchievedHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -848,6 +864,47 @@ class LFr extends L {
       'On dirait que l’app s’est pris les pieds dans ses lacets. Réessayez, promis, on les serrera mieux la prochaine fois !';
 
   @override
+  String get bestSetVolume => 'Meilleur volume par série';
+
+  @override
+  String get mostReps => 'Plus de répétitions';
+
+  @override
+  String get bestPace => 'Meilleure allure';
+
+  @override
+  String get leastAssistance => 'Assistance minimale';
+
+  @override
+  String get repMaxes => 'Maxis par répétitions';
+
+  @override
+  String repMaxCount(num reps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      reps,
+      locale: localeName,
+      other: '$reps reps',
+      one: '$reps rep',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get allTime => 'Depuis le début';
+
+  @override
+  String get sessions => 'Séances';
+
+  @override
+  String get firstPerformed => 'Première fois';
+
+  @override
+  String get totalTime => 'Temps total';
+
+  @override
+  String get totalDistance => 'Distance totale';
+
+  @override
   String get personalRecords => 'Records personnels';
 
   @override
@@ -927,6 +984,21 @@ class LFr extends L {
 
   @override
   String get newChart => 'Nouveau graphique';
+
+  @override
+  String get addChartToProfile => 'Ajouter au profil';
+
+  @override
+  String get addToActiveWorkout => 'Ajouter à la séance';
+
+  @override
+  String get exerciseAddedToWorkout => 'Ajouté à la séance';
+
+  @override
+  String get chartAddedToProfile => 'Ajouté au profil';
+
+  @override
+  String get removeChartFromProfile => 'Retirer du profil';
 
   @override
   String get emptyChartStateTitle => 'C’est un peu vide par ici';

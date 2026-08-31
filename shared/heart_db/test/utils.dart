@@ -14,6 +14,7 @@ Exercise exercise({
   String? id,
   String name = 'Push Up',
   String target = 'Chest',
+  String category = 'Weighted Body Weight',
   Map<String, dynamic>? movement,
   bool? validated,
 }) {
@@ -21,7 +22,7 @@ Exercise exercise({
     // deterministic per name, so fixtures stay self-consistent across calls
     'id': id ?? 'id-${name.toLowerCase().replaceAll(' ', '-')}',
     'name': name,
-    'category': 'Weighted Body Weight',
+    'category': category,
     'target': target,
     'validated': ?validated,
     'asset': 'https://dev.media.heart-of.me/exercises/$name/asset.gif',

@@ -682,6 +682,29 @@
     "type": "text",
     "placeholders": {}
   },
+  "recordsAchievedHeading": "{count, plural, one{Новый рекорд} other{Новые рекорды}}",
+  "@recordsAchievedHeading": {
+    "description": "Workout complete screen, heading above the personal records this session set",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recordAchievedLine": "{exercise} · {records}",
+  "@recordAchievedLine": {
+    "description": "Workout complete screen, one exercise's new records: the exercise name and its record values",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      },
+      "records": {
+        "type": "String"
+      }
+    }
+  },
   "goalsAchievedHeading": "{count, plural, one{Цель взята} few{Цели взяты} many{Целей взято} other{Цели взяты}}",
   "@goalsAchievedHeading": {
     "description": "Workout complete screen, heading above the goal rungs this session earned",
@@ -1606,6 +1629,74 @@
     "type": "text",
     "placeholders": {}
   },
+  "bestSetVolume": "Лучший объём за подход",
+  "@bestSetVolume": {
+    "description": "Record tile on the exercise records tab: highest weight × reps in a single set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "mostReps": "Больше всего повторений",
+  "@mostReps": {
+    "description": "Record tile on the exercise records tab",
+    "type": "text",
+    "placeholders": {}
+  },
+  "bestPace": "Лучший темп",
+  "@bestPace": {
+    "description": "Record tile on the exercise records tab, cardio exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "leastAssistance": "Наименьшая поддержка",
+  "@leastAssistance": {
+    "description": "Record tile on the exercise records tab, assisted body-weight exercises: the lightest counterweight used",
+    "type": "text",
+    "placeholders": {}
+  },
+  "repMaxes": "Максимумы по повторениям",
+  "@repMaxes": {
+    "description": "Title of the records-tab table listing the best weight lifted at each rep count",
+    "type": "text",
+    "placeholders": {}
+  },
+  "repMaxCount": "{reps, plural, one{{reps} повторение} few{{reps} повторения} many{{reps} повторений} other{{reps} повторения}}",
+  "@repMaxCount": {
+    "description": "Left column of the rep-maxes table: the rep count the weight was lifted for",
+    "type": "text",
+    "placeholders": {
+      "reps": {}
+    }
+  },
+  "allTime": "За всё время",
+  "@allTime": {
+    "description": "Title of the records-tab section with lifetime totals",
+    "type": "text",
+    "placeholders": {}
+  },
+  "sessions": "Тренировки",
+  "@sessions": {
+    "description": "Lifetime row on the records tab: how many workouts included this exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "firstPerformed": "Впервые выполнено",
+  "@firstPerformed": {
+    "description": "Lifetime row on the records tab: date of the first session with this exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalTime": "Общее время",
+  "@totalTime": {
+    "description": "Lifetime row on the records tab",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalDistance": "Общая дистанция",
+  "@totalDistance": {
+    "description": "Lifetime row on the records tab",
+    "type": "text",
+    "placeholders": {}
+  },
   "personalRecords": "Личные рекорды",
   "@personalRecords": {
     "description": "Records screen, title",
@@ -1764,6 +1855,36 @@
   "newChart": "Новый график",
   "@newChart": {
     "description": "Button that allows to create a new chart",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addChartToProfile": "Добавить в профиль",
+  "@addChartToProfile": {
+    "description": "Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addToActiveWorkout": "Добавить в тренировку",
+  "@addToActiveWorkout": {
+    "description": "Tooltip on the exercise detail page; adds the exercise to the workout in progress",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseAddedToWorkout": "Добавлено в тренировку",
+  "@exerciseAddedToWorkout": {
+    "description": "Snackbar confirmation after adding the exercise to the workout in progress",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartAddedToProfile": "Добавлено в профиль",
+  "@chartAddedToProfile": {
+    "description": "Snackbar confirmation after adding a chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeChartFromProfile": "Убрать из профиля",
+  "@removeChartFromProfile": {
+    "description": "Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard",
     "type": "text",
     "placeholders": {}
   },

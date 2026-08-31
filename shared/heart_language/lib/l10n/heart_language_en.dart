@@ -368,6 +368,22 @@ class LEn extends L {
   String get congratulationsBody => 'Your workout is complete!';
 
   @override
+  String recordsAchievedHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'New records',
+      one: 'New record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recordAchievedLine(String exercise, String records) {
+    return '$exercise · $records';
+  }
+
+  @override
   String goalsAchievedHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -846,6 +862,47 @@ class LEn extends L {
       'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!';
 
   @override
+  String get bestSetVolume => 'Best set volume';
+
+  @override
+  String get mostReps => 'Most reps';
+
+  @override
+  String get bestPace => 'Best pace';
+
+  @override
+  String get leastAssistance => 'Least assistance';
+
+  @override
+  String get repMaxes => 'Rep maxes';
+
+  @override
+  String repMaxCount(num reps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      reps,
+      locale: localeName,
+      other: '$reps reps',
+      one: '$reps rep',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get allTime => 'All time';
+
+  @override
+  String get sessions => 'Sessions';
+
+  @override
+  String get firstPerformed => 'First performed';
+
+  @override
+  String get totalTime => 'Total time';
+
+  @override
+  String get totalDistance => 'Total distance';
+
+  @override
   String get personalRecords => 'Personal records';
 
   @override
@@ -925,6 +982,21 @@ class LEn extends L {
 
   @override
   String get newChart => 'New chart';
+
+  @override
+  String get addChartToProfile => 'Add to profile';
+
+  @override
+  String get addToActiveWorkout => 'Add to workout';
+
+  @override
+  String get exerciseAddedToWorkout => 'Added to workout';
+
+  @override
+  String get chartAddedToProfile => 'Added to profile';
+
+  @override
+  String get removeChartFromProfile => 'Remove from profile';
 
   @override
   String get emptyChartStateTitle => 'Looks a little empty here';
@@ -1926,6 +1998,22 @@ class LEnCa extends LEn {
   String get congratulationsBody => 'Your workout is complete!';
 
   @override
+  String recordsAchievedHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'New records',
+      one: 'New record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recordAchievedLine(String exercise, String records) {
+    return '$exercise · $records';
+  }
+
+  @override
   String goalsAchievedHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2404,6 +2492,47 @@ class LEnCa extends LEn {
       'Looks like the app tripped over its own shoelaces. Try again, and we promise to tie them tighter next time!';
 
   @override
+  String get bestSetVolume => 'Best set volume';
+
+  @override
+  String get mostReps => 'Most reps';
+
+  @override
+  String get bestPace => 'Best pace';
+
+  @override
+  String get leastAssistance => 'Least assistance';
+
+  @override
+  String get repMaxes => 'Rep maxes';
+
+  @override
+  String repMaxCount(num reps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      reps,
+      locale: localeName,
+      other: '$reps reps',
+      one: '$reps rep',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get allTime => 'All time';
+
+  @override
+  String get sessions => 'Sessions';
+
+  @override
+  String get firstPerformed => 'First performed';
+
+  @override
+  String get totalTime => 'Total time';
+
+  @override
+  String get totalDistance => 'Total distance';
+
+  @override
   String get personalRecords => 'Personal records';
 
   @override
@@ -2483,6 +2612,21 @@ class LEnCa extends LEn {
 
   @override
   String get newChart => 'New chart';
+
+  @override
+  String get addChartToProfile => 'Add to profile';
+
+  @override
+  String get addToActiveWorkout => 'Add to workout';
+
+  @override
+  String get exerciseAddedToWorkout => 'Added to workout';
+
+  @override
+  String get chartAddedToProfile => 'Added to profile';
+
+  @override
+  String get removeChartFromProfile => 'Remove from profile';
 
   @override
   String get emptyChartStateTitle => 'Looks a little empty here';

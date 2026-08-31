@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/logo.dart';
@@ -15,6 +16,7 @@ part 'confetti.dart';
 part 'counter.dart';
 part 'heart.dart';
 part 'achievements.dart';
+part 'records.dart';
 
 class WorkoutDone extends StatelessWidget {
   final Workout? workout;
@@ -26,11 +28,16 @@ class WorkoutDone extends StatelessWidget {
   /// pushed the moment finishing starts, not when it lands.
   final Future<List<GoalAchievement>> Function() achievementsCallback;
 
+  /// The personal records this session set, under the same contract as
+  /// [achievementsCallback]: resolved late, against the written workout.
+  final Future<List<AchievedRecord>> Function() recordsCallback;
+
   const new({
     super.key,
     required this.workout,
     required this.workoutsThisWeekCallback,
     required this.achievementsCallback,
+    required this.recordsCallback,
     required this.onQuit,
   });
 
@@ -96,6 +103,7 @@ class WorkoutDone extends StatelessWidget {
                     style: textTheme.bodyLarge,
                   ),
                   _Achievements(callback: achievementsCallback),
+                  _Records(callback: recordsCallback),
                   const SizedBox(height: 72),
                   if (workout case Workout workout)
                     WorkoutItem(

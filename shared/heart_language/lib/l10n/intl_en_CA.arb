@@ -682,6 +682,29 @@
     "type": "text",
     "placeholders": {}
   },
+  "recordsAchievedHeading": "{count, plural, one{New record} other{New records}}",
+  "@recordsAchievedHeading": {
+    "description": "Workout complete screen, heading above the personal records this session set",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recordAchievedLine": "{exercise} · {records}",
+  "@recordAchievedLine": {
+    "description": "Workout complete screen, one exercise's new records: the exercise name and its record values",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      },
+      "records": {
+        "type": "String"
+      }
+    }
+  },
   "goalsAchievedHeading": "{count, plural, one{Goal reached} other{Goals reached}}",
   "@goalsAchievedHeading": {
     "description": "Workout complete screen, heading above the goal rungs this session earned",
@@ -1606,6 +1629,74 @@
     "type": "text",
     "placeholders": {}
   },
+  "bestSetVolume": "Best set volume",
+  "@bestSetVolume": {
+    "description": "Record tile on the exercise records tab: highest weight × reps in a single set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "mostReps": "Most reps",
+  "@mostReps": {
+    "description": "Record tile on the exercise records tab",
+    "type": "text",
+    "placeholders": {}
+  },
+  "bestPace": "Best pace",
+  "@bestPace": {
+    "description": "Record tile on the exercise records tab, cardio exercises",
+    "type": "text",
+    "placeholders": {}
+  },
+  "leastAssistance": "Least assistance",
+  "@leastAssistance": {
+    "description": "Record tile on the exercise records tab, assisted body-weight exercises: the lightest counterweight used",
+    "type": "text",
+    "placeholders": {}
+  },
+  "repMaxes": "Rep maxes",
+  "@repMaxes": {
+    "description": "Title of the records-tab table listing the best weight lifted at each rep count",
+    "type": "text",
+    "placeholders": {}
+  },
+  "repMaxCount": "{reps, plural, one{{reps} rep} other{{reps} reps}}",
+  "@repMaxCount": {
+    "description": "Left column of the rep-maxes table: the rep count the weight was lifted for",
+    "type": "text",
+    "placeholders": {
+      "reps": {}
+    }
+  },
+  "allTime": "All time",
+  "@allTime": {
+    "description": "Title of the records-tab section with lifetime totals",
+    "type": "text",
+    "placeholders": {}
+  },
+  "sessions": "Sessions",
+  "@sessions": {
+    "description": "Lifetime row on the records tab: how many workouts included this exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "firstPerformed": "First performed",
+  "@firstPerformed": {
+    "description": "Lifetime row on the records tab: date of the first session with this exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalTime": "Total time",
+  "@totalTime": {
+    "description": "Lifetime row on the records tab",
+    "type": "text",
+    "placeholders": {}
+  },
+  "totalDistance": "Total distance",
+  "@totalDistance": {
+    "description": "Lifetime row on the records tab",
+    "type": "text",
+    "placeholders": {}
+  },
   "personalRecords": "Personal records",
   "@personalRecords": {
     "description": "Records screen, title",
@@ -1764,6 +1855,36 @@
   "newChart": "New chart",
   "@newChart": {
     "description": "Button that allows to create a new chart",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addChartToProfile": "Add to profile",
+  "@addChartToProfile": {
+    "description": "Tooltip on a chart in the exercise detail, adds the chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addToActiveWorkout": "Add to workout",
+  "@addToActiveWorkout": {
+    "description": "Tooltip on the exercise detail page; adds the exercise to the workout in progress",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseAddedToWorkout": "Added to workout",
+  "@exerciseAddedToWorkout": {
+    "description": "Snackbar confirmation after adding the exercise to the workout in progress",
+    "type": "text",
+    "placeholders": {}
+  },
+  "chartAddedToProfile": "Added to profile",
+  "@chartAddedToProfile": {
+    "description": "Snackbar confirmation after adding a chart to the profile dashboard",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeChartFromProfile": "Remove from profile",
+  "@removeChartFromProfile": {
+    "description": "Tooltip on a chart in the exercise detail, removes the chart from the profile dashboard",
     "type": "text",
     "placeholders": {}
   },

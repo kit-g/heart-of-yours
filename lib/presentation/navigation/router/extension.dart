@@ -75,6 +75,23 @@ extension on BuildContext {
     return go(_exercisesPath);
   }
 
+  /// Opens a workout from the exercise detail's history *within* the
+  /// exercises stack — never a jump to the history tab, which loses the
+  /// reader's place. Same push/go split as [goToExerciseDetail]: compact
+  /// pushes so back means "back to the exercise", wide swaps the pane and the
+  /// editor's close button restores the exercise.
+  Future<Object?> goToExerciseWorkout(String exerciseId, String workoutId) {
+    final path = '$_exercisesPath/$exerciseId/workout/$workoutId';
+
+    switch (LayoutProvider.of(this)) {
+      case .compact:
+        return push(path);
+      case .wide:
+        go(path);
+        return Future<Object?>.value();
+    }
+  }
+
   void goToExerciseArchive() {
     return goNamed(_exerciseArchive);
   }
