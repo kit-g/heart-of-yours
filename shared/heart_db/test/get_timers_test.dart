@@ -22,14 +22,14 @@ void main() {
     'returns rest timers as a Map<String, int>',
     () async {
       final mockRows = [
-        {'exercise_name': 'Push Up', 'rest_timer': 30},
-        {'exercise_name': 'Squat', 'rest_timer': 45},
+        {'exercise_id': 'id-push-up', 'rest_timer': 30},
+        {'exercise_id': 'id-squat', 'rest_timer': 45},
       ];
 
       when(
         db.query(
           table,
-          columns: ['exercise_name', 'rest_timer'],
+          columns: ['exercise_id', 'rest_timer'],
           where: 'user_id = ? AND rest_timer IS NOT NULL',
           whereArgs: [userId],
         ),
@@ -42,11 +42,11 @@ void main() {
         equals(2),
       );
       expect(
-        result['Push Up'],
+        result['id-push-up'],
         equals(30),
       );
       expect(
-        result['Squat'],
+        result['id-squat'],
         equals(45),
       );
     },
@@ -86,7 +86,7 @@ void main() {
       verify(
         db.query(
           table,
-          columns: ['exercise_name', 'rest_timer'],
+          columns: ['exercise_id', 'rest_timer'],
           where: 'user_id = ? AND rest_timer IS NOT NULL',
           whereArgs: [userId],
         ),

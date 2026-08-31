@@ -33,6 +33,7 @@ void main() {
     await dropHealthColumn();
 
     final swimming = Exercise.fromJson({
+      'id': 'id-swimming',
       'name': 'Swimming',
       'category': 'Cardio',
       'target': 'Cardio',
@@ -52,6 +53,7 @@ void main() {
     await dropHealthColumn();
 
     final swimming = Exercise.fromJson({
+      'id': 'id-swimming',
       'name': 'Swimming',
       'category': 'Cardio',
       'target': 'Cardio',
@@ -72,6 +74,7 @@ void main() {
 
   test('with the column present the value is persisted', () async {
     final swimming = Exercise.fromJson({
+      'id': 'id-swimming',
       'name': 'Swimming',
       'category': 'Cardio',
       'target': 'Cardio',

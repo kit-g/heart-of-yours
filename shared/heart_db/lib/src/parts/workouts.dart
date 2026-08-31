@@ -28,7 +28,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       var (order, exercise) = each;
       final exerciseRow = {
         'workout_id': workoutId,
-        'exercise_id': exercise.exercise.name,
+        'exercise_id': exercise.exercise.id,
         'exercise_order': order,
         'id': exercise.id,
       };
@@ -104,7 +104,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       (txn) async {
         final row = {
           'workout_id': workoutId,
-          'exercise_id': exercise.exercise.name,
+          'exercise_id': exercise.exercise.id,
           'id': exercise.id,
           // a freshly started exercise lands at the end of the workout
           'exercise_order': await _nextExerciseOrder(txn, workoutId),

@@ -45,7 +45,7 @@ void main() {
         ),
       ];
 
-      when(db.rawQuery(sql.getExerciseHistory, [ex.name, 'user-1'])).thenAnswer((_) async => rows);
+      when(db.rawQuery(sql.getExerciseHistory, [ex.id, 'user-1'])).thenAnswer((_) async => rows);
 
       final result = await local.getExerciseHistory('user-1', ex);
 
@@ -59,7 +59,7 @@ void main() {
   test(
     'returns empty list when no history found',
     () async {
-      when(db.rawQuery(sql.getExerciseHistory, [ex.name, 'user-1'])).thenAnswer((_) async => []);
+      when(db.rawQuery(sql.getExerciseHistory, [ex.id, 'user-1'])).thenAnswer((_) async => []);
 
       final result = await local.getExerciseHistory('user-1', ex);
       expect(result, isEmpty);
@@ -73,7 +73,7 @@ void main() {
 
       await local.getExerciseHistory('abc', ex);
 
-      verify(db.rawQuery(sql.getExerciseHistory, [ex.name, 'abc'])).called(1);
+      verify(db.rawQuery(sql.getExerciseHistory, [ex.id, 'abc'])).called(1);
     },
   );
 }

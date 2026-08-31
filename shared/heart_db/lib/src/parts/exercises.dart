@@ -58,6 +58,7 @@ mixin _Exercises on _LocalDatabase
   Future<void> storeExercises(
     Iterable<Exercise> exercises, {
     String? userId,
+    String? locale,
   }) async {
     return _db.transaction(
       (txn) async {
@@ -81,6 +82,19 @@ mixin _Exercises on _LocalDatabase
           // missing one would leave the column untouched on conflict-update.
           row['movement'] = jsonEncode(each.movement.toMap());
           row['health'] = jsonEncode(each.health.toMap());
+          // unconditional for a sharper reason than the blobs: `toMap()` omits
+          // the key when null, and null is a meaning, not an absence — a row
+          // demoted from reviewed copy to machine copy (or to none, when it
+          // goes library → custom) must not keep a stale flag on the
+          // conflict-update.
+          row['validated'] = switch (each.validated) {
+            true => 1,
+            false => 0,
+            null => null,
+          };
+          // same trap for the slug: absent on a custom, and a row promoted
+          // into someone's customs must shed it rather than keep a stale one
+          row['key'] = each.key;
           // the unit preference is per-user (exercise_details), not a column on
           // the shared catalog row — see setExerciseUnit / getExerciseUnits.
           row.remove('unit_system');
@@ -92,21 +106,34 @@ mixin _Exercises on _LocalDatabase
 
           final columns = row.keys.join(', ');
           final placeholders = List.filled(row.length, '?').join(', ');
-          final updates = row.keys.where((k) => k != 'name').map((k) => '$k = EXCLUDED.$k').join(', ');
+          // `name` is in the update set on purpose: it is localized display
+          // copy now, and refreshing it in place — same id, new language — is
+          // how a locale change lands.
+          final updates = row.keys.where((k) => k != 'id').map((k) => '$k = EXCLUDED.$k').join(', ');
 
           batch.rawInsert(
             '''
             INSERT INTO $_exercises ($columns)
             VALUES ($placeholders)
-            ON CONFLICT(name) DO UPDATE SET $updates
+            ON CONFLICT(id) DO UPDATE SET $updates
             ''',
             row.values.toList(),
           );
         }
 
-        txn.insert(_syncs, {
-          'table_name': _exercises,
-        }, conflictAlgorithm: .replace);
+        // The locale is part of the cache key: localized columns are only as
+        // fresh as the Accept-Language tag they were fetched under. An upsert
+        // rather than REPLACE so a locale-less write — storing one user-created
+        // exercise — bumps the timestamp without wiping the recorded locale.
+        txn.rawInsert(
+          '''
+          INSERT INTO $_syncs (table_name, locale) VALUES (?, ?)
+          ON CONFLICT(table_name) DO UPDATE SET
+            synced_at = (datetime('now') || '+00:00'),
+            locale = coalesce(EXCLUDED.locale, locale)
+          ''',
+          [_exercises, locale],
+        );
 
         await batch.commit(noResult: true);
       },
@@ -115,6 +142,8 @@ mixin _Exercises on _LocalDatabase
 
   @override
   Future<void> setExerciseUnit({
+    // the exercise's uuid since v11 — the parameter keeps the interface's
+    // (stale) name until the next heart_models major
     required String exerciseName,
     required String userId,
     required MeasurementUnit? unit,
@@ -123,7 +152,7 @@ mixin _Exercises on _LocalDatabase
       (txn) async {
         final rows = await txn.query(
           _exerciseDetails,
-          where: 'exercise_name = ? AND user_id = ?',
+          where: 'exercise_id = ? AND user_id = ?',
           whereArgs: [exerciseName, userId],
         );
 
@@ -132,7 +161,7 @@ mixin _Exercises on _LocalDatabase
             txn.update(
               _exerciseDetails,
               {'unit_system': unit?.name},
-              where: 'exercise_name = ? AND user_id = ?',
+              where: 'exercise_id = ? AND user_id = ?',
               whereArgs: [exerciseName, userId],
             );
           default: // new
@@ -140,7 +169,7 @@ mixin _Exercises on _LocalDatabase
               _exerciseDetails,
               {
                 'unit_system': unit?.name,
-                'exercise_name': exerciseName,
+                'exercise_id': exerciseName,
                 'user_id': userId,
               },
               conflictAlgorithm: .replace,
@@ -154,7 +183,7 @@ mixin _Exercises on _LocalDatabase
   Future<Map<String, MeasurementUnit>> getExerciseUnits(String userId) async {
     final rows = await _db.query(
       _exerciseDetails,
-      columns: ['exercise_name', 'unit_system'],
+      columns: ['exercise_id', 'unit_system'],
       where: 'user_id = ? AND unit_system IS NOT NULL',
       whereArgs: [userId],
     );
@@ -163,7 +192,7 @@ mixin _Exercises on _LocalDatabase
       rows.map(
         (row) {
           return MapEntry(
-            row['exercise_name'] as String,
+            row['exercise_id'] as String,
             MeasurementUnit.fromString(row['unit_system'] as String),
           );
         },
@@ -178,7 +207,7 @@ mixin _Exercises on _LocalDatabase
     int? pageSize,
     String? anchor,
   }) {
-    return _db.rawQuery(sql.getExerciseHistory, [exercise.name, userId]).then<Iterable<ExerciseAct>>(
+    return _db.rawQuery(sql.getExerciseHistory, [exercise.id, userId]).then<Iterable<ExerciseAct>>(
       (rows) {
         if (rows.isEmpty) return [];
         final grouped = rows.fold<Map<String, List<Map<String, dynamic>>>>(
@@ -209,7 +238,7 @@ mixin _Exercises on _LocalDatabase
       .cardio => sql.distanceRecord,
       .duration => sql.durationRecord,
     };
-    return _db.rawQuery(query, [userId, exercise.name]).then(
+    return _db.rawQuery(query, [userId, exercise.id]).then(
       (rows) {
         return switch (rows) {
           [Map m] => m,
@@ -283,7 +312,7 @@ mixin _Exercises on _LocalDatabase
     String query, {
     int? limit,
   }) {
-    return _db.rawQuery(query, [userId, exercise.name, limit ?? 30]).then(
+    return _db.rawQuery(query, [userId, exercise.id, limit ?? 30]).then(
       (rows) {
         return rows.map(
           (row) {

@@ -57,6 +57,34 @@ const _schema = [
   healthSamplesIndex,
   // v10
   addExerciseHealth,
+  // v11
+  rekeyExercisesCreate,
+  rekeyExercisesCopy,
+  rekeyWorkoutExercisesCreate,
+  rekeyWorkoutExercisesCopy,
+  rekeySetsCreate,
+  rekeySetsCopy,
+  rekeyTemplateExercisesCreate,
+  rekeyTemplateExercisesCopy,
+  rekeyExerciseDetailsCreate,
+  rekeyExerciseDetailsCopy,
+  rekeyExerciseCharts,
+  rekeyDropSets,
+  rekeyDropWorkoutExercises,
+  rekeyDropTemplateExercises,
+  rekeyDropExerciseDetails,
+  rekeyDropExercises,
+  rekeyExercisesRename,
+  rekeyWorkoutExercisesRename,
+  rekeySetsRename,
+  rekeyTemplateExercisesRename,
+  rekeyExerciseDetailsRename,
+  rekeyWorkoutExercisesIndex1,
+  rekeyWorkoutExercisesIndex2,
+  rekeySetsIndex,
+  rekeyTemplateExercisesIndex,
+  rekeyExerciseDetailsIndex,
+  addSyncsLocale,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -66,7 +94,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 10,
+      version: 11,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
