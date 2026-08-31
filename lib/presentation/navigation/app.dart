@@ -55,11 +55,20 @@ class HeartApp extends StatelessWidget {
           create: (_) => AppTheme(),
         ),
         ChangeNotifierProvider<Exercises>(
-          create: (_) => Exercises(
-            onError: reportToSentry,
-            remoteService: api,
-            service: db,
-          ),
+          create: (_) {
+            final exercises = Exercises(
+              onError: reportToSentry,
+              remoteService: api,
+              service: db,
+            );
+            // sample templates arrive as content slugs plus per-locale
+            // names; the CDN client resolves the slugs through the catalog
+            // (loaded before any sample fetch — templates init is chained
+            // behind the catalog's) and picks names by the device language
+            cdn.resolveExercise = exercises.lookupByKey;
+            cdn.languageTag = languageTag;
+            return exercises;
+          },
         ),
         ChangeNotifierProvider<Stats>(
           create: (_) => Stats(
@@ -234,7 +243,12 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
   void didChangeLocales(List<Locale>? locales) {
     final tag = languageTag(locales?.firstOrNull);
     Api.instance.localize(tag);
-    if (mounted) Exercises.of(context).onLocaleChanged(tag);
+    if (mounted) {
+      Exercises.of(context).onLocaleChanged(tag);
+      // sample templates carry names picked at fetch time — same staleness,
+      // same cure
+      Templates.of(context).onLocaleChanged();
+    }
   }
 
   @override

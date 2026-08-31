@@ -48,6 +48,55 @@ void main() {
         expect(probe.notifications, 0); // samples do not trigger notify
       });
 
+      test('a locale change re-fetches the samples and notifies', () async {
+        // sample names are picked per language at fetch time; a mid-session
+        // language change must swap the batch in place, visibly
+        when(local.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+        when(config.getSampleTemplates()).thenAnswer((_) async => [tmpl(id: 's1', order: 0, name: 'Push Day')]);
+
+        await templates.init();
+        // the samples init is deliberately un-awaited; let it land
+        await pumpEventQueue();
+        expect(templates.samples.single.name, 'Push Day');
+        final before = probe.notifications;
+
+        when(config.getSampleTemplates()).thenAnswer((_) async => [tmpl(id: 's1', order: 0, name: 'Día de empuje')]);
+
+        await templates.onLocaleChanged();
+
+        expect(templates.samples.single.name, 'Día de empuje');
+        expect(probe.notifications, before + 1);
+      });
+
+      test('a failing samples fetch is routed to onError and costs only the samples', () async {
+        // static content ships on its own schedule and can lag the models —
+        // nobody awaits the samples init, so an escaping error would surface
+        // as an unhandled async exception on every launch
+        Object? reported;
+        templates = Templates(
+          remoteService: remote,
+          service: local,
+          configService: config,
+          folderService: localFolders,
+          remoteFolderService: remoteFolders,
+          filingService: filing,
+          onError: (e, {stacktrace}) => reported = e,
+        )..userId = 'u1';
+
+        final localTemplates = [tmpl(id: 't1', order: 1, name: 'L1')];
+        when(local.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+        when(config.getSampleTemplates()).thenThrow(ArgumentError('an exercise payload must carry its id'));
+        when(local.getTemplates('u1')).thenAnswer((_) async => localTemplates);
+
+        await templates.init();
+        await pumpEventQueue();
+
+        expect(reported, isA<ArgumentError>());
+        expect(templates.samples, isEmpty);
+        // the user's own templates are untouched by the samples failing
+        expect(templates.toList(), localTemplates);
+      });
+
       test('with userId: loads local templates and notifies when non-empty', () async {
         templates.userId = 'u1';
         final localTemplates = [tmpl(id: 't1', order: 1, name: 'L1')];
