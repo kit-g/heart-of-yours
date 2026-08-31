@@ -27,7 +27,7 @@ class _ThemeModePicker extends StatelessWidget with HasHaptic {
                       children: [
                         const Icon(Icons.settings_suggest_rounded),
                         const SizedBox(width: 4),
-                        Text(toSystemMode),
+                        Flexible(child: Text(toSystemMode, maxLines: 1, overflow: .ellipsis)),
                       ],
                     ),
                   ),
@@ -37,7 +37,7 @@ class _ThemeModePicker extends StatelessWidget with HasHaptic {
                       children: [
                         const Icon(Icons.wb_sunny_rounded),
                         const SizedBox(width: 4),
-                        Text(toLightMode),
+                        Flexible(child: Text(toLightMode, maxLines: 1, overflow: .ellipsis)),
                       ],
                     ),
                   ),
@@ -47,7 +47,7 @@ class _ThemeModePicker extends StatelessWidget with HasHaptic {
                       children: [
                         const Icon(Icons.nights_stay_rounded),
                         const SizedBox(width: 4),
-                        Text(toDarkMode),
+                        Flexible(child: Text(toDarkMode, maxLines: 1, overflow: .ellipsis)),
                       ],
                     ),
                   ),

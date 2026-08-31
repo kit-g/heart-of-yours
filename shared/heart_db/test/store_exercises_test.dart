@@ -62,10 +62,9 @@ void main() {
       ).called(1);
 
       verify(
-        txn.insert(
-          expectedSyncTable,
-          {'table_name': expectedTable},
-          conflictAlgorithm: ConflictAlgorithm.replace,
+        txn.rawInsert(
+          argThat(contains('INSERT INTO $expectedSyncTable')),
+          [expectedTable, null],
         ),
       ).called(1);
 
@@ -121,10 +120,9 @@ void main() {
       ).called(2);
 
       verify(
-        txn.insert(
-          expectedSyncTable,
-          {'table_name': expectedTable},
-          conflictAlgorithm: ConflictAlgorithm.replace,
+        txn.rawInsert(
+          argThat(contains('INSERT INTO $expectedSyncTable')),
+          [expectedTable, null],
         ),
       ).called(1);
 
@@ -140,14 +138,49 @@ void main() {
       verifyNever(batch.rawInsert(any, any));
 
       verify(
-        txn.insert(
-          expectedSyncTable,
-          {'table_name': expectedTable},
-          conflictAlgorithm: ConflictAlgorithm.replace,
+        txn.rawInsert(
+          argThat(contains('INSERT INTO $expectedSyncTable')),
+          [expectedTable, null],
         ),
       ).called(1);
 
       verify(batch.commit(noResult: true)).called(1);
+    },
+  );
+
+  test(
+    'should write validated unconditionally so a demoted flag clears',
+    () async {
+      // `toMap()` omits a null flag, and the conflict-update leaves absent
+      // keys stale — a row going library → custom would keep its old mark.
+      Object? boundValidated(String statement, List<Object?> values) {
+        final columns = RegExp(r'\(([^)]*)\)').firstMatch(statement)!.group(1)!.split(',');
+        return values[columns.indexWhere((column) => column.trim() == 'validated')];
+      }
+
+      await local.storeExercises([exercise(name: 'Push Up')]);
+
+      var [String statement, List<Object?> values] = verify(batch.rawInsert(captureAny, captureAny)).captured;
+      expect(boundValidated(statement, values), isNull);
+
+      await local.storeExercises([exercise(name: 'Push Up', validated: false)]);
+
+      [statement, values] = verify(batch.rawInsert(captureAny, captureAny)).captured;
+      expect(boundValidated(statement, values), 0);
+    },
+  );
+
+  test(
+    'should record the locale the catalog was fetched under',
+    () async {
+      await local.storeExercises([exercise()], locale: 'ru');
+
+      verify(
+        txn.rawInsert(
+          argThat(contains('INSERT INTO $expectedSyncTable')),
+          [expectedTable, 'ru'],
+        ),
+      ).called(1);
     },
   );
 

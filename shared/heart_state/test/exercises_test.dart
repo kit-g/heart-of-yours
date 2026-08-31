@@ -92,8 +92,8 @@ void main() {
       await sut.init();
 
       expect(sut.isInitialized, isTrue);
-      expect(sut.lookup(e1.name), e1);
-      expect(sut.lookup(e2.name), e2);
+      expect(sut.lookup(e1.id), e1);
+      expect(sut.lookup(e2.id), e2);
       expect(probe.notifications, 2); // 1 for local, 1 for remote
 
       verify(local.getExercises(userId: anyNamed('userId'))).called(1);
@@ -112,7 +112,7 @@ void main() {
       await sut.init();
 
       expect(sut.isInitialized, isTrue);
-      expect(sut.lookup(e1.name), e1);
+      expect(sut.lookup(e1.id), e1);
       expect(probe.notifications, 1); // 1 for remote (none for empty local)
 
       verify(remote.getExercises()).called(1);
@@ -127,6 +127,62 @@ void main() {
       await sut.init(lastSync: DateTime(2020, 1, 1));
 
       expect(err, isNotNull);
+    });
+  });
+
+  group('onLocaleChanged()', () {
+    // The server resolves `name`/`instructions` per request from
+    // `Accept-Language`; `id` is the identity that survives it. A locale
+    // change must overwrite display copy in place, never fork the entry.
+    test('re-fetches and overwrites display copy under the same identity', () async {
+      final en = ex('Bench Press');
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
+      when(remote.getExercises()).thenAnswer((_) async => <Exercise>[en]);
+      await sut.init(locale: 'en');
+      expect(sut.lookup(en.id)?.name, 'Bench Press');
+
+      final ru = Exercise.fromJson({
+        'id': en.id,
+        'name': 'Жим лёжа',
+        'category': 'Weighted Body Weight',
+        'target': 'Chest',
+      });
+      when(remote.getExercises()).thenAnswer((_) async => <Exercise>[ru]);
+
+      await sut.onLocaleChanged('ru');
+
+      expect(sut.lookup(en.id)?.name, 'Жим лёжа');
+      expect(sut.where((each) => each.id == en.id), hasLength(1));
+    });
+
+    test('the same tag again is a no-op', () async {
+      final en = ex('Bench Press');
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
+      when(remote.getExercises()).thenAnswer((_) async => <Exercise>[en]);
+      await sut.init(locale: 'en');
+
+      // were a fetch to happen, this copy would show up
+      when(remote.getExercises()).thenAnswer(
+        (_) async => <Exercise>[
+          Exercise.fromJson({
+            'id': en.id,
+            'name': 'Жим лёжа',
+            'category': 'Weighted Body Weight',
+            'target': 'Chest',
+          }),
+        ],
+      );
+
+      await sut.onLocaleChanged('en');
+
+      expect(sut.lookup(en.id)?.name, 'Bench Press');
+    });
+
+    test('a change before init is only recorded — init fetches under the new header anyway', () async {
+      await sut.onLocaleChanged('ru');
+
+      expect(sut.isInitialized, isFalse);
+      expect(sut, isEmpty);
     });
   });
 
@@ -147,6 +203,7 @@ void main() {
     test('applies filters when filters=true', () async {
       final a = ex('Bench Press');
       final b = Exercise.fromJson({
+        'id': 'id-treadmill',
         'name': 'Treadmill',
         'category': 'Cardio',
         'target': 'Cardio',

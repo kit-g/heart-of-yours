@@ -11,15 +11,20 @@ const pushUpMovement = {
 };
 
 Exercise exercise({
+  String? id,
   String name = 'Push Up',
   String target = 'Chest',
   String category = 'Weighted Body Weight',
   Map<String, dynamic>? movement,
+  bool? validated,
 }) {
   return Exercise.fromJson({
+    // deterministic per name, so fixtures stay self-consistent across calls
+    'id': id ?? 'id-${name.toLowerCase().replaceAll(' ', '-')}',
     'name': name,
     'category': category,
     'target': target,
+    'validated': ?validated,
     'asset': 'https://dev.media.heart-of.me/exercises/$name/asset.gif',
     'assetWidth': 1080,
     'assetHeight': 1080,

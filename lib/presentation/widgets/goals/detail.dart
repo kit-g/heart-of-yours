@@ -149,8 +149,8 @@ class _GoalDetailState extends State<GoalDetail> {
       child: ExerciseChart(
         // the whole ladder: there is room for it here, unlike on a dashboard card
         thresholds: goalThresholds(context, goal, metric: metric, settings: settings),
-        callback: () => Exercises.of(context).getChartExerciseMetics(metric, exercise.name),
-        refreshKey: (exercise.name, metric, goal.stages.length),
+        callback: () => Exercises.of(context).getChartExerciseMetics(metric, exercise.id),
+        refreshKey: (exercise.id, metric, goal.stages.length),
         converter: convert,
         getLeftLabel: metric.leftLabel(Theme.of(context).textTheme.bodySmall),
         getTooltip: metric.tooltip,

@@ -11,7 +11,7 @@ mixin _Timers on _LocalDatabase implements TimersService {
       (txn) async {
         final rows = await txn.query(
           _exerciseDetails,
-          where: 'exercise_name = ? AND user_id = ?',
+          where: 'exercise_id = ? AND user_id = ?',
           whereArgs: [exerciseName, userId],
         );
 
@@ -20,7 +20,7 @@ mixin _Timers on _LocalDatabase implements TimersService {
             txn.update(
               _exerciseDetails,
               {'rest_timer': seconds},
-              where: 'exercise_name = ? AND user_id = ?',
+              where: 'exercise_id = ? AND user_id = ?',
               whereArgs: [exerciseName, userId],
             );
           default: // new
@@ -28,7 +28,7 @@ mixin _Timers on _LocalDatabase implements TimersService {
               _exerciseDetails,
               {
                 'rest_timer': seconds,
-                'exercise_name': exerciseName,
+                'exercise_id': exerciseName,
                 'user_id': userId,
               },
               conflictAlgorithm: .replace,
@@ -42,7 +42,7 @@ mixin _Timers on _LocalDatabase implements TimersService {
   Future<Map<String, int>> getTimers(String userId) async {
     final rows = await _db.query(
       _exerciseDetails,
-      columns: ['exercise_name', 'rest_timer'],
+      columns: ['exercise_id', 'rest_timer'],
       where: 'user_id = ? AND rest_timer IS NOT NULL',
       whereArgs: [userId],
     );
@@ -51,7 +51,7 @@ mixin _Timers on _LocalDatabase implements TimersService {
       rows.map(
         (row) {
           return MapEntry(
-            row['exercise_name'] as String,
+            row['exercise_id'] as String,
             row['rest_timer'] as int,
           );
         },

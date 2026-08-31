@@ -85,31 +85,37 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                         false => null,
                       },
                       key: _targetKey,
-                      child: Stack(
+                      // a Row, not a Stack with a left-pinned icon: a wide
+                      // label (ru «Категория») slid under the icon. The
+                      // trailing spacer mirrors the icon so the label centers
+                      // on the button, and long copy ellipsizes.
+                      child: Row(
                         children: [
-                          Positioned(
-                            left: 0,
-                            child: Icon(
-                              Icons.filter_alt_rounded,
-                              // an active filter sits on the accent fill,
-                              // where the muted grey blends away
-                              color: switch (exercises.targets.isEmpty) {
-                                true => colorScheme.onSurfaceVariant,
-                                false => colorScheme.onTertiaryContainer,
-                              },
-                            ),
+                          Icon(
+                            Icons.filter_alt_rounded,
+                            // an active filter sits on the accent fill,
+                            // where the muted grey blends away
+                            color: switch (exercises.targets.isEmpty) {
+                              true => colorScheme.onSurfaceVariant,
+                              false => colorScheme.onTertiaryContainer,
+                            },
                           ),
-                          Center(
-                            child: Text(
-                              target,
-                              style: textTheme.titleSmall?.copyWith(
-                                color: switch (exercises.targets.isEmpty) {
-                                  true => colorScheme.onSurfaceVariant,
-                                  false => colorScheme.onTertiaryContainer,
-                                },
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                target,
+                                maxLines: 1,
+                                overflow: .ellipsis,
+                                style: textTheme.titleSmall?.copyWith(
+                                  color: switch (exercises.targets.isEmpty) {
+                                    true => colorScheme.onSurfaceVariant,
+                                    false => colorScheme.onTertiaryContainer,
+                                  },
+                                ),
                               ),
                             ),
                           ),
+                          const SizedBox(width: 24),
                         ],
                       ),
                       onPressed: () async {
@@ -134,7 +140,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                                         style: textTheme.titleLarge,
                                       ),
                                       Text(
-                                        category.value,
+                                        category.label(L.of(context)),
                                         style: textTheme.titleSmall,
                                       ),
                                     ],
@@ -157,29 +163,32 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                         false => null,
                       },
                       key: _categoryKey,
-                      child: Stack(
+                      // Row for the same reason as the target button above
+                      child: Row(
                         children: [
-                          Positioned(
-                            left: 0,
-                            child: Icon(
-                              Icons.filter_alt_rounded,
-                              color: switch (exercises.categories.isEmpty) {
-                                true => colorScheme.onSurfaceVariant,
-                                false => colorScheme.onTertiaryContainer,
-                              },
-                            ),
+                          Icon(
+                            Icons.filter_alt_rounded,
+                            color: switch (exercises.categories.isEmpty) {
+                              true => colorScheme.onSurfaceVariant,
+                              false => colorScheme.onTertiaryContainer,
+                            },
                           ),
-                          Center(
-                            child: Text(
-                              category,
-                              style: textTheme.titleSmall?.copyWith(
-                                color: switch (exercises.categories.isEmpty) {
-                                  true => colorScheme.onSurfaceVariant,
-                                  false => colorScheme.onTertiaryContainer,
-                                },
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                category,
+                                maxLines: 1,
+                                overflow: .ellipsis,
+                                style: textTheme.titleSmall?.copyWith(
+                                  color: switch (exercises.categories.isEmpty) {
+                                    true => colorScheme.onSurfaceVariant,
+                                    false => colorScheme.onTertiaryContainer,
+                                  },
+                                ),
                               ),
                             ),
                           ),
+                          const SizedBox(width: 24),
                         ],
                       ),
                       onPressed: () async {
@@ -197,7 +206,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                                     exercises.addFilter(category);
                                   },
                                   child: Text(
-                                    category.value,
+                                    category.label(L.of(context)),
                                     style: textTheme.titleSmall,
                                   ),
                                 );
@@ -252,11 +261,12 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                             label: Padding(
                               padding: const .symmetric(horizontal: 4),
                               child: Text(
-                                // category and target carry their own English;
-                                // the movement filters carry identifiers and
-                                // are worded by the presentation layer
+                                // every filter carries an identifier; the
+                                // presentation layer words them
                                 switch (filter) {
                                   MovementFilter filter => filter.chipLabel(L.of(context)),
+                                  Category category => category.label(L.of(context)),
+                                  Target target => target.label(L.of(context)),
                                   _ => filter.value,
                                 },
                                 style: textTheme.bodyMedium,
@@ -296,7 +306,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     preferences: preferences,
                     onExerciseSelected: onExerciseSelected,
                     selected: exercises.hasSelected(exercise),
-                    highlighted: exercise.name == highlightedName,
+                    highlighted: exercise.id == highlightedName,
                   );
                 },
                 separatorBuilder: (_, _) {

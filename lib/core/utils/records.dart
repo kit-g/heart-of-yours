@@ -44,7 +44,7 @@ Future<List<AchievedRecord>> recordsSetBy(
 
   for (final entry in workout) {
     final exercise = entry.exercise;
-    if (!seen.add(exercise.name)) continue;
+    if (!seen.add(exercise.id)) continue;
 
     final records = await lookup(exercise);
     if (records == null) continue;

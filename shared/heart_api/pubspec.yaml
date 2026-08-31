@@ -12,7 +12,7 @@ dependencies:
       url: "https://github.com/kit-g/heart-api.git"
       path: "shared/heart_models"
       ref: "main"
-    version: 1.9.0
+    version: 2.0.0
   http: 1.6.0
   network_utils:
     git:

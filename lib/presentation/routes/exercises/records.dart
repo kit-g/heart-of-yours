@@ -99,7 +99,7 @@ class _Content extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
-    final unit = Exercises.watch(context).unitFor(exercise.name);
+    final unit = Exercises.watch(context).unitFor(exercise.id);
     final formats = RecordFormats(l: l, prefs: prefs, unit: unit);
 
     final tiles = _tiles(l, formats);

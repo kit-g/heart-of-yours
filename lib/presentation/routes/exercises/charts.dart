@@ -9,7 +9,7 @@ class _Charts extends StatelessWidget {
   Widget build(BuildContext context) {
     final prefs = Preferences.watch(context);
     final exercises = Exercises.of(context);
-    final unit = Exercises.watch(context).unitFor(exercise.name);
+    final unit = Exercises.watch(context).unitFor(exercise.id);
     // watched: reaching a rung redraws the line on the chart that measures it
     final goals = Goals.watch(context);
     final ThemeData(:textTheme) = Theme.of(context);
@@ -31,15 +31,15 @@ class _Charts extends StatelessWidget {
           // metric. Converted with this exercise's own unit, the one the series
           // beside it is plotted in — the user default would land elsewhere.
           thresholds: [
-            for (final goal in goalsOnChart(goals, exerciseName: exercise.name, metric: type, exercises: exercises))
+            for (final goal in goalsOnChart(goals, exerciseId: exercise.id, metric: type))
               ...goalThresholds(context, goal, metric: type, settings: prefs, unit: unit, nextOnly: true),
           ],
           // only the first chart carries the full "no data yet" hint; the rest
           // stay quiet so an empty exercise doesn't repeat it N times
           emptyState: index == 0 ? const _EmptyState() : const SizedBox.shrink(),
-          callback: () => exercises.getChartExerciseMetics(type, exercise.name, limit: _exerciseHistoryLimit),
+          callback: () => exercises.getChartExerciseMetics(type, exercise.id, limit: _exerciseHistoryLimit),
           timeline: true,
-          refreshKey: (type, exercise.name),
+          refreshKey: (type, exercise.id),
           // the string still travels as [label] — it feeds the chart's
           // spoken summary — while the row adds the dashboard toggle
           label: title,
@@ -78,14 +78,16 @@ class _DashboardToggle extends StatelessWidget {
     final charts = Charts.watch(context);
     final L(:addChartToProfile, :removeChartFromProfile, :chartAddedToProfile) = L.of(context);
 
-    // the dashboard card this chart would duplicate, if it is already there
-    final existing = charts.where((each) => each.exerciseName == exercise.name && each.type == type).firstOrNull;
+    // the dashboard card this chart would duplicate, if it is already there.
+    // The preference's getter keeps its stale name — the value is the
+    // exercise id, the identity that survives localization.
+    final existing = charts.where((each) => each.exerciseName == exercise.id && each.type == type).firstOrNull;
 
     return switch (existing) {
       null => FeedbackButton.circular(
         tooltip: addChartToProfile,
         onPressed: () {
-          charts.addPreference(.exercise(exercise.name, type));
+          charts.addPreference(.exercise(exercise.id, type));
           // the result lives on another tab, so confirm it landed
           snack(context, chartAddedToProfile);
         },

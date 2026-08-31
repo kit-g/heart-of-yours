@@ -23,14 +23,16 @@ void main() {
   /// [instructions] is not decoration: `Exercise.hasInfo` gates whether the
   /// About tab exists at all, and it looks only at asset, thumbnail and
   /// instructions — never at movement.
-  Exercise ex(String name, {Map<String, dynamic>? movement}) {
+  Exercise ex(String name, {Map<String, dynamic>? movement, bool? validated}) {
     return Exercise.fromJson({
+      'id': 'id-${name.toLowerCase().replaceAll(' ', '-')}',
       'name': name,
       'category': 'Machine',
       'target': 'Back',
       'archived': false,
       'instructions': 'Pull the bar down.',
       'movement': ?movement,
+      'validated': ?validated,
     });
   }
 
@@ -147,6 +149,26 @@ void main() {
       // dialog sitting on top of a live workout
       expect(find.byType(ActionChip), findsNothing);
       expect(find.byType(Chip), findsNWidgets(3));
+    });
+  });
+
+  group('machine-copy mark', () {
+    testWidgets('machine-authored copy is disclosed above the instructions', (tester) async {
+      await pumpAbout(tester, ex('Lat Pulldown (Machine)', validated: false));
+
+      expect(find.text('Machine-translated'), findsOneWidget);
+    });
+
+    testWidgets('reviewed copy renders unmarked', (tester) async {
+      await pumpAbout(tester, ex('Lat Pulldown (Machine)', validated: true));
+
+      expect(find.text('Machine-translated'), findsNothing);
+    });
+
+    testWidgets('user-created copy takes no stance and renders unmarked', (tester) async {
+      await pumpAbout(tester, ex('My Curl'));
+
+      expect(find.text('Machine-translated'), findsNothing);
     });
   });
 }

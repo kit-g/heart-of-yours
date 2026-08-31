@@ -42,13 +42,20 @@ class GreetingsPane extends StatelessWidget {
                 mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    title,
-                    style: textTheme.displaySmall?.copyWith(
-                      color: fontColor,
-                      fontFamily: 'Daydream',
+                  // scaled to one line rather than wrapped: the titles are
+                  // short phrases in every locale, but a single long word —
+                  // «С возвращением!» — otherwise breaks mid-word, since
+                  // Flutter doesn't hyphenate
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      title,
+                      style: textTheme.displaySmall?.copyWith(
+                        color: fontColor,
+                        fontFamily: 'Daydream',
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   Text(

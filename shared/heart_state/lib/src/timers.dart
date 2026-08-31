@@ -35,6 +35,7 @@ class Timers with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Keyed by exercise id.
   int? operator [](String exercise) => _timers[exercise];
 
   /// Whether the user has any rest-timer preference configured.
