@@ -11,7 +11,7 @@ void main() {
   final txn = MockTransaction();
 
   const table = 'exercise_details';
-  const exerciseName = 'Push Up';
+  const exerciseName = 'id-push-up';
   const userId = 'user-1';
 
   setUp(
@@ -51,7 +51,7 @@ void main() {
         txn.update(
           table,
           {'rest_timer': 90},
-          where: 'exercise_name = ? AND user_id = ?',
+          where: 'exercise_id = ? AND user_id = ?',
           whereArgs: [exerciseName, userId],
         ),
       ).called(1);
@@ -80,7 +80,7 @@ void main() {
           table,
           {
             'rest_timer': 60,
-            'exercise_name': exerciseName,
+            'exercise_id': exerciseName,
             'user_id': userId,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -111,7 +111,7 @@ void main() {
           table,
           {
             'rest_timer': null,
-            'exercise_name': exerciseName,
+            'exercise_id': exerciseName,
             'user_id': userId,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,

@@ -21,6 +21,8 @@ class ListenerProbe {
 // Convenience builders for real domain models used in tests
 Exercise ex(String name, {Map<String, dynamic>? movement, bool archived = false}) {
   return Exercise.fromJson({
+    // deterministic per name, so fixtures stay self-consistent across calls
+    'id': 'id-${name.toLowerCase().replaceAll(' ', '-')}',
     'name': name,
     'category': 'Weighted Body Weight',
     'target': 'Chest',

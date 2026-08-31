@@ -1,25 +1,21 @@
 part of 'goals.dart';
 
-/// The goals whose rungs belong on a chart of [metric] for the exercise named
-/// [exerciseName].
-///
-/// A dashboard chart addresses its exercise by *name* — that is what the
-/// metrics queries are keyed by — while a goal addresses its own by *id*, so
-/// the catalog is what joins the two.
+/// The goals whose rungs belong on a chart of [metric] for the exercise with
+/// [exerciseId] — the same server id both charts and goals address exercises
+/// by since schema v11.
 ///
 /// Recurring goals are left out. Their target is per-period while the chart
 /// plots one point per session, so a line drawn at it would sit on a scale the
 /// series is not on — the same reason [Goals.observeProgress] skips them.
 Iterable<Goal> goalsOnChart(
   Iterable<Goal> goals, {
-  required String exerciseName,
+  required String exerciseId,
   required ChartPreferenceType metric,
-  required Exercises exercises,
 }) {
   return goals.where(
     (goal) {
       if (goal.cadence != null || goal.metric.chart != metric) return false;
-      return goalExercise(goal, exercises)?.name == exerciseName;
+      return goal.exerciseId == exerciseId;
     },
   );
 }

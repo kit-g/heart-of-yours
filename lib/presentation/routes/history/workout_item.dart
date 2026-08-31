@@ -42,8 +42,8 @@ class WorkoutItem extends StatelessWidget {
           _formatSet(
             context,
             exercise.best,
-            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.weightUnit,
-            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.distanceUnit,
+            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
+            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
           ),
           exercise.exercise.name,
         ),
@@ -170,8 +170,8 @@ class WorkoutItem extends StatelessWidget {
                           _formatSet(
                             context,
                             exercise.best,
-                            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.weightUnit,
-                            Exercises.of(context).unitFor(exercise.exercise.name) ?? prefs.distanceUnit,
+                            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit,
+                            Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.distanceUnit,
                           ),
                           // the result column reads in full ink and lines up
                           // digit-for-digit

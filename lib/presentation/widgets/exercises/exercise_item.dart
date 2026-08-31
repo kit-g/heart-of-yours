@@ -61,7 +61,7 @@ class ExerciseItem extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            exercise.target.value,
+                            exercise.target.label(L.of(context)),
                             style: style,
                           ),
                           Text(
@@ -69,7 +69,7 @@ class ExerciseItem extends StatelessWidget {
                             style: style,
                           ),
                           Text(
-                            exercise.category.value,
+                            exercise.category.label(L.of(context)),
                             style: style,
                           ),
                         ],
@@ -86,7 +86,7 @@ class ExerciseItem extends StatelessWidget {
                     child: Icon(Icons.check_circle_rounded),
                   ),
                   false => Selector<PreviousExercises, Map<String, dynamic>?>(
-                    selector: (_, provider) => provider.last(exercise.name),
+                    selector: (_, provider) => provider.last(exercise.id),
                     builder: (_, metric, _) {
                       return switch (metric) {
                         Map<String, dynamic> m => Align(

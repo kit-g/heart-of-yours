@@ -62,7 +62,7 @@ class _HistoryState extends State<_History> {
   @override
   Widget build(BuildContext context) {
     final prefs = Preferences.watch(context);
-    final unit = Exercises.watch(context).unitFor(widget.exercise.name);
+    final unit = Exercises.watch(context).unitFor(widget.exercise.id);
 
     return ValueListenableBuilder(
       valueListenable: _query,

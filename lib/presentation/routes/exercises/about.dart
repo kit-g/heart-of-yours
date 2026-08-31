@@ -13,8 +13,8 @@ class _About extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Exercise(:asset, :muscles, :instructions, :category, :target, :movement) = exercise;
-    final ThemeData(:colorScheme) = Theme.of(context);
+    final Exercise(:asset, :muscles, :instructions, :category, :target, :movement, :validated) = exercise;
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     return SingleChildScrollView(
       padding: const .symmetric(vertical: 8),
@@ -132,6 +132,24 @@ class _About extends StatelessWidget {
                 );
               },
             ),
+          // provenance, stated only when there is something to disclose:
+          // `false` is machine-authored copy for the served language, awaiting
+          // human review. `true` (reviewed) and `null` (the user's own words)
+          // both render unmarked — see the locale API contract.
+          if (validated == false)
+            Padding(
+              padding: const .fromLTRB(16, 0, 16, 4),
+              child: Row(
+                spacing: 4,
+                children: [
+                  Icon(Icons.auto_awesome, size: 14, color: colorScheme.onSurfaceVariant),
+                  Text(
+                    L.of(context).machineTranslatedCopy,
+                    style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
           if (instructions case String instructions when instructions.isNotEmpty)
             Padding(
               padding: const .symmetric(horizontal: 16),
@@ -178,10 +196,11 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme) = Theme.of(context);
+    // all three carry identifiers, not words — the presentation layer names them
     final label = Text(
       switch (filter) {
-        Target(:final icon, :final value) => '$icon  $value',
-        // carries an identifier, not words — the presentation layer names it
+        Target target => '${target.icon}  ${target.label(L.of(context))}',
+        Category category => category.label(L.of(context)),
         MovementFilter filter => filter.label(L.of(context)),
         _ => filter.value,
       },

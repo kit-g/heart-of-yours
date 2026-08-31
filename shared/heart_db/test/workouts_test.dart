@@ -311,7 +311,7 @@ void main() {
               'workout_exercises',
               {
                 'workout_id': workoutId,
-                'exercise_id': we.exercise.name,
+                'exercise_id': we.exercise.id,
                 'id': we.id,
                 // lands at the end of the workout
                 'exercise_order': 3,
@@ -856,12 +856,12 @@ void main() {
             ),
           ).called(2);
 
-          // Verify workout_exercises inserted with correct exercise names
+          // Verify workout_exercises inserted with correct exercise ids
           verify(
             batch.insert(
               'workout_exercises',
               argThat(
-                containsPair('exercise_id', 'Push Up'),
+                containsPair('exercise_id', 'id-push-up'),
               ),
               conflictAlgorithm: ConflictAlgorithm.replace,
             ),

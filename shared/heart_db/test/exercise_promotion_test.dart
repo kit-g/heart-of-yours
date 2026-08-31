@@ -24,6 +24,7 @@ void main() {
 
   Exercise landminePress({required bool own}) {
     return Exercise.fromJson({
+      'id': 'id-landmine-press',
       'name': 'Landmine Press',
       'category': 'Barbell',
       'target': 'Shoulders',
@@ -54,5 +55,31 @@ void main() {
     final rows = await db.query('exercises', where: 'name = ?', whereArgs: ['Landmine Press']);
     expect(rows.single['own'], 1);
     expect(rows.single['user_id'], 'u1');
+  });
+
+  test('the content slug round-trips, and sheds like the owner does', () async {
+    Exercise benchPress({String? key}) {
+      return Exercise.fromJson({
+        'id': 'id-bench-press',
+        'key': ?key,
+        'name': 'Bench Press (Barbell)',
+        'category': 'Barbell',
+        'target': 'Chest',
+        'archived': false,
+      });
+    }
+
+    await local.storeExercises([benchPress(key: 'bench-press-barbell')], userId: 'u1');
+
+    final (_, stored) = await local.getExercises(userId: 'u1');
+    expect(stored.single.key, 'bench-press-barbell');
+
+    // `toMap()` omits a null slug, and the conflict-update leaves absent keys
+    // stale — the same mechanism as user_id above; the unconditional row
+    // write is what clears it
+    await local.storeExercises([benchPress()], userId: 'u1');
+
+    final (_, restored) = await local.getExercises(userId: 'u1');
+    expect(restored.single.key, isNull);
   });
 }

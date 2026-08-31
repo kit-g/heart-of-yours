@@ -43,7 +43,7 @@ void main() {
   group('strength', () {
     test('each record carries its own set, workout and date', () async {
       final ex = exercise(name: 'Bench', category: 'Barbell');
-      stub(ex.name, [
+      stub(ex.id, [
         // heaviest single, low reps
         row(weight: 100, reps: 3, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
         // best volume and best e1rm live on a different set
@@ -72,7 +72,7 @@ void main() {
 
     test('rep maxes keep the best weight per rep count, first achievement wins ties', () async {
       final ex = exercise(name: 'Squat', category: 'Barbell');
-      stub(ex.name, [
+      stub(ex.id, [
         row(weight: 100, reps: 5, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
         // same weight at the same reps later must not steal the record
         row(weight: 100, reps: 5, workoutId: 'w2', start: '2026-02-01T10:00:00Z'),
@@ -90,7 +90,7 @@ void main() {
 
     test('a heaviest set with null reps still counts, without inventing reps', () async {
       final ex = exercise(name: 'Press', category: 'Dumbbell');
-      stub(ex.name, [
+      stub(ex.id, [
         row(weight: 30, reps: 8, workoutId: 'w1'),
         row(weight: 40, reps: null, workoutId: 'w2'),
       ]);
@@ -106,7 +106,7 @@ void main() {
   group('other categories', () {
     test('reps only', () async {
       final ex = exercise(name: 'Pull Up', category: 'Reps Only');
-      stub(ex.name, [
+      stub(ex.id, [
         row(reps: 10, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
         row(reps: 14, workoutId: 'w2', start: '2026-02-01T10:00:00Z'),
       ]);
@@ -118,7 +118,7 @@ void main() {
 
     test('assisted body weight treats less assistance as the record', () async {
       final ex = exercise(name: 'Assisted Dip', category: 'Assisted Body Weight');
-      stub(ex.name, [
+      stub(ex.id, [
         row(weight: 20, reps: 8, workoutId: 'w1'),
         row(weight: 10, reps: 5, workoutId: 'w2'),
       ]);
@@ -130,7 +130,7 @@ void main() {
 
     test('duration', () async {
       final ex = exercise(name: 'Plank', category: 'Duration');
-      stub(ex.name, [
+      stub(ex.id, [
         row(duration: 60, workoutId: 'w1'),
         row(duration: 90, workoutId: 'w2'),
       ]);
@@ -142,7 +142,7 @@ void main() {
 
     test('cardio: distance, duration and pace can come from different sets', () async {
       final ex = exercise(name: 'Run', category: 'Cardio');
-      stub(ex.name, [
+      stub(ex.id, [
         // 5 km in 30 min: longest distance, but slower
         row(distance: 5, duration: 1800, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
         // 2 km in 600 s: best pace
@@ -166,13 +166,13 @@ void main() {
   group('degenerate inputs', () {
     test('never performed yields null', () async {
       final ex = exercise(name: 'Ghost', category: 'Barbell');
-      stub(ex.name, []);
+      stub(ex.id, []);
       expect(await local.getRecord('user-1', ex), isNull);
     });
 
     test('rows with only nulls yield null, not an empty records card', () async {
       final ex = exercise(name: 'Empty', category: 'Barbell');
-      stub(ex.name, [row(weight: null, reps: null)]);
+      stub(ex.id, [row(weight: null, reps: null)]);
       expect(await local.getRecord('user-1', ex), isNull);
     });
   });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -158,7 +159,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                             HapticFeedback.mediumImpact();
                                             target.value = selected ? each : null;
                                           },
-                                          label: Text(each.value),
+                                          label: Text(each.label(L.of(context))),
                                         );
                                       },
                                     ),
@@ -192,7 +193,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                             HapticFeedback.mediumImpact();
                                             category.value = selected ? each : null;
                                           },
-                                          label: Text(each.value),
+                                          label: Text(each.label(L.of(context))),
                                         );
                                       },
                                     ),

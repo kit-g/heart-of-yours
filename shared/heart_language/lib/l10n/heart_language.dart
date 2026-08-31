@@ -6,6 +6,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'heart_language_en.dart';
+import 'heart_language_es.dart';
+import 'heart_language_fr.dart';
 import 'heart_language_ru.dart';
 
 // ignore_for_file: type=lint
@@ -90,7 +92,13 @@ abstract class L {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('en', 'CA'), Locale('ru')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('en', 'CA'),
+    Locale('es'),
+    Locale('fr'),
+    Locale('ru'),
+  ];
 
   /// Label
   ///
@@ -1514,7 +1522,7 @@ abstract class L {
   /// **'Also try'**
   String get alsoTry;
 
-  /// Generic label
+  /// Exercise detail tab: overview and technique of the exercise (not about the app)
   ///
   /// In en, this message translates to:
   /// **'About'**
@@ -2539,6 +2547,384 @@ abstract class L {
   /// In en, this message translates to:
   /// **'These didn\'t match anything in the library, so they came over as your custom exercises:'**
   String get importNewExercisesBody;
+
+  /// Small provenance mark above exercise instructions whose copy for the current language is machine-authored and not yet human-reviewed (Exercise.validated == false)
+  ///
+  /// In en, this message translates to:
+  /// **'Machine-translated'**
+  String get machineTranslatedCopy;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Weighted Body Weight'**
+  String get categoryWeightedBodyWeight;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Assisted Body Weight'**
+  String get categoryAssistedBodyWeight;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Reps Only'**
+  String get categoryRepsOnly;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Cardio'**
+  String get categoryCardio;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get categoryDuration;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Machine'**
+  String get categoryMachine;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Dumbbell'**
+  String get categoryDumbbell;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Barbell'**
+  String get categoryBarbell;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Core'**
+  String get targetCore;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Arms'**
+  String get targetArms;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get targetBack;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Chest'**
+  String get targetChest;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Legs'**
+  String get targetLegs;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Shoulders'**
+  String get targetShoulders;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get targetOther;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Olympic'**
+  String get targetOlympic;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Full Body'**
+  String get targetFullBody;
+
+  /// Exercise target (body part) label
+  ///
+  /// In en, this message translates to:
+  /// **'Cardio'**
+  String get targetCardio;
+
+  /// Skill-demand level, in the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get skillLow;
+
+  /// Skill-demand level, in the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get skillModerate;
+
+  /// Skill-demand level, in the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get skillHigh;
+
+  /// Movement-path stability, in the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get stabilityFree;
+
+  /// Movement-path stability, in the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Supported'**
+  String get stabilitySupported;
+
+  /// Movement-path stability, in the movement filter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Machine'**
+  String get stabilityMachine;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Calf Raise'**
+  String get patternCalfRaise;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Steady-State Cardio'**
+  String get patternCardioSteady;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Chest Dip'**
+  String get patternChestDip;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Chest Fly'**
+  String get patternChestFly;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Core Bracing'**
+  String get patternCoreBracing;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Deadlift from Floor'**
+  String get patternDeadliftFloor;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Decline Press'**
+  String get patternDeclinePress;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Elbow Extension'**
+  String get patternElbowExtension;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Elbow Flexion'**
+  String get patternElbowFlexion;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Forearm'**
+  String get patternForearm;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Front Raise'**
+  String get patternFrontRaise;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Full-Body Conditioning'**
+  String get patternFullBodyConditioning;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Glute Isolation'**
+  String get patternGluteIsolation;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Hip Abduction'**
+  String get patternHipAbduction;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Hip Adduction'**
+  String get patternHipAdduction;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Hip Bridge'**
+  String get patternHipExtensionBridge;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Hanging Leg Raise'**
+  String get patternHipFlexionHanging;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Stiff-Legged Hinge'**
+  String get patternHipHingeStifflegged;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Horizontal Press'**
+  String get patternHorizontalPress;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Horizontal Row'**
+  String get patternHorizontalRow;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Incline Press'**
+  String get patternInclinePress;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Knee Extension'**
+  String get patternKneeExtension;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Knee Flexion'**
+  String get patternKneeFlexion;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Lateral Raise'**
+  String get patternLateralRaise;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Lunge & Split Squat'**
+  String get patternLungeSplit;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Mobility'**
+  String get patternMobility;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Olympic Lift'**
+  String get patternOlympicLift;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Lower-Body Plyometrics'**
+  String get patternPlyometricLower;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Pullover'**
+  String get patternPullover;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Rear Delt'**
+  String get patternRearDelt;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Shrug'**
+  String get patternShrug;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Spinal Extension'**
+  String get patternSpinalExtension;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Squat'**
+  String get patternSquatBilateral;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Trunk Flexion'**
+  String get patternTrunkFlexion;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Trunk Rotation'**
+  String get patternTrunkLateralRotation;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Upright Row'**
+  String get patternUprightRow;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical Press'**
+  String get patternVerticalPress;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical Pull'**
+  String get patternVerticalPull;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
@@ -2550,7 +2936,7 @@ class _LDelegate extends LocalizationsDelegate<L> {
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'ru'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en', 'es', 'fr', 'ru'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_LDelegate old) => false;
@@ -2573,6 +2959,10 @@ L lookupL(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return LEn();
+    case 'es':
+      return LEs();
+    case 'fr':
+      return LFr();
     case 'ru':
       return LRu();
   }

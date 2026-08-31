@@ -72,10 +72,11 @@ class _RecordsState extends State<_Records> {
     Exercises exercises,
   ) {
     // one line per exercise, its records strung together — a list of twelve
-    // single-record lines reads as a ledger, not a celebration
-    final byExercise = <String, List<AchievedRecord>>{};
+    // single-record lines reads as a ledger, not a celebration. Keyed by the
+    // exercise itself: equality is the id, and the name is display copy.
+    final byExercise = <Exercise, List<AchievedRecord>>{};
     for (final record in achieved) {
-      (byExercise[record.exercise.name] ??= []).add(record);
+      (byExercise[record.exercise] ??= []).add(record);
     }
 
     return Padding(
@@ -90,10 +91,10 @@ class _RecordsState extends State<_Records> {
           for (final MapEntry(key: exercise, value: records) in byExercise.entries)
             Builder(
               builder: (context) {
-                final formats = RecordFormats(l: l, prefs: prefs, unit: exercises.unitFor(exercise));
+                final formats = RecordFormats(l: l, prefs: prefs, unit: exercises.unitFor(exercise.id));
                 return Text(
                   l.recordAchievedLine(
-                    exercise,
+                    exercise.name,
                     records
                         .map(
                           (each) => '${recordKindLabel(context, each.kind)} ${formats.value(each.kind, each.record)}',

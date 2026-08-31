@@ -504,7 +504,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            exercise.exercise.target.value,
+                            exercise.exercise.target.label(L.of(context)),
                             style: textTheme.bodyMedium,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
