@@ -50,7 +50,7 @@ void main() {
         'getRepsHistory returns parsed metric list',
         () async {
           when(
-            db.rawQuery(sql.getRepsHistory, [userId, ex.name, 30]),
+            db.rawQuery(sql.getRepsHistory, [userId, ex.id, 30]),
           ).thenAnswer((_) async => [metricRow]);
 
           final result = await local.getRepsHistory(userId, ex);
@@ -65,7 +65,7 @@ void main() {
         'getWeightHistory works with limit',
         () async {
           when(
-            db.rawQuery(sql.getWeightHistory, [userId, ex.name, 10]),
+            db.rawQuery(sql.getWeightHistory, [userId, ex.id, 10]),
           ).thenAnswer((_) async => [metricRow]);
 
           final result = await local.getWeightHistory(userId, ex, limit: 10);
@@ -77,7 +77,7 @@ void main() {
         'getDistanceHistory returns empty list when no data',
         () async {
           when(
-            db.rawQuery(sql.getDistanceHistory, [userId, ex.name, 30]),
+            db.rawQuery(sql.getDistanceHistory, [userId, ex.id, 30]),
           ).thenAnswer((_) async => []);
 
           final result = await local.getDistanceHistory(userId, ex);
@@ -90,7 +90,7 @@ void main() {
         'getDurationHistory throws on malformed data',
         () async {
           when(
-            db.rawQuery(sql.getDurationHistory, [userId, ex.name, 30]),
+            db.rawQuery(sql.getDurationHistory, [userId, ex.id, 30]),
           ).thenAnswer(
             (_) async => [
               {'when': '2025-07-20T12:00:00Z'}, // missing 'value'

@@ -30,7 +30,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
               // they must ascend with the exercise's position
               'id': ts.add(Duration(milliseconds: 2 * index)).toIso8601String(),
               'template_id': template.id,
-              'exercise_id': exercise.exercise.name,
+              'exercise_id': exercise.exercise.id,
               'description': jsonEncode(desc),
             },
           );
@@ -115,7 +115,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
               {
                 'id': ts.add(Duration(milliseconds: 2 * index)).toIso8601String(),
                 'template_id': template.id,
-                'exercise_id': exercise.exercise.name,
+                'exercise_id': exercise.exercise.id,
                 'description': jsonEncode(desc),
               },
             );

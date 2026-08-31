@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -138,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 10);
+          expect(await userVersion(db), 11);
           expect(
             await tables(db),
             {
@@ -180,6 +181,12 @@ void main() {
           expect(await columns(db, 'exercises'), contains('movement'));
           // v10
           expect(await columns(db, 'exercises'), contains('health'));
+          // v11: identity moved to the uuid id; details re-keyed with it
+          expect(await columns(db, 'exercises'), containsPair('key', 'TEXT'));
+          expect(await columns(db, 'exercises'), containsPair('validated', 'INT'));
+          expect(await columns(db, 'syncs'), containsPair('locale', 'TEXT'));
+          expect(await columns(db, 'exercise_details'), contains('exercise_id'));
+          expect(await columns(db, 'exercise_details'), isNot(contains('exercise_name')));
 
           expect(await indexesOn(db, 'template_exercises'), {'template_idx'});
           // `exercise_idx` is claimed three times in 0001.dart (workout_exercises,
@@ -377,6 +384,90 @@ void main() {
           }
         },
       );
+
+      test(
+        'v11 re-keys the catalog and every reference by exercise id',
+        () async {
+          await LocalDatabase.init(version: 1);
+          var db = await raw();
+          await seedV1(db);
+          await db.insert('syncs', {'table_name': 'exercises'});
+          // a chart preference in the shape the model actually writes — the
+          // bare-string rows seedV1 plants exist only for the v4 dedupe test
+          await db.insert('charts', {
+            'user_id': 'u1',
+            'type': 'exercise',
+            'data': '{"exerciseName":"Bench Press"}',
+          });
+          await db.close();
+
+          await LocalDatabase.init(version: 11);
+          db = await raw();
+
+          expect(await userVersion(db), 11);
+
+          // the row predates server ids, so the copy minted a v7-shaped one —
+          // the same shape the platform validates everywhere (heart_models)
+          final [bench] = await db.query('exercises');
+          final benchId = bench['id'] as String;
+          expect(isUuidV7(benchId), isTrue, reason: benchId);
+          expect(bench['name'], 'Bench Press');
+          // no provenance stance until the server states one
+          expect(bench['validated'], isNull);
+
+          // every reference followed the re-key
+          final [we] = await db.query('workout_exercises');
+          expect(we['exercise_id'], benchId);
+          final [te] = await db.query('template_exercises');
+          expect(te['exercise_id'], benchId);
+          final [details] = await db.query('exercise_details');
+          expect(details['exercise_id'], benchId);
+          expect(details['rest_timer'], 90);
+
+          // sets reference workout_exercises.id, which is stable — carried as-is
+          final [s1] = await db.query('sets');
+          expect(s1['exercise_id'], 'we1');
+          expect(s1['weight'], 60.0);
+
+          // the JSON-shaped chart preference re-keys to the exercise id; the
+          // bare-string rows are not valid JSON and survive untouched
+          final charts = await db.query('charts', orderBy: 'id');
+          expect(
+            charts.map((c) => c['data']),
+            ['Bench Press', 'Squat', 'Bench Press', null, '{"exerciseName":"$benchId"}'],
+          );
+
+          final [sync] = await db.query('syncs');
+          expect(sync['locale'], isNull);
+
+          // the cascade chain still runs behind the new key
+          await db.delete('exercises', where: 'id = ?', whereArgs: [benchId]);
+          expect(await db.query('workout_exercises'), isEmpty);
+          expect(await db.query('sets'), isEmpty);
+          expect(await db.query('template_exercises'), isEmpty);
+          expect(await db.query('exercise_details'), isEmpty);
+
+          // identity is enforced: a row without an id has nowhere to land
+          expect(
+            () => db.insert('exercises', {'name': 'Deadlift', 'category': 'Barbell', 'target': 'Back'}),
+            throwsA(isA<DatabaseException>()),
+          );
+
+          // and the provenance flag's CHECK is live
+          expect(
+            () => db.insert('exercises', {
+              'id': 'id-deadlift',
+              'name': 'Deadlift',
+              'category': 'Barbell',
+              'target': 'Back',
+              'validated': 2,
+            }),
+            throwsA(isA<DatabaseException>()),
+          );
+
+          await db.close();
+        },
+      );
     },
   );
 
@@ -389,6 +480,7 @@ void main() {
           await LocalDatabase.init();
           var db = await raw();
           await db.insert('exercises', {
+            'id': 'id-squat',
             'name': 'Squat',
             'category': 'Barbell',
             'target': 'Legs',
@@ -404,7 +496,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 10);
+          expect(await userVersion(db), 11);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');

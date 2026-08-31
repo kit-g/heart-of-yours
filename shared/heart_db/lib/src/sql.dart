@@ -29,7 +29,7 @@ WITH
         ) AS exercise_json
     FROM workout_exercises
     INNER JOIN _workout ON _workout.id = workout_exercises.workout_id
-    INNER JOIN exercises ON exercises.name = workout_exercises.exercise_id
+    INNER JOIN exercises ON exercises.id = workout_exercises.exercise_id
 )
 , _sets AS (
     SELECT *
@@ -104,7 +104,7 @@ WITH
         ) AS exercise_json
     FROM workout_exercises
     INNER JOIN _workout ON _workout.id = workout_exercises.workout_id
-    INNER JOIN exercises ON exercises.name = workout_exercises.exercise_id
+    INNER JOIN exercises ON exercises.id = workout_exercises.exercise_id
 )
 , _sets AS (
     SELECT *
@@ -176,7 +176,7 @@ WITH
             'muscles', json(coalesce(exercises.muscles, '{}'))
         ) AS exercise_json
     FROM workout_exercises
-    INNER JOIN exercises ON exercises.name = workout_exercises.exercise_id
+    INNER JOIN exercises ON exercises.id = workout_exercises.exercise_id
     WHERE workout_id IN (SELECT id FROM _workouts)
 )
 , _sets AS (
@@ -258,7 +258,7 @@ WITH
             'muscles', json(coalesce(exercises.muscles, '{}'))
         ) AS exercise_json
     FROM template_exercises
-    INNER JOIN exercises ON exercises.name = template_exercises.exercise_id
+    INNER JOIN exercises ON exercises.id = template_exercises.exercise_id
     WHERE template_id IN (SELECT id FROM _templates)
 )
 SELECT
@@ -331,7 +331,7 @@ WITH
             'muscles', json(coalesce(exercises.muscles, '{}'))
         ) AS exercise_json
     FROM template_exercises
-    INNER JOIN exercises ON exercises.name = template_exercises.exercise_id
+    INNER JOIN exercises ON exercises.id = template_exercises.exercise_id
     WHERE template_id IN (SELECT id FROM _templates)
 )
 SELECT

@@ -45,10 +45,15 @@ part of '../../heart_db.dart';
 /// tri-state provenance flag for the served copy — 1 when a human reviewed
 /// this locale's translation, 0 when machine-authored (the client marks it),
 /// NULL when the exercise carries no library-managed copy (user-created).
+/// `key` too: the env-stable content slug shared deep links carry (a uuid
+/// only resolves in the database that minted it) — NULL for user-created
+/// exercises, and for every pre-existing row until the next catalog sync
+/// fills it in.
 const rekeyExercisesCreate = '''
 CREATE TABLE exercises_new
 (
     id               TEXT NOT NULL PRIMARY KEY,
+    key              TEXT,
     name             TEXT NOT NULL,
     category         TEXT NOT NULL,
     target           TEXT NOT NULL,
