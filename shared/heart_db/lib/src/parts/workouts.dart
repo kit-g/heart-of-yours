@@ -6,23 +6,54 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     return jsonEncode(images.map((each) => each.toRow()).toList());
   }
 
+  /// Whether [workout] carries its own detail — at least one set somewhere.
+  ///
+  /// A finished workout cannot legitimately be empty: finishing requires a
+  /// completed set, and the client never sends a set-less exercise. So a
+  /// server copy with no sets at all is a *shallow* one — a list page, a PATCH
+  /// echo, a shape the parser could not fully read — and says nothing about
+  /// the exercises the mirror already holds for it.
+  static bool _carriesDetail(Workout workout) {
+    return workout.any((exercise) => exercise.isNotEmpty);
+  }
+
+  /// Writes [workout] into the mirror, updating the row in place.
+  ///
+  /// The row used to be written with `INSERT OR REPLACE`, whose implicit
+  /// delete cascaded the workout's exercises and sets away. That silently
+  /// stripped every workout re-stored without its exercises
+  /// (heart-of-yours#85) — history, charts and records went empty, and the
+  /// Done screen crowned new "records" against nothing.
+  ///
+  /// [replaceExercises] says the payload is authoritative for the children:
+  /// what it lists is the whole of them, so anything the mirror had beyond it
+  /// (an exercise dropped by an edit, a set left unfinished) is removed. When
+  /// false, the children are left exactly as they are.
   static void _storeWorkout(
     Batch batch,
     Workout workout,
     String userId, {
     required bool synced,
+    required bool replaceExercises,
   }) {
     final Workout(id: workoutId, :start, :name, :end, :images) = workout;
-    final row = {
-      'id': workoutId,
-      'start': start.toIso8601String(),
-      'user_id': userId,
-      'name': ?name,
-      'end': ?end?.toIso8601String(),
-      'images': ?_encodeImages(images?.values),
-      'synced': synced ? 1 : 0,
-    };
-    batch.insert(_workouts, row, conflictAlgorithm: .replace);
+    // every column, nulls included, so the row ends up exactly as REPLACE
+    // used to leave it — only without the delete underneath
+    batch.rawInsert(sql.upsertWorkout, [
+      workoutId,
+      start.toIso8601String(),
+      userId,
+      name,
+      end?.toIso8601String(),
+      _encodeImages(images?.values),
+      synced ? 1 : 0,
+    ]);
+
+    if (!replaceExercises) return;
+
+    // the one cascade that is meant: the payload's exercises are the whole
+    // set, so what the mirror had goes, sets included
+    batch.delete(_workoutExercises, where: 'workout_id = ?', whereArgs: [workoutId]);
 
     for (final each in workout.indexed) {
       var (order, exercise) = each;
@@ -64,7 +95,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       (txn) async {
         final batch = txn.batch();
         // local write only — not yet confirmed on the server
-        _storeWorkout(batch, workout, userId, synced: false);
+        _storeWorkout(batch, workout, userId, synced: false, replaceExercises: true);
         await batch.commit(noResult: true);
       },
     );
@@ -81,17 +112,13 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       (txn) async {
         final batch = txn.batch();
 
-        // local write only — not yet confirmed on the server
-        _storeWorkout(batch, workout, userId, synced: false);
+        // local write only — not yet confirmed on the server. The in-memory
+        // workout is the truth here: an exercise `removeEmptySets` dropped
+        // must go from the mirror too.
+        _storeWorkout(batch, workout, userId, synced: false, replaceExercises: true);
 
         await batch.commit(noResult: true);
 
-        await txn.update(
-          _workouts,
-          {'end': workout.end?.toIso8601String()},
-          where: 'id = ?',
-          whereArgs: [workout.id],
-        );
         // we'll remove all the exercises that are not marked as finished
         await txn.rawDelete(sql.removeUnfinished, [workout.id]);
       },
@@ -226,16 +253,52 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   Future<void> storeWorkoutHistory(Iterable<Workout> history, String userId) {
     return _db.transaction(
       (txn) async {
+        // history comes from the server (or a just-confirmed save). A copy
+        // with detail replaces the mirror's; a shallow one only touches the
+        // row, leaving whatever exercises the mirror already holds.
+        final shallow = {
+          for (final each in history)
+            if (!_carriesDetail(each)) each.id,
+        };
+        if (shallow.isNotEmpty) await _reportShallow(txn, shallow);
+
         final batch = txn.batch();
 
         for (final each in history) {
-          // history comes from the server (or a just-confirmed save)
-          _storeWorkout(batch, each, userId, synced: true);
+          _storeWorkout(batch, each, userId, synced: true, replaceExercises: !shallow.contains(each.id));
         }
 
         await batch.commit();
       },
     );
+  }
+
+  /// Names each of the [shallow] workouts — arrived without detail — that the
+  /// mirror holds some for: the exact write that used to strip it.
+  ///
+  /// Diagnostic only: the write above already keeps the mirror's copy. This is
+  /// how the payloads that arrive shallow get pinned down, per
+  /// heart-of-yours#85, so the contract can be settled with the server.
+  Future<void> _reportShallow(DatabaseExecutor txn, Set<String> shallow) async {
+    // release builds log nothing, so they should not pay for the query either
+    if (!_logger.isLoggable(Level.WARNING)) return;
+
+    final rows = await txn.rawQuery(
+      '''
+      SELECT workout_id, count(*) AS exercises
+      FROM $_workoutExercises
+      WHERE workout_id IN (${List.filled(shallow.length, '?').join(', ')})
+      GROUP BY workout_id
+      ''',
+      shallow.toList(),
+    );
+
+    for (final row in rows) {
+      _logger.warning(
+        'Workout ${row['workout_id']} arrived without exercises; '
+        'the mirror keeps the ${row['exercises']} it has (heart-of-yours#85)',
+      );
+    }
   }
 
   @override

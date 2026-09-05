@@ -39,6 +39,16 @@ void main() {
     when(local.updateWorkout(workoutId: anyNamed('workoutId'), name: anyNamed('name'))).thenAnswer((_) async {});
 
     when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => <Workout>[]);
+    // the launch-time repair pass asks for every stripped workout in the
+    // mirror; by default the server has none of them, and a test that is
+    // about the repair stubs its own answer
+    when(
+      remote.getTargetWorkout(
+        requesterId: anyNamed('requesterId'),
+        targetUserId: anyNamed('targetUserId'),
+        workoutId: anyNamed('workoutId'),
+      ),
+    ).thenThrow({'error': 'not found', 'code': 'not_found'});
     when(remote.saveWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.editWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.deleteWorkout(any)).thenAnswer((_) async => true);
@@ -606,9 +616,10 @@ void main() {
       when(local.getWorkout('u1', any)).thenAnswer((_) async => w);
 
       final probe = ListenerProbe()..attach(sut);
-      await sut.fetchWorkout('wid');
+      await sut.fetchWorkout(w.id);
 
-      expect(sut.lookup('wid'), w);
+      // keyed by the workout's own id, as every server copy is
+      expect(sut.lookup(w.id), w);
       expect(probe.notifications, 1);
     });
   });
@@ -844,6 +855,341 @@ void main() {
       expect(sut.historyPageError, isFalse);
       expect(sut.lookup(w2.id), w2);
       expect(sut.hasMoreHistory, isTrue);
+    });
+  });
+
+  group('stripped mirror repair (heart-of-yours#85)', () {
+    // the mocks are shared across this file and never reset, so `verify` and
+    // `verifyNever` would otherwise pick up calls from earlier tests
+    setUp(() {
+      clearInteractions(local);
+      clearInteractions(remote);
+      when(local.getWorkoutGallery(userId: 'u1')).thenAnswer((_) async => ProgressGalleryResponse(images: []));
+    });
+
+    /// A finished, synced workout as the mirror holds it after #85 stripped
+    /// it: the row, none of its exercises.
+    Workout stripped(String id, {bool synced = true}) {
+      return Workout.fromJson({
+        'id': id,
+        'start': '2026-08-21T10:00:00.000Z',
+        'end': '2026-08-21T11:00:00.000Z',
+        'exercises': [],
+        'synced': synced ? 1 : 0,
+      });
+    }
+
+    /// The same workout as the server has it, detail and all.
+    Workout detailed(String id) {
+      return Workout.fromJson({
+        'id': id,
+        'start': '2026-08-21T10:00:00.000Z',
+        'end': '2026-08-21T11:00:00.000Z',
+        'exercises': [
+          {
+            'id': '$id-ex',
+            'exercise': bench.toMap(),
+            'sets': [
+              {'id': '$id-set', 'weight': 225, 'reps': 5, 'completed': true},
+            ],
+          },
+        ],
+      });
+    }
+
+    /// The server's answer for one workout, to complete with `thenAnswer`
+    /// or `thenThrow`.
+    PostExpectation<Future<Workout>> serverGet(String workoutId) {
+      return when(
+        remote.getTargetWorkout(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          workoutId: workoutId,
+        ),
+      );
+    }
+
+    void whenServerHas(Workout workout) {
+      serverGet(workout.id).thenAnswer((_) async => workout);
+    }
+
+    void fails(String workoutId, Object error) {
+      serverGet(workoutId).thenThrow(error);
+    }
+
+    test('initHistory refetches a stripped workout and stores the server\'s copy', () async {
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1')]);
+      final full = detailed('w1');
+      whenServerHas(full);
+
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+      expect(sut.lookup('w1'), full);
+      expect(sut.lookup('w1')!.single.sets, hasLength(1));
+    });
+
+    test('leaves healthy and unsynced workouts alone', () async {
+      // a workout with its sets needs nothing; an unsynced one, empty or not,
+      // is the only copy there is and is never a candidate
+      final healthy = detailed('healthy');
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [healthy, stripped('local-only', synced: false)]);
+
+      await sut.initHistory();
+
+      verifyNever(
+        remote.getTargetWorkout(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          workoutId: anyNamed('workoutId'),
+        ),
+      );
+    });
+
+    test('runs after history is initialized, and notifies once healed', () async {
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1')]);
+      final full = detailed('w1');
+      serverGet('w1').thenAnswer(
+        (_) async {
+          // the list must not wait on the repair pass
+          expect(sut.historyInitialized, isTrue);
+          return full;
+        },
+      );
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.initHistory();
+
+      // local read, initialized, healed
+      expect(probe.notifications, 3);
+    });
+
+    test('stops after the batch in which the server could not be reached', () async {
+      // offline or an outage would fail every remaining request the same
+      // way; the next launch retries. Requests go out a few at a time, so
+      // the rest of the failing batch is already in flight — but no later one
+      final ids = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7'];
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [for (final id in ids) stripped(id)]);
+      for (final id in ids) {
+        whenServerHas(detailed(id));
+      }
+      fails('w1', Exception('offline'));
+
+      await sut.initHistory();
+
+      verify(
+        remote.getTargetWorkout(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          workoutId: anyNamed('workoutId'),
+        ),
+      ).called(5);
+      // the (empty) first page is stored regardless; no workout was
+      verifyNever(local.storeWorkoutHistory(argThat(isNotEmpty), 'u1'));
+    });
+
+    test('skips a workout the server no longer has and carries on', () async {
+      // any body the server answered with is an answer about that one
+      // workout — a 404 is not an outage, whatever shape it comes in
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('gone'), stripped('w2')]);
+      fails('gone', {'error': 'not found'});
+      final full = detailed('w2');
+      whenServerHas(full);
+
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+      expect(sut.lookup('w2'), full);
+    });
+
+    test('asks about a workout once per session', () async {
+      // a workout the server has nothing more for stays stripped in memory,
+      // and initHistory runs on every visit to History
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1')]);
+      whenServerHas(stripped('w1'));
+
+      await sut.initHistory();
+      await sut.initHistory();
+
+      verify(
+        remote.getTargetWorkout(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          workoutId: 'w1',
+        ),
+      ).called(1);
+    });
+
+    test('a mirror write failing for one batch does not end the pass', () async {
+      final ids = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'];
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [for (final id in ids) stripped(id)]);
+      for (final id in ids) {
+        whenServerHas(detailed(id));
+      }
+      when(local.storeWorkoutHistory(argThat(contains(detailed('w1'))), 'u1')).thenThrow(Exception('constraint'));
+
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([detailed('w6')], 'u1')).called(1);
+      expect(sut.lookup('w6')!.single.sets, hasLength(1));
+    });
+
+    test('an edit that emptied the workout drops the mirror\'s copy before storing it', () async {
+      // the one empty copy that is authoritative: the mirror keeps exercises
+      // whenever a copy arrives without any, so this edit has to say so
+      final emptied = Workout.fromJson({
+        'id': 'w1',
+        'start': '2026-08-21T10:00:00.000Z',
+        'end': '2026-08-21T11:00:00.000Z',
+        'exercises': [],
+      });
+      when(remote.editWorkout(any)).thenAnswer((_) async => emptied);
+
+      await sut.editWorkout(emptied);
+
+      verifyInOrder([
+        local.deleteWorkout('w1'),
+        local.storeWorkoutHistory([emptied], 'u1'),
+      ]);
+    });
+
+    test('a batch the server could not answer is asked again on the next pass', () async {
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1')]);
+      fails('w1', Exception('offline'));
+
+      await sut.initHistory();
+
+      // the network is back
+      final full = detailed('w1');
+      whenServerHas(full);
+      await sut.initHistory();
+
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+    });
+
+    test('signing out mid-pass keeps the old user\'s workouts out of the new one\'s memory', () async {
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1')]);
+      final full = detailed('w1');
+      serverGet('w1').thenAnswer(
+        (_) async {
+          sut.onSignOut();
+          sut.userId = 'u2';
+          return full;
+        },
+      );
+
+      await sut.initHistory();
+
+      expect(sut.lookup('w1'), isNull);
+      verifyNever(local.storeWorkoutHistory([full], any));
+    });
+
+    test('an edit that kept its sets does not touch the row first', () async {
+      final full = detailed('w1');
+      when(remote.editWorkout(any)).thenAnswer((_) async => full);
+
+      await sut.editWorkout(full);
+
+      verifyNever(local.deleteWorkout(any));
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+    });
+
+    test('does not store a server copy that is just as empty', () async {
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [stripped('w1')]);
+      whenServerHas(stripped('w1'));
+
+      await sut.initHistory();
+
+      verifyNever(local.storeWorkoutHistory(argThat(isNotEmpty), 'u1'));
+    });
+
+    test('a shallow page entry keeps the detail held in memory, and is not refetched', () async {
+      // the in-memory side of the store rule: the row's fields follow the
+      // page, the exercises stay — so nothing looks stripped afterwards
+      final full = detailed('w1');
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => [full]);
+      final renamed = Workout.fromJson({
+        'id': 'w1',
+        'start': '2026-08-21T10:00:00.000Z',
+        'end': '2026-08-21T11:30:00.000Z',
+        'name': 'Pull Day, renamed',
+      });
+      when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [renamed]);
+
+      await sut.initHistory();
+
+      final held = sut.lookup('w1')!;
+      expect(held.single.sets, hasLength(1));
+      expect(held.name, 'Pull Day, renamed');
+      expect(held.end, DateTime.parse('2026-08-21T11:30:00.000Z'));
+      verifyNever(
+        remote.getTargetWorkout(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          workoutId: anyNamed('workoutId'),
+        ),
+      );
+    });
+
+    test('an unsynced copy the server already lists is not pushed again', () async {
+      // the mirror marks the row synced as the page is stored, and the
+      // pending pass re-reads the mirror before it decides what to push
+      final pending = Workout.fromJson({
+        'id': 'w1',
+        'start': '2026-08-21T10:00:00.000Z',
+        'end': '2026-08-21T11:00:00.000Z',
+        'synced': 0,
+        'exercises': [
+          {
+            'id': 'w1-ex',
+            'exercise': bench.toMap(),
+            'sets': [
+              {'id': 'w1-set', 'weight': 225, 'reps': 5, 'completed': true},
+            ],
+          },
+        ],
+      });
+      // a mutable mirror: `syncPendingWorkouts` re-reads history right after
+      // the page is stored, and a static stub would hand the unsynced copy back
+      final stored = [pending];
+      when(local.getWorkoutHistory('u1')).thenAnswer((_) async => List.of(stored));
+      when(local.storeWorkoutHistory(any, 'u1')).thenAnswer(
+        (invocation) async {
+          for (final workout in invocation.positionalArguments.first as Iterable<Workout>) {
+            stored
+              ..removeWhere((each) => each.id == workout.id)
+              ..add(workout);
+          }
+        },
+      );
+      final confirmed = stripped('w1');
+      when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [confirmed]);
+
+      await sut.initHistory();
+
+      expect(sut.lookup('w1')!.synced, isTrue);
+      verifyNever(remote.saveWorkout(any));
+    });
+
+    test('fetchWorkout asks the server past a stripped local copy, and caches the answer', () async {
+      when(local.getWorkout('u1', 'w1')).thenAnswer((_) async => stripped('w1'));
+      final full = detailed('w1');
+      whenServerHas(full);
+
+      expect(await sut.fetchWorkout('w1'), isTrue);
+
+      expect(sut.lookup('w1'), full);
+      verify(local.storeWorkoutHistory([full], 'u1')).called(1);
+    });
+
+    test('fetchWorkout still answers with the stripped copy when the server cannot', () async {
+      final held = stripped('w1');
+      when(local.getWorkout('u1', 'w1')).thenAnswer((_) async => held);
+      fails('w1', Exception('offline'));
+
+      expect(await sut.fetchWorkout('w1'), isTrue);
+
+      expect(sut.lookup('w1'), held);
     });
   });
 
