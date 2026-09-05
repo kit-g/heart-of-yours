@@ -87,14 +87,9 @@ void main() {
 
           await local.startWorkout(testWorkout, 'user-1');
 
+          // an upsert, never REPLACE — see workout_detail_test.dart for why
           verify(
-            batch.insert(
-              'workouts',
-              argThat(
-                containsPair('id', testWorkout.id),
-              ),
-              conflictAlgorithm: anyNamed('conflictAlgorithm'),
-            ),
+            batch.rawInsert(sql.upsertWorkout, argThat(contains(testWorkout.id))),
           ).called(1);
 
           verify(
@@ -214,28 +209,15 @@ void main() {
           const userId = 'user-123';
 
           when(batch.commit(noResult: true)).thenAnswer((_) async => []);
-          when(
-            txn.update(
-              any,
-              any,
-              where: anyNamed('where'),
-              whereArgs: anyNamed('whereArgs'),
-            ),
-          ).thenAnswer((_) async => 1);
-
           when(txn.rawDelete(sql.removeUnfinished, any)).thenAnswer((_) async => 1);
 
           await local.finishWorkout(w, userId);
 
           verify(batch.commit(noResult: true)).called(1);
 
+          // the end rides on the row write itself
           verify(
-            txn.update(
-              'workouts',
-              {'end': w.end!.toIso8601String()},
-              where: 'id = ?',
-              whereArgs: [w.id],
-            ),
+            batch.rawInsert(sql.upsertWorkout, argThat(contains(w.end!.toIso8601String()))),
           ).called(1);
 
           verify(txn.rawDelete(sql.removeUnfinished, [w.id])).called(1);
@@ -258,20 +240,13 @@ void main() {
       );
 
       test(
-        'finishWorkout throws if update fails',
+        'finishWorkout throws if dropping the unfinished sets fails',
         () async {
           final w = workout(finished: true);
           const userId = 'user-123';
 
           when(batch.commit(noResult: true)).thenAnswer((_) async => []);
-          when(
-            txn.update(
-              any,
-              any,
-              where: anyNamed('where'),
-              whereArgs: anyNamed('whereArgs'),
-            ),
-          ).thenThrow(MockDatabaseException());
+          when(txn.rawDelete(sql.removeUnfinished, any)).thenThrow(MockDatabaseException());
 
           expect(
             () => local.finishWorkout(w, userId),
@@ -842,18 +817,14 @@ void main() {
 
           await local.storeWorkoutHistory(history, 'user-1');
 
+          // an upsert, never REPLACE — see workout_detail_test.dart for why
           verify(
-            batch.insert(
-              'workouts',
-              argThat(
-                allOf(
-                  isA<Map<String, dynamic>>(),
-                  containsPair('user_id', 'user-1'),
-                  contains('start'), // timestamps are dynamic
-                ),
-              ),
-              conflictAlgorithm: ConflictAlgorithm.replace,
-            ),
+            batch.rawInsert(sql.upsertWorkout, argThat(contains('user-1'))),
+          ).called(2);
+
+          // both carry their sets, so both replace their children wholesale
+          verify(
+            batch.delete('workout_exercises', where: 'workout_id = ?', whereArgs: anyNamed('whereArgs')),
           ).called(2);
 
           // Verify workout_exercises inserted with correct exercise ids

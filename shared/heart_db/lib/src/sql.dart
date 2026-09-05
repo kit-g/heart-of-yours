@@ -231,6 +231,21 @@ WHERE completed = 0
       );
 ''';
 
+/// Writes the workout row in place. Never `INSERT OR REPLACE` here: with
+/// foreign keys on, REPLACE is a delete + insert, and the delete cascades
+/// through `workout_exercises` into `sets` (heart-of-yours#85).
+const upsertWorkout = '''
+INSERT INTO workouts (id, start, user_id, name, "end", images, synced)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(id) DO UPDATE SET
+    start   = EXCLUDED.start,
+    user_id = EXCLUDED.user_id,
+    name    = EXCLUDED.name,
+    "end"   = EXCLUDED."end",
+    images  = EXCLUDED.images,
+    synced  = EXCLUDED.synced;
+''';
+
 const getTemplates = """
 WITH
   _templates AS (
