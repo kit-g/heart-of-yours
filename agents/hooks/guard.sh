@@ -23,11 +23,11 @@ deny() {
   exit 0
 }
 
-if grep -Eq '\bgit[^|;&]*\b(commit|push)\b' <<<"$cmd"; then
+if grep -Eq '(^|[|;&(`])\s*git[^|;&]*\b(commit|push)\b' <<<"$cmd"; then
   deny "Commits and pushes are reserved for the user. Leave work in the tree; run 'git add -N .' so new files show in git diff."
 fi
 
-if grep -Eq '\bgit[^|;&]*\b(reset[^|;&]*--hard|clean[^|;&]* -[a-zA-Z]*f|rebase|merge|branch[^|;&]* -D|checkout[^|;&]* \.|restore[^|;&]* \.|stash[^|;&]*\b(drop|clear))' <<<"$cmd"; then
+if grep -Eq '(^|[|;&(`])\s*git[^|;&]*\b(reset[^|;&]*--hard|clean[^|;&]* -[a-zA-Z]*f| (rebase|merge)(\s|$)|branch[^|;&]* -D|checkout[^|;&]* \.|restore[^|;&]* \.|stash[^|;&]*\b(drop|clear))' <<<"$cmd"; then
   deny "Destructive git operation blocked — it can erase uncommitted work. Explain what you need and let the user run it."
 fi
 

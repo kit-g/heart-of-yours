@@ -60,20 +60,22 @@ must screenshot-verify on its own `agent-iphone` simulator.
 (gitignored) — what changed, verification evidence, the `docs/handoff.md`
 checklist with each item done/n-a/flagged, and anything needing a visual
 pass — and, for issue-dispatched work, the same summary as an issue comment.
-Start there, then review the tree like any dirty tree
-(`git -C .claude/worktrees/a1 diff`; new files show via `git add -N`), then
-commit yourself. Picking up a container-produced worktree on the host?
+Before writing it they run the `review-handoff` skill on their own
+tree and leave `REVIEW.md` beside it. Review with the same skill — "review
+the a1 worktree" — which re-runs lint and tests, checks the diff against the
+ticket and the repo contract, and rewrites `REVIEW.md` with a verdict and
+to-dos; then commit yourself. Picking up a container-produced worktree on the host?
 Run `flutter pub get` in it first — its `.dart_tool` points at the
 container's SDK.
 
 ## Credentials (default.env, shared; per-agent override optional)
 
-| What | Scope | Why this scope |
-|---|---|---|
-| `CLAUDE_CODE_OAUTH_TOKEN` | from `claude setup-token` | headless auth in containers |
-| `GH_TOKEN` | fine-grained PAT: heart + heart-api; Contents **Read**, Issues **Read/write**, Metadata Read | agents read issues and comment; read-only Contents means the token cannot push even if asked to |
-| `SENTRY_AUTH_TOKEN` | project:read, event:read, issue:read | triage crashes; no mutation |
-| `AGENT_AWS_ROLE_ARN` | `heart-agent` role, dev account only, `ReadOnlyAccess` to start (heart-api#49) | no static secret at all — with `--aws` the launcher assumes the role via your `heart-dev` profile and injects session creds that expire on their own (default 4h; agent needs a restart past that); `--aws` also opens the firewall to AWS ranges in ca-central-1; prod stays yours |
+| What                      | Scope                                                                                        | Why this scope                                                                                                                                                                                                                                                                      |
+|---------------------------|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CLAUDE_CODE_OAUTH_TOKEN` | from `claude setup-token`                                                                    | headless auth in containers                                                                                                                                                                                                                                                         |
+| `GH_TOKEN`                | fine-grained PAT: heart + heart-api; Contents **Read**, Issues **Read/write**, Metadata Read | agents read issues and comment; read-only Contents means the token cannot push even if asked to                                                                                                                                                                                     |
+| `SENTRY_AUTH_TOKEN`       | project:read, event:read, issue:read                                                         | triage crashes; no mutation                                                                                                                                                                                                                                                         |
+| `AGENT_AWS_ROLE_ARN`      | `heart-agent` role, dev account only, `ReadOnlyAccess` to start (heart-api#49)               | no static secret at all — with `--aws` the launcher assumes the role via your `heart-dev` profile and injects session creds that expire on their own (default 4h; agent needs a restart past that); `--aws` also opens the firewall to AWS ranges in ca-central-1; prod stays yours |
 
 The issue text for `--issue` is fetched on the **host** with your own `gh`
 auth before the container starts, so agent PATs stay minimal.
