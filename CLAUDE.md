@@ -39,6 +39,14 @@ Screens keep their entries in `test/a11y_test.dart`'s screen×guideline
 matrix honest: enable what passes, skip what doesn't with a file:line
 reason. Patterns, the adoption rule, and what maps to WCAG: `docs/a11y.md`.
 
+## Health data
+Anything read from HealthKit / Health Connect is device-only: no server,
+no Sentry message, no screenshot, no analytics event. The contract, the
+guards that enforce it, and the change protocol (manifest, iOS usage
+strings, Play declaration, `site/privacy.html` in heart-api) are in
+`docs/2026-09-05.health-data.md`. Read it before touching `Health.tracked`, the
+workout write-back, or anything that stores a health value.
+
 ## Definition of done
 `docs/handoff.md` is the submission checklist for any nontrivial change.
 Autonomous agents finish by writing `HANDOFF.md` (worktree root, gitignored)
