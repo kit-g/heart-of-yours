@@ -37,8 +37,10 @@ if [[ -n "$ISSUE" ]]; then
 fi
 
 PROMPT_PREFIX="You are an autonomous agent in an isolated worktree of this repo.
-docs/handoff.md is your definition of done — work through its checklist and
-finish by writing HANDOFF.md at the worktree root. UI changes must be
+docs/handoff.md is your definition of done — work through its checklist,
+then run the review-handoff skill on your own work (self-review mode: fix what
+it finds, re-run, leave REVIEW.md describing the final tree), and only then
+write HANDOFF.md at the worktree root. UI changes must be
 screenshot-verified on the 'agent-iphone' simulator (and an iPad if the
 surface has a two-pane layout) — never the user's own simulators. If this
 task came from a GitHub issue, post your closing summary as a comment on it

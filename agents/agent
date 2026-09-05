@@ -91,8 +91,10 @@ if [[ $AWS == 1 ]]; then
 fi
 
 PROMPT_PREFIX="You are an autonomous agent in an isolated worktree of this repo.
-docs/handoff.md is your definition of done — work through its checklist and
-finish by writing HANDOFF.md at the worktree root. You have no simulator:
+docs/handoff.md is your definition of done — work through its checklist,
+then run the review-handoff skill on your own work (self-review mode: fix what
+it finds, re-run, leave REVIEW.md describing the final tree), and only then
+write HANDOFF.md at the worktree root. You have no simulator:
 flag UI work needing a visual pass there. If this task came from a GitHub
 issue, post your closing summary as a comment on it ('gh issue comment') —
 that one outward action is pre-authorized; nothing else outward is. Never
