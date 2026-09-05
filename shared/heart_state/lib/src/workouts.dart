@@ -34,6 +34,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _notifiedOfActiveWorkout = false;
     _latestMarkedSet = null;
     _progress.clear();
+    _healChecked.clear();
+    // a pass still running is the old user's; it checks for that at every
+    // step, and the next sign-in must not wait on it
+    _healing = null;
   }
 
   static Workouts of(BuildContext context) {
@@ -166,12 +170,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// a missing workout from one it simply has not fetched yet.
   Future<bool> fetchWorkout(String workoutId, {String? ownerId}) async {
     if (userId case String id) {
-      final local = await _localService.getWorkout(id, workoutId);
-      if (local != null) {
-        _workouts[workoutId] = local;
+      bool adopt(Workout workout) {
+        _absorb([workout]);
         notifyListeners();
         return true;
       }
+
+      final local = await _localService.getWorkout(id, workoutId);
+      // a stripped copy is worth less than the server's, so it only answers
+      // when the server cannot
+      if (local != null && !_isStripped(local)) return adopt(local);
 
       try {
         final remote = await _remoteService.getTargetWorkout(
@@ -179,22 +187,41 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           targetUserId: ownerId ?? id,
           workoutId: workoutId,
         );
-        _workouts[remote.id] = remote;
         // cached only when it is the user's own — the mirror is theirs, and
         // storing a connection's session in it would leak into their history,
         // their aggregation and every goal measured against it
         if ((ownerId ?? id) == id) {
           await _localService.storeWorkoutHistory([remote], id);
         }
-        notifyListeners();
-        return true;
+        return adopt(remote);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
-        return false;
+        return switch (local) {
+          Workout stripped => adopt(stripped),
+          null => false,
+        };
       }
     }
 
     return false;
+  }
+
+  /// Whether [workout] is a mirror row that lost its detail.
+  ///
+  /// A finished workout the server confirmed cannot legitimately be empty:
+  /// finishing needs a completed set, and the client never sends a set-less
+  /// exercise. So one with no sets at all is what heart-of-yours#85 left
+  /// behind — the row survived a re-store, its exercises did not — and the
+  /// server's copy is the real one. An unsynced workout is never a candidate:
+  /// the mirror is its only copy, empty or not.
+  static bool _isStripped(Workout workout) {
+    return workout.isCompleted && workout.synced && !_carriesDetail(workout);
+  }
+
+  /// At least one set somewhere — the same test `heart_db` applies before it
+  /// lets a server copy replace the mirror's exercises.
+  static bool _carriesDetail(Workout workout) {
+    return workout.any((exercise) => exercise.isNotEmpty);
   }
 
   Future<void> startWorkout({String? name, Workout? template}) {
@@ -253,7 +280,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         _workouts.remove(active.id);
         await _localService.deleteWorkout(active.id);
       }
-      _workouts[saved.id] = saved;
+      _absorb([saved]);
       if (userId case String id) {
         await _localService.storeWorkoutHistory([saved], id);
       }
@@ -285,7 +312,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
             _workouts.remove(workout.id);
             await _localService.deleteWorkout(workout.id);
           }
-          _workouts[saved.id] = saved;
+          _absorb([saved]);
           await _localService.storeWorkoutHistory([saved], id);
         } catch (error, stacktrace) {
           onError?.call(error, stacktrace: stacktrace);
@@ -301,9 +328,17 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     final edited = await _remoteService.editWorkout(workout);
     if (userId case String id) {
+      // The one empty copy that is authoritative: the user took every set
+      // out. The mirror keeps a workout's exercises whenever a copy arrives
+      // without any — that is what stops a shallow payload stripping it
+      // (heart-of-yours#85) — so an edit that emptied it has to say so by
+      // dropping the row, children and all, before the empty one is written.
+      if (!_carriesDetail(workout)) {
+        await _localService.deleteWorkout(workout.id);
+      }
       await _localService.storeWorkoutHistory([edited], id);
     }
-    _workouts[edited.id] = edited;
+    _absorb([edited]);
     if (edited.id != workout.id) {
       _workouts.remove(workout.id);
     }
@@ -318,7 +353,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (start == null && end == null) return null;
     try {
       final patched = await _remoteService.patchWorkout(workoutId, start: start, end: end);
-      _workouts[patched.id] = patched;
+      _absorb([patched]);
       if (userId case String id) {
         await _localService.storeWorkoutHistory([patched], id);
       }
@@ -480,7 +515,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       final workouts = await _getRemoteHistory(id);
       if (workouts != null) {
         await _localService.storeWorkoutHistory(workouts, id);
-        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+        _absorb(workouts);
         await _dropDeletedElsewhere(workouts);
         _advanceHistory(workouts);
       }
@@ -492,6 +527,90 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
       historyInitialized = true;
       notifyListeners();
+
+      // after the flag: this can be a request per workout, and the list
+      // should not wait for it. One pass at a time — History's own visit
+      // runs this too, and would otherwise start a second over the same rows.
+      await (_healing ??= _healStrippedHistory(id).whenComplete(() => _healing = null));
+    }
+  }
+
+  Future<void>? _healing;
+
+  /// Workouts the repair pass has already asked the server about this
+  /// session. One the server has nothing more for — or no longer has — stays
+  /// stripped in memory, and [initHistory] runs on every visit to History,
+  /// so without this it would be asked for again on each.
+  final _healChecked = <String>{};
+
+  /// Requests in flight at once during the repair pass: enough that a mirror
+  /// stripped across a hundred workouts heals in seconds rather than a
+  /// serial minute, few enough not to crowd out the rest of start-up.
+  static const _healBatch = 5;
+
+  /// Refetches every workout the mirror holds without its detail.
+  ///
+  /// The repair path for heart-of-yours#85: a mirror stripped before the store
+  /// stopped cascading has its rows but not their exercises, and nothing else
+  /// would ever put them back — [initHistory] only re-pages the newest twenty,
+  /// and only a full copy overwrites. One request per stripped workout, a few
+  /// at a time. Not reaching the server ends the pass, since the rest would
+  /// fail the same way and the next launch retries; anything it did answer,
+  /// and anything the mirror refuses, is skipped and not asked again.
+  Future<void> _healStrippedHistory(String id) async {
+    final stripped = [
+      for (final workout in _workouts.values)
+        if (_isStripped(workout) && !_healChecked.contains(workout.id)) workout.id,
+    ];
+
+    for (var offset = 0; offset < stripped.length; offset += _healBatch) {
+      final chunk = stripped.skip(offset).take(_healBatch).toList();
+      _healChecked.addAll(chunk);
+
+      final List<Workout?> answers;
+      try {
+        answers = await Future.wait(chunk.map((workoutId) => _detailOf(id, workoutId)));
+      } catch (error, stacktrace) {
+        onError?.call(error, stacktrace: stacktrace);
+        // not answered, so not checked: a later visit to History, once the
+        // network is back, should ask again
+        _healChecked.removeAll(chunk);
+        break;
+      }
+      // signed out mid-pass: whatever came back is the previous user's
+      if (userId != id) return;
+
+      final healed = [
+        for (final answer in answers)
+          if (answer != null && _carriesDetail(answer)) answer,
+      ];
+      if (healed.isEmpty) continue;
+
+      try {
+        await _localService.storeWorkoutHistory(healed, id);
+      } catch (error, stacktrace) {
+        // the mirror's problem with these rows, not the server's with the rest
+        onError?.call(error, stacktrace: stacktrace);
+        continue;
+      }
+      if (userId != id) return;
+      _absorb(healed);
+      notifyListeners();
+    }
+  }
+
+  /// The server's copy of one of the user's own workouts, or null when the
+  /// server answered with anything but the workout — a 404 body, whatever its
+  /// shape, is still an answer about this one. Not reaching it at all throws.
+  Future<Workout?> _detailOf(String id, String workoutId) async {
+    try {
+      return await _remoteService.getTargetWorkout(
+        requesterId: id,
+        targetUserId: id,
+        workoutId: workoutId,
+      );
+    } on Map {
+      return null;
     }
   }
 
@@ -550,7 +669,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       // list) — surface it so the tail can offer a retry.
       if (workouts != null) {
         await _localService.storeWorkoutHistory(workouts, id);
-        _workouts.addAll(Map.fromEntries(workouts.map(_entry)));
+        _absorb(workouts);
         _advanceHistory(workouts);
       } else {
         _historyPageError = true;
@@ -577,6 +696,33 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   static MapEntry<WorkoutId, Workout> _entry(Workout w) => MapEntry(w.id, w);
+
+  /// Every server copy enters memory through here, and is taken the way the
+  /// mirror takes it: one that arrives without its detail — a list page, a
+  /// PATCH echo — updates what its row carries and keeps the exercises
+  /// already held. Otherwise a shallow copy would blank the list the mirror
+  /// just kept intact, and hand the repair pass the same "stripped" workouts
+  /// to refetch on every launch.
+  ///
+  /// The fields copied over are the row's: what a shallow payload can carry.
+  /// Images are not among them — the gallery is its own feed — and `synced`
+  /// is final, which is fine: a held copy the server has just listed is
+  /// re-read from the mirror, where the store already marked it, before
+  /// anything decides what to push.
+  void _absorb(Iterable<Workout> copies) {
+    for (final incoming in copies) {
+      final held = _workouts[incoming.id];
+      if (held != null && _carriesDetail(held) && _isStripped(incoming)) {
+        held
+          ..start = incoming.start
+          ..end = incoming.end
+          ..name = incoming.name
+          ..calories = incoming.calories;
+        continue;
+      }
+      _workouts[incoming.id] = incoming;
+    }
+  }
 
   void notifyOfActiveWorkout() {
     if (!_notifiedOfActiveWorkout) {
