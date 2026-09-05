@@ -16,7 +16,9 @@ Two modes, same checklist:
   `REVIEW.md`; fixing is a separate ask, because the user is the one who commits.
 - **Self-review** (an agent before it writes `HANDOFF.md`): fix what you find, re-run the
   checks, and let `REVIEW.md` record the final state. `HANDOFF.md` then points at it. Anything
-  you could not fix becomes an *open end* in the handoff, not a silent pass.
+  you could not fix becomes an *open end* in the handoff, not a silent pass. **Skip section 4** —
+  the multi-agent code review is the reviewer's tool, not something to run inside an autonomous
+  run.
 
 ## 1. Locate the target
 
@@ -49,24 +51,33 @@ is always a finding, filed under *beyond the ticket*, never buried in the summar
 Run the checks yourself. Do not accept "621 passed" from the handoff.
 
 ```sh
-make lint                       # format-check + analyze, with codegen and firebase stubs
+make codegen codegen-app        # first: a fresh worktree has no generated mocks, and lint does not make them
+make lint                       # format-check + analyze (+ firebase stubs)
 make test-<pkg>                 # once per shared/<pkg> the diff touches
 make test-app                   # if lib/ or test/ changed
 ```
 
 Compare with the handoff's verification section. Findings here:
 
-- Any red. Paste the failing output into the review.
+- Any red. Paste the failing output into the review. **A red here caps the verdict at *needs
+  changes*.** "Environmental", "not my files", "would pass on another machine" are hypotheses,
+  not passes — the last run that said so was three missing mocks that one `make codegen` fixed.
+  If a command could not be run at all (denied, tool missing), the verdict is *needs your eyes*
+  and the review says exactly which command and why; it is never *ready to commit*.
 - The handoff ran raw `flutter analyze` / `flutter test` / `dart format` instead of the make
   targets. Make is the entrypoint (it wires codegen and the stubs); raw commands can pass
   locally and fail in CI. Flag it — the number may still be right, the process was not.
 - New tests: do they exist, and do they test the change rather than the framework? Open them.
 
-## 4. Generic correctness
+## 4. Generic correctness — reviewer mode only
 
 Invoke `/code-review` at **high** effort with `$W` as the path target, and fold its findings in.
 Do not restate what it already covers (null-safety, dead code, duplication, efficiency). Your job
 is the rest.
+
+Not in self-review. `/code-review high` fans out about eight subagents that each re-read the
+whole diff: inside an autonomous run that is expensive, floods the narration, and produces
+uncertain findings with nobody there to judge them. Sections 3, 5, 6 and 7 are the self-review.
 
 ## 5. The repo contract
 
@@ -133,7 +144,8 @@ At `$W/REVIEW.md` (gitignored, like `HANDOFF.md`). Shape:
 ```markdown
 # Review — <ticket or task>, worktree <name>
 
-**Verdict:** ready to commit | needs changes | needs your eyes (visual / product call)
+**Verdict:** ready to commit | needs changes | needs your eyes (visual / product call / a check
+that could not run). *Ready to commit* requires every command in section 3 green on this tree.
 
 ## Findings
 Ranked, most severe first. Each: what, where (`path:line`), why it matters, what to do.

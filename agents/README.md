@@ -40,7 +40,13 @@ metadata records absolute paths.
 **Permissions.** Containerized agents run `--permission-mode
 bypassPermissions` — sanctioned for exactly this shape: non-root, firewalled,
 scoped credentials. The host agent runs `acceptEdits` and leans on the
-allowlist in `.claude/settings.local.json`; unlisted commands still prompt.
+allowlist in `.claude/settings.local.json`; unlisted commands still prompt —
+and in a headless `-p` run a prompt is a denial, so the allowlist must cover
+everything the handoff checklist needs (`make`, read-only `git`, `tail`,
+`head`, the shared repos' paths). GoLand's MCP tools that execute, write, or
+touch databases are denied on the host agent's command line
+(`--disallowedTools`): they run through your IDE, past both the allowlist and
+the guard hook. Its read-only tools stay available.
 
 **Guardrails.** `.claude/settings.json` wires `hooks/guard.sh` as a
 PreToolUse hook for every session in this repo — hooks still fire under

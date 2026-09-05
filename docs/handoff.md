@@ -6,8 +6,13 @@ satisfied or explicitly flagged in the handoff.
 
 ## Checklist
 
-1. **Verified** — `make lint` and `make test` (or the targeted `make
-   test-<pkg>` suites) pass; record the exact commands and outcomes.
+1. **Verified** — `make codegen codegen-app` first (a fresh worktree has no
+   generated mocks, and `make lint` deliberately does not generate them),
+   then `make lint` and `make test` (or the targeted `make test-<pkg>`
+   suites) pass; record the exact commands and outcomes. A red lint or test
+   is never "satisfied", whatever you believe the cause to be, and a command
+   you could not run is not a pass — either is a blocker to name, not an
+   open end to flag.
 2. **Strings** — every new user-facing string, including tooltips and
    semantic labels, goes through `shared/heart_language` via the
    translations workflow: hand-edit only `intl_en.arb`; other locales flow
