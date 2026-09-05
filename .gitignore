@@ -63,6 +63,7 @@ lib/firebase_options_prod.dart
 
 /.ai
 /.claude/worktrees
+/.claude/settings.json
 **/build
 # Agent handoff notes and their review (review material, never committed).
 # Root-anchored: on a case-insensitive filesystem an unanchored HANDOFF.md
