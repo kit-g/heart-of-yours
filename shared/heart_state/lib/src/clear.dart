@@ -7,6 +7,7 @@ import 'config.dart';
 import 'exercises.dart';
 import 'goals.dart';
 import 'health.dart';
+import 'preferences.dart';
 import 'previous.dart';
 import 'stats.dart';
 import 'templates.dart';
@@ -17,6 +18,25 @@ import 'workouts.dart';
 void clearState(BuildContext context) {
   clearUserState(context);
   Auth.of(context).onSignOut();
+}
+
+/// Erases everything an anonymous session holds on the device and signs it
+/// out, so the app starts over under a fresh uid.
+///
+/// The memory is cleared first: nothing a notifier still holds may be written
+/// back once the rows are gone. Then the uid's rows and preferences, then the
+/// session — which on mobile is replaced by a new anonymous one at once (see
+/// [Auth.ensureSession]). Nothing happens for a session with an account: that
+/// one has account deletion, and [Auth.eraseSession] refuses it.
+Future<void> eraseState(BuildContext context) async {
+  final auth = Auth.of(context);
+  if (!auth.isAnonymous) return;
+  if (auth.user?.id case String uid) {
+    final preferences = Preferences.of(context);
+    clearUserState(context);
+    await preferences.forgetUser(uid);
+    await auth.eraseSession();
+  }
 }
 
 /// Forgets everything the session held, keeping the session itself.
