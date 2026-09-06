@@ -188,6 +188,21 @@ class Preferences with ChangeNotifier {
     return _prefs?.setBool('$_healthAsked-$userId', true);
   }
 
+  /// Drops what this store keeps under [userId]: the theme preset and the two
+  /// health flags. Part of "Erase my data" — the uid is never read again once
+  /// its session is gone, so these are orphans either way, but a wipe that
+  /// says everything should mean it. The device's own keys (units, theme
+  /// mode, [onboardingSeen]) are not a user's and stay.
+  Future<void> forgetUser(String userId) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    await Future.wait([
+      for (final key in ['$_baseColor-$userId', '$_healthInviteDismissed-$userId', '$_healthAsked-$userId'])
+        prefs.remove(key),
+    ]);
+    notifyListeners();
+  }
+
   /// Whether the first-launch onboarding has been shown on this device.
   ///
   /// A fact about the device, not a user: it is set before there is a session
