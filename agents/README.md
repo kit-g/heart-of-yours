@@ -23,6 +23,7 @@ xcrun simctl create agent-iphone "iPhone 17"
 agents/agent a1 --issue 142                       # containerized, headless
 agents/agent a2 --repo ~/mine/heart-api --task "…" --aws
 agents/host-agent ui --issue 137                  # host, simulators available
+agents/host-agent a3 --issue 92 --base worktree-a2  # stacked on a2's branch
 ```
 
 No `--task`/`--issue` drops you into an interactive session in the same
@@ -32,7 +33,19 @@ isolation (useful for steering); `--shell` gives bash in the container.
 
 **Isolation.** Each agent runs `claude --worktree <name>`, so edits land in
 `.claude/worktrees/<name>` and Claude Code itself blocks writes to the main
-checkout. Containers add the hard shell: non-root, default-deny egress
+checkout. The launcher makes the worktree first (`agents/worktree.sh`), on
+`main` unless told otherwise — Claude Code would branch from whatever the
+checkout has out, which is a review branch as often as not.
+
+**Stacked work.** A ticket that builds on another agent's unmerged work gets
+`--base worktree-<parent>`: the child's branch starts from the parent's, and
+`branch.<child>.gh-merge-base` is set so `gh pr create` from it targets the
+parent's PR, the way GitHub's stacked pull requests expect. The child's
+handoff names its base; its diff is still only its own work (`git diff
+HEAD`). Two things the agents cannot do for you: when you push more commits
+to the parent, the child needs rebasing (the guard hook denies `rebase` and
+`merge` to agents), and when the parent merges, check that GitHub retargeted
+the child before merging it. Containers add the hard shell: non-root, default-deny egress
 firewall (`init-firewall.sh`), resource caps, and only the target repo
 mounted. The repo is mounted at its **identical host path** because worktree
 metadata records absolute paths.
