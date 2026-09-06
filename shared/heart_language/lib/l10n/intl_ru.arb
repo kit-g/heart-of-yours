@@ -1500,6 +1500,36 @@
     "type": "text",
     "placeholders": {}
   },
+  "eraseData": "Стереть мои данные",
+  "@eraseData": {
+    "description": "Settings row, shown only while using the app without an account: wipes everything Heart holds on this device. Destructive, red",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataTitle": "Вы уверены, что хотите стереть свои данные?",
+  "@eraseDataTitle": {
+    "description": "Erase-my-data dialog title. Mirrors the delete-account title's phrasing",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataBody": "Ваши тренировки, шаблоны, собственные упражнения, цели и настройки графиков будут удалены с этого телефона вместе с копией данных здоровья в Heart. Записи здоровья самого телефона не затрагиваются. Без аккаунта резервной копии нет — это действие нельзя отменить.",
+  "@eraseDataBody": {
+    "description": "Erase-my-data dialog body. Must name the health data as included (it is device-only and lives in the same store) while making clear the operating system's health store itself is untouched, and say plainly that nothing can bring the data back",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataCancelMessage": "Оставить мои данные",
+  "@eraseDataCancelMessage": {
+    "description": "Erase-my-data dialog, the safe way out",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataConfirmMessage": "Стереть всё",
+  "@eraseDataConfirmMessage": {
+    "description": "Erase-my-data dialog, the destructive action",
+    "type": "text",
+    "placeholders": {}
+  },
   "confirmDeleteAccountTitle": "Подтвердите удаление аккаунта",
   "@confirmDeleteAccountTitle": {
     "description": "Delete account dialog",

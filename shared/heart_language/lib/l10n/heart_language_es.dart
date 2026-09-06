@@ -803,6 +803,22 @@ class LEs extends L {
   String get deleteAccountConfirmMessage => '¡Sí, sigan sin mí!';
 
   @override
+  String get eraseData => 'Borrar mis datos';
+
+  @override
+  String get eraseDataTitle => '¿Seguro que quieres borrar tus datos?';
+
+  @override
+  String get eraseDataBody =>
+      'Tus entrenamientos, plantillas, ejercicios personalizados, objetivos y ajustes de gráficos se eliminan de este teléfono, junto con la copia de Heart de tus datos de salud. Los registros de salud de tu propio teléfono no se tocan. Sin una cuenta no hay copia de seguridad: esto no se puede deshacer.';
+
+  @override
+  String get eraseDataCancelMessage => 'Conservar mis datos';
+
+  @override
+  String get eraseDataConfirmMessage => 'Borrar todo';
+
+  @override
   String get confirmDeleteAccountTitle => 'Confirma la eliminación de tu cuenta';
 
   @override

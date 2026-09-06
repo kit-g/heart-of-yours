@@ -804,6 +804,22 @@ class LRu extends L {
   String get deleteAccountConfirmMessage => 'Да, продолжайте без меня!';
 
   @override
+  String get eraseData => 'Стереть мои данные';
+
+  @override
+  String get eraseDataTitle => 'Вы уверены, что хотите стереть свои данные?';
+
+  @override
+  String get eraseDataBody =>
+      'Ваши тренировки, шаблоны, собственные упражнения, цели и настройки графиков будут удалены с этого телефона вместе с копией данных здоровья в Heart. Записи здоровья самого телефона не затрагиваются. Без аккаунта резервной копии нет — это действие нельзя отменить.';
+
+  @override
+  String get eraseDataCancelMessage => 'Оставить мои данные';
+
+  @override
+  String get eraseDataConfirmMessage => 'Стереть всё';
+
+  @override
   String get confirmDeleteAccountTitle => 'Подтвердите удаление аккаунта';
 
   @override

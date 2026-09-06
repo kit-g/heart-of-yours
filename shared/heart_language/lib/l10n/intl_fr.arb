@@ -1500,6 +1500,36 @@
     "type": "text",
     "placeholders": {}
   },
+  "eraseData": "Effacer mes données",
+  "@eraseData": {
+    "description": "Settings row, shown only while using the app without an account: wipes everything Heart holds on this device. Destructive, red",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataTitle": "Voulez-vous vraiment effacer vos données ?",
+  "@eraseDataTitle": {
+    "description": "Erase-my-data dialog title. Mirrors the delete-account title's phrasing",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataBody": "Vos entraînements, modèles, exercices personnalisés, objectifs et réglages de graphiques sont supprimés de ce téléphone, ainsi que la copie que Heart garde de vos données de santé. Les données de santé de votre téléphone lui-même ne sont pas touchées. Sans compte, il n’y a pas de sauvegarde : cette action est irréversible.",
+  "@eraseDataBody": {
+    "description": "Erase-my-data dialog body. Must name the health data as included (it is device-only and lives in the same store) while making clear the operating system's health store itself is untouched, and say plainly that nothing can bring the data back",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataCancelMessage": "Garder mes données",
+  "@eraseDataCancelMessage": {
+    "description": "Erase-my-data dialog, the safe way out",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataConfirmMessage": "Tout effacer",
+  "@eraseDataConfirmMessage": {
+    "description": "Erase-my-data dialog, the destructive action",
+    "type": "text",
+    "placeholders": {}
+  },
   "confirmDeleteAccountTitle": "Confirmez la suppression de votre compte",
   "@confirmDeleteAccountTitle": {
     "description": "Delete account dialog",
