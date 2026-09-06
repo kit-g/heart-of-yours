@@ -40,6 +40,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
     final L(:startWorkout, templates: copy, :template, :exampleTemplates, :newFolder, :noFolder) = L.of(context);
     final templates = Templates.watch(context);
     final preferences = Preferences.watch(context);
+    final isAnonymous = Auth.watch(context).isAnonymous;
     final unfiled = templates.templatesIn(null).toList();
     return CustomScrollView(
       slivers: [
@@ -66,19 +67,22 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                 ),
                 Row(
                   children: [
-                    IconButton(
-                      tooltip: newFolder,
-                      // a square tight box rather than `visualDensity`, same as
-                      // the movement filter: Material clamps the density's
-                      // horizontal adjustment at zero, so it trimmed the height
-                      // alone and the splash came out an ellipse
-                      constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-                      padding: .zero,
-                      icon: const Icon(Icons.create_new_folder_outlined),
-                      onPressed: () {
-                        _createFolder(context);
-                      },
-                    ),
+                    // folders are the server's — it mints their ids — so there
+                    // are none to make without an account
+                    if (!isAnonymous)
+                      IconButton(
+                        tooltip: newFolder,
+                        // a square tight box rather than `visualDensity`, same as
+                        // the movement filter: Material clamps the density's
+                        // horizontal adjustment at zero, so it trimmed the height
+                        // alone and the splash came out an ellipse
+                        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+                        padding: .zero,
+                        icon: const Icon(Icons.create_new_folder_outlined),
+                        onPressed: () {
+                          _createFolder(context);
+                        },
+                      ),
                     if (templates.allowsNewTemplate)
                       PrimaryButton.shrunk(
                         backgroundColor: colorScheme.secondaryContainer,
@@ -165,6 +169,12 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
     final templates = Templates.of(context);
     final card = _TemplateCard(
       template: template,
+      // no folders without an account (see the new-folder button), so nothing
+      // to move into
+      options: switch (Auth.of(context).isAnonymous) {
+        true => _TemplateOption.values.where((option) => option != .move).toList(),
+        false => null,
+      },
       onDelete: (template) {
         _showDeleteTemplateDialog(context, template);
       },
