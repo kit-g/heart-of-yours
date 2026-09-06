@@ -51,15 +51,21 @@ class HeartApp extends StatelessWidget {
       providers: [
         Provider<AppConfig>.value(value: appConfig),
         Provider<HeartRouter>.value(value: router),
+        // One gate for every remote leg below; Auth decides, the rest consult.
+        // Above them all because each takes it at construction.
+        Provider<RemoteAccess>(
+          create: (_) => RemoteAccess(),
+        ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
         ),
         ChangeNotifierProvider<Exercises>(
-          create: (_) {
+          create: (context) {
             final exercises = Exercises(
               onError: reportToSentry,
               remoteService: api,
               service: db,
+              remote: RemoteAccess.of(context),
             );
             // sample templates arrive as content slugs plus per-locale
             // names; the CDN client resolves the slugs through the catalog
@@ -80,6 +86,7 @@ class HeartApp extends StatelessWidget {
           create: (context) => Workouts(
             service: db,
             remoteService: api,
+            remote: RemoteAccess.of(context),
             onError: (error, {stacktrace}) {
               Logger('Workouts')
                 ..shout('${error.runtimeType}: $error')
@@ -102,6 +109,7 @@ class HeartApp extends StatelessWidget {
             folderService: LocalTemplateFolders(db),
             remoteFolderService: api,
             filingService: RemoteTemplateFiling(api),
+            remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
         ),
@@ -126,9 +134,10 @@ class HeartApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<Goals>(
-          create: (_) => Goals(
+          create: (context) => Goals(
             service: LocalGoals(db),
             remoteService: api,
+            remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
         ),
@@ -141,34 +150,59 @@ class HeartApp extends StatelessWidget {
             onError: reportHealthFailure,
           ),
         ),
-        ChangeNotifierProvider<Auth>(
-          create: (context) => Auth(
-            service: api,
-            onEnter: (session, userId) => _initApp(
-              context,
-              session,
-              userId,
-              hasLocalNotifications: hasLocalNotifications,
-            ),
-            onUserChange: (user) {
-              router.refresh();
-              Exercises.of(context).userId = user?.id;
-              Charts.of(context).userId = user?.id;
-              Goals.of(context).userId = user?.id;
-              Health.of(context).userId = user?.id;
-              PreviousExercises.of(context).userId = user?.id;
-              Stats.of(context).userId = user?.id;
-              Templates.of(context).userId = user?.id;
-              Timers.of(context).userId = user?.id;
-              Workouts.of(context).userId = user?.id;
+        ChangeNotifierProvider<Alarms>(
+          // same contract as _WorkoutTimeoutScheduler: with notifications off
+          // the plugin is never initialized, so no call may reach it — and a
+          // sign-out (or a uid switch) stops the timer through this
+          create: (_) => Alarms(
+            cancelRestTimerNotifications: switch (hasLocalNotifications ?? false) {
+              true => cancelExerciseNotification,
+              false => null,
             },
-            onError: reportToSentry,
-            firebase: firebaseAuth,
-            isWeb: kIsWeb,
           ),
         ),
-        ChangeNotifierProvider<Alarms>(
-          create: (_) => Alarms(cancelRestTimerNotifications: cancelExerciseNotification),
+        // Last of the state classes: its callbacks below reach every one of
+        // them through this context, which only sees what is provided above.
+        ChangeNotifierProvider<Auth>(
+          create: (context) {
+            // the uid the state classes are currently keyed on
+            String? current;
+            return Auth(
+              service: api,
+              remote: RemoteAccess.of(context),
+              onEnter: (session, userId) => _initApp(
+                context,
+                session,
+                userId,
+                hasLocalNotifications: hasLocalNotifications,
+              ),
+              onUserChange: (user) {
+                router.refresh();
+                // One uid replacing another under a running app — an account
+                // signed into from an anonymous session. A sign-out clears the
+                // state on its way out; this switch has no such moment, so it
+                // is cleared here, before the new uid is keyed in. Exercises
+                // forgets it was initialized, which is what makes `_initApp`
+                // run the full startup again for the new uid.
+                if (current != null && user != null && user.id != current) {
+                  clearUserState(context);
+                }
+                current = user?.id;
+                Exercises.of(context).userId = user?.id;
+                Charts.of(context).userId = user?.id;
+                Goals.of(context).userId = user?.id;
+                Health.of(context).userId = user?.id;
+                PreviousExercises.of(context).userId = user?.id;
+                Stats.of(context).userId = user?.id;
+                Templates.of(context).userId = user?.id;
+                Timers.of(context).userId = user?.id;
+                Workouts.of(context).userId = user?.id;
+              },
+              onError: reportToSentry,
+              firebase: firebaseAuth,
+              isWeb: kIsWeb,
+            );
+          },
         ),
         Provider<Scrolls>(
           create: (_) => Scrolls(),
@@ -231,8 +265,13 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
   /// background: its permissions are granted in another app entirely, and the
   /// platform never tells us what was decided there. See [Health.onResume],
   /// which throttles itself — this fires on every alt-tab.
+  ///
+  /// The session is the other: a first launch offline could not mint an
+  /// anonymous uid, and coming back is the natural moment to try again.
   void _onResume() {
-    if (mounted) Health.of(context).onResume();
+    if (!mounted) return;
+    Health.of(context).onResume();
+    Auth.of(context).ensureSession();
   }
 
   /// Localized backend content (the exercise catalog) is served per request
