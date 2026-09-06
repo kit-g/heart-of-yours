@@ -216,6 +216,69 @@
     "type": "text",
     "placeholders": {}
   },
+  "onboardingWelcomeTitle": "Добро пожаловать в Heart",
+  "@onboardingWelcomeTitle": {
+    "description": "First-launch onboarding, screen 1 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingWelcomeBody": "Дневник тренировок, который не мешает: планируйте сессию, отмечайте каждый подход и смотрите, как растут ваши веса.",
+  "@onboardingWelcomeBody": {
+    "description": "First-launch onboarding, screen 1 of 3: what Heart is, in one line",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalTitle": "Ваши данные остаются на телефоне",
+  "@onboardingLocalTitle": {
+    "description": "First-launch onboarding, screen 2 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalBody": "Аккаунт не нужен: ваши тренировки и данные о здоровье, которые вы разрешите Heart читать, хранятся только на этом устройстве и больше нигде.",
+  "@onboardingLocalBody": {
+    "description": "First-launch onboarding, screen 2 of 3: the anonymous promise and the health-data promise as one sentence",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalTrade": "Честная сделка: потеряете телефон — потеряете данные, если только не войдёте в аккаунт.",
+  "@onboardingLocalTrade": {
+    "description": "First-launch onboarding, screen 2 of 3: the trade-off of having no account",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingAccountTitle": "Войдите, когда захотите",
+  "@onboardingAccountTitle": {
+    "description": "First-launch onboarding, screen 3 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingAccountBody": "Аккаунт добавит резервную копию и синхронизацию между устройствами, а позже — обмен с друзьями и тренера. Пока вы не войдёте, ничего не изменится.",
+  "@onboardingAccountBody": {
+    "description": "First-launch onboarding, screen 3 of 3: what an account adds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingNext": "Далее",
+  "@onboardingNext": {
+    "description": "First-launch onboarding: moves to the next screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingContinue": "Продолжить",
+  "@onboardingContinue": {
+    "description": "First-launch onboarding, last screen: closes the onboarding and enters the app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingScreenOf": "Экран {current} из {total}",
+  "@onboardingScreenOf": {
+    "description": "First-launch onboarding: screen-reader label of the page indicator dots",
+    "type": "text",
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
   "profile": "Профиль",
   "@profile": {
     "description": "Generic label, e.g. bottom nav bar",
