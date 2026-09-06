@@ -120,7 +120,11 @@ Future<void> _runner({
           return (j, 426);
         }
         ..onReauthenticate = () async {
-          final token = await firebase?.currentUser?.getIdToken(true);
+          // An anonymous session never talks to the server, so there is no
+          // 401 to recover from — and its token must never become a header.
+          final user = firebase?.currentUser;
+          if (user == null || user.isAnonymous) return false;
+          final token = await user.getIdToken(true);
           if (token != null) {
             api.reauthenticate(token);
           }
