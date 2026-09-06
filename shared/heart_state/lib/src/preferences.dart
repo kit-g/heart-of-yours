@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
@@ -12,10 +14,24 @@ const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
 
 class Preferences with ChangeNotifier {
+  /// The key under which [onboardingSeen] is stored. Public so a test can seed
+  /// a device that has already been through the first launch — the app's
+  /// widget tests start there far more often than on a fresh install.
+  @visibleForTesting
+  static const onboardingSeenKey = 'onboardingSeen';
+
   SharedPreferences? _prefs;
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
+
+  final _initialized = Completer<void>();
+
+  /// Resolves once [init] has read the store — for the one reader that cannot
+  /// act on a guess and cannot wait for a notification either: the router,
+  /// deciding a first launch's opening screen. Never fails; a torn-down app
+  /// simply leaves it pending.
+  Future<void> get initialized => _initialized.future;
 
   late MeasurementUnit _weight;
 
@@ -55,6 +71,8 @@ class Preferences with ChangeNotifier {
       defaultWeightUnit: unit,
       defaultDistanceUnit: unit,
     );
+    // startup reads this twice (see app.dart); the second read is a no-op here
+    if (!_initialized.isCompleted) _initialized.complete();
     notifyListeners();
   }
 
@@ -168,6 +186,23 @@ class Preferences with ChangeNotifier {
     if (userId == null) return null;
     notifyListeners();
     return _prefs?.setBool('$_healthAsked-$userId', true);
+  }
+
+  /// Whether the first-launch onboarding has been shown on this device.
+  ///
+  /// A fact about the device, not a user: it is set before there is a session
+  /// to key on, and it stays set through every sign-in and sign-out after —
+  /// the carousel is shown once, full stop. Only meaningful once
+  /// [isInitialized] (see [initialized]); before that it reads as seen, so
+  /// nothing is shown on a guess.
+  bool get onboardingSeen {
+    return _prefs?.getBool(onboardingSeenKey) ?? !_isInitialized;
+  }
+
+  Future<bool>? markOnboardingSeen() {
+    final write = _prefs?.setBool(onboardingSeenKey, true);
+    notifyListeners();
+    return write;
   }
 
   /// Formats [value] (stored canonically in metric) for display.
