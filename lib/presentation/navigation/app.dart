@@ -184,6 +184,9 @@ class HeartApp extends StatelessWidget {
                 userId,
                 hasLocalNotifications: hasLocalNotifications,
               ),
+              // "Erase my data": the anonymous session's store is this
+              // device's alone, so the wipe is the local database's to do
+              onErase: db.eraseUser,
               onUserChange: (user) {
                 router.refresh();
                 // One uid replacing another under a running app — an account

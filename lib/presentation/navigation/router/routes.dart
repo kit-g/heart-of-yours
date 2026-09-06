@@ -38,6 +38,7 @@ RouteBase _profileRoute() {
           return SettingsPage(
             onAccountManagement: context.goToAccountManagement,
             onImportData: context.goToImportData,
+            onErased: context.goToProfile,
           );
         },
         name: _settingsName,
