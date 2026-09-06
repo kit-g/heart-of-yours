@@ -20,7 +20,7 @@ import '../mocks.mocks.dart';
 /// session is anonymous rather than gated — so even a test that only looks at
 /// the MaterialApp gets that far.
 void stubStartup(MockLocalDatabase db, MockApi api) {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues(pastOnboarding());
 
   when(
     db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
@@ -37,6 +37,11 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
   when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
   when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
 }
+
+/// The preferences of a device past its first launch. An anonymous session
+/// on a fresh device opens on the onboarding carousel rather than the app, so
+/// every test that is not about the carousel seeds this first.
+Map<String, Object> pastOnboarding() => {Preferences.onboardingSeenKey: true};
 
 /// A lightweight, reusable harness to keep widget tests DRY.
 ///

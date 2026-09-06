@@ -30,7 +30,7 @@ const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_i
 /// A screen the matrix sweeps. Each maps to a path through the real app —
 /// see [_pumpTo] — rather than a page pumped in isolation, so the check sees
 /// the same chrome (app bar, nav) the guideline actually has to pass on.
-enum _Screen { login, profile, noAccountDialog, workout, history, exercises, settings, importData }
+enum _Screen { onboarding, login, profile, noAccountDialog, workout, history, exercises, settings, importData }
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
 /// [textContrastGuideline]; which token set it sees is the preset and mode
@@ -53,6 +53,14 @@ extension on _Guideline {
 /// constraint that blocks a fix) rather than `true`/`false`, so `flutter
 /// test`'s output says *why* a combination is still debt.
 final _matrix = <(_Screen, _Guideline, String?)>[
+  // The first-launch carousel (lib/presentation/routes/onboarding/page.dart),
+  // on its last screen: Skip, the page dots and both ways out.
+  (_Screen.onboarding, _Guideline.labeledTapTarget, null),
+  (_Screen.onboarding, _Guideline.textContrastLight, null),
+  (_Screen.onboarding, _Guideline.textContrastDark, null),
+  (_Screen.onboarding, _Guideline.androidTapTarget, null),
+  (_Screen.onboarding, _Guideline.iosTapTarget, null),
+
   // Login: untouched by this ticket's remediation pass — every control
   // already carries a visible text label, so the guidelines it can pass,
   // pass without changes.
@@ -172,7 +180,7 @@ void main() {
   late TestAppHarness harness;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(pastOnboarding());
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       _signInWithAppleChannel,
@@ -233,10 +241,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    // the one screen a device sees only before its first launch is over
+    if (screen == _Screen.onboarding) {
+      SharedPreferences.setMockInitialValues({});
+    }
+
     // No user means an anonymous session, not a gate: the login page is only
     // reachable through the no-account dialog on that session's profile.
     final firebase = switch (screen) {
-      _Screen.login || _Screen.noAccountDialog => MockFirebaseAuth(signedIn: false),
+      _Screen.onboarding || _Screen.login || _Screen.noAccountDialog => MockFirebaseAuth(signedIn: false),
       _ => MockFirebaseAuth(
         mockUser: MockUser(uid: 'u1', email: 'u1@test'),
         signedIn: true,
@@ -258,6 +271,11 @@ void main() {
     switch (screen) {
       case _Screen.profile:
         break;
+      case _Screen.onboarding:
+        // the last screen carries every control the carousel has
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        await tester.tapByKey(AppKeys.onboardingNext);
       case _Screen.noAccountDialog:
         await tester.tapByKey(AppKeys.noAccount);
       case _Screen.login:
