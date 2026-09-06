@@ -1454,6 +1454,44 @@ class LRu extends L {
   String get yourData => 'Ваши данные';
 
   @override
+  String get exportData => 'Экспорт моих данных';
+
+  @override
+  String get exportExplainer =>
+      'Всё, что Heart хранит на этом телефоне, в файле, который останется у вас: тренировки со всеми подходами, шаблоны и папки, свои упражнения, настройки единиц измерения и цели.';
+
+  @override
+  String get exportNoHealthData => 'Данные о здоровье не включены — они никогда не покидают ваш телефон.';
+
+  @override
+  String exportPartialHistory(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Включены $count тренировки с этого телефона.',
+      many: 'Включены $count тренировок с этого телефона.',
+      few: 'Включены $count тренировки с этого телефона.',
+      one: 'Включена $count тренировка с этого телефона.',
+    );
+    return '$_temp0 Более старые тренировки, ещё не загруженные, в файл не попадут — откройте Историю и пролистайте назад, чтобы сначала загрузить их.';
+  }
+
+  @override
+  String get exportAsJson => 'Экспорт в JSON';
+
+  @override
+  String get exportJsonHint => 'Всё перечисленное выше, в собственном формате Heart.';
+
+  @override
+  String get exportAsCsv => 'Экспорт в CSV';
+
+  @override
+  String get exportCsvHint => 'Только тренировки, по строке на подход — открывается в любой таблице.';
+
+  @override
+  String get exportInFlight => 'Готовим ваш файл…';
+
+  @override
   String get account => 'Аккаунт';
 
   @override

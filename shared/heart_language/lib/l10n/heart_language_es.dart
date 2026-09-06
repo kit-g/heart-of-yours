@@ -1436,6 +1436,42 @@ class LEs extends L {
   String get yourData => 'Tus datos';
 
   @override
+  String get exportData => 'Exportar mis datos';
+
+  @override
+  String get exportExplainer =>
+      'Todo lo que Heart guarda en este teléfono, en un archivo que es tuyo: entrenamientos con cada serie, plantillas y carpetas, ejercicios personalizados, ajustes de unidades y objetivos.';
+
+  @override
+  String get exportNoHealthData => 'Tus datos de salud no se incluyen: nunca salen de tu teléfono.';
+
+  @override
+  String exportPartialHistory(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Incluye los $count entrenamientos de este teléfono.',
+      one: 'Incluye el único entrenamiento de este teléfono.',
+    );
+    return '$_temp0 Los entrenamientos más antiguos que aún no se han descargado quedan fuera: abre el Historial y desplázate hacia atrás para descargarlos primero.';
+  }
+
+  @override
+  String get exportAsJson => 'Exportar como JSON';
+
+  @override
+  String get exportJsonHint => 'Todo lo anterior, en el formato propio de Heart.';
+
+  @override
+  String get exportAsCsv => 'Exportar como CSV';
+
+  @override
+  String get exportCsvHint => 'Solo entrenamientos, una fila por serie: se abre en cualquier hoja de cálculo.';
+
+  @override
+  String get exportInFlight => 'Preparando tu archivo…';
+
+  @override
   String get account => 'Cuenta';
 
   @override

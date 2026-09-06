@@ -2645,6 +2645,62 @@
     "type": "text",
     "placeholders": {}
   },
+  "exportData": "Export my data",
+  "@exportData": {
+    "description": "Settings row (shown with and without an account) and title of the export page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportExplainer": "Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.",
+  "@exportExplainer": {
+    "description": "Export page, what the file holds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportNoHealthData": "Your health data is not included — it never leaves your phone.",
+  "@exportNoHealthData": {
+    "description": "Export page, the device-only health promise restated: no health data is in the file",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportPartialHistory": "{count, plural, =1{Includes the 1 workout on this phone.} other{Includes the {count} workouts on this phone.}} Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.",
+  "@exportPartialHistory": {
+    "description": "Export page, shown to a signed-in user whose phone holds fewer workouts than the server: how many the file will have and how to get the rest",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "exportAsJson": "Export as JSON",
+  "@exportAsJson": {
+    "description": "Export page, the button that writes the JSON file and opens the share sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportJsonHint": "Everything above, in Heart's own format.",
+  "@exportJsonHint": {
+    "description": "Export page, one line under the JSON button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportAsCsv": "Export as CSV",
+  "@exportAsCsv": {
+    "description": "Export page, the button that writes the CSV file and opens the share sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportCsvHint": "Workouts only, one row per set — opens in any spreadsheet.",
+  "@exportCsvHint": {
+    "description": "Export page, one line under the CSV button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportInFlight": "Preparing your file…",
+  "@exportInFlight": {
+    "description": "Export page, shown under the progress bar while the file is being written",
+    "type": "text",
+    "placeholders": {}
+  },
   "account": "Account",
   "@account": {
     "description": "Settings section header over account management",

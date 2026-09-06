@@ -1437,6 +1437,43 @@ class LFr extends L {
   String get yourData => 'Vos données';
 
   @override
+  String get exportData => 'Exporter mes données';
+
+  @override
+  String get exportExplainer =>
+      'Tout ce que Heart garde sur ce téléphone, dans un fichier qui vous appartient : séances avec chaque série, modèles et dossiers, exercices personnalisés, réglages d’unités et objectifs.';
+
+  @override
+  String get exportNoHealthData =>
+      'Vos données de santé ne sont pas incluses : elles ne quittent jamais votre téléphone.';
+
+  @override
+  String exportPartialHistory(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Inclut les $count séances présentes sur ce téléphone.',
+      one: 'Inclut la seule séance présente sur ce téléphone.',
+    );
+    return '$_temp0 Les séances plus anciennes pas encore téléchargées sont laissées de côté : ouvrez l’Historique et remontez pour les récupérer d’abord.';
+  }
+
+  @override
+  String get exportAsJson => 'Exporter en JSON';
+
+  @override
+  String get exportJsonHint => 'Tout ce qui précède, au format propre à Heart.';
+
+  @override
+  String get exportAsCsv => 'Exporter en CSV';
+
+  @override
+  String get exportCsvHint => 'Séances uniquement, une ligne par série : s’ouvre dans n’importe quel tableur.';
+
+  @override
+  String get exportInFlight => 'Préparation de votre fichier…';
+
+  @override
   String get account => 'Compte';
 
   @override
