@@ -120,6 +120,41 @@ class LEn extends L {
   String get notNow => 'Not now';
 
   @override
+  String get onboardingWelcomeTitle => 'Welcome to Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.';
+
+  @override
+  String get onboardingLocalTitle => 'Your data stays on your phone';
+
+  @override
+  String get onboardingLocalBody =>
+      'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.';
+
+  @override
+  String get onboardingLocalTrade => 'The honest trade: lose the phone and you lose the data, unless you log in.';
+
+  @override
+  String get onboardingAccountTitle => 'Log in whenever you like';
+
+  @override
+  String get onboardingAccountBody =>
+      'An account adds a backup and sync between your devices, and later sharing with friends and coaching. Nothing changes until you do.';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Screen $current of $total';
+  }
+
+  @override
   String get profile => 'Profile';
 
   @override
@@ -1768,6 +1803,41 @@ class LEnCa extends LEn {
 
   @override
   String get notNow => 'Not now';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.';
+
+  @override
+  String get onboardingLocalTitle => 'Your data stays on your phone';
+
+  @override
+  String get onboardingLocalBody =>
+      'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.';
+
+  @override
+  String get onboardingLocalTrade => 'The honest trade: lose the phone and you lose the data, unless you log in.';
+
+  @override
+  String get onboardingAccountTitle => 'Log in whenever you like';
+
+  @override
+  String get onboardingAccountBody =>
+      'An account adds a backup and sync between your devices, and later sharing with friends and coaching. Nothing changes until you do.';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Screen $current of $total';
+  }
 
   @override
   String get profile => 'Profile';

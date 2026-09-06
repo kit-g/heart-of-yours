@@ -216,6 +216,69 @@
     "type": "text",
     "placeholders": {}
   },
+  "onboardingWelcomeTitle": "Te damos la bienvenida a Heart",
+  "@onboardingWelcomeTitle": {
+    "description": "First-launch onboarding, screen 1 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingWelcomeBody": "Un diario de entrenamientos que no estorba: planifica una sesión, marca cada serie y mira cómo crecen tus marcas.",
+  "@onboardingWelcomeBody": {
+    "description": "First-launch onboarding, screen 1 of 3: what Heart is, in one line",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalTitle": "Tus datos se quedan en tu teléfono",
+  "@onboardingLocalTitle": {
+    "description": "First-launch onboarding, screen 2 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalBody": "No hace falta cuenta: tus entrenamientos, y los datos de salud que dejes leer a Heart, viven en este dispositivo y en ningún otro sitio.",
+  "@onboardingLocalBody": {
+    "description": "First-launch onboarding, screen 2 of 3: the anonymous promise and the health-data promise as one sentence",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalTrade": "El trato honesto: si pierdes el teléfono, pierdes los datos, a menos que inicies sesión.",
+  "@onboardingLocalTrade": {
+    "description": "First-launch onboarding, screen 2 of 3: the trade-off of having no account",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingAccountTitle": "Inicia sesión cuando quieras",
+  "@onboardingAccountTitle": {
+    "description": "First-launch onboarding, screen 3 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingAccountBody": "Una cuenta añade una copia de seguridad y sincronización entre tus dispositivos, y más adelante compartir con amigos y coaching. Nada cambia hasta que tú lo decidas.",
+  "@onboardingAccountBody": {
+    "description": "First-launch onboarding, screen 3 of 3: what an account adds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingNext": "Siguiente",
+  "@onboardingNext": {
+    "description": "First-launch onboarding: moves to the next screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingContinue": "Continuar",
+  "@onboardingContinue": {
+    "description": "First-launch onboarding, last screen: closes the onboarding and enters the app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingScreenOf": "Pantalla {current} de {total}",
+  "@onboardingScreenOf": {
+    "description": "First-launch onboarding: screen-reader label of the page indicator dots",
+    "type": "text",
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
   "profile": "Perfil",
   "@profile": {
     "description": "Generic label, e.g. bottom nav bar",

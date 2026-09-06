@@ -120,6 +120,42 @@ class LFr extends L {
   String get notNow => 'Pas maintenant';
 
   @override
+  String get onboardingWelcomeTitle => 'Bienvenue dans Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Un carnet d\'entraînement qui ne vous gêne pas : planifiez une séance, cochez chaque série et regardez vos charges progresser.';
+
+  @override
+  String get onboardingLocalTitle => 'Vos données restent sur votre téléphone';
+
+  @override
+  String get onboardingLocalBody =>
+      'Pas besoin de compte : vos séances, et les données de santé que vous laissez Heart lire, restent sur cet appareil et nulle part ailleurs.';
+
+  @override
+  String get onboardingLocalTrade =>
+      'Le marché est honnête : perdez le téléphone et vous perdez les données, sauf si vous vous connectez.';
+
+  @override
+  String get onboardingAccountTitle => 'Connectez-vous quand vous voulez';
+
+  @override
+  String get onboardingAccountBody =>
+      'Un compte ajoute une sauvegarde et la synchronisation entre vos appareils, et plus tard le partage avec des amis et le coaching. Rien ne change tant que vous ne le décidez pas.';
+
+  @override
+  String get onboardingNext => 'Suivant';
+
+  @override
+  String get onboardingContinue => 'Continuer';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Écran $current sur $total';
+  }
+
+  @override
   String get profile => 'Profil';
 
   @override
