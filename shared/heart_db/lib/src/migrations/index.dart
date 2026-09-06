@@ -92,4 +92,8 @@ const _migrations = <int, List<String>>{
     rekeyExerciseDetailsIndex,
     addSyncsLocale,
   ],
+  12: [
+    addSyncsVersion,
+    addSyncsEtag,
+  ],
 };

@@ -28,6 +28,7 @@ part 'src/migrations/0008.dart';
 part 'src/migrations/0009.dart';
 part 'src/migrations/0010.dart';
 part 'src/migrations/0011.dart';
+part 'src/migrations/0012.dart';
 part 'src/migrations/index.dart';
 part 'src/parts/charts.dart';
 part 'src/parts/exercises.dart';
