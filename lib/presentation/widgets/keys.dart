@@ -61,6 +61,13 @@ abstract final class AppKeys {
   /// The confirmation's destructive action.
   static const eraseDataConfirm = Key('Settings.eraseData.confirm');
 
+  /// The settings row that opens the export page; present in both sessions.
+  static const exportData = Key('Settings.exportData');
+
+  /// The export page's two actions, one per format.
+  static const exportJson = Key('Export.json');
+  static const exportCsv = Key('Export.csv');
+
   /// The first-launch onboarding's way out, present on every screen of it.
   static const onboardingSkip = Key('Onboarding.skip');
 
