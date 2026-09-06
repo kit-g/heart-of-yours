@@ -15,6 +15,16 @@ extension on BuildContext {
     return goNamed(_profileName);
   }
 
+  /// The login page, by name: nothing redirects here on mobile, so this is
+  /// how an anonymous session gets to an account. Gone to, not pushed: the
+  /// route's own redirect is what sends a fresh account on to the profile, and
+  /// go_router does not re-run it for a pushed page. The way back for a
+  /// session that changes its mind is the page's close action (see
+  /// `_loginRoute`).
+  void goToLogin() {
+    return goNamed(_loginName);
+  }
+
   void goToPasswordRecoveryPage({String? address}) {
     return goNamed(_recoveryName, queryParameters: {'address': address});
   }
