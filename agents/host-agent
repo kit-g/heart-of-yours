@@ -1,7 +1,7 @@
 #!/bin/bash
 # Host-side agent for UI work: full macOS toolchain, simulators, screenshots.
 #
-#   agents/host-agent <name> [--task "..." | --issue N] [--base BRANCH]
+#   agents/host-agent <name> [--task "..." | --issue N] [--base BRANCH] [--resume [ID]]
 #
 # Weaker isolation than the containers — it runs as you. Safety comes from
 # four layers: worktree isolation (edits outside the worktree are blocked),
@@ -17,6 +17,10 @@
 #
 #   --base BRANCH  branch the worktree from BRANCH instead of main — another
 #                  agent's branch (worktree-a2) to stack this work on it
+#   --resume [ID]  continue a run that stopped (usage limit, a turn ended
+#                  mid-wait): the session ID, or the last one this launcher
+#                  streamed for <name>. The worktree keeps its work; the
+#                  agent is told to verify the tree as it stands and finish.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -25,15 +29,25 @@ REPO="$(cd "$HERE/.." && pwd)"
 NAME="${1:?usage: agents/host-agent <name> [--task \"...\" | --issue N] [--base BRANCH]}"
 shift
 
-TASK="" ISSUE="" BASE="" BASE_SET=0
+TASK="" ISSUE="" BASE="" BASE_SET=0 RESUME="" RESUME_SET=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --task)  TASK="$2"; shift 2 ;;
     --issue) ISSUE="$2"; shift 2 ;;
     --base)  BASE="$2"; BASE_SET=1; shift 2 ;;
+    --resume)
+      RESUME_SET=1
+      if [[ $# -gt 1 && "$2" != --* ]]; then RESUME="$2"; shift 2; else shift; fi ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
 done
+
+LOG="${TMPDIR:-/tmp}/heart-agent-$NAME.jsonl"
+if [[ $RESUME_SET == 1 && -z "$RESUME" ]]; then
+  # the stream's init event names the session; the last one is the run to continue
+  RESUME="$(jq -r 'select(.type=="system" and .subtype=="init") | .session_id' "$LOG" 2>/dev/null | tail -1)"
+  [[ -n "$RESUME" ]] || { echo "--resume: no session found in $LOG; pass the ID" >&2; exit 1; }
+fi
 
 # shellcheck source=worktree.sh
 . "$HERE/worktree.sh"
@@ -56,7 +70,11 @@ codegen codegen-app' before 'make lint' or the analyzer reports missing
 mocks. A red lint or test, or a check you could not run, is a blocker to
 report — never rationalize it into an open end. Your worktree branches
 from '$WORKTREE_BASE' and your pull request will target it; your work is what
-'git diff HEAD' shows. Name that base in HANDOFF.md. UI changes must be
+'git diff HEAD' shows. Name that base in HANDOFF.md. You are headless: the run ends
+the moment you answer without a tool call, and any background job dies with
+it — there is no notification to wait for. Run builds, simulator launches and
+test suites in the foreground (Bash timeout up to 600000 ms), or poll them
+with a foreground until-loop; never end a turn to 'wait'. UI changes must be
 screenshot-verified on the 'agent-iphone' simulator (and an iPad if the
 surface has a two-pane layout) — never the user's own simulators. If this
 task came from a GitHub issue, post your closing summary as a comment on it
@@ -73,11 +91,22 @@ mcp__goland__open_file_in_editor mcp__goland__execute_sql_query \
 mcp__goland__create_database_connection mcp__goland__edit_database_connection"
 
 cd "$REPO"
-if [[ -n "$TASK" ]]; then
+if [[ -n "$RESUME" ]]; then
+  # Same isolation, same prompt rules, the previous context compacted in.
+  # The stream is appended so the post-mortem keeps both halves.
+  echo "resuming session $RESUME; raw stream: $LOG" >&2
+  claude --worktree "$NAME" --permission-mode acceptEdits \
+    --disallowedTools $DISALLOWED \
+    --output-format stream-json --verbose --resume "$RESUME" -p "$PROMPT_PREFIX
+
+Your previous run stopped before it finished — the worktree still holds your
+work, uncommitted. Do not redo it: re-read the tree as it stands, run the
+verification in the foreground, complete the self-review, HANDOFF.md and the
+issue comment, and end with the summary." | tee -a "$LOG" | jq -rj -f "$HERE/narrate.jq"
+elif [[ -n "$TASK" ]]; then
   # Plain -p is silent until the run ends. Stream the session instead and
   # render it with the same filter `watch` uses; the raw event stream
   # survives in $LOG for post-mortems.
-  LOG="${TMPDIR:-/tmp}/heart-agent-$NAME.jsonl"
   echo "narrating; raw stream: $LOG" >&2
   claude --worktree "$NAME" --permission-mode acceptEdits \
     --disallowedTools $DISALLOWED \

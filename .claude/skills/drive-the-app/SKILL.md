@@ -3,6 +3,19 @@
 See a change actually rendered, and interact with it, without asking the user to tap things.
 Works against an app the user already has running — you rarely need to launch one yourself.
 
+## Headless agents: build in the foreground
+
+A `flutter run` takes minutes. In a headless (`-p`) run there is no one to wake you: the
+run ends the moment you answer without a tool call, and a backgrounded build or test suite
+is killed with it. Two agents in a row died on "the build waiter will notify me". So:
+
+- Launch with a foreground Bash call and a long timeout (`timeout: 600000`), or
+- background it and then **poll in the foreground** — `until grep -q "Dart Tooling Daemon"
+  log; do sleep 5; done` as its own Bash call with the same long timeout — before doing
+  anything else.
+
+Never end a turn while a build or a suite is still running.
+
 ## Connect
 
 1. `mcp__dart__dtd` with `listDtdUris`. Pick the instance whose **Workspace Root is
