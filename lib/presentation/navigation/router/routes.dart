@@ -647,6 +647,30 @@ RouteBase _avatarRoute() {
   );
 }
 
+/// The first-launch carousel, on the root navigator so no shell chrome shows
+/// under it. Both ways out mark it seen first, so the redirect that put the
+/// reader here lets them leave; the deep link it may carry (`from`) rides on
+/// to the profile, where the top-level redirect honours it.
+RouteBase _onboardingRoute() {
+  return GoRoute(
+    path: _onboardingPath,
+    name: _onboardingName,
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) {
+      return OnboardingPage(
+        onContinue: () {
+          Preferences.of(context).markOnboardingSeen();
+          context.goNamed(_profileName, queryParameters: state.uri.queryParameters);
+        },
+        onLogIn: () {
+          Preferences.of(context).markOnboardingSeen();
+          context.goToLogin();
+        },
+      );
+    },
+  );
+}
+
 RouteBase _upgradeRequiredRoute() {
   return GoRoute(
     path: _upgradeAppPath,
