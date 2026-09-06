@@ -289,6 +289,74 @@ void main() {
     });
   });
 
+  group('eraseSession', () {
+    test('wipes the anonymous uid, signs out, and a fresh anonymous session follows', () async {
+      final firebase = MockFirebaseAuth(signedIn: false);
+      final erased = <String>[];
+      final uids = <String?>[];
+
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        googleSignIn: MockGoogleSignIn(),
+        onErase: (uid) async => erased.add(uid),
+        onUserChange: (user) => uids.add(user?.id),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final before = sut.user!.id;
+
+      await sut.eraseSession();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(erased, [before], reason: 'the store is wiped under the uid that held it, once');
+      // signed out, then a new anonymous user minted on the spot
+      expect(uids, contains(null));
+      expect(sut.isLoggedIn, isTrue);
+      expect(sut.isAnonymous, isTrue);
+    });
+
+    test('wipes the store before the session goes, so the uid is still there to key on', () async {
+      final firebase = MockFirebaseAuth(signedIn: false);
+      late bool signedInWhileErasing;
+
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        googleSignIn: MockGoogleSignIn(),
+        onErase: (_) async => signedInWhileErasing = firebase.currentUser != null,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      await sut.eraseSession();
+
+      expect(signedInWhileErasing, isTrue);
+    });
+
+    test('refuses a session with an account behind it: nothing wiped, nobody signed out', () async {
+      final firebase = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      );
+      final google = MockGoogleSignIn();
+      var erased = 0;
+
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        googleSignIn: google,
+        onErase: (_) async => erased++,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      await sut.eraseSession();
+
+      expect(erased, 0, reason: 'an account\'s mirror is a copy of what the server keeps');
+      expect(sut.isLoggedIn, isTrue);
+      expect(sut.isAnonymous, isFalse);
+      verifyNever(google.signOut());
+    });
+  });
+
   group('onSignOut', () {
     test('completes without throwing', () async {
       final firebase = MockFirebaseAuth();

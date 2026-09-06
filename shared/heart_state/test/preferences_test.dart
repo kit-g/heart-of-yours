@@ -228,6 +228,40 @@ void main() {
     });
   });
 
+  group('forgetUser', () {
+    test('drops the uid\'s keys and leaves the device\'s, the onboarding flag first among them', () async {
+      SharedPreferences.setMockInitialValues({
+        Preferences.onboardingSeenKey: true,
+        'themeMode': 'dark',
+        'weightUnit': 'imperial',
+        'baseColor-u1': 'ember',
+        'healthInviteDismissed-u1': true,
+        'healthAsked-u1': true,
+        'baseColor-u2': 'ink',
+      });
+      sut = Preferences();
+      await sut.init(locale: const Locale('en', 'US'));
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.forgetUser('u1');
+
+      expect(sut.getBaseColor('u1'), isNull);
+      expect(sut.healthInviteDismissed('u1'), isFalse);
+      expect(sut.healthAsked('u1'), isFalse);
+      expect(probe.notifications, 1);
+
+      // another uid's, and the device's own
+      expect(sut.getBaseColor('u2'), 'ink');
+      expect(sut.onboardingSeen, isTrue, reason: 'the carousel is shown once per device, not once per uid');
+      expect(sut.themeMode, 'dark');
+      expect(sut.weightUnit, MeasurementUnit.imperial);
+    });
+
+    test('is a no-op before init', () async {
+      await sut.forgetUser('u1');
+    });
+  });
+
   group('formatting and conversions', () {
     test('weight() and distance() format integers without decimals in metric', () async {
       await sut.init(locale: const Locale('de', 'DE'));

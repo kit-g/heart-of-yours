@@ -294,6 +294,137 @@ void main() {
     });
   });
 
+  group('eraseState', () {
+    late _Alarms alarms;
+    late _Charts charts;
+    late _Exercises exercises;
+    late _Goals goals;
+    late _Health health;
+    late _Previous previous;
+    late _RemoteConfig config;
+    late _Stats stats;
+    late _Templates templates;
+    late _Timers timers;
+    late _Workouts workouts;
+    late Preferences preferences;
+    late BuildContext capturedContext;
+
+    /// The same tree as above, but with a real [Auth] over a mock Firebase —
+    /// the erase is gated on the session being anonymous, which the counting
+    /// stand-in above cannot say — and with [Preferences] in it.
+    Future<Auth> pumpProviders(
+      WidgetTester tester, {
+      required MockFirebaseAuth firebase,
+      required List<String> erased,
+    }) async {
+      SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
+      alarms = _Alarms();
+      charts = _Charts();
+      exercises = _Exercises();
+      goals = _Goals();
+      health = _Health();
+      previous = _Previous();
+      config = _RemoteConfig();
+      stats = _Stats();
+      templates = _Templates();
+      timers = _Timers();
+      workouts = _Workouts();
+      preferences = Preferences();
+      await preferences.init();
+      final auth = Auth(
+        service: MockAccountService(),
+        firebase: firebase,
+        googleSignIn: MockGoogleSignIn(),
+        onErase: (uid) async => erased.add(uid),
+      );
+      // the Firebase stream's first event, which settles the session — under
+      // the test's fake clock, so pumped rather than awaited on a real delay
+      await tester.pump(const Duration(milliseconds: 20));
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<Auth>.value(value: auth),
+            ChangeNotifierProvider<Charts>.value(value: charts),
+            ChangeNotifierProvider<Exercises>.value(value: exercises),
+            ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<Health>.value(value: health),
+            ChangeNotifierProvider<PreviousExercises>.value(value: previous),
+            Provider<RemoteConfig>.value(value: config),
+            ChangeNotifierProvider<Stats>.value(value: stats),
+            ChangeNotifierProvider<Templates>.value(value: templates),
+            ChangeNotifierProvider<Timers>.value(value: timers),
+            ChangeNotifierProvider<Workouts>.value(value: workouts),
+            ChangeNotifierProvider<Preferences>.value(value: preferences),
+          ],
+          child: Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      return auth;
+    }
+
+    List<int> counts() {
+      return [
+        alarms.calls,
+        charts.calls,
+        exercises.calls,
+        goals.calls,
+        health.calls,
+        previous.calls,
+        config.calls,
+        stats.calls,
+        templates.calls,
+        timers.calls,
+        workouts.calls,
+      ];
+    }
+
+    testWidgets('an anonymous session: memory cleared, the uid wiped and forgotten, the session signed out', (
+      tester,
+    ) async {
+      final erased = <String>[];
+      final firebase = MockFirebaseAuth(signedIn: false);
+      final auth = await pumpProviders(tester, firebase: firebase, erased: erased);
+      final uid = auth.user!.id;
+      await preferences.setBaseColor(uid, 'ember');
+
+      await eraseState(capturedContext);
+
+      expect(counts(), everyElement(1), reason: 'the same fan-out a sign-out gets');
+      expect(erased, [uid]);
+      expect(preferences.getBaseColor(uid), isNull);
+      expect(preferences.onboardingSeen, isTrue, reason: 'the device flag survives: no carousel on the way back in');
+      // signed out — and, this being mobile, straight back in under a new anonymous session
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(auth.isAnonymous, isTrue);
+      expect(auth.isLoggedIn, isTrue);
+    });
+
+    testWidgets('a session with an account is left exactly as it was', (tester) async {
+      final erased = <String>[];
+      final firebase = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      );
+      final auth = await pumpProviders(tester, firebase: firebase, erased: erased);
+      await preferences.setBaseColor('u1', 'ember');
+
+      await eraseState(capturedContext);
+
+      expect(counts(), everyElement(0));
+      expect(erased, isEmpty);
+      expect(preferences.getBaseColor('u1'), 'ember');
+      expect(auth.isLoggedIn, isTrue);
+      expect(auth.isAnonymous, isFalse);
+    });
+  });
+
   group('clearState completeness (source-level)', () {
     // The classic regression: a notifier gains per-user state and implements
     // SignOutStateSentry, but nobody adds it to clearState — the previous
