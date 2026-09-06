@@ -289,14 +289,24 @@ void main() {
     });
   });
 
+  // The exercise library is the exception that proves the rule: it comes from
+  // the CDN, static and unauthenticated, so an anonymous session reads it
+  // like any other — the one network call the mode makes. heart-api itself is
+  // still never dialled.
   group('Exercises', () {
     late MockExerciseService local;
     late MockRemoteExerciseService remote;
+    late MockExerciseLibraryService library;
+    late MockLocalCatalogService catalog;
     late Exercises sut;
+
+    const stamp = (version: 'run-1', locale: 'en', etag: null);
 
     setUp(() {
       local = MockExerciseService();
       remote = MockRemoteExerciseService();
+      library = MockExerciseLibraryService();
+      catalog = MockLocalCatalogService();
       when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [ex('Bench Press')]));
       when(local.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
       when(local.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
@@ -307,32 +317,45 @@ void main() {
           unit: anyNamed('unit'),
         ),
       ).thenAnswer((_) async {});
-      sut = Exercises(remoteService: remote, service: local, remote: offline)..userId = userId;
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => ([ex('Squat')], stamp));
+      when(catalog.getCatalogStamp()).thenAnswer((_) async => null);
+      when(catalog.storeCatalog(any, stamp: anyNamed('stamp'))).thenAnswer((_) async {});
+      sut = Exercises(
+        remoteService: remote,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        remote: offline,
+      )..userId = userId;
     });
 
-    test('init serves the cache and never syncs', () async {
+    test('init serves the cache, then the CDN library — and never the API', () async {
       expect(await sut.init(), isTrue);
 
-      expect(sut.length, 1);
+      expect(sut.map((each) => each.name), ['Bench Press', 'Squat']);
       expect(sut.isInitialized, isTrue);
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
+      verify(catalog.storeCatalog(any, stamp: stamp)).called(1);
       verifyZeroInteractions(remote);
     });
 
-    test('an empty cache is an empty, initialized catalog — not a blocked one', () async {
+    test('an empty cache is filled from the CDN', () async {
       when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
 
       expect(await sut.init(), isTrue);
 
-      expect(sut, isEmpty);
+      expect(sut.map((each) => each.name), ['Squat']);
       expect(sut.isInitialized, isTrue);
+      verify(library.getLibrary(cached: null)).called(1);
       verifyZeroInteractions(remote);
     });
 
-    test('a locale change does not re-fetch', () async {
+    test('a locale change re-fetches the library, not the API', () async {
       await sut.init(locale: 'en');
 
       await sut.onLocaleChanged('fr');
 
+      verify(library.getLibrary(cached: anyNamed('cached'))).called(2);
       verifyZeroInteractions(remote);
     });
 
