@@ -54,6 +54,13 @@ abstract final class AppKeys {
   /// The no-account dialog's way to the login page.
   static const noAccountLogIn = Key('Profile.noAccount.logIn');
 
+  /// The settings row that wipes an anonymous session's data off the device;
+  /// opens the confirmation.
+  static const eraseData = Key('Settings.eraseData');
+
+  /// The confirmation's destructive action.
+  static const eraseDataConfirm = Key('Settings.eraseData.confirm');
+
   /// The first-launch onboarding's way out, present on every screen of it.
   static const onboardingSkip = Key('Onboarding.skip');
 
