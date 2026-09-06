@@ -25,7 +25,7 @@ void main() {
     late TestAppHarness harness;
 
     setUp(() {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues(pastOnboarding());
 
       db = MockLocalDatabase();
       api = MockApi();
