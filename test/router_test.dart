@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
@@ -13,6 +15,17 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
+
+/// A Firebase project with the anonymous provider switched off answers every
+/// anonymous sign-in with `admin-restricted-operation`.
+class _NoAnonymousSignIn extends MockFirebaseAuth {
+  new() : super(signedIn: false);
+
+  @override
+  Future<UserCredential> signInAnonymously() {
+    throw FirebaseAuthException(code: 'admin-restricted-operation');
+  }
+}
 
 void main() {
   group('Navigation and routing (HeartRouter)', () {
@@ -59,7 +72,9 @@ void main() {
       },
     );
 
-    testWidgets('initial route: signed-out user is redirected to LoginPage', (tester) async {
+    testWidgets('initial route: no user lands in the app as an anonymous session, on ProfilePage', (tester) async {
+      // no sign-in gate on mobile: Auth replaces the missing user with an
+      // anonymous one, and the profile's logout slot says so instead
       final firebase = MockFirebaseAuth(signedIn: false);
       await harness.pumpHeartApp(
         tester,
@@ -68,9 +83,17 @@ void main() {
         cdn: cdn,
         firebaseAuth: firebase,
         hasLocalNotifications: false,
+        settle: false,
       );
+      await tester.pumpTimes();
 
-      expect(find.byType(LoginPage), findsOneWidget);
+      expect(find.byType(LoginPage), findsNothing);
+      expect(find.byType(ProfilePage), findsOneWidget);
+      expect(find.byKey(AppKeys.noAccount), findsOneWidget);
+      // nothing went to the server on the anonymous uid
+      verifyNever(api.getExercises());
+      verifyNever(api.getOwnExercises());
+      verifyNever(api.registerAccount(any));
     });
 
     testWidgets('initial route: signed-in user lands on ProfilePage', (tester) async {
@@ -118,7 +141,25 @@ void main() {
       expect(find.byType(WorkoutPage), findsOneWidget);
     });
 
-    testWidgets('router.refresh reacts to Auth user change: LoginPage -> ProfilePage', (tester) async {
+    testWidgets('a device that cannot get a session at all falls back to LoginPage', (tester) async {
+      // a first launch offline, or a Firebase project with the anonymous
+      // provider switched off: the gate is the one page that can still act
+      final firebase = _NoAnonymousSignIn();
+
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: firebase,
+        hasLocalNotifications: false,
+      );
+
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('the no-account dialog leads to LoginPage, and signing in leads back to ProfilePage', (tester) async {
       final firebase = MockFirebaseAuth(signedIn: false);
       final router = HeartRouter();
 
@@ -132,6 +173,14 @@ void main() {
         hasLocalNotifications: false,
         settle: false,
       );
+      await tester.pumpTimes();
+      expect(find.byType(ProfilePage), findsOneWidget);
+
+      // the login page is reached by name, from the dialog — never by redirect
+      await tester.tapByKey(AppKeys.noAccount);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.noAccountLogIn);
+      await tester.pumpTimes();
 
       expect(find.byType(LoginPage), findsOneWidget);
 
@@ -140,6 +189,7 @@ void main() {
       await tester.pumpTimes();
 
       expect(find.byType(ProfilePage), findsOneWidget);
+      expect(find.byKey(AppKeys.noAccount), findsNothing);
     });
 
     testWidgets('cold-start deep link is never dropped on the profile page', (tester) async {

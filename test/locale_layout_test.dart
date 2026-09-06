@@ -114,13 +114,15 @@ void main() {
     tester.platformDispatcher.localesTestValue = [locale];
     addTearDown(tester.platformDispatcher.clearLocalesTestValue);
 
-    final signedIn = screen != _Screen.login;
-    final firebase = signedIn
-        ? MockFirebaseAuth(
-            mockUser: MockUser(uid: 'u1', email: 'u1@test'),
-            signedIn: true,
-          )
-        : MockFirebaseAuth(signedIn: false);
+    // no user means an anonymous session; the login page is reached from its
+    // profile's no-account dialog, never by redirect
+    final firebase = switch (screen) {
+      _Screen.login => MockFirebaseAuth(signedIn: false),
+      _ => MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      ),
+    };
 
     await harness.pumpHeartApp(
       tester,
@@ -134,9 +136,12 @@ void main() {
     await tester.pumpTimes();
 
     switch (screen) {
-      case _Screen.login:
       case _Screen.profile:
         break;
+      case _Screen.login:
+        await tester.tapByKey(AppKeys.noAccount);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.noAccountLogIn);
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
       case _Screen.history:

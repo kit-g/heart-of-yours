@@ -30,7 +30,7 @@ const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_i
 /// A screen the matrix sweeps. Each maps to a path through the real app —
 /// see [_pumpTo] — rather than a page pumped in isolation, so the check sees
 /// the same chrome (app bar, nav) the guideline actually has to pass on.
-enum _Screen { login, profile, workout, history, exercises, settings, importData }
+enum _Screen { login, profile, noAccountDialog, workout, history, exercises, settings, importData }
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
 /// [textContrastGuideline]; which token set it sees is the preset and mode
@@ -82,6 +82,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.profile,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // The no-account dialog over the profile of an anonymous session
+  // (lib/presentation/routes/profile/page.dart, _showNoAccountDialog).
+  (_Screen.noAccountDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.noAccountDialog, _Guideline.textContrastLight, null),
+  (_Screen.noAccountDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.noAccountDialog,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.noAccountDialog,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
@@ -217,13 +233,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final signedIn = screen != _Screen.login;
-    final firebase = signedIn
-        ? MockFirebaseAuth(
-            mockUser: MockUser(uid: 'u1', email: 'u1@test'),
-            signedIn: true,
-          )
-        : MockFirebaseAuth(signedIn: false);
+    // No user means an anonymous session, not a gate: the login page is only
+    // reachable through the no-account dialog on that session's profile.
+    final firebase = switch (screen) {
+      _Screen.login || _Screen.noAccountDialog => MockFirebaseAuth(signedIn: false),
+      _ => MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      ),
+    };
 
     await harness.pumpHeartApp(
       tester,
@@ -238,9 +256,14 @@ void main() {
     await tester.pumpTimes();
 
     switch (screen) {
-      case _Screen.login:
       case _Screen.profile:
         break;
+      case _Screen.noAccountDialog:
+        await tester.tapByKey(AppKeys.noAccount);
+      case _Screen.login:
+        await tester.tapByKey(AppKeys.noAccount);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.noAccountLogIn);
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
       case _Screen.history:
