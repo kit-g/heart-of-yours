@@ -57,7 +57,12 @@ void main() {
     // never initialized, so nothing is stubbed: an Exercises with no userId
     // answers metric queries with null, which is what a goal with no history
     // looks like anyway
-    exercises = Exercises(remoteService: MockRemoteExerciseService(), service: MockExerciseService());
+    exercises = Exercises(
+      remoteService: MockRemoteExerciseService(),
+      service: MockExerciseService(),
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+    );
 
     stats = Stats(onError: null, service: MockLocalStatsService());
 
