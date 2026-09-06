@@ -24,6 +24,7 @@ agents/agent a1 --issue 142                       # containerized, headless
 agents/agent a2 --repo ~/mine/heart-api --task "…" --aws
 agents/host-agent ui --issue 137                  # host, simulators available
 agents/host-agent a3 --issue 92 --base worktree-a2  # stacked on a2's branch
+agents/host-agent a3 --resume                       # finish a run that stopped
 ```
 
 No `--task`/`--issue` drops you into an interactive session in the same
@@ -100,6 +101,13 @@ The issue text for `--issue` is fetched on the **host** with your own `gh`
 auth before the container starts, so agent PATs stay minimal.
 
 ## The list of things one forgets
+
+- **Headless runs end when the agent stops calling tools.** A backgrounded
+  build or test suite dies with the run, and there is no notification to
+  wait for — the prompt and the `drive-the-app` skill both say so, after
+  two agents ended on "the build waiter will notify me". If one still does,
+  `agents/host-agent <name> --resume` continues its session in the same
+  worktree with orders to verify the tree as it stands and finish.
 
 - **Flutter/Dart pin**: the image installs the tag in `.flutter-version`
   (build-arg). After you upgrade to 3.47 / Dart 3.13, rerun with `--build`.
