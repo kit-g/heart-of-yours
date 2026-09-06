@@ -9,23 +9,49 @@ import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'password.dart';
+import 'remote.dart';
 
 class Auth with ChangeNotifier implements SignOutStateSentry {
   final GoogleSignIn _googleSignIn;
   final fb.FirebaseAuth _firebase;
   final void Function(User?)? onUserChange;
   final AccountService _service;
+
+  /// Called with the session token and uid once a user is in. The token is
+  /// null for an anonymous session: nothing of it may reach the server.
   final Future<void> Function(String?, String?)? onEnter;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final bool isWeb;
   final String? appleServiceId;
   final String? appleSignInRedirect;
 
+  /// The remote leg's gate, shared with every state class. This is where it is
+  /// decided — see [_adopt].
+  final RemoteAccess remote;
+
   User? _user;
 
   User? get user => _user;
 
+  /// True for an anonymous session too: the rest of the app keys everything on
+  /// a uid and an anonymous one is a uid like any other.
   bool get isLoggedIn => _user != null;
+
+  bool _isAnonymous = false;
+
+  /// Whether the session is Firebase's anonymous kind — a uid with no account
+  /// behind it. What an account adds (sync, socials, a coach) is off, and so is
+  /// the remote leg, see [RemoteAccess].
+  bool get isAnonymous => _isAnonymous;
+
+  bool _sessionUnavailable = false;
+
+  /// There is no user and the device could not mint an anonymous one — a
+  /// first launch offline, or a Firebase project without the anonymous
+  /// provider enabled. The router falls back to the sign-in gate on this: a
+  /// login page beats a spinner nobody can dismiss. Cleared the moment any
+  /// user arrives (see [ensureSession], retried on resume).
+  bool get sessionUnavailable => _sessionUnavailable;
 
   bool _isInitialized = false;
 
@@ -46,8 +72,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.appleSignInRedirect,
     fb.FirebaseAuth? firebase,
     GoogleSignIn? googleSignIn,
+    RemoteAccess? remote,
   }) : _firebase = firebase ?? fb.FirebaseAuth.instance,
-       _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
+       _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
+       remote = remote ?? RemoteAccess() {
     // such is the way with Google sign-in
     // on the web - Firebase does not pick it up
     if (isWeb) {
@@ -65,25 +93,52 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       );
     }
 
-    _firebase.userChanges().listen(
+    _users = _firebase.userChanges().listen(
       (user) async {
-        _user = _cast(user);
+        _adopt(user);
         onUserChange?.call(_user);
         notifyListeners();
-        if (user case fb.User user) {
-          await onEnter?.call(await user.getIdToken(), user.uid);
-          try {
-            _user = await _registerUser(_user);
-          } on AccountDeleted {
-            _logout();
-          }
+        switch (user) {
+          case fb.User(isAnonymous: true, :final uid):
+            // no token handed over — the anonymous leg never reaches the
+            // server, and registering an account is what an account is for
+            await onEnter?.call(null, uid);
+          case fb.User user:
+            await onEnter?.call(await user.getIdToken(), user.uid);
+            if (_disposed) return;
+            try {
+              _user = await _registerUser(_user);
+            } on AccountDeleted {
+              _logout();
+            }
+          case null:
+            await ensureSession();
+            // the gate is decided on this answer (see the router), and the
+            // router re-reads it on a user change — which this is: there is
+            // still no user, and now that is settled rather than pending
+            if (_sessionUnavailable) onUserChange?.call(null);
         }
+        // app startup is awaited above and can outlive a torn-down tree (a
+        // test's, mid-session); there is nobody left to tell
+        if (_disposed) return;
         isInitialized = true;
       },
       onError: (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       },
     );
+  }
+
+  /// The Firebase subscription, held so [dispose] can end it.
+  StreamSubscription<fb.User?>? _users;
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _users?.cancel();
+    super.dispose();
   }
 
   static Auth of(BuildContext context) {
@@ -96,6 +151,47 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> initGoogleSignIn() {
     return _googleSignIn.initialize();
+  }
+
+  /// Makes sure there is a uid to key the local store on.
+  ///
+  /// On mobile the app works without an account, so a missing Firebase user —
+  /// first launch, a sign-out, an anonymous uid Firebase has purged — is
+  /// replaced by an anonymous one on the spot, and [fb.FirebaseAuth.userChanges]
+  /// delivers it like any sign-in. A purged uid means a fresh, empty store;
+  /// rows under the old one are keyed away from it and simply never read.
+  ///
+  /// The web keeps its sign-in gate (see the router), so there this is a no-op.
+  /// Minting an anonymous user needs the network: a first launch offline
+  /// reports the failure and is retried when the app next resumes.
+  ///
+  /// One attempt at a time: a sign-out is reported on more than one Firebase
+  /// stream event, and a second anonymous sign-in racing the first is refused
+  /// by the SDK (`admin-restricted-operation`) — which would read as the
+  /// session being unavailable when it is a moment from arriving.
+  Future<void> ensureSession() {
+    if (isWeb || _firebase.currentUser != null) return Future.value();
+    return _minting ??= _mintAnonymous().whenComplete(() => _minting = null);
+  }
+
+  Future<void>? _minting;
+
+  Future<void> _mintAnonymous() async {
+    try {
+      await _firebase.signInAnonymously();
+    } catch (error, stacktrace) {
+      _sessionUnavailable = true;
+      onError?.call(error, stacktrace: stacktrace);
+    }
+  }
+
+  /// Takes [user] as the session: the model the app reads, whether it is an
+  /// anonymous one, and — the consequence — whether the remote leg is open.
+  void _adopt(fb.User? user) {
+    _user = _cast(user);
+    _isAnonymous = user?.isAnonymous ?? false;
+    remote.allowed = user != null && !_isAnonymous;
+    if (user != null) _sessionUnavailable = false;
   }
 
   Future<void> _loginWithGoogle(GoogleSignInAccount user) async {
@@ -165,7 +261,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) {
     return _firebase.signInWithCredential(credential).then<void>(
       (result) {
-        _user = _cast(result.user)?.copyWith(displayName: appleName, email: appleEmail);
+        _adopt(result.user);
+        _user = _user?.copyWith(displayName: appleName, email: appleEmail);
 
         return _registerUser(_user).then(
           (user) {
@@ -185,6 +282,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       ),
     ).then(
       (cred) async {
+        // the stream usually got here first; adopting again is harmless and
+        // makes sure an anonymous session does not read as one past this point
+        _adopt(cred?.user);
         onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
         _user = await _registerUser(_user);
       },
@@ -207,7 +307,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     if (name case String name) {
       if (cred?.user case fb.User user) {
         await user.updateDisplayName(name);
-        _user = _cast(user);
+        _adopt(user);
 
         updateName(name);
         notifyListeners();
@@ -270,7 +370,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<User?> _registerUser(User? user) async {
     try {
-      if (user == null) return user;
+      if (user == null || _isAnonymous) return user;
       if (!_service.isAuthenticated) return user;
       return await _service.registerAccount(user);
     } on UpgradeRequired catch (e) {
