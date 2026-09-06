@@ -13,6 +13,7 @@ void main() {
       final api = MockApi();
       final cdn = MockCdn();
       const harness = TestAppHarness();
+      stubStartup(db, api);
 
       await harness.pumpHeartApp(
         tester,
@@ -21,6 +22,8 @@ void main() {
         cdn: cdn,
         appConfig: AppConfig.test(allowsFeedbackFeature: false),
         hasLocalNotifications: false,
+        // lands on the profile, whose dashboard animates indefinitely
+        settle: false,
       );
 
       final materialAppFinder = find.byType(MaterialApp);
