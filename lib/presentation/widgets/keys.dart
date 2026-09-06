@@ -46,4 +46,11 @@ abstract final class AppKeys {
 
   /// Turns it back to the goals still being worked on.
   static const goalsViewActive = Key('Goals.viewActive');
+
+  /// Stands where the logout button does while the session is anonymous;
+  /// opens the no-account dialog.
+  static const noAccount = Key('Profile.noAccount');
+
+  /// The no-account dialog's way to the login page.
+  static const noAccountLogIn = Key('Profile.noAccount.logIn');
 }
