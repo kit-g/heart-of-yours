@@ -180,6 +180,42 @@
     "type": "text",
     "placeholders": {}
   },
+  "noAccount": "Sans compte",
+  "@noAccount": {
+    "description": "Profile app bar while using the app without an account: the name slot and the tooltip of the icon that opens the no-account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountTitle": "Vous utilisez Heart sans compte",
+  "@noAccountTitle": {
+    "description": "Title of the no-account dialog on the profile page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountBodyLocal": "Vos données de santé ne quittent jamais votre téléphone. Sans compte, rien d'autre ne le quitte non plus : vos séances, modèles et objectifs restent uniquement sur cet appareil.",
+  "@noAccountBodyLocal": {
+    "description": "No-account dialog, first paragraph: where the data lives. Reads as one with the health-data promise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountBodySignIn": "Se connecter ajoute une sauvegarde et la synchronisation entre vos appareils, et plus tard le partage avec des amis et le coaching.",
+  "@noAccountBodySignIn": {
+    "description": "No-account dialog, second paragraph: what an account adds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountBodyLose": "Si vous perdez ce téléphone, vous perdez vos données.",
+  "@noAccountBodyLose": {
+    "description": "No-account dialog, last paragraph; the export screen repeats this line and nothing else",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notNow": "Pas maintenant",
+  "@notNow": {
+    "description": "Dismisses the no-account dialog without logging in",
+    "type": "text",
+    "placeholders": {}
+  },
   "profile": "Profil",
   "@profile": {
     "description": "Generic label, e.g. bottom nav bar",

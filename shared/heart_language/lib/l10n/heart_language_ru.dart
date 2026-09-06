@@ -100,6 +100,26 @@ class LRu extends L {
   String get logOut => 'Выйти';
 
   @override
+  String get noAccount => 'Без аккаунта';
+
+  @override
+  String get noAccountTitle => 'Вы используете Heart без аккаунта';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Данные о здоровье никогда не покидают ваш телефон. Без аккаунта его не покидает и всё остальное: тренировки, шаблоны и цели хранятся только на этом устройстве.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Вход добавит резервную копию и синхронизацию между устройствами, а позже — обмен с друзьями и тренера.';
+
+  @override
+  String get noAccountBodyLose => 'Если вы потеряете этот телефон, вы потеряете свои данные.';
+
+  @override
+  String get notNow => 'Не сейчас';
+
+  @override
   String get profile => 'Профиль';
 
   @override
