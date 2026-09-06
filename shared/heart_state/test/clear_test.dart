@@ -43,7 +43,13 @@ class _Charts extends Charts {
 class _Exercises extends Exercises {
   int calls = 0;
 
-  new() : super(service: MockExerciseService(), remoteService: MockRemoteExerciseService());
+  new()
+    : super(
+        service: MockExerciseService(),
+        remoteService: MockRemoteExerciseService(),
+        libraryService: MockExerciseLibraryService(),
+        catalogService: MockLocalCatalogService(),
+      );
 
   @override
   void onSignOut() => calls++;
