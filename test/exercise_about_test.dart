@@ -54,10 +54,14 @@ void main() {
     when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
     when(local.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
     when(local.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
-    when(remote.getExercises()).thenAnswer((_) async => <Exercise>[]);
     when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
-    exercises = Exercises(remoteService: remote, service: local);
+    exercises = Exercises(
+      remoteService: remote,
+      service: local,
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+    );
 
     // the detail page builds every tab, not just About, and the History one
     // reads unit preferences
