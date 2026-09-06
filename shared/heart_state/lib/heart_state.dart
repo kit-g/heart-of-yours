@@ -16,6 +16,7 @@ export 'src/package.dart';
 export 'src/password.dart';
 export 'src/preferences.dart';
 export 'src/previous.dart';
+export 'src/remote.dart';
 export 'src/stats.dart';
 export 'src/templates.dart';
 export 'src/timers.dart';

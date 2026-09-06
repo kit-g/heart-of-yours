@@ -3,11 +3,13 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 import 'movement_filters.dart';
+import 'remote.dart';
 
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
   final RemoteExerciseService _remoteService;
+  final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _filters = <ExerciseFilter>{};
   final _exercises = <ExerciseId, Exercise>{};
@@ -38,7 +40,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     this.onError,
     required this._remoteService,
     required this._service,
-  });
+    RemoteAccess? remote,
+  }) : _remote = remote ?? RemoteAccess();
 
   @override
   void onSignOut() {
@@ -113,6 +116,10 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   ///
   /// A local cache counts: the remote sync failing is survivable, the catalog
   /// being empty is not.
+  ///
+  /// With the remote leg closed the cache is all there is. An anonymous first
+  /// launch has no cache yet and so an empty catalog — the picker shows its
+  /// empty list rather than blocking on a server it may not talk to.
   Future<bool> init({DateTime? lastSync, String? locale}) async {
     _catalogLocale = locale;
     try {
@@ -128,7 +135,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
         notifyListeners();
       }
 
-      await _syncRemote();
+      if (_remote.allowed) await _syncRemote();
       isInitialized = true;
       notifyListeners();
     } catch (e, s) {
@@ -147,7 +154,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   Future<void> onLocaleChanged(String locale) async {
     if (locale == _catalogLocale) return;
     _catalogLocale = locale;
-    if (!isInitialized) return;
+    if (!isInitialized || !_remote.allowed) return;
 
     try {
       await _syncRemote();
@@ -266,6 +273,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       await _service.setExerciseUnit(exerciseName: exercise.id, userId: id, unit: unit);
     }
 
+    if (!_remote.allowed) return;
+
     switch (unit) {
       case MeasurementUnit u:
         await _remoteService.saveUnitPreference(exercise.id, u);
@@ -356,35 +365,40 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return _service.storeExercises([exercise.copyWith(isMine: true)], userId: userId);
   }
 
+  /// A custom exercise is the user's own row, so with the remote leg closed it
+  /// simply lives in the local catalog under its client-minted id.
   Future<void> makeExercise(Exercise exercise) async {
-    await _remoteService.makeExercise(exercise);
+    if (_remote.allowed) await _remoteService.makeExercise(exercise);
     _exercises[exercise.id] = exercise;
     await _storeLocalExercise(exercise);
     notifyListeners();
   }
 
   Future<void> editExercise(Exercise exercise) async {
-    await _remoteService.editExercise(exercise);
+    if (_remote.allowed) await _remoteService.editExercise(exercise);
     _exercises[exercise.id] = exercise;
     await _storeLocalExercise(exercise);
     notifyListeners();
   }
 
-  Future<void> archive(Exercise exercise) async {
-    final archived = exercise.copyWith(isArchived: true);
-    _exercises[exercise.id] = archived;
-    final remote = await _remoteService.editExercise(archived);
-    _service.storeExercises([remote], userId: userId);
-    _exercises[remote.id] = remote;
-    notifyListeners();
+  Future<void> archive(Exercise exercise) {
+    return _setArchived(exercise, true);
   }
 
-  Future<void> unarchive(Exercise exercise) async {
-    final unarchived = exercise.copyWith(isArchived: false);
-    _exercises[exercise.id] = unarchived;
-    final remote = await _remoteService.editExercise(unarchived);
-    _service.storeExercises([remote], userId: userId);
-    _exercises[remote.id] = remote;
+  Future<void> unarchive(Exercise exercise) {
+    return _setArchived(exercise, false);
+  }
+
+  /// The server's copy wins where there is one; otherwise the edit is the copy.
+  Future<void> _setArchived(Exercise exercise, bool archived) async {
+    final edited = exercise.copyWith(isArchived: archived);
+    _exercises[exercise.id] = edited;
+    final saved = switch (_remote.allowed) {
+      true => await _remoteService.editExercise(edited),
+      false => edited,
+    };
+    _service.storeExercises([saved], userId: userId);
+    _exercises[saved.id] = saved;
     notifyListeners();
   }
 
