@@ -20,6 +20,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   /// Called with the session token and uid once a user is in. The token is
   /// null for an anonymous session: nothing of it may reach the server.
   final Future<void> Function(String?, String?)? onEnter;
+
+  /// Wipes everything the device store holds under a uid — what
+  /// [eraseSession] calls before signing the anonymous session out. Null
+  /// where there is nothing local to wipe.
+  final Future<void> Function(String userId)? onErase;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final bool isWeb;
   final String? appleServiceId;
@@ -67,6 +72,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.onUserChange,
     this.onError,
     this.onEnter,
+    this.onErase,
     this.isWeb = false,
     this.appleServiceId,
     this.appleSignInRedirect,
@@ -401,6 +407,30 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     }
 
     return _toFirebase(callback());
+  }
+
+  /// "Erase my data", the anonymous session's counterpart to account deletion.
+  ///
+  /// There is no account to delete and nothing on a server, so what the user
+  /// holds is the device store under their uid — [onErase] wipes it — and the
+  /// session itself, which is signed out. On mobile a missing user is replaced
+  /// by a fresh anonymous one at once (see [ensureSession]), so the app comes
+  /// back under a new uid with nothing keyed to it: a first launch, minus the
+  /// onboarding, whose flag is the device's and not touched here.
+  ///
+  /// The in-memory state is the caller's to clear — see `eraseState`, which
+  /// pairs this with the same fan-out a sign-out gets. Refused for a session
+  /// with an account behind it: that one deletes its account instead, and
+  /// its local mirror is a copy of what the server keeps.
+  Future<void> eraseSession() async {
+    if (!_isAnonymous) return;
+    if (_user?.id case String uid) {
+      await onErase?.call(uid);
+      // Firebase alone, not [_logout]: an anonymous session was never signed
+      // into Google, and there is nothing to gain from initialising that
+      // plugin only to sign out of it.
+      await _firebase.signOut();
+    }
   }
 
   Future<void> deleteAccountDeletionSchedule() async {
