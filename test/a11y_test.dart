@@ -30,7 +30,19 @@ const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_i
 /// A screen the matrix sweeps. Each maps to a path through the real app —
 /// see [_pumpTo] — rather than a page pumped in isolation, so the check sees
 /// the same chrome (app bar, nav) the guideline actually has to pass on.
-enum _Screen { onboarding, login, profile, noAccountDialog, workout, history, exercises, settings, importData }
+enum _Screen {
+  onboarding,
+  login,
+  profile,
+  noAccountDialog,
+  workout,
+  history,
+  exercises,
+  settings,
+  anonymousSettings,
+  eraseDataDialog,
+  importData,
+}
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
 /// [textContrastGuideline]; which token set it sees is the preset and mode
@@ -166,6 +178,39 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
+  // The settings of an anonymous session: the same page, with the "Erase my
+  // data" row (lib/presentation/routes/settings/page.dart) where the account
+  // rows would be.
+  (_Screen.anonymousSettings, _Guideline.labeledTapTarget, null),
+  (_Screen.anonymousSettings, _Guideline.textContrastLight, null),
+  (_Screen.anonymousSettings, _Guideline.textContrastDark, null),
+  (
+    _Screen.anonymousSettings,
+    _Guideline.androidTapTarget,
+    'switch rows are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.anonymousSettings,
+    _Guideline.iosTapTarget,
+    'switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // The erase-my-data confirmation over those settings
+  // (lib/presentation/routes/settings/page.dart, _onEraseData).
+  (_Screen.eraseDataDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.eraseDataDialog, _Guideline.textContrastLight, null),
+  (_Screen.eraseDataDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.eraseDataDialog,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.eraseDataDialog,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+
   (_Screen.importData, _Guideline.labeledTapTarget, null),
   (_Screen.importData, _Guideline.textContrastLight, null),
   (_Screen.importData, _Guideline.textContrastDark, null),
@@ -249,7 +294,11 @@ void main() {
     // No user means an anonymous session, not a gate: the login page is only
     // reachable through the no-account dialog on that session's profile.
     final firebase = switch (screen) {
-      _Screen.onboarding || _Screen.login || _Screen.noAccountDialog => MockFirebaseAuth(signedIn: false),
+      _Screen.onboarding ||
+      _Screen.login ||
+      _Screen.noAccountDialog ||
+      _Screen.anonymousSettings ||
+      _Screen.eraseDataDialog => MockFirebaseAuth(signedIn: false),
       _ => MockFirebaseAuth(
         mockUser: MockUser(uid: 'u1', email: 'u1@test'),
         signedIn: true,
@@ -288,8 +337,12 @@ void main() {
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.exercises:
         await tester.tapByKey(AppKeys.exercisesStack);
-      case _Screen.settings:
+      case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
+      case _Screen.eraseDataDialog:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.eraseData);
       case _Screen.importData:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
