@@ -50,6 +50,11 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     );
 
     final heart = AppTheme.of(context).heart();
+    // Import, feedback and the account itself all go through the server, so
+    // they want an account. Absent rather than dead while the session is
+    // anonymous — the profile's no-account dialog is the one place that says
+    // why, and a row that fails on tap would only be a reminder in disguise.
+    final isAnonymous = Auth.watch(context).isAnonymous;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarIconBrightness: switch (brightness) {
@@ -167,28 +172,30 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               // with no health store, and a header over nothing would lie
               const HealthSettings(),
               const SizedBox(height: 24),
-              _Section(
-                title: yourData,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.upload_file_rounded),
-                    title: Text(importData),
-                    onTap: onImportData,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _Section(
-                title: account,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.manage_accounts_rounded),
-                    title: Text(accountControl),
-                    onTap: onAccountManagement,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+              if (!isAnonymous) ...[
+                _Section(
+                  title: yourData,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.upload_file_rounded),
+                      title: Text(importData),
+                      onTap: onImportData,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _Section(
+                  title: account,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.manage_accounts_rounded),
+                      title: Text(accountControl),
+                      onTap: onAccountManagement,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
               _Section(
                 title: app,
                 children: [
@@ -220,44 +227,45 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                       );
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.feedback_rounded),
-                    title: Text('$leaveFeedback $heart'),
-                    onTap: () {
-                      showBrandedDialog(
-                        context,
-                        title: Text(leaveFeedback),
-                        titleTextStyle: textTheme.titleMedium,
-                        icon: Icon(
-                          Icons.feedback_rounded,
-                          color: onPrimaryContainer,
-                        ),
-                        content: Text(
-                          leaveFeedbackBody(AppTheme.of(context).heart()),
-                          textAlign: TextAlign.center,
-                        ),
-                        actions: [
-                          PrimaryButton.wide(
-                            backgroundColor: outlineVariant.withValues(alpha: .5),
-                            child: Center(
-                              child: Text(cancel),
-                            ),
-                            onPressed: () {
-                              Navigator.of(context, rootNavigator: true).pop();
-                            },
+                  if (!isAnonymous)
+                    ListTile(
+                      leading: const Icon(Icons.feedback_rounded),
+                      title: Text('$leaveFeedback $heart'),
+                      onTap: () {
+                        showBrandedDialog(
+                          context,
+                          title: Text(leaveFeedback),
+                          titleTextStyle: textTheme.titleMedium,
+                          icon: Icon(
+                            Icons.feedback_rounded,
+                            color: onPrimaryContainer,
                           ),
-                          const SizedBox(height: 8),
-                          PrimaryButton.wide(
-                            backgroundColor: primaryContainer,
-                            child: Center(
-                              child: Text(toFeedback),
-                            ),
-                            onPressed: () => _openFeedback(context),
+                          content: Text(
+                            leaveFeedbackBody(AppTheme.of(context).heart()),
+                            textAlign: TextAlign.center,
                           ),
-                        ],
-                      );
-                    },
-                  ),
+                          actions: [
+                            PrimaryButton.wide(
+                              backgroundColor: outlineVariant.withValues(alpha: .5),
+                              child: Center(
+                                child: Text(cancel),
+                              ),
+                              onPressed: () {
+                                Navigator.of(context, rootNavigator: true).pop();
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            PrimaryButton.wide(
+                              backgroundColor: primaryContainer,
+                              child: Center(
+                                child: Text(toFeedback),
+                              ),
+                              onPressed: () => _openFeedback(context),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                 ],
               ),
               const SizedBox(height: 24),
