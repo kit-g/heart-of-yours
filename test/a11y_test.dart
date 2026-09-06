@@ -42,6 +42,7 @@ enum _Screen {
   anonymousSettings,
   eraseDataDialog,
   importData,
+  exportData,
 }
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
@@ -216,6 +217,14 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.importData, _Guideline.textContrastDark, null),
   (_Screen.importData, _Guideline.androidTapTarget, null),
   (_Screen.importData, _Guideline.iosTapTarget, null),
+
+  // The export page (lib/presentation/routes/settings/export_data.dart):
+  // prose and two 48pt buttons, like the import page beside it.
+  (_Screen.exportData, _Guideline.labeledTapTarget, null),
+  (_Screen.exportData, _Guideline.textContrastLight, null),
+  (_Screen.exportData, _Guideline.textContrastDark, null),
+  (_Screen.exportData, _Guideline.androidTapTarget, null),
+  (_Screen.exportData, _Guideline.iosTapTarget, null),
 ];
 
 void main() {
@@ -347,6 +356,10 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tap(find.byIcon(Icons.upload_file_rounded));
+      case _Screen.exportData:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.exportData);
     }
     await tester.pumpTimes();
   }
