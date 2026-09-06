@@ -9,6 +9,8 @@ import 'package:heart_models/heart_models.dart';
     MockSpec<AccountService>(),
     MockSpec<ExerciseService>(),
     MockSpec<RemoteExerciseService>(),
+    MockSpec<ExerciseLibraryService>(),
+    MockSpec<LocalCatalogService>(),
     MockSpec<WorkoutService>(),
     MockSpec<RemoteWorkoutService>(),
     MockSpec<TemplateService>(),

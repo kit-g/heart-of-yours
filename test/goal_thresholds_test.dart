@@ -46,10 +46,14 @@ void main() {
     when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, squat]));
     when(local.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
     when(local.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
-    when(remote.getExercises()).thenAnswer((_) async => <Exercise>[]);
     when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
-    exercises = Exercises(remoteService: remote, service: local);
+    exercises = Exercises(
+      remoteService: remote,
+      service: local,
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+    );
     await exercises.init();
 
     SharedPreferences.setMockInitialValues({});

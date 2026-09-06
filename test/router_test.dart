@@ -206,7 +206,9 @@ void main() {
       addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
 
       final bench = Exercise(name: 'Bench Press (Barbell)', category: .barbell, target: .chest);
-      when(api.getExercises()).thenAnswer((_) async => [bench]);
+      when(
+        cdn.getExerciseLibrary(cached: anyNamed('cached')),
+      ).thenAnswer((_) async => ([bench], (version: 'run-1', locale: 'en', etag: null)));
 
       final router = HeartRouter();
       await harness.pumpHeartApp(
