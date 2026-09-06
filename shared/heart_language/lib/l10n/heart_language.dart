@@ -1528,6 +1528,36 @@ abstract class L {
   /// **'Yep, go on without me!'**
   String get deleteAccountConfirmMessage;
 
+  /// Settings row, shown only while using the app without an account: wipes everything Heart holds on this device. Destructive, red
+  ///
+  /// In en, this message translates to:
+  /// **'Erase my data'**
+  String get eraseData;
+
+  /// Erase-my-data dialog title. Mirrors the delete-account title's phrasing
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to erase your data?'**
+  String get eraseDataTitle;
+
+  /// Erase-my-data dialog body. Must name the health data as included (it is device-only and lives in the same store) while making clear the operating system's health store itself is untouched, and say plainly that nothing can bring the data back
+  ///
+  /// In en, this message translates to:
+  /// **'Your workouts, templates, custom exercises, goals and chart settings are deleted from this phone, together with Heart\'s copy of your health data. Your phone\'s own health records are not touched. Without an account there is no backup — this cannot be undone.'**
+  String get eraseDataBody;
+
+  /// Erase-my-data dialog, the safe way out
+  ///
+  /// In en, this message translates to:
+  /// **'Keep my data'**
+  String get eraseDataCancelMessage;
+
+  /// Erase-my-data dialog, the destructive action
+  ///
+  /// In en, this message translates to:
+  /// **'Erase everything'**
+  String get eraseDataConfirmMessage;
+
   /// Delete account dialog
   ///
   /// In en, this message translates to:
