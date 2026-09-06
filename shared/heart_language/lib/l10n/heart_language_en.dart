@@ -1432,6 +1432,42 @@ class LEn extends L {
   String get yourData => 'Your data';
 
   @override
+  String get exportData => 'Export my data';
+
+  @override
+  String get exportExplainer =>
+      'Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.';
+
+  @override
+  String get exportNoHealthData => 'Your health data is not included — it never leaves your phone.';
+
+  @override
+  String exportPartialHistory(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Includes the $count workouts on this phone.',
+      one: 'Includes the 1 workout on this phone.',
+    );
+    return '$_temp0 Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.';
+  }
+
+  @override
+  String get exportAsJson => 'Export as JSON';
+
+  @override
+  String get exportJsonHint => 'Everything above, in Heart\'s own format.';
+
+  @override
+  String get exportAsCsv => 'Export as CSV';
+
+  @override
+  String get exportCsvHint => 'Workouts only, one row per set — opens in any spreadsheet.';
+
+  @override
+  String get exportInFlight => 'Preparing your file…';
+
+  @override
   String get account => 'Account';
 
   @override
@@ -3131,6 +3167,42 @@ class LEnCa extends LEn {
 
   @override
   String get yourData => 'Your data';
+
+  @override
+  String get exportData => 'Export my data';
+
+  @override
+  String get exportExplainer =>
+      'Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.';
+
+  @override
+  String get exportNoHealthData => 'Your health data is not included — it never leaves your phone.';
+
+  @override
+  String exportPartialHistory(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Includes the $count workouts on this phone.',
+      one: 'Includes the 1 workout on this phone.',
+    );
+    return '$_temp0 Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.';
+  }
+
+  @override
+  String get exportAsJson => 'Export as JSON';
+
+  @override
+  String get exportJsonHint => 'Everything above, in Heart\'s own format.';
+
+  @override
+  String get exportAsCsv => 'Export as CSV';
+
+  @override
+  String get exportCsvHint => 'Workouts only, one row per set — opens in any spreadsheet.';
+
+  @override
+  String get exportInFlight => 'Preparing your file…';
 
   @override
   String get account => 'Account';

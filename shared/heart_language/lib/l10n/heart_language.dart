@@ -2578,6 +2578,60 @@ abstract class L {
   /// **'Your data'**
   String get yourData;
 
+  /// Settings row (shown with and without an account) and title of the export page
+  ///
+  /// In en, this message translates to:
+  /// **'Export my data'**
+  String get exportData;
+
+  /// Export page, what the file holds
+  ///
+  /// In en, this message translates to:
+  /// **'Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.'**
+  String get exportExplainer;
+
+  /// Export page, the device-only health promise restated: no health data is in the file
+  ///
+  /// In en, this message translates to:
+  /// **'Your health data is not included — it never leaves your phone.'**
+  String get exportNoHealthData;
+
+  /// Export page, shown to a signed-in user whose phone holds fewer workouts than the server: how many the file will have and how to get the rest
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Includes the 1 workout on this phone.} other{Includes the {count} workouts on this phone.}} Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.'**
+  String exportPartialHistory(num count);
+
+  /// Export page, the button that writes the JSON file and opens the share sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Export as JSON'**
+  String get exportAsJson;
+
+  /// Export page, one line under the JSON button
+  ///
+  /// In en, this message translates to:
+  /// **'Everything above, in Heart\'s own format.'**
+  String get exportJsonHint;
+
+  /// Export page, the button that writes the CSV file and opens the share sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Export as CSV'**
+  String get exportAsCsv;
+
+  /// Export page, one line under the CSV button
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts only, one row per set — opens in any spreadsheet.'**
+  String get exportCsvHint;
+
+  /// Export page, shown under the progress bar while the file is being written
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your file…'**
+  String get exportInFlight;
+
   /// Settings section header over account management
   ///
   /// In en, this message translates to:

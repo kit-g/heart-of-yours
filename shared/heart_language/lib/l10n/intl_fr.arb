@@ -2615,6 +2615,62 @@
     "type": "text",
     "placeholders": {}
   },
+  "exportData": "Exporter mes données",
+  "@exportData": {
+    "description": "Settings row (shown with and without an account) and title of the export page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportExplainer": "Tout ce que Heart garde sur ce téléphone, dans un fichier qui vous appartient : séances avec chaque série, modèles et dossiers, exercices personnalisés, réglages d’unités et objectifs.",
+  "@exportExplainer": {
+    "description": "Export page, what the file holds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportNoHealthData": "Vos données de santé ne sont pas incluses : elles ne quittent jamais votre téléphone.",
+  "@exportNoHealthData": {
+    "description": "Export page, the device-only health promise restated: no health data is in the file",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportPartialHistory": "{count, plural, =1{Inclut la seule séance présente sur ce téléphone.} other{Inclut les {count} séances présentes sur ce téléphone.}} Les séances plus anciennes pas encore téléchargées sont laissées de côté : ouvrez l’Historique et remontez pour les récupérer d’abord.",
+  "@exportPartialHistory": {
+    "description": "Export page, shown to a signed-in user whose phone holds fewer workouts than the server: how many the file will have and how to get the rest",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "exportAsJson": "Exporter en JSON",
+  "@exportAsJson": {
+    "description": "Export page, the button that writes the JSON file and opens the share sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportJsonHint": "Tout ce qui précède, au format propre à Heart.",
+  "@exportJsonHint": {
+    "description": "Export page, one line under the JSON button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportAsCsv": "Exporter en CSV",
+  "@exportAsCsv": {
+    "description": "Export page, the button that writes the CSV file and opens the share sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportCsvHint": "Séances uniquement, une ligne par série : s’ouvre dans n’importe quel tableur.",
+  "@exportCsvHint": {
+    "description": "Export page, one line under the CSV button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportInFlight": "Préparation de votre fichier…",
+  "@exportInFlight": {
+    "description": "Export page, shown under the progress bar while the file is being written",
+    "type": "text",
+    "placeholders": {}
+  },
   "account": "Compte",
   "@account": {
     "description": "Settings section header over account management",
