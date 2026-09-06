@@ -801,6 +801,22 @@ class LEn extends L {
   String get deleteAccountConfirmMessage => 'Yep, go on without me!';
 
   @override
+  String get eraseData => 'Erase my data';
+
+  @override
+  String get eraseDataTitle => 'Are you sure you want to erase your data?';
+
+  @override
+  String get eraseDataBody =>
+      'Your workouts, templates, custom exercises, goals and chart settings are deleted from this phone, together with Heart\'s copy of your health data. Your phone\'s own health records are not touched. Without an account there is no backup — this cannot be undone.';
+
+  @override
+  String get eraseDataCancelMessage => 'Keep my data';
+
+  @override
+  String get eraseDataConfirmMessage => 'Erase everything';
+
+  @override
   String get confirmDeleteAccountTitle => 'Confirm your account deletion';
 
   @override
@@ -2484,6 +2500,22 @@ class LEnCa extends LEn {
 
   @override
   String get deleteAccountConfirmMessage => 'Yep, go on without me!';
+
+  @override
+  String get eraseData => 'Erase my data';
+
+  @override
+  String get eraseDataTitle => 'Are you sure you want to erase your data?';
+
+  @override
+  String get eraseDataBody =>
+      'Your workouts, templates, custom exercises, goals and chart settings are deleted from this phone, together with Heart\'s copy of your health data. Your phone\'s own health records are not touched. Without an account there is no backup — this cannot be undone.';
+
+  @override
+  String get eraseDataCancelMessage => 'Keep my data';
+
+  @override
+  String get eraseDataConfirmMessage => 'Erase everything';
 
   @override
   String get confirmDeleteAccountTitle => 'Confirm your account deletion';

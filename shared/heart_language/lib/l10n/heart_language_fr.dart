@@ -804,6 +804,22 @@ class LFr extends L {
   String get deleteAccountConfirmMessage => 'Oui, continuez sans moi !';
 
   @override
+  String get eraseData => 'Effacer mes données';
+
+  @override
+  String get eraseDataTitle => 'Voulez-vous vraiment effacer vos données ?';
+
+  @override
+  String get eraseDataBody =>
+      'Vos entraînements, modèles, exercices personnalisés, objectifs et réglages de graphiques sont supprimés de ce téléphone, ainsi que la copie que Heart garde de vos données de santé. Les données de santé de votre téléphone lui-même ne sont pas touchées. Sans compte, il n’y a pas de sauvegarde : cette action est irréversible.';
+
+  @override
+  String get eraseDataCancelMessage => 'Garder mes données';
+
+  @override
+  String get eraseDataConfirmMessage => 'Tout effacer';
+
+  @override
   String get confirmDeleteAccountTitle => 'Confirmez la suppression de votre compte';
 
   @override
