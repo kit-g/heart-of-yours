@@ -36,3 +36,5 @@ const _upgradeAppName = 'upgradeApp';
 const _upgradeAppPath = '/$_upgradeAppName';
 const _galleryName = 'gallery';
 const _galleryPath = '/$_galleryName';
+const _onboardingName = 'welcome';
+const _onboardingPath = '/$_onboardingName';

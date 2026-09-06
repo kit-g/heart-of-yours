@@ -16,6 +16,7 @@ import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
+import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/settings/upgrade_app.dart';
@@ -73,6 +74,7 @@ final class HeartRouter {
             ],
           ),
           _upgradeRequiredRoute(),
+          _onboardingRoute(),
           _activeWorkoutRoute(),
           _loginRoute(),
           _workoutDoneRoute(),
@@ -96,6 +98,24 @@ final class HeartRouter {
       );
 
   static FutureOr<String?> _redirect(BuildContext context, GoRouterState state) {
+    // A first launch's opening screen is decided on a stored flag (see the
+    // onboarding block in `_decide`), and until the store has been read the
+    // flag reads as "seen" — so the first decision on mobile waits for it,
+    // rather than opening the app and swapping the onboarding in a moment
+    // later. A cold start pays this once, for as long as the platform takes to
+    // hand over its preferences; every decision after finds it read.
+    final prefs = Preferences.of(context);
+    if (kIsWeb || prefs.isInitialized) return _decide(context, state);
+    return prefs.initialized.then<String?>(
+      (_) {
+        // a tree torn down mid-wait (a test's) has nowhere left to go
+        if (!context.mounted) return null;
+        return _decide(context, state);
+      },
+    );
+  }
+
+  static FutureOr<String?> _decide(BuildContext context, GoRouterState state) {
     final upgradeRequired = AppVersionSentry.instance.upgradeRequired;
 
     // app version to low, show dedicated UX
@@ -143,6 +163,30 @@ final class HeartRouter {
       final query = Map<String, String>.from(state.uri.queryParameters);
       query['from'] ??= from;
       return state.namedLocation(_loginName, queryParameters: query);
+    }
+
+    // The first launch opens on the onboarding, once, before the anonymous
+    // session lands anyone in the app — and only for a session with no account
+    // behind it: an install that signs in already knows what an account adds.
+    // The flag is a device's, so a later sign-out does not bring it back. The
+    // web keeps its sign-in gate and never sees this.
+    final isOnboarding = state.fullPath == _onboardingPath;
+    final needsOnboarding =
+        !kIsWeb && !Preferences.of(context).onboardingSeen && (auth.user == null || auth.isAnonymous);
+    switch ((isOnboarding, needsOnboarding)) {
+      case (true, true):
+        return null;
+      case (false, true):
+        // same as the sign-in gate: a deep link opening a fresh install is
+        // carried through and honoured on the way out
+        final from = Uri.encodeComponent(state.uri.toString());
+        final query = Map<String, String>.from(state.uri.queryParameters);
+        query['from'] ??= from;
+        return state.namedLocation(_onboardingName, queryParameters: query);
+      case (true, false):
+        return state.namedLocation(_profileName, queryParameters: state.uri.queryParameters);
+      case (false, false):
+        break;
     }
 
     if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {

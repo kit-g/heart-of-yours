@@ -120,7 +120,12 @@ class HeartApp extends StatelessWidget {
           create: (_) => PreviousExercises(service: db),
         ),
         ChangeNotifierProvider<Preferences>(
-          create: (_) => Preferences(),
+          // Loaded here, before there is a session, not with the rest of
+          // startup: the router's first decision — onboarding or the app —
+          // waits on `Preferences.initialized`, and the sooner that is read
+          // the shorter the wait. `_initApp` reads it again with the rest;
+          // the second read is harmless.
+          create: (_) => Preferences()..init(locale: PlatformDispatcher.instance.locale),
         ),
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
