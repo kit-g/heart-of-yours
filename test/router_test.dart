@@ -6,6 +6,7 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
+import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -37,7 +38,7 @@ void main() {
     setUp(
       () {
         // Prevent SharedPreferences.getInstance() from throwing a MissingPluginException
-        SharedPreferences.setMockInitialValues({});
+        SharedPreferences.setMockInitialValues(pastOnboarding());
 
         db = MockLocalDatabase();
         api = MockApi();
@@ -229,6 +230,127 @@ void main() {
       final location = router.config.routerDelegate.currentConfiguration.uri.toString();
       expect(location, contains('exercises'));
       expect(find.byType(ProfilePage), findsNothing);
+    });
+
+    group('first-launch onboarding', () {
+      /// A device that has never launched the app.
+      setUp(() => SharedPreferences.setMockInitialValues({}));
+
+      Future<void> pumpFreshInstall(WidgetTester tester, {FirebaseAuth? firebase}) async {
+        await harness.pumpHeartApp(
+          tester,
+          db: db,
+          api: api,
+          cdn: cdn,
+          firebaseAuth: firebase ?? MockFirebaseAuth(signedIn: false),
+          hasLocalNotifications: false,
+          settle: false,
+        );
+        await tester.pumpTimes();
+      }
+
+      testWidgets('a fresh install opens on the onboarding, not the app', (tester) async {
+        await pumpFreshInstall(tester);
+
+        expect(find.byType(OnboardingPage), findsOneWidget);
+        expect(find.byType(ProfilePage), findsNothing);
+        // a way out on the first screen already
+        expect(find.byKey(AppKeys.onboardingSkip), findsOneWidget);
+      });
+
+      testWidgets('Skip lands in the app and is remembered', (tester) async {
+        await pumpFreshInstall(tester);
+
+        await tester.tapByKey(AppKeys.onboardingSkip);
+        await tester.pumpTimes();
+
+        expect(find.byType(OnboardingPage), findsNothing);
+        expect(find.byType(ProfilePage), findsOneWidget);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool(Preferences.onboardingSeenKey), isTrue);
+      });
+
+      testWidgets('Next walks the three screens; Continue on the last lands in the app', (tester) async {
+        await pumpFreshInstall(tester);
+
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        expect(find.byKey(AppKeys.onboardingSkip), findsOneWidget);
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+
+        // the last screen trades Next for the two ways out
+        expect(find.byKey(AppKeys.onboardingNext), findsNothing);
+        expect(find.byKey(AppKeys.onboardingSkip), findsOneWidget);
+        expect(find.byKey(AppKeys.onboardingSignIn), findsOneWidget);
+
+        await tester.tapByKey(AppKeys.onboardingContinue);
+        await tester.pumpTimes();
+
+        expect(find.byType(ProfilePage), findsOneWidget);
+        expect(find.byKey(AppKeys.noAccount), findsOneWidget);
+      });
+
+      testWidgets('Log in on the last screen goes to LoginPage, and is remembered too', (tester) async {
+        await pumpFreshInstall(tester);
+
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        await tester.tapByKey(AppKeys.onboardingSignIn);
+        await tester.pumpTimes();
+
+        expect(find.byType(LoginPage), findsOneWidget);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool(Preferences.onboardingSeenKey), isTrue);
+      });
+
+      testWidgets('a device that has seen it opens straight into the app', (tester) async {
+        SharedPreferences.setMockInitialValues(pastOnboarding());
+        await pumpFreshInstall(tester);
+
+        expect(find.byType(OnboardingPage), findsNothing);
+        expect(find.byType(ProfilePage), findsOneWidget);
+      });
+
+      testWidgets('an account never sees it, even on a device that has not', (tester) async {
+        await pumpFreshInstall(
+          tester,
+          firebase: MockFirebaseAuth(
+            mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+            signedIn: true,
+          ),
+        );
+
+        expect(find.byType(OnboardingPage), findsNothing);
+        expect(find.byType(ProfilePage), findsOneWidget);
+      });
+
+      testWidgets('a deep link opening a fresh install is honoured after Skip', (tester) async {
+        tester.binding.platformDispatcher.defaultRouteNameTestValue = '/workout';
+        addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+        final router = HeartRouter();
+
+        await harness.pumpHeartApp(
+          tester,
+          db: db,
+          api: api,
+          cdn: cdn,
+          firebaseAuth: MockFirebaseAuth(signedIn: false),
+          router: router,
+          hasLocalNotifications: false,
+          settle: false,
+        );
+        await tester.pumpTimes();
+        expect(find.byType(OnboardingPage), findsOneWidget);
+
+        await tester.tapByKey(AppKeys.onboardingSkip);
+        await tester.pumpTimes();
+
+        expect(find.byType(WorkoutPage), findsOneWidget);
+        expect(router.config.routerDelegate.currentConfiguration.uri.path, '/workout');
+      });
     });
 
     testWidgets('bottom navigation: tapping items by AppKeys switches stacks', (tester) async {
