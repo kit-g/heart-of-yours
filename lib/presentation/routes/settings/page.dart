@@ -3,6 +3,7 @@ part of 'settings.dart';
 class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
   final VoidCallback onImportData;
+  final VoidCallback onExportData;
 
   /// Where the app goes once an anonymous session's data is erased.
   final VoidCallback onErased;
@@ -11,6 +12,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     super.key,
     required this.onAccountManagement,
     required this.onImportData,
+    required this.onExportData,
     required this.onErased,
   });
 
@@ -32,6 +34,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :toFeedback,
       :leaveFeedbackBody,
       :importData,
+      :exportData,
       :eraseData,
       :yourData,
       :account,
@@ -62,6 +65,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     // why, and a row that fails on tap would only be a reminder in disguise.
     // The one row the anonymous session has instead is the erase: with no
     // account to delete, this is how everything the device holds goes.
+    // Export is the row both sessions share: it reads the device, not the
+    // server, so it owes nothing to an account.
     final isAnonymous = Auth.watch(context).isAnonymous;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -183,19 +188,25 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               _Section(
                 title: yourData,
                 children: [
-                  switch (isAnonymous) {
-                    true => ListTile(
+                  if (!isAnonymous)
+                    ListTile(
+                      leading: const Icon(Icons.upload_file_rounded),
+                      title: Text(importData),
+                      onTap: onImportData,
+                    ),
+                  ListTile(
+                    key: AppKeys.exportData,
+                    leading: const Icon(Icons.file_download_rounded),
+                    title: Text(exportData),
+                    onTap: onExportData,
+                  ),
+                  if (isAnonymous)
+                    ListTile(
                       key: AppKeys.eraseData,
                       leading: Icon(Icons.delete_forever_rounded, color: error),
                       title: Text(eraseData, style: textTheme.bodyLarge?.copyWith(color: error)),
                       onTap: () => _onEraseData(context),
                     ),
-                    false => ListTile(
-                      leading: const Icon(Icons.upload_file_rounded),
-                      title: Text(importData),
-                      onTap: onImportData,
-                    ),
-                  },
                 ],
               ),
               const SizedBox(height: 24),
