@@ -100,6 +100,26 @@ class LFr extends L {
   String get logOut => 'Se déconnecter';
 
   @override
+  String get noAccount => 'Sans compte';
+
+  @override
+  String get noAccountTitle => 'Vous utilisez Heart sans compte';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Vos données de santé ne quittent jamais votre téléphone. Sans compte, rien d\'autre ne le quitte non plus : vos séances, modèles et objectifs restent uniquement sur cet appareil.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Se connecter ajoute une sauvegarde et la synchronisation entre vos appareils, et plus tard le partage avec des amis et le coaching.';
+
+  @override
+  String get noAccountBodyLose => 'Si vous perdez ce téléphone, vous perdez vos données.';
+
+  @override
+  String get notNow => 'Pas maintenant';
+
+  @override
   String get profile => 'Profil';
 
   @override

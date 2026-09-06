@@ -100,6 +100,26 @@ class LEs extends L {
   String get logOut => 'Cerrar sesión';
 
   @override
+  String get noAccount => 'Sin cuenta';
+
+  @override
+  String get noAccountTitle => 'Estás usando Heart sin cuenta';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Tus datos de salud nunca salen de tu teléfono. Sin cuenta, nada más sale tampoco: tus entrenamientos, plantillas y metas viven solo en este dispositivo.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Iniciar sesión añade una copia de seguridad y sincronización entre tus dispositivos, y más adelante compartir con amigos y coaching.';
+
+  @override
+  String get noAccountBodyLose => 'Si pierdes este teléfono, pierdes tus datos.';
+
+  @override
+  String get notNow => 'Ahora no';
+
+  @override
   String get profile => 'Perfil';
 
   @override

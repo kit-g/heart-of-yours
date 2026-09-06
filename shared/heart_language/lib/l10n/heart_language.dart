@@ -280,6 +280,42 @@ abstract class L {
   /// **'Log out'**
   String get logOut;
 
+  /// Profile app bar while using the app without an account: the name slot and the tooltip of the icon that opens the no-account dialog
+  ///
+  /// In en, this message translates to:
+  /// **'No account'**
+  String get noAccount;
+
+  /// Title of the no-account dialog on the profile page
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using Heart without an account'**
+  String get noAccountTitle;
+
+  /// No-account dialog, first paragraph: where the data lives. Reads as one with the health-data promise
+  ///
+  /// In en, this message translates to:
+  /// **'Your health data never leaves your phone. Without an account, neither does anything else: your workouts, templates and goals live on this device only.'**
+  String get noAccountBodyLocal;
+
+  /// No-account dialog, second paragraph: what an account adds
+  ///
+  /// In en, this message translates to:
+  /// **'Logging in adds a backup and sync between your devices, and later sharing with friends and coaching.'**
+  String get noAccountBodySignIn;
+
+  /// No-account dialog, last paragraph; the export screen repeats this line and nothing else
+  ///
+  /// In en, this message translates to:
+  /// **'If you lose this phone, you lose your data.'**
+  String get noAccountBodyLose;
+
+  /// Dismisses the no-account dialog without logging in
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
   /// Generic label, e.g. bottom nav bar
   ///
   /// In en, this message translates to:
