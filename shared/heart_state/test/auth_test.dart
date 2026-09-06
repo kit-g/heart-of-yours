@@ -11,6 +11,17 @@ import 'package:mockito/mockito.dart';
 import 'mocks.mocks.dart';
 import 'test_utils.dart';
 
+/// A Firebase project with the anonymous provider switched off answers every
+/// anonymous sign-in with `admin-restricted-operation`.
+class _NoAnonymousSignIn extends MockFirebaseAuth {
+  new() : super(signedIn: false);
+
+  @override
+  Future<fb.UserCredential> signInAnonymously() {
+    throw fb.FirebaseAuthException(code: 'admin-restricted-operation');
+  }
+}
+
 void main() {
   late MockAccountService account;
 
@@ -166,6 +177,115 @@ void main() {
       await sut.deleteAccountDeletionSchedule();
 
       verifyZeroInteractions(account);
+    });
+  });
+
+  group('anonymous session', () {
+    test('a missing user is replaced by an anonymous one, with the remote leg closed', () async {
+      final firebase = MockFirebaseAuth(signedIn: false);
+      final remote = RemoteAccess();
+      String? token;
+      String? uid;
+      var entered = 0;
+      when(account.isAuthenticated).thenReturn(true);
+
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        remote: remote,
+        googleSignIn: MockGoogleSignIn(),
+        onEnter: (t, u) async {
+          token = t;
+          uid = u;
+          entered++;
+        },
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.isLoggedIn, isTrue, reason: 'an anonymous uid is a uid like any other');
+      expect(sut.isAnonymous, isTrue);
+      expect(sut.isInitialized, isTrue);
+      expect(remote.allowed, isFalse);
+      expect(entered, 1);
+      expect(uid, sut.user!.id);
+      expect(token, isNull, reason: 'no anonymous token may reach the server');
+      verifyNever(account.registerAccount(any));
+    });
+
+    test('the web keeps its gate: no user, no anonymous sign-in', () async {
+      final firebase = MockFirebaseAuth(signedIn: false);
+      final remote = RemoteAccess();
+
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        remote: remote,
+        isWeb: true,
+        googleSignIn: MockGoogleSignIn(),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.isLoggedIn, isFalse);
+      expect(sut.isAnonymous, isFalse);
+      expect(sut.isInitialized, isTrue);
+      expect(remote.allowed, isFalse);
+    });
+
+    test('a refused anonymous sign-in leaves the session unavailable, and says so through onUserChange', () async {
+      final firebase = _NoAnonymousSignIn();
+      final remote = RemoteAccess();
+      final errors = <Object>[];
+      final changes = <User?>[];
+
+      final sut = Auth(
+        service: account,
+        firebase: firebase,
+        remote: remote,
+        googleSignIn: MockGoogleSignIn(),
+        onError: (error, {stacktrace}) => errors.add(error),
+        onUserChange: changes.add,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.isLoggedIn, isFalse);
+      expect(sut.sessionUnavailable, isTrue, reason: 'the router falls back to the gate on this');
+      expect(sut.isInitialized, isTrue, reason: 'the login page shows its form, not its spinner');
+      expect(remote.allowed, isFalse);
+      expect(errors, hasLength(1));
+      // once for the missing user, once more for the settled answer
+      expect(changes, [null, null]);
+    });
+
+    test('ensureSession is a no-op while someone is signed in', () async {
+      final firebase = MockFirebaseAuth(mockUser: MockUser(uid: 'u1'), signedIn: true);
+      final sut = Auth(service: account, firebase: firebase, googleSignIn: MockGoogleSignIn());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      await sut.ensureSession();
+
+      expect(sut.user?.id, 'u1');
+      expect(sut.isAnonymous, isFalse);
+    });
+
+    test('an account signed into from an anonymous session opens the remote leg', () async {
+      final firebase = MockFirebaseAuth(signedIn: false);
+      final remote = RemoteAccess();
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
+
+      final sut = Auth(service: account, firebase: firebase, remote: remote, googleSignIn: MockGoogleSignIn());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(sut.isAnonymous, isTrue);
+      expect(remote.allowed, isFalse);
+
+      await firebase.signInWithCredential(
+        fb.GoogleAuthProvider.credential(idToken: 'token', accessToken: 'access'),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.isAnonymous, isFalse);
+      expect(remote.allowed, isTrue);
+      verify(account.registerAccount(any)).called(1);
     });
   });
 
