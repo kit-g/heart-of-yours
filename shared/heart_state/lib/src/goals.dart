@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'remote.dart';
+
 /// The local half of goal storage.
 ///
 /// [GoalService] covers what both ends can do; these three are the bookkeeping
@@ -96,6 +98,7 @@ class GoalRejected implements Exception {
 class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   final LocalGoalService _service;
   final GoalService _remoteService;
+  final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   /// How many live goals the server will hold for one user.
@@ -129,7 +132,8 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     required this._service,
     required this._remoteService,
     this.onError,
-  });
+    RemoteAccess? remote,
+  }) : _remote = remote ?? RemoteAccess();
 
   @override
   Iterator<Goal> get iterator => _goals.iterator;
@@ -234,6 +238,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   /// Both slices, because the achieved surface is as authoritative as the live
   /// list and neither is paginated — the cap keeps them small.
   Future<void> pull() async {
+    if (!_remote.allowed) return;
     if (userId case String id) {
       try {
         await _service.storeGoals(
@@ -330,6 +335,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
     notifyListeners();
 
     await _service.deleteGoal(goalId, id);
+    if (!_remote.allowed) return;
     try {
       await _remoteService.deleteGoal(goalId, id);
     } catch (error, stacktrace) {
@@ -506,6 +512,7 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   bool _pushing = false;
 
   Future<void> _pushPending() async {
+    if (!_remote.allowed) return;
     if (userId case String id) {
       try {
         for (final goal in await _service.unsyncedGoals(id)) {
@@ -523,12 +530,14 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   ///
   /// A failure the server never saw leaves [local] standing and unsynced, to be
   /// retried; one it saw and refused is handed to [onRejected] to undo, because
-  /// retrying it forever would only keep failing.
+  /// retrying it forever would only keep failing. A closed remote leg is the
+  /// first kind, without the request: the row waits for an account.
   Future<Goal> _push(
     Goal local,
     Future<Goal> Function() send, {
     required Future<void> Function(Goal local) onRejected,
   }) async {
+    if (!_remote.allowed) return local;
     final id = userId!;
     final localId = local.id!;
     _inFlight.add(localId);

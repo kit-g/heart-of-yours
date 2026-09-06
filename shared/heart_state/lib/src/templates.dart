@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'remote.dart';
+
 /// Local persistence of the user's template folders.
 ///
 /// Folders are remote-first — the server mints ids and settles name conflicts —
@@ -44,6 +46,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   final LocalTemplateFolderService _folderService;
   final ApiTemplateFolderService _remoteFolderService;
   final RemoteTemplateFilingService _filingService;
+  final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final int? maxTemplates;
 
@@ -56,7 +59,8 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     required this._filingService,
     this.onError,
     this.maxTemplates,
-  });
+    RemoteAccess? remote,
+  }) : _remote = remote ?? RemoteAccess();
 
   Template? editable;
 
@@ -105,6 +109,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
         _folders.addAll(localFolders);
         notifyListeners();
       }
+
+      // the mirror is the whole story until there is a server to reconcile with
+      if (!_remote.allowed) return;
 
       final remote = await _remoteService.getTemplates() ?? [];
       if (remote.isNotEmpty) {
@@ -192,10 +199,19 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     await _service.deleteTemplate(draft.id);
   }
 
+  /// With the remote leg closed the template stays [Template.local] under its
+  /// client-minted id — the state a template made offline is in until a save
+  /// reaches the server.
   Future<void> saveEditable() async {
     if (editable case Template template) {
       _templates.add(template);
       await _service.updateTemplate(template);
+
+      if (!_remote.allowed) {
+        editable = null;
+        notifyListeners();
+        return;
+      }
 
       try {
         final save = template.local ? _remoteService.saveTemplate : _remoteService.editTemplate;
@@ -228,9 +244,16 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     return Future.wait(
       [
         _service.deleteTemplate(template.id),
-        _remoteService.deleteTemplate(template.id),
+        if (_remote.allowed) _remoteService.deleteTemplate(template.id),
       ],
     );
+  }
+
+  /// Folders are remote-first — the server mints their ids — so there are none
+  /// to be had while the remote leg is closed. The pages hide the affordances;
+  /// this is the tripwire behind them.
+  void _requireRemote() {
+    if (!_remote.allowed) throw StateError('template folders need the remote leg');
   }
 
   bool get allowsNewTemplate => length < (maxTemplates ?? _maxTemplates);
@@ -282,6 +305,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// duplicate name throws here — the caller owns the apology — and nothing is
   /// kept locally that the server has not confirmed.
   Future<TemplateFolder> createFolder(String name) async {
+    _requireRemote();
     final order = (_folders.lastOrNull?.order ?? -1) + 1;
     final created = await _remoteFolderService.createFolder(
       userId: userId!,
@@ -294,6 +318,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   Future<TemplateFolder> renameFolder(TemplateFolder folder, String name) async {
+    _requireRemote();
     final updated = await _remoteFolderService.updateFolder(
       userId: userId!,
       folderId: folder.id!,
@@ -311,6 +336,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   /// The templates inside come back unfiled, here and on the server alike.
   Future<void> deleteFolder(TemplateFolder folder) async {
+    _requireRemote();
     await _remoteFolderService.deleteFolder(userId: userId!, folderId: folder.id!);
     _folders.remove(folder);
     _refileAll(folder.id, null);
@@ -322,6 +348,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// move shows immediately and is rolled back if the server rejects it.
   Future<void> moveToFolder(Template template, TemplateFolder? folder) async {
     if (template.folderId == folder?.id) return;
+    _requireRemote();
 
     _swap(template, _filed(template, folder));
     notifyListeners();
