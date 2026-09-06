@@ -10,6 +10,7 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
+import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
@@ -65,6 +66,8 @@ class HeartApp extends StatelessWidget {
               onError: reportToSentry,
               remoteService: api,
               service: db,
+              libraryService: CdnExerciseLibrary(cdn),
+              catalogService: LocalCatalog(db),
               remote: RemoteAccess.of(context),
             );
             // sample templates arrive as content slugs plus per-locale
