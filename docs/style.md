@@ -28,17 +28,18 @@ final g = switch (accent) {
 
 A one-line `??` fallback is fine.
 
-**No C-style index loops.** `for (var i = 0; i < n; i++)` is not how this
-codebase walks anything. Iterate the collection; when the index matters, ask
-for it; when there is only a count, generate.
+**Functional first, loops last.** Walk a collection with `Iterable` methods —
+`map`, `where`, `indexed`, `fold`, `expand` — or a collection-`for` over it;
+`List.generate` / `Iterable.generate` when there is only a count. A C-style
+`for (var i = 0; i < n; i++)` is not how this codebase walks anything.
 
 ```dart
 // no
 for (var i = 0; i < screens; i++) _Dot(active: i == page),
 
 // yes
-for (final (i, _) in screens.indexed) _Dot(active: i == page),
-...List.generate(screens.length, (i) => _Dot(active: i == page)),
+...screens.indexed.map((e) => _Dot(active: e.$1 == page)),
+...List.generate(screens, (i) => _Dot(active: i == page)),
 ```
 
 The one place an index loop earns its keep is index *arithmetic* — bucketing a

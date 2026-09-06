@@ -49,7 +49,8 @@ workout write-back, or anything that stores a health value.
 
 ## Style
 `docs/style.md` is what the linter cannot say: switch expressions over
-ternaries, no C-style index loops, dot-shorthand constructors, no `setState`,
+ternaries, `Iterable` methods over index loops, dot-shorthand constructors, no
+`setState`,
 copy only in presentation, controls absent rather than dead. Its entries are
 review findings even when `make lint` is clean; add to it when a review
 finds a new one.
