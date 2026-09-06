@@ -49,6 +49,10 @@ extension on BuildContext {
     return goNamed(_importDataName);
   }
 
+  void goToExportData() {
+    return goNamed(_exportDataName);
+  }
+
   void goToAvatar() {
     return goNamed(_avatarName);
   }
