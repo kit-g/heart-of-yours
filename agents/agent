@@ -2,13 +2,15 @@
 # Launch a containerized autonomous agent in its own git worktree.
 #
 #   agents/agent <name> [--repo PATH] [--task "..." | --issue N]
-#                       [--aws] [--db] [--build] [--shell]
+#                       [--base BRANCH] [--aws] [--db] [--build] [--shell]
 #
 # With --task or --issue the agent runs headless to completion; without either
 # you get an interactive Claude session inside the container (good for
 # steering or inspecting). One terminal tab per agent works well.
 #
 #   --repo PATH   repo to work on (default: this repo; use ~/mine/heart-api)
+#   --base BRANCH branch the worktree from BRANCH instead of main — another
+#                 agent's branch (worktree-a1) to stack this work on it
 #   --aws         open egress to AWS ranges (ca-central-1) — pair with AWS
 #                 keys for the dedicated dev IAM user in the env file
 #   --db          allow reaching the dev Postgres on the host
@@ -24,15 +26,16 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DEFAULT_REPO="$(cd "$HERE/.." && pwd)"
 
-NAME="${1:?usage: agents/agent <name> [--repo PATH] [--task \"...\" | --issue N] [--aws] [--db] [--build] [--shell]}"
+NAME="${1:?usage: agents/agent <name> [--repo PATH] [--task \"...\" | --issue N] [--base BRANCH] [--aws] [--db] [--build] [--shell]}"
 shift
 
-REPO="$DEFAULT_REPO" TASK="" ISSUE="" AWS=0 DB=0 BUILD=0 SHELL_MODE=0
+REPO="$DEFAULT_REPO" TASK="" ISSUE="" BASE="" BASE_SET=0 AWS=0 DB=0 BUILD=0 SHELL_MODE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo)  REPO="$(cd "$2" && pwd)"; shift 2 ;;
     --task)  TASK="$2"; shift 2 ;;
     --issue) ISSUE="$2"; shift 2 ;;
+    --base)  BASE="$2"; BASE_SET=1; shift 2 ;;
     --aws)   AWS=1; shift ;;
     --db)    DB=1; shift ;;
     --build) BUILD=1; shift ;;
@@ -40,6 +43,12 @@ while [[ $# -gt 0 ]]; do
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
 done
+
+# The worktree is made on the host, before the container starts: the repo is
+# mounted at its identical path, so the worktree metadata stays valid inside.
+# shellcheck source=worktree.sh
+. "$HERE/worktree.sh"
+ensure_worktree "$REPO" "$NAME" "$BASE" "$BASE_SET"
 
 IMAGE=heart-agent
 # Per-agent env file if present, shared default.env otherwise.
@@ -97,7 +106,9 @@ it finds, re-run, leave REVIEW.md describing the final tree), and only then
 write HANDOFF.md at the worktree root. This worktree is fresh: run 'make
 codegen codegen-app' before 'make lint' or the analyzer reports missing
 mocks. A red lint or test, or a check you could not run, is a blocker to
-report — never rationalize it into an open end. You have no simulator:
+report — never rationalize it into an open end. Your worktree branches
+from '$WORKTREE_BASE' and your pull request will target it; your work is what
+'git diff HEAD' shows. Name that base in HANDOFF.md. You have no simulator:
 flag UI work needing a visual pass there. If this task came from a GitHub
 issue, post your closing summary as a comment on it ('gh issue comment') —
 that one outward action is pre-authorized; nothing else outward is. Never

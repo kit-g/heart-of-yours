@@ -1,7 +1,7 @@
 #!/bin/bash
 # Host-side agent for UI work: full macOS toolchain, simulators, screenshots.
 #
-#   agents/host-agent <name> [--task "..." | --issue N]
+#   agents/host-agent <name> [--task "..." | --issue N] [--base BRANCH]
 #
 # Weaker isolation than the containers — it runs as you. Safety comes from
 # four layers: worktree isolation (edits outside the worktree are blocked),
@@ -14,22 +14,30 @@
 #
 # Give it its own simulator so it never fights you for yours:
 #   xcrun simctl create agent-iphone "iPhone 17"
+#
+#   --base BRANCH  branch the worktree from BRANCH instead of main — another
+#                  agent's branch (worktree-a2) to stack this work on it
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
 
-NAME="${1:?usage: agents/host-agent <name> [--task \"...\" | --issue N]}"
+NAME="${1:?usage: agents/host-agent <name> [--task \"...\" | --issue N] [--base BRANCH]}"
 shift
 
-TASK="" ISSUE=""
+TASK="" ISSUE="" BASE="" BASE_SET=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --task)  TASK="$2"; shift 2 ;;
     --issue) ISSUE="$2"; shift 2 ;;
+    --base)  BASE="$2"; BASE_SET=1; shift 2 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
 done
+
+# shellcheck source=worktree.sh
+. "$HERE/worktree.sh"
+ensure_worktree "$REPO" "$NAME" "$BASE" "$BASE_SET"
 
 if [[ -n "$ISSUE" ]]; then
   TASK="$(gh -R "$(git -C "$REPO" remote get-url origin)" issue view "$ISSUE" \
@@ -46,7 +54,9 @@ it finds, re-run, leave REVIEW.md describing the final tree), and only then
 write HANDOFF.md at the worktree root. This worktree is fresh: run 'make
 codegen codegen-app' before 'make lint' or the analyzer reports missing
 mocks. A red lint or test, or a check you could not run, is a blocker to
-report — never rationalize it into an open end. UI changes must be
+report — never rationalize it into an open end. Your worktree branches
+from '$WORKTREE_BASE' and your pull request will target it; your work is what
+'git diff HEAD' shows. Name that base in HANDOFF.md. UI changes must be
 screenshot-verified on the 'agent-iphone' simulator (and an iPad if the
 surface has a two-pane layout) — never the user's own simulators. If this
 task came from a GitHub issue, post your closing summary as a comment on it
