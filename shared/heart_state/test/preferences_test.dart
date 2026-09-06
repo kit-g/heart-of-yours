@@ -183,6 +183,51 @@ void main() {
     });
   });
 
+  group('first-launch onboarding', () {
+    test('reads as seen until initialized, so nothing is shown on a guess', () {
+      expect(sut.onboardingSeen, isTrue);
+    });
+
+    test('initialized resolves with init, not before, and a second init is harmless', () async {
+      var resolved = false;
+      sut.initialized.then((_) => resolved = true);
+      await Future<void>.delayed(Duration.zero);
+      expect(resolved, isFalse);
+
+      await sut.init();
+      await Future<void>.delayed(Duration.zero);
+      expect(resolved, isTrue);
+
+      // startup reads the store twice (see app.dart)
+      await sut.init();
+      expect(sut.isInitialized, isTrue);
+    });
+
+    test('a fresh device has not seen it', () async {
+      await sut.init();
+      expect(sut.onboardingSeen, isFalse);
+    });
+
+    test('marking it seen persists and notifies once', () async {
+      await sut.init();
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.markOnboardingSeen();
+      expect(sut.onboardingSeen, isTrue);
+      expect(probe.notifications, 1);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(Preferences.onboardingSeenKey), isTrue);
+    });
+
+    test('seen survives a new Preferences instance', () async {
+      SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.onboardingSeen, isTrue);
+    });
+  });
+
   group('formatting and conversions', () {
     test('weight() and distance() format integers without decimals in metric', () async {
       await sut.init(locale: const Locale('de', 'DE'));
