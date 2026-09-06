@@ -53,4 +53,20 @@ abstract final class AppKeys {
 
   /// The no-account dialog's way to the login page.
   static const noAccountLogIn = Key('Profile.noAccount.logIn');
+
+  /// The first-launch onboarding's way out, present on every screen of it.
+  static const onboardingSkip = Key('Onboarding.skip');
+
+  /// Advances the onboarding by one screen.
+  static const onboardingNext = Key('Onboarding.next');
+
+  /// The last onboarding screen's way into the app.
+  static const onboardingContinue = Key('Onboarding.continue');
+
+  /// The last onboarding screen's way to the login page.
+  static const onboardingSignIn = Key('Onboarding.signIn');
+
+  /// The onboarding's illustration, one per screen: what a window-size test
+  /// measures to prove the cap holds.
+  static const onboardingIllustration = Key('Onboarding.illustration');
 }
