@@ -218,6 +218,18 @@ class HeartApp extends StatelessWidget {
         Provider<Scrolls>(
           create: (_) => Scrolls(),
         ),
+        // "Export my data": reads the mirror straight, through the same
+        // adapters the notifiers use, so what goes in the file is what the
+        // device holds — no server, and nothing from the health tables
+        Provider<DataExport>(
+          create: (_) => DataExport(
+            workouts: db,
+            templates: db,
+            folders: LocalTemplateFolders(db),
+            exercises: db,
+            goals: LocalGoals(db),
+          ),
+        ),
       ],
       builder: (_, _) {
         return Consumer<AppTheme>(

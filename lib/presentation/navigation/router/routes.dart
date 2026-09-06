@@ -38,6 +38,7 @@ RouteBase _profileRoute() {
           return SettingsPage(
             onAccountManagement: context.goToAccountManagement,
             onImportData: context.goToImportData,
+            onExportData: context.goToExportData,
             onErased: context.goToProfile,
           );
         },
@@ -52,6 +53,11 @@ RouteBase _profileRoute() {
             path: _importDataPath,
             builder: (_, _) => const ImportDataPage(onError: reportToSentry),
             name: _importDataName,
+          ),
+          GoRoute(
+            path: _exportDataPath,
+            builder: (_, _) => const ExportDataPage(onError: reportToSentry),
+            name: _exportDataName,
           ),
         ],
       ),
