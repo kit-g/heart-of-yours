@@ -4,10 +4,14 @@ class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
   final VoidCallback onImportData;
 
+  /// Where the app goes once an anonymous session's data is erased.
+  final VoidCallback onErased;
+
   const new({
     super.key,
     required this.onAccountManagement,
     required this.onImportData,
+    required this.onErased,
   });
 
   @override
@@ -28,6 +32,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :toFeedback,
       :leaveFeedbackBody,
       :importData,
+      :eraseData,
       :yourData,
       :account,
       :app,
@@ -44,6 +49,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
         :primaryContainer,
         :onPrimaryContainer,
         :primary,
+        :error,
       ),
     ) = Theme.of(
       context,
@@ -54,6 +60,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     // they want an account. Absent rather than dead while the session is
     // anonymous — the profile's no-account dialog is the one place that says
     // why, and a row that fails on tap would only be a reminder in disguise.
+    // The one row the anonymous session has instead is the erase: with no
+    // account to delete, this is how everything the device holds goes.
     final isAnonymous = Auth.watch(context).isAnonymous;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -172,18 +180,26 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               // with no health store, and a header over nothing would lie
               const HealthSettings(),
               const SizedBox(height: 24),
-              if (!isAnonymous) ...[
-                _Section(
-                  title: yourData,
-                  children: [
-                    ListTile(
+              _Section(
+                title: yourData,
+                children: [
+                  switch (isAnonymous) {
+                    true => ListTile(
+                      key: AppKeys.eraseData,
+                      leading: Icon(Icons.delete_forever_rounded, color: error),
+                      title: Text(eraseData, style: textTheme.bodyLarge?.copyWith(color: error)),
+                      onTap: () => _onEraseData(context),
+                    ),
+                    false => ListTile(
                       leading: const Icon(Icons.upload_file_rounded),
                       title: Text(importData),
                       onTap: onImportData,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+                  },
+                ],
+              ),
+              const SizedBox(height: 24),
+              if (!isAnonymous) ...[
                 _Section(
                   title: account,
                   children: [
@@ -276,6 +292,62 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     );
   }
 
+  /// The same shape as account deletion's first dialog (account.dart): one
+  /// confirmation, explicit about what goes, the destructive action in the
+  /// error container. No password step — there is no credential to check an
+  /// anonymous session against, and nothing on a server to protect.
+  Future<void> _onEraseData(BuildContext context) {
+    final ThemeData(:colorScheme) = Theme.of(context);
+    final L(
+      :eraseDataTitle,
+      :eraseDataBody,
+      :eraseDataCancelMessage,
+      :eraseDataConfirmMessage,
+    ) = L.of(
+      context,
+    );
+
+    return showBrandedDialog(
+      context,
+      title: Text(
+        eraseDataTitle,
+        textAlign: TextAlign.center,
+      ),
+      content: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          eraseDataBody,
+          textAlign: TextAlign.center,
+        ),
+      ),
+      icon: Icon(
+        Icons.delete_forever_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      actions: [
+        _EraseDataActions(
+          keepCopy: eraseDataCancelMessage,
+          eraseCopy: eraseDataConfirmMessage,
+          onErase: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            _erase(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  /// The same pair as the profile's log-out — theme is provided above
+  /// heart_state's fan-out — with the wipe in between; then back to the
+  /// profile, which is where a fresh session lands.
+  Future<void> _erase(BuildContext context) async {
+    buzz();
+    AppTheme.of(context).onSignOut();
+    await eraseState(context);
+    if (!context.mounted) return;
+    onErased();
+  }
+
   void _openFeedback(BuildContext context) {
     Navigator.of(context, rootNavigator: true).pop();
     final L(:feedbackReceived) = L.of(context);
@@ -301,6 +373,51 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               },
             );
       },
+    );
+  }
+}
+
+/// The erase-my-data dialog's two actions: a neutral fill for keeping the
+/// data, the error container for the wipe.
+///
+/// A widget rather than two buttons built where the dialog is opened, for the
+/// reason the profile's no-account actions are: the fills come from the theme
+/// the dialog is *showing* under, so a dark-mode flip while it is open
+/// repaints them instead of leaving a light fill under dark-mode ink.
+class _EraseDataActions extends StatelessWidget {
+  final String keepCopy;
+  final String eraseCopy;
+  final VoidCallback onErase;
+
+  const new({required this.keepCopy, required this.eraseCopy, required this.onErase});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    return Column(
+      spacing: 8,
+      children: [
+        PrimaryButton.wide(
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          child: Center(
+            child: Text(keepCopy),
+          ),
+          onPressed: () {
+            Navigator.of(context, rootNavigator: true).pop();
+          },
+        ),
+        PrimaryButton.wide(
+          key: AppKeys.eraseDataConfirm,
+          backgroundColor: colorScheme.errorContainer,
+          onPressed: onErase,
+          child: Center(
+            child: Text(
+              eraseCopy,
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
