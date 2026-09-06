@@ -120,6 +120,42 @@ class LRu extends L {
   String get notNow => 'Не сейчас';
 
   @override
+  String get onboardingWelcomeTitle => 'Добро пожаловать в Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Дневник тренировок, который не мешает: планируйте сессию, отмечайте каждый подход и смотрите, как растут ваши веса.';
+
+  @override
+  String get onboardingLocalTitle => 'Ваши данные остаются на телефоне';
+
+  @override
+  String get onboardingLocalBody =>
+      'Аккаунт не нужен: ваши тренировки и данные о здоровье, которые вы разрешите Heart читать, хранятся только на этом устройстве и больше нигде.';
+
+  @override
+  String get onboardingLocalTrade =>
+      'Честная сделка: потеряете телефон — потеряете данные, если только не войдёте в аккаунт.';
+
+  @override
+  String get onboardingAccountTitle => 'Войдите, когда захотите';
+
+  @override
+  String get onboardingAccountBody =>
+      'Аккаунт добавит резервную копию и синхронизацию между устройствами, а позже — обмен с друзьями и тренера. Пока вы не войдёте, ничего не изменится.';
+
+  @override
+  String get onboardingNext => 'Далее';
+
+  @override
+  String get onboardingContinue => 'Продолжить';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Экран $current из $total';
+  }
+
+  @override
   String get profile => 'Профиль';
 
   @override

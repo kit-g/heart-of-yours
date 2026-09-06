@@ -316,6 +316,66 @@ abstract class L {
   /// **'Not now'**
   String get notNow;
 
+  /// First-launch onboarding, screen 1 of 3: title
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Heart'**
+  String get onboardingWelcomeTitle;
+
+  /// First-launch onboarding, screen 1 of 3: what Heart is, in one line
+  ///
+  /// In en, this message translates to:
+  /// **'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.'**
+  String get onboardingWelcomeBody;
+
+  /// First-launch onboarding, screen 2 of 3: title
+  ///
+  /// In en, this message translates to:
+  /// **'Your data stays on your phone'**
+  String get onboardingLocalTitle;
+
+  /// First-launch onboarding, screen 2 of 3: the anonymous promise and the health-data promise as one sentence
+  ///
+  /// In en, this message translates to:
+  /// **'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.'**
+  String get onboardingLocalBody;
+
+  /// First-launch onboarding, screen 2 of 3: the trade-off of having no account
+  ///
+  /// In en, this message translates to:
+  /// **'The honest trade: lose the phone and you lose the data, unless you log in.'**
+  String get onboardingLocalTrade;
+
+  /// First-launch onboarding, screen 3 of 3: title
+  ///
+  /// In en, this message translates to:
+  /// **'Log in whenever you like'**
+  String get onboardingAccountTitle;
+
+  /// First-launch onboarding, screen 3 of 3: what an account adds
+  ///
+  /// In en, this message translates to:
+  /// **'An account adds a backup and sync between your devices, and later sharing with friends and coaching. Nothing changes until you do.'**
+  String get onboardingAccountBody;
+
+  /// First-launch onboarding: moves to the next screen
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNext;
+
+  /// First-launch onboarding, last screen: closes the onboarding and enters the app
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingContinue;
+
+  /// First-launch onboarding: screen-reader label of the page indicator dots
+  ///
+  /// In en, this message translates to:
+  /// **'Screen {current} of {total}'**
+  String onboardingScreenOf(Object current, Object total);
+
   /// Generic label, e.g. bottom nav bar
   ///
   /// In en, this message translates to:

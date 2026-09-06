@@ -120,6 +120,42 @@ class LEs extends L {
   String get notNow => 'Ahora no';
 
   @override
+  String get onboardingWelcomeTitle => 'Te damos la bienvenida a Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Un diario de entrenamientos que no estorba: planifica una sesión, marca cada serie y mira cómo crecen tus marcas.';
+
+  @override
+  String get onboardingLocalTitle => 'Tus datos se quedan en tu teléfono';
+
+  @override
+  String get onboardingLocalBody =>
+      'No hace falta cuenta: tus entrenamientos, y los datos de salud que dejes leer a Heart, viven en este dispositivo y en ningún otro sitio.';
+
+  @override
+  String get onboardingLocalTrade =>
+      'El trato honesto: si pierdes el teléfono, pierdes los datos, a menos que inicies sesión.';
+
+  @override
+  String get onboardingAccountTitle => 'Inicia sesión cuando quieras';
+
+  @override
+  String get onboardingAccountBody =>
+      'Una cuenta añade una copia de seguridad y sincronización entre tus dispositivos, y más adelante compartir con amigos y coaching. Nada cambia hasta que tú lo decidas.';
+
+  @override
+  String get onboardingNext => 'Siguiente';
+
+  @override
+  String get onboardingContinue => 'Continuar';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Pantalla $current de $total';
+  }
+
+  @override
   String get profile => 'Perfil';
 
   @override
