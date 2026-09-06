@@ -100,6 +100,26 @@ class LEn extends L {
   String get logOut => 'Log out';
 
   @override
+  String get noAccount => 'No account';
+
+  @override
+  String get noAccountTitle => 'You\'re using Heart without an account';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Your health data never leaves your phone. Without an account, neither does anything else: your workouts, templates and goals live on this device only.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Logging in adds a backup and sync between your devices, and later sharing with friends and coaching.';
+
+  @override
+  String get noAccountBodyLose => 'If you lose this phone, you lose your data.';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
   String get profile => 'Profile';
 
   @override
@@ -1728,6 +1748,26 @@ class LEnCa extends LEn {
 
   @override
   String get logOut => 'Log out';
+
+  @override
+  String get noAccount => 'No account';
+
+  @override
+  String get noAccountTitle => 'You\'re using Heart without an account';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Your health data never leaves your phone. Without an account, neither does anything else: your workouts, templates and goals live on this device only.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Logging in adds a backup and sync between your devices, and later sharing with friends and coaching.';
+
+  @override
+  String get noAccountBodyLose => 'If you lose this phone, you lose your data.';
+
+  @override
+  String get notNow => 'Not now';
 
   @override
   String get profile => 'Profile';
