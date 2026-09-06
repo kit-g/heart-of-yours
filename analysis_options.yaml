@@ -5,6 +5,9 @@ analyzer:
     # generated output, gitignored — the iOS build checks whole packages out
     # under build/, and analyzing them buries real findings
     - build/**
+    # the same checkouts land under a plugin package's own build/ when the
+    # flutter tool resolves its SwiftPM manifest (heart_health, on test runs)
+    - shared/*/build/**
     - android/**
     - ios/**
     - web/**
