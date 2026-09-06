@@ -47,6 +47,13 @@ strings, Play declaration, `site/privacy.html` in heart-api) are in
 `docs/2026-09-05.health-data.md`. Read it before touching `Health.tracked`, the
 workout write-back, or anything that stores a health value.
 
+## Style
+`docs/style.md` is what the linter cannot say: switch expressions over
+ternaries, no C-style index loops, dot-shorthand constructors, no `setState`,
+copy only in presentation, controls absent rather than dead. Its entries are
+review findings even when `make lint` is clean; add to it when a review
+finds a new one.
+
 ## Definition of done
 `docs/handoff.md` is the submission checklist for any nontrivial change.
 Autonomous agents finish by writing `HANDOFF.md` (worktree root, gitignored)

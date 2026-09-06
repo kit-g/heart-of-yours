@@ -8,7 +8,7 @@ description: Review an autonomous agent's work against this repo's definition of
 Agent work arrives as an **uncommitted diff in a worktree** plus `HANDOFF.md`; the user reviews,
 commits, and opens the PR. This skill is the review. Its stance: **HANDOFF.md is a set of claims,
 and every claim gets checked.** The built-in `/code-review` finds bugs in any codebase; this skill
-adds what only this repo knows — `docs/handoff.md`, CLAUDE.md, and the house style below.
+adds what only this repo knows — `docs/handoff.md`, CLAUDE.md, and `docs/style.md`.
 
 Two modes, same checklist:
 
@@ -22,13 +22,16 @@ Two modes, same checklist:
 
 ## 1. Locate the target
 
-| Target                        | Where the diff is                                                                                                                                                                 |
-|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| worktree name (`ui`, `a1`, …) | `W=.claude/worktrees/<name>`; `git -C "$W" add -N . && git -C "$W" diff`                                                                                                          |
-| self-review                   | you are already in the worktree: `W=.`                                                                                                                                            |
-| PR number                     | `gh pr view N`, `gh pr diff N`. Run checks in the worktree it came from if it still exists (`git worktree list`); otherwise review the diff statically and say so in the verdict. |
+| Target                        | Where the diff is                                                                                                                                                                                       |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| worktree name (`ui`, `a1`, …) | `cd .claude/worktrees/<name>` first — then plain `git add -N . && git diff`. Run git from inside the worktree, not through `git -C`: the allowlist cannot safely wildcard a path before the subcommand. |
+| self-review                   | you are already in the worktree: `W=.`                                                                                                                                                                  |
+| PR number                     | `gh pr view N`, `gh pr diff N`. Run checks in the worktree it came from if it still exists (`git worktree list`); otherwise review the diff statically and say so in the verdict.                       |
 
-Everything below runs with `-C "$W"` or from inside it. A worktree produced by a **container**
+Everything below runs from inside the worktree. The **base** it stacks on is
+`git config branch.$(git branch --show-current).gh-merge-base`, `main` when unset — a worktree
+made with the launcher's `--base` sits on another agent's branch, and the PR will target that,
+not `main`. A worktree produced by a **container**
 agent has a `.dart_tool` pointing at `/opt/flutter` — run `flutter pub get` in it first, or every
 tool will complain about "0.0.0-unknown".
 
@@ -93,7 +96,8 @@ Each row is a check to run, not a box to tick from the handoff.
 | **Large screens** — pages own their real estate  | `grep -n "MediaQuery.sizeOf"` over the diff hunks (`git diff -U0`) — anything outside `presentation/widgets/responsive/` is a finding; page code measures `LayoutBuilder` constraints.                                                                                                                                                             |
 | **Large screens** — measure *and* cap            | New surfaces use `readableWidth` / `columnsFor` / `dialogWidth` or an explicit `ConstrainedBox`. An `AspectRatio` or grid with no width cap is a finding even if the phone screenshot looks fine — it will ask for 1400pt on an iPad. Where no screenshot exists, a window-size test (`integration_test/responsive_frame_test.dart` pattern) must. |
 | **State** — notifiers, not `setState`            | `git diff -U0                                                                                                                                                                                                                                                                                                                                      | grep -c setState` is `0`. Local state is a `ValueNotifier` read through a builder. |
-| **Style** — switches                             | Multi-line ternaries and `x != null ? … : …` chains are findings; pattern-matched `switch` expressions are the house form.                                                                                                                                                                                                                         |
+| **Style** — switches                             | Multi-line ternaries and `x != null ? … : …` chains are findings; pattern-matched `switch` expressions are the house form. (`docs/style.md` is the full list; every entry there is a finding.)                                                                                                                                                      |
+| **Style** — loops                                | `grep -nE "for \((var|int) [a-z]+ = 0"` over the diff hunks: a C-style index loop is a finding. Iterate the collection (`for (final x in xs)`, `xs.indexed`) or `List.generate` for a count; index arithmetic in a small helper is the one exception.                                                                                                |
 | **Style** — naming                               | Dot-shorthand for constructors where the type is known (`.circular(8)`, not `BorderRadius.circular(8)`). No `k`-prefixed constants. Helpers stay private unless something outside the file needs them.                                                                                                                                             |
 | **Identity** — exercises                         | Exercise `id` is the identity everywhere; `name` is localized display copy and is never compared, keyed on, or persisted as the identity.                                                                                                                                                                                                          |
 | **Dependencies**                                 | A new `pubspec.yaml` entry is a finding to surface (not reject): what it's for, whether the platform folders needed anything, whether `pubspec.lock` moved only for it. A `pubspec.lock` change with no `pubspec.yaml` change is a finding.                                                                                                        |
@@ -101,8 +105,8 @@ Each row is a check to run, not a box to tick from the handoff.
 ## 6. Tree hygiene
 
 ```sh
-git -C "$W" status --short          # everything the committer is about to pick up
-git -C "$W" diff --stat
+git status --short                  # everything the committer is about to pick up
+git diff --stat
 ```
 
 - Gitignored config the agent copied in to make the worktree build — `lib/firebase_options*.dart`,
@@ -112,9 +116,10 @@ git -C "$W" diff --stat
   were not, so the reviewer would miss them — flag and run it.
 - Screenshots and scratch live under `build/` (ignored). Anything else the agent left behind —
   a debug print, a `TODO(agent)`, a commented-out block — is a finding.
-- The worktree branch has no commits of its own (`git -C "$W" log --oneline main..HEAD` is
-  empty). The never-commit rule is enforced by a hook, so this is a sanity check, not an
-  expectation of trouble.
+- The worktree branch has no commits of its own past its base (`git log --oneline
+  <base>..HEAD` is empty, with the base from section 1 — `main..HEAD` is *not* empty for a
+  stacked worktree, and that is fine). The never-commit rule is enforced by a hook, so this is
+  a sanity check, not an expectation of trouble.
 
 ## 7. Visual pass
 

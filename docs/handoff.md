@@ -25,10 +25,15 @@ satisfied or explicitly flagged in the handoff.
    (see CLAUDE.md). When you cannot screenshot (containers), a new surface
    gets a window-size widget test instead — the mechanism is in
    `integration_test/responsive_frame_test.dart`.
-5. **State** — local widget state is a `ValueNotifier` read through a
-   builder, never `setState`.
+5. **Style** — `docs/style.md`, the no-nos the linter cannot catch: local
+   widget state is a `ValueNotifier` read through a builder, never
+   `setState`; `switch` expressions over multi-line ternaries; no C-style
+   index loops; dot-shorthand constructors; copy only in presentation.
 6. **Git** — never commit or push. Leave work in the tree and run
-   `git add -N .` so new files appear in `git diff`.
+   `git add -N .` so new files appear in `git diff`. Your worktree may be
+   stacked on another agent's branch rather than `main` (the launcher's
+   `--base`); your work is still exactly `git diff HEAD`, and the handoff
+   names the base so the reviewer diffs and the PR targets the right branch.
 7. **Self-review** — run the `review-handoff` skill on the finished tree
    before writing the handoff. Fix what it finds, re-run, and leave
    `REVIEW.md` describing the tree as handed off. The reviewer runs the same
