@@ -5,10 +5,46 @@ import 'package:provider/provider.dart';
 import 'movement_filters.dart';
 import 'remote.dart';
 
+/// How the CDN identifies the catalog copy the local cache holds: the
+/// publishing run's `version` from the manifest, the locale file the device
+/// tag resolved to (`es_ES` — not the tag itself, since two regional tags
+/// that resolve to one file share one copy), and that file's ETag, for the
+/// conditional re-fetch when only the version moved.
+typedef CatalogStamp = ({String version, String locale, String? etag});
+
+/// The exercise library as the CDN publishes it: static, unauthenticated,
+/// one file per locale behind a manifest. Both modes read it — an anonymous
+/// session never talks to heart-api, and a signed-in one no longer reads the
+/// library through it; the API keeps only the user's own exercises.
+///
+/// Defined here rather than in `heart_models` because the manifest and the
+/// stamp are a client-side freshness concern the server has no model for; the
+/// app adapts `Cdn` onto it, the way `RemoteTemplateFilingService` is adapted.
+abstract interface class ExerciseLibraryService {
+  /// The library, or `null` when the copy [cached] describes is still
+  /// current — and either way the stamp the cache should carry from now on.
+  Future<(Iterable<Exercise>?, CatalogStamp)> getLibrary({CatalogStamp? cached});
+}
+
+/// The stamp beside the cached catalog rows. Written in the same transaction
+/// as the rows it describes, so neither can outlive the other — a stamp with
+/// no rows behind it would have the manifest answer "unchanged" to an empty
+/// catalog. `ExerciseService` cannot carry it: that interface is the server's.
+abstract interface class LocalCatalogService {
+  /// Null until a library has been stored.
+  Future<CatalogStamp?> getCatalogStamp();
+
+  /// Upserts the library rows and records [stamp]. An empty [exercises] only
+  /// moves the stamp — a publish that left this locale's file byte-identical.
+  Future<void> storeCatalog(Iterable<Exercise> exercises, {required CatalogStamp stamp});
+}
+
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
   final RemoteExerciseService _remoteService;
+  final ExerciseLibraryService _libraryService;
+  final LocalCatalogService _catalogService;
   final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final _filters = <ExerciseFilter>{};
@@ -40,6 +76,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     this.onError,
     required this._remoteService,
     required this._service,
+    required this._libraryService,
+    required this._catalogService,
     RemoteAccess? remote,
   }) : _remote = remote ?? RemoteAccess();
 
@@ -117,9 +155,9 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// A local cache counts: the remote sync failing is survivable, the catalog
   /// being empty is not.
   ///
-  /// With the remote leg closed the cache is all there is. An anonymous first
-  /// launch has no cache yet and so an empty catalog — the picker shows its
-  /// empty list rather than blocking on a server it may not talk to.
+  /// The library comes from the CDN in both modes — the one network call an
+  /// anonymous session makes. Only the user's own exercises need the account,
+  /// and they follow once the library is in.
   Future<bool> init({DateTime? lastSync, String? locale}) async {
     _catalogLocale = locale;
     try {
@@ -135,7 +173,8 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
         notifyListeners();
       }
 
-      if (_remote.allowed) await _syncRemote();
+      await _syncLibrary();
+      if (_remote.allowed) await _syncOwn();
       isInitialized = true;
       notifyListeners();
     } catch (e, s) {
@@ -144,43 +183,70 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return isInitialized;
   }
 
-  /// The device locale changed mid-session. The server resolves localized
-  /// catalog copy per request from `Accept-Language`, so the content already
-  /// fetched is stale in the new language — re-fetch and overwrite in place.
+  /// The device locale changed mid-session. The library is published per
+  /// locale, so the copy already loaded is stale in the new language — the CDN
+  /// client resolves the new tag to its file, and the rows are overwritten in
+  /// place under the same ids.
   ///
-  /// The caller refreshes the API client's headers first; this only re-runs
-  /// the sync. A change arriving before [init] is just recorded — init fetches
-  /// under the new header anyway.
+  /// A change arriving before [init] is just recorded — init resolves under
+  /// the new tag anyway.
   Future<void> onLocaleChanged(String locale) async {
     if (locale == _catalogLocale) return;
     _catalogLocale = locale;
-    if (!isInitialized || !_remote.allowed) return;
+    if (!isInitialized) return;
 
     try {
-      await _syncRemote();
+      await _syncLibrary();
       notifyListeners();
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
   }
 
-  Future<void> _syncRemote() async {
-    final [ex, own] = await Future.wait<Iterable<Exercise>>([
-      _remoteService.getExercises(),
-      _remoteService.getOwnExercises(),
-    ]);
+  /// Brings the library up to what the CDN publishes, downloading only when
+  /// the cached copy is not it.
+  ///
+  /// The stamp is trusted only when library rows sit behind it. A stamp over
+  /// an empty catalog — a wiped table, a first launch that stored the stamp
+  /// but not the rows — would have the manifest answer "unchanged" forever.
+  Future<void> _syncLibrary() async {
+    final warm = _exercises.values.any((each) => !each.isMine);
+    final cached = switch (warm) {
+      true => await _catalogService.getCatalogStamp(),
+      false => null,
+    };
 
-    final all = [...ex, ...own]..sort();
-    _exercises.addAll(all.byId);
-    // awaited: everything chained behind this init writes rows referencing
-    // `exercises.id`, and letting the catalog write stay in flight leaves
-    // them racing a parent row that is not committed yet.
-    await _service.storeExercises(_exercises.values, userId: userId);
+    final (library, stamp) = await _libraryService.getLibrary(cached: cached);
+    switch (library) {
+      case Iterable<Exercise> exercises:
+        final sorted = exercises.toList()..sort();
+        _exercises.addAll(sorted.byId);
+        // awaited: everything chained behind this init writes rows referencing
+        // `exercises.id`, and letting the catalog write stay in flight leaves
+        // them racing a parent row that is not committed yet.
+        await _catalogService.storeCatalog(sorted, stamp: stamp);
+      case null when stamp != cached:
+        // nothing to download, but the CDN moved on (a publish that left this
+        // locale's file byte-identical, say) — record it so the next launch
+        // does not repeat the conditional round trip
+        await _catalogService.storeCatalog(const [], stamp: stamp);
+      case null:
+        break;
+    }
+  }
 
-    // the server is the source of truth for unit prefs (it joins them onto the
-    // exercise list per authenticated user); mirror them into the local cache.
+  /// The user's own exercises, which the CDN cannot know: the authenticated
+  /// list, with the unit preferences the server joins onto them.
+  Future<void> _syncOwn() async {
+    final own = (await _remoteService.getOwnExercises()).toList()..sort();
+    _exercises.addAll(own.byId);
+    await _service.storeExercises(own, userId: userId);
+
+    // the server is the source of truth for unit prefs on these rows; mirror
+    // them into the local cache. Preferences on library exercises no longer
+    // ride any list the app reads — only the local mirror remembers them.
     if (userId case String id) {
-      for (final each in all) {
+      for (final each in own) {
         if (each.unitSystem case MeasurementUnit u) {
           _units[each.id] = u;
           await _service.setExerciseUnit(exerciseName: each.id, userId: id, unit: u);
