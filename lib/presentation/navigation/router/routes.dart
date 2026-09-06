@@ -16,6 +16,7 @@ RouteBase _profileRoute() {
       return ProfilePage(
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
+        onLogIn: context.goToLogin,
         onAvatar: () {
           final user = Auth.of(context).user;
           if (user?.localAvatar != null) {
@@ -423,6 +424,13 @@ RouteBase _loginRoute() {
   return GoRoute(
     path: _loginPath,
     builder: (context, state) {
+      // An anonymous session came here from its profile and may go back to it;
+      // with no session at all this page is the gate, and there is no back.
+      final onClose = switch (Auth.of(context).isLoggedIn) {
+        true => context.goToProfile,
+        false => null,
+      };
+
       // LayoutProvider owns the breakpoint for this route and both branches
       return LayoutProvider(
         currentStack: -1,
@@ -438,6 +446,7 @@ RouteBase _loginRoute() {
                 context.goToSignUp(address: address);
               },
               address: state.uri.queryParameters['address'],
+              onClose: onClose,
             ),
             .wide => ValueListenableBuilder<_AuthPages>(
               valueListenable: currentPage,
@@ -462,6 +471,7 @@ RouteBase _loginRoute() {
                         currentAddress.value = address;
                       },
                       address: currentAddress.value,
+                      onClose: onClose,
                     ),
                     .recovery => RecoveryPage(
                       address: currentAddress.value,
@@ -495,8 +505,9 @@ RouteBase _loginRoute() {
     },
     name: _loginName,
     redirect: (context, state) {
-      final isLoggedIn = Auth.of(context).isLoggedIn;
-      if (isLoggedIn) {
+      // an anonymous session is logged in, and is exactly who this page is for
+      final Auth(:isLoggedIn, :isAnonymous) = Auth.of(context);
+      if (isLoggedIn && !isAnonymous) {
         return state.namedLocation(
           _profileName,
           queryParameters: state.uri.queryParameters,
