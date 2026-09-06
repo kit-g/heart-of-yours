@@ -131,7 +131,13 @@ final class HeartRouter {
 
     final isLoggedIn = auth.isLoggedIn;
 
-    if (!isLoggedIn) {
+    // The sign-in gate is the web's alone. On mobile there is no such thing as
+    // being signed out: a missing user is replaced by an anonymous one (see
+    // Auth.ensureSession), the app works without an account, and the login
+    // page is reached by name — from the profile's no-account dialog. The
+    // one exception is a device that could not get a session at all, where
+    // the gate is the only page that can still do something.
+    if (!isLoggedIn && (kIsWeb || auth.sessionUnavailable)) {
       // same as RecoveryPage
       final from = Uri.encodeComponent(state.uri.toString());
       final query = Map<String, String>.from(state.uri.queryParameters);
