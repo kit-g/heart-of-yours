@@ -29,6 +29,8 @@ import 'package:mockito/annotations.dart';
     MockSpec<ExerciseHistoryService>(),
     MockSpec<ChartPreference>(),
     MockSpec<ChartPreferenceService>(),
+    MockSpec<UpsyncService>(),
+    MockSpec<LocalUpsyncService>(),
   ],
 )
 void main() {
