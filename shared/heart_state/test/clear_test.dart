@@ -131,6 +131,24 @@ class _Workouts extends Workouts {
   void onSignOut() => calls++;
 }
 
+class _Upsync extends Upsync {
+  int calls = 0;
+
+  new()
+    : super(
+        local: MockLocalUpsyncService(),
+        remote: MockUpsyncService(),
+        exercises: MockExerciseService(),
+        folders: MockLocalTemplateFolderService(),
+        templates: MockTemplateService(),
+        workouts: MockWorkoutService(),
+        goals: MockLocalGoalService(),
+      );
+
+  @override
+  void onSignOut() => calls++;
+}
+
 /// A local mirror that holds nothing. [clearState] never reaches storage — it
 /// only fans out — so the store just has to exist.
 class _NoHealthStore implements HealthSampleStore {
@@ -216,6 +234,7 @@ void main() {
     late _Stats stats;
     late _Templates templates;
     late _Timers timers;
+    late _Upsync upsync;
     late _Workouts workouts;
     late BuildContext capturedContext;
 
@@ -231,6 +250,7 @@ void main() {
       stats = _Stats();
       templates = _Templates();
       timers = _Timers();
+      upsync = _Upsync();
       workouts = _Workouts();
 
       await tester.pumpWidget(
@@ -247,6 +267,7 @@ void main() {
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Timers>.value(value: timers),
+            ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
           ],
           child: Builder(
@@ -272,6 +293,7 @@ void main() {
         stats.calls,
         templates.calls,
         timers.calls,
+        upsync.calls,
         workouts.calls,
       ];
     }
@@ -305,6 +327,7 @@ void main() {
     late _Stats stats;
     late _Templates templates;
     late _Timers timers;
+    late _Upsync upsync;
     late _Workouts workouts;
     late Preferences preferences;
     late BuildContext capturedContext;
@@ -328,6 +351,7 @@ void main() {
       stats = _Stats();
       templates = _Templates();
       timers = _Timers();
+      upsync = _Upsync();
       workouts = _Workouts();
       preferences = Preferences();
       await preferences.init();
@@ -355,6 +379,7 @@ void main() {
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Timers>.value(value: timers),
+            ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
             ChangeNotifierProvider<Preferences>.value(value: preferences),
           ],
@@ -381,6 +406,7 @@ void main() {
         stats.calls,
         templates.calls,
         timers.calls,
+        upsync.calls,
         workouts.calls,
       ];
     }
@@ -462,7 +488,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twelve known notifiers', () {
+    test('the fan-out list is the thirteen known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -479,6 +505,7 @@ void main() {
         'Stats',
         'Templates',
         'Timers',
+        'Upsync',
         'Workouts',
       });
     });
