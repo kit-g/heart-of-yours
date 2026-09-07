@@ -420,6 +420,19 @@ class Api
     };
   }
 
+  /// Every preference the account holds, on a library exercise as much as on
+  /// one of its own: since the catalog moved to the CDN no list the app reads
+  /// carries them, so they are asked for on their own (heart-api#73).
+  ///
+  /// Unpaginated — a preference exists only where the user set one.
+  Future<Iterable<ExercisePreference>> getExercisePreferences() async {
+    final (json, _) = await get(Router.exercisePreferences);
+    return switch (json) {
+      {'preferences': List l} => l.map((each) => ExercisePreference.fromJson(each as Map)).toList(),
+      _ => const <ExercisePreference>[],
+    };
+  }
+
   @override
   Future<void> saveUnitPreference(String exerciseId, MeasurementUnit unit) {
     return post(
