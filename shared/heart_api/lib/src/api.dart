@@ -140,6 +140,26 @@ class Api
     };
   }
 
+  /// What the account holds, collection by collection — the yardstick the
+  /// export's completeness check measures this device's mirror against
+  /// (heart-api#75).
+  ///
+  /// Caller-scoped: there is no `:targetUserId` form, so this is never a read
+  /// of somebody else's totals.
+  ///
+  /// Throws rather than falling back to an empty summary on a refusal. An
+  /// empty summary is a *claim* — "the account holds nothing" — and it reads
+  /// as "your mirror is complete", which is the one answer a failed call must
+  /// never give.
+  Future<AccountSummary> getAccountSummary() async {
+    final (json, code) = await get('${Router.accounts}/summary');
+    return switch ((code, json)) {
+      (200, Map json) => AccountSummary.fromJson(json),
+      (426, _) => throw UpgradeRequired(),
+      _ => throw json,
+    };
+  }
+
   @override
   Future<String?> deleteAccount({required String accountId}) async {
     final (json, code) = await delete(Router.accounts);
