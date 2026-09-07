@@ -1449,30 +1449,15 @@ class LFr extends L {
       'Vos données de santé ne sont pas incluses : elles ne quittent jamais votre téléphone.';
 
   @override
-  String exportPartialHistory(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Inclut les $count séances présentes sur ce téléphone.',
-      one: 'Inclut la seule séance présente sur ce téléphone.',
-    );
-    return '$_temp0 Les séances plus anciennes pas encore téléchargées sont laissées de côté : ouvrez l’Historique et remontez pour les récupérer d’abord.';
+  String get backfillRunning => 'Restauration de votre historique…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Restauration de votre historique… $done sur $total';
   }
 
   @override
-  String exportPartialHistoryOf(num count, Object total) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Inclut $count de vos $total séances.',
-      one: 'Inclut 1 de vos $total séances.',
-    );
-    return '$_temp0 Les autres ne sont pas encore téléchargées sur ce téléphone : ouvrez l’Historique et remontez pour les récupérer.';
-  }
-
-  @override
-  String get exportPartialAccount =>
-      'Une partie de ce que contient votre compte n’est pas encore sur ce téléphone : le fichier ne l’inclura pas. Rouvrez l’application en ligne pour qu’elle se mette à jour.';
+  String get backfillFailed => 'Impossible de terminer la restauration de votre historique.';
 
   @override
   String get exportAsJson => 'Exporter en JSON';

@@ -1464,34 +1464,15 @@ class LRu extends L {
   String get exportNoHealthData => 'Данные о здоровье не включены — они никогда не покидают ваш телефон.';
 
   @override
-  String exportPartialHistory(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Включены $count тренировки с этого телефона.',
-      many: 'Включены $count тренировок с этого телефона.',
-      few: 'Включены $count тренировки с этого телефона.',
-      one: 'Включена $count тренировка с этого телефона.',
-    );
-    return '$_temp0 Более старые тренировки, ещё не загруженные, в файл не попадут — откройте Историю и пролистайте назад, чтобы сначала загрузить их.';
+  String get backfillRunning => 'Восстанавливаем вашу историю…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Восстанавливаем вашу историю… $done из $total';
   }
 
   @override
-  String exportPartialHistoryOf(num count, Object total) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Включены $count тренировки из $total.',
-      many: 'Включены $count тренировок из $total.',
-      few: 'Включены $count тренировки из $total.',
-      one: 'Включена $count тренировка из $total.',
-    );
-    return '$_temp0 Остальные ещё не загружены на этот телефон — откройте Историю и пролистайте назад, чтобы загрузить их.';
-  }
-
-  @override
-  String get exportPartialAccount =>
-      'Часть того, что хранится в вашей учётной записи, ещё не загружена на этот телефон, поэтому в файл она не попадёт. Откройте приложение при подключении к интернету, чтобы оно догрузило её.';
+  String get backfillFailed => 'Не удалось восстановить историю полностью.';
 
   @override
   String get exportAsJson => 'Экспорт в JSON';

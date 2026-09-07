@@ -2633,26 +2633,23 @@
     "type": "text",
     "placeholders": {}
   },
-  "exportPartialHistory": "{count, plural, one{Включена {count} тренировка с этого телефона.} few{Включены {count} тренировки с этого телефона.} many{Включены {count} тренировок с этого телефона.} other{Включены {count} тренировки с этого телефона.}} Более старые тренировки, ещё не загруженные, в файл не попадут — откройте Историю и пролистайте назад, чтобы сначала загрузить их.",
-  "@exportPartialHistory": {
-    "description": "Export page, shown to a signed-in user whose phone holds fewer workouts than the server: how many the file will have and how to get the rest",
-    "type": "text",
-    "placeholders": {
-      "count": {}
-    }
+  "backfillRunning": "Восстанавливаем вашу историю…",
+  "@backfillRunning": {
+    "description": "Profile row while the app pages down the history this device is missing, when the account's own total could not be read",
+    "type": "text"
   },
-  "exportPartialHistoryOf": "{count, plural, one{Включена {count} тренировка из {total}.} few{Включены {count} тренировки из {total}.} many{Включены {count} тренировок из {total}.} other{Включены {count} тренировки из {total}.}} Остальные ещё не загружены на этот телефон — откройте Историю и пролистайте назад, чтобы загрузить их.",
-  "@exportPartialHistoryOf": {
-    "description": "Export page, shown to a signed-in user whose phone holds fewer workouts than the account does: how many of how many the file will have, and how to get the rest",
+  "backfillRunningOf": "Восстанавливаем вашу историю… {done} из {total}",
+  "@backfillRunningOf": {
+    "description": "Profile row while the app pages down the history this device is missing: workouts held so far, and the account's total",
     "type": "text",
     "placeholders": {
-      "count": {},
+      "done": {},
       "total": {}
     }
   },
-  "exportPartialAccount": "Часть того, что хранится в вашей учётной записи, ещё не загружена на этот телефон, поэтому в файл она не попадёт. Откройте приложение при подключении к интернету, чтобы оно догрузило её.",
-  "@exportPartialAccount": {
-    "description": "Export page, shown to a signed-in user whose phone is missing rows the account has — in a collection other than workouts, or the same number of rows but not the same ones",
+  "backfillFailed": "Не удалось восстановить историю полностью.",
+  "@backfillFailed": {
+    "description": "Profile row when the history backfill stopped because the server could not be reached; shown beside a Retry button",
     "type": "text"
   },
   "exportAsJson": "Экспорт в JSON",

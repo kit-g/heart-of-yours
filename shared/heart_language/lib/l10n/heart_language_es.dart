@@ -1446,30 +1446,15 @@ class LEs extends L {
   String get exportNoHealthData => 'Tus datos de salud no se incluyen: nunca salen de tu teléfono.';
 
   @override
-  String exportPartialHistory(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Incluye los $count entrenamientos de este teléfono.',
-      one: 'Incluye el único entrenamiento de este teléfono.',
-    );
-    return '$_temp0 Los entrenamientos más antiguos que aún no se han descargado quedan fuera: abre el Historial y desplázate hacia atrás para descargarlos primero.';
+  String get backfillRunning => 'Restaurando tu historial…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Restaurando tu historial… $done de $total';
   }
 
   @override
-  String exportPartialHistoryOf(num count, Object total) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Incluye $count de tus $total entrenamientos.',
-      one: 'Incluye 1 de tus $total entrenamientos.',
-    );
-    return '$_temp0 El resto aún no se ha descargado en este teléfono: abre el Historial y desplázate hacia atrás para descargarlos.';
-  }
-
-  @override
-  String get exportPartialAccount =>
-      'Parte de lo que hay en tu cuenta aún no está en este teléfono, así que el archivo no lo incluirá. Vuelve a abrir la app con conexión para que se ponga al día.';
+  String get backfillFailed => 'No se pudo terminar de restaurar tu historial.';
 
   @override
   String get exportAsJson => 'Exportar como JSON';
