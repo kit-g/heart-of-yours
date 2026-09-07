@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'alarms.dart';
 import 'auth.dart';
+import 'backfill.dart';
 import 'charts.dart';
 import 'config.dart';
 import 'exercises.dart';
@@ -48,6 +49,7 @@ Future<void> eraseState(BuildContext context) async {
 /// account's lists or, worse, get pushed to its server as pending writes.
 void clearUserState(BuildContext context) {
   Alarms.of(context).onSignOut();
+  Backfill.of(context).onSignOut();
   Charts.of(context).onSignOut();
   Exercises.of(context).onSignOut();
   Goals.of(context).onSignOut();
