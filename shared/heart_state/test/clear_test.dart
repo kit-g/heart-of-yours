@@ -132,6 +132,25 @@ class _Workouts extends Workouts {
   void onSignOut() => calls++;
 }
 
+class _Backfill extends Backfill {
+  int calls = 0;
+
+  new()
+    : super(
+        local: MockLocalMirrorService(),
+        remote: MockRemoteAccountSummaryService(),
+        nextPage: _noPage,
+      );
+
+  static Future<BackfillPage> _noPage() async => (stored: 0, more: false);
+
+  @override
+  void onSignOut() {
+    calls++;
+    super.onSignOut();
+  }
+}
+
 class _Upsync extends Upsync {
   int calls = 0;
 
@@ -226,6 +245,7 @@ void main() {
   group('clearState fan-out', () {
     late _Alarms alarms;
     late _Auth auth;
+    late _Backfill backfill;
     late _Charts charts;
     late _Exercises exercises;
     late _Goals goals;
@@ -242,6 +262,7 @@ void main() {
     Future<void> pumpProviders(WidgetTester tester) async {
       alarms = _Alarms();
       auth = _Auth();
+      backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
       goals = _Goals();
@@ -259,6 +280,7 @@ void main() {
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
             ChangeNotifierProvider<Auth>.value(value: auth),
+            ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
@@ -319,6 +341,7 @@ void main() {
 
   group('eraseState', () {
     late _Alarms alarms;
+    late _Backfill backfill;
     late _Charts charts;
     late _Exercises exercises;
     late _Goals goals;
@@ -343,6 +366,7 @@ void main() {
     }) async {
       SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
       alarms = _Alarms();
+      backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
       goals = _Goals();
@@ -371,6 +395,7 @@ void main() {
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
             ChangeNotifierProvider<Auth>.value(value: auth),
+            ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
@@ -489,7 +514,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the thirteen known notifiers', () {
+    test('the fan-out list is the fourteen known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -497,6 +522,7 @@ void main() {
       expect(fanned, {
         'Alarms',
         'Auth',
+        'Backfill',
         'Charts',
         'Exercises',
         'Goals',
