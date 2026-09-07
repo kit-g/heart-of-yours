@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "exportedAt": "2026-09-06T12:00:00.000Z",
   "units": {
     "weight": "imperial",
@@ -18,14 +18,7 @@
         {
           "order": 0,
           "id": "we-1",
-          "exercise": {
-            "id": "ex-bench",
-            "category": "Barbell",
-            "name": "Bench Press (Barbell)",
-            "target": "Chest",
-            "own": 0,
-            "archived": 0
-          },
+          "exercise": "Bench Press (Barbell)",
           "sets": [
             {
               "id": "s1",
@@ -44,14 +37,7 @@
         {
           "order": 1,
           "id": "we-2",
-          "exercise": {
-            "id": "ex-custom",
-            "category": "Reps Only",
-            "name": "Kit, \"special\" pull-up",
-            "target": "Other",
-            "own": 1,
-            "archived": 0
-          },
+          "exercise": "Muffin, \"special\" pull-up",
           "note": "one hand at a time",
           "sets": [
             {
@@ -80,14 +66,7 @@
         {
           "order": 0,
           "id": "we-3",
-          "exercise": {
-            "id": "ex-run",
-            "category": "Cardio",
-            "name": "Run",
-            "target": "Cardio",
-            "own": 0,
-            "archived": 0
-          },
+          "exercise": "Run",
           "sets": [
             {
               "id": "s4",
@@ -100,14 +79,7 @@
         {
           "order": 1,
           "id": "we-4",
-          "exercise": {
-            "id": "ex-plank",
-            "category": "Duration",
-            "name": "Plank",
-            "target": "Core",
-            "own": 0,
-            "archived": 0
-          },
+          "exercise": "Plank",
           "sets": [
             {
               "id": "s5",
@@ -133,14 +105,7 @@
       "exercises": [
         {
           "id": "we-t1",
-          "exercise": {
-            "id": "ex-bench",
-            "category": "Barbell",
-            "name": "Bench Press (Barbell)",
-            "target": "Chest",
-            "own": 0,
-            "archived": 0
-          },
+          "exercise": "Bench Press (Barbell)",
           "sets": [
             {
               "id": "ts1",
@@ -159,14 +124,7 @@
       "exercises": [
         {
           "id": "we-t2",
-          "exercise": {
-            "id": "ex-custom",
-            "category": "Reps Only",
-            "name": "Kit, \"special\" pull-up",
-            "target": "Other",
-            "own": 1,
-            "archived": 0
-          },
+          "exercise": "Muffin, \"special\" pull-up",
           "sets": [
             {
               "id": "ts2",
@@ -190,7 +148,7 @@
     {
       "id": "ex-custom",
       "category": "Reps Only",
-      "name": "Kit, \"special\" pull-up",
+      "name": "Muffin, \"special\" pull-up",
       "target": "Other",
       "own": 1,
       "archived": 0
