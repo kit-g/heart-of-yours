@@ -10,7 +10,10 @@ import 'templates.dart';
 /// The layout of the JSON envelope — its top-level keys and what each holds.
 /// Not the shapes inside it: those are `heart_models`' own wire shapes and
 /// carry no version. Bump when a key is added, renamed or changes meaning.
-const exportSchemaVersion = 1;
+///
+/// `2`: a workout's or template's `exercise` is the exercise's name rather than
+/// a copy of its catalog row (heart-of-yours#113).
+const exportSchemaVersion = 2;
 
 /// What the local store holds for one user, read once and written as many
 /// times as asked.
@@ -144,43 +147,12 @@ class ExportSnapshot {
 }
 
 /// Gathers an [ExportSnapshot] from the local store.
-/// The account's own totals, collection by collection — what the device
-/// measures its mirror against before it writes an export.
-///
-/// Defined here rather than added to `AccountService`: that interface is the
-/// contract heart-api implements, and the app has no server-side counting to
-/// implement (the API takes the same view — see its `ApiProfileService`). The
-/// app adapts `Api` onto this, the way [RemoteExercisePreferenceService] is
-/// adapted.
-abstract interface class RemoteAccountSummaryService {
-  Future<AccountSummary> getAccountSummary();
-}
-
-/// The same shape, from the store: how much of the account this device holds.
-///
-/// Only the collections a mirror can honestly count appear in it — the
-/// database decides which, and [DataExport.completeness] walks whatever comes
-/// back rather than keeping a second list that could drift from it.
-abstract interface class LocalMirrorService {
-  Future<AccountSummary> mirrorSummary(String userId);
-}
-
-/// One collection the export will be short on.
-///
-/// [local] and [remote] are row counts. [diverged] is the case a count alone
-/// cannot see: the same number of rows on each side under a different newest
-/// id, which means the two stores hold *different* rows.
-typedef MirrorGap = ({ExportableCollection collection, int local, int remote, bool diverged});
-
 class DataExport {
   final WorkoutService _workouts;
   final TemplateService _templates;
   final LocalTemplateFolderService _folders;
   final ExerciseService _exercises;
   final GoalService _goals;
-  final RemoteAccountSummaryService _summary;
-  final LocalMirrorService _mirror;
-  final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   const new({
     required this._workouts,
@@ -188,9 +160,6 @@ class DataExport {
     required this._folders,
     required this._exercises,
     required this._goals,
-    required this._summary,
-    required this._mirror,
-    this.onError,
   });
 
   static DataExport of(BuildContext context) {
@@ -222,56 +191,6 @@ class DataExport {
       goals: [...live, ...achieved],
     );
   }
-
-  /// Which collections the file would be short on, measured against what the
-  /// account actually holds. Empty means the mirror is whole; `null` means the
-  /// question could not be asked.
-  ///
-  /// The distinction matters more than the answer. An export off a partial
-  /// mirror is silently partial — the file looks finished either way — so the
-  /// page has to be able to tell "everything is here" from "I could not check",
-  /// and never show the first when it means the second. That is also why a
-  /// failed call is reported and answered `null` rather than treated as no
-  /// gaps.
-  ///
-  /// Only for a session with an account: an anonymous session's mirror *is*
-  /// the account, so there is nothing to measure it against.
-  Future<List<MirrorGap>?> completeness(String userId) async {
-    try {
-      final [remote, local] = await Future.wait([
-        _summary.getAccountSummary(),
-        _mirror.mirrorSummary(userId),
-      ]);
-
-      return [
-        for (final MapEntry(key: collection, value: mine) in local.collections.entries)
-          if (_gap(collection, mine: mine, theirs: remote[collection]) case MirrorGap gap) gap,
-      ];
-    } catch (e, s) {
-      onError?.call(e, stacktrace: s);
-      return null;
-    }
-  }
-
-  /// A device holding *more* than the server is not a gap: those rows are in
-  /// the file, and getting them onto the account is the upsync's business.
-  static MirrorGap? _gap(
-    ExportableCollection collection, {
-    required CollectionSummary mine,
-    required CollectionSummary theirs,
-  }) {
-    final diverged = mine.count == theirs.count && theirs.latestId != null && mine.latestId != theirs.latestId;
-    return switch (mine.count) {
-      final count when count < theirs.count => (
-        collection: collection,
-        local: count,
-        remote: theirs.count,
-        diverged: false,
-      ),
-      final count when diverged => (collection: collection, local: count, remote: theirs.count, diverged: true),
-      _ => null,
-    };
-  }
 }
 
 int _byStart(Workout a, Workout b) {
@@ -302,12 +221,28 @@ Map<String, dynamic> _templateJson(Template template) {
 /// The mirror keeps no timestamp on an exercise or a set, and the models fill
 /// the gap with the moment they were read — a fact about the export, not the
 /// workout, so it goes. `met` goes for the same reason as `calories`.
+///
+/// The exercise each entry names is written as its **name** and nothing else.
+///
+/// A workout's wire shape carries the whole [Exercise]: instructions, both
+/// asset links with their dimensions, muscle tagging, movement and health
+/// classification. Written once per exercise per workout, that is the same
+/// library row repeated thousands of times — an account of 568 workouts
+/// exported to **11.2 MB**, nearly all of it catalog.
+///
+/// None of it is the user's to begin with. The library belongs to the CDN and
+/// the export promises "custom exercises", not the catalog; the id is the
+/// catalog's key and means nothing outside this app; and the name is already
+/// the localized display copy, which is the only part of an exercise a person
+/// reading their own file is looking for. A custom of theirs keeps everything
+/// it has, in the envelope's own `exercises` list.
 List<Map<String, dynamic>> _exercisesJson(List exercises) {
   return [
     for (final exercise in exercises.cast<Map<String, dynamic>>())
       {...exercise}
         ..remove('start')
         ..remove('met')
+        ..['exercise'] = (exercise['exercise'] as Map<String, dynamic>)['name']
         ..['sets'] = [
           for (final set in (exercise['sets'] as List).cast<Map<String, dynamic>>()) {...set}..remove('started_at'),
         ],
