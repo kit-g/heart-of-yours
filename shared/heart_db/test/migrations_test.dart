@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 12);
+          expect(await userVersion(db), 13);
           expect(
             await tables(db),
             {
@@ -155,6 +155,7 @@ void main() {
               'charts',
               'goals',
               'health_samples',
+              'upsync',
             },
           );
 
@@ -483,13 +484,38 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 12);
+          expect(await userVersion(db), 13);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
           expect(sync['locale'], 'ru');
           expect(sync['version'], isNull);
           expect(sync['etag'], isNull);
+
+          await db.close();
+        },
+      );
+
+      test(
+        'v13 adds the upsync ledger and touches nothing else',
+        () async {
+          await LocalDatabase.init(version: 12);
+          var db = await raw();
+          await db.insert('syncs', {'table_name': 'exercises', 'locale': 'ru', 'version': '3', 'etag': '"e"'});
+          await db.close();
+
+          await LocalDatabase.init();
+          db = await raw();
+
+          expect(await userVersion(db), 13);
+          expect(await tables(db), contains('upsync'));
+          expect(
+            await columns(db, 'upsync'),
+            {'user_id': 'TEXT', 'resource': 'TEXT', 'id': 'TEXT', 'outcome': 'TEXT'},
+          );
+          final [sync] = await db.query('syncs');
+          expect(sync['version'], '3');
+          expect(sync['etag'], '"e"');
 
           await db.close();
         },
@@ -522,7 +548,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 12);
+          expect(await userVersion(db), 13);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
