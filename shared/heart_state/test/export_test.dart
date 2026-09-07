@@ -30,11 +30,38 @@ Map<String, dynamic> _exercise(
   return {'id': id, 'name': name, 'category': category, 'target': target, 'own': own};
 }
 
-final _bench = _exercise('ex-bench', 'Bench Press (Barbell)', category: 'Barbell', target: 'Chest');
+/// The catalog's own bulk, which a workout's wire shape carries in full: the
+/// instructions, the two asset links with their dimensions, the tagging. This
+/// fixture exists because without it the goldens could not tell a reference
+/// from a copy — and an account of 568 workouts exported to 11.2 MB before
+/// anyone noticed (heart-of-yours#113).
+final _bench = {
+  ..._exercise('ex-bench', 'Bench Press (Barbell)', category: 'Barbell', target: 'Chest'),
+  'instructions':
+      'Lie back on a flat bench. Using a medium width grip, lift the bar from the rack '
+      'and hold it straight over you with your arms locked. Breathe in and begin coming down '
+      'slowly until the bar touches your middle chest.',
+  'asset': 'https://cdn.example/exercises/bench-press.webp',
+  'assetWidth': 1024,
+  'assetHeight': 768,
+  'thumbnail': 'https://cdn.example/exercises/bench-press-thumb.webp',
+  'thumbnailWidth': 256,
+  'thumbnailHeight': 192,
+  'muscles': {
+    'primary': {
+      'ids': ['pectoralis-major'],
+      'groups': ['chest'],
+    },
+    'secondary': {
+      'ids': ['triceps-brachii'],
+      'groups': ['arms'],
+    },
+  },
+};
 final _run = _exercise('ex-run', 'Run', category: 'Cardio', target: 'Cardio');
 final _plank = _exercise('ex-plank', 'Plank', category: 'Duration', target: 'Core');
 // a comma and quotes in the name: what the CSV writer has to escape
-final _custom = _exercise('ex-custom', 'Kit, "special" pull-up', category: 'Reps Only', target: 'Other', own: true);
+final _custom = _exercise('ex-custom', 'Muffin, "special" pull-up', category: 'Reps Only', target: 'Other', own: true);
 
 /// Two finished workouts, handed over newest first so the writer has to sort,
 /// and one still running, which no export may carry. The first carries the
@@ -220,8 +247,6 @@ void main() {
   late MockLocalTemplateFolderService folders;
   late MockExerciseService exercises;
   late MockGoalService goals;
-  late MockRemoteAccountSummaryService summary;
-  late MockLocalMirrorService mirror;
   late DataExport export;
 
   setUp(() {
@@ -230,16 +255,12 @@ void main() {
     folders = MockLocalTemplateFolderService();
     exercises = MockExerciseService();
     goals = MockGoalService();
-    summary = MockRemoteAccountSummaryService();
-    mirror = MockLocalMirrorService();
     export = DataExport(
       workouts: workouts,
       templates: templates,
       folders: folders,
       exercises: exercises,
       goals: goals,
-      summary: summary,
-      mirror: mirror,
     );
 
     when(workouts.getWorkoutHistory(_user)).thenAnswer((_) async => _workouts());
@@ -352,6 +373,57 @@ void main() {
     });
   });
 
+  group('the catalog is named, not copied', () {
+    Future<Map<String, dynamic>> envelope() async {
+      final snapshot = await read();
+      return jsonDecode(snapshot.toJson(exportedAt: DateTime.utc(2026, 9, 6, 12))) as Map<String, dynamic>;
+    }
+
+    test('a workout names its exercise, and that is the whole of it', () async {
+      final json = await envelope();
+
+      final entries = (json['workouts'] as List).cast<Map<String, dynamic>>().expand(
+        (workout) => (workout['exercises'] as List).cast<Map<String, dynamic>>(),
+      );
+
+      expect(
+        entries.map((entry) => entry['exercise']),
+        // the localized display copy, which is the only part of an exercise a
+        // person reading their own file is looking for
+        ['Bench Press (Barbell)', 'Muffin, "special" pull-up', 'Run', 'Plank'],
+      );
+    });
+
+    test('none of the catalog reaches the file through a workout', () async {
+      final json = await envelope();
+      final workouts = jsonEncode(json['workouts']);
+
+      // the fields that made the file 11.2 MB: written once per exercise per
+      // workout, they are the same library row thousands of times over
+      for (final field in const ['instructions', 'asset', 'thumbnail', 'muscles', 'movement', 'category', 'target']) {
+        expect(workouts, isNot(contains('"$field"')), reason: '$field rode along on a workout');
+      }
+    });
+
+    test('a custom of the user\'s own keeps everything it has', () async {
+      final json = await envelope();
+
+      // the rule is about the *catalog*, not about the user's rows: their own
+      // exercises are theirs, and the envelope carries them whole
+      final own = (json['exercises'] as List).cast<Map<String, dynamic>>();
+      expect(own.map((each) => each['id']), ['ex-custom']);
+      expect(own.single, contains('own'));
+    });
+
+    test('the schema version says the shape changed', () async {
+      final json = await envelope();
+
+      // a reader written against v1 would find a string where an object was
+      expect(json['schemaVersion'], 2);
+      expect(exportSchemaVersion, 2);
+    });
+  });
+
   group('the CSV', () {
     test('matches its golden', () async {
       final snapshot = await read();
@@ -378,7 +450,7 @@ void main() {
       // the custom exercise: quoted name, no measurement but reps, the note along
       expect(
         lines[3],
-        'w1,2026-03-01T10:00:00.000Z,2026-03-01T11:00:00.000Z,ex-custom,"Kit, ""special"" pull-up",1,,,10,,,one hand at a time',
+        'w1,2026-03-01T10:00:00.000Z,2026-03-01T11:00:00.000Z,ex-custom,"Muffin, ""special"" pull-up",1,,,10,,,one hand at a time',
       );
       // the run has its own override: kilometres read as miles
       expect(lines[4], 'w2,2026-03-03T07:30:00.000Z,2026-03-03T08:00:00.000Z,ex-run,Run,1,,mi,,1500,3.11,');
@@ -403,126 +475,6 @@ void main() {
         snapshot.toCsv(),
         'workout_id,start,end,exercise_id,exercise_name,set_index,weight,unit,reps,duration,distance,notes\n',
       );
-    });
-  });
-
-  group('completeness', () {
-    AccountSummary summaryOf(Map<ExportableCollection, ({int count, String? head})> rows) {
-      return AccountSummary(
-        collections: {
-          for (final MapEntry(:key, value: (:count, :head)) in rows.entries)
-            key: CollectionSummary(count: count, latestId: head),
-        },
-      );
-    }
-
-    void given({
-      required Map<ExportableCollection, ({int count, String? head})> device,
-      required Map<ExportableCollection, ({int count, String? head})> account,
-    }) {
-      when(mirror.mirrorSummary(_user)).thenAnswer((_) async => summaryOf(device));
-      when(summary.getAccountSummary()).thenAnswer((_) async => summaryOf(account));
-    }
-
-    test('a mirror holding everything the account does has no gaps', () async {
-      given(
-        device: {
-          .workouts: (count: 12, head: '0198d4'),
-          .templates: (count: 3, head: '0198c0'),
-        },
-        account: {
-          .workouts: (count: 12, head: '0198d4'),
-          .templates: (count: 3, head: '0198c0'),
-        },
-      );
-
-      expect(await export.completeness(_user), isEmpty);
-    });
-
-    test('names the collection the account has more of, with both counts', () async {
-      given(
-        device: {
-          .workouts: (count: 118, head: '0198a0'),
-          .templates: (count: 3, head: '0198c0'),
-        },
-        account: {
-          .workouts: (count: 412, head: '0198d4'),
-          .templates: (count: 3, head: '0198c0'),
-        },
-      );
-
-      expect(await export.completeness(_user), [
-        (collection: ExportableCollection.workouts, local: 118, remote: 412, diverged: false),
-      ]);
-    });
-
-    test('the same count under a different newest row is a divergence, not a match', () async {
-      given(
-        device: {
-          .workouts: (count: 12, head: '0198a0'),
-        },
-        account: {
-          .workouts: (count: 12, head: '0198d4'),
-        },
-      );
-
-      expect(await export.completeness(_user), [
-        (collection: ExportableCollection.workouts, local: 12, remote: 12, diverged: true),
-      ]);
-    });
-
-    test('a device holding more than the account is not a gap — the file has those rows', () async {
-      given(
-        device: {
-          .workouts: (count: 15, head: '0198d9'),
-        },
-        account: {
-          .workouts: (count: 12, head: '0198d4'),
-        },
-      );
-
-      // three workouts the upsync still owes the server; the export carries
-      // them either way
-      expect(await export.completeness(_user), isEmpty);
-    });
-
-    test('a collection the mirror cannot count is never compared', () async {
-      given(
-        device: {
-          .workouts: (count: 12, head: '0198d4'),
-        },
-        account: {
-          .workouts: (count: 12, head: '0198d4'),
-          // the app keeps no preference row ids and no comments at all; a
-          // zero on this side would read as a shortfall it can never close
-          .exercisePreferences: (count: 22, head: '0198a1'),
-          .comments: (count: 5, head: '0198c9'),
-        },
-      );
-
-      expect(await export.completeness(_user), isEmpty);
-    });
-
-    test('an unanswerable question is null, never an empty list', () async {
-      when(mirror.mirrorSummary(_user)).thenAnswer((_) async => summaryOf(const {}));
-      when(summary.getAccountSummary()).thenThrow(Exception('offline'));
-
-      final reported = <dynamic>[];
-      final export = DataExport(
-        workouts: workouts,
-        templates: templates,
-        folders: folders,
-        exercises: exercises,
-        goals: goals,
-        summary: summary,
-        mirror: mirror,
-        onError: (error, {stacktrace}) => reported.add(error),
-      );
-
-      // empty would read as "your mirror is whole", which is the one thing a
-      // failed call must not say
-      expect(await export.completeness(_user), isNull);
-      expect(reported, hasLength(1));
     });
   });
 }
