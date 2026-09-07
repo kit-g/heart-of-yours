@@ -33,10 +33,10 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
     db.getWorkoutGallery(userId: anyNamed('userId')),
   ).thenAnswer((_) async => ProgressGalleryResponse(images: <WorkoutImage>[]));
 
-  // the export page's completeness check, on both sides: a device that holds
-  // exactly what the account does, so no test that merely opens the page has
-  // to say anything about it
+  // the history backfill: a device that has already paged everything down, so
+  // no test that merely launches the app has to say anything about it
   const nothing = AccountSummary(collections: {});
+  when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);
   when(db.mirrorSummary(any)).thenAnswer((_) async => nothing);
   when(api.getAccountSummary()).thenAnswer((_) async => nothing);
 

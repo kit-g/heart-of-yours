@@ -52,16 +52,6 @@ Workout _workout() {
   });
 }
 
-/// An [AccountSummary] over the collections a test cares about.
-AccountSummary _summary(Map<ExportableCollection, ({int count, String? head})> rows) {
-  return AccountSummary(
-    collections: {
-      for (final MapEntry(:key, value: (:count, :head)) in rows.entries)
-        key: CollectionSummary(count: count, latestId: head),
-    },
-  );
-}
-
 void main() {
   // `SharePlus.instance` captures the platform once, on first use, so one
   // fake serves the whole file and is emptied between tests
@@ -165,8 +155,10 @@ void main() {
       expect(strings.exportNoHealthData.toLowerCase(), contains('health'));
       // an account has a backup; the warning is the anonymous session's
       expect(find.text(strings.noAccountBodyLose), findsNothing);
-      // the mirror is the whole history: nothing to say about what is missing
+      // the mirror is the whole account's history by construction now, so the
+      // page has nothing to say about what the file might be missing (#113)
       expect(find.textContaining('Older workouts'), findsNothing);
+      expect(find.textContaining('Includes'), findsNothing);
     });
 
     testWidgets('repeats the lose-the-phone line, once, while anonymous', (tester) async {
@@ -175,70 +167,6 @@ void main() {
       expect(find.text(l(tester).noAccountBodyLose), findsOneWidget);
       expect(find.byKey(AppKeys.exportJson), findsOneWidget);
       expect(find.byKey(AppKeys.exportCsv), findsOneWidget);
-    });
-
-    testWidgets('says how many of the account\'s workouts the file will hold', (tester) async {
-      when(db.mirrorSummary(any)).thenAnswer((_) async => _summary({.workouts: (count: 118, head: '0198a0')}));
-      when(api.getAccountSummary()).thenAnswer((_) async => _summary({.workouts: (count: 412, head: '0198d4')}));
-
-      await pumpToExport(tester, firebase: signedIn());
-
-      expect(find.text(l(tester).exportPartialHistoryOf(118, 412)), findsOneWidget);
-    });
-
-    testWidgets('one line for a shortfall anywhere else, whatever mix of it', (tester) async {
-      when(db.mirrorSummary(any)).thenAnswer(
-        (_) async => _summary({
-          .workouts: (count: 412, head: '0198d4'),
-          .templates: (count: 1, head: '0198c0'),
-          .goals: (count: 0, head: null),
-        }),
-      );
-      when(api.getAccountSummary()).thenAnswer(
-        (_) async => _summary({
-          .workouts: (count: 412, head: '0198d4'),
-          .templates: (count: 12, head: '0198c9'),
-          .goals: (count: 3, head: '0198b2'),
-        }),
-      );
-
-      await pumpToExport(tester, firebase: signedIn());
-
-      final strings = l(tester);
-      expect(find.text(strings.exportPartialAccount), findsOneWidget);
-      // "3 of your 5 folders" is noise: only the workouts count is spelled out
-      expect(find.textContaining('12'), findsNothing);
-    });
-
-    testWidgets('the account\'s own totals outrank the paging flag', (tester) async {
-      // the list has not paged to the end, but the store holds every row the
-      // account does — the old proxy would have cried wolf here
-      when(
-        api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')),
-      ).thenAnswer((_) async => Page(items: [_workout()], hasMore: true));
-
-      await pumpToExport(tester, firebase: signedIn());
-      await Workouts.of(tester.element(find.byType(ExportDataPage))).initHistory();
-      await tester.pumpTimes();
-
-      expect(find.textContaining('Older workouts'), findsNothing);
-      expect(find.text(l(tester).exportPartialAccount), findsNothing);
-    });
-
-    testWidgets('falls back to the paging flag when the account cannot be asked', (tester) async {
-      when(api.getAccountSummary()).thenThrow(Exception('offline'));
-      when(
-        api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')),
-      ).thenAnswer((_) async => Page(items: [_workout()], hasMore: true));
-
-      await pumpToExport(tester, firebase: signedIn());
-      // what visiting History does: the pull that tells the list whether the
-      // server holds more than the mirror
-      await Workouts.of(tester.element(find.byType(ExportDataPage))).initHistory();
-      await tester.pumpTimes();
-
-      // a refused summary must never read as "your file will be whole"
-      expect(find.text(l(tester).exportPartialHistory(1)), findsOneWidget);
     });
   });
 

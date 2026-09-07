@@ -49,6 +49,8 @@ enum _Screen {
   upsyncRunning,
   upsyncFailed,
   upsyncDone,
+  backfillRunning,
+  backfillFailed,
 }
 
 /// A finished workout the server has not confirmed — what the upsync replays.
@@ -272,6 +274,35 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
   ),
+  // The backfill row (lib/presentation/widgets/upsync_row.dart, BackfillRow) in
+  // its two states — it has no finished line to check. Same reasons as its push
+  // counterpart above: the profile's bottom nav, and a 32pt Retry.
+  (_Screen.backfillRunning, _Guideline.labeledTapTarget, null),
+  (_Screen.backfillRunning, _Guideline.textContrastLight, null),
+  (_Screen.backfillRunning, _Guideline.textContrastDark, null),
+  (
+    _Screen.backfillRunning,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.backfillRunning,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (_Screen.backfillFailed, _Guideline.labeledTapTarget, null),
+  (_Screen.backfillFailed, _Guideline.textContrastLight, null),
+  (_Screen.backfillFailed, _Guideline.textContrastDark, null),
+  (
+    _Screen.backfillFailed,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.backfillFailed,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
   (_Screen.upsyncDone, _Guideline.labeledTapTarget, null),
   (_Screen.upsyncDone, _Guideline.textContrastLight, null),
   (_Screen.upsyncDone, _Guideline.textContrastDark, null),
@@ -311,6 +342,12 @@ void main() {
     api = MockApi();
     cdn = MockCdn();
     harness = const TestAppHarness();
+
+    // The history backfill's two reads, answered as "this device is whole" —
+    // every screen but the two that are about the row itself re-stubs them.
+    when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);
+    when(db.mirrorSummary(any)).thenAnswer((_) async => const AccountSummary(collections: {}));
+    when(api.getAccountSummary()).thenAnswer((_) async => const AccountSummary(collections: {}));
 
     // Same baseline stubs as router_test.dart: enough for every bottom-nav
     // stack (and the dashboard's after-first-layout Stats.init) to render
@@ -377,6 +414,27 @@ void main() {
             _ => Future.value((row: invocation.positionalArguments.single as Workout, created: true)),
           },
         );
+      case _Screen.backfillRunning || _Screen.backfillFailed:
+        // an unmarked device that the account has more history than: enough to
+        // put the row up, with the page either never answering or refusing
+        when(db.isHistoryBackfilled(any)).thenAnswer((_) async => false);
+        when(db.mirrorSummary(any)).thenAnswer(
+          (_) async => const AccountSummary(
+            collections: {ExportableCollection.workouts: CollectionSummary(count: 20)},
+          ),
+        );
+        when(api.getAccountSummary()).thenAnswer(
+          (_) async => const AccountSummary(
+            collections: {ExportableCollection.workouts: CollectionSummary(count: 568)},
+          ),
+        );
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since'))).thenAnswer(
+          (_) => switch (screen) {
+            // never answers, so the bar stays up
+            _Screen.backfillRunning => Completer<Iterable<Workout>>().future,
+            _ => Future.error(const SocketException('offline')),
+          },
+        );
       default:
         break;
     }
@@ -412,6 +470,10 @@ void main() {
         break;
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         unawaited(Upsync.of(tester.element(find.byType(MaterialApp))).run('u1'));
+      case _Screen.backfillRunning || _Screen.backfillFailed:
+        // started the way `_initTrainingData` would, for the same reason the
+        // upsync run is started here rather than left to start-up
+        unawaited(Backfill.of(tester.element(find.byType(MaterialApp))).run('u1'));
       case _Screen.onboarding:
         // the last screen carries every control the carousel has
         await tester.tapByKey(AppKeys.onboardingNext);
