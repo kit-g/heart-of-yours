@@ -49,6 +49,7 @@ class _Exercises extends Exercises {
         remoteService: MockRemoteExerciseService(),
         libraryService: MockExerciseLibraryService(),
         catalogService: MockLocalCatalogService(),
+        preferenceService: MockRemoteExercisePreferenceService(),
       );
 
   @override

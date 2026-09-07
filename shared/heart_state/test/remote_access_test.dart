@@ -298,6 +298,7 @@ void main() {
     late MockRemoteExerciseService remote;
     late MockExerciseLibraryService library;
     late MockLocalCatalogService catalog;
+    late MockRemoteExercisePreferenceService preferences;
     late Exercises sut;
 
     const stamp = (version: 'run-1', locale: 'en', etag: null);
@@ -307,6 +308,7 @@ void main() {
       remote = MockRemoteExerciseService();
       library = MockExerciseLibraryService();
       catalog = MockLocalCatalogService();
+      preferences = MockRemoteExercisePreferenceService();
       when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [ex('Bench Press')]));
       when(local.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
       when(local.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
@@ -325,6 +327,7 @@ void main() {
         service: local,
         libraryService: library,
         catalogService: catalog,
+        preferenceService: preferences,
         remote: offline,
       )..userId = userId;
     });
@@ -337,6 +340,8 @@ void main() {
       verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
       verify(catalog.storeCatalog(any, stamp: stamp)).called(1);
       verifyZeroInteractions(remote);
+      // the account's preferences are an authenticated read like any other
+      verifyZeroInteractions(preferences);
     });
 
     test('an empty cache is filled from the CDN', () async {
