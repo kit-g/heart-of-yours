@@ -14,15 +14,15 @@ enum _ExportFormat {
 /// Hands the user everything the device holds, as a file through the system
 /// share sheet.
 ///
-/// The file is written from the local store, never the server — the point of
-/// the export is that it costs nothing and works without a network or an
-/// account. The sheet is the confirmation: once it opens the page has nothing
-/// left to say, and a second export is as safe as the first.
+/// Reads the local store, never the server — the point of the export is that
+/// it costs nothing and works without a network or an account. The sheet is
+/// the confirmation: once it opens the page has nothing left to say, and a
+/// second export is as safe as the first.
 ///
-/// The one server read is the completeness check, and it goes the other way:
-/// it never adds a row to the file, it only says whether the store the file
-/// comes from is the whole account (heart-api#75). Both buttons work without
-/// it.
+/// It says nothing about how much of the account the file holds, because it no
+/// longer has to: `Backfill` makes the mirror whole in the background (#113).
+/// A page that asks the user to go and scroll History before exporting is the
+/// app handing them its own bookkeeping.
 class ExportDataPage extends StatefulWidget {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
@@ -33,41 +33,8 @@ class ExportDataPage extends StatefulWidget {
 }
 
 class _ExportDataPageState extends State<ExportDataPage> with LoadingState<ExportDataPage>, HasHaptic<ExportDataPage> {
-  /// What the account holds that this device does not, or `null` while the
-  /// question is still open — unasked, unanswerable, or refused.
-  ///
-  /// `null` is not "complete": an export off a partial mirror looks exactly
-  /// like a whole one, so the page falls back to what it can see for itself
-  /// rather than promise a file it has not measured.
-  final _gaps = ValueNotifier<List<MirrorGap>?>(null);
-
-  @override
-  void initState() {
-    super.initState();
-    _check();
-  }
-
-  @override
-  void dispose() {
-    _gaps.dispose();
-    super.dispose();
-  }
-
-  /// One read, when the page opens. An anonymous session skips it: its mirror
-  /// *is* the account, so there is nothing to measure it against.
-  Future<void> _check() async {
-    final Auth(:isAnonymous, :user) = Auth.of(context);
-    if (isAnonymous) return;
-
-    if (user?.id case String id) {
-      final gaps = await DataExport.of(context).completeness(id);
-      if (mounted) _gaps.value = gaps;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final l = L.of(context);
     final L(
       :exportData,
       :exportExplainer,
@@ -78,15 +45,11 @@ class _ExportDataPageState extends State<ExportDataPage> with LoadingState<Expor
       :exportAsCsv,
       :exportCsvHint,
       :exportInFlight,
-    ) = l;
+    ) = L.of(
+      context,
+    );
     final ThemeData(:textTheme) = Theme.of(context);
     final isAnonymous = Auth.watch(context).isAnonymous;
-    // The fallback, for when the account's own totals could not be read: the
-    // history list knows whether it has paged everything down, which covers
-    // workouts and nothing else. Nothing to say before the first page has
-    // landed, or once the server has no more.
-    final Workouts(:hasMoreHistory, :historyInitialized, :history) = Workouts.watch(context);
-    final partial = !isAnonymous && historyInitialized && hasMoreHistory;
 
     return Scaffold(
       appBar: AppBar(
@@ -122,20 +85,6 @@ class _ExportDataPageState extends State<ExportDataPage> with LoadingState<Expor
                       style: textTheme.bodySmall,
                     ),
                   ],
-                  ValueListenableBuilder<List<MirrorGap>?>(
-                    valueListenable: _gaps,
-                    builder: (_, gaps, _) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final line in _shortfall(l, gaps: gaps, partial: partial, held: history.length)) ...[
-                            const SizedBox(height: 12),
-                            Text(line, style: textTheme.bodySmall),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
                   const SizedBox(height: 24),
                   ValueListenableBuilder<bool>(
                     valueListenable: loader,
@@ -180,35 +129,6 @@ class _ExportDataPageState extends State<ExportDataPage> with LoadingState<Expor
         },
       ),
     );
-  }
-
-  /// What the file will be missing, as lines of copy — none when it will be
-  /// whole.
-  ///
-  /// Three states, and the middle one is why [gaps] is not a boolean: an empty
-  /// list means the mirror was measured against the account and is whole, so
-  /// the page says nothing; `null` means it could not be measured, and the
-  /// page falls back to the one thing it can see without the server — whether
-  /// the history list has paged everything down; a non-empty list is the
-  /// measured shortfall.
-  ///
-  /// Only the workouts count is spelled out. It is the collection that is
-  /// routinely a prefix, the only one with somewhere for the user to go, and
-  /// the only shortfall a number makes concrete; the rest are one line,
-  /// because "3 of your 5 folders" is noise, not an action. A collection
-  /// holding as many rows as the account under a different newest row joins
-  /// them: the file would be complete by count and still not be the account.
-  static Iterable<String> _shortfall(L l, {required List<MirrorGap>? gaps, required bool partial, required int held}) {
-    return switch (gaps) {
-      null => [if (partial) l.exportPartialHistory(held)],
-      [] => const <String>[],
-      final found => [
-        for (final gap in found)
-          if (gap case (collection: .workouts, :final local, :final remote, diverged: false))
-            l.exportPartialHistoryOf(local, remote),
-        if (found.any((gap) => gap.collection != ExportableCollection.workouts || gap.diverged)) l.exportPartialAccount,
-      ],
-    };
   }
 
   /// Reads the store, writes the file, opens the sheet. The share result is
