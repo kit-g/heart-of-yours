@@ -26,6 +26,19 @@ abstract interface class ExerciseLibraryService {
   Future<(Iterable<Exercise>?, CatalogStamp)> getLibrary({CatalogStamp? cached});
 }
 
+/// The per-exercise preferences the account holds — a unit override, a rest
+/// timer — on the library's exercises as much as on its own.
+///
+/// Read on its own because since the catalog moved to the CDN, nothing else
+/// the app fetches carries a preference set on a *library* exercise. Defined
+/// here rather than added to `RemoteExerciseService`: that interface is the
+/// contract heart-api implements, and widening it breaks the server (the API
+/// takes the same view — see its `ApiExercisePreferenceService`). The app
+/// adapts `Api` onto this, the way `RemoteTemplateFilingService` is adapted.
+abstract interface class RemoteExercisePreferenceService {
+  Future<Iterable<ExercisePreference>> getExercisePreferences();
+}
+
 /// The stamp beside the cached catalog rows. Written in the same transaction
 /// as the rows it describes, so neither can outlive the other — a stamp with
 /// no rows behind it would have the manifest answer "unchanged" to an empty
@@ -45,8 +58,14 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final RemoteExerciseService _remoteService;
   final ExerciseLibraryService _libraryService;
   final LocalCatalogService _catalogService;
+  final RemoteExercisePreferenceService _preferenceService;
   final RemoteAccess _remote;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+
+  /// Hands a mirrored rest timer to `Timers`, which owns them — the read that
+  /// brings the unit overrides back carries the timers in the same row, and a
+  /// copy of them here would be a second answer to the same question.
+  final Future<void> Function(ExerciseId exercise, int seconds)? onRestTimer;
   final _filters = <ExerciseFilter>{};
   final _exercises = <ExerciseId, Exercise>{};
 
@@ -74,10 +93,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
   new({
     this.onError,
+    this.onRestTimer,
     required this._remoteService,
     required this._service,
     required this._libraryService,
     required this._catalogService,
+    required this._preferenceService,
     RemoteAccess? remote,
   }) : _remote = remote ?? RemoteAccess();
 
@@ -243,8 +264,9 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     await _service.storeExercises(own, userId: userId);
 
     // the server is the source of truth for unit prefs on these rows; mirror
-    // them into the local cache. Preferences on library exercises no longer
-    // ride any list the app reads — only the local mirror remembers them.
+    // them into the local cache. [_syncPreferences] covers these same rows,
+    // off a call of its own — so what the list already carries is banked here
+    // rather than made to depend on that second call landing.
     if (userId case String id) {
       for (final each in own) {
         if (each.unitSystem case MeasurementUnit u) {
@@ -252,6 +274,44 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
           await _service.setExerciseUnit(exerciseName: each.id, userId: id, unit: u);
         }
       }
+      await _syncPreferences(id);
+    }
+  }
+
+  /// The account's preferences on any exercise at all, the library's included
+  /// — which no list the app reads carries since the catalog moved to the CDN.
+  ///
+  /// The server wins: for a signed-in device the account is the source of
+  /// truth, and what an anonymous session set offline is the upsync's problem,
+  /// not this read's. Units land here and in the per-user local cache; rest
+  /// timers go to `Timers` through [onRestTimer], which owns them.
+  ///
+  /// Reported rather than thrown, unlike the two legs above it: a cold cache
+  /// leaves [init] answering `false` on anything that escapes, and the whole
+  /// chained start-up — workouts, templates — stops on that answer. It stops
+  /// for an empty catalog, which those rows key onto; it should not stop for a
+  /// rest timer.
+  Future<void> _syncPreferences(String id) async {
+    try {
+      // Only for exercises this device holds: both stores key their rows by a
+      // foreign key onto `exercises.id`, so a preference on an exercise the
+      // CDN no longer publishes would fail its write — and there would be
+      // nothing on screen to apply it to anyway.
+      final held = (await _preferenceService.getExercisePreferences()).where(
+        (each) => _exercises.containsKey(each.exerciseId),
+      );
+
+      for (final each in held) {
+        if (each.unitSystem case MeasurementUnit unit) {
+          _units[each.exerciseId] = unit;
+          await _service.setExerciseUnit(exerciseName: each.exerciseId, userId: id, unit: unit);
+        }
+        if (each.restTimer case int seconds) {
+          await onRestTimer?.call(each.exerciseId, seconds);
+        }
+      }
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
     }
   }
 
