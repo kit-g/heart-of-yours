@@ -68,6 +68,16 @@ abstract final class AppKeys {
   static const exportJson = Key('Export.json');
   static const exportCsv = Key('Export.csv');
 
+  /// The profile row that shows the replay of an anonymous session's store
+  /// into its new account — present only while there is something to say.
+  static const upsyncRow = Key('Profile.upsync');
+
+  /// The row's way to try again after the server could not be reached.
+  static const upsyncRetry = Key('Profile.upsync.retry');
+
+  /// Puts the finished row's line away.
+  static const upsyncDismiss = Key('Profile.upsync.dismiss');
+
   /// The first-launch onboarding's way out, present on every screen of it.
   static const onboardingSkip = Key('Onboarding.skip');
 
