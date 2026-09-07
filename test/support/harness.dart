@@ -33,6 +33,13 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
     db.getWorkoutGallery(userId: anyNamed('userId')),
   ).thenAnswer((_) async => ProgressGalleryResponse(images: <WorkoutImage>[]));
 
+  // the export page's completeness check, on both sides: a device that holds
+  // exactly what the account does, so no test that merely opens the page has
+  // to say anything about it
+  const nothing = AccountSummary(collections: {});
+  when(db.mirrorSummary(any)).thenAnswer((_) async => nothing);
+  when(api.getAccountSummary()).thenAnswer((_) async => nothing);
+
   when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
   when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
   when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
