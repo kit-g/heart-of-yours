@@ -25,6 +25,13 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   /// [eraseSession] calls before signing the anonymous session out. Null
   /// where there is nothing local to wipe.
   final Future<void> Function(String userId)? onErase;
+
+  /// An anonymous session became an account: [fromUid] is the session's uid,
+  /// [toUid] the account's — the same one when the credential was linked onto
+  /// the session, another when it already had an account and the session
+  /// signed into it. Called before the new user is adopted, so the store can
+  /// be moved and the replay owed before anything reads under the new uid.
+  final Future<void> Function(String fromUid, String toUid)? onLink;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final bool isWeb;
   final String? appleServiceId;
@@ -73,6 +80,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.onError,
     this.onEnter,
     this.onErase,
+    this.onLink,
     this.isWeb = false,
     this.appleServiceId,
     this.appleSignInRedirect,
@@ -101,6 +109,13 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
     _users = _firebase.userChanges().listen(
       (user) async {
+        // the account an anonymous session just became: its store moves and
+        // its replay is owed before the uid is keyed in anywhere
+        if (_linking case String from when user != null && !user.isAnonymous) {
+          _linking = null;
+          await onLink?.call(from, user.uid);
+          if (_disposed) return;
+        }
         _adopt(user);
         onUserChange?.call(_user);
         notifyListeners();
@@ -196,8 +211,54 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   void _adopt(fb.User? user) {
     _user = _cast(user);
     _isAnonymous = user?.isAnonymous ?? false;
-    remote.allowed = user != null && !_isAnonymous;
+    remote.account = user != null && !_isAnonymous;
     if (user != null) _sessionUnavailable = false;
+  }
+
+  /// The anonymous uid a sign-in is under way from, until the stream delivers
+  /// the account that replaces it — see [onLink].
+  String? _linking;
+
+  /// Runs [signIn] as a sign-in *from* the anonymous session, when there is
+  /// one: the remote leg is held closed from this moment — the account will
+  /// arrive before its store has been replayed, and the sweeps must not run
+  /// ahead of the replay (see [RemoteAccess.replaying]) — and the stream
+  /// handler is told which uid the account is taking over from. A sign-in
+  /// that fails or is abandoned puts both back.
+  ///
+  /// Signed in to already, or not at all (the web's gate): a plain sign-in.
+  Future<T> _fromAnonymous<T>(Future<T> Function() signIn) async {
+    if (_firebase.currentUser case fb.User(isAnonymous: true, :final uid)) {
+      _linking = uid;
+      remote.replaying = true;
+      try {
+        return await signIn();
+      } catch (_) {
+        _linking = null;
+        remote.replaying = false;
+        rethrow;
+      }
+    }
+    return signIn();
+  }
+
+  /// Links [credential] onto the anonymous session where there is one — the
+  /// uid survives, the account is new — and signs in with it instead where it
+  /// already has an account, which is the one case linking refuses. Without
+  /// an anonymous session it is a sign-in like any other.
+  Future<fb.UserCredential> _linkOrSignIn(fb.AuthCredential credential) {
+    return _fromAnonymous(
+      () async {
+        final anonymous = _firebase.currentUser;
+        if (anonymous == null || !anonymous.isAnonymous) return _firebase.signInWithCredential(credential);
+        try {
+          return await anonymous.linkWithCredential(credential);
+        } on fb.FirebaseAuthException catch (e) {
+          if (e.code != 'credential-already-in-use') rethrow;
+          return await _firebase.signInWithCredential(credential);
+        }
+      },
+    );
   }
 
   Future<void> _loginWithGoogle(GoogleSignInAccount user) async {
@@ -265,7 +326,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) {
-    return _firebase.signInWithCredential(credential).then<void>(
+    return _linkOrSignIn(credential).then<void>(
       (result) {
         _adopt(result.user);
         _user = _user?.copyWith(displayName: appleName, email: appleEmail);
@@ -280,33 +341,47 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  /// Logging in is signing into an account that exists, so from an anonymous
+  /// session this is always the uid-changing case: the session's store moves
+  /// onto the account (see [onLink]), never the other way round.
   Future<void> logInWithEmailAndPassword({required String email, required String password}) {
+    final wasAnonymous = _isAnonymous;
     return _toFirebase<fb.UserCredential>(
-      _firebase.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      ),
+      _fromAnonymous(() => _firebase.signInWithEmailAndPassword(email: email, password: password)),
     ).then(
       (cred) async {
         // the stream usually got here first; adopting again is harmless and
         // makes sure an anonymous session does not read as one past this point
         _adopt(cred?.user);
+        // from an anonymous session the stream handler owns the rest: it moves
+        // the store first, and only then keys the new uid in — starting the
+        // app up here as well would read the store while the rows are moving
+        if (wasAnonymous) return;
         onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
         _user = await _registerUser(_user);
       },
     );
   }
 
+  /// From an anonymous session the account is made *on* the session — the
+  /// email credential is linked onto it and the uid survives, so everything
+  /// the device holds is already the account's; only the replay is owed. An
+  /// email that already has an account is the same refusal it always was.
   Future<void> signUpWithEmailAndPassword({required String email, required String password, String? name}) async {
     final status = await validatePassword(password);
     if (!status.isValid) {
       throw PasswordRequirementsNotMet(status: status);
     }
 
+    final wasAnonymous = _isAnonymous;
     final cred = await _toFirebase<fb.UserCredential>(
-      _firebase.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      _fromAnonymous(
+        () => switch (_firebase.currentUser) {
+          fb.User(isAnonymous: true) && final session => session.linkWithCredential(
+            fb.EmailAuthProvider.credential(email: email, password: password),
+          ),
+          _ => _firebase.createUserWithEmailAndPassword(email: email, password: password),
+        },
       ),
     );
 
@@ -324,6 +399,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       cred?.user?.sendEmailVerification();
     }
 
+    // the stream handler starts the app up for a session that just linked —
+    // see logInWithEmailAndPassword
+    if (wasAnonymous) return;
     return onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
   }
 
