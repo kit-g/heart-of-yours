@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'backfill.dart';
 import 'remote.dart';
 
 typedef WorkoutId = String;
@@ -722,6 +723,34 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       _loadingMoreHistory = false;
       notifyListeners();
     }
+  }
+
+  /// One older page, for the background backfill (heart-of-yours#113).
+  ///
+  /// The same fetch, store and absorb [loadMoreHistory] does, without
+  /// [loadingMoreHistory] — that flag puts a spinner on History's tail, and a
+  /// page nobody asked for must not look like one the user is waiting on. The
+  /// cursor is shared with [loadMoreHistory] on purpose: whichever of the two
+  /// pages next, the other carries on from there rather than re-walking rows.
+  ///
+  /// Throws when the page could not be fetched, so the caller can stop the run
+  /// and leave the mirror unmarked; `hasMore` is the server's word, and a list
+  /// with no paging in it (a test double) ends the walk.
+  Future<BackfillPage> backfillPage() async {
+    if (!_hasMoreHistory || !_remote.allowed) return (stored: 0, more: false);
+
+    if (userId case String id) {
+      final page = await _getRemoteHistory(id, since: _historyCursor);
+      if (page == null) throw StateError('history page could not be fetched');
+
+      await _localService.storeWorkoutHistory(page, id);
+      _absorb(page);
+      _advanceHistory(page);
+      notifyListeners();
+      return (stored: page.length, more: _hasMoreHistory);
+    }
+
+    return (stored: 0, more: false);
   }
 
   /// Updates paging state from a freshly fetched [page]. `hasMore` is
