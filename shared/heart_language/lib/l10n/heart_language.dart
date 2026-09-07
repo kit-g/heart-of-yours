@@ -2596,23 +2596,23 @@ abstract class L {
   /// **'Your health data is not included — it never leaves your phone.'**
   String get exportNoHealthData;
 
-  /// Export page, shown to a signed-in user whose phone holds fewer workouts than the server: how many the file will have and how to get the rest
+  /// Profile row while the app pages down the history this device is missing, when the account's own total could not be read
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Includes the 1 workout on this phone.} other{Includes the {count} workouts on this phone.}} Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.'**
-  String exportPartialHistory(num count);
+  /// **'Restoring your history…'**
+  String get backfillRunning;
 
-  /// Export page, shown to a signed-in user whose phone holds fewer workouts than the account does: how many of how many the file will have, and how to get the rest
+  /// Profile row while the app pages down the history this device is missing: workouts held so far, and the account's total
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Includes 1 of your {total} workouts.} other{Includes {count} of your {total} workouts.}} The rest are not downloaded to this phone yet — open History and scroll back to fetch them first.'**
-  String exportPartialHistoryOf(num count, Object total);
+  /// **'Restoring your history… {done} of {total}'**
+  String backfillRunningOf(Object done, Object total);
 
-  /// Export page, shown to a signed-in user whose phone is missing rows the account has — in a collection other than workouts, or the same number of rows but not the same ones
+  /// Profile row when the history backfill stopped because the server could not be reached; shown beside a Retry button
   ///
   /// In en, this message translates to:
-  /// **'Some of what your account holds is not on this phone yet, so the file will be missing it. Reopen the app while online to let it catch up.'**
-  String get exportPartialAccount;
+  /// **'Couldn\'t finish restoring your history.'**
+  String get backfillFailed;
 
   /// Export page, the button that writes the JSON file and opens the share sheet
   ///

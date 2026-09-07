@@ -1442,30 +1442,15 @@ class LEn extends L {
   String get exportNoHealthData => 'Your health data is not included — it never leaves your phone.';
 
   @override
-  String exportPartialHistory(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Includes the $count workouts on this phone.',
-      one: 'Includes the 1 workout on this phone.',
-    );
-    return '$_temp0 Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.';
+  String get backfillRunning => 'Restoring your history…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Restoring your history… $done of $total';
   }
 
   @override
-  String exportPartialHistoryOf(num count, Object total) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Includes $count of your $total workouts.',
-      one: 'Includes 1 of your $total workouts.',
-    );
-    return '$_temp0 The rest are not downloaded to this phone yet — open History and scroll back to fetch them first.';
-  }
-
-  @override
-  String get exportPartialAccount =>
-      'Some of what your account holds is not on this phone yet, so the file will be missing it. Reopen the app while online to let it catch up.';
+  String get backfillFailed => 'Couldn\'t finish restoring your history.';
 
   @override
   String get exportAsJson => 'Export as JSON';
@@ -3220,30 +3205,15 @@ class LEnCa extends LEn {
   String get exportNoHealthData => 'Your health data is not included — it never leaves your phone.';
 
   @override
-  String exportPartialHistory(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Includes the $count workouts on this phone.',
-      one: 'Includes the 1 workout on this phone.',
-    );
-    return '$_temp0 Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.';
+  String get backfillRunning => 'Restoring your history…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Restoring your history… $done of $total';
   }
 
   @override
-  String exportPartialHistoryOf(num count, Object total) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Includes $count of your $total workouts.',
-      one: 'Includes 1 of your $total workouts.',
-    );
-    return '$_temp0 The rest are not downloaded to this phone yet — open History and scroll back to fetch them first.';
-  }
-
-  @override
-  String get exportPartialAccount =>
-      'Some of what your account holds is not on this phone yet, so the file will be missing it. Reopen the app while online to let it catch up.';
+  String get backfillFailed => 'Couldn\'t finish restoring your history.';
 
   @override
   String get exportAsJson => 'Export as JSON';
