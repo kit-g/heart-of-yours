@@ -57,6 +57,9 @@ mixin _Erase on _LocalDatabase {
         // a replay owed to the uid, and how far it got — nothing left to replay
         batch.delete(_upsync, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_syncs, where: 'table_name = ?', whereArgs: [_Upsync._owedKey(userId)]);
+        // the claim that this device holds the whole history: it holds none of
+        // it now, and the next sign-in has to page it down again
+        batch.delete(_syncs, where: 'table_name = ?', whereArgs: [_Mirror.historyBackfillKey(userId)]);
         await batch.commit(noResult: true);
       },
     );

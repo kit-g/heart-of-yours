@@ -5,13 +5,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'real_database.dart';
 
-/// The mirror's side of the export completeness check: what this device holds
-/// per collection, in the shape `GET /accounts/summary` answers in.
+/// The mirror's own side of the count `GET /accounts/summary` answers for the
+/// account, and the mark that says this device holds the whole history
+/// (heart-of-yours#113).
 ///
 /// What is pinned is the scope of each count. Every row the server would never
 /// have seen — a workout still running, a draft with no name, a library
 /// exercise, another account's rows — has to stay out, because a mirror that
-/// counts too high reads as complete and says nothing.
+/// counts too high reads as whole and the backfill never runs.
 void main() {
   sqfliteFfiInit();
 
@@ -36,7 +37,7 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> workout(String id, {String uid = user, bool finished = true}) {
+  Future<void> workout(String id, {String uid = user, bool synced = true, bool finished = true}) {
     return db.insert('workouts', {
       'id': id,
       'start': '2026-09-01T10:00:00.000Z',
@@ -45,6 +46,10 @@ void main() {
         false => null,
       },
       'user_id': uid,
+      'synced': switch (synced) {
+        true => 1,
+        false => 0,
+      },
     });
   }
 
@@ -132,15 +137,28 @@ void main() {
       expect(summary.total, 8);
     });
 
-    test('a workout still running is not counted', () async {
+    test('a workout the server has never seen is not counted', () async {
       await workout('0198d1-workout');
-      await workout('0198d9-running', finished: false);
+      // in progress, or finished and not yet pushed: either way the account
+      // does not have it, so counting it would hide a shortfall of one
+      await workout('0198d9-local', synced: false);
 
       final summary = await local.mirrorSummary(user);
 
       expect(summary[.workouts].count, 1);
-      // the head is the newest *finished* row, not the newest row
       expect(summary[.workouts].latestId, '0198d1-workout');
+    });
+
+    test('an abandoned session counts — the account holds those too', () async {
+      await workout('0198d1-workout');
+      // no `end`, but synced: the server has it and counts it, so a mirror
+      // that did not would be permanently short of a target it cannot reach
+      await workout('0198d2-abandoned', finished: false);
+
+      final summary = await local.mirrorSummary(user);
+
+      expect(summary[.workouts].count, 2);
+      expect(summary[.workouts].latestId, '0198d2-abandoned');
     });
 
     test('a draft with no name is not counted', () async {
@@ -184,6 +202,29 @@ void main() {
 
       expect(summary[.goals].count, 2);
       expect(summary[.goals].latestId, '0198e2-archived');
+    });
+  });
+
+  group('the history backfill mark', () {
+    test('is absent until it is written, and per uid', () async {
+      expect(await local.isHistoryBackfilled(user), isFalse);
+
+      await local.markHistoryBackfilled(user);
+
+      expect(await local.isHistoryBackfilled(user), isTrue);
+      // a second account on the same device does not inherit the claim
+      expect(await local.isHistoryBackfilled(other), isFalse);
+    });
+
+    test('an erase takes it with the rows', () async {
+      await workout('0198d1-workout');
+      await local.markHistoryBackfilled(user);
+
+      await local.eraseUser(user);
+
+      // the device holds none of the history now, so the claim that it holds
+      // all of it has to go with it
+      expect(await local.isHistoryBackfilled(user), isFalse);
     });
   });
 }
