@@ -12,6 +12,7 @@ import 'previous.dart';
 import 'stats.dart';
 import 'templates.dart';
 import 'timers.dart';
+import 'upsync.dart';
 import 'workouts.dart';
 
 /// Signs out and forgets everything the session held.
@@ -56,5 +57,6 @@ void clearUserState(BuildContext context) {
   Stats.of(context).onSignOut();
   Templates.of(context).onSignOut();
   Timers.of(context).onSignOut();
+  Upsync.of(context).onSignOut();
   Workouts.of(context).onSignOut();
 }
