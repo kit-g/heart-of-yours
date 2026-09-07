@@ -278,9 +278,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Returns the workout as it ended up — the server's copy where the push
   /// landed, the local one where it did not.
   ///
-  /// Which matters because the server mints its own id: anything that wants to
-  /// *refer* to this session afterwards has to use the id it came back with,
-  /// not the one it was saved under.
+  /// The server keeps the id the app minted (heart-api#66), so the two copies
+  /// share it; what differs is `synced`, and whatever the server filled in.
   ///
   /// With the remote leg closed the local copy is the result, left unsynced
   /// exactly like a save that met a dead network — [syncPendingWorkouts] picks
@@ -296,10 +295,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     try {
       final saved = await _remoteService.saveWorkout(active);
-      if (saved.id != active.id) {
-        _workouts.remove(active.id);
-        await _localService.deleteWorkout(active.id);
-      }
       _absorb([saved]);
       if (userId case String id) {
         await _localService.storeWorkoutHistory([saved], id);
@@ -315,8 +310,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Re-attempts the server save for any finished workout persisted locally but
   /// never confirmed on the server — e.g. a save that failed on a flaky network.
   /// Successful saves flip to synced via [storeWorkoutHistory]; failures are left
-  /// as-is to retry next launch. An unsynced workout is never deleted; the only
-  /// removal is the stale local id after the server assigns its own on success.
+  /// as-is to retry next launch. Nothing is ever deleted here: the server keeps
+  /// the id it is sent, so a confirmed copy lands on the row it came from.
   Future<void> syncPendingWorkouts() async {
     if (!_remote.allowed) return;
     if (userId case String id) {
@@ -329,10 +324,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       for (final workout in pending) {
         try {
           final saved = await _remoteService.saveWorkout(workout);
-          if (saved.id != workout.id) {
-            _workouts.remove(workout.id);
-            await _localService.deleteWorkout(workout.id);
-          }
           _absorb([saved]);
           await _localService.storeWorkoutHistory([saved], id);
         } catch (error, stacktrace) {
