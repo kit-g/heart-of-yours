@@ -203,6 +203,27 @@ class Preferences with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Moves what this store keeps under [from] onto [to] — the same three keys
+  /// [forgetUser] drops. An anonymous session that signs into an existing
+  /// account changes uid under the running app, and its theme preset and
+  /// health answers are the same person's; where the account already has a
+  /// value on this device, the session's — the more recent choice — wins.
+  Future<void> rekeyUser(String from, String to) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    for (final key in [_baseColor, _healthInviteDismissed, _healthAsked]) {
+      final value = prefs.get('$key-$from');
+      if (value == null) continue;
+      await switch (value) {
+        String s => prefs.setString('$key-$to', s),
+        bool b => prefs.setBool('$key-$to', b),
+        _ => Future.value(),
+      };
+      await prefs.remove('$key-$from');
+    }
+    notifyListeners();
+  }
+
   /// Whether the first-launch onboarding has been shown on this device.
   ///
   /// A fact about the device, not a user: it is set before there is a session
