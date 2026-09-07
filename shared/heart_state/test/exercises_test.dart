@@ -14,6 +14,10 @@ void main() {
   final local = MockExerciseService();
   final library = MockExerciseLibraryService();
   final catalog = MockLocalCatalogService();
+  final preferences = MockRemoteExercisePreferenceService();
+
+  /// What [Exercises] hands `Timers`, keyed by exercise id.
+  final timers = <String, int>{};
   late Exercises sut;
 
   const stamp = (version: 'run-1', locale: 'en', etag: null);
@@ -24,7 +28,9 @@ void main() {
       service: local,
       libraryService: library,
       catalogService: catalog,
+      preferenceService: preferences,
       onError: onError,
+      onRestTimer: (exercise, seconds) async => timers[exercise] = seconds,
     );
   }
 
@@ -32,6 +38,10 @@ void main() {
     reset(local);
     reset(library);
     reset(catalog);
+    reset(preferences);
+    timers.clear();
+
+    when(preferences.getExercisePreferences()).thenAnswer((_) async => <ExercisePreference>[]);
 
     when(local.getExercises()).thenAnswer((_) async => (null, <Exercise>[]));
     when(local.storeExercises(any)).thenAnswer((_) async {});
@@ -177,6 +187,93 @@ void main() {
 
       expect(sut.unitFor(curl.id), MeasurementUnit.imperial);
       verify(local.setExerciseUnit(exerciseName: curl.id, userId: 'u1', unit: MeasurementUnit.imperial)).called(1);
+    });
+
+    // The catalog comes from the CDN, which knows nothing about accounts: a
+    // preference set on a library exercise rides no list the app reads, and
+    // without this read it would not survive a reinstall or reach a second
+    // device.
+    test('a preference on a library exercise is mirrored locally', () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, unitSystem: .imperial)],
+      );
+
+      await sut.init();
+
+      expect(sut.unitFor(bench.id), MeasurementUnit.imperial);
+      verify(local.setExerciseUnit(exerciseName: bench.id, userId: 'u1', unit: MeasurementUnit.imperial)).called(1);
+    });
+
+    test('a rest timer goes to Timers rather than a store of its own', () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, restTimer: 90)],
+      );
+
+      await sut.init();
+
+      expect(timers, {bench.id: 90});
+      expect(sut.unitFor(bench.id), isNull);
+    });
+
+    // the account is the source of truth for a signed-in device; what an
+    // anonymous session set offline is the upsync's problem, not this read's
+    test('the server overrides what the local mirror holds', () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(local.getExerciseUnits('u1')).thenAnswer((_) async => {bench.id: MeasurementUnit.metric});
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, unitSystem: .imperial)],
+      );
+
+      await sut.init();
+
+      expect(sut.unitFor(bench.id), MeasurementUnit.imperial);
+    });
+
+    // both local stores key their rows by a foreign key onto `exercises.id`
+    test('a preference on an exercise the device does not hold is dropped', () async {
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: 'unpublished', unitSystem: .metric, restTimer: 60)],
+      );
+
+      await sut.init();
+
+      expect(sut.unitFor('unpublished'), isNull);
+      expect(timers, isEmpty);
+      verifyNever(
+        local.setExerciseUnit(
+          exerciseName: anyNamed('exerciseName'),
+          userId: anyNamed('userId'),
+          unit: anyNamed('unit'),
+        ),
+      );
+    });
+
+    // the catalog is what the rest of start-up is chained behind; a preference
+    // is not, so it must not be able to stop it
+    test('a failed preference read is reported, and the catalog still stands', () async {
+      Object? err;
+      sut = build(onError: (e, {stacktrace}) => err = e)..userId = 'u1';
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[ex('Squat')], stamp));
+      when(preferences.getExercisePreferences()).thenThrow(Exception('preferences down'));
+
+      expect(await sut.init(), isTrue);
+
+      expect(sut.isInitialized, isTrue);
+      expect(sut.map((each) => each.name), ['Squat']);
+      expect(err, isNotNull);
+    });
+
+    test('with no user keyed in there is nobody to hold preferences, and none are asked for', () async {
+      sut = build()..userId = null;
+
+      await sut.init();
+
+      verifyNever(preferences.getExercisePreferences());
     });
 
     test('a CDN failure with a warm cache is survivable', () async {
