@@ -1477,6 +1477,23 @@ class LRu extends L {
   }
 
   @override
+  String exportPartialHistoryOf(num count, Object total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Включены $count тренировки из $total.',
+      many: 'Включены $count тренировок из $total.',
+      few: 'Включены $count тренировки из $total.',
+      one: 'Включена $count тренировка из $total.',
+    );
+    return '$_temp0 Остальные ещё не загружены на этот телефон — откройте Историю и пролистайте назад, чтобы загрузить их.';
+  }
+
+  @override
+  String get exportPartialAccount =>
+      'Часть того, что хранится в вашей учётной записи, ещё не загружена на этот телефон, поэтому в файл она не попадёт. Откройте приложение при подключении к интернету, чтобы оно догрузило её.';
+
+  @override
   String get exportAsJson => 'Экспорт в JSON';
 
   @override

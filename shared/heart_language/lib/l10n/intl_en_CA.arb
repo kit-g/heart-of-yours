@@ -2641,6 +2641,20 @@
       "count": {}
     }
   },
+  "exportPartialHistoryOf": "{count, plural, =1{Includes 1 of your {total} workouts.} other{Includes {count} of your {total} workouts.}} The rest are not downloaded to this phone yet — open History and scroll back to fetch them first.",
+  "@exportPartialHistoryOf": {
+    "description": "Export page, shown to a signed-in user whose phone holds fewer workouts than the account does: how many of how many the file will have, and how to get the rest",
+    "type": "text",
+    "placeholders": {
+      "count": {},
+      "total": {}
+    }
+  },
+  "exportPartialAccount": "Some of what your account holds is not on this phone yet, so the file will be missing it. Reopen the app while online to let it catch up.",
+  "@exportPartialAccount": {
+    "description": "Export page, shown to a signed-in user whose phone is missing rows the account has — in a collection other than workouts, or the same number of rows but not the same ones",
+    "type": "text"
+  },
   "exportAsJson": "Export as JSON",
   "@exportAsJson": {
     "description": "Export page, the button that writes the JSON file and opens the share sheet",

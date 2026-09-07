@@ -2602,6 +2602,18 @@ abstract class L {
   /// **'{count, plural, =1{Includes the 1 workout on this phone.} other{Includes the {count} workouts on this phone.}} Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.'**
   String exportPartialHistory(num count);
 
+  /// Export page, shown to a signed-in user whose phone holds fewer workouts than the account does: how many of how many the file will have, and how to get the rest
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Includes 1 of your {total} workouts.} other{Includes {count} of your {total} workouts.}} The rest are not downloaded to this phone yet — open History and scroll back to fetch them first.'**
+  String exportPartialHistoryOf(num count, Object total);
+
+  /// Export page, shown to a signed-in user whose phone is missing rows the account has — in a collection other than workouts, or the same number of rows but not the same ones
+  ///
+  /// In en, this message translates to:
+  /// **'Some of what your account holds is not on this phone yet, so the file will be missing it. Reopen the app while online to let it catch up.'**
+  String get exportPartialAccount;
+
   /// Export page, the button that writes the JSON file and opens the share sheet
   ///
   /// In en, this message translates to:

@@ -1457,6 +1457,21 @@ class LEs extends L {
   }
 
   @override
+  String exportPartialHistoryOf(num count, Object total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Incluye $count de tus $total entrenamientos.',
+      one: 'Incluye 1 de tus $total entrenamientos.',
+    );
+    return '$_temp0 El resto aún no se ha descargado en este teléfono: abre el Historial y desplázate hacia atrás para descargarlos.';
+  }
+
+  @override
+  String get exportPartialAccount =>
+      'Parte de lo que hay en tu cuenta aún no está en este teléfono, así que el archivo no lo incluirá. Vuelve a abrir la app con conexión para que se ponga al día.';
+
+  @override
   String get exportAsJson => 'Exportar como JSON';
 
   @override

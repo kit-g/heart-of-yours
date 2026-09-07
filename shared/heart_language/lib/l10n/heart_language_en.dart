@@ -1453,6 +1453,21 @@ class LEn extends L {
   }
 
   @override
+  String exportPartialHistoryOf(num count, Object total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Includes $count of your $total workouts.',
+      one: 'Includes 1 of your $total workouts.',
+    );
+    return '$_temp0 The rest are not downloaded to this phone yet — open History and scroll back to fetch them first.';
+  }
+
+  @override
+  String get exportPartialAccount =>
+      'Some of what your account holds is not on this phone yet, so the file will be missing it. Reopen the app while online to let it catch up.';
+
+  @override
   String get exportAsJson => 'Export as JSON';
 
   @override
@@ -3214,6 +3229,21 @@ class LEnCa extends LEn {
     );
     return '$_temp0 Older workouts not downloaded yet are left out — open History and scroll back to fetch them first.';
   }
+
+  @override
+  String exportPartialHistoryOf(num count, Object total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Includes $count of your $total workouts.',
+      one: 'Includes 1 of your $total workouts.',
+    );
+    return '$_temp0 The rest are not downloaded to this phone yet — open History and scroll back to fetch them first.';
+  }
+
+  @override
+  String get exportPartialAccount =>
+      'Some of what your account holds is not on this phone yet, so the file will be missing it. Reopen the app while online to let it catch up.';
 
   @override
   String get exportAsJson => 'Export as JSON';
