@@ -14,6 +14,7 @@ import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
+import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
@@ -169,6 +170,24 @@ class HeartApp extends StatelessWidget {
             },
           ),
         ),
+        // The replay of an anonymous session's store into the account it
+        // becomes. Reads and writes the mirror through the same adapters the
+        // notifiers use, talks to the server through the same Api, and when
+        // it is done the notifiers above re-pull what the server now holds.
+        ChangeNotifierProvider<Upsync>(
+          create: (context) => Upsync(
+            local: LocalUpsync(db),
+            remote: RemoteUpsync(api),
+            exercises: db,
+            folders: LocalTemplateFolders(db),
+            templates: db,
+            workouts: db,
+            goals: LocalGoals(db),
+            access: RemoteAccess.of(context),
+            onError: reportToSentry,
+            onComplete: () => _resync(context),
+          ),
+        ),
         // Last of the state classes: its callbacks below reach every one of
         // them through this context, which only sees what is provided above.
         ChangeNotifierProvider<Auth>(
@@ -187,6 +206,15 @@ class HeartApp extends StatelessWidget {
               // "Erase my data": the anonymous session's store is this
               // device's alone, so the wipe is the local database's to do
               onErase: db.eraseUser,
+              // An anonymous session became an account: its rows move onto the
+              // account's uid where that changed, and a replay is owed either
+              // way — before the new uid is keyed into anything below.
+              onLink: (from, to) async {
+                final upsync = Upsync.of(context);
+                final preferences = Preferences.of(context);
+                await upsync.claim(from: from, to: to);
+                if (from != to) await preferences.rekeyUser(from, to);
+              },
               onUserChange: (user) {
                 router.refresh();
                 // One uid replacing another under a running app — an account
@@ -545,6 +573,16 @@ Future<void> _initApp(
     // one throws — which in a test takes the whole shell process with it.
     if (!context.mounted) return;
 
+    // Before anything below dials out: an account whose store is still owed a
+    // replay keeps the remote leg closed to the sweeps until the replay is
+    // done (see RemoteAccess.replaying). An anonymous session owes nothing.
+    final upsync = Upsync.of(context);
+    final owed = switch ((sessionToken, userId)) {
+      (String _, String uid) => await upsync.restore(uid),
+      _ => false,
+    };
+    if (!context.mounted) return;
+
     theme
       ..preset = Preset.fromStored(prefs.getBaseColor(userId))
       ..toMode(prefs.themeMode);
@@ -553,7 +591,11 @@ Future<void> _initApp(
     // thing left to wait for is the token.
     authenticated.then<void>(
       (_) {
-        if (context.mounted) Goals.of(context).init();
+        if (!context.mounted) return;
+        Goals.of(context).init();
+        // the replay needs the token too; it resumes from the ledger, so a
+        // launch mid-run picks up where the last one stopped
+        if (owed && userId != null) upsync.run(userId);
       },
     );
 
@@ -577,34 +619,65 @@ Future<void> _initApp(
 
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
-          workouts
-              .init()
-              .then<void>(
-                (_) {
-                  router.refresh();
-                  // Pulls what other devices logged into the local mirror, and
-                  // heals anything stranded here by a failed save. Until this
-                  // ran at startup the only thing that ran it was opening the
-                  // History screen — so a workout from the phone reached the
-                  // tablet's goals and previous-set tags a launch late, after
-                  // some unrelated visit to History had quietly seeded it.
-                  return workouts.initHistory();
-                },
-              )
-              .then<void>(
-                (_) {
-                  // both read training data straight out of that mirror, so
-                  // they are only correct once it has been filled
-                  previous.init();
-                  stats.init();
-                },
-              );
-          templates.init();
+          workouts.init().then<void>(
+            (_) {
+              router.refresh();
+              return _initTrainingData(workouts: workouts, previous: previous, stats: stats, templates: templates);
+            },
+          );
           timers.init();
         },
       );
     }
   });
+}
+
+/// Everything that reads the mirror against the server: the history pull, the
+/// aggregations over it, the templates and their folders.
+///
+/// One function because it runs twice in one session's life — at start-up,
+/// and again when the upsync of an anonymous session's store completes and the
+/// remote leg opens for the first time.
+Future<void> _initTrainingData({
+  required Workouts workouts,
+  required PreviousExercises previous,
+  required Stats stats,
+  required Templates templates,
+}) {
+  templates.init();
+  // Pulls what other devices logged into the local mirror, and heals anything
+  // stranded here by a failed save. Until this ran at startup the only thing
+  // that ran it was opening the History screen — so a workout from the phone
+  // reached the tablet's goals and previous-set tags a launch late, after some
+  // unrelated visit to History had quietly seeded it.
+  return workouts.initHistory().then<void>(
+    (_) {
+      // both read training data straight out of that mirror, so they are only
+      // correct once it has been filled
+      previous.init();
+      stats.init();
+    },
+  );
+}
+
+/// The replay is done and the remote leg is open: pull what the account holds
+/// — its own exercises, the history the mirror is now part of, its templates
+/// and goals — over a mirror that so far only knew this device.
+void _resync(BuildContext context) {
+  if (!context.mounted) return;
+  final exercises = Exercises.of(context);
+  final config = RemoteConfig.of(context);
+  final workouts = Workouts.of(context);
+  final previous = PreviousExercises.of(context);
+  final stats = Stats.of(context);
+  final templates = Templates.of(context);
+  Goals.of(context).init();
+  exercises.init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
+    (hasExercises) {
+      if (!hasExercises) return;
+      _initTrainingData(workouts: workouts, previous: previous, stats: stats, templates: templates);
+    },
+  );
 }
 
 Future<void> _initAppInfo(BuildContext context) {

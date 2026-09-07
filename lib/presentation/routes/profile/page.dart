@@ -157,6 +157,9 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
           return CustomScrollView(
             controller: Scrolls.of(context).profileScrollController,
             slivers: [
+              // the replay of an anonymous session's store into the account
+              // it just became — absent unless one is under way or just was
+              const UpsyncRow(),
               _ProfileArea(
                 workouts: workouts,
                 emptyState: emptyState,
