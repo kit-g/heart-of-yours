@@ -78,6 +78,13 @@ abstract final class AppKeys {
   /// Puts the finished row's line away.
   static const upsyncDismiss = Key('Profile.upsync.dismiss');
 
+  /// The profile row that shows the history backfill — the pull counterpart
+  /// of the upsync row, present only while it is paging or has stopped short.
+  static const backfillRow = Key('Profile.backfill');
+
+  /// The row's way to try again after the server could not be reached.
+  static const backfillRetry = Key('Profile.backfill.retry');
+
   /// The first-launch onboarding's way out, present on every screen of it.
   static const onboardingSkip = Key('Onboarding.skip');
 
