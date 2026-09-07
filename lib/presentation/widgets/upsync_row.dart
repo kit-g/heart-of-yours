@@ -75,6 +75,64 @@ class const UpsyncRow({super.key}) extends StatelessWidget {
   }
 }
 
+/// The pull counterpart: the history this device does not hold yet, being
+/// paged down in the background (heart-of-yours#113).
+///
+/// A line with a bar while it runs, the same line with a retry when the server
+/// could not be reached. **No finished line** — the user never asked for this
+/// sync, and telling them a job they did not start has ended is a notice about
+/// the app's bookkeeping rather than about them. It simply goes.
+class const BackfillRow({super.key}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final backfill = Backfill.watch(context);
+    final l = L.of(context);
+
+    final Widget? row = switch (backfill.status) {
+      .idle => null,
+      .running => _Running(
+        // the account's own total is one request the run may not have got;
+        // without it the line says what it knows and the bar spins
+        label: switch (backfill.total) {
+          0 => l.backfillRunning,
+          final total => l.backfillRunningOf(backfill.done, total),
+        },
+        done: backfill.done,
+        total: backfill.total,
+      ),
+      .failed => _Line(
+        text: l.backfillFailed,
+        action: PrimaryButton.shrunk(
+          key: AppKeys.backfillRetry,
+          onPressed: backfill.retry,
+          child: Text(l.retry),
+        ),
+      ),
+    };
+
+    if (row == null) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+    return SliverToBoxAdapter(
+      child: LayoutBuilder(
+        builder: (_, constraints) {
+          final width = math.min(constraints.maxWidth - 32, readableWidth);
+          return Padding(
+            padding: const .fromLTRB(16, 8, 16, 0),
+            child: Align(
+              alignment: .centerLeft,
+              child: SizedBox(
+                key: AppKeys.backfillRow,
+                width: width,
+                child: row,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _Running extends StatelessWidget {
   final String label;
   final int done;
