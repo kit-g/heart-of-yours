@@ -96,4 +96,7 @@ const _migrations = <int, List<String>>{
     addSyncsVersion,
     addSyncsEtag,
   ],
+  13: [
+    upsync,
+  ],
 };
