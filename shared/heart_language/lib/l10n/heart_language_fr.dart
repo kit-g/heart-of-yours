@@ -70,19 +70,19 @@ class LFr extends L {
   String get logInTitle => 'Ravi de vous revoir';
 
   @override
-  String get logInBody => 'Vous avez déjà commencé quelque chose d’important. \nContinuons sur cette lancée.';
+  String get logInBody => 'Vous avez déjà commencé quelque chose d’important. \r\nContinuons sur cette lancée.';
 
   @override
   String get signUpTitle => 'Commencez avec Heart';
 
   @override
-  String get signUpBody => 'Chaque parcours commence par une décision. \nCelle-ci vous appartient.';
+  String get signUpBody => 'Chaque parcours commence par une décision. \r\nCelle-ci vous appartient.';
 
   @override
   String get recoverTitle => 'Toujours là pour vous';
 
   @override
-  String get recoverBody => 'Votre parcours n’est pas perdu. \nJuste une pause — on repart ensemble.';
+  String get recoverBody => 'Votre parcours n’est pas perdu. \r\nJuste une pause — on repart ensemble.';
 
   @override
   String get logInWithGoogle => 'Se connecter avec Google';
@@ -98,6 +98,62 @@ class LFr extends L {
 
   @override
   String get logOut => 'Se déconnecter';
+
+  @override
+  String get noAccount => 'Sans compte';
+
+  @override
+  String get noAccountTitle => 'Vous utilisez Heart sans compte';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Vos données de santé ne quittent jamais votre téléphone. Sans compte, rien d\'autre ne le quitte non plus : vos séances, modèles et objectifs restent uniquement sur cet appareil.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Se connecter ajoute une sauvegarde et la synchronisation entre vos appareils, et plus tard le partage avec des amis et le coaching.';
+
+  @override
+  String get noAccountBodyLose => 'Si vous perdez ce téléphone, vous perdez vos données.';
+
+  @override
+  String get notNow => 'Pas maintenant';
+
+  @override
+  String get onboardingWelcomeTitle => 'Bienvenue dans Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Un carnet d\'entraînement qui ne vous gêne pas : planifiez une séance, cochez chaque série et regardez vos charges progresser.';
+
+  @override
+  String get onboardingLocalTitle => 'Vos données restent sur votre téléphone';
+
+  @override
+  String get onboardingLocalBody =>
+      'Pas besoin de compte : vos séances, et les données de santé que vous laissez Heart lire, restent sur cet appareil et nulle part ailleurs.';
+
+  @override
+  String get onboardingLocalTrade =>
+      'Le marché est honnête : perdez le téléphone et vous perdez les données, sauf si vous vous connectez.';
+
+  @override
+  String get onboardingAccountTitle => 'Connectez-vous quand vous voulez';
+
+  @override
+  String get onboardingAccountBody =>
+      'Un compte ajoute une sauvegarde et la synchronisation entre vos appareils, et plus tard le partage avec des amis et le coaching. Rien ne change tant que vous ne le décidez pas.';
+
+  @override
+  String get onboardingNext => 'Suivant';
+
+  @override
+  String get onboardingContinue => 'Continuer';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Écran $current sur $total';
+  }
 
   @override
   String get profile => 'Profil';
@@ -161,10 +217,11 @@ class LFr extends L {
 
   @override
   String get archiveConfirmBody =>
-      'Cet exercice sera déplacé vers les exercices archivés (retrouvez-le dans Exercices → Plus → Voir les archivés).\n L’archivage n’affecte aucune de vos séances passées — votre historique reste intact.';
+      'Cet exercice sera déplacé vers les exercices archivés (retrouvez-le dans Exercices → Plus → Voir les archivés).\r\n L’archivage n’affecte aucune de vos séances passées — votre historique reste intact.';
 
   @override
-  String get exerciseArchived => 'Cet exercice est archivé \net n’apparaîtra plus dans votre bibliothèque principale.';
+  String get exerciseArchived =>
+      'Cet exercice est archivé \r\net n’apparaîtra plus dans votre bibliothèque principale.';
 
   @override
   String get deleteSet => 'Supprimer la série';
@@ -718,7 +775,7 @@ class LFr extends L {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Prenez une capture d’écran, gribouillez vos impressions et laissez-nous un mot. Vous pouvez continuer à naviguer dans l’app pendant ce temps.\n\nOn adore les retours. Chaque gribouillis et chaque commentaire nous aide à améliorer l’app — pour vous et pour tout le monde. Alors merci. Sincèrement. $emoji';
+    return 'Prenez une capture d’écran, gribouillez vos impressions et laissez-nous un mot. Vous pouvez continuer à naviguer dans l’app pendant ce temps.\r\n\r\nOn adore les retours. Chaque gribouillis et chaque commentaire nous aide à améliorer l’app — pour vous et pour tout le monde. Alors merci. Sincèrement. $emoji';
   }
 
   @override
@@ -748,6 +805,22 @@ class LFr extends L {
   String get deleteAccountConfirmMessage => 'Oui, continuez sans moi !';
 
   @override
+  String get eraseData => 'Effacer mes données';
+
+  @override
+  String get eraseDataTitle => 'Voulez-vous vraiment effacer vos données ?';
+
+  @override
+  String get eraseDataBody =>
+      'Vos entraînements, modèles, exercices personnalisés, objectifs et réglages de graphiques sont supprimés de ce téléphone, ainsi que la copie que Heart garde de vos données de santé. Les données de santé de votre téléphone lui-même ne sont pas touchées. Sans compte, il n’y a pas de sauvegarde : cette action est irréversible.';
+
+  @override
+  String get eraseDataCancelMessage => 'Garder mes données';
+
+  @override
+  String get eraseDataConfirmMessage => 'Tout effacer';
+
+  @override
   String get confirmDeleteAccountTitle => 'Confirmez la suppression de votre compte';
 
   @override
@@ -761,7 +834,7 @@ class LFr extends L {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'La suppression de votre compte est programmée pour le $date.\n\nSi vous changez d’avis, vous pouvez restaurer votre compte à tout moment avant cette date.\n\nAppuyez simplement sur le bouton ci-dessous pour annuler la suppression et garder votre compte.';
+    return 'La suppression de votre compte est programmée pour le $date.\r\n\r\nSi vous changez d’avis, vous pouvez restaurer votre compte à tout moment avant cette date.\r\n\r\nAppuyez simplement sur le bouton ci-dessous pour annuler la suppression et garder votre compte.';
   }
 
   @override
@@ -942,7 +1015,7 @@ class LFr extends L {
 
   @override
   String get updateRequiredBody =>
-      'Une mise à jour importante vous attend — elle garantit le bon fonctionnement de votre app.\n\nVous devrez l’installer avant de continuer.\nMerci de votre patience — et désolé pour l’interruption.';
+      'Une mise à jour importante vous attend — elle garantit le bon fonctionnement de votre app.\r\n\r\nVous devrez l’installer avant de continuer.\r\nMerci de votre patience — et désolé pour l’interruption.';
 
   @override
   String updateRequiredCta(String storeName) {
@@ -1365,6 +1438,43 @@ class LFr extends L {
   String get yourData => 'Vos données';
 
   @override
+  String get exportData => 'Exporter mes données';
+
+  @override
+  String get exportExplainer =>
+      'Tout ce que Heart garde sur ce téléphone, dans un fichier qui vous appartient : séances avec chaque série, modèles et dossiers, exercices personnalisés, réglages d’unités et objectifs.';
+
+  @override
+  String get exportNoHealthData =>
+      'Vos données de santé ne sont pas incluses : elles ne quittent jamais votre téléphone.';
+
+  @override
+  String get backfillRunning => 'Restauration de votre historique…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Restauration de votre historique… $done sur $total';
+  }
+
+  @override
+  String get backfillFailed => 'Impossible de terminer la restauration de votre historique.';
+
+  @override
+  String get exportAsJson => 'Exporter en JSON';
+
+  @override
+  String get exportJsonHint => 'Tout ce qui précède, au format propre à Heart.';
+
+  @override
+  String get exportAsCsv => 'Exporter en CSV';
+
+  @override
+  String get exportCsvHint => 'Séances uniquement, une ligne par série : s’ouvre dans n’importe quel tableur.';
+
+  @override
+  String get exportInFlight => 'Préparation de votre fichier…';
+
+  @override
   String get account => 'Compte';
 
   @override
@@ -1372,7 +1482,7 @@ class LFr extends L {
 
   @override
   String get importExplainerStrong =>
-      'Vous souleviez avec Strong ? Emportez votre historique avec vous.\n\nDans l’app Strong, allez dans Profile → Settings → Export Strong Data. Vous recevrez un fichier CSV par e-mail — enregistrez-le, puis choisissez-le ici.';
+      'Vous souleviez avec Strong ? Emportez votre historique avec vous.\r\n\r\nDans l’app Strong, allez dans Profile → Settings → Export Strong Data. Vous recevrez un fichier CSV par e-mail — enregistrez-le, puis choisissez-le ici.';
 
   @override
   String get importSafeToRetry =>
@@ -1637,4 +1747,30 @@ class LFr extends L {
 
   @override
   String get patternVerticalPull => 'Tirage vertical';
+
+  @override
+  String upsyncRunning(Object done, Object total) {
+    return 'Sauvegarde vers votre compte… $done sur $total';
+  }
+
+  @override
+  String upsyncFailed(Object done, Object total) {
+    return 'Sauvegarde en pause — $done sur $total envoyés. Vérifiez votre connexion et réessayez.';
+  }
+
+  @override
+  String upsyncDone(Object uploaded, Object existing) {
+    return 'Sauvegarde terminée : $uploaded envoyés, $existing déjà présents.';
+  }
+
+  @override
+  String upsyncSkipped(num skipped) {
+    String _temp0 = intl.Intl.pluralLogic(
+      skipped,
+      locale: localeName,
+      other: '$skipped éléments n’ont pas pu être envoyés.',
+      one: '1 élément n’a pas pu être envoyé.',
+    );
+    return '$_temp0';
+  }
 }

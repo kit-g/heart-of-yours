@@ -145,11 +145,13 @@ Future<T?> showBrandedDialog<T>(
   List<Widget>? actions,
   EdgeInsetsGeometry padding = const .only(left: 16, right: 16, bottom: 12),
 }) {
-  final ThemeData(:textTheme, :scaffoldBackgroundColor) = Theme.of(context);
-
   return showDialog<T>(
     context: context,
     builder: (context) {
+      // read inside the builder, so a theme change under an open dialog — a
+      // system dark-mode flip, a preset switch — repaints the title with it
+      // rather than leaving it in the colours it opened under
+      final ThemeData(:textTheme) = Theme.of(context);
       return AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
         contentPadding: padding,

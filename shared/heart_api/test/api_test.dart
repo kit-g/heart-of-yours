@@ -215,6 +215,106 @@ void main() {
     });
   });
 
+  group('account summary', () {
+    test('getAccountSummary parses every collection it knows', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/summary',
+        statusCode: 200,
+        body: {
+          'collections': {
+            'customExercises': {'count': 7, 'latestId': '0197b3'},
+            'workouts': {'count': 412, 'latestId': '0198d4'},
+            'connections': {'count': 2},
+          },
+        },
+      );
+
+      final summary = await api.getAccountSummary();
+
+      expect(summary[.customExercises].count, 7);
+      expect(summary[.customExercises].latestId, '0197b3');
+      expect(summary[.workouts].count, 412);
+      // the one collection whose rows have no id of their own
+      expect(summary[.connections].count, 2);
+      expect(summary[.connections].latestId, isNull);
+      // a collection the server did not report reads as zero
+      expect(summary[.goals].count, 0);
+      expect(summary.total, 421);
+    });
+
+    test('getAccountSummary skips a collection this build has never heard of', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/summary',
+        statusCode: 200,
+        body: {
+          'collections': {
+            'workouts': {'count': 3, 'latestId': '0198d4'},
+            'somethingNewer': {'count': 99, 'latestId': '0199ff'},
+          },
+        },
+      );
+
+      final summary = await api.getAccountSummary();
+
+      expect(summary.collections.keys, [ExportableCollection.workouts]);
+      // the unknown collection does not silently inflate the total either
+      expect(summary.total, 3);
+    });
+
+    test('getAccountSummary throws on a refusal rather than answering empty', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/summary',
+        statusCode: 500,
+        body: {'code': 'boom'},
+      );
+
+      // an empty summary would read as "your mirror is complete"
+      await expectLater(api.getAccountSummary, throwsA(anything));
+    });
+  });
+
+  group('exercise preferences', () {
+    test('getExercisePreferences parses every row, whichever fields it carries', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.exercisePreferences,
+        statusCode: 200,
+        body: {
+          'preferences': [
+            {'exerciseId': 'e1', 'unitSystem': 'imperial'},
+            {'exerciseId': 'e2', 'restTimer': 90},
+            {'exerciseId': 'e3', 'unitSystem': 'metric', 'restTimer': 60},
+          ],
+        },
+      );
+
+      final result = (await api.getExercisePreferences()).toList();
+
+      expect(result.map((each) => each.exerciseId), ['e1', 'e2', 'e3']);
+      expect(result.map((each) => each.unitSystem), [MeasurementUnit.imperial, null, MeasurementUnit.metric]);
+      expect(result.map((each) => each.restTimer), [null, 90, 60]);
+    });
+
+    test('getExercisePreferences is empty when the response carries nothing named', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.exercisePreferences,
+        statusCode: 200,
+        body: {'error': 'no data'},
+      );
+
+      expect(await api.getExercisePreferences(), isEmpty);
+    });
+  });
+
   group('RemoteTemplateService', () {
     test('deleteTemplate returns true if code is 204', () async {
       _response(

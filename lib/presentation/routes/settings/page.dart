@@ -3,11 +3,17 @@ part of 'settings.dart';
 class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
   final VoidCallback onImportData;
+  final VoidCallback onExportData;
+
+  /// Where the app goes once an anonymous session's data is erased.
+  final VoidCallback onErased;
 
   const new({
     super.key,
     required this.onAccountManagement,
     required this.onImportData,
+    required this.onExportData,
+    required this.onErased,
   });
 
   @override
@@ -28,6 +34,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :toFeedback,
       :leaveFeedbackBody,
       :importData,
+      :exportData,
+      :eraseData,
       :yourData,
       :account,
       :app,
@@ -44,12 +52,22 @@ class SettingsPage extends StatelessWidget with HasHaptic {
         :primaryContainer,
         :onPrimaryContainer,
         :primary,
+        :error,
       ),
     ) = Theme.of(
       context,
     );
 
     final heart = AppTheme.of(context).heart();
+    // Import, feedback and the account itself all go through the server, so
+    // they want an account. Absent rather than dead while the session is
+    // anonymous — the profile's no-account dialog is the one place that says
+    // why, and a row that fails on tap would only be a reminder in disguise.
+    // The one row the anonymous session has instead is the erase: with no
+    // account to delete, this is how everything the device holds goes.
+    // Export is the row both sessions share: it reads the device, not the
+    // server, so it owes nothing to an account.
+    final isAnonymous = Auth.watch(context).isAnonymous;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarIconBrightness: switch (brightness) {
@@ -170,25 +188,41 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               _Section(
                 title: yourData,
                 children: [
+                  if (!isAnonymous)
+                    ListTile(
+                      leading: const Icon(Icons.upload_file_rounded),
+                      title: Text(importData),
+                      onTap: onImportData,
+                    ),
                   ListTile(
-                    leading: const Icon(Icons.upload_file_rounded),
-                    title: Text(importData),
-                    onTap: onImportData,
+                    key: AppKeys.exportData,
+                    leading: const Icon(Icons.file_download_rounded),
+                    title: Text(exportData),
+                    onTap: onExportData,
                   ),
+                  if (isAnonymous)
+                    ListTile(
+                      key: AppKeys.eraseData,
+                      leading: Icon(Icons.delete_forever_rounded, color: error),
+                      title: Text(eraseData, style: textTheme.bodyLarge?.copyWith(color: error)),
+                      onTap: () => _onEraseData(context),
+                    ),
                 ],
               ),
               const SizedBox(height: 24),
-              _Section(
-                title: account,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.manage_accounts_rounded),
-                    title: Text(accountControl),
-                    onTap: onAccountManagement,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+              if (!isAnonymous) ...[
+                _Section(
+                  title: account,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.manage_accounts_rounded),
+                      title: Text(accountControl),
+                      onTap: onAccountManagement,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
               _Section(
                 title: app,
                 children: [
@@ -220,44 +254,45 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                       );
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.feedback_rounded),
-                    title: Text('$leaveFeedback $heart'),
-                    onTap: () {
-                      showBrandedDialog(
-                        context,
-                        title: Text(leaveFeedback),
-                        titleTextStyle: textTheme.titleMedium,
-                        icon: Icon(
-                          Icons.feedback_rounded,
-                          color: onPrimaryContainer,
-                        ),
-                        content: Text(
-                          leaveFeedbackBody(AppTheme.of(context).heart()),
-                          textAlign: TextAlign.center,
-                        ),
-                        actions: [
-                          PrimaryButton.wide(
-                            backgroundColor: outlineVariant.withValues(alpha: .5),
-                            child: Center(
-                              child: Text(cancel),
-                            ),
-                            onPressed: () {
-                              Navigator.of(context, rootNavigator: true).pop();
-                            },
+                  if (!isAnonymous)
+                    ListTile(
+                      leading: const Icon(Icons.feedback_rounded),
+                      title: Text('$leaveFeedback $heart'),
+                      onTap: () {
+                        showBrandedDialog(
+                          context,
+                          title: Text(leaveFeedback),
+                          titleTextStyle: textTheme.titleMedium,
+                          icon: Icon(
+                            Icons.feedback_rounded,
+                            color: onPrimaryContainer,
                           ),
-                          const SizedBox(height: 8),
-                          PrimaryButton.wide(
-                            backgroundColor: primaryContainer,
-                            child: Center(
-                              child: Text(toFeedback),
-                            ),
-                            onPressed: () => _openFeedback(context),
+                          content: Text(
+                            leaveFeedbackBody(AppTheme.of(context).heart()),
+                            textAlign: TextAlign.center,
                           ),
-                        ],
-                      );
-                    },
-                  ),
+                          actions: [
+                            PrimaryButton.wide(
+                              backgroundColor: outlineVariant.withValues(alpha: .5),
+                              child: Center(
+                                child: Text(cancel),
+                              ),
+                              onPressed: () {
+                                Navigator.of(context, rootNavigator: true).pop();
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            PrimaryButton.wide(
+                              backgroundColor: primaryContainer,
+                              child: Center(
+                                child: Text(toFeedback),
+                              ),
+                              onPressed: () => _openFeedback(context),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -266,6 +301,62 @@ class SettingsPage extends StatelessWidget with HasHaptic {
         ),
       ),
     );
+  }
+
+  /// The same shape as account deletion's first dialog (account.dart): one
+  /// confirmation, explicit about what goes, the destructive action in the
+  /// error container. No password step — there is no credential to check an
+  /// anonymous session against, and nothing on a server to protect.
+  Future<void> _onEraseData(BuildContext context) {
+    final ThemeData(:colorScheme) = Theme.of(context);
+    final L(
+      :eraseDataTitle,
+      :eraseDataBody,
+      :eraseDataCancelMessage,
+      :eraseDataConfirmMessage,
+    ) = L.of(
+      context,
+    );
+
+    return showBrandedDialog(
+      context,
+      title: Text(
+        eraseDataTitle,
+        textAlign: TextAlign.center,
+      ),
+      content: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          eraseDataBody,
+          textAlign: TextAlign.center,
+        ),
+      ),
+      icon: Icon(
+        Icons.delete_forever_rounded,
+        color: colorScheme.onErrorContainer,
+      ),
+      actions: [
+        _EraseDataActions(
+          keepCopy: eraseDataCancelMessage,
+          eraseCopy: eraseDataConfirmMessage,
+          onErase: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            _erase(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  /// The same pair as the profile's log-out — theme is provided above
+  /// heart_state's fan-out — with the wipe in between; then back to the
+  /// profile, which is where a fresh session lands.
+  Future<void> _erase(BuildContext context) async {
+    buzz();
+    AppTheme.of(context).onSignOut();
+    await eraseState(context);
+    if (!context.mounted) return;
+    onErased();
   }
 
   void _openFeedback(BuildContext context) {
@@ -293,6 +384,51 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               },
             );
       },
+    );
+  }
+}
+
+/// The erase-my-data dialog's two actions: a neutral fill for keeping the
+/// data, the error container for the wipe.
+///
+/// A widget rather than two buttons built where the dialog is opened, for the
+/// reason the profile's no-account actions are: the fills come from the theme
+/// the dialog is *showing* under, so a dark-mode flip while it is open
+/// repaints them instead of leaving a light fill under dark-mode ink.
+class _EraseDataActions extends StatelessWidget {
+  final String keepCopy;
+  final String eraseCopy;
+  final VoidCallback onErase;
+
+  const new({required this.keepCopy, required this.eraseCopy, required this.onErase});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    return Column(
+      spacing: 8,
+      children: [
+        PrimaryButton.wide(
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          child: Center(
+            child: Text(keepCopy),
+          ),
+          onPressed: () {
+            Navigator.of(context, rootNavigator: true).pop();
+          },
+        ),
+        PrimaryButton.wide(
+          key: AppKeys.eraseDataConfirm,
+          backgroundColor: colorScheme.errorContainer,
+          onPressed: onErase,
+          child: Center(
+            child: Text(
+              eraseCopy,
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

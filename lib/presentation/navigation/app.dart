@@ -10,9 +10,12 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
+import 'package:heart/core/utils/backfill.dart';
+import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
+import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
@@ -51,15 +54,31 @@ class HeartApp extends StatelessWidget {
       providers: [
         Provider<AppConfig>.value(value: appConfig),
         Provider<HeartRouter>.value(value: router),
+        // One gate for every remote leg below; Auth decides, the rest consult.
+        // Above them all because each takes it at construction.
+        Provider<RemoteAccess>(
+          create: (_) => RemoteAccess(),
+        ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
         ),
+        // Above `Exercises`, which hands it the rest timers the account's
+        // preferences come back with — the mirror that read feeds is this
+        // notifier's, not a second copy inside `Exercises`.
+        ChangeNotifierProvider<Timers>(
+          create: (_) => Timers(service: db),
+        ),
         ChangeNotifierProvider<Exercises>(
-          create: (_) {
+          create: (context) {
             final exercises = Exercises(
               onError: reportToSentry,
               remoteService: api,
               service: db,
+              libraryService: CdnExerciseLibrary(cdn),
+              catalogService: LocalCatalog(db),
+              preferenceService: RemoteExercisePreferences(api),
+              remote: RemoteAccess.of(context),
+              onRestTimer: Timers.of(context).setRestTimer,
             );
             // sample templates arrive as content slugs plus per-locale
             // names; the CDN client resolves the slugs through the catalog
@@ -80,6 +99,7 @@ class HeartApp extends StatelessWidget {
           create: (context) => Workouts(
             service: db,
             remoteService: api,
+            remote: RemoteAccess.of(context),
             onError: (error, {stacktrace}) {
               Logger('Workouts')
                 ..shout('${error.runtimeType}: $error')
@@ -102,17 +122,20 @@ class HeartApp extends StatelessWidget {
             folderService: LocalTemplateFolders(db),
             remoteFolderService: api,
             filingService: RemoteTemplateFiling(api),
+            remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
-        ),
-        ChangeNotifierProvider<Timers>(
-          create: (_) => Timers(service: db),
         ),
         ChangeNotifierProvider<PreviousExercises>(
           create: (_) => PreviousExercises(service: db),
         ),
         ChangeNotifierProvider<Preferences>(
-          create: (_) => Preferences(),
+          // Loaded here, before there is a session, not with the rest of
+          // startup: the router's first decision — onboarding or the app —
+          // waits on `Preferences.initialized`, and the sooner that is read
+          // the shorter the wait. `_initApp` reads it again with the rest;
+          // the second read is harmless.
+          create: (_) => Preferences()..init(locale: PlatformDispatcher.instance.locale),
         ),
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
@@ -126,9 +149,10 @@ class HeartApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<Goals>(
-          create: (_) => Goals(
+          create: (context) => Goals(
             service: LocalGoals(db),
             remoteService: api,
+            remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
         ),
@@ -141,37 +165,118 @@ class HeartApp extends StatelessWidget {
             onError: reportHealthFailure,
           ),
         ),
-        ChangeNotifierProvider<Auth>(
-          create: (context) => Auth(
-            service: api,
-            onEnter: (session, userId) => _initApp(
-              context,
-              session,
-              userId,
-              hasLocalNotifications: hasLocalNotifications,
-            ),
-            onUserChange: (user) {
-              router.refresh();
-              Exercises.of(context).userId = user?.id;
-              Charts.of(context).userId = user?.id;
-              Goals.of(context).userId = user?.id;
-              Health.of(context).userId = user?.id;
-              PreviousExercises.of(context).userId = user?.id;
-              Stats.of(context).userId = user?.id;
-              Templates.of(context).userId = user?.id;
-              Timers.of(context).userId = user?.id;
-              Workouts.of(context).userId = user?.id;
+        ChangeNotifierProvider<Alarms>(
+          // same contract as _WorkoutTimeoutScheduler: with notifications off
+          // the plugin is never initialized, so no call may reach it — and a
+          // sign-out (or a uid switch) stops the timer through this
+          create: (_) => Alarms(
+            cancelRestTimerNotifications: switch (hasLocalNotifications ?? false) {
+              true => cancelExerciseNotification,
+              false => null,
             },
-            onError: reportToSentry,
-            firebase: firebaseAuth,
-            isWeb: kIsWeb,
           ),
         ),
-        ChangeNotifierProvider<Alarms>(
-          create: (_) => Alarms(cancelRestTimerNotifications: cancelExerciseNotification),
+        // The pull half of "the app is catching up": after `Workouts`, whose
+        // paging it drives, and above `Upsync`, whose completion callback
+        // reaches it through `_resync` (#113). It waits for the replay through
+        // `RemoteAccess` rather than through provider order.
+        ChangeNotifierProvider<Backfill>(
+          create: (context) => Backfill(
+            local: LocalMirror(db),
+            remote: RemoteAccountSummary(api),
+            nextPage: Workouts.of(context).backfillPage,
+            access: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // The replay of an anonymous session's store into the account it
+        // becomes. Reads and writes the mirror through the same adapters the
+        // notifiers use, talks to the server through the same Api, and when
+        // it is done the notifiers above re-pull what the server now holds.
+        ChangeNotifierProvider<Upsync>(
+          create: (context) => Upsync(
+            local: LocalUpsync(db),
+            remote: RemoteUpsync(api),
+            exercises: db,
+            folders: LocalTemplateFolders(db),
+            templates: db,
+            workouts: db,
+            goals: LocalGoals(db),
+            access: RemoteAccess.of(context),
+            onError: reportToSentry,
+            onComplete: () => _resync(context),
+          ),
+        ),
+        // Last of the state classes: its callbacks below reach every one of
+        // them through this context, which only sees what is provided above.
+        ChangeNotifierProvider<Auth>(
+          create: (context) {
+            // the uid the state classes are currently keyed on
+            String? current;
+            return Auth(
+              service: api,
+              remote: RemoteAccess.of(context),
+              onEnter: (session, userId) => _initApp(
+                context,
+                session,
+                userId,
+                hasLocalNotifications: hasLocalNotifications,
+              ),
+              // "Erase my data": the anonymous session's store is this
+              // device's alone, so the wipe is the local database's to do
+              onErase: db.eraseUser,
+              // An anonymous session became an account: its rows move onto the
+              // account's uid where that changed, and a replay is owed either
+              // way — before the new uid is keyed into anything below.
+              onLink: (from, to) async {
+                final upsync = Upsync.of(context);
+                final preferences = Preferences.of(context);
+                await upsync.claim(from: from, to: to);
+                if (from != to) await preferences.rekeyUser(from, to);
+              },
+              onUserChange: (user) {
+                router.refresh();
+                // One uid replacing another under a running app — an account
+                // signed into from an anonymous session. A sign-out clears the
+                // state on its way out; this switch has no such moment, so it
+                // is cleared here, before the new uid is keyed in. Exercises
+                // forgets it was initialized, which is what makes `_initApp`
+                // run the full startup again for the new uid.
+                if (current != null && user != null && user.id != current) {
+                  clearUserState(context);
+                }
+                current = user?.id;
+                Exercises.of(context).userId = user?.id;
+                Charts.of(context).userId = user?.id;
+                Goals.of(context).userId = user?.id;
+                Health.of(context).userId = user?.id;
+                PreviousExercises.of(context).userId = user?.id;
+                Stats.of(context).userId = user?.id;
+                Templates.of(context).userId = user?.id;
+                Timers.of(context).userId = user?.id;
+                Workouts.of(context).userId = user?.id;
+              },
+              onError: reportToSentry,
+              firebase: firebaseAuth,
+              isWeb: kIsWeb,
+            );
+          },
         ),
         Provider<Scrolls>(
           create: (_) => Scrolls(),
+        ),
+        // "Export my data": reads the mirror straight, through the same
+        // adapters the notifiers use, so what goes in the file is what the
+        // device holds — no server, and nothing from the health tables.
+        // The mirror being *whole* is `Backfill`'s job, not this page's.
+        Provider<DataExport>(
+          create: (_) => DataExport(
+            workouts: db,
+            templates: db,
+            folders: LocalTemplateFolders(db),
+            exercises: db,
+            goals: LocalGoals(db),
+          ),
         ),
       ],
       builder: (_, _) {
@@ -231,8 +336,13 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
   /// background: its permissions are granted in another app entirely, and the
   /// platform never tells us what was decided there. See [Health.onResume],
   /// which throttles itself — this fires on every alt-tab.
+  ///
+  /// The session is the other: a first launch offline could not mint an
+  /// anonymous uid, and coming back is the natural moment to try again.
   void _onResume() {
-    if (mounted) Health.of(context).onResume();
+    if (!mounted) return;
+    Health.of(context).onResume();
+    Auth.of(context).ensureSession();
   }
 
   /// Localized backend content (the exercise catalog) is served per request
@@ -483,6 +593,17 @@ Future<void> _initApp(
     // one throws — which in a test takes the whole shell process with it.
     if (!context.mounted) return;
 
+    // Before anything below dials out: an account whose store is still owed a
+    // replay keeps the remote leg closed to the sweeps until the replay is
+    // done (see RemoteAccess.replaying). An anonymous session owes nothing.
+    final upsync = Upsync.of(context);
+    final backfill = Backfill.of(context);
+    final owed = switch ((sessionToken, userId)) {
+      (String _, String uid) => await upsync.restore(uid),
+      _ => false,
+    };
+    if (!context.mounted) return;
+
     theme
       ..preset = Preset.fromStored(prefs.getBaseColor(userId))
       ..toMode(prefs.themeMode);
@@ -491,7 +612,11 @@ Future<void> _initApp(
     // thing left to wait for is the token.
     authenticated.then<void>(
       (_) {
-        if (context.mounted) Goals.of(context).init();
+        if (!context.mounted) return;
+        Goals.of(context).init();
+        // the replay needs the token too; it resumes from the ledger, so a
+        // launch mid-run picks up where the last one stopped
+        if (owed && userId != null) upsync.run(userId);
       },
     );
 
@@ -515,34 +640,93 @@ Future<void> _initApp(
 
           // since workouts initialization looks up exercises
           // in `Exercises`, we must chain these calls this way
-          workouts
-              .init()
-              .then<void>(
-                (_) {
-                  router.refresh();
-                  // Pulls what other devices logged into the local mirror, and
-                  // heals anything stranded here by a failed save. Until this
-                  // ran at startup the only thing that ran it was opening the
-                  // History screen — so a workout from the phone reached the
-                  // tablet's goals and previous-set tags a launch late, after
-                  // some unrelated visit to History had quietly seeded it.
-                  return workouts.initHistory();
-                },
-              )
-              .then<void>(
-                (_) {
-                  // both read training data straight out of that mirror, so
-                  // they are only correct once it has been filled
-                  previous.init();
-                  stats.init();
-                },
+          workouts.init().then<void>(
+            (_) {
+              router.refresh();
+              return _initTrainingData(
+                workouts: workouts,
+                previous: previous,
+                stats: stats,
+                templates: templates,
+                backfill: backfill,
               );
-          templates.init();
+            },
+          );
           timers.init();
         },
       );
     }
   });
+}
+
+/// Everything that reads the mirror against the server: the history pull, the
+/// aggregations over it, the templates and their folders.
+///
+/// One function because it runs twice in one session's life — at start-up,
+/// and again when the upsync of an anonymous session's store completes and the
+/// remote leg opens for the first time.
+Future<void> _initTrainingData({
+  required Workouts workouts,
+  required PreviousExercises previous,
+  required Stats stats,
+  required Templates templates,
+  required Backfill backfill,
+}) {
+  templates.init();
+  // Pulls what other devices logged into the local mirror, and heals anything
+  // stranded here by a failed save. Until this ran at startup the only thing
+  // that ran it was opening the History screen — so a workout from the phone
+  // reached the tablet's goals and previous-set tags a launch late, after some
+  // unrelated visit to History had quietly seeded it.
+  return workouts.initHistory().then<void>(
+    (_) async {
+      // both read training data straight out of that mirror, so they are only
+      // correct once it has been filled
+      void readMirror() {
+        previous.init();
+        stats.init();
+      }
+
+      readMirror();
+
+      // …and only *right* once the mirror is the whole account. Until the
+      // backfill has run, the aggregations above and every goal that counts
+      // workouts are computed over whatever prefix the device happens to hold
+      // (#113), so they are computed again when it lands. A marked uid returns
+      // here without a request.
+      if (workouts.userId case String uid) {
+        await backfill.run(uid);
+        readMirror();
+      }
+    },
+  );
+}
+
+/// The replay is done and the remote leg is open: pull what the account holds
+/// — its own exercises, the history the mirror is now part of, its templates
+/// and goals — over a mirror that so far only knew this device.
+void _resync(BuildContext context) {
+  if (!context.mounted) return;
+  final exercises = Exercises.of(context);
+  final config = RemoteConfig.of(context);
+  final workouts = Workouts.of(context);
+  final previous = PreviousExercises.of(context);
+  final stats = Stats.of(context);
+  final templates = Templates.of(context);
+  final backfill = Backfill.of(context);
+  Goals.of(context).init();
+  exercises.init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
+    (hasExercises) {
+      if (!hasExercises) return;
+      _initTrainingData(
+        workouts: workouts,
+        previous: previous,
+        stats: stats,
+        templates: templates,
+        backfill: backfill,
+      );
+    },
+  );
 }
 
 Future<void> _initAppInfo(BuildContext context) {

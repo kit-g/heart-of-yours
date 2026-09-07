@@ -1,9 +1,18 @@
+/// The session in progress *on this device*.
+///
+/// `synced = 0` is what makes it this device's: the app never posts an
+/// unfinished workout — `saveWorkout` runs on finish, and `syncPendingWorkouts`
+/// only pushes `isCompleted && !synced` — so a synced row with no `end` is an
+/// abandoned session the server handed us, not one the user is in the middle
+/// of. Without the clause, pulling an account's history (heart-of-yours#113)
+/// resurrects the oldest of those as an open workout hours-old in the hundreds.
 const activeWorkout = """
 WITH
   _workout AS (
     SELECT *
     FROM workouts
     WHERE "end" IS NULL
+      AND synced = 0
       AND user_id = ?
     ORDER BY start DESC
     LIMIT 1

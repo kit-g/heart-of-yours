@@ -183,6 +183,85 @@ void main() {
     });
   });
 
+  group('first-launch onboarding', () {
+    test('reads as seen until initialized, so nothing is shown on a guess', () {
+      expect(sut.onboardingSeen, isTrue);
+    });
+
+    test('initialized resolves with init, not before, and a second init is harmless', () async {
+      var resolved = false;
+      sut.initialized.then((_) => resolved = true);
+      await Future<void>.delayed(Duration.zero);
+      expect(resolved, isFalse);
+
+      await sut.init();
+      await Future<void>.delayed(Duration.zero);
+      expect(resolved, isTrue);
+
+      // startup reads the store twice (see app.dart)
+      await sut.init();
+      expect(sut.isInitialized, isTrue);
+    });
+
+    test('a fresh device has not seen it', () async {
+      await sut.init();
+      expect(sut.onboardingSeen, isFalse);
+    });
+
+    test('marking it seen persists and notifies once', () async {
+      await sut.init();
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.markOnboardingSeen();
+      expect(sut.onboardingSeen, isTrue);
+      expect(probe.notifications, 1);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(Preferences.onboardingSeenKey), isTrue);
+    });
+
+    test('seen survives a new Preferences instance', () async {
+      SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.onboardingSeen, isTrue);
+    });
+  });
+
+  group('forgetUser', () {
+    test('drops the uid\'s keys and leaves the device\'s, the onboarding flag first among them', () async {
+      SharedPreferences.setMockInitialValues({
+        Preferences.onboardingSeenKey: true,
+        'themeMode': 'dark',
+        'weightUnit': 'imperial',
+        'baseColor-u1': 'ember',
+        'healthInviteDismissed-u1': true,
+        'healthAsked-u1': true,
+        'baseColor-u2': 'ink',
+      });
+      sut = Preferences();
+      await sut.init(locale: const Locale('en', 'US'));
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.forgetUser('u1');
+
+      expect(sut.getBaseColor('u1'), isNull);
+      expect(sut.healthInviteDismissed('u1'), isFalse);
+      expect(sut.healthAsked('u1'), isFalse);
+      expect(probe.notifications, 1);
+
+      // another uid's, and the device's own
+      expect(sut.getBaseColor('u2'), 'ink');
+      expect(sut.onboardingSeen, isTrue, reason: 'the carousel is shown once per device, not once per uid');
+      expect(sut.themeMode, 'dark');
+      expect(sut.weightUnit, MeasurementUnit.imperial);
+    });
+
+    test('is a no-op before init', () async {
+      await sut.forgetUser('u1');
+    });
+  });
+
   group('formatting and conversions', () {
     test('weight() and distance() format integers without decimals in metric', () async {
       await sut.init(locale: const Locale('de', 'DE'));

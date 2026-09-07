@@ -43,7 +43,7 @@ dependencies:
       url: "https://github.com/kit-g/heart-api.git"
       path: "shared/heart_models"
       ref: "main"
-    version: 2.0.0
+    version: 2.2.0
   heart_state:
   image_cropper: ^12.2.1
   image_picker: ^1.1.2
@@ -54,6 +54,7 @@ dependencies:
   package_info_plus: ^10.2.0
   reorderable_grid: ^1.0.13
   sentry_flutter: ^9.28.0
+  share_plus: ^13.3.0
   timezone: ^0.11.0
 
 dev_dependencies:
@@ -63,6 +64,8 @@ dev_dependencies:
   # both back the fake file picker in test/import_flow_test.dart
   file_selector_platform_interface: any
   plugin_platform_interface: any
+  # backs the fake share sheet in test/export_flow_test.dart
+  share_plus_platform_interface: any
   firebase_auth_mocks: ^0.15.0
   flutter_launcher_icons: ^0.14.3
   flutter_test: { sdk: flutter }

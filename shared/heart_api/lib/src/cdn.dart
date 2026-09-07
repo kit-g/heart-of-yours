@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:heart_models/heart_models.dart';
 import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
@@ -95,8 +97,80 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
     return i18n[tag] ?? i18n[canonical] ?? i18n[language] ?? raw['name'];
   }
 
+  /// The exercise library as static content: a manifest naming the publishing
+  /// run and the locales it wrote, and one file per locale carrying exactly
+  /// the API's list body for an anonymous caller (`own: false`, no unit
+  /// preferences, archived rows present). Both modes read it here; heart-api
+  /// keeps only the user's own exercises.
+  ///
+  /// Two requests. The manifest is the freshness gate and is always fetched —
+  /// two hundred bytes, edge-cached for five minutes; a 304 on it would leave
+  /// the client without the locale list it needs to pick a file. The file is
+  /// fetched only when the manifest's `version` or the resolved locale differs
+  /// from [cached], and then conditionally on the cached ETag: a publish that
+  /// touched another language still bumps the version, and the 304 is what
+  /// keeps that from costing this one a megabyte. Compression is left to the
+  /// transport, which asks for what it can decode.
+  ///
+  /// Returns the parsed library, or `null` when [cached] is still the current
+  /// copy — and in both cases the stamp the cache should carry from now on.
+  /// The stamp is what heart_state calls `CatalogStamp`, structurally: the
+  /// manifest `version`, the locale file, and that file's ETag.
+  Future<(Iterable<Exercise>?, ({String version, String locale, String? etag}))> getExerciseLibrary({
+    ({String version, String locale, String? etag})? cached,
+  }) async {
+    final (manifest, _) = await get('$_library/index.json');
+    final (version, locales) = switch (manifest) {
+      {'version': String version, 'locales': List locales} => (version, locales.cast<String>()),
+      _ => throw FormatException('not an exercise library manifest', manifest),
+    };
+    final locale = _libraryLocale(languageTag?.call(), locales);
+
+    if (cached != null && cached.version == version && cached.locale == locale) return (null, cached);
+
+    // an ETag only vouches for the file it came with
+    final etag = switch (cached) {
+      (locale: final same, :final etag, version: _) when same == locale => etag,
+      _ => null,
+    };
+    final response = await (client?.get ?? http.get)(
+      Uri.https(gateway, '$_library/$locale.json'),
+      headers: {...?defaultHeaders, 'If-None-Match': ?etag},
+    );
+
+    return switch (response.statusCode) {
+      304 => (null, (version: version, locale: locale, etag: etag)),
+      // JSON is UTF-8 by definition, and the object carries no charset for
+      // `response.body` to pick it from — it would decode Cyrillic as Latin-1
+      200 => switch (jsonDecode(utf8.decode(response.bodyBytes))) {
+        {'exercises': List l} => (
+          l.map((e) => Exercise.fromJson(e)).toList(),
+          (version: version, locale: locale, etag: response.headers['etag']),
+        ),
+        final body => throw FormatException('not an exercise library', body),
+      },
+      final code => throw NetworkException(statusCode: code),
+    };
+  }
+
+  /// The API's own resolution rule, applied on-device over the manifest's
+  /// list: the exact tag, then its bare language, then any variant of that
+  /// language the manifest names, then `en`. The device tag comes hyphenated
+  /// (`es-MX`); files are named the way the server tags locales (`es_MX`).
+  /// The list is never hardcoded — adding a locale is a server-only change.
+  static String _libraryLocale(String? tag, List<String> locales) {
+    if (tag == null) return 'en';
+    final canonical = tag.replaceAll('-', '_');
+    if (locales.contains(canonical)) return canonical;
+    final language = canonical.split('_').first;
+    if (locales.contains(language)) return language;
+    return locales.firstWhere((each) => each.startsWith('${language}_'), orElse: () => 'en');
+  }
+
   /// Injectable for tests, like [Api.client]; production leaves it null and
   /// [Requests] falls back to the plain top-level http functions.
   @override
   http.Client? client;
 }
+
+const _library = '/static/exercises';

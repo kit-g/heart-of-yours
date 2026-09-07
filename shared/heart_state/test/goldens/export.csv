@@ -1,0 +1,6 @@
+workout_id,start,end,exercise_id,exercise_name,set_index,weight,unit,reps,duration,distance,notes
+w1,2026-03-01T10:00:00.000Z,2026-03-01T11:00:00.000Z,ex-bench,Bench Press (Barbell),1,132.28,lb,8,,,
+w1,2026-03-01T10:00:00.000Z,2026-03-01T11:00:00.000Z,ex-bench,Bench Press (Barbell),2,137.79,lb,6,,,
+w1,2026-03-01T10:00:00.000Z,2026-03-01T11:00:00.000Z,ex-custom,"Muffin, ""special"" pull-up",1,,,10,,,one hand at a time
+w2,2026-03-03T07:30:00.000Z,2026-03-03T08:00:00.000Z,ex-run,Run,1,,mi,,1500,3.11,
+w2,2026-03-03T07:30:00.000Z,2026-03-03T08:00:00.000Z,ex-plank,Plank,1,,,,60,,

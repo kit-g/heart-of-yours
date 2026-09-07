@@ -23,10 +23,17 @@ import 'package:mockito/annotations.dart';
     MockSpec<RemoteWorkoutService>(),
     MockSpec<RemoteExerciseService>(),
     MockSpec<ExerciseService>(),
+    MockSpec<ExerciseLibraryService>(),
+    MockSpec<LocalCatalogService>(),
+    MockSpec<RemoteExercisePreferenceService>(),
     MockSpec<GoogleSignIn>(),
     MockSpec<ExerciseHistoryService>(),
     MockSpec<ChartPreference>(),
     MockSpec<ChartPreferenceService>(),
+    MockSpec<UpsyncService>(),
+    MockSpec<LocalUpsyncService>(),
+    MockSpec<RemoteAccountSummaryService>(),
+    MockSpec<LocalMirrorService>(),
   ],
 )
 void main() {

@@ -6,11 +6,15 @@ import 'package:heart_db/src/sql.dart' as sql;
 import 'package:heart_models/heart_models.dart';
 import 'package:mockito/mockito.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart' as ffi;
 
 import 'mocks.mocks.dart';
+import 'real_database.dart';
 import 'utils.dart';
 
 void main() {
+  _activeWorkoutAgainstRealSqlite();
+
   late LocalDatabase local;
   final db = MockDatabase();
   final txn = MockTransaction();
@@ -962,6 +966,64 @@ void main() {
       );
     },
   );
+}
+
+/// The one thing the mocked suite above cannot check: what `sql.activeWorkout`
+/// actually selects. Against a real SQLite, because the bug it guards was in
+/// the statement rather than in the code around it.
+void _activeWorkoutAgainstRealSqlite() {
+  ffi.sqfliteFfiInit();
+
+  late Database db;
+  late LocalDatabase local;
+
+  const user = 'user-1';
+
+  Future<void> open(String id, {required bool synced, String start = '2026-09-01T10:00:00.000Z'}) {
+    return db.insert('workouts', {
+      'id': id,
+      'start': start,
+      'user_id': user,
+      'synced': switch (synced) {
+        true => 1,
+        false => 0,
+      },
+    });
+  }
+
+  setUp(() async {
+    db = await openTestDatabase();
+    local = await LocalDatabase.init(other: db);
+  });
+
+  tearDown(() => db.close());
+
+  group('getActiveWorkout, against the real statement', () {
+    test('restores the session this device left open', () async {
+      await open('0198d1-mine', synced: false);
+
+      expect((await local.getActiveWorkout(user))?.id, '0198d1-mine');
+    });
+
+    test('an abandoned session pulled from the server is not this device\'s', () async {
+      // heart-of-yours#113: the history backfill brings the account's whole
+      // past down, and an account can hold sessions that were never finished.
+      // The app never posts an unfinished workout, so a synced one with no
+      // `end` came from the server — resurrecting it as the open workout put a
+      // 14,000-hour session on screen.
+      await open('0190dc67-abandoned', synced: true, start: '2024-07-22T21:45:06.000Z');
+      await open('019485f4-abandoned', synced: true, start: '2025-01-20T23:03:00.000Z');
+
+      expect(await local.getActiveWorkout(user), isNull);
+    });
+
+    test('picks this device\'s own even when the server\'s is newer', () async {
+      await open('0198d1-mine', synced: false, start: '2026-09-01T10:00:00.000Z');
+      await open('0198d9-theirs', synced: true, start: '2026-09-06T10:00:00.000Z');
+
+      expect((await local.getActiveWorkout(user))?.id, '0198d1-mine');
+    });
+  });
 }
 
 class MockDatabaseException extends Mock implements DatabaseException;

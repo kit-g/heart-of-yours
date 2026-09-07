@@ -6,6 +6,9 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'backfill.dart';
+import 'remote.dart';
+
 typedef WorkoutId = String;
 
 class Workouts with ChangeNotifier implements SignOutStateSentry {
@@ -13,13 +16,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
   final WorkoutService _localService;
   final RemoteWorkoutService _remoteService;
+  final RemoteAccess _remote;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
   new({
     required WorkoutService service,
     required this._remoteService,
     this.onError,
-  }) : _localService = service;
+    RemoteAccess? remote,
+  }) : _localService = service,
+       _remote = remote ?? RemoteAccess();
 
   @override
   void onSignOut() {
@@ -181,6 +187,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       // when the server cannot
       if (local != null && !_isStripped(local)) return adopt(local);
 
+      // without the remote leg the mirror is all there is — a stripped copy
+      // included, since no server is going to fill it in
+      if (!_remote.allowed) {
+        return switch (local) {
+          Workout stripped => adopt(stripped),
+          null => false,
+        };
+      }
+
       try {
         final remote = await _remoteService.getTargetWorkout(
           requesterId: id,
@@ -264,9 +279,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Returns the workout as it ended up — the server's copy where the push
   /// landed, the local one where it did not.
   ///
-  /// Which matters because the server mints its own id: anything that wants to
-  /// *refer* to this session afterwards has to use the id it came back with,
-  /// not the one it was saved under.
+  /// The server keeps the id the app minted (heart-api#66), so the two copies
+  /// share it; what differs is `synced`, and whatever the server filled in.
+  ///
+  /// With the remote leg closed the local copy is the result, left unsynced
+  /// exactly like a save that met a dead network — [syncPendingWorkouts] picks
+  /// it up once there is an account to push it to.
   Future<Workout> saveWorkout(Workout active) async {
     active.removeEmptySets();
     await _localService.finishWorkout(active, userId!);
@@ -274,12 +292,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts[active.id] = active;
     notifyListeners();
 
+    if (!_remote.allowed) return active;
+
     try {
       final saved = await _remoteService.saveWorkout(active);
-      if (saved.id != active.id) {
-        _workouts.remove(active.id);
-        await _localService.deleteWorkout(active.id);
-      }
       _absorb([saved]);
       if (userId case String id) {
         await _localService.storeWorkoutHistory([saved], id);
@@ -295,9 +311,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Re-attempts the server save for any finished workout persisted locally but
   /// never confirmed on the server — e.g. a save that failed on a flaky network.
   /// Successful saves flip to synced via [storeWorkoutHistory]; failures are left
-  /// as-is to retry next launch. An unsynced workout is never deleted; the only
-  /// removal is the stale local id after the server assigns its own on success.
+  /// as-is to retry next launch. Nothing is ever deleted here: the server keeps
+  /// the id it is sent, so a confirmed copy lands on the row it came from.
   Future<void> syncPendingWorkouts() async {
+    if (!_remote.allowed) return;
     if (userId case String id) {
       final local = await _localService.getWorkoutHistory(id);
       if (local != null) {
@@ -308,10 +325,6 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       for (final workout in pending) {
         try {
           final saved = await _remoteService.saveWorkout(workout);
-          if (saved.id != workout.id) {
-            _workouts.remove(workout.id);
-            await _localService.deleteWorkout(workout.id);
-          }
           _absorb([saved]);
           await _localService.storeWorkoutHistory([saved], id);
         } catch (error, stacktrace) {
@@ -325,6 +338,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> editWorkout(Workout workout) async {
     _workouts[workout.id] = workout;
     notifyListeners();
+
+    if (!_remote.allowed) return _storeLocally(workout);
 
     final edited = await _remoteService.editWorkout(workout);
     if (userId case String id) {
@@ -345,12 +360,35 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
+  /// Writes an edit to a finished workout that the server has not seen.
+  ///
+  /// Through the same write a finish takes rather than [WorkoutService.storeWorkoutHistory],
+  /// because that one marks its rows synced — it stores what the server has
+  /// confirmed — and this row is the opposite: a local truth still owed to a
+  /// server, whenever there is an account to owe it to.
+  Future<void> _storeLocally(Workout workout) async {
+    if (userId case String id) {
+      await _localService.finishWorkout(workout, id);
+    }
+    notifyListeners();
+  }
+
   /// Updates a finished workout's [start] and/or [end] through the dedicated
   /// times PATCH endpoint, replacing the local copy with the server's
   /// authoritative one. Returns the updated workout, or null if nothing was
   /// requested or the request failed (reported via [onError]).
+  ///
+  /// With the remote leg closed the mirror's copy is edited in place instead.
   Future<Workout?> editWorkoutTimes(String workoutId, {DateTime? start, DateTime? end}) async {
     if (start == null && end == null) return null;
+    if (!_remote.allowed) {
+      final workout = _workouts[workoutId];
+      if (workout == null) return null;
+      if (start != null) workout.start = start;
+      if (end != null) workout.end = end;
+      await _storeLocally(workout);
+      return workout;
+    }
     try {
       final patched = await _remoteService.patchWorkout(workoutId, start: start, end: end);
       _absorb([patched]);
@@ -370,7 +408,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       _workouts.remove(id);
       try {
         await _localService.deleteWorkout(id);
-        await _remoteService.deleteWorkout(id);
+        await _deleteWorkout(id);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
       }
@@ -379,8 +417,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
   }
 
-  Future<void> _deleteWorkout(String workoutId) {
-    return _remoteService.deleteWorkout(workoutId);
+  Future<void> _deleteWorkout(String workoutId) async {
+    if (!_remote.allowed) return;
+    await _remoteService.deleteWorkout(workoutId);
   }
 
   Future<void> deleteWorkout(String workoutId) {
@@ -498,6 +537,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<Iterable<Workout>?> _getRemoteHistory(String userId, {int pageSize = _historyPageSize, String? since}) async {
+    if (!_remote.allowed) return null;
     try {
       return await _remoteService.getWorkouts(userId, pageSize: pageSize, since: since);
     } catch (error, s) {
@@ -510,6 +550,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (userId case String id) {
       final local = await _localService.getWorkoutHistory(id);
       _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
+      // with no server to page from, the mirror is the whole history
+      if (!_remote.allowed) _hasMoreHistory = false;
       notifyListeners();
 
       final workouts = await _getRemoteHistory(id);
@@ -531,6 +573,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       // after the flag: this can be a request per workout, and the list
       // should not wait for it. One pass at a time — History's own visit
       // runs this too, and would otherwise start a second over the same rows.
+      // Without the remote leg there is nobody to ask: the pass waits for an
+      // account, like every other remote call.
+      if (!_remote.allowed) return;
       await (_healing ??= _healStrippedHistory(id).whenComplete(() => _healing = null));
     }
   }
@@ -658,7 +703,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// backend reports `hasMore` authoritatively, so paging stops the moment a page
   /// says there is nothing older.
   Future<void> loadMoreHistory() async {
-    if (_loadingMoreHistory || !_hasMoreHistory) return;
+    if (_loadingMoreHistory || !_hasMoreHistory || !_remote.allowed) return;
     if (userId case String id) {
       _loadingMoreHistory = true;
       _historyPageError = false;
@@ -678,6 +723,34 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       _loadingMoreHistory = false;
       notifyListeners();
     }
+  }
+
+  /// One older page, for the background backfill (heart-of-yours#113).
+  ///
+  /// The same fetch, store and absorb [loadMoreHistory] does, without
+  /// [loadingMoreHistory] — that flag puts a spinner on History's tail, and a
+  /// page nobody asked for must not look like one the user is waiting on. The
+  /// cursor is shared with [loadMoreHistory] on purpose: whichever of the two
+  /// pages next, the other carries on from there rather than re-walking rows.
+  ///
+  /// Throws when the page could not be fetched, so the caller can stop the run
+  /// and leave the mirror unmarked; `hasMore` is the server's word, and a list
+  /// with no paging in it (a test double) ends the walk.
+  Future<BackfillPage> backfillPage() async {
+    if (!_hasMoreHistory || !_remote.allowed) return (stored: 0, more: false);
+
+    if (userId case String id) {
+      final page = await _getRemoteHistory(id, since: _historyCursor);
+      if (page == null) throw StateError('history page could not be fetched');
+
+      await _localService.storeWorkoutHistory(page, id);
+      _absorb(page);
+      _advanceHistory(page);
+      notifyListeners();
+      return (stored: page.length, more: _hasMoreHistory);
+    }
+
+    return (stored: 0, more: false);
   }
 
   /// Updates paging state from a freshly fetched [page]. `hasMore` is
@@ -732,10 +805,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Workout? lookup(String id) => _workouts[id];
 
+  /// Photos live in the server's bucket, so there is nowhere to put one without
+  /// the remote leg — the callers hide the affordance in that case, and this
+  /// answers null should one slip through.
   Future<WorkoutImage?> attachImageToWorkout(
     Workout workout,
     (Uint8List, {String? mimeType, String? name}) image,
   ) async {
+    if (!_remote.allowed) return null;
     // destinationUrl is where the image will be available once saved
     final (cred, destinationUrl) = await _remoteService.getWorkoutUploadLink(workout.id);
     if (cred != null) {
@@ -760,6 +837,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<WorkoutImage?> attachImageToActiveWorkout((Uint8List, {String? mimeType, String? name}) image) async {
+    if (!_remote.allowed) return null;
     if (activeWorkout case Workout workout) {
       final saved = await _remoteService.saveWorkout(workout);
       return attachImageToWorkout(saved, image);
@@ -768,6 +846,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> detachImageFromWorkout(Workout workout, WorkoutImage image) async {
+    if (!_remote.allowed) return;
     final detached = await _remoteService.deleteWorkoutImage(workout.id, image.key);
     if (detached) {
       _workouts[workout.id]?.images?.remove(image.id);
