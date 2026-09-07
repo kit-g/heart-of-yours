@@ -10,8 +10,8 @@ import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
+import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
-import 'package:heart/core/utils/export.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
@@ -176,6 +176,19 @@ class HeartApp extends StatelessWidget {
             },
           ),
         ),
+        // The pull half of "the app is catching up": after `Workouts`, whose
+        // paging it drives, and above `Upsync`, whose completion callback
+        // reaches it through `_resync` (#113). It waits for the replay through
+        // `RemoteAccess` rather than through provider order.
+        ChangeNotifierProvider<Backfill>(
+          create: (context) => Backfill(
+            local: LocalMirror(db),
+            remote: RemoteAccountSummary(api),
+            nextPage: Workouts.of(context).backfillPage,
+            access: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
         // The replay of an anonymous session's store into the account it
         // becomes. Reads and writes the mirror through the same adapters the
         // notifiers use, talks to the server through the same Api, and when
@@ -252,11 +265,10 @@ class HeartApp extends StatelessWidget {
         Provider<Scrolls>(
           create: (_) => Scrolls(),
         ),
-        // "Export my data": the file is written from the mirror, through the
-        // same adapters the notifiers use, so what goes in it is what the
-        // device holds — nothing from the health tables, and nothing fetched.
-        // The account summary is the exception and touches no file: it is the
-        // yardstick that says whether the mirror was whole.
+        // "Export my data": reads the mirror straight, through the same
+        // adapters the notifiers use, so what goes in the file is what the
+        // device holds — no server, and nothing from the health tables.
+        // The mirror being *whole* is `Backfill`'s job, not this page's.
         Provider<DataExport>(
           create: (_) => DataExport(
             workouts: db,
@@ -264,11 +276,6 @@ class HeartApp extends StatelessWidget {
             folders: LocalTemplateFolders(db),
             exercises: db,
             goals: LocalGoals(db),
-            // the one server read on this page, and it never reaches the
-            // file: it only says whether the file will be whole
-            summary: RemoteAccountSummary(api),
-            mirror: LocalMirror(db),
-            onError: reportToSentry,
           ),
         ),
       ],
@@ -590,6 +597,7 @@ Future<void> _initApp(
     // replay keeps the remote leg closed to the sweeps until the replay is
     // done (see RemoteAccess.replaying). An anonymous session owes nothing.
     final upsync = Upsync.of(context);
+    final backfill = Backfill.of(context);
     final owed = switch ((sessionToken, userId)) {
       (String _, String uid) => await upsync.restore(uid),
       _ => false,
@@ -635,7 +643,13 @@ Future<void> _initApp(
           workouts.init().then<void>(
             (_) {
               router.refresh();
-              return _initTrainingData(workouts: workouts, previous: previous, stats: stats, templates: templates);
+              return _initTrainingData(
+                workouts: workouts,
+                previous: previous,
+                stats: stats,
+                templates: templates,
+                backfill: backfill,
+              );
             },
           );
           timers.init();
@@ -656,6 +670,7 @@ Future<void> _initTrainingData({
   required PreviousExercises previous,
   required Stats stats,
   required Templates templates,
+  required Backfill backfill,
 }) {
   templates.init();
   // Pulls what other devices logged into the local mirror, and heals anything
@@ -664,11 +679,25 @@ Future<void> _initTrainingData({
   // reached the tablet's goals and previous-set tags a launch late, after some
   // unrelated visit to History had quietly seeded it.
   return workouts.initHistory().then<void>(
-    (_) {
+    (_) async {
       // both read training data straight out of that mirror, so they are only
       // correct once it has been filled
-      previous.init();
-      stats.init();
+      void readMirror() {
+        previous.init();
+        stats.init();
+      }
+
+      readMirror();
+
+      // …and only *right* once the mirror is the whole account. Until the
+      // backfill has run, the aggregations above and every goal that counts
+      // workouts are computed over whatever prefix the device happens to hold
+      // (#113), so they are computed again when it lands. A marked uid returns
+      // here without a request.
+      if (workouts.userId case String uid) {
+        await backfill.run(uid);
+        readMirror();
+      }
     },
   );
 }
@@ -684,11 +713,18 @@ void _resync(BuildContext context) {
   final previous = PreviousExercises.of(context);
   final stats = Stats.of(context);
   final templates = Templates.of(context);
+  final backfill = Backfill.of(context);
   Goals.of(context).init();
   exercises.init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
     (hasExercises) {
       if (!hasExercises) return;
-      _initTrainingData(workouts: workouts, previous: previous, stats: stats, templates: templates);
+      _initTrainingData(
+        workouts: workouts,
+        previous: previous,
+        stats: stats,
+        templates: templates,
+        backfill: backfill,
+      );
     },
   );
 }
