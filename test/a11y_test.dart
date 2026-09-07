@@ -6,6 +6,9 @@
 // are enabled; entries that don't yet are skipped with a reason so the debt
 // stays enumerable instead of silently missing. Do not delete a failing
 // entry — flip its `skip` to null once the underlying issue is fixed.
+import 'dart:async';
+import 'dart:io';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,6 +46,18 @@ enum _Screen {
   eraseDataDialog,
   importData,
   exportData,
+  upsyncRunning,
+  upsyncFailed,
+  upsyncDone,
+}
+
+/// A finished workout the server has not confirmed — what the upsync replays.
+Workout _unsynced() {
+  final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+  final workout = Workout(name: 'Monday');
+  workout.add(bench).add(ExerciseSet(bench, weight: 60, reps: 5)..isCompleted = true);
+  workout.finish(DateTime.timestamp());
+  return workout;
 }
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
@@ -225,6 +240,51 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.exportData, _Guideline.textContrastDark, null),
   (_Screen.exportData, _Guideline.androidTapTarget, null),
   (_Screen.exportData, _Guideline.iosTapTarget, null),
+
+  // The upsync row on the profile (lib/presentation/widgets/upsync_row.dart) in
+  // each of its three states: the bar, the Retry button, the dismiss. The tap
+  // target rows inherit the profile's bottom-nav reason; the row's own
+  // controls are a 32pt PrimaryButton (see noAccountDialog) and a stock
+  // IconButton.
+  (_Screen.upsyncRunning, _Guideline.labeledTapTarget, null),
+  (_Screen.upsyncRunning, _Guideline.textContrastLight, null),
+  (_Screen.upsyncRunning, _Guideline.textContrastDark, null),
+  (
+    _Screen.upsyncRunning,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.upsyncRunning,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (_Screen.upsyncFailed, _Guideline.labeledTapTarget, null),
+  (_Screen.upsyncFailed, _Guideline.textContrastLight, null),
+  (_Screen.upsyncFailed, _Guideline.textContrastDark, null),
+  (
+    _Screen.upsyncFailed,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.upsyncFailed,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
+  (_Screen.upsyncDone, _Guideline.labeledTapTarget, null),
+  (_Screen.upsyncDone, _Guideline.textContrastLight, null),
+  (_Screen.upsyncDone, _Guideline.textContrastDark, null),
+  (
+    _Screen.upsyncDone,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.upsyncDone,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
 ];
 
 void main() {
@@ -300,6 +360,27 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     }
 
+    // The upsync row shows on the profile of an account whose store is still
+    // owed a replay; what the server answers picks the state. The run is
+    // started below the way start-up would once the API has its token —
+    // `_initApp` runs in `Zone.root`, which this fake-async zone never yields
+    // to, so its own restore-and-run never gets that far in a widget test.
+    switch (screen) {
+      case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
+        when(db.isUpsyncOwed(any)).thenAnswer((_) async => true);
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [_unsynced()]);
+        when(api.replayWorkout(any)).thenAnswer(
+          (invocation) => switch (screen) {
+            // never answers, so the bar stays up
+            _Screen.upsyncRunning => Completer<({Workout row, bool created})>().future,
+            _Screen.upsyncFailed => Future.error(const SocketException('offline')),
+            _ => Future.value((row: invocation.positionalArguments.single as Workout, created: true)),
+          },
+        );
+      default:
+        break;
+    }
+
     // No user means an anonymous session, not a gate: the login page is only
     // reachable through the no-account dialog on that session's profile.
     final firebase = switch (screen) {
@@ -329,6 +410,8 @@ void main() {
     switch (screen) {
       case _Screen.profile:
         break;
+      case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
+        unawaited(Upsync.of(tester.element(find.byType(MaterialApp))).run('u1'));
       case _Screen.onboarding:
         // the last screen carries every control the carousel has
         await tester.tapByKey(AppKeys.onboardingNext);
