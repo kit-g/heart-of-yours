@@ -160,6 +160,9 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
               // the replay of an anonymous session's store into the account
               // it just became — absent unless one is under way or just was
               const UpsyncRow(),
+              // and its pull counterpart: the history being paged down behind
+              // the charts that are drawn from it
+              const BackfillRow(),
               _ProfileArea(
                 workouts: workouts,
                 emptyState: emptyState,
