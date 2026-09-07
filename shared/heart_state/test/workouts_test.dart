@@ -483,26 +483,26 @@ void main() {
     });
 
     group('finishing reports what landed', () {
-      test('gives back the server\'s copy, under the id it minted', () async {
+      test('gives back the server\'s copy, under the id the app minted', () async {
         // anything that refers to the session afterwards — a goal rung crediting
-        // it, most of all — has to use the id it came back with. Crediting the
-        // pre-save id had the server refuse the attribution as an id it had
-        // never seen.
+        // it, most of all — uses the id it came back with; the server keeps the
+        // one it was sent (heart-api#66), so that is the local id, now synced
         await sut.startWorkout(name: 'Chest');
         final localId = sut.activeWorkout!.id;
-        final minted = Workout.fromJson({
-          'id': 'server-minted',
+        final confirmed = Workout.fromJson({
+          'id': localId,
           'start': DateTime.utc(2026, 8, 11).toIso8601String(),
           'end': DateTime.utc(2026, 8, 11, 1).toIso8601String(),
           'exercises': [],
         });
-        when(remote.saveWorkout(any)).thenAnswer((_) async => minted);
+        when(remote.saveWorkout(any)).thenAnswer((_) async => confirmed);
 
         final finished = await sut.finishActiveWorkout();
 
-        expect(finished?.id, 'server-minted');
-        expect(finished?.id, isNot(localId));
+        expect(finished?.id, localId);
+        expect(finished?.synced, isTrue);
         expect(await sut.finishing, isNotNull);
+        verifyNever(local.deleteWorkout(any));
       });
 
       test('falls back to the local copy when the push fails', () async {
