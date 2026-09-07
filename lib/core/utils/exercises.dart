@@ -22,6 +22,21 @@ class CdnExerciseLibrary implements ExerciseLibraryService {
   }
 }
 
+/// Presents [Api] as the [RemoteExercisePreferenceService] the [Exercises]
+/// notifier wants — the exercise CRUD travels as `RemoteExerciseService`,
+/// which [Api] implements itself, and this carries the one read that
+/// server-shared interface cannot grow.
+class RemoteExercisePreferences implements RemoteExercisePreferenceService {
+  final Api _api;
+
+  const new(this._api);
+
+  @override
+  Future<Iterable<ExercisePreference>> getExercisePreferences() {
+    return _api.getExercisePreferences();
+  }
+}
+
 /// Presents [LocalDatabase] as the [LocalCatalogService] the [Exercises]
 /// notifier wants — the catalog rows travel as `ExerciseService`, which the
 /// database implements itself, and this carries the stamp that interface
