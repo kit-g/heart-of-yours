@@ -36,6 +36,7 @@ part 'src/parts/erase.dart';
 part 'src/parts/exercises.dart';
 part 'src/parts/goals.dart';
 part 'src/parts/health.dart';
+part 'src/parts/mirror.dart';
 part 'src/parts/stats.dart';
 part 'src/parts/template_folders.dart';
 part 'src/parts/templates.dart';
