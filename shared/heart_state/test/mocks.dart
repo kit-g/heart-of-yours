@@ -32,6 +32,8 @@ import 'package:mockito/annotations.dart';
     MockSpec<ChartPreferenceService>(),
     MockSpec<UpsyncService>(),
     MockSpec<LocalUpsyncService>(),
+    MockSpec<RemoteAccountSummaryService>(),
+    MockSpec<LocalMirrorService>(),
   ],
 )
 void main() {

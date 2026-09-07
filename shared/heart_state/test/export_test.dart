@@ -220,6 +220,8 @@ void main() {
   late MockLocalTemplateFolderService folders;
   late MockExerciseService exercises;
   late MockGoalService goals;
+  late MockRemoteAccountSummaryService summary;
+  late MockLocalMirrorService mirror;
   late DataExport export;
 
   setUp(() {
@@ -228,12 +230,16 @@ void main() {
     folders = MockLocalTemplateFolderService();
     exercises = MockExerciseService();
     goals = MockGoalService();
+    summary = MockRemoteAccountSummaryService();
+    mirror = MockLocalMirrorService();
     export = DataExport(
       workouts: workouts,
       templates: templates,
       folders: folders,
       exercises: exercises,
       goals: goals,
+      summary: summary,
+      mirror: mirror,
     );
 
     when(workouts.getWorkoutHistory(_user)).thenAnswer((_) async => _workouts());
@@ -397,6 +403,126 @@ void main() {
         snapshot.toCsv(),
         'workout_id,start,end,exercise_id,exercise_name,set_index,weight,unit,reps,duration,distance,notes\n',
       );
+    });
+  });
+
+  group('completeness', () {
+    AccountSummary summaryOf(Map<ExportableCollection, ({int count, String? head})> rows) {
+      return AccountSummary(
+        collections: {
+          for (final MapEntry(:key, value: (:count, :head)) in rows.entries)
+            key: CollectionSummary(count: count, latestId: head),
+        },
+      );
+    }
+
+    void given({
+      required Map<ExportableCollection, ({int count, String? head})> device,
+      required Map<ExportableCollection, ({int count, String? head})> account,
+    }) {
+      when(mirror.mirrorSummary(_user)).thenAnswer((_) async => summaryOf(device));
+      when(summary.getAccountSummary()).thenAnswer((_) async => summaryOf(account));
+    }
+
+    test('a mirror holding everything the account does has no gaps', () async {
+      given(
+        device: {
+          .workouts: (count: 12, head: '0198d4'),
+          .templates: (count: 3, head: '0198c0'),
+        },
+        account: {
+          .workouts: (count: 12, head: '0198d4'),
+          .templates: (count: 3, head: '0198c0'),
+        },
+      );
+
+      expect(await export.completeness(_user), isEmpty);
+    });
+
+    test('names the collection the account has more of, with both counts', () async {
+      given(
+        device: {
+          .workouts: (count: 118, head: '0198a0'),
+          .templates: (count: 3, head: '0198c0'),
+        },
+        account: {
+          .workouts: (count: 412, head: '0198d4'),
+          .templates: (count: 3, head: '0198c0'),
+        },
+      );
+
+      expect(await export.completeness(_user), [
+        (collection: ExportableCollection.workouts, local: 118, remote: 412, diverged: false),
+      ]);
+    });
+
+    test('the same count under a different newest row is a divergence, not a match', () async {
+      given(
+        device: {
+          .workouts: (count: 12, head: '0198a0'),
+        },
+        account: {
+          .workouts: (count: 12, head: '0198d4'),
+        },
+      );
+
+      expect(await export.completeness(_user), [
+        (collection: ExportableCollection.workouts, local: 12, remote: 12, diverged: true),
+      ]);
+    });
+
+    test('a device holding more than the account is not a gap — the file has those rows', () async {
+      given(
+        device: {
+          .workouts: (count: 15, head: '0198d9'),
+        },
+        account: {
+          .workouts: (count: 12, head: '0198d4'),
+        },
+      );
+
+      // three workouts the upsync still owes the server; the export carries
+      // them either way
+      expect(await export.completeness(_user), isEmpty);
+    });
+
+    test('a collection the mirror cannot count is never compared', () async {
+      given(
+        device: {
+          .workouts: (count: 12, head: '0198d4'),
+        },
+        account: {
+          .workouts: (count: 12, head: '0198d4'),
+          // the app keeps no preference row ids and no comments at all; a
+          // zero on this side would read as a shortfall it can never close
+          .exercisePreferences: (count: 22, head: '0198a1'),
+          .comments: (count: 5, head: '0198c9'),
+        },
+      );
+
+      expect(await export.completeness(_user), isEmpty);
+    });
+
+    test('an unanswerable question is null, never an empty list', () async {
+      when(mirror.mirrorSummary(_user)).thenAnswer((_) async => summaryOf(const {}));
+      when(summary.getAccountSummary()).thenThrow(Exception('offline'));
+
+      final reported = <dynamic>[];
+      final export = DataExport(
+        workouts: workouts,
+        templates: templates,
+        folders: folders,
+        exercises: exercises,
+        goals: goals,
+        summary: summary,
+        mirror: mirror,
+        onError: (error, {stacktrace}) => reported.add(error),
+      );
+
+      // empty would read as "your mirror is whole", which is the one thing a
+      // failed call must not say
+      expect(await export.completeness(_user), isNull);
+      expect(reported, hasLength(1));
     });
   });
 }
