@@ -54,9 +54,14 @@ mixin _Templates on _LocalDatabase implements TemplateService {
     return rows.map((row) => Template.fromJson(row.toTemplate()));
   }
 
+  /// A new template gets a platform id here rather than the server's mint,
+  /// so that a save — now, or in the replay of an anonymous session's store —
+  /// lands on the same row when it is repeated. The server validates the
+  /// shape (heart-api#66), so it has to be a v7 uuid, not the timestamp this
+  /// used to hand out; `Template.createdAt` reads the instant out of either.
   @override
   Future<Template> startTemplate({int? order, String? userId}) async {
-    final id = DateTime.timestamp().toIso8601String();
+    final id = uuidV7();
     return _db.transaction(
       (txn) async {
         final newOrder = order ?? (await txn.getMaxValue(_templates, 'order_in_parent') + 1);
