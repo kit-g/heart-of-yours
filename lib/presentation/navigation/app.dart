@@ -11,6 +11,7 @@ import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/exercises.dart';
+import 'package:heart/core/utils/export.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
@@ -251,9 +252,11 @@ class HeartApp extends StatelessWidget {
         Provider<Scrolls>(
           create: (_) => Scrolls(),
         ),
-        // "Export my data": reads the mirror straight, through the same
-        // adapters the notifiers use, so what goes in the file is what the
-        // device holds — no server, and nothing from the health tables
+        // "Export my data": the file is written from the mirror, through the
+        // same adapters the notifiers use, so what goes in it is what the
+        // device holds — nothing from the health tables, and nothing fetched.
+        // The account summary is the exception and touches no file: it is the
+        // yardstick that says whether the mirror was whole.
         Provider<DataExport>(
           create: (_) => DataExport(
             workouts: db,
@@ -261,6 +264,11 @@ class HeartApp extends StatelessWidget {
             folders: LocalTemplateFolders(db),
             exercises: db,
             goals: LocalGoals(db),
+            // the one server read on this page, and it never reaches the
+            // file: it only says whether the file will be whole
+            summary: RemoteAccountSummary(api),
+            mirror: LocalMirror(db),
+            onError: reportToSentry,
           ),
         ),
       ],
