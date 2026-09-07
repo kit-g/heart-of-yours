@@ -44,6 +44,7 @@ void main() {
       service: service,
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
     );
     await exercises.init();
 

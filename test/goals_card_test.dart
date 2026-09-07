@@ -62,6 +62,7 @@ void main() {
       service: MockExerciseService(),
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
     );
 
     stats = Stats(onError: null, service: MockLocalStatsService());

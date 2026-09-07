@@ -61,6 +61,7 @@ void main() {
       service: local,
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
     );
 
     // the detail page builds every tab, not just About, and the History one

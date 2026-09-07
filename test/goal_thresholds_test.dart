@@ -53,6 +53,7 @@ void main() {
       service: local,
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
     );
     await exercises.init();
 

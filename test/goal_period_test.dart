@@ -59,6 +59,7 @@ void main() {
       service: service,
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
     )..userId = userId;
     await exercises.init();
   });
