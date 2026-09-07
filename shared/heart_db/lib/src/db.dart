@@ -66,7 +66,7 @@ abstract class _LocalDatabase {
 }
 
 class LocalDatabase extends _LocalDatabase
-    with _Charts, _Erase, _Exercises, _Goals, _Health, _Stats, _TemplateFolders, _Templates, _Timers, _Workouts
+    with _Charts, _Erase, _Exercises, _Goals, _Health, _Stats, _TemplateFolders, _Templates, _Timers, _Upsync, _Workouts
     implements
         ChartPreferenceService,
         ExerciseService,
@@ -85,7 +85,7 @@ class LocalDatabase extends _LocalDatabase
 
   new _(this._db);
 
-  static Future<LocalDatabase> init({int version = 12, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 13, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';
