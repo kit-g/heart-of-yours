@@ -215,6 +215,42 @@ void main() {
     });
   });
 
+  group('exercise preferences', () {
+    test('getExercisePreferences parses every row, whichever fields it carries', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.exercisePreferences,
+        statusCode: 200,
+        body: {
+          'preferences': [
+            {'exerciseId': 'e1', 'unitSystem': 'imperial'},
+            {'exerciseId': 'e2', 'restTimer': 90},
+            {'exerciseId': 'e3', 'unitSystem': 'metric', 'restTimer': 60},
+          ],
+        },
+      );
+
+      final result = (await api.getExercisePreferences()).toList();
+
+      expect(result.map((each) => each.exerciseId), ['e1', 'e2', 'e3']);
+      expect(result.map((each) => each.unitSystem), [MeasurementUnit.imperial, null, MeasurementUnit.metric]);
+      expect(result.map((each) => each.restTimer), [null, 90, 60]);
+    });
+
+    test('getExercisePreferences is empty when the response carries nothing named', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.exercisePreferences,
+        statusCode: 200,
+        body: {'error': 'no data'},
+      );
+
+      expect(await api.getExercisePreferences(), isEmpty);
+    });
+  });
+
   group('RemoteTemplateService', () {
     test('deleteTemplate returns true if code is 204', () async {
       _response(
