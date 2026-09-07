@@ -1460,6 +1460,21 @@ class LFr extends L {
   }
 
   @override
+  String exportPartialHistoryOf(num count, Object total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Inclut $count de vos $total séances.',
+      one: 'Inclut 1 de vos $total séances.',
+    );
+    return '$_temp0 Les autres ne sont pas encore téléchargées sur ce téléphone : ouvrez l’Historique et remontez pour les récupérer.';
+  }
+
+  @override
+  String get exportPartialAccount =>
+      'Une partie de ce que contient votre compte n’est pas encore sur ce téléphone : le fichier ne l’inclura pas. Rouvrez l’application en ligne pour qu’elle se mette à jour.';
+
+  @override
   String get exportAsJson => 'Exporter en JSON';
 
   @override
