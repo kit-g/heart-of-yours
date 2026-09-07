@@ -61,6 +61,12 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
         ),
+        // Above `Exercises`, which hands it the rest timers the account's
+        // preferences come back with — the mirror that read feeds is this
+        // notifier's, not a second copy inside `Exercises`.
+        ChangeNotifierProvider<Timers>(
+          create: (_) => Timers(service: db),
+        ),
         ChangeNotifierProvider<Exercises>(
           create: (context) {
             final exercises = Exercises(
@@ -69,7 +75,9 @@ class HeartApp extends StatelessWidget {
               service: db,
               libraryService: CdnExerciseLibrary(cdn),
               catalogService: LocalCatalog(db),
+              preferenceService: RemoteExercisePreferences(api),
               remote: RemoteAccess.of(context),
+              onRestTimer: Timers.of(context).setRestTimer,
             );
             // sample templates arrive as content slugs plus per-locale
             // names; the CDN client resolves the slugs through the catalog
@@ -116,9 +124,6 @@ class HeartApp extends StatelessWidget {
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
-        ),
-        ChangeNotifierProvider<Timers>(
-          create: (_) => Timers(service: db),
         ),
         ChangeNotifierProvider<PreviousExercises>(
           create: (_) => PreviousExercises(service: db),
