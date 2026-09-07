@@ -52,10 +52,15 @@ void main() {
     when(service.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [press]));
     when(service.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
     when(service.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
-    when(remote.getExercises()).thenAnswer((_) async => <Exercise>[]);
     when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
-    exercises = Exercises(remoteService: remote, service: service)..userId = userId;
+    exercises = Exercises(
+      remoteService: remote,
+      service: service,
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
+    )..userId = userId;
     await exercises.init();
   });
 

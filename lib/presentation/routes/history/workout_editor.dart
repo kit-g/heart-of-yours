@@ -103,7 +103,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                     showMenu<_WorkoutEditOption>(
                       context: context,
                       position: _optionsButtonKey.position(),
-                      items: _WorkoutEditOption.values.map(
+                      items: _options(context).map(
                         (option) {
                           return PopupMenuItem<_WorkoutEditOption>(
                             value: option,
@@ -353,6 +353,15 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       ),
       actions: actions,
     );
+  }
+
+  /// Photos live in the server's bucket, so there is nowhere to put one
+  /// without an account — the option is absent rather than dead.
+  Iterable<_WorkoutEditOption> _options(BuildContext context) {
+    return switch (Auth.of(context).isAnonymous) {
+      true => _WorkoutEditOption.values.where((option) => option != .editImage),
+      false => _WorkoutEditOption.values,
+    };
   }
 
   String _workoutOptionCopy(L l, _WorkoutEditOption option) {

@@ -100,6 +100,61 @@ class LEn extends L {
   String get logOut => 'Log out';
 
   @override
+  String get noAccount => 'No account';
+
+  @override
+  String get noAccountTitle => 'You\'re using Heart without an account';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Your health data never leaves your phone. Without an account, neither does anything else: your workouts, templates and goals live on this device only.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Logging in adds a backup and sync between your devices, and later sharing with friends and coaching.';
+
+  @override
+  String get noAccountBodyLose => 'If you lose this phone, you lose your data.';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.';
+
+  @override
+  String get onboardingLocalTitle => 'Your data stays on your phone';
+
+  @override
+  String get onboardingLocalBody =>
+      'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.';
+
+  @override
+  String get onboardingLocalTrade => 'The honest trade: lose the phone and you lose the data, unless you log in.';
+
+  @override
+  String get onboardingAccountTitle => 'Log in whenever you like';
+
+  @override
+  String get onboardingAccountBody =>
+      'An account adds a backup and sync between your devices, and later sharing with friends and coaching. Nothing changes until you do.';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Screen $current of $total';
+  }
+
+  @override
   String get profile => 'Profile';
 
   @override
@@ -746,6 +801,22 @@ class LEn extends L {
   String get deleteAccountConfirmMessage => 'Yep, go on without me!';
 
   @override
+  String get eraseData => 'Erase my data';
+
+  @override
+  String get eraseDataTitle => 'Are you sure you want to erase your data?';
+
+  @override
+  String get eraseDataBody =>
+      'Your workouts, templates, custom exercises, goals and chart settings are deleted from this phone, together with Heart\'s copy of your health data. Your phone\'s own health records are not touched. Without an account there is no backup — this cannot be undone.';
+
+  @override
+  String get eraseDataCancelMessage => 'Keep my data';
+
+  @override
+  String get eraseDataConfirmMessage => 'Erase everything';
+
+  @override
   String get confirmDeleteAccountTitle => 'Confirm your account deletion';
 
   @override
@@ -1361,6 +1432,42 @@ class LEn extends L {
   String get yourData => 'Your data';
 
   @override
+  String get exportData => 'Export my data';
+
+  @override
+  String get exportExplainer =>
+      'Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.';
+
+  @override
+  String get exportNoHealthData => 'Your health data is not included — it never leaves your phone.';
+
+  @override
+  String get backfillRunning => 'Restoring your history…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Restoring your history… $done of $total';
+  }
+
+  @override
+  String get backfillFailed => 'Couldn\'t finish restoring your history.';
+
+  @override
+  String get exportAsJson => 'Export as JSON';
+
+  @override
+  String get exportJsonHint => 'Everything above, in Heart\'s own format.';
+
+  @override
+  String get exportAsCsv => 'Export as CSV';
+
+  @override
+  String get exportCsvHint => 'Workouts only, one row per set — opens in any spreadsheet.';
+
+  @override
+  String get exportInFlight => 'Preparing your file…';
+
+  @override
   String get account => 'Account';
 
   @override
@@ -1633,6 +1740,32 @@ class LEn extends L {
 
   @override
   String get patternVerticalPull => 'Vertical Pull';
+
+  @override
+  String upsyncRunning(Object done, Object total) {
+    return 'Backing up to your account… $done of $total';
+  }
+
+  @override
+  String upsyncFailed(Object done, Object total) {
+    return 'Backup paused — $done of $total uploaded. Check your connection and try again.';
+  }
+
+  @override
+  String upsyncDone(Object uploaded, Object existing) {
+    return 'Backup done: $uploaded uploaded, $existing already there.';
+  }
+
+  @override
+  String upsyncSkipped(num skipped) {
+    String _temp0 = intl.Intl.pluralLogic(
+      skipped,
+      locale: localeName,
+      other: '$skipped items could not be uploaded.',
+      one: '1 item could not be uploaded.',
+    );
+    return '$_temp0';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -1700,19 +1833,19 @@ class LEnCa extends LEn {
   String get logInTitle => 'Welcome Back';
 
   @override
-  String get logInBody => 'You\'ve already started something important.\nLet\'s keep going.';
+  String get logInBody => 'You\'ve already started something important.\r\nLet\'s keep going.';
 
   @override
   String get signUpTitle => 'Begin with Heart';
 
   @override
-  String get signUpBody => 'Every journey starts with one decision.\nThis one\'s yours.';
+  String get signUpBody => 'Every journey starts with one decision.\r\nThis one\'s yours.';
 
   @override
   String get recoverTitle => 'Still with You';
 
   @override
-  String get recoverBody => 'Your journey isn\'t lost.\nJust a moment of pause — we\'ll reset together.';
+  String get recoverBody => 'Your journey isn\'t lost.\r\nJust a moment of pause — we\'ll reset together.';
 
   @override
   String get logInWithGoogle => 'Log in with Google';
@@ -1728,6 +1861,61 @@ class LEnCa extends LEn {
 
   @override
   String get logOut => 'Log out';
+
+  @override
+  String get noAccount => 'No account';
+
+  @override
+  String get noAccountTitle => 'You\'re using Heart without an account';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Your health data never leaves your phone. Without an account, neither does anything else: your workouts, templates and goals live on this device only.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Logging in adds a backup and sync between your devices, and later sharing with friends and coaching.';
+
+  @override
+  String get noAccountBodyLose => 'If you lose this phone, you lose your data.';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.';
+
+  @override
+  String get onboardingLocalTitle => 'Your data stays on your phone';
+
+  @override
+  String get onboardingLocalBody =>
+      'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.';
+
+  @override
+  String get onboardingLocalTrade => 'The honest trade: lose the phone and you lose the data, unless you log in.';
+
+  @override
+  String get onboardingAccountTitle => 'Log in whenever you like';
+
+  @override
+  String get onboardingAccountBody =>
+      'An account adds a backup and sync between your devices, and later sharing with friends and coaching. Nothing changes until you do.';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Screen $current of $total';
+  }
 
   @override
   String get profile => 'Profile';
@@ -1791,10 +1979,10 @@ class LEnCa extends LEn {
 
   @override
   String get archiveConfirmBody =>
-      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won\'t affect any of your past workouts — your history stays intact.';
+      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won\'t affect any of your past workouts — your history stays intact.';
 
   @override
-  String get exerciseArchived => 'This exercise is archived\nand won\'t appear in your main library anymore.';
+  String get exerciseArchived => 'This exercise is archived\r\nand won\'t appear in your main library anymore.';
 
   @override
   String get deleteSet => 'Delete set';
@@ -2346,7 +2534,7 @@ class LEnCa extends LEn {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
+    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\r\n\r\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
   }
 
   @override
@@ -2376,6 +2564,22 @@ class LEnCa extends LEn {
   String get deleteAccountConfirmMessage => 'Yep, go on without me!';
 
   @override
+  String get eraseData => 'Erase my data';
+
+  @override
+  String get eraseDataTitle => 'Are you sure you want to erase your data?';
+
+  @override
+  String get eraseDataBody =>
+      'Your workouts, templates, custom exercises, goals and chart settings are deleted from this phone, together with Heart\'s copy of your health data. Your phone\'s own health records are not touched. Without an account there is no backup — this cannot be undone.';
+
+  @override
+  String get eraseDataCancelMessage => 'Keep my data';
+
+  @override
+  String get eraseDataConfirmMessage => 'Erase everything';
+
+  @override
   String get confirmDeleteAccountTitle => 'Confirm your account deletion';
 
   @override
@@ -2389,7 +2593,7 @@ class LEnCa extends LEn {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'Your account has been scheduled for deletion on $date.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.';
+    return 'Your account has been scheduled for deletion on $date.\r\n\r\nIf you change your mind, you can restore your account anytime before this date.\r\n\r\nSimply click the button below to cancel the deletion and keep your account safe.';
   }
 
   @override
@@ -2570,7 +2774,7 @@ class LEnCa extends LEn {
 
   @override
   String get updateRequiredBody =>
-      'There\'s an important update waiting — one that keeps your app working as it should.\n\nYou\'ll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.';
+      'There\'s an important update waiting — one that keeps your app working as it should.\r\n\r\nYou\'ll need to install it before continuing.\r\nThanks for your patience — and sorry for the interruption.';
 
   @override
   String updateRequiredCta(String storeName) {
@@ -2991,6 +3195,42 @@ class LEnCa extends LEn {
   String get yourData => 'Your data';
 
   @override
+  String get exportData => 'Export my data';
+
+  @override
+  String get exportExplainer =>
+      'Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.';
+
+  @override
+  String get exportNoHealthData => 'Your health data is not included — it never leaves your phone.';
+
+  @override
+  String get backfillRunning => 'Restoring your history…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Restoring your history… $done of $total';
+  }
+
+  @override
+  String get backfillFailed => 'Couldn\'t finish restoring your history.';
+
+  @override
+  String get exportAsJson => 'Export as JSON';
+
+  @override
+  String get exportJsonHint => 'Everything above, in Heart\'s own format.';
+
+  @override
+  String get exportAsCsv => 'Export as CSV';
+
+  @override
+  String get exportCsvHint => 'Workouts only, one row per set — opens in any spreadsheet.';
+
+  @override
+  String get exportInFlight => 'Preparing your file…';
+
+  @override
   String get account => 'Account';
 
   @override
@@ -2998,7 +3238,7 @@ class LEnCa extends LEn {
 
   @override
   String get importExplainerStrong =>
-      'Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.';
+      'Lifted with Strong before? Bring your history along.\r\n\r\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.';
 
   @override
   String get importSafeToRetry =>
@@ -3263,4 +3503,30 @@ class LEnCa extends LEn {
 
   @override
   String get patternVerticalPull => 'Vertical Pull';
+
+  @override
+  String upsyncRunning(Object done, Object total) {
+    return 'Backing up to your account… $done of $total';
+  }
+
+  @override
+  String upsyncFailed(Object done, Object total) {
+    return 'Backup paused — $done of $total uploaded. Check your connection and try again.';
+  }
+
+  @override
+  String upsyncDone(Object uploaded, Object existing) {
+    return 'Backup done: $uploaded uploaded, $existing already there.';
+  }
+
+  @override
+  String upsyncSkipped(num skipped) {
+    String _temp0 = intl.Intl.pluralLogic(
+      skipped,
+      locale: localeName,
+      other: '$skipped items could not be uploaded.',
+      one: '1 item could not be uploaded.',
+    );
+    return '$_temp0';
+  }
 }

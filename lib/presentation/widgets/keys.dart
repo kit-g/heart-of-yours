@@ -46,4 +46,58 @@ abstract final class AppKeys {
 
   /// Turns it back to the goals still being worked on.
   static const goalsViewActive = Key('Goals.viewActive');
+
+  /// Stands where the logout button does while the session is anonymous;
+  /// opens the no-account dialog.
+  static const noAccount = Key('Profile.noAccount');
+
+  /// The no-account dialog's way to the login page.
+  static const noAccountLogIn = Key('Profile.noAccount.logIn');
+
+  /// The settings row that wipes an anonymous session's data off the device;
+  /// opens the confirmation.
+  static const eraseData = Key('Settings.eraseData');
+
+  /// The confirmation's destructive action.
+  static const eraseDataConfirm = Key('Settings.eraseData.confirm');
+
+  /// The settings row that opens the export page; present in both sessions.
+  static const exportData = Key('Settings.exportData');
+
+  /// The export page's two actions, one per format.
+  static const exportJson = Key('Export.json');
+  static const exportCsv = Key('Export.csv');
+
+  /// The profile row that shows the replay of an anonymous session's store
+  /// into its new account — present only while there is something to say.
+  static const upsyncRow = Key('Profile.upsync');
+
+  /// The row's way to try again after the server could not be reached.
+  static const upsyncRetry = Key('Profile.upsync.retry');
+
+  /// Puts the finished row's line away.
+  static const upsyncDismiss = Key('Profile.upsync.dismiss');
+
+  /// The profile row that shows the history backfill — the pull counterpart
+  /// of the upsync row, present only while it is paging or has stopped short.
+  static const backfillRow = Key('Profile.backfill');
+
+  /// The row's way to try again after the server could not be reached.
+  static const backfillRetry = Key('Profile.backfill.retry');
+
+  /// The first-launch onboarding's way out, present on every screen of it.
+  static const onboardingSkip = Key('Onboarding.skip');
+
+  /// Advances the onboarding by one screen.
+  static const onboardingNext = Key('Onboarding.next');
+
+  /// The last onboarding screen's way into the app.
+  static const onboardingContinue = Key('Onboarding.continue');
+
+  /// The last onboarding screen's way to the login page.
+  static const onboardingSignIn = Key('Onboarding.signIn');
+
+  /// The onboarding's illustration, one per screen: what a window-size test
+  /// measures to prove the cap holds.
+  static const onboardingIllustration = Key('Onboarding.illustration');
 }

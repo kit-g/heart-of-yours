@@ -85,6 +85,11 @@ const _schema = [
   rekeyTemplateExercisesIndex,
   rekeyExerciseDetailsIndex,
   addSyncsLocale,
+  // v12
+  addSyncsVersion,
+  addSyncsEtag,
+  // v13
+  upsync,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -94,7 +99,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 11,
+      version: 13,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);

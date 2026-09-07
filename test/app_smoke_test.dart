@@ -21,6 +21,7 @@ void main() {
       api = MockApi();
       cdn = MockCdn();
       harness = const TestAppHarness();
+      stubStartup(db, api);
     });
 
     testWidgets('renders MaterialApp with expected localization delegates and supported locales', (tester) async {
@@ -31,6 +32,8 @@ void main() {
         cdn: cdn,
         appConfig: AppConfig.test(allowsFeedbackFeature: false),
         hasLocalNotifications: false,
+        // lands on the profile, whose dashboard animates indefinitely
+        settle: false,
       );
 
       // Ensure we do not wrap with BetterFeedback when disabled
@@ -56,6 +59,8 @@ void main() {
         cdn: cdn,
         appConfig: AppConfig.test(allowsFeedbackFeature: false),
         hasLocalNotifications: false,
+        // lands on the profile, whose dashboard animates indefinitely
+        settle: false,
       );
 
       final element = tester.element(find.byType(MaterialApp));

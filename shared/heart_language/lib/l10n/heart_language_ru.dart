@@ -70,19 +70,19 @@ class LRu extends L {
   String get logInTitle => 'С возвращением!';
 
   @override
-  String get logInBody => 'Вы уже начали что-то важное.\nДавайте продолжим!';
+  String get logInBody => 'Вы уже начали что-то важное.\r\nДавайте продолжим!';
 
   @override
   String get signUpTitle => 'Начните с Heart';
 
   @override
-  String get signUpBody => 'Каждое путешествие начинается с одного решения.\nЭто — ваше.';
+  String get signUpBody => 'Каждое путешествие начинается с одного решения.\r\nЭто — ваше.';
 
   @override
   String get recoverTitle => 'Все еще с вами';
 
   @override
-  String get recoverBody => 'Ваш путь не потерян.\nПросто небольшая пауза — давайте начнем заново.';
+  String get recoverBody => 'Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.';
 
   @override
   String get logInWithGoogle => 'Войти через Google';
@@ -98,6 +98,62 @@ class LRu extends L {
 
   @override
   String get logOut => 'Выйти';
+
+  @override
+  String get noAccount => 'Без аккаунта';
+
+  @override
+  String get noAccountTitle => 'Вы используете Heart без аккаунта';
+
+  @override
+  String get noAccountBodyLocal =>
+      'Данные о здоровье никогда не покидают ваш телефон. Без аккаунта его не покидает и всё остальное: тренировки, шаблоны и цели хранятся только на этом устройстве.';
+
+  @override
+  String get noAccountBodySignIn =>
+      'Вход добавит резервную копию и синхронизацию между устройствами, а позже — обмен с друзьями и тренера.';
+
+  @override
+  String get noAccountBodyLose => 'Если вы потеряете этот телефон, вы потеряете свои данные.';
+
+  @override
+  String get notNow => 'Не сейчас';
+
+  @override
+  String get onboardingWelcomeTitle => 'Добро пожаловать в Heart';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Дневник тренировок, который не мешает: планируйте сессию, отмечайте каждый подход и смотрите, как растут ваши веса.';
+
+  @override
+  String get onboardingLocalTitle => 'Ваши данные остаются на телефоне';
+
+  @override
+  String get onboardingLocalBody =>
+      'Аккаунт не нужен: ваши тренировки и данные о здоровье, которые вы разрешите Heart читать, хранятся только на этом устройстве и больше нигде.';
+
+  @override
+  String get onboardingLocalTrade =>
+      'Честная сделка: потеряете телефон — потеряете данные, если только не войдёте в аккаунт.';
+
+  @override
+  String get onboardingAccountTitle => 'Войдите, когда захотите';
+
+  @override
+  String get onboardingAccountBody =>
+      'Аккаунт добавит резервную копию и синхронизацию между устройствами, а позже — обмен с друзьями и тренера. Пока вы не войдёте, ничего не изменится.';
+
+  @override
+  String get onboardingNext => 'Далее';
+
+  @override
+  String get onboardingContinue => 'Продолжить';
+
+  @override
+  String onboardingScreenOf(Object current, Object total) {
+    return 'Экран $current из $total';
+  }
 
   @override
   String get profile => 'Профиль';
@@ -160,11 +216,11 @@ class LRu extends L {
 
   @override
   String get archiveConfirmBody =>
-      'Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.';
+      'Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\r\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.';
 
   @override
   String get exerciseArchived =>
-      'Это упражнение находится в архиве\nи больше не будет отображаться в основной библиотеке.';
+      'Это упражнение находится в архиве\r\nи больше не будет отображаться в основной библиотеке.';
 
   @override
   String get deleteSet => 'Удалить подход';
@@ -718,7 +774,7 @@ class LRu extends L {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\n\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. $emoji';
+    return 'Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\r\n\r\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. $emoji';
   }
 
   @override
@@ -748,6 +804,22 @@ class LRu extends L {
   String get deleteAccountConfirmMessage => 'Да, продолжайте без меня!';
 
   @override
+  String get eraseData => 'Стереть мои данные';
+
+  @override
+  String get eraseDataTitle => 'Вы уверены, что хотите стереть свои данные?';
+
+  @override
+  String get eraseDataBody =>
+      'Ваши тренировки, шаблоны, собственные упражнения, цели и настройки графиков будут удалены с этого телефона вместе с копией данных здоровья в Heart. Записи здоровья самого телефона не затрагиваются. Без аккаунта резервной копии нет — это действие нельзя отменить.';
+
+  @override
+  String get eraseDataCancelMessage => 'Оставить мои данные';
+
+  @override
+  String get eraseDataConfirmMessage => 'Стереть всё';
+
+  @override
   String get confirmDeleteAccountTitle => 'Подтвердите удаление аккаунта';
 
   @override
@@ -761,7 +833,7 @@ class LRu extends L {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'Ваш аккаунт запланирован на удаление $date.\n\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\n\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.';
+    return 'Ваш аккаунт запланирован на удаление $date.\r\n\r\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\r\n\r\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.';
   }
 
   @override
@@ -944,7 +1016,7 @@ class LRu extends L {
 
   @override
   String get updateRequiredBody =>
-      'Доступно важное обновление — оно необходимо для правильной работы приложения.\n\nВам нужно установить его, чтобы продолжить.\nСпасибо за терпение — и извините за прерывание.';
+      'Доступно важное обновление — оно необходимо для правильной работы приложения.\r\n\r\nВам нужно установить его, чтобы продолжить.\r\nСпасибо за терпение — и извините за прерывание.';
 
   @override
   String updateRequiredCta(String storeName) {
@@ -1382,6 +1454,42 @@ class LRu extends L {
   String get yourData => 'Ваши данные';
 
   @override
+  String get exportData => 'Экспорт моих данных';
+
+  @override
+  String get exportExplainer =>
+      'Всё, что Heart хранит на этом телефоне, в файле, который останется у вас: тренировки со всеми подходами, шаблоны и папки, свои упражнения, настройки единиц измерения и цели.';
+
+  @override
+  String get exportNoHealthData => 'Данные о здоровье не включены — они никогда не покидают ваш телефон.';
+
+  @override
+  String get backfillRunning => 'Восстанавливаем вашу историю…';
+
+  @override
+  String backfillRunningOf(Object done, Object total) {
+    return 'Восстанавливаем вашу историю… $done из $total';
+  }
+
+  @override
+  String get backfillFailed => 'Не удалось восстановить историю полностью.';
+
+  @override
+  String get exportAsJson => 'Экспорт в JSON';
+
+  @override
+  String get exportJsonHint => 'Всё перечисленное выше, в собственном формате Heart.';
+
+  @override
+  String get exportAsCsv => 'Экспорт в CSV';
+
+  @override
+  String get exportCsvHint => 'Только тренировки, по строке на подход — открывается в любой таблице.';
+
+  @override
+  String get exportInFlight => 'Готовим ваш файл…';
+
+  @override
   String get account => 'Аккаунт';
 
   @override
@@ -1389,7 +1497,7 @@ class LRu extends L {
 
   @override
   String get importExplainerStrong =>
-      'Тренировались в Strong? Забирайте историю с собой.\n\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.';
+      'Тренировались в Strong? Забирайте историю с собой.\r\n\r\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.';
 
   @override
   String get importSafeToRetry =>
@@ -1661,4 +1769,30 @@ class LRu extends L {
 
   @override
   String get patternVerticalPull => 'Вертикальная тяга';
+
+  @override
+  String upsyncRunning(Object done, Object total) {
+    return 'Сохраняем в ваш аккаунт… $done из $total';
+  }
+
+  @override
+  String upsyncFailed(Object done, Object total) {
+    return 'Сохранение приостановлено — загружено $done из $total. Проверьте соединение и попробуйте ещё раз.';
+  }
+
+  @override
+  String upsyncDone(Object uploaded, Object existing) {
+    return 'Сохранение завершено: $uploaded загружено, $existing уже было.';
+  }
+
+  @override
+  String upsyncSkipped(num skipped) {
+    String _temp0 = intl.Intl.pluralLogic(
+      skipped,
+      locale: localeName,
+      other: 'Не удалось загрузить $skipped элементов.',
+      one: '1 элемент не удалось загрузить.',
+    );
+    return '$_temp0';
+  }
 }

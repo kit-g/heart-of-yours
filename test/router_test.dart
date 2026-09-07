@@ -1,9 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
+import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -13,6 +16,17 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
+
+/// A Firebase project with the anonymous provider switched off answers every
+/// anonymous sign-in with `admin-restricted-operation`.
+class _NoAnonymousSignIn extends MockFirebaseAuth {
+  new() : super(signedIn: false);
+
+  @override
+  Future<UserCredential> signInAnonymously() {
+    throw FirebaseAuthException(code: 'admin-restricted-operation');
+  }
+}
 
 void main() {
   group('Navigation and routing (HeartRouter)', () {
@@ -24,7 +38,7 @@ void main() {
     setUp(
       () {
         // Prevent SharedPreferences.getInstance() from throwing a MissingPluginException
-        SharedPreferences.setMockInitialValues({});
+        SharedPreferences.setMockInitialValues(pastOnboarding());
 
         db = MockLocalDatabase();
         api = MockApi();
@@ -59,7 +73,9 @@ void main() {
       },
     );
 
-    testWidgets('initial route: signed-out user is redirected to LoginPage', (tester) async {
+    testWidgets('initial route: no user lands in the app as an anonymous session, on ProfilePage', (tester) async {
+      // no sign-in gate on mobile: Auth replaces the missing user with an
+      // anonymous one, and the profile's logout slot says so instead
       final firebase = MockFirebaseAuth(signedIn: false);
       await harness.pumpHeartApp(
         tester,
@@ -68,9 +84,17 @@ void main() {
         cdn: cdn,
         firebaseAuth: firebase,
         hasLocalNotifications: false,
+        settle: false,
       );
+      await tester.pumpTimes();
 
-      expect(find.byType(LoginPage), findsOneWidget);
+      expect(find.byType(LoginPage), findsNothing);
+      expect(find.byType(ProfilePage), findsOneWidget);
+      expect(find.byKey(AppKeys.noAccount), findsOneWidget);
+      // nothing went to the server on the anonymous uid
+      verifyNever(api.getExercises());
+      verifyNever(api.getOwnExercises());
+      verifyNever(api.registerAccount(any));
     });
 
     testWidgets('initial route: signed-in user lands on ProfilePage', (tester) async {
@@ -118,7 +142,25 @@ void main() {
       expect(find.byType(WorkoutPage), findsOneWidget);
     });
 
-    testWidgets('router.refresh reacts to Auth user change: LoginPage -> ProfilePage', (tester) async {
+    testWidgets('a device that cannot get a session at all falls back to LoginPage', (tester) async {
+      // a first launch offline, or a Firebase project with the anonymous
+      // provider switched off: the gate is the one page that can still act
+      final firebase = _NoAnonymousSignIn();
+
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: firebase,
+        hasLocalNotifications: false,
+      );
+
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('the no-account dialog leads to LoginPage, and signing in leads back to ProfilePage', (tester) async {
       final firebase = MockFirebaseAuth(signedIn: false);
       final router = HeartRouter();
 
@@ -132,6 +174,14 @@ void main() {
         hasLocalNotifications: false,
         settle: false,
       );
+      await tester.pumpTimes();
+      expect(find.byType(ProfilePage), findsOneWidget);
+
+      // the login page is reached by name, from the dialog — never by redirect
+      await tester.tapByKey(AppKeys.noAccount);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.noAccountLogIn);
+      await tester.pumpTimes();
 
       expect(find.byType(LoginPage), findsOneWidget);
 
@@ -140,6 +190,7 @@ void main() {
       await tester.pumpTimes();
 
       expect(find.byType(ProfilePage), findsOneWidget);
+      expect(find.byKey(AppKeys.noAccount), findsNothing);
     });
 
     testWidgets('cold-start deep link is never dropped on the profile page', (tester) async {
@@ -155,7 +206,9 @@ void main() {
       addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
 
       final bench = Exercise(name: 'Bench Press (Barbell)', category: .barbell, target: .chest);
-      when(api.getExercises()).thenAnswer((_) async => [bench]);
+      when(
+        cdn.getExerciseLibrary(cached: anyNamed('cached')),
+      ).thenAnswer((_) async => ([bench], (version: 'run-1', locale: 'en', etag: null)));
 
       final router = HeartRouter();
       await harness.pumpHeartApp(
@@ -179,6 +232,127 @@ void main() {
       final location = router.config.routerDelegate.currentConfiguration.uri.toString();
       expect(location, contains('exercises'));
       expect(find.byType(ProfilePage), findsNothing);
+    });
+
+    group('first-launch onboarding', () {
+      /// A device that has never launched the app.
+      setUp(() => SharedPreferences.setMockInitialValues({}));
+
+      Future<void> pumpFreshInstall(WidgetTester tester, {FirebaseAuth? firebase}) async {
+        await harness.pumpHeartApp(
+          tester,
+          db: db,
+          api: api,
+          cdn: cdn,
+          firebaseAuth: firebase ?? MockFirebaseAuth(signedIn: false),
+          hasLocalNotifications: false,
+          settle: false,
+        );
+        await tester.pumpTimes();
+      }
+
+      testWidgets('a fresh install opens on the onboarding, not the app', (tester) async {
+        await pumpFreshInstall(tester);
+
+        expect(find.byType(OnboardingPage), findsOneWidget);
+        expect(find.byType(ProfilePage), findsNothing);
+        // a way out on the first screen already
+        expect(find.byKey(AppKeys.onboardingSkip), findsOneWidget);
+      });
+
+      testWidgets('Skip lands in the app and is remembered', (tester) async {
+        await pumpFreshInstall(tester);
+
+        await tester.tapByKey(AppKeys.onboardingSkip);
+        await tester.pumpTimes();
+
+        expect(find.byType(OnboardingPage), findsNothing);
+        expect(find.byType(ProfilePage), findsOneWidget);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool(Preferences.onboardingSeenKey), isTrue);
+      });
+
+      testWidgets('Next walks the three screens; Continue on the last lands in the app', (tester) async {
+        await pumpFreshInstall(tester);
+
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        expect(find.byKey(AppKeys.onboardingSkip), findsOneWidget);
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+
+        // the last screen trades Next for the two ways out
+        expect(find.byKey(AppKeys.onboardingNext), findsNothing);
+        expect(find.byKey(AppKeys.onboardingSkip), findsOneWidget);
+        expect(find.byKey(AppKeys.onboardingSignIn), findsOneWidget);
+
+        await tester.tapByKey(AppKeys.onboardingContinue);
+        await tester.pumpTimes();
+
+        expect(find.byType(ProfilePage), findsOneWidget);
+        expect(find.byKey(AppKeys.noAccount), findsOneWidget);
+      });
+
+      testWidgets('Log in on the last screen goes to LoginPage, and is remembered too', (tester) async {
+        await pumpFreshInstall(tester);
+
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        await tester.tapByKey(AppKeys.onboardingSignIn);
+        await tester.pumpTimes();
+
+        expect(find.byType(LoginPage), findsOneWidget);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool(Preferences.onboardingSeenKey), isTrue);
+      });
+
+      testWidgets('a device that has seen it opens straight into the app', (tester) async {
+        SharedPreferences.setMockInitialValues(pastOnboarding());
+        await pumpFreshInstall(tester);
+
+        expect(find.byType(OnboardingPage), findsNothing);
+        expect(find.byType(ProfilePage), findsOneWidget);
+      });
+
+      testWidgets('an account never sees it, even on a device that has not', (tester) async {
+        await pumpFreshInstall(
+          tester,
+          firebase: MockFirebaseAuth(
+            mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+            signedIn: true,
+          ),
+        );
+
+        expect(find.byType(OnboardingPage), findsNothing);
+        expect(find.byType(ProfilePage), findsOneWidget);
+      });
+
+      testWidgets('a deep link opening a fresh install is honoured after Skip', (tester) async {
+        tester.binding.platformDispatcher.defaultRouteNameTestValue = '/workout';
+        addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+        final router = HeartRouter();
+
+        await harness.pumpHeartApp(
+          tester,
+          db: db,
+          api: api,
+          cdn: cdn,
+          firebaseAuth: MockFirebaseAuth(signedIn: false),
+          router: router,
+          hasLocalNotifications: false,
+          settle: false,
+        );
+        await tester.pumpTimes();
+        expect(find.byType(OnboardingPage), findsOneWidget);
+
+        await tester.tapByKey(AppKeys.onboardingSkip);
+        await tester.pumpTimes();
+
+        expect(find.byType(WorkoutPage), findsOneWidget);
+        expect(router.config.routerDelegate.currentConfiguration.uri.path, '/workout');
+      });
     });
 
     testWidgets('bottom navigation: tapping items by AppKeys switches stacks', (tester) async {

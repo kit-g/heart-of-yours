@@ -50,6 +50,46 @@ class Api
     instance.defaultHeaders = headers;
   }
 
+  // Every verb runs through [_tripwire]: the one answer that must never come
+  // back is caught before any caller can act on it.
+
+  @override
+  Future<Response> get(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
+    return super.get(endpoint, headers: headers, query: query).then(_tripwire);
+  }
+
+  @override
+  Future<Response> post(String endpoint, {Map<String, String>? headers, Json? body, Map<String, dynamic>? query}) {
+    return super.post(endpoint, headers: headers, body: body, query: query).then(_tripwire);
+  }
+
+  @override
+  Future<Response> put(String endpoint, {Map<String, String>? headers, Json? body}) {
+    return super.put(endpoint, headers: headers, body: body).then(_tripwire);
+  }
+
+  @override
+  Future<Response> patch(String endpoint, {Map<String, String>? headers, Json? body}) {
+    return super.patch(endpoint, headers: headers, body: body).then(_tripwire);
+  }
+
+  @override
+  Future<Response> delete(String endpoint, {Map<String, String>? headers, Map<String, dynamic>? query}) {
+    return super.delete(endpoint, headers: headers, query: query).then(_tripwire);
+  }
+
+  /// The server refused the token because it belongs to an anonymous
+  /// session (heart-of-yours#91). That token never has business on the wire —
+  /// `RemoteAccess` closes every leg while the session is anonymous — so this
+  /// is not a failure to retry but a gate that failed, and it is thrown as its
+  /// own type so it reaches Sentry under a name rather than as a body map.
+  static Response _tripwire(Response response) {
+    return switch (response) {
+      ({'code': 'anonymous_account'}, 403) => throw const AnonymousSessionRejected(),
+      _ => response,
+    };
+  }
+
   @override
   void reauthenticate(String sessionToken) {
     // Re-apply the scheme. Callers hand over a raw provider token (see
@@ -97,6 +137,26 @@ class Api
       (400, {'code': 'ACCOUNT_DELETED'}) => throw AccountDeleted(),
       (426, _) => throw UpgradeRequired(),
       _ => throw json, // error
+    };
+  }
+
+  /// What the account holds, collection by collection — the yardstick the
+  /// export's completeness check measures this device's mirror against
+  /// (heart-api#75).
+  ///
+  /// Caller-scoped: there is no `:targetUserId` form, so this is never a read
+  /// of somebody else's totals.
+  ///
+  /// Throws rather than falling back to an empty summary on a refusal. An
+  /// empty summary is a *claim* — "the account holds nothing" — and it reads
+  /// as "your mirror is complete", which is the one answer a failed call must
+  /// never give.
+  Future<AccountSummary> getAccountSummary() async {
+    final (json, code) = await get('${Router.accounts}/summary');
+    return switch ((code, json)) {
+      (200, Map json) => AccountSummary.fromJson(json),
+      (426, _) => throw UpgradeRequired(),
+      _ => throw json,
     };
   }
 
@@ -216,8 +276,45 @@ class Api
 
   @override
   Future<Workout> saveWorkout(Workout workout) async {
-    final (json, code) = await post(Router.workouts, body: workout.toMap());
-    return Workout.fromJson(json);
+    return (await replayWorkout(workout)).row;
+  }
+
+  /// [saveWorkout], with the server's answer kept: whether this call created
+  /// the row or found it already there under the same client id.
+  ///
+  /// Every create in this file sends the client-minted id, and the server keys
+  /// idempotency on it (heart-api#66): a repeat lands on the same row with a
+  /// `200` instead of a duplicate. The upsync replay counts those answers for
+  /// its "n uploaded, n already there" line; the everyday paths only want the
+  /// row and read it off this.
+  Future<({Workout row, bool created})> replayWorkout(Workout workout) async {
+    final (json, created) = _created(await post(Router.workouts, body: workout.toMap()));
+    return (row: Workout.fromJson(json), created: created);
+  }
+
+  /// `201` made the row, `200` found it — by id, or by name for the two
+  /// resources with one. Anything else is thrown whole, code and all, so the
+  /// caller can tell a refusal (`id_taken`, `goal_limit`) from an outage.
+  static (Map, bool) _created((Map, int) response) {
+    return switch (response) {
+      (Map json, 201) => (json, true),
+      (Map json, 200) => (json, false),
+      (final json, _) => throw json,
+    };
+  }
+
+  /// [body] with its `id` only when it is one the server will take.
+  ///
+  /// Templates minted before heart-of-yours#96 carry a timestamp for an id;
+  /// the server validates the shape and answers a `400` to anything that is
+  /// not a v7 uuid, so such an id is left off and the server mints one. The
+  /// caller reconciles the local row with whatever comes back, as it always
+  /// has for templates.
+  static Map<String, dynamic> _withClientId(Map<String, dynamic> body) {
+    return switch (body['id']) {
+      String id when isUuidV7(id) => body,
+      _ => body..remove('id'),
+    };
   }
 
   @override
@@ -294,18 +391,36 @@ class Api
 
   @override
   Future<Exercise> makeExercise(Exercise exercise) async {
-    final (json, code) = await post(
-      Router.exercises,
-      body: {
-        'name': exercise.name,
-        'category': exercise.category.value,
-        'target': exercise.target.value,
-      },
+    return (await replayExercise(exercise)).row;
+  }
+
+  /// See [replayWorkout]. A `200` here can also be a name match: the account
+  /// already has a custom by this name, and the row that comes back is that
+  /// one, under its own id.
+  Future<({Exercise row, bool created})> replayExercise(Exercise exercise) async {
+    final (json, created) = _created(
+      await post(
+        Router.exercises,
+        body: {
+          'id': exercise.id,
+          'name': exercise.name,
+          'category': exercise.category.value,
+          'target': exercise.target.value,
+        },
+      ),
     );
-    return switch (code) {
-      200 => Exercise.fromJson(json),
-      _ => throw ArgumentError(json),
-    };
+    return (row: Exercise.fromJson(json), created: created);
+  }
+
+  /// [saveUnitPreference] that fails loudly: the replay has to know a step
+  /// landed before it records it. Always a `200` when it does — the endpoint
+  /// is an upsert, and the device's preference is the most recent intent.
+  Future<void> replayUnitPreference(String exerciseId, MeasurementUnit unit) async {
+    final (json, code) = await post(
+      Router.exercisePreferences,
+      body: {'exerciseId': exerciseId, 'unitSystem': unit.name},
+    );
+    if (code >= 300) throw json;
   }
 
   @override
@@ -322,6 +437,19 @@ class Api
     return switch (code) {
       200 => Exercise.fromJson(json),
       _ => throw ArgumentError(json),
+    };
+  }
+
+  /// Every preference the account holds, on a library exercise as much as on
+  /// one of its own: since the catalog moved to the CDN no list the app reads
+  /// carries them, so they are asked for on their own (heart-api#73).
+  ///
+  /// Unpaginated — a preference exists only where the user set one.
+  Future<Iterable<ExercisePreference>> getExercisePreferences() async {
+    final (json, _) = await get(Router.exercisePreferences);
+    return switch (json) {
+      {'preferences': List l} => l.map((each) => ExercisePreference.fromJson(each as Map)).toList(),
+      _ => const <ExercisePreference>[],
     };
   }
 
@@ -365,13 +493,22 @@ class Api
 
   @override
   Future<Goal> createGoal(Goal goal, String userId) async {
-    final (json, code) = await post(Router.goals, body: goal.toBody());
-    return switch ((code, json)) {
-      (200 || 201, Map json) => Goal.fromJson(json),
-      // the body carries a stable `code`; thrown whole so the caller can tell a
-      // refusal from an outage instead of retrying both forever
-      _ => throw json,
-    };
+    return (await replayGoal(goal)).row;
+  }
+
+  /// See [replayWorkout]. The body carries a stable `code` on a refusal;
+  /// thrown whole so the caller can tell one from an outage instead of
+  /// retrying both forever.
+  Future<({Goal row, bool created})> replayGoal(Goal goal) async {
+    final (json, created) = _created(
+      await post(
+        Router.goals,
+        // the client's id rides on a create only — an update addresses its
+        // goal by path, and the server preserves the id it was first given
+        body: {'id': ?goal.id, ...goal.toBody()},
+      ),
+    );
+    return (row: Goal.fromJson(json), created: created);
   }
 
   @override
@@ -428,8 +565,13 @@ class Api
 
   @override
   Future<Template> saveTemplate(Template template) async {
-    final (json, code) = await post(Router.templates, body: template.toMap());
-    return Template.fromJson(json);
+    return (await replayTemplate(template)).row;
+  }
+
+  /// See [replayWorkout]. Two templates may share a name — no name match here.
+  Future<({Template row, bool created})> replayTemplate(Template template) async {
+    final (json, created) = _created(await post(Router.templates, body: _withClientId(template.toMap())));
+    return (row: Template.fromJson(json), created: created);
   }
 
   @override
@@ -471,14 +613,21 @@ class Api
 
   @override
   Future<TemplateFolder> createFolder({required String userId, required TemplateFolder folder}) async {
-    final (json, code) = await post(
-      Router.templateFolders,
-      body: {'name': folder.name, 'order': folder.order},
+    return (await replayFolder(folder)).row;
+  }
+
+  /// See [replayWorkout]. A `200` here can also be a name match, like
+  /// [replayExercise]: the account's folder by that name comes back, under
+  /// its own id. A folder made in the app carries no id until the server
+  /// mints one, so the key is sent only when there is one to send.
+  Future<({TemplateFolder row, bool created})> replayFolder(TemplateFolder folder) async {
+    final (json, created) = _created(
+      await post(
+        Router.templateFolders,
+        body: {'id': ?folder.id, 'name': folder.name, 'order': folder.order},
+      ),
     );
-    return switch ((code, json)) {
-      (200, Map json) => TemplateFolder.fromJson(json),
-      _ => throw json,
-    };
+    return (row: TemplateFolder.fromJson(json), created: created);
   }
 
   @override
@@ -663,6 +812,16 @@ class Api
     final mm = '${minutes % 60}'.padLeft(2, '0');
     return '$sign$hh:$mm';
   }
+}
+
+/// An anonymous session's token reached the server, which answered `403
+/// anonymous_account`. The remote leg is meant to be closed for the whole of
+/// an anonymous session, so this is a tripwire: reported, never retried.
+class AnonymousSessionRejected implements Exception {
+  const new();
+
+  @override
+  String toString() => 'AnonymousSessionRejected: an anonymous token reached heart-api';
 }
 
 abstract final class Router {

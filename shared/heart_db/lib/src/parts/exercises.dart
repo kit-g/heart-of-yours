@@ -54,11 +54,37 @@ mixin _Exercises on _LocalDatabase
     );
   }
 
+  /// What the cached catalog rows are a copy of, as the CDN identifies it —
+  /// the manifest `version`, the locale file, that file's ETag. Null until a
+  /// library has been stored with one.
+  Future<({String version, String locale, String? etag})?> getCatalogStamp() async {
+    final rows = await _db.query(
+      _syncs,
+      columns: ['version', 'locale', 'etag'],
+      where: 'table_name = ?',
+      whereArgs: [_exercises],
+    );
+
+    return switch (rows) {
+      [{'version': String version, 'locale': String locale, 'etag': String? etag}] => (
+        version: version,
+        locale: locale,
+        etag: etag,
+      ),
+      _ => null,
+    };
+  }
+
+  /// [locale], [version] and [etag] together are the catalog stamp — see
+  /// [getCatalogStamp]; the interface has no notion of them, so a caller that
+  /// stores one user-created exercise passes none and the stamp stays put.
   @override
   Future<void> storeExercises(
     Iterable<Exercise> exercises, {
     String? userId,
     String? locale,
+    String? version,
+    String? etag,
   }) async {
     return _db.transaction(
       (txn) async {
@@ -121,18 +147,23 @@ mixin _Exercises on _LocalDatabase
           );
         }
 
-        // The locale is part of the cache key: localized columns are only as
-        // fresh as the Accept-Language tag they were fetched under. An upsert
-        // rather than REPLACE so a locale-less write — storing one user-created
-        // exercise — bumps the timestamp without wiping the recorded locale.
+        // The stamp is part of the cache key: localized columns are only as
+        // fresh as the locale file they came from, and version + ETag are
+        // what the next launch shows the CDN. An upsert rather than REPLACE so
+        // a stamp-less write — storing one user-created exercise — bumps the
+        // timestamp and leaves the stamp alone. A catalog write replaces the
+        // ETag even with null: a stale one would vouch for rows it never
+        // described, and the next conditional fetch would 304 against them.
         txn.rawInsert(
           '''
-          INSERT INTO $_syncs (table_name, locale) VALUES (?, ?)
+          INSERT INTO $_syncs (table_name, locale, version, etag) VALUES (?, ?, ?, ?)
           ON CONFLICT(table_name) DO UPDATE SET
             synced_at = (datetime('now') || '+00:00'),
-            locale = coalesce(EXCLUDED.locale, locale)
+            locale = coalesce(EXCLUDED.locale, locale),
+            version = coalesce(EXCLUDED.version, version),
+            etag = CASE WHEN EXCLUDED.version IS NULL THEN etag ELSE EXCLUDED.etag END
           ''',
-          [_exercises, locale],
+          [_exercises, locale, version, etag],
         );
 
         await batch.commit(noResult: true);

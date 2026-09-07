@@ -30,7 +30,7 @@ import 'support/harness.dart';
 
 const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_in_with_apple');
 
-enum _Screen { login, profile, workout, history, exercises, settings, importData }
+enum _Screen { onboarding, login, profile, workout, history, exercises, settings, importData }
 
 void main() {
   late MockLocalDatabase db;
@@ -55,7 +55,7 @@ void main() {
   });
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(pastOnboarding());
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       _signInWithAppleChannel,
@@ -114,13 +114,20 @@ void main() {
     tester.platformDispatcher.localesTestValue = [locale];
     addTearDown(tester.platformDispatcher.clearLocalesTestValue);
 
-    final signedIn = screen != _Screen.login;
-    final firebase = signedIn
-        ? MockFirebaseAuth(
-            mockUser: MockUser(uid: 'u1', email: 'u1@test'),
-            signedIn: true,
-          )
-        : MockFirebaseAuth(signedIn: false);
+    // the one screen a device sees only before its first launch is over
+    if (screen == _Screen.onboarding) {
+      SharedPreferences.setMockInitialValues({});
+    }
+
+    // no user means an anonymous session; the login page is reached from its
+    // profile's no-account dialog, never by redirect
+    final firebase = switch (screen) {
+      _Screen.onboarding || _Screen.login => MockFirebaseAuth(signedIn: false),
+      _ => MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      ),
+    };
 
     await harness.pumpHeartApp(
       tester,
@@ -134,9 +141,17 @@ void main() {
     await tester.pumpTimes();
 
     switch (screen) {
-      case _Screen.login:
       case _Screen.profile:
         break;
+      case _Screen.onboarding:
+        // every screen of the carousel gets laid out on the way to the last
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        await tester.tapByKey(AppKeys.onboardingNext);
+      case _Screen.login:
+        await tester.tapByKey(AppKeys.noAccount);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.noAccountLogIn);
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
       case _Screen.history:

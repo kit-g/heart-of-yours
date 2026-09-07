@@ -16,6 +16,7 @@ RouteBase _profileRoute() {
       return ProfilePage(
         onSettings: context.goToSettings,
         onAccount: context.goToAccountManagement,
+        onLogIn: context.goToLogin,
         onAvatar: () {
           final user = Auth.of(context).user;
           if (user?.localAvatar != null) {
@@ -37,6 +38,8 @@ RouteBase _profileRoute() {
           return SettingsPage(
             onAccountManagement: context.goToAccountManagement,
             onImportData: context.goToImportData,
+            onExportData: context.goToExportData,
+            onErased: context.goToProfile,
           );
         },
         name: _settingsName,
@@ -50,6 +53,11 @@ RouteBase _profileRoute() {
             path: _importDataPath,
             builder: (_, _) => const ImportDataPage(onError: reportToSentry),
             name: _importDataName,
+          ),
+          GoRoute(
+            path: _exportDataPath,
+            builder: (_, _) => const ExportDataPage(onError: reportToSentry),
+            name: _exportDataName,
           ),
         ],
       ),
@@ -423,6 +431,13 @@ RouteBase _loginRoute() {
   return GoRoute(
     path: _loginPath,
     builder: (context, state) {
+      // An anonymous session came here from its profile and may go back to it;
+      // with no session at all this page is the gate, and there is no back.
+      final onClose = switch (Auth.of(context).isLoggedIn) {
+        true => context.goToProfile,
+        false => null,
+      };
+
       // LayoutProvider owns the breakpoint for this route and both branches
       return LayoutProvider(
         currentStack: -1,
@@ -438,6 +453,7 @@ RouteBase _loginRoute() {
                 context.goToSignUp(address: address);
               },
               address: state.uri.queryParameters['address'],
+              onClose: onClose,
             ),
             .wide => ValueListenableBuilder<_AuthPages>(
               valueListenable: currentPage,
@@ -462,6 +478,7 @@ RouteBase _loginRoute() {
                         currentAddress.value = address;
                       },
                       address: currentAddress.value,
+                      onClose: onClose,
                     ),
                     .recovery => RecoveryPage(
                       address: currentAddress.value,
@@ -495,8 +512,9 @@ RouteBase _loginRoute() {
     },
     name: _loginName,
     redirect: (context, state) {
-      final isLoggedIn = Auth.of(context).isLoggedIn;
-      if (isLoggedIn) {
+      // an anonymous session is logged in, and is exactly who this page is for
+      final Auth(:isLoggedIn, :isAnonymous) = Auth.of(context);
+      if (isLoggedIn && !isAnonymous) {
         return state.namedLocation(
           _profileName,
           queryParameters: state.uri.queryParameters,
@@ -633,6 +651,30 @@ RouteBase _avatarRoute() {
       onEdit: context.goToAccountManagement,
     ),
     name: _avatarName,
+  );
+}
+
+/// The first-launch carousel, on the root navigator so no shell chrome shows
+/// under it. Both ways out mark it seen first, so the redirect that put the
+/// reader here lets them leave; the deep link it may carry (`from`) rides on
+/// to the profile, where the top-level redirect honours it.
+RouteBase _onboardingRoute() {
+  return GoRoute(
+    path: _onboardingPath,
+    name: _onboardingName,
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) {
+      return OnboardingPage(
+        onContinue: () {
+          Preferences.of(context).markOnboardingSeen();
+          context.goNamed(_profileName, queryParameters: state.uri.queryParameters);
+        },
+        onLogIn: () {
+          Preferences.of(context).markOnboardingSeen();
+          context.goToLogin();
+        },
+      );
+    },
   );
 }
 

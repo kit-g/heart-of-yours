@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 2,
+  "exportedAt": "2026-09-06T12:00:00.000Z",
+  "units": {
+    "weight": "imperial",
+    "distance": "metric",
+    "exercises": {
+      "ex-run": "imperial"
+    }
+  },
+  "workouts": [
+    {
+      "id": "w1",
+      "name": "Push day",
+      "start": "2026-03-01T10:00:00.000Z",
+      "end": "2026-03-01T11:00:00.000Z",
+      "exercises": [
+        {
+          "order": 0,
+          "id": "we-1",
+          "exercise": "Bench Press (Barbell)",
+          "sets": [
+            {
+              "id": "s1",
+              "completed": true,
+              "reps": 8,
+              "weight": 60.0
+            },
+            {
+              "id": "s2",
+              "completed": true,
+              "reps": 6,
+              "weight": 62.5
+            }
+          ]
+        },
+        {
+          "order": 1,
+          "id": "we-2",
+          "exercise": "Muffin, \"special\" pull-up",
+          "note": "one hand at a time",
+          "sets": [
+            {
+              "id": "s3",
+              "completed": true,
+              "reps": 10
+            }
+          ]
+        }
+      ],
+      "images": [
+        {
+          "workoutId": "w1",
+          "id": "img1",
+          "url": "https://cdn.example/w1/img1.jpg",
+          "key": "workouts/w1/img1.jpg"
+        }
+      ]
+    },
+    {
+      "id": "w2",
+      "name": "Run, then plank",
+      "start": "2026-03-03T07:30:00.000Z",
+      "end": "2026-03-03T08:00:00.000Z",
+      "exercises": [
+        {
+          "order": 0,
+          "id": "we-3",
+          "exercise": "Run",
+          "sets": [
+            {
+              "id": "s4",
+              "completed": true,
+              "duration": 1500,
+              "distance": 5.0
+            }
+          ]
+        },
+        {
+          "order": 1,
+          "id": "we-4",
+          "exercise": "Plank",
+          "sets": [
+            {
+              "id": "s5",
+              "completed": true,
+              "duration": 60
+            }
+          ]
+        }
+      ],
+      "images": []
+    }
+  ],
+  "templates": [
+    {
+      "id": "t1",
+      "name": "Push",
+      "order": 0,
+      "folder": {
+        "id": "f1",
+        "name": "Split",
+        "order": 0
+      },
+      "exercises": [
+        {
+          "id": "we-t1",
+          "exercise": "Bench Press (Barbell)",
+          "sets": [
+            {
+              "id": "ts1",
+              "completed": false,
+              "reps": 5,
+              "weight": 80.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "Pull",
+      "order": 1,
+      "exercises": [
+        {
+          "id": "we-t2",
+          "exercise": "Muffin, \"special\" pull-up",
+          "sets": [
+            {
+              "id": "ts2",
+              "completed": false,
+              "reps": 8
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "folders": [
+    {
+      "id": "f1",
+      "name": "Split",
+      "order": 0,
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "exercises": [
+    {
+      "id": "ex-custom",
+      "category": "Reps Only",
+      "name": "Muffin, \"special\" pull-up",
+      "target": "Other",
+      "own": 1,
+      "archived": 0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "metric": "topSetWeight",
+      "exerciseId": "ex-bench",
+      "stages": [
+        {
+          "id": "gs1",
+          "target": 100,
+          "dueOn": "2026-12-25"
+        }
+      ],
+      "archived": false,
+      "createdAt": "2026-02-01T00:00:00.000Z"
+    },
+    {
+      "id": "g2",
+      "metric": "workouts",
+      "cadence": "week",
+      "stages": [
+        {
+          "id": "gs2",
+          "target": 3,
+          "achievedAt": "2026-02-08T00:00:00.000Z",
+          "achievedBy": "w1"
+        }
+      ],
+      "archived": true,
+      "createdAt": "2026-01-15T00:00:00.000Z"
+    }
+  ]
+}

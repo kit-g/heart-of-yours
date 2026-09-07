@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "Ya empezaste algo importante. \nSigamos adelante.",
+  "logInBody": "Ya empezaste algo importante. \r\nSigamos adelante.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Todo camino empieza con una decisión. \nEsta es tuya.",
+  "signUpBody": "Todo camino empieza con una decisión. \r\nEsta es tuya.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Tu camino no está perdido. \nSolo es una pausa — lo restableceremos juntos.",
+  "recoverBody": "Tu camino no está perdido. \r\nSolo es una pausa — lo restableceremos juntos.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -179,6 +179,105 @@
     "description": "Generic label",
     "type": "text",
     "placeholders": {}
+  },
+  "noAccount": "Sin cuenta",
+  "@noAccount": {
+    "description": "Profile app bar while using the app without an account: the name slot and the tooltip of the icon that opens the no-account dialog",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountTitle": "Estás usando Heart sin cuenta",
+  "@noAccountTitle": {
+    "description": "Title of the no-account dialog on the profile page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountBodyLocal": "Tus datos de salud nunca salen de tu teléfono. Sin cuenta, nada más sale tampoco: tus entrenamientos, plantillas y metas viven solo en este dispositivo.",
+  "@noAccountBodyLocal": {
+    "description": "No-account dialog, first paragraph: where the data lives. Reads as one with the health-data promise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountBodySignIn": "Iniciar sesión añade una copia de seguridad y sincronización entre tus dispositivos, y más adelante compartir con amigos y coaching.",
+  "@noAccountBodySignIn": {
+    "description": "No-account dialog, second paragraph: what an account adds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noAccountBodyLose": "Si pierdes este teléfono, pierdes tus datos.",
+  "@noAccountBodyLose": {
+    "description": "No-account dialog, last paragraph; the export screen repeats this line and nothing else",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notNow": "Ahora no",
+  "@notNow": {
+    "description": "Dismisses the no-account dialog without logging in",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingWelcomeTitle": "Te damos la bienvenida a Heart",
+  "@onboardingWelcomeTitle": {
+    "description": "First-launch onboarding, screen 1 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingWelcomeBody": "Un diario de entrenamientos que no estorba: planifica una sesión, marca cada serie y mira cómo crecen tus marcas.",
+  "@onboardingWelcomeBody": {
+    "description": "First-launch onboarding, screen 1 of 3: what Heart is, in one line",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalTitle": "Tus datos se quedan en tu teléfono",
+  "@onboardingLocalTitle": {
+    "description": "First-launch onboarding, screen 2 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalBody": "No hace falta cuenta: tus entrenamientos, y los datos de salud que dejes leer a Heart, viven en este dispositivo y en ningún otro sitio.",
+  "@onboardingLocalBody": {
+    "description": "First-launch onboarding, screen 2 of 3: the anonymous promise and the health-data promise as one sentence",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingLocalTrade": "El trato honesto: si pierdes el teléfono, pierdes los datos, a menos que inicies sesión.",
+  "@onboardingLocalTrade": {
+    "description": "First-launch onboarding, screen 2 of 3: the trade-off of having no account",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingAccountTitle": "Inicia sesión cuando quieras",
+  "@onboardingAccountTitle": {
+    "description": "First-launch onboarding, screen 3 of 3: title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingAccountBody": "Una cuenta añade una copia de seguridad y sincronización entre tus dispositivos, y más adelante compartir con amigos y coaching. Nada cambia hasta que tú lo decidas.",
+  "@onboardingAccountBody": {
+    "description": "First-launch onboarding, screen 3 of 3: what an account adds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingNext": "Siguiente",
+  "@onboardingNext": {
+    "description": "First-launch onboarding: moves to the next screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingContinue": "Continuar",
+  "@onboardingContinue": {
+    "description": "First-launch onboarding, last screen: closes the onboarding and enters the app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "onboardingScreenOf": "Pantalla {current} de {total}",
+  "@onboardingScreenOf": {
+    "description": "First-launch onboarding: screen-reader label of the page indicator dots",
+    "type": "text",
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
   },
   "profile": "Perfil",
   "@profile": {
@@ -296,13 +395,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).\n Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.",
+  "archiveConfirmBody": "Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).\r\n Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "Este ejercicio está archivado \ny ya no aparecerá en tu biblioteca principal.",
+  "exerciseArchived": "Este ejercicio está archivado \r\ny ya no aparecerá en tu biblioteca principal.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -1343,7 +1442,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.\n\nNos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. {emoji}",
+  "leaveFeedbackBody": "Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.\r\n\r\nNos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1401,6 +1500,36 @@
     "type": "text",
     "placeholders": {}
   },
+  "eraseData": "Borrar mis datos",
+  "@eraseData": {
+    "description": "Settings row, shown only while using the app without an account: wipes everything Heart holds on this device. Destructive, red",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataTitle": "¿Seguro que quieres borrar tus datos?",
+  "@eraseDataTitle": {
+    "description": "Erase-my-data dialog title. Mirrors the delete-account title's phrasing",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataBody": "Tus entrenamientos, plantillas, ejercicios personalizados, objetivos y ajustes de gráficos se eliminan de este teléfono, junto con la copia de Heart de tus datos de salud. Los registros de salud de tu propio teléfono no se tocan. Sin una cuenta no hay copia de seguridad: esto no se puede deshacer.",
+  "@eraseDataBody": {
+    "description": "Erase-my-data dialog body. Must name the health data as included (it is device-only and lives in the same store) while making clear the operating system's health store itself is untouched, and say plainly that nothing can bring the data back",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataCancelMessage": "Conservar mis datos",
+  "@eraseDataCancelMessage": {
+    "description": "Erase-my-data dialog, the safe way out",
+    "type": "text",
+    "placeholders": {}
+  },
+  "eraseDataConfirmMessage": "Borrar todo",
+  "@eraseDataConfirmMessage": {
+    "description": "Erase-my-data dialog, the destructive action",
+    "type": "text",
+    "placeholders": {}
+  },
   "confirmDeleteAccountTitle": "Confirma la eliminación de tu cuenta",
   "@confirmDeleteAccountTitle": {
     "description": "Delete account dialog",
@@ -1425,7 +1554,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "Tu cuenta quedó programada para eliminarse el {date}.\n\nSi cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.\n\nSolo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.",
+  "accountDeletedBody": "Tu cuenta quedó programada para eliminarse el {date}.\r\n\r\nSi cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.\r\n\r\nSolo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
@@ -1769,7 +1898,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredBody": "Hay una actualización importante esperando — una que mantiene la app funcionando como debe.\n\nNecesitas instalarla antes de continuar.\nGracias por tu paciencia — y perdón por la interrupción.",
+  "updateRequiredBody": "Hay una actualización importante esperando — una que mantiene la app funcionando como debe.\r\n\r\nNecesitas instalarla antes de continuar.\r\nGracias por tu paciencia — y perdón por la interrupción.",
   "@updateRequiredBody": {
     "description": "Force update screen, body",
     "type": "text",
@@ -2486,6 +2615,73 @@
     "type": "text",
     "placeholders": {}
   },
+  "exportData": "Exportar mis datos",
+  "@exportData": {
+    "description": "Settings row (shown with and without an account) and title of the export page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportExplainer": "Todo lo que Heart guarda en este teléfono, en un archivo que es tuyo: entrenamientos con cada serie, plantillas y carpetas, ejercicios personalizados, ajustes de unidades y objetivos.",
+  "@exportExplainer": {
+    "description": "Export page, what the file holds",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportNoHealthData": "Tus datos de salud no se incluyen: nunca salen de tu teléfono.",
+  "@exportNoHealthData": {
+    "description": "Export page, the device-only health promise restated: no health data is in the file",
+    "type": "text",
+    "placeholders": {}
+  },
+  "backfillRunning": "Restaurando tu historial…",
+  "@backfillRunning": {
+    "description": "Profile row while the app pages down the history this device is missing, when the account's own total could not be read",
+    "type": "text"
+  },
+  "backfillRunningOf": "Restaurando tu historial… {done} de {total}",
+  "@backfillRunningOf": {
+    "description": "Profile row while the app pages down the history this device is missing: workouts held so far, and the account's total",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "backfillFailed": "No se pudo terminar de restaurar tu historial.",
+  "@backfillFailed": {
+    "description": "Profile row when the history backfill stopped because the server could not be reached; shown beside a Retry button",
+    "type": "text"
+  },
+  "exportAsJson": "Exportar como JSON",
+  "@exportAsJson": {
+    "description": "Export page, the button that writes the JSON file and opens the share sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportJsonHint": "Todo lo anterior, en el formato propio de Heart.",
+  "@exportJsonHint": {
+    "description": "Export page, one line under the JSON button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportAsCsv": "Exportar como CSV",
+  "@exportAsCsv": {
+    "description": "Export page, the button that writes the CSV file and opens the share sheet",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportCsvHint": "Solo entrenamientos, una fila por serie: se abre en cualquier hoja de cálculo.",
+  "@exportCsvHint": {
+    "description": "Export page, one line under the CSV button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exportInFlight": "Preparando tu archivo…",
+  "@exportInFlight": {
+    "description": "Export page, shown under the progress bar while the file is being written",
+    "type": "text",
+    "placeholders": {}
+  },
   "account": "Cuenta",
   "@account": {
     "description": "Settings section header over account management",
@@ -2498,7 +2694,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importExplainerStrong": "¿Entrenabas con Strong? Trae tu historial contigo.\n\nEn la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.",
+  "importExplainerStrong": "¿Entrenabas con Strong? Trae tu historial contigo.\r\n\r\nEn la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.",
   "@importExplainerStrong": {
     "description": "Import page, explains where the Strong export file comes from",
     "type": "text",
@@ -2975,5 +3171,40 @@
     "description": "Movement pattern label (filter sheet chip and About-tab chip)",
     "type": "text",
     "placeholders": {}
+  },
+  "upsyncRunning": "Guardando en tu cuenta… {done} de {total}",
+  "@upsyncRunning": {
+    "description": "Profile row while an anonymous session's data is being uploaded to the account it just became: rows done so far out of the rows found",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncFailed": "Copia en pausa — {done} de {total} subidos. Comprueba tu conexión e inténtalo de nuevo.",
+  "@upsyncFailed": {
+    "description": "Profile row when the upload stopped because the server could not be reached; a Retry button sits beside it",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncDone": "Copia completada: {uploaded} subidos, {existing} ya estaban.",
+  "@upsyncDone": {
+    "description": "Profile row, one line once the upload finished: how many rows the server created and how many it already had",
+    "type": "text",
+    "placeholders": {
+      "uploaded": {},
+      "existing": {}
+    }
+  },
+  "upsyncSkipped": "{skipped, plural, =1{1 elemento no se pudo subir.} other{{skipped} elementos no se pudieron subir.}}",
+  "@upsyncSkipped": {
+    "description": "Appended to the finished backup line when the server refused some rows (for example, over the goal limit)",
+    "type": "text",
+    "placeholders": {
+      "skipped": {}
+    }
   }
 }

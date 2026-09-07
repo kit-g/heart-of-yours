@@ -6,6 +6,9 @@
 // are enabled; entries that don't yet are skipped with a reason so the debt
 // stays enumerable instead of silently missing. Do not delete a failing
 // entry — flip its `skip` to null once the underlying issue is fixed.
+import 'dart:async';
+import 'dart:io';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,7 +33,34 @@ const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_i
 /// A screen the matrix sweeps. Each maps to a path through the real app —
 /// see [_pumpTo] — rather than a page pumped in isolation, so the check sees
 /// the same chrome (app bar, nav) the guideline actually has to pass on.
-enum _Screen { login, profile, workout, history, exercises, settings, importData }
+enum _Screen {
+  onboarding,
+  login,
+  profile,
+  noAccountDialog,
+  workout,
+  history,
+  exercises,
+  settings,
+  anonymousSettings,
+  eraseDataDialog,
+  importData,
+  exportData,
+  upsyncRunning,
+  upsyncFailed,
+  upsyncDone,
+  backfillRunning,
+  backfillFailed,
+}
+
+/// A finished workout the server has not confirmed — what the upsync replays.
+Workout _unsynced() {
+  final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+  final workout = Workout(name: 'Monday');
+  workout.add(bench).add(ExerciseSet(bench, weight: 60, reps: 5)..isCompleted = true);
+  workout.finish(DateTime.timestamp());
+  return workout;
+}
 
 /// One guideline check. [textContrastLight] and [textContrastDark] both run
 /// [textContrastGuideline]; which token set it sees is the preset and mode
@@ -53,6 +83,14 @@ extension on _Guideline {
 /// constraint that blocks a fix) rather than `true`/`false`, so `flutter
 /// test`'s output says *why* a combination is still debt.
 final _matrix = <(_Screen, _Guideline, String?)>[
+  // The first-launch carousel (lib/presentation/routes/onboarding/page.dart),
+  // on its last screen: Skip, the page dots and both ways out.
+  (_Screen.onboarding, _Guideline.labeledTapTarget, null),
+  (_Screen.onboarding, _Guideline.textContrastLight, null),
+  (_Screen.onboarding, _Guideline.textContrastDark, null),
+  (_Screen.onboarding, _Guideline.androidTapTarget, null),
+  (_Screen.onboarding, _Guideline.iosTapTarget, null),
+
   // Login: untouched by this ticket's remediation pass — every control
   // already carries a visible text label, so the guidelines it can pass,
   // pass without changes.
@@ -82,6 +120,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.profile,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // The no-account dialog over the profile of an anonymous session
+  // (lib/presentation/routes/profile/page.dart, _showNoAccountDialog).
+  (_Screen.noAccountDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.noAccountDialog, _Guideline.textContrastLight, null),
+  (_Screen.noAccountDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.noAccountDialog,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.noAccountDialog,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
@@ -142,11 +196,126 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
+  // The settings of an anonymous session: the same page, with the "Erase my
+  // data" row (lib/presentation/routes/settings/page.dart) where the account
+  // rows would be.
+  (_Screen.anonymousSettings, _Guideline.labeledTapTarget, null),
+  (_Screen.anonymousSettings, _Guideline.textContrastLight, null),
+  (_Screen.anonymousSettings, _Guideline.textContrastDark, null),
+  (
+    _Screen.anonymousSettings,
+    _Guideline.androidTapTarget,
+    'switch rows are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.anonymousSettings,
+    _Guideline.iosTapTarget,
+    'switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // The erase-my-data confirmation over those settings
+  // (lib/presentation/routes/settings/page.dart, _onEraseData).
+  (_Screen.eraseDataDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.eraseDataDialog, _Guideline.textContrastLight, null),
+  (_Screen.eraseDataDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.eraseDataDialog,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.eraseDataDialog,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+
   (_Screen.importData, _Guideline.labeledTapTarget, null),
   (_Screen.importData, _Guideline.textContrastLight, null),
   (_Screen.importData, _Guideline.textContrastDark, null),
   (_Screen.importData, _Guideline.androidTapTarget, null),
   (_Screen.importData, _Guideline.iosTapTarget, null),
+
+  // The export page (lib/presentation/routes/settings/export_data.dart):
+  // prose and two 48pt buttons, like the import page beside it.
+  (_Screen.exportData, _Guideline.labeledTapTarget, null),
+  (_Screen.exportData, _Guideline.textContrastLight, null),
+  (_Screen.exportData, _Guideline.textContrastDark, null),
+  (_Screen.exportData, _Guideline.androidTapTarget, null),
+  (_Screen.exportData, _Guideline.iosTapTarget, null),
+
+  // The upsync row on the profile (lib/presentation/widgets/upsync_row.dart) in
+  // each of its three states: the bar, the Retry button, the dismiss. The tap
+  // target rows inherit the profile's bottom-nav reason; the row's own
+  // controls are a 32pt PrimaryButton (see noAccountDialog) and a stock
+  // IconButton.
+  (_Screen.upsyncRunning, _Guideline.labeledTapTarget, null),
+  (_Screen.upsyncRunning, _Guideline.textContrastLight, null),
+  (_Screen.upsyncRunning, _Guideline.textContrastDark, null),
+  (
+    _Screen.upsyncRunning,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.upsyncRunning,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (_Screen.upsyncFailed, _Guideline.labeledTapTarget, null),
+  (_Screen.upsyncFailed, _Guideline.textContrastLight, null),
+  (_Screen.upsyncFailed, _Guideline.textContrastDark, null),
+  (
+    _Screen.upsyncFailed,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.upsyncFailed,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
+  // The backfill row (lib/presentation/widgets/upsync_row.dart, BackfillRow) in
+  // its two states — it has no finished line to check. Same reasons as its push
+  // counterpart above: the profile's bottom nav, and a 32pt Retry.
+  (_Screen.backfillRunning, _Guideline.labeledTapTarget, null),
+  (_Screen.backfillRunning, _Guideline.textContrastLight, null),
+  (_Screen.backfillRunning, _Guideline.textContrastDark, null),
+  (
+    _Screen.backfillRunning,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.backfillRunning,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (_Screen.backfillFailed, _Guideline.labeledTapTarget, null),
+  (_Screen.backfillFailed, _Guideline.textContrastLight, null),
+  (_Screen.backfillFailed, _Guideline.textContrastDark, null),
+  (
+    _Screen.backfillFailed,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.backfillFailed,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44, and the Retry PrimaryButton is 32pt tall by design (lib/presentation/widgets/buttons.dart:98) — visual-density change, out of scope',
+  ),
+  (_Screen.upsyncDone, _Guideline.labeledTapTarget, null),
+  (_Screen.upsyncDone, _Guideline.textContrastLight, null),
+  (_Screen.upsyncDone, _Guideline.textContrastDark, null),
+  (
+    _Screen.upsyncDone,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.upsyncDone,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
 ];
 
 void main() {
@@ -156,7 +325,7 @@ void main() {
   late TestAppHarness harness;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(pastOnboarding());
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       _signInWithAppleChannel,
@@ -173,6 +342,12 @@ void main() {
     api = MockApi();
     cdn = MockCdn();
     harness = const TestAppHarness();
+
+    // The history backfill's two reads, answered as "this device is whole" —
+    // every screen but the two that are about the row itself re-stubs them.
+    when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);
+    when(db.mirrorSummary(any)).thenAnswer((_) async => const AccountSummary(collections: {}));
+    when(api.getAccountSummary()).thenAnswer((_) async => const AccountSummary(collections: {}));
 
     // Same baseline stubs as router_test.dart: enough for every bottom-nav
     // stack (and the dashboard's after-first-layout Stats.init) to render
@@ -217,13 +392,66 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final signedIn = screen != _Screen.login;
-    final firebase = signedIn
-        ? MockFirebaseAuth(
-            mockUser: MockUser(uid: 'u1', email: 'u1@test'),
-            signedIn: true,
-          )
-        : MockFirebaseAuth(signedIn: false);
+    // the one screen a device sees only before its first launch is over
+    if (screen == _Screen.onboarding) {
+      SharedPreferences.setMockInitialValues({});
+    }
+
+    // The upsync row shows on the profile of an account whose store is still
+    // owed a replay; what the server answers picks the state. The run is
+    // started below the way start-up would once the API has its token —
+    // `_initApp` runs in `Zone.root`, which this fake-async zone never yields
+    // to, so its own restore-and-run never gets that far in a widget test.
+    switch (screen) {
+      case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
+        when(db.isUpsyncOwed(any)).thenAnswer((_) async => true);
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [_unsynced()]);
+        when(api.replayWorkout(any)).thenAnswer(
+          (invocation) => switch (screen) {
+            // never answers, so the bar stays up
+            _Screen.upsyncRunning => Completer<({Workout row, bool created})>().future,
+            _Screen.upsyncFailed => Future.error(const SocketException('offline')),
+            _ => Future.value((row: invocation.positionalArguments.single as Workout, created: true)),
+          },
+        );
+      case _Screen.backfillRunning || _Screen.backfillFailed:
+        // an unmarked device that the account has more history than: enough to
+        // put the row up, with the page either never answering or refusing
+        when(db.isHistoryBackfilled(any)).thenAnswer((_) async => false);
+        when(db.mirrorSummary(any)).thenAnswer(
+          (_) async => const AccountSummary(
+            collections: {ExportableCollection.workouts: CollectionSummary(count: 20)},
+          ),
+        );
+        when(api.getAccountSummary()).thenAnswer(
+          (_) async => const AccountSummary(
+            collections: {ExportableCollection.workouts: CollectionSummary(count: 568)},
+          ),
+        );
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since'))).thenAnswer(
+          (_) => switch (screen) {
+            // never answers, so the bar stays up
+            _Screen.backfillRunning => Completer<Iterable<Workout>>().future,
+            _ => Future.error(const SocketException('offline')),
+          },
+        );
+      default:
+        break;
+    }
+
+    // No user means an anonymous session, not a gate: the login page is only
+    // reachable through the no-account dialog on that session's profile.
+    final firebase = switch (screen) {
+      _Screen.onboarding ||
+      _Screen.login ||
+      _Screen.noAccountDialog ||
+      _Screen.anonymousSettings ||
+      _Screen.eraseDataDialog => MockFirebaseAuth(signedIn: false),
+      _ => MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      ),
+    };
 
     await harness.pumpHeartApp(
       tester,
@@ -238,21 +466,45 @@ void main() {
     await tester.pumpTimes();
 
     switch (screen) {
-      case _Screen.login:
       case _Screen.profile:
         break;
+      case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
+        unawaited(Upsync.of(tester.element(find.byType(MaterialApp))).run('u1'));
+      case _Screen.backfillRunning || _Screen.backfillFailed:
+        // started the way `_initTrainingData` would, for the same reason the
+        // upsync run is started here rather than left to start-up
+        unawaited(Backfill.of(tester.element(find.byType(MaterialApp))).run('u1'));
+      case _Screen.onboarding:
+        // the last screen carries every control the carousel has
+        await tester.tapByKey(AppKeys.onboardingNext);
+        await tester.pumpTimes(4);
+        await tester.tapByKey(AppKeys.onboardingNext);
+      case _Screen.noAccountDialog:
+        await tester.tapByKey(AppKeys.noAccount);
+      case _Screen.login:
+        await tester.tapByKey(AppKeys.noAccount);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.noAccountLogIn);
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.exercises:
         await tester.tapByKey(AppKeys.exercisesStack);
-      case _Screen.settings:
+      case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
+      case _Screen.eraseDataDialog:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.eraseData);
       case _Screen.importData:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tap(find.byIcon(Icons.upload_file_rounded));
+      case _Screen.exportData:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.exportData);
     }
     await tester.pumpTimes();
   }

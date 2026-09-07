@@ -7,7 +7,48 @@ import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
+import 'package:mockito/mockito.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+
+import '../mocks.mocks.dart';
+
+/// The least a pumped app needs to start up without tripping over an
+/// unstubbed call: what the profile page's first layout and the chained
+/// startup read. Every launch lands on the profile now — with no user the
+/// session is anonymous rather than gated — so even a test that only looks at
+/// the MaterialApp gets that far.
+void stubStartup(MockLocalDatabase db, MockApi api) {
+  SharedPreferences.setMockInitialValues(pastOnboarding());
+
+  when(
+    db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
+  ).thenAnswer((_) async => WorkoutAggregation.empty());
+  when(db.getWeeklyWorkoutCount(any)).thenAnswer((_) async => 0);
+  when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
+  when(db.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
+  when(db.getActiveWorkout(any)).thenAnswer((_) async => null);
+  when(
+    db.getWorkoutGallery(userId: anyNamed('userId')),
+  ).thenAnswer((_) async => ProgressGalleryResponse(images: <WorkoutImage>[]));
+
+  // the history backfill: a device that has already paged everything down, so
+  // no test that merely launches the app has to say anything about it
+  const nothing = AccountSummary(collections: {});
+  when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);
+  when(db.mirrorSummary(any)).thenAnswer((_) async => nothing);
+  when(api.getAccountSummary()).thenAnswer((_) async => nothing);
+
+  when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
+  when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
+  when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
+}
+
+/// The preferences of a device past its first launch. An anonymous session
+/// on a fresh device opens on the onboarding carousel rather than the app, so
+/// every test that is not about the carousel seeds this first.
+Map<String, Object> pastOnboarding() => {Preferences.onboardingSeenKey: true};
 
 /// A lightweight, reusable harness to keep widget tests DRY.
 ///

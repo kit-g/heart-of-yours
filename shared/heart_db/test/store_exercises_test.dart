@@ -64,7 +64,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, null],
+          [expectedTable, null, null, null],
         ),
       ).called(1);
 
@@ -122,7 +122,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, null],
+          [expectedTable, null, null, null],
         ),
       ).called(1);
 
@@ -140,7 +140,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, null],
+          [expectedTable, null, null, null],
         ),
       ).called(1);
 
@@ -178,7 +178,21 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, 'ru'],
+          [expectedTable, 'ru', null, null],
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'should record the catalog stamp the library was fetched under',
+    () async {
+      await local.storeExercises([exercise()], locale: 'es_ES', version: 'run-1', etag: 'W/"abc"');
+
+      verify(
+        txn.rawInsert(
+          argThat(contains('INSERT INTO $expectedSyncTable')),
+          [expectedTable, 'es_ES', 'run-1', 'W/"abc"'],
         ),
       ).called(1);
     },

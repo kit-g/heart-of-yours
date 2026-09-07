@@ -146,7 +146,6 @@ void main() {
         () async {
           const userId = 'user-1';
           const order = 5;
-          final insertedId = DateTime.timestamp().toIso8601String();
 
           when(
             txn.insert(
@@ -164,7 +163,8 @@ void main() {
 
           final result = await local.startTemplate(order: order, userId: userId);
 
-          expect(result.id.substring(0, 19), insertedId.substring(0, 19));
+          // a platform id, so a repeated save lands on the same server row
+          expect(isUuidV7(result.id), isTrue);
           expect(result.order, order);
           expect(result.name, isNull);
           expect(result, isEmpty);

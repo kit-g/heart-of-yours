@@ -882,7 +882,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                       showMenu<_WorkoutOption>(
                                         context: context,
                                         position: _optionsButtonKey.position(),
-                                        items: _WorkoutOption.values.map(
+                                        items: _options(context).map(
                                           (option) {
                                             return PopupMenuItem<_WorkoutOption>(
                                               value: option,
@@ -972,6 +972,15 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
         );
       },
     );
+  }
+
+  /// Photos live in the server's bucket, so there is nowhere to put one
+  /// without an account — the option is absent rather than dead.
+  Iterable<_WorkoutOption> _options(BuildContext context) {
+    return switch (Auth.of(context).isAnonymous) {
+      true => _WorkoutOption.values.where((option) => option != .editImage),
+      false => _WorkoutOption.values,
+    };
   }
 
   String _workoutOptionCopy(L l, _WorkoutOption option) {

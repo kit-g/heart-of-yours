@@ -43,7 +43,14 @@ class _Charts extends Charts {
 class _Exercises extends Exercises {
   int calls = 0;
 
-  new() : super(service: MockExerciseService(), remoteService: MockRemoteExerciseService());
+  new()
+    : super(
+        service: MockExerciseService(),
+        remoteService: MockRemoteExerciseService(),
+        libraryService: MockExerciseLibraryService(),
+        catalogService: MockLocalCatalogService(),
+        preferenceService: MockRemoteExercisePreferenceService(),
+      );
 
   @override
   void onSignOut() => calls++;
@@ -125,6 +132,43 @@ class _Workouts extends Workouts {
   void onSignOut() => calls++;
 }
 
+class _Backfill extends Backfill {
+  int calls = 0;
+
+  new()
+    : super(
+        local: MockLocalMirrorService(),
+        remote: MockRemoteAccountSummaryService(),
+        nextPage: _noPage,
+      );
+
+  static Future<BackfillPage> _noPage() async => (stored: 0, more: false);
+
+  @override
+  void onSignOut() {
+    calls++;
+    super.onSignOut();
+  }
+}
+
+class _Upsync extends Upsync {
+  int calls = 0;
+
+  new()
+    : super(
+        local: MockLocalUpsyncService(),
+        remote: MockUpsyncService(),
+        exercises: MockExerciseService(),
+        folders: MockLocalTemplateFolderService(),
+        templates: MockTemplateService(),
+        workouts: MockWorkoutService(),
+        goals: MockLocalGoalService(),
+      );
+
+  @override
+  void onSignOut() => calls++;
+}
+
 /// A local mirror that holds nothing. [clearState] never reaches storage — it
 /// only fans out — so the store just has to exist.
 class _NoHealthStore implements HealthSampleStore {
@@ -201,6 +245,7 @@ void main() {
   group('clearState fan-out', () {
     late _Alarms alarms;
     late _Auth auth;
+    late _Backfill backfill;
     late _Charts charts;
     late _Exercises exercises;
     late _Goals goals;
@@ -210,12 +255,14 @@ void main() {
     late _Stats stats;
     late _Templates templates;
     late _Timers timers;
+    late _Upsync upsync;
     late _Workouts workouts;
     late BuildContext capturedContext;
 
     Future<void> pumpProviders(WidgetTester tester) async {
       alarms = _Alarms();
       auth = _Auth();
+      backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
       goals = _Goals();
@@ -225,6 +272,7 @@ void main() {
       stats = _Stats();
       templates = _Templates();
       timers = _Timers();
+      upsync = _Upsync();
       workouts = _Workouts();
 
       await tester.pumpWidget(
@@ -232,6 +280,7 @@ void main() {
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
             ChangeNotifierProvider<Auth>.value(value: auth),
+            ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
             ChangeNotifierProvider<Exercises>.value(value: exercises),
             ChangeNotifierProvider<Goals>.value(value: goals),
@@ -241,6 +290,7 @@ void main() {
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Timers>.value(value: timers),
+            ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
           ],
           child: Builder(
@@ -266,6 +316,7 @@ void main() {
         stats.calls,
         templates.calls,
         timers.calls,
+        upsync.calls,
         workouts.calls,
       ];
     }
@@ -285,6 +336,144 @@ void main() {
       clearState(capturedContext);
 
       expect(counts(), everyElement(2));
+    });
+  });
+
+  group('eraseState', () {
+    late _Alarms alarms;
+    late _Backfill backfill;
+    late _Charts charts;
+    late _Exercises exercises;
+    late _Goals goals;
+    late _Health health;
+    late _Previous previous;
+    late _RemoteConfig config;
+    late _Stats stats;
+    late _Templates templates;
+    late _Timers timers;
+    late _Upsync upsync;
+    late _Workouts workouts;
+    late Preferences preferences;
+    late BuildContext capturedContext;
+
+    /// The same tree as above, but with a real [Auth] over a mock Firebase —
+    /// the erase is gated on the session being anonymous, which the counting
+    /// stand-in above cannot say — and with [Preferences] in it.
+    Future<Auth> pumpProviders(
+      WidgetTester tester, {
+      required MockFirebaseAuth firebase,
+      required List<String> erased,
+    }) async {
+      SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
+      alarms = _Alarms();
+      backfill = _Backfill();
+      charts = _Charts();
+      exercises = _Exercises();
+      goals = _Goals();
+      health = _Health();
+      previous = _Previous();
+      config = _RemoteConfig();
+      stats = _Stats();
+      templates = _Templates();
+      timers = _Timers();
+      upsync = _Upsync();
+      workouts = _Workouts();
+      preferences = Preferences();
+      await preferences.init();
+      final auth = Auth(
+        service: MockAccountService(),
+        firebase: firebase,
+        googleSignIn: MockGoogleSignIn(),
+        onErase: (uid) async => erased.add(uid),
+      );
+      // the Firebase stream's first event, which settles the session — under
+      // the test's fake clock, so pumped rather than awaited on a real delay
+      await tester.pump(const Duration(milliseconds: 20));
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<Auth>.value(value: auth),
+            ChangeNotifierProvider<Backfill>.value(value: backfill),
+            ChangeNotifierProvider<Charts>.value(value: charts),
+            ChangeNotifierProvider<Exercises>.value(value: exercises),
+            ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<Health>.value(value: health),
+            ChangeNotifierProvider<PreviousExercises>.value(value: previous),
+            Provider<RemoteConfig>.value(value: config),
+            ChangeNotifierProvider<Stats>.value(value: stats),
+            ChangeNotifierProvider<Templates>.value(value: templates),
+            ChangeNotifierProvider<Timers>.value(value: timers),
+            ChangeNotifierProvider<Upsync>.value(value: upsync),
+            ChangeNotifierProvider<Workouts>.value(value: workouts),
+            ChangeNotifierProvider<Preferences>.value(value: preferences),
+          ],
+          child: Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      return auth;
+    }
+
+    List<int> counts() {
+      return [
+        alarms.calls,
+        charts.calls,
+        exercises.calls,
+        goals.calls,
+        health.calls,
+        previous.calls,
+        config.calls,
+        stats.calls,
+        templates.calls,
+        timers.calls,
+        upsync.calls,
+        workouts.calls,
+      ];
+    }
+
+    testWidgets('an anonymous session: memory cleared, the uid wiped and forgotten, the session signed out', (
+      tester,
+    ) async {
+      final erased = <String>[];
+      final firebase = MockFirebaseAuth(signedIn: false);
+      final auth = await pumpProviders(tester, firebase: firebase, erased: erased);
+      final uid = auth.user!.id;
+      await preferences.setBaseColor(uid, 'ember');
+
+      await eraseState(capturedContext);
+
+      expect(counts(), everyElement(1), reason: 'the same fan-out a sign-out gets');
+      expect(erased, [uid]);
+      expect(preferences.getBaseColor(uid), isNull);
+      expect(preferences.onboardingSeen, isTrue, reason: 'the device flag survives: no carousel on the way back in');
+      // signed out — and, this being mobile, straight back in under a new anonymous session
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(auth.isAnonymous, isTrue);
+      expect(auth.isLoggedIn, isTrue);
+    });
+
+    testWidgets('a session with an account is left exactly as it was', (tester) async {
+      final erased = <String>[];
+      final firebase = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      );
+      final auth = await pumpProviders(tester, firebase: firebase, erased: erased);
+      await preferences.setBaseColor('u1', 'ember');
+
+      await eraseState(capturedContext);
+
+      expect(counts(), everyElement(0));
+      expect(erased, isEmpty);
+      expect(preferences.getBaseColor('u1'), 'ember');
+      expect(auth.isLoggedIn, isTrue);
+      expect(auth.isAnonymous, isFalse);
     });
   });
 
@@ -325,7 +514,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the twelve known notifiers', () {
+    test('the fan-out list is the fourteen known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -333,6 +522,7 @@ void main() {
       expect(fanned, {
         'Alarms',
         'Auth',
+        'Backfill',
         'Charts',
         'Exercises',
         'Goals',
@@ -342,6 +532,7 @@ void main() {
         'Stats',
         'Templates',
         'Timers',
+        'Upsync',
         'Workouts',
       });
     });

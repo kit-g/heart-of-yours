@@ -31,6 +31,9 @@ void main() {
     exercises = Exercises(
       remoteService: MockRemoteExerciseService(),
       service: MockExerciseService(),
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
     );
   });
 

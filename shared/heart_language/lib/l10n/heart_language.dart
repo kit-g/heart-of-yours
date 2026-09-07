@@ -280,6 +280,102 @@ abstract class L {
   /// **'Log out'**
   String get logOut;
 
+  /// Profile app bar while using the app without an account: the name slot and the tooltip of the icon that opens the no-account dialog
+  ///
+  /// In en, this message translates to:
+  /// **'No account'**
+  String get noAccount;
+
+  /// Title of the no-account dialog on the profile page
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using Heart without an account'**
+  String get noAccountTitle;
+
+  /// No-account dialog, first paragraph: where the data lives. Reads as one with the health-data promise
+  ///
+  /// In en, this message translates to:
+  /// **'Your health data never leaves your phone. Without an account, neither does anything else: your workouts, templates and goals live on this device only.'**
+  String get noAccountBodyLocal;
+
+  /// No-account dialog, second paragraph: what an account adds
+  ///
+  /// In en, this message translates to:
+  /// **'Logging in adds a backup and sync between your devices, and later sharing with friends and coaching.'**
+  String get noAccountBodySignIn;
+
+  /// No-account dialog, last paragraph; the export screen repeats this line and nothing else
+  ///
+  /// In en, this message translates to:
+  /// **'If you lose this phone, you lose your data.'**
+  String get noAccountBodyLose;
+
+  /// Dismisses the no-account dialog without logging in
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// First-launch onboarding, screen 1 of 3: title
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Heart'**
+  String get onboardingWelcomeTitle;
+
+  /// First-launch onboarding, screen 1 of 3: what Heart is, in one line
+  ///
+  /// In en, this message translates to:
+  /// **'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.'**
+  String get onboardingWelcomeBody;
+
+  /// First-launch onboarding, screen 2 of 3: title
+  ///
+  /// In en, this message translates to:
+  /// **'Your data stays on your phone'**
+  String get onboardingLocalTitle;
+
+  /// First-launch onboarding, screen 2 of 3: the anonymous promise and the health-data promise as one sentence
+  ///
+  /// In en, this message translates to:
+  /// **'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.'**
+  String get onboardingLocalBody;
+
+  /// First-launch onboarding, screen 2 of 3: the trade-off of having no account
+  ///
+  /// In en, this message translates to:
+  /// **'The honest trade: lose the phone and you lose the data, unless you log in.'**
+  String get onboardingLocalTrade;
+
+  /// First-launch onboarding, screen 3 of 3: title
+  ///
+  /// In en, this message translates to:
+  /// **'Log in whenever you like'**
+  String get onboardingAccountTitle;
+
+  /// First-launch onboarding, screen 3 of 3: what an account adds
+  ///
+  /// In en, this message translates to:
+  /// **'An account adds a backup and sync between your devices, and later sharing with friends and coaching. Nothing changes until you do.'**
+  String get onboardingAccountBody;
+
+  /// First-launch onboarding: moves to the next screen
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNext;
+
+  /// First-launch onboarding, last screen: closes the onboarding and enters the app
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingContinue;
+
+  /// First-launch onboarding: screen-reader label of the page indicator dots
+  ///
+  /// In en, this message translates to:
+  /// **'Screen {current} of {total}'**
+  String onboardingScreenOf(Object current, Object total);
+
   /// Generic label, e.g. bottom nav bar
   ///
   /// In en, this message translates to:
@@ -1432,6 +1528,36 @@ abstract class L {
   /// **'Yep, go on without me!'**
   String get deleteAccountConfirmMessage;
 
+  /// Settings row, shown only while using the app without an account: wipes everything Heart holds on this device. Destructive, red
+  ///
+  /// In en, this message translates to:
+  /// **'Erase my data'**
+  String get eraseData;
+
+  /// Erase-my-data dialog title. Mirrors the delete-account title's phrasing
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to erase your data?'**
+  String get eraseDataTitle;
+
+  /// Erase-my-data dialog body. Must name the health data as included (it is device-only and lives in the same store) while making clear the operating system's health store itself is untouched, and say plainly that nothing can bring the data back
+  ///
+  /// In en, this message translates to:
+  /// **'Your workouts, templates, custom exercises, goals and chart settings are deleted from this phone, together with Heart\'s copy of your health data. Your phone\'s own health records are not touched. Without an account there is no backup — this cannot be undone.'**
+  String get eraseDataBody;
+
+  /// Erase-my-data dialog, the safe way out
+  ///
+  /// In en, this message translates to:
+  /// **'Keep my data'**
+  String get eraseDataCancelMessage;
+
+  /// Erase-my-data dialog, the destructive action
+  ///
+  /// In en, this message translates to:
+  /// **'Erase everything'**
+  String get eraseDataConfirmMessage;
+
   /// Delete account dialog
   ///
   /// In en, this message translates to:
@@ -2452,6 +2578,72 @@ abstract class L {
   /// **'Your data'**
   String get yourData;
 
+  /// Settings row (shown with and without an account) and title of the export page
+  ///
+  /// In en, this message translates to:
+  /// **'Export my data'**
+  String get exportData;
+
+  /// Export page, what the file holds
+  ///
+  /// In en, this message translates to:
+  /// **'Everything Heart keeps on this phone, in a file that is yours to keep: workouts with every set, templates and folders, custom exercises, unit settings and goals.'**
+  String get exportExplainer;
+
+  /// Export page, the device-only health promise restated: no health data is in the file
+  ///
+  /// In en, this message translates to:
+  /// **'Your health data is not included — it never leaves your phone.'**
+  String get exportNoHealthData;
+
+  /// Profile row while the app pages down the history this device is missing, when the account's own total could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your history…'**
+  String get backfillRunning;
+
+  /// Profile row while the app pages down the history this device is missing: workouts held so far, and the account's total
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your history… {done} of {total}'**
+  String backfillRunningOf(Object done, Object total);
+
+  /// Profile row when the history backfill stopped because the server could not be reached; shown beside a Retry button
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t finish restoring your history.'**
+  String get backfillFailed;
+
+  /// Export page, the button that writes the JSON file and opens the share sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Export as JSON'**
+  String get exportAsJson;
+
+  /// Export page, one line under the JSON button
+  ///
+  /// In en, this message translates to:
+  /// **'Everything above, in Heart\'s own format.'**
+  String get exportJsonHint;
+
+  /// Export page, the button that writes the CSV file and opens the share sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Export as CSV'**
+  String get exportAsCsv;
+
+  /// Export page, one line under the CSV button
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts only, one row per set — opens in any spreadsheet.'**
+  String get exportCsvHint;
+
+  /// Export page, shown under the progress bar while the file is being written
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your file…'**
+  String get exportInFlight;
+
   /// Settings section header over account management
   ///
   /// In en, this message translates to:
@@ -2925,6 +3117,30 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Vertical Pull'**
   String get patternVerticalPull;
+
+  /// Profile row while an anonymous session's data is being uploaded to the account it just became: rows done so far out of the rows found
+  ///
+  /// In en, this message translates to:
+  /// **'Backing up to your account… {done} of {total}'**
+  String upsyncRunning(Object done, Object total);
+
+  /// Profile row when the upload stopped because the server could not be reached; a Retry button sits beside it
+  ///
+  /// In en, this message translates to:
+  /// **'Backup paused — {done} of {total} uploaded. Check your connection and try again.'**
+  String upsyncFailed(Object done, Object total);
+
+  /// Profile row, one line once the upload finished: how many rows the server created and how many it already had
+  ///
+  /// In en, this message translates to:
+  /// **'Backup done: {uploaded} uploaded, {existing} already there.'**
+  String upsyncDone(Object uploaded, Object existing);
+
+  /// Appended to the finished backup line when the server refused some rows (for example, over the goal limit)
+  ///
+  /// In en, this message translates to:
+  /// **'{skipped, plural, =1{1 item could not be uploaded.} other{{skipped} items could not be uploaded.}}'**
+  String upsyncSkipped(num skipped);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
