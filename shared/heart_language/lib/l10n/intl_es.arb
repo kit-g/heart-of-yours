@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "Ya empezaste algo importante. \nSigamos adelante.",
+  "logInBody": "Ya empezaste algo importante. \r\nSigamos adelante.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Todo camino empieza con una decisión. \nEsta es tuya.",
+  "signUpBody": "Todo camino empieza con una decisión. \r\nEsta es tuya.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Tu camino no está perdido. \nSolo es una pausa — lo restableceremos juntos.",
+  "recoverBody": "Tu camino no está perdido. \r\nSolo es una pausa — lo restableceremos juntos.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -395,13 +395,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).\n Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.",
+  "archiveConfirmBody": "Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).\r\n Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "Este ejercicio está archivado \ny ya no aparecerá en tu biblioteca principal.",
+  "exerciseArchived": "Este ejercicio está archivado \r\ny ya no aparecerá en tu biblioteca principal.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -1442,7 +1442,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.\n\nNos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. {emoji}",
+  "leaveFeedbackBody": "Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.\r\n\r\nNos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1554,7 +1554,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "Tu cuenta quedó programada para eliminarse el {date}.\n\nSi cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.\n\nSolo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.",
+  "accountDeletedBody": "Tu cuenta quedó programada para eliminarse el {date}.\r\n\r\nSi cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.\r\n\r\nSolo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
@@ -1898,7 +1898,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredBody": "Hay una actualización importante esperando — una que mantiene la app funcionando como debe.\n\nNecesitas instalarla antes de continuar.\nGracias por tu paciencia — y perdón por la interrupción.",
+  "updateRequiredBody": "Hay una actualización importante esperando — una que mantiene la app funcionando como debe.\r\n\r\nNecesitas instalarla antes de continuar.\r\nGracias por tu paciencia — y perdón por la interrupción.",
   "@updateRequiredBody": {
     "description": "Force update screen, body",
     "type": "text",
@@ -2683,7 +2683,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importExplainerStrong": "¿Entrenabas con Strong? Trae tu historial contigo.\n\nEn la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.",
+  "importExplainerStrong": "¿Entrenabas con Strong? Trae tu historial contigo.\r\n\r\nEn la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.",
   "@importExplainerStrong": {
     "description": "Import page, explains where the Strong export file comes from",
     "type": "text",
@@ -3160,5 +3160,40 @@
     "description": "Movement pattern label (filter sheet chip and About-tab chip)",
     "type": "text",
     "placeholders": {}
+  },
+  "upsyncRunning": "Guardando en tu cuenta… {done} de {total}",
+  "@upsyncRunning": {
+    "description": "Profile row while an anonymous session's data is being uploaded to the account it just became: rows done so far out of the rows found",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncFailed": "Copia en pausa — {done} de {total} subidos. Comprueba tu conexión e inténtalo de nuevo.",
+  "@upsyncFailed": {
+    "description": "Profile row when the upload stopped because the server could not be reached; a Retry button sits beside it",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncDone": "Copia completada: {uploaded} subidos, {existing} ya estaban.",
+  "@upsyncDone": {
+    "description": "Profile row, one line once the upload finished: how many rows the server created and how many it already had",
+    "type": "text",
+    "placeholders": {
+      "uploaded": {},
+      "existing": {}
+    }
+  },
+  "upsyncSkipped": "{skipped, plural, =1{1 elemento no se pudo subir.} other{{skipped} elementos no se pudieron subir.}}",
+  "@upsyncSkipped": {
+    "description": "Appended to the finished backup line when the server refused some rows (for example, over the goal limit)",
+    "type": "text",
+    "placeholders": {
+      "skipped": {}
+    }
   }
 }

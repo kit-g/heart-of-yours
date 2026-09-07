@@ -3190,5 +3190,40 @@
     "description": "Movement pattern label (filter sheet chip and About-tab chip)",
     "type": "text",
     "placeholders": {}
+  },
+  "upsyncRunning": "Backing up to your account… {done} of {total}",
+  "@upsyncRunning": {
+    "description": "Profile row while an anonymous session's data is being uploaded to the account it just became: rows done so far out of the rows found",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncFailed": "Backup paused — {done} of {total} uploaded. Check your connection and try again.",
+  "@upsyncFailed": {
+    "description": "Profile row when the upload stopped because the server could not be reached; a Retry button sits beside it",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncDone": "Backup done: {uploaded} uploaded, {existing} already there.",
+  "@upsyncDone": {
+    "description": "Profile row, one line once the upload finished: how many rows the server created and how many it already had",
+    "type": "text",
+    "placeholders": {
+      "uploaded": {},
+      "existing": {}
+    }
+  },
+  "upsyncSkipped": "{skipped, plural, =1{1 item could not be uploaded.} other{{skipped} items could not be uploaded.}}",
+  "@upsyncSkipped": {
+    "description": "Appended to the finished backup line when the server refused some rows (for example, over the goal limit)",
+    "type": "text",
+    "placeholders": {
+      "skipped": {}
+    }
   }
 }

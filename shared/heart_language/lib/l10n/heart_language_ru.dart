@@ -70,19 +70,19 @@ class LRu extends L {
   String get logInTitle => 'С возвращением!';
 
   @override
-  String get logInBody => 'Вы уже начали что-то важное.\nДавайте продолжим!';
+  String get logInBody => 'Вы уже начали что-то важное.\r\nДавайте продолжим!';
 
   @override
   String get signUpTitle => 'Начните с Heart';
 
   @override
-  String get signUpBody => 'Каждое путешествие начинается с одного решения.\nЭто — ваше.';
+  String get signUpBody => 'Каждое путешествие начинается с одного решения.\r\nЭто — ваше.';
 
   @override
   String get recoverTitle => 'Все еще с вами';
 
   @override
-  String get recoverBody => 'Ваш путь не потерян.\nПросто небольшая пауза — давайте начнем заново.';
+  String get recoverBody => 'Ваш путь не потерян.\r\nПросто небольшая пауза — давайте начнем заново.';
 
   @override
   String get logInWithGoogle => 'Войти через Google';
@@ -216,11 +216,11 @@ class LRu extends L {
 
   @override
   String get archiveConfirmBody =>
-      'Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.';
+      'Это упражнение будет перемещено в Архивные упражнения (найти в Упражнения → Ещё → Показать архивные).\r\n Архивирование не повлияет на ваши прошлые тренировки — история останется без изменений.';
 
   @override
   String get exerciseArchived =>
-      'Это упражнение находится в архиве\nи больше не будет отображаться в основной библиотеке.';
+      'Это упражнение находится в архиве\r\nи больше не будет отображаться в основной библиотеке.';
 
   @override
   String get deleteSet => 'Удалить подход';
@@ -774,7 +774,7 @@ class LRu extends L {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\n\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. $emoji';
+    return 'Сделайте скриншот, нарисуйте свои впечатления и оставьте нам заметку. Вы можете продолжать пользоваться приложением.\r\n\r\nМы любим обратную связь. Каждый рисунок и комментарий помогает нам сделать приложение лучше — для вас и всех остальных. Так что спасибо. Серьезно. $emoji';
   }
 
   @override
@@ -833,7 +833,7 @@ class LRu extends L {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'Ваш аккаунт запланирован на удаление $date.\n\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\n\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.';
+    return 'Ваш аккаунт запланирован на удаление $date.\r\n\r\nЕсли вы передумаете, вы можете восстановить свой аккаунт в любое время до этой даты.\r\n\r\nПросто нажмите кнопку ниже, чтобы отменить удаление и сохранить ваш аккаунт.';
   }
 
   @override
@@ -1016,7 +1016,7 @@ class LRu extends L {
 
   @override
   String get updateRequiredBody =>
-      'Доступно важное обновление — оно необходимо для правильной работы приложения.\n\nВам нужно установить его, чтобы продолжить.\nСпасибо за терпение — и извините за прерывание.';
+      'Доступно важное обновление — оно необходимо для правильной работы приложения.\r\n\r\nВам нужно установить его, чтобы продолжить.\r\nСпасибо за терпение — и извините за прерывание.';
 
   @override
   String updateRequiredCta(String storeName) {
@@ -1499,7 +1499,7 @@ class LRu extends L {
 
   @override
   String get importExplainerStrong =>
-      'Тренировались в Strong? Забирайте историю с собой.\n\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.';
+      'Тренировались в Strong? Забирайте историю с собой.\r\n\r\nВ приложении Strong откройте Profile → Settings → Export Strong Data. CSV-файл придёт вам на почту — сохраните его, а затем выберите здесь.';
 
   @override
   String get importSafeToRetry =>
@@ -1771,4 +1771,30 @@ class LRu extends L {
 
   @override
   String get patternVerticalPull => 'Вертикальная тяга';
+
+  @override
+  String upsyncRunning(Object done, Object total) {
+    return 'Сохраняем в ваш аккаунт… $done из $total';
+  }
+
+  @override
+  String upsyncFailed(Object done, Object total) {
+    return 'Сохранение приостановлено — загружено $done из $total. Проверьте соединение и попробуйте ещё раз.';
+  }
+
+  @override
+  String upsyncDone(Object uploaded, Object existing) {
+    return 'Сохранение завершено: $uploaded загружено, $existing уже было.';
+  }
+
+  @override
+  String upsyncSkipped(num skipped) {
+    String _temp0 = intl.Intl.pluralLogic(
+      skipped,
+      locale: localeName,
+      other: 'Не удалось загрузить $skipped элементов.',
+      one: '1 элемент не удалось загрузить.',
+    );
+    return '$_temp0';
+  }
 }

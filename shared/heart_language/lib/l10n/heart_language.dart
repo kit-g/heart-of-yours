@@ -3105,6 +3105,30 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Vertical Pull'**
   String get patternVerticalPull;
+
+  /// Profile row while an anonymous session's data is being uploaded to the account it just became: rows done so far out of the rows found
+  ///
+  /// In en, this message translates to:
+  /// **'Backing up to your account… {done} of {total}'**
+  String upsyncRunning(Object done, Object total);
+
+  /// Profile row when the upload stopped because the server could not be reached; a Retry button sits beside it
+  ///
+  /// In en, this message translates to:
+  /// **'Backup paused — {done} of {total} uploaded. Check your connection and try again.'**
+  String upsyncFailed(Object done, Object total);
+
+  /// Profile row, one line once the upload finished: how many rows the server created and how many it already had
+  ///
+  /// In en, this message translates to:
+  /// **'Backup done: {uploaded} uploaded, {existing} already there.'**
+  String upsyncDone(Object uploaded, Object existing);
+
+  /// Appended to the finished backup line when the server refused some rows (for example, over the goal limit)
+  ///
+  /// In en, this message translates to:
+  /// **'{skipped, plural, =1{1 item could not be uploaded.} other{{skipped} items could not be uploaded.}}'**
+  String upsyncSkipped(num skipped);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

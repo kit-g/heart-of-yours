@@ -120,7 +120,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "logInBody": "Vous avez déjà commencé quelque chose d’important. \nContinuons sur cette lancée.",
+  "logInBody": "Vous avez déjà commencé quelque chose d’important. \r\nContinuons sur cette lancée.",
   "@logInBody": {
     "description": "Login page copy",
     "type": "text",
@@ -132,7 +132,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "signUpBody": "Chaque parcours commence par une décision. \nCelle-ci vous appartient.",
+  "signUpBody": "Chaque parcours commence par une décision. \r\nCelle-ci vous appartient.",
   "@signUpBody": {
     "description": "Sign up page copy",
     "type": "text",
@@ -144,7 +144,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "recoverBody": "Votre parcours n’est pas perdu. \nJuste une pause — on repart ensemble.",
+  "recoverBody": "Votre parcours n’est pas perdu. \r\nJuste une pause — on repart ensemble.",
   "@recoverBody": {
     "description": "Recover page copy",
     "type": "text",
@@ -395,13 +395,13 @@
       "exerciseName": {}
     }
   },
-  "archiveConfirmBody": "Cet exercice sera déplacé vers les exercices archivés (retrouvez-le dans Exercices → Plus → Voir les archivés).\n L’archivage n’affecte aucune de vos séances passées — votre historique reste intact.",
+  "archiveConfirmBody": "Cet exercice sera déplacé vers les exercices archivés (retrouvez-le dans Exercices → Plus → Voir les archivés).\r\n L’archivage n’affecte aucune de vos séances passées — votre historique reste intact.",
   "@archiveConfirmBody": {
     "description": "Dialog body",
     "type": "text",
     "placeholders": {}
   },
-  "exerciseArchived": "Cet exercice est archivé \net n’apparaîtra plus dans votre bibliothèque principale.",
+  "exerciseArchived": "Cet exercice est archivé \r\net n’apparaîtra plus dans votre bibliothèque principale.",
   "@exerciseArchived": {
     "description": "Tooltip over archived icon",
     "type": "text",
@@ -1442,7 +1442,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "leaveFeedbackBody": "Prenez une capture d’écran, gribouillez vos impressions et laissez-nous un mot. Vous pouvez continuer à naviguer dans l’app pendant ce temps.\n\nOn adore les retours. Chaque gribouillis et chaque commentaire nous aide à améliorer l’app — pour vous et pour tout le monde. Alors merci. Sincèrement. {emoji}",
+  "leaveFeedbackBody": "Prenez une capture d’écran, gribouillez vos impressions et laissez-nous un mot. Vous pouvez continuer à naviguer dans l’app pendant ce temps.\r\n\r\nOn adore les retours. Chaque gribouillis et chaque commentaire nous aide à améliorer l’app — pour vous et pour tout le monde. Alors merci. Sincèrement. {emoji}",
   "@leaveFeedbackBody": {
     "description": "Settings item",
     "type": "text",
@@ -1554,7 +1554,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "accountDeletedBody": "La suppression de votre compte est programmée pour le {date}.\n\nSi vous changez d’avis, vous pouvez restaurer votre compte à tout moment avant cette date.\n\nAppuyez simplement sur le bouton ci-dessous pour annuler la suppression et garder votre compte.",
+  "accountDeletedBody": "La suppression de votre compte est programmée pour le {date}.\r\n\r\nSi vous changez d’avis, vous pouvez restaurer votre compte à tout moment avant cette date.\r\n\r\nAppuyez simplement sur le bouton ci-dessous pour annuler la suppression et garder votre compte.",
   "@accountDeletedBody": {
     "description": "Delete account page",
     "type": "text",
@@ -1898,7 +1898,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "updateRequiredBody": "Une mise à jour importante vous attend — elle garantit le bon fonctionnement de votre app.\n\nVous devrez l’installer avant de continuer.\nMerci de votre patience — et désolé pour l’interruption.",
+  "updateRequiredBody": "Une mise à jour importante vous attend — elle garantit le bon fonctionnement de votre app.\r\n\r\nVous devrez l’installer avant de continuer.\r\nMerci de votre patience — et désolé pour l’interruption.",
   "@updateRequiredBody": {
     "description": "Force update screen, body",
     "type": "text",
@@ -2683,7 +2683,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "importExplainerStrong": "Vous souleviez avec Strong ? Emportez votre historique avec vous.\n\nDans l’app Strong, allez dans Profile → Settings → Export Strong Data. Vous recevrez un fichier CSV par e-mail — enregistrez-le, puis choisissez-le ici.",
+  "importExplainerStrong": "Vous souleviez avec Strong ? Emportez votre historique avec vous.\r\n\r\nDans l’app Strong, allez dans Profile → Settings → Export Strong Data. Vous recevrez un fichier CSV par e-mail — enregistrez-le, puis choisissez-le ici.",
   "@importExplainerStrong": {
     "description": "Import page, explains where the Strong export file comes from",
     "type": "text",
@@ -3160,5 +3160,40 @@
     "description": "Movement pattern label (filter sheet chip and About-tab chip)",
     "type": "text",
     "placeholders": {}
+  },
+  "upsyncRunning": "Sauvegarde vers votre compte… {done} sur {total}",
+  "@upsyncRunning": {
+    "description": "Profile row while an anonymous session's data is being uploaded to the account it just became: rows done so far out of the rows found",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncFailed": "Sauvegarde en pause — {done} sur {total} envoyés. Vérifiez votre connexion et réessayez.",
+  "@upsyncFailed": {
+    "description": "Profile row when the upload stopped because the server could not be reached; a Retry button sits beside it",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
+  "upsyncDone": "Sauvegarde terminée : {uploaded} envoyés, {existing} déjà présents.",
+  "@upsyncDone": {
+    "description": "Profile row, one line once the upload finished: how many rows the server created and how many it already had",
+    "type": "text",
+    "placeholders": {
+      "uploaded": {},
+      "existing": {}
+    }
+  },
+  "upsyncSkipped": "{skipped, plural, =1{1 élément n’a pas pu être envoyé.} other{{skipped} éléments n’ont pas pu être envoyés.}}",
+  "@upsyncSkipped": {
+    "description": "Appended to the finished backup line when the server refused some rows (for example, over the goal limit)",
+    "type": "text",
+    "placeholders": {
+      "skipped": {}
+    }
   }
 }
