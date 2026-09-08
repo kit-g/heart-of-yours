@@ -3190,6 +3190,15 @@
       "total": {}
     }
   },
+  "upsyncRefused": "Резервное копирование приостановлено — загружено {done} из {total}. Что-то пошло не так на нашей стороне.",
+  "@upsyncRefused": {
+    "description": "Profile row when the upload stopped because the server answered with an error rather than because it could not be reached; a Retry button sits beside it",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
   "upsyncDone": "Сохранение завершено: {uploaded} загружено, {existing} уже было.",
   "@upsyncDone": {
     "description": "Profile row, one line once the upload finished: how many rows the server created and how many it already had",

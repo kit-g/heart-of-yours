@@ -3190,6 +3190,15 @@
       "total": {}
     }
   },
+  "upsyncRefused": "Backup paused — {done} of {total} uploaded. Something went wrong on our side.",
+  "@upsyncRefused": {
+    "description": "Profile row when the upload stopped because the server answered with an error rather than because it could not be reached; a Retry button sits beside it",
+    "type": "text",
+    "placeholders": {
+      "done": {},
+      "total": {}
+    }
+  },
   "upsyncDone": "Backup done: {uploaded} uploaded, {existing} already there.",
   "@upsyncDone": {
     "description": "Profile row, one line once the upload finished: how many rows the server created and how many it already had",

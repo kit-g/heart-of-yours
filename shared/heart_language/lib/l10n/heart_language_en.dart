@@ -1752,6 +1752,11 @@ class LEn extends L {
   }
 
   @override
+  String upsyncRefused(Object done, Object total) {
+    return 'Backup paused — $done of $total uploaded. Something went wrong on our side.';
+  }
+
+  @override
   String upsyncDone(Object uploaded, Object existing) {
     return 'Backup done: $uploaded uploaded, $existing already there.';
   }
@@ -3512,6 +3517,11 @@ class LEnCa extends LEn {
   @override
   String upsyncFailed(Object done, Object total) {
     return 'Backup paused — $done of $total uploaded. Check your connection and try again.';
+  }
+
+  @override
+  String upsyncRefused(Object done, Object total) {
+    return 'Backup paused — $done of $total uploaded. Something went wrong on our side.';
   }
 
   @override
