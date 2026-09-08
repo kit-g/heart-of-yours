@@ -222,6 +222,8 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     buzz();
     final workouts = Workouts.of(context);
     final exercises = Exercises.of(context);
+    final backfill = Backfill.of(context);
+    final userId = Auth.of(context).user?.id;
     final messenger = ScaffoldMessenger.of(context);
 
     startLoading();
@@ -237,16 +239,26 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       );
       _outcome.value = _Imported(report);
       // The imported workouts exist server-side only until the mirrors
-      // refresh. Fire and forget: the report above is the confirmation, and
-      // older pages fill in as the user pages back through history. The chain
-      // is ordered like startup (see app.dart): history rows hold a foreign
-      // key onto `exercises.name`, and an import that created custom
+      // refresh. Fire and forget: the report above is the confirmation. The
+      // chain is ordered like startup (see app.dart): history rows hold a
+      // foreign key onto `exercises.name`, and an import that created custom
       // exercises must land them in the catalog before the mirror writes
       // workouts that reference them.
+      //
+      // [Backfill.resync] last, and it is what brings the *whole* import down:
+      // `initHistory` only ever asks for the newest page, and this device's
+      // mark was earned against the account as it stood before the import
+      // (heart-of-yours#113).
       unawaited(
         exercises
             .init()
             .then((_) => workouts.initHistory())
+            .then(
+              (_) => switch (userId) {
+                String uid => backfill.resync(uid),
+                null => null,
+              },
+            )
             .catchError(
               (e, s) => widget.onError?.call(e, stacktrace: s),
             ),

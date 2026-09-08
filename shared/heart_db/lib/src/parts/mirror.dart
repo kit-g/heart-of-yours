@@ -66,6 +66,12 @@ mixin _Mirror on _LocalDatabase {
     );
   }
 
+  /// The account gained rows this device did not put there, so the claim that
+  /// the mirror is whole is no longer one this device can make.
+  Future<void> clearHistoryBackfilled(String userId) async {
+    await _db.delete(_syncs, where: 'table_name = ?', whereArgs: [historyBackfillKey(userId)]);
+  }
+
   /// What this device holds for [userId], collection by collection.
   Future<AccountSummary> mirrorSummary(String userId) async {
     // one statement, one round trip: a scalar subquery per column, in the
