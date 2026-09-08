@@ -1759,6 +1759,11 @@ class LFr extends L {
   }
 
   @override
+  String upsyncRefused(Object done, Object total) {
+    return 'Sauvegarde en pause — $done sur $total envoyés. Un problème est survenu de notre côté.';
+  }
+
+  @override
   String upsyncDone(Object uploaded, Object existing) {
     return 'Sauvegarde terminée : $uploaded envoyés, $existing déjà présents.';
   }

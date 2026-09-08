@@ -1781,6 +1781,11 @@ class LRu extends L {
   }
 
   @override
+  String upsyncRefused(Object done, Object total) {
+    return 'Резервное копирование приостановлено — загружено $done из $total. Что-то пошло не так на нашей стороне.';
+  }
+
+  @override
   String upsyncDone(Object uploaded, Object existing) {
     return 'Сохранение завершено: $uploaded загружено, $existing уже было.';
   }

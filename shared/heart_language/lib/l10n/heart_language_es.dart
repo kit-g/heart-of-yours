@@ -1756,6 +1756,11 @@ class LEs extends L {
   }
 
   @override
+  String upsyncRefused(Object done, Object total) {
+    return 'Copia de seguridad en pausa: $done de $total subidos. Algo ha fallado por nuestra parte.';
+  }
+
+  @override
   String upsyncDone(Object uploaded, Object existing) {
     return 'Copia completada: $uploaded subidos, $existing ya estaban.';
   }

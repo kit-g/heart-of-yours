@@ -3130,6 +3130,12 @@ abstract class L {
   /// **'Backup paused — {done} of {total} uploaded. Check your connection and try again.'**
   String upsyncFailed(Object done, Object total);
 
+  /// Profile row when the upload stopped because the server answered with an error rather than because it could not be reached; a Retry button sits beside it
+  ///
+  /// In en, this message translates to:
+  /// **'Backup paused — {done} of {total} uploaded. Something went wrong on our side.'**
+  String upsyncRefused(Object done, Object total);
+
   /// Profile row, one line once the upload finished: how many rows the server created and how many it already had
   ///
   /// In en, this message translates to:
