@@ -29,7 +29,13 @@ class const UpsyncRow({super.key}) extends StatelessWidget {
         total: upsync.total,
       ),
       .failed => _Line(
-        text: l.upsyncFailed(upsync.done, upsync.total),
+        // a phone with no signal is the user's to fix; a server that answered
+        // and refused is not, and sending them after a working connection is
+        // sending them after a fault they do not have
+        text: switch (upsync.reachedServer) {
+          true => l.upsyncRefused(upsync.done, upsync.total),
+          false => l.upsyncFailed(upsync.done, upsync.total),
+        },
         action: PrimaryButton.shrunk(
           key: AppKeys.upsyncRetry,
           onPressed: upsync.retry,
