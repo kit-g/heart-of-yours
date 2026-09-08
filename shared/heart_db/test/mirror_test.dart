@@ -216,6 +216,14 @@ void main() {
       expect(await local.isHistoryBackfilled(other), isFalse);
     });
 
+    test('the account growing behind the app takes it back', () async {
+      await local.markHistoryBackfilled(user);
+
+      await local.clearHistoryBackfilled(user);
+
+      expect(await local.isHistoryBackfilled(user), isFalse);
+    });
+
     test('an erase takes it with the rows', () async {
       await workout('0198d1-workout');
       await local.markHistoryBackfilled(user);
