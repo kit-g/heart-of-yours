@@ -33,4 +33,7 @@ class LocalMirror implements LocalMirrorService {
 
   @override
   Future<void> markHistoryBackfilled(String userId) => _db.markHistoryBackfilled(userId);
+
+  @override
+  Future<void> clearHistoryBackfilled(String userId) => _db.clearHistoryBackfilled(userId);
 }
