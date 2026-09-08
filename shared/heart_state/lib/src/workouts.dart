@@ -676,17 +676,33 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// that answered wrongly, and the price of being wrong here is every workout
   /// the user has — so the one account this cannot heal is someone who deleted
   /// their last remaining workout elsewhere.
+  /// Rows the server has stopped listing, within the stretch this [page]
+  /// actually speaks for.
+  ///
+  /// Bounded by **id**, because that is the axis the backend pages on
+  /// (`cursorOf: (w) => w.id`, see [_advanceHistory]). Ids are uuid v7, so
+  /// that is creation order — which is *not* the order workouts happened in.
+  /// A Strong import mints every row now with starts spread over years; an
+  /// upsync replays a backdated anonymous history the same way; editing a
+  /// workout's start moves one on its own.
+  ///
+  /// Bounding by `start` instead assumed the page held every workout from its
+  /// oldest one forward. Against 1000 replayed workouts whose ids and starts
+  /// disagreed, that read 481 live rows as deleted and removed them from the
+  /// mirror while the server still held all of them (heart-of-yours#113).
   Future<void> _dropDeletedElsewhere(Iterable<Workout> page) async {
     if (page.isEmpty) return;
 
     final kept = page.map((each) => each.id).toSet();
-    final oldest = page.map((each) => each.start).reduce((a, b) => a.isBefore(b) ? a : b);
+    // the page is ordered newest first, so its last id is the low-water mark:
+    // below it the server has not spoken and the mirror keeps what it holds
+    final floor = kept.reduce((a, b) => a.compareTo(b) <= 0 ? a : b);
 
     final stale = _workouts.values.where(
       (workout) {
         if (!workout.isCompleted || !workout.synced) return false;
         if (kept.contains(workout.id)) return false;
-        return !workout.start.isBefore(oldest);
+        return workout.id.compareTo(floor) > 0;
       },
     ).toList();
 

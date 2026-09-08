@@ -381,6 +381,11 @@ void main() {
 
     group('history reconciliation', () {
       /// A workout as the server would hand it back: finished and synced.
+      /// A uuid v7 whose timestamp is [minted] — the axis the backend pages on
+      /// and the one the mirror's staleness check has to agree with. Written
+      /// out rather than generated so each test's ordering is on the page.
+      String v7(int minted) => '019e0000-${minted.toString().padLeft(4, '0')}-7000-8000-000000000000';
+
       Workout fromServer({required String id, required DateTime start}) {
         return Workout.fromJson({
           'id': id,
@@ -408,39 +413,60 @@ void main() {
       test('drops a workout the server no longer has', () async {
         // deleted on another device. storeWorkoutHistory only upserts, so
         // nothing else would ever remove it from this one's mirror
-        final kept = fromServer(id: 'kept', start: DateTime(2026, 8, 5));
-        final deletedElsewhere = fromServer(id: 'gone', start: DateTime(2026, 8, 6));
+        final kept = fromServer(id: v7(10), start: DateTime(2026, 8, 5));
+        // minted after the page's floor, so the page speaks for it
+        final deletedElsewhere = fromServer(id: v7(20), start: DateTime(2026, 8, 6));
 
         stubLocal([kept, deletedElsewhere]);
         when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [kept]);
 
         await sut.initHistory();
 
-        expect(sut.lookup('gone'), isNull);
-        expect(sut.lookup('kept'), isNotNull);
-        verify(local.deleteWorkout('gone')).called(1);
+        expect(sut.lookup(v7(20)), isNull);
+        expect(sut.lookup(v7(10)), isNotNull);
+        verify(local.deleteWorkout(v7(20))).called(1);
       });
 
       test('leaves history older than the page alone', () async {
-        // the page is the newest N; anything before its oldest member simply
-        // was not asked about, and absence is not evidence of deletion
-        final older = fromServer(id: 'older', start: DateTime(2026, 1, 2));
-        final page = fromServer(id: 'recent', start: DateTime(2026, 8, 6));
+        // the page is the newest N; anything minted before its oldest member
+        // simply was not asked about, and absence is not evidence of deletion
+        final older = fromServer(id: v7(1), start: DateTime(2026, 1, 2));
+        final page = fromServer(id: v7(30), start: DateTime(2026, 8, 6));
 
         stubLocal([older, page]);
         when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [page]);
 
         await sut.initHistory();
 
-        expect(sut.lookup('older'), isNotNull);
-        verifyNever(local.deleteWorkout('older'));
+        expect(sut.lookup(v7(1)), isNotNull);
+        verifyNever(local.deleteWorkout(v7(1)));
+      });
+
+      test('a backdated workout is not a deletion, however recent it reads', () async {
+        // The case that cost 481 rows (heart-of-yours#113): a Strong import and
+        // an upsync replay both mint every row *now* with starts spread over
+        // years, so id order and start order disagree. Bounding the sweep by
+        // `start` read this as "the page should have listed it" and deleted a
+        // workout the server still had.
+        final backdated = fromServer(id: v7(5), start: DateTime(2026, 8, 20));
+        final page = fromServer(id: v7(40), start: DateTime(2026, 8, 6));
+
+        stubLocal([backdated, page]);
+        when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [page]);
+
+        await sut.initHistory();
+
+        // its start is *after* the page's oldest, and it is still not stale:
+        // the page never reached down to where it was minted
+        expect(sut.lookup(v7(5)), isNotNull);
+        verifyNever(local.deleteWorkout(v7(5)));
       });
 
       test('leaves an unsynced workout alone', () async {
         // a local write the server has not seen yet — the opposite of a
         // deletion, and deleting it would lose the session outright
         final pending = Workout(name: 'not pushed yet')..finish(DateTime(2026, 8, 7));
-        final page = fromServer(id: 'recent', start: DateTime(2026, 8, 6));
+        final page = fromServer(id: v7(30), start: DateTime(2026, 8, 6));
 
         stubLocal([pending, page]);
         when(remote.getWorkouts(any, pageSize: anyNamed('pageSize'))).thenAnswer((_) async => [page]);
