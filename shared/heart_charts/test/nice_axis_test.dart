@@ -189,4 +189,52 @@ void main() {
       expectWellFormed(a, 270, 330);
     });
   });
+
+  group('a count axis', () {
+    // What the profile's "Workouts per week" chart asks for: whole steps, and
+    // few enough labels to read. It used to pin `interval: 1` and render every
+    // even integer, which is fine at 7 a week and an unreadable column of
+    // overlapping digits at 175 (heart-of-yours#113).
+    const counts = <double>[1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+
+    /// Labels the axis would draw above zero — the number that has to stay
+    /// small however busy the weeks get.
+    int ticks(double max, double interval) => (max / interval).round();
+
+    test('a quiet week keeps the step it always had', () {
+      final a = niceYAxis(0, 7, stepCandidates: counts);
+
+      expect(a.interval, 2);
+      expect(a.max, greaterThanOrEqualTo(7));
+      expect(ticks(a.max, a.interval), lessThanOrEqualTo(6));
+    });
+
+    test('a single workout does not get a fractional axis', () {
+      final a = niceYAxis(0, 1, stepCandidates: counts);
+
+      // without candidates the generic nice number lands on 0.2 — half a
+      // workout is not a gridline anyone wants
+      expect(a.interval, 1);
+      expect(a.interval % 1, 0);
+    });
+
+    test('a busy week coarsens the step instead of adding labels', () {
+      final a = niceYAxis(0, 175, stepCandidates: counts);
+
+      expect(a.interval, 50);
+      expect(a.max, greaterThanOrEqualTo(175));
+      // the whole point: not 88 of them
+      expect(ticks(a.max, a.interval), lessThanOrEqualTo(6));
+    });
+
+    test('every plausible week stays under a handful of labels', () {
+      for (final max in [1, 3, 7, 12, 21, 40, 99, 175, 400, 1200]) {
+        final a = niceYAxis(0, max.toDouble(), stepCandidates: counts);
+
+        expect(a.interval % 1, 0, reason: 'fractional step at $max');
+        expect(a.max, greaterThanOrEqualTo(max.toDouble()), reason: 'clipped at $max');
+        expect(ticks(a.max, a.interval), lessThanOrEqualTo(7), reason: 'too many labels at $max');
+      }
+    });
+  });
 }
