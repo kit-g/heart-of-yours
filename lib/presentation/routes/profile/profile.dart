@@ -18,6 +18,7 @@ import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/health/section.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart_charts/heart_charts.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/upsync_row.dart';

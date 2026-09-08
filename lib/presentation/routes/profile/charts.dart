@@ -101,10 +101,11 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                             return LayoutBuilder(
                               builder: (context, constraints) {
                                 final stride = _labelStride(constraints.maxWidth);
+                                final axis = _yAxis(widget.workouts.max);
                                 return BarChart(
                                   duration: animDuration,
                                   BarChartData(
-                                    maxY: widget.workouts.max.toDouble() + 1,
+                                    maxY: axis.max,
                                     minY: 0,
                                     barTouchData: BarTouchData(
                                       touchTooltipData: BarTouchTooltipData(
@@ -133,8 +134,11 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                                       leftTitles: AxisTitles(
                                         sideTitles: SideTitles(
                                           showTitles: true,
-                                          interval: 1.0,
-                                          reservedSize: 28,
+                                          interval: axis.interval,
+                                          // room for the widest number the axis
+                                          // will draw, so three figures are not
+                                          // clipped into the plot
+                                          reservedSize: 20 + 8.0 * '${axis.max.toInt()}'.length,
                                           minIncluded: false,
                                           maxIncluded: true,
                                           getTitlesWidget: _yTitles,
@@ -152,7 +156,7 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
                                       show: true,
                                       drawHorizontalLine: true,
                                       drawVerticalLine: false,
-                                      checkToShowHorizontalLine: (v) => v % 1 == 0,
+                                      horizontalInterval: axis.interval,
                                     ),
                                   ),
                                 );
@@ -263,20 +267,33 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
     );
   }
 
+  /// Steps the count axis is allowed to take. Whole workouts, and coarse
+  /// enough that a busy week cannot ask for a label per workout: the axis used
+  /// to be pinned at `interval: 1` and drew every even integer, which reads
+  /// fine at 7 a week and collapsed into an unreadable column of digits at 175
+  /// (heart-of-yours#113).
+  static const _ySteps = <double>[1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+
+  /// The axis for a bar chart of counts: a whole-number step, and a floor
+  /// pinned at zero.
+  ///
+  /// [niceYAxis] leaves half a step of headroom at each end so a line's dot
+  /// marker never touches the frame. Bars grow from the baseline and have no
+  /// such problem, and a negative number of workouts is not a thing — so the
+  /// minimum it suggests is dropped and only the top and the step are kept.
+  ({double max, double interval}) _yAxis(int max) {
+    final axis = niceYAxis(0, max.toDouble(), stepCandidates: _ySteps);
+    return (max: axis.max, interval: axis.interval);
+  }
+
   Widget _yTitles(double value, TitleMeta meta) {
     return SideTitleWidget(
       meta: meta,
-      child: switch (value.toInt() % 2 == 0) {
-        false => const SizedBox.shrink(),
-        true => Padding(
-          padding: const EdgeInsets.only(left: 0.0),
-          child: Text(
-            value.toInt().toString(),
-            textAlign: TextAlign.end,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ),
-      },
+      child: Text(
+        value.toInt().toString(),
+        textAlign: TextAlign.end,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
     );
   }
 }
