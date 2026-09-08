@@ -160,6 +160,24 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
 
   UpsyncReport get report => _report;
 
+  bool _reachedServer = false;
+
+  /// Whether the run that stopped got an answer at all. Only meaningful while
+  /// [status] is `failed`.
+  ///
+  /// The two are different things to be told. A phone with no signal is the
+  /// user's to fix and "check your connection" is the right nudge; a server
+  /// that answered and refused is not, and telling them to check a connection
+  /// that is working sends them after a fault they do not have. The 500 that
+  /// stopped a 358-row backup at row 26 read exactly that way
+  /// (heart-of-yours#113).
+  bool get reachedServer => _reachedServer;
+
+  /// `Api` throws the decoded body when the server answered and the answer was
+  /// an error; a transport failure arrives as a `SocketException`, a
+  /// `ClientException` or a timeout. So a Map is the server's voice.
+  static bool _isServerAnswer(Object? error) => error is Map;
+
   Future<void>? _running;
 
   /// The gate is left as it stands: a sign-out closes the leg through
@@ -176,6 +194,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     _done = 0;
     _total = 0;
     _report = (uploaded: 0, existing: 0, skipped: 0);
+    _reachedServer = false;
   }
 
   /// The moment a sign-in from an anonymous session lands: the store is owed a
@@ -266,6 +285,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
               ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
               _report = _tally(ledger);
             } else {
+              _reachedServer = _isServerAnswer(error);
               _status = .failed;
               notifyListeners();
               return;

@@ -508,6 +508,33 @@ void main() {
       expect(server.calls.map((each) => each.$1), contains(UpsyncResource.goal));
     });
 
+    test('a dead network and a server that said no are told apart', () async {
+      // the row has two lines for the failed state, and picking the wrong one
+      // sends the user after a connection that is working
+      seedStore();
+      server.deadAfter = 3;
+      await sut.claim(from: 'anon-1', to: uid);
+
+      await sut.run(uid);
+
+      expect(sut.status, UpsyncStatus.failed);
+      expect(sut.reachedServer, isFalse, reason: 'a SocketException is not the server speaking');
+    });
+
+    test('an unrecognised server error is not a connection problem', () async {
+      seedStore();
+      // `Api` throws the decoded body when the server answered; this one is
+      // not a refusal the replay knows, so the run stops — but it stops having
+      // been answered. The 500 that stopped a 358-row backup read like this.
+      server.refused[unitOn.id] = {'error': 'server error', 'code': 'server_error'};
+      await sut.claim(from: 'anon-1', to: uid);
+
+      await sut.run(uid);
+
+      expect(sut.status, UpsyncStatus.failed);
+      expect(sut.reachedServer, isTrue);
+    });
+
     test('a row written during the run is picked up by the next pass', () async {
       final monday = finished('Monday');
       final wednesday = finished('Wednesday');
