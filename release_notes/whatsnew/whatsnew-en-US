@@ -1,1 +1,9 @@
-Heart now speaks Spanish, French and Russian — every screen and the exercise library itself, with machine-translated copy clearly marked. Pick a look in Settings → Theme: four presets tuned for light and dark. The rebuilt Records tab shows rep maxes and lifetime totals, and new records are celebrated when you finish a workout. Add exercises to your workout and charts to your profile straight from an exercise's page. Plus visual fixes and polish throughout.
+Heart now works without an account.
+
+• Start straight away — no sign-up. Your workouts, and any Health Connect data you allow, stay on this phone.
+• Log in whenever you like and everything you logged so far is backed up.
+• Your full history now downloads in the background, so charts and goals count every workout.
+• Export my data as JSON or CSV.
+• Erase my data when you're not signed in.
+
+Fixed: workouts could lose their exercises after syncing.
