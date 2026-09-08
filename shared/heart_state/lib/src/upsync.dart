@@ -239,36 +239,41 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     // — a workout finished with the remote leg closed — is picked up by the
     // next pass instead of waiting for the sweeps this run holds back.
     for (final _ in Iterable<int>.generate(_maxPasses)) {
-      final plan = await _plan(uid, ledger);
-      if (plan.isEmpty) break;
-      _total = _done + plan.length;
+      final pending = await _pending(uid, ledger);
+      if (pending == 0) break;
+      _total = _done + pending;
       notifyListeners();
 
-      for (final step in plan) {
-        // signed out mid-run: whatever comes back is the previous account's
-        if (userId != uid) return;
-        try {
-          final (id, outcome) = await step.replay();
-          await _local.record(uid, step.resource, id, outcome);
-          ledger.putIfAbsent(step.resource, () => {})[id] = outcome;
-          _report = _tally(ledger);
-        } catch (error, stacktrace) {
+      // One resource at a time, and each one planned only when its turn comes:
+      // the steps before it may have moved the ids it references. See
+      // [_planFor].
+      for (final resource in UpsyncResource.values) {
+        for (final step in await _planFor(resource, uid, ledger)) {
+          // signed out mid-run: whatever comes back is the previous account's
           if (userId != uid) return;
-          onError?.call(error, stacktrace: stacktrace);
-          // the server considered this one and said no, and will again: the
-          // rest of the run is not blocked on it
-          if (_isRefusal(error)) {
-            await _local.record(uid, step.resource, step.id, .skipped);
-            ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
+          try {
+            final (id, outcome) = await step.replay();
+            await _local.record(uid, step.resource, id, outcome);
+            ledger.putIfAbsent(step.resource, () => {})[id] = outcome;
             _report = _tally(ledger);
-          } else {
-            _status = .failed;
-            notifyListeners();
-            return;
+          } catch (error, stacktrace) {
+            if (userId != uid) return;
+            onError?.call(error, stacktrace: stacktrace);
+            // the server considered this one and said no, and will again: the
+            // rest of the run is not blocked on it
+            if (_isRefusal(error)) {
+              await _local.record(uid, step.resource, step.id, .skipped);
+              ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
+              _report = _tally(ledger);
+            } else {
+              _status = .failed;
+              notifyListeners();
+              return;
+            }
           }
+          _done++;
+          notifyListeners();
         }
-        _done++;
-        notifyListeners();
       }
     }
 
@@ -303,44 +308,90 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// `id_taken` should never occur in a normal replay; the goal cap can.
   /// Either way the answer is final — see [GoalRejected] for why a named
   /// refusal is not an outage.
+  /// Answers the server gives that repeating would only repeat.
+  ///
+  /// `id_taken` is the id collision. The rest are heart-api's mapping of a
+  /// Postgres constraint onto a code (heart-api 593ea80): a row naming a
+  /// reference the account does not have, or one that is already there under
+  /// a unique key. Every one of them is about *this* row and no other, which
+  /// is what makes skipping it and carrying on the right answer — before that
+  /// mapping the same cases arrived as `500`s, and a single bad row stopped a
+  /// backup of 358 with 332 never attempted (heart-of-yours#113).
+  static const _refusals = {'id_taken', 'unknown_exercise', 'unknown_folder', 'invalid_reference', 'duplicate'};
+
   static bool _isRefusal(Object? error) {
     return switch (error) {
-      {'code': 'id_taken'} => true,
+      {'code': String code} when _refusals.contains(code) => true,
       _ => GoalRejected.from(error) != null,
     };
   }
 
-  /// Everything under [uid] the ledger does not yet answer for, in order.
-  Future<List<_Step>> _plan(String uid, Map<UpsyncResource, Map<String, UpsyncOutcome>> ledger) async {
-    bool pending(UpsyncResource resource, String id) => !(ledger[resource]?.containsKey(id) ?? false);
+  /// What [uid]'s store owes for one [resource], read at the moment the
+  /// resource's turn comes round.
+  ///
+  /// Late on purpose. The order in [UpsyncResource] exists because later
+  /// resources reference earlier ones, and a name-merge *changes the id they
+  /// must reference*: the server answers a replayed custom with its own id,
+  /// [LocalDatabase.mergeExercise] rewrites every local reference to it, and
+  /// the row under the old id goes. A plan built before the run holds the id
+  /// the store has just stopped using — and sends it, to a server that has
+  /// never had it.
+  ///
+  /// Found by seeding 358 rows against an account that already owned a custom
+  /// by the same name: the merge landed, the units step posted the pre-merge
+  /// id, and the whole backup stopped at row 26. Reading here rather than up
+  /// front means every step sees the store as the steps before it left it.
+  Future<List<_Step>> _planFor(
+    UpsyncResource resource,
+    String uid,
+    Map<UpsyncResource, Map<String, UpsyncOutcome>> ledger,
+  ) async {
+    bool pending(String id) => !(ledger[resource]?.containsKey(id) ?? false);
 
-    final (_, catalog) = await _exercises.getExercises(userId: uid);
-    final units = await _exercises.getExerciseUnits(uid);
-    final folders = await _folders.getFolders(uid);
-    final templates = await _templates.getTemplates(uid);
-    final workouts = await _workouts.getWorkoutHistory(uid) ?? const <Workout>[];
-    final goals = await _goals.unsyncedGoals(uid);
+    return switch (resource) {
+      .exercise => [
+        for (final exercise in (await _exercises.getExercises(userId: uid)).$2)
+          if (exercise.isMine && pending(exercise.id))
+            (resource: resource, id: exercise.id, replay: () => _replayExercise(uid, exercise)),
+      ],
+      .unit => [
+        for (final MapEntry(key: exerciseId, value: unit) in (await _exercises.getExerciseUnits(uid)).entries)
+          if (pending(exerciseId)) (resource: resource, id: exerciseId, replay: () => _replayUnit(exerciseId, unit)),
+      ],
+      .folder => [
+        for (final folder in await _folders.getFolders(uid))
+          if (folder.id case String id when pending(id))
+            (resource: resource, id: id, replay: () => _replayFolder(uid, folder)),
+      ],
+      .template => [
+        for (final template in await _templates.getTemplates(uid))
+          // a draft the editor never finished is not a template the user has
+          if (template.name != null && template.isNotEmpty && pending(template.id))
+            (resource: resource, id: template.id, replay: () => _replayTemplate(uid, template)),
+      ],
+      .workout => [
+        for (final workout in await _workouts.getWorkoutHistory(uid) ?? const <Workout>[])
+          if (workout.isCompleted && !workout.synced && pending(workout.id))
+            (resource: resource, id: workout.id, replay: () => _replayWorkout(uid, workout)),
+      ],
+      .goal => [
+        for (final goal in await _goals.unsyncedGoals(uid))
+          if (goal.id case String id when pending(id))
+            (resource: resource, id: id, replay: () => _replayGoal(uid, goal)),
+      ],
+    };
+  }
 
-    return <_Step>[
-      for (final exercise in catalog)
-        if (exercise.isMine && pending(.exercise, exercise.id))
-          (resource: .exercise, id: exercise.id, replay: () => _replayExercise(uid, exercise)),
-      for (final MapEntry(key: exerciseId, value: unit) in units.entries)
-        if (pending(.unit, exerciseId)) (resource: .unit, id: exerciseId, replay: () => _replayUnit(exerciseId, unit)),
-      for (final folder in folders)
-        if (folder.id case String id when pending(.folder, id))
-          (resource: .folder, id: id, replay: () => _replayFolder(uid, folder)),
-      for (final template in templates)
-        // a draft the editor never finished is not a template the user has
-        if (template.name != null && template.isNotEmpty && pending(.template, template.id))
-          (resource: .template, id: template.id, replay: () => _replayTemplate(uid, template)),
-      for (final workout in workouts)
-        if (workout.isCompleted && !workout.synced && pending(.workout, workout.id))
-          (resource: .workout, id: workout.id, replay: () => _replayWorkout(uid, workout)),
-      for (final goal in goals)
-        if (goal.id case String id when pending(.goal, id))
-          (resource: .goal, id: id, replay: () => _replayGoal(uid, goal)),
-    ];
+  /// How many steps the store owes across every resource — the number the row
+  /// counts towards.
+  ///
+  /// Costs a second read of each source per pass, and buys a total that is
+  /// settled before the first request rather than growing a resource at a
+  /// time under the user's eyes. Local reads against a hundred rows, next to
+  /// one HTTP request each.
+  Future<int> _pending(String uid, Map<UpsyncResource, Map<String, UpsyncOutcome>> ledger) async {
+    final plans = await Future.wait(UpsyncResource.values.map((each) => _planFor(each, uid, ledger)));
+    return plans.fold<int>(0, (running, steps) => running + steps.length);
   }
 
   Future<(String, UpsyncOutcome)> _replayExercise(String uid, Exercise exercise) async {

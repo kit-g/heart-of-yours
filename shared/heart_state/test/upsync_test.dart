@@ -328,6 +328,32 @@ void main() {
       expect(sut.report.existing, 1);
     });
 
+    test('a merge moves the ids the steps behind it have not read yet', () async {
+      // the store's unit preference is on the custom that merges, and the real
+      // `mergeExercise` moves it: `UPDATE OR REPLACE exercise_details SET
+      // exercise_id = ?`. Plan the run up front and the units step still holds
+      // the id the merge just deleted.
+      seedStore();
+      when(exercises.getExerciseUnits(uid)).thenAnswer((_) async => {custom.id: MeasurementUnit.imperial});
+      server.merged[custom.id] = 'theirs';
+      ledger.onMergeExercise = (from, to) {
+        final theirs = Exercise.fromJson({...custom.toMap(), 'id': to});
+        when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, theirs]));
+        when(exercises.getExerciseUnits(uid)).thenAnswer((_) async => {to: MeasurementUnit.imperial});
+      };
+      await sut.claim(from: 'anon-1', to: uid);
+
+      await sut.run(uid);
+
+      final units = server.calls.where((each) => each.$1 == UpsyncResource.unit).map((each) => each.$2);
+      expect(units, ['theirs']);
+      // heart-of-yours#113 stress run: the pre-merge id reached the server,
+      // which answered 500 on a foreign key, and the backup stopped at row 26
+      // of 358 with 332 rows never attempted
+      expect(units, isNot(contains(custom.id)));
+      expect(sut.status, UpsyncStatus.done);
+    });
+
     test('a name-merged folder refiles its templates', () async {
       seedStore();
       server.merged['f1'] = 'their-folder';
@@ -459,6 +485,27 @@ void main() {
       expect(server.calls.where((each) => each.$2 == monday.id), hasLength(1));
       expect(sut.status, UpsyncStatus.done);
       expect(sut.report, (uploaded: 6, existing: 0, skipped: 1));
+    });
+
+    test('a reference the account does not have skips one row, not the backup', () async {
+      // heart-api 593ea80 maps a Postgres foreign-key violation onto a code.
+      // Before it the same case arrived as a 500, which reads as an outage:
+      // the run stopped where it stood and everything behind it went untried.
+      seedStore();
+      server.refused[unitOn.id] = {
+        'error': 'not found',
+        'code': 'unknown_exercise',
+        'message': 'Exercise #${unitOn.id} not found',
+      };
+      await sut.claim(from: 'anon-1', to: uid);
+
+      await sut.run(uid);
+
+      expect(sut.status, UpsyncStatus.done);
+      expect(sut.report.skipped, 1);
+      // the rows behind the refused one all went out
+      expect(server.calls.map((each) => each.$1), contains(UpsyncResource.workout));
+      expect(server.calls.map((each) => each.$1), contains(UpsyncResource.goal));
     });
 
     test('a row written during the run is picked up by the next pass', () async {
