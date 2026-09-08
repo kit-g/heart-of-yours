@@ -178,6 +178,45 @@ void main() {
     expect(find.text('New custom exercises'), findsNothing);
   });
 
+  testWidgets('a finished import sends the backfill back for what it brought', (tester) async {
+    FileSelectorPlatform.instance = _FakePicker(
+      XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+    );
+    serveImport(
+      preview: {
+        'source': 'strong',
+        'workoutsFound': 21,
+        'workoutsAlreadyImported': 0,
+        'setsFound': 760,
+        'exercisesMatched': 252,
+        'exercisesUnmatched': [],
+        'rowsSkipped': 0,
+      },
+      report: {
+        'source': 'strong',
+        'workoutsFound': 21,
+        'workoutsCreated': 21,
+        'workoutsSkipped': 0,
+        'setsCreated': 760,
+        'exercisesMatched': 252,
+        'exercisesCreated': [],
+        'rowsSkipped': 0,
+      },
+    );
+    // a device that had been marked whole — which a brand new account is, the
+    // moment it signs in, seconds before an import fills it
+    when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);
+
+    await pumpImportPage(tester);
+    await tester.tap(find.text('Choose file'));
+    await tester.pumpTimes();
+
+    expect(find.text('21 workouts imported'), findsOneWidget);
+    // without this the mark stands, the backfill never runs, and the newest
+    // page is all of a 21-workout import that ever reaches the device (#113)
+    verify(db.clearHistoryBackfilled(any)).called(1);
+  });
+
   testWidgets('unmatched exercises are each their own checkbox; unchecked ones stay behind', (tester) async {
     FileSelectorPlatform.instance = _FakePicker(
       XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),

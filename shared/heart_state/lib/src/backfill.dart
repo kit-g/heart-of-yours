@@ -28,6 +28,9 @@ abstract interface class LocalMirrorService {
   /// Records that it has. Cleared by an erase, and never written on a run that
   /// could not confirm the count.
   Future<void> markHistoryBackfilled(String userId);
+
+  /// Takes the mark back — see [Backfill.resync].
+  Future<void> clearHistoryBackfilled(String userId);
 }
 
 /// One page of older history, stored and absorbed: how many rows it carried,
@@ -121,6 +124,19 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
   /// concurrent callers.
   Future<void> run(String uid) {
     return _running ??= _run(uid).whenComplete(() => _running = null);
+  }
+
+  /// The account gained rows this device did not put there: a Strong import,
+  /// which is written server-side and lands whole (heart-api#44). The mark was
+  /// earned against the account as it stood *before* that, so it is now a claim
+  /// this device cannot make — it goes, and the run starts over.
+  ///
+  /// Without this the newest page is all an import ever brings down. A brand
+  /// new account is marked the moment it signs in, seconds before the import
+  /// fills it, and 21 imported workouts arrive as the 20 the first page holds.
+  Future<void> resync(String uid) async {
+    await _local.clearHistoryBackfilled(uid);
+    return run(uid);
   }
 
   /// Retries a run that stopped on an unreachable server.

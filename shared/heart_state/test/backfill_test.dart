@@ -22,6 +22,9 @@ class _Store implements LocalMirrorService {
 
   @override
   Future<void> markHistoryBackfilled(String userId) async => marked.add(userId);
+
+  @override
+  Future<void> clearHistoryBackfilled(String userId) async => marked.remove(userId);
 }
 
 /// The account's side, counting every call — the point of the mark is that
@@ -226,6 +229,36 @@ void main() {
       expect(backfill.total, 0);
       // paging is all there is to go on, and it says the mirror is whole
       expect(store.marked, contains(user));
+    });
+  });
+
+  group('resync', () {
+    test('a marked device pages again when the account grew behind it', () async {
+      // exactly what a Strong import does: the account is written server-side,
+      // and this device was marked whole seconds earlier against an empty one
+      final store = _Store(held: 0)..marked.add(user);
+      final account = _Account(21);
+      final pager = _Pager(store, pages: 2);
+
+      final backfill = build(store, account, pager);
+      await backfill.resync(user);
+
+      expect(pager.fetched, 2);
+      expect(store.held, 40);
+      expect(store.marked, contains(user));
+    });
+
+    test('run alone would have done nothing', () async {
+      final store = _Store(held: 0)..marked.add(user);
+      final account = _Account(21);
+      final pager = _Pager(store, pages: 2);
+
+      // the mark is the whole difference: without resync the import is
+      // invisible to this device forever
+      await build(store, account, pager).run(user);
+
+      expect(pager.fetched, 0);
+      expect(account.calls, 0);
     });
   });
 
