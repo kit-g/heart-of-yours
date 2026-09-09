@@ -1,0 +1,8 @@
+# The translation CSV is written by `dart run scripts/move.dart export`, which
+# emits CRLF row terminators (package:csv's default eol). With core.autocrlf
+# stripping those on commit and never restoring them, the working copy and the
+# committed file disagreed, and `import` wrote whichever line ending it happened
+# to read into the generated locale ARBs — flipping \n and \r\n back and forth
+# across seven commits. Pinning the working copy to LF makes the import
+# deterministic whoever runs it.
+shared/heart_language/scripts/translations.csv text eol=lf
