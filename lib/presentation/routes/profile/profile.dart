@@ -20,6 +20,7 @@ import 'package:heart/presentation/widgets/health/section.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
+import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/upsync_row.dart';
 import 'package:heart_language/heart_language.dart';
