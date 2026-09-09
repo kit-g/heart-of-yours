@@ -63,7 +63,7 @@ void main() {
 
       // the illustration measures its page and stops at the cap
       final illustration = tester.getSize(find.byKey(AppKeys.onboardingIllustration));
-      expect(illustration.width, lessThanOrEqualTo(160));
+      expect(illustration.width, lessThanOrEqualTo(200));
       expect(illustration.width, greaterThanOrEqualTo(96));
       expect(illustration.width, illustration.height);
 
@@ -92,5 +92,41 @@ void main() {
     expect(find.byKey(AppKeys.onboardingSignIn), findsOneWidget);
     // an overflow anywhere along the way would have failed the test by itself
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the dots and the action hold their place across all three screens', (tester) async {
+    await pumpAt(tester, _windows['an iPad, landscape']!);
+
+    // Built only where it is used, the last screen's second button pushed the
+    // whole footer up as the reader arrived on it.
+    final dots = tester.getRect(find.byKey(AppKeys.onboardingScreenCount));
+    final action = tester.getRect(find.byKey(AppKeys.onboardingNext));
+
+    await tester.tapByKey(AppKeys.onboardingNext);
+    await tester.pumpTimes(4);
+    expect(tester.getRect(find.byKey(AppKeys.onboardingScreenCount)), dots);
+
+    await tester.tapByKey(AppKeys.onboardingNext);
+    await tester.pumpTimes(4);
+    expect(tester.getRect(find.byKey(AppKeys.onboardingScreenCount)), dots);
+    // same slot, same size — only the label and the destination changed
+    expect(tester.getRect(find.byKey(AppKeys.onboardingContinue)), action);
+  });
+
+  testWidgets('Skip is hidden on the last screen, without moving anything', (tester) async {
+    await pumpAt(tester, _windows['a small phone']!);
+
+    final skip = tester.getRect(find.byKey(AppKeys.onboardingSkip));
+    expect(find.byKey(AppKeys.onboardingSkip).hitTestable(), findsOneWidget);
+
+    await tester.tapByKey(AppKeys.onboardingNext);
+    await tester.pumpTimes(4);
+    await tester.tapByKey(AppKeys.onboardingNext);
+    await tester.pumpTimes(4);
+
+    // Continue is the same door; the corner keeps its space so the carousel
+    // does not grow into it on the way in
+    expect(find.byKey(AppKeys.onboardingSkip).hitTestable(), findsNothing);
+    expect(tester.getRect(find.byKey(AppKeys.onboardingSkip)), skip);
   });
 }

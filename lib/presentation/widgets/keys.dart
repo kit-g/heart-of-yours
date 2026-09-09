@@ -85,7 +85,8 @@ abstract final class AppKeys {
   /// The row's way to try again after the server could not be reached.
   static const backfillRetry = Key('Profile.backfill.retry');
 
-  /// The first-launch onboarding's way out, present on every screen of it.
+  /// The first-launch onboarding's way out, on every screen but the last —
+  /// where Continue is the same door, so it stands down.
   static const onboardingSkip = Key('Onboarding.skip');
 
   /// Advances the onboarding by one screen.
@@ -100,4 +101,8 @@ abstract final class AppKeys {
   /// The onboarding's illustration, one per screen: what a window-size test
   /// measures to prove the cap holds.
   static const onboardingIllustration = Key('Onboarding.illustration');
+
+  /// The onboarding's page dots: what a test measures to prove the footer
+  /// stops resizing under them on the last screen.
+  static const onboardingScreenCount = Key('Onboarding.screenCount');
 }
