@@ -70,19 +70,19 @@ class LEs extends L {
   String get logInTitle => 'Hola de nuevo';
 
   @override
-  String get logInBody => 'Ya empezaste algo importante. \r\nSigamos adelante.';
+  String get logInBody => 'Ya empezaste algo importante. \nSigamos adelante.';
 
   @override
   String get signUpTitle => 'Empieza con Heart';
 
   @override
-  String get signUpBody => 'Todo camino empieza con una decisión. \r\nEsta es tuya.';
+  String get signUpBody => 'Todo camino empieza con una decisión. \nEsta es tuya.';
 
   @override
   String get recoverTitle => 'Seguimos contigo';
 
   @override
-  String get recoverBody => 'Tu camino no está perdido. \r\nSolo es una pausa — lo restableceremos juntos.';
+  String get recoverBody => 'Tu camino no está perdido. \nSolo es una pausa — lo restableceremos juntos.';
 
   @override
   String get logInWithGoogle => 'Iniciar sesión con Google';
@@ -127,7 +127,7 @@ class LEs extends L {
       'Un diario de entrenamientos que no estorba: planifica una sesión, marca cada serie y mira cómo crecen tus marcas.';
 
   @override
-  String get onboardingLocalTitle => 'Tus datos se quedan en tu teléfono';
+  String get onboardingLocalTitle => 'Tus datos se quedan en este dispositivo';
 
   @override
   String get onboardingLocalBody =>
@@ -135,7 +135,7 @@ class LEs extends L {
 
   @override
   String get onboardingLocalTrade =>
-      'El trato honesto: si pierdes el teléfono, pierdes los datos, a menos que inicies sesión.';
+      'El trato honesto: si pierdes este dispositivo, pierdes los datos, a menos que inicies sesión.';
 
   @override
   String get onboardingAccountTitle => 'Inicia sesión cuando quieras';
@@ -216,10 +216,10 @@ class LEs extends L {
 
   @override
   String get archiveConfirmBody =>
-      'Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).\r\n Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.';
+      'Este ejercicio se moverá a Ejercicios archivados (encuéntralo en Ejercicios → Más → Mostrar archivados).\n Archivarlo no afectará ninguno de tus entrenamientos pasados — tu historial queda intacto.';
 
   @override
-  String get exerciseArchived => 'Este ejercicio está archivado \r\ny ya no aparecerá en tu biblioteca principal.';
+  String get exerciseArchived => 'Este ejercicio está archivado \ny ya no aparecerá en tu biblioteca principal.';
 
   @override
   String get deleteSet => 'Eliminar serie';
@@ -649,6 +649,9 @@ class LEs extends L {
   String get templates => 'Plantillas';
 
   @override
+  String get noTemplatesYet => 'Aún no hay plantillas';
+
+  @override
   String get exampleTemplates => 'Plantillas de ejemplo';
 
   @override
@@ -773,7 +776,7 @@ class LEs extends L {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.\r\n\r\nNos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. $emoji';
+    return 'Toma una captura, garabatea lo que sientes y déjanos una nota. Puedes recorrer la app mientras tanto.\n\nNos encantan los comentarios. Cada garabato y nota nos ayuda a mejorar la app — para ti y para todos los demás. Así que gracias. En serio. $emoji';
   }
 
   @override
@@ -832,7 +835,7 @@ class LEs extends L {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'Tu cuenta quedó programada para eliminarse el $date.\r\n\r\nSi cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.\r\n\r\nSolo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.';
+    return 'Tu cuenta quedó programada para eliminarse el $date.\n\nSi cambias de opinión, puedes restaurarla en cualquier momento antes de esa fecha.\n\nSolo toca el botón de abajo para cancelar la eliminación y conservar tu cuenta.';
   }
 
   @override
@@ -1013,7 +1016,7 @@ class LEs extends L {
 
   @override
   String get updateRequiredBody =>
-      'Hay una actualización importante esperando — una que mantiene la app funcionando como debe.\r\n\r\nNecesitas instalarla antes de continuar.\r\nGracias por tu paciencia — y perdón por la interrupción.';
+      'Hay una actualización importante esperando — una que mantiene la app funcionando como debe.\n\nNecesitas instalarla antes de continuar.\nGracias por tu paciencia — y perdón por la interrupción.';
 
   @override
   String updateRequiredCta(String storeName) {
@@ -1479,7 +1482,7 @@ class LEs extends L {
 
   @override
   String get importExplainerStrong =>
-      '¿Entrenabas con Strong? Trae tu historial contigo.\r\n\r\nEn la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.';
+      '¿Entrenabas con Strong? Trae tu historial contigo.\n\nEn la app Strong, ve a Perfil → Ajustes → Exportar datos de Strong. Te llegará un archivo CSV por correo — guárdalo y luego elígelo aquí.';
 
   @override
   String get importSafeToRetry =>

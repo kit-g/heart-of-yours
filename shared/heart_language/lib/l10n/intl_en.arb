@@ -228,7 +228,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "onboardingLocalTitle": "Your data stays on your phone",
+  "onboardingLocalTitle": "Your data stays on this device",
   "@onboardingLocalTitle": {
     "description": "First-launch onboarding, screen 2 of 3: title",
     "type": "text",
@@ -240,7 +240,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "onboardingLocalTrade": "The honest trade: lose the phone and you lose the data, unless you log in.",
+  "onboardingLocalTrade": "The honest trade: lose this device and you lose the data, unless you log in.",
   "@onboardingLocalTrade": {
     "description": "First-launch onboarding, screen 2 of 3: the trade-off of having no account",
     "type": "text",
@@ -1203,6 +1203,12 @@
   "templates": "Templates",
   "@templates": {
     "description": "Workout templates section header",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noTemplatesYet": "No templates yet",
+  "@noTemplatesYet": {
+    "description": "Shown under the Templates section header when the user has made none of their own, the way the goals card says the same of goals",
     "type": "text",
     "placeholders": {}
   },

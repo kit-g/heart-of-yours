@@ -331,7 +331,7 @@ abstract class L {
   /// First-launch onboarding, screen 2 of 3: title
   ///
   /// In en, this message translates to:
-  /// **'Your data stays on your phone'**
+  /// **'Your data stays on this device'**
   String get onboardingLocalTitle;
 
   /// First-launch onboarding, screen 2 of 3: the anonymous promise and the health-data promise as one sentence
@@ -343,7 +343,7 @@ abstract class L {
   /// First-launch onboarding, screen 2 of 3: the trade-off of having no account
   ///
   /// In en, this message translates to:
-  /// **'The honest trade: lose the phone and you lose the data, unless you log in.'**
+  /// **'The honest trade: lose this device and you lose the data, unless you log in.'**
   String get onboardingLocalTrade;
 
   /// First-launch onboarding, screen 3 of 3: title
@@ -1239,6 +1239,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Templates'**
   String get templates;
+
+  /// Shown under the Templates section header when the user has made none of their own, the way the goals card says the same of goals
+  ///
+  /// In en, this message translates to:
+  /// **'No templates yet'**
+  String get noTemplatesYet;
 
   /// Workout templates section header
   ///
