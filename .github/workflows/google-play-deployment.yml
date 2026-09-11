@@ -32,6 +32,15 @@ on:
         type: string
         description: "Google Play track"
         default: 'internal'
+      status:
+        required: false
+        type: string
+        # A draft release is uploaded but distributed to nobody, which is what
+        # we want while a build is being looked at — and exactly what we do not
+        # want on a closed track, where Google counts only days a published
+        # release spent in testers' hands.
+        description: "Release status: draft (uploaded, not distributed) or completed (live on the track)"
+        default: 'draft'
 
 jobs:
   deploy:
@@ -93,7 +102,7 @@ jobs:
           packageName: ${{ inputs.app_id }}
           releaseFiles: "build/app/outputs/bundle/${{ inputs.flavor }}Release/app-${{ inputs.flavor }}-release.aab"
           track: ${{ inputs.track }}
-          status: draft
+          status: ${{ inputs.status }}
           # Written by the `release-notes` skill. Files are named whatsnew-<locale>
           # and capped at 500 characters each; the release lands as a draft, so
           # they stay editable in the Play Console afterwards.
