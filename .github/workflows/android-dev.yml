@@ -40,3 +40,4 @@ jobs:
       flavor: 'dev'
       secrets_bucket: '583168578067-ca-central-1-static'
       track: 'internal'
+      status: 'completed'
