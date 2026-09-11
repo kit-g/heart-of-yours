@@ -40,8 +40,22 @@ class ExerciseDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Keyed by the exercise, so picking a sibling in the two-pane master list
+    // builds a new State instead of pouring a new exercise into the old one.
+    // Everything below seeds itself once — `_sections` and the tab controller
+    // here, the queries in the History and Records tabs — so without this the
+    // two stateless tabs (About, Charts) tracked the selection and the two
+    // stateful ones went on showing the exercise you arrived with. It also
+    // keeps the controller's length honest: `sections` drops About for an
+    // exercise with no info, and a stale length mismatches the children.
+    //
+    // The remembered tab survives because it is library-scoped, not State —
+    // see [_rememberedSection].
+    final key = ValueKey(exercise.id);
+
     return switch (Theme.of(context).platform) {
       .iOS || .macOS => _CupertinoExerciseDetailPage(
+        key: key,
         exercise: exercise,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
@@ -53,6 +67,7 @@ class ExerciseDetailPage extends StatelessWidget {
         onAddToWorkout: onAddToWorkout,
       ),
       _ => _MaterialExerciseDetailPage(
+        key: key,
         exercise: exercise,
         onTapWorkout: onTapWorkout,
         allowOptions: allowOptions,
