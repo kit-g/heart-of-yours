@@ -41,4 +41,5 @@ jobs:
       secrets_bucket: "922419543441-ca-central-1-static"
       # Closed testing
       track: "alpha"
-      status: "completed"
+      # until the app is verified
+      status: "draft"
