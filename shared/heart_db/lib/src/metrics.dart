@@ -48,9 +48,16 @@ LIMIT ?
 ''';
 
 // Volume-weighted average: Total Volume / Total Reps
+// A weighted-bodyweight set logged at bodyweight carries no weight at all, and
+// a bare `sum(sets.weight * ...)` over a workout of them is NULL, not 0 — which
+// no longer matches the `{'value': num value}` row pattern, so the whole chart
+// fell to its *error* state (heart-of-yours: "Back Extension has a broken
+// chart"). Coalescing reads a bodyweight set as nought added weight, the way
+// getTopSetWeightHistory and getTotalVolumeHistory already do. `sets.reps > 0`
+// below keeps the divisor off zero.
 const getAverageWorkingWeightHistory = ''' 
 SELECT
-    sum(sets.weight * sets.reps) / sum(sets.reps) AS "value",
+    sum(coalesce(sets.weight, 0) * sets.reps) / sum(sets.reps) AS "value",
     workouts.start AS "when"
 FROM sets
 INNER JOIN workout_exercises we ON sets.exercise_id = we.id
