@@ -42,10 +42,7 @@ class _Ledger extends Fake implements LocalUpsyncService {
   }
 
   @override
-  Future<void> settle(String userId) async {
-    owed.remove(userId);
-    entries.remove(userId);
-  }
+  Future<void> settle(String userId) async => owed.remove(userId);
 
   @override
   Future<void> mergeExercise(String userId, {required String from, required String to}) async {
@@ -393,7 +390,12 @@ void main() {
       final stored = verify(templates.storeTemplates(captureAny, userId: uid)).captured.single as Iterable<Template>;
       expect(stored.single.id, 'server-t1');
       expect(sut.status, UpsyncStatus.done);
-      expect(ledger.entries[uid], isNull, reason: 'settled');
+      expect(ledger.owed, isEmpty, reason: 'settled');
+      expect(
+        ledger.entries[uid]?[UpsyncResource.template],
+        contains('server-t1'),
+        reason: 'the ledger outlives the debt, under the id the row ended up with',
+      );
     });
 
     test('an unreachable server stops the run where it is, retryable, with the leg still held', () async {
@@ -452,8 +454,48 @@ void main() {
       await relaunched.run(uid);
 
       expect(relaunched.status, UpsyncStatus.done);
-      expect(server.calls, hasLength(7));
-      expect(relaunched.report, (uploaded: 7, existing: 0, skipped: 0), reason: 'the count spans both attempts');
+      expect(server.calls, hasLength(7), reason: 'seven rows across both attempts, none of them twice');
+      expect(
+        relaunched.report,
+        (uploaded: 4, existing: 0, skipped: 0),
+        reason:
+            'a new notifier reports the attempt it made; the ledger says what the '
+            'server holds, not what this backup did, so it cannot supply the first three',
+      );
+    });
+
+    test('signing out and back in replays nothing and says nothing', () async {
+      seedStore();
+      await sut.claim(from: uid, to: uid);
+      await sut.run(uid);
+      expect(sut.status, UpsyncStatus.done);
+      final first = server.calls.length;
+
+      // the sign-out, then the sign-in behind it: a fresh anonymous session
+      // becoming the same account, which owes a replay the same way
+      sut.onSignOut();
+      await sut.claim(from: 'anon-2', to: uid);
+      await sut.run(uid);
+
+      expect(
+        server.calls,
+        hasLength(first),
+        reason:
+            'exercises, unit preferences, folders and templates carry no synced flag of '
+            'their own: with the ledger cleared on settle, every login re-posted all of them',
+      );
+      expect(sut.report, (uploaded: 0, existing: 0, skipped: 0));
+      expect(sut.done, 0);
+      expect(
+        sut.status,
+        UpsyncStatus.idle,
+        reason:
+            'nothing was backed up, so there is no line to show — the "3 uploaded, 23 '
+            'already there" that greeted every sign-in (heart-of-yours)',
+      );
+      expect(ledger.owed, isEmpty, reason: 'settled');
+      expect(access.allowed, isTrue, reason: 'the leg opens even when there was nothing to do');
+      expect(completions, 2, reason: 'the pull still runs: the leg was held for the length of the run');
     });
 
     test('a refusal is skipped and reported, and the run goes on', () async {
