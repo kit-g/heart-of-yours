@@ -94,14 +94,21 @@ mixin _Upsync on _LocalDatabase {
     );
   }
 
-  /// The run is complete: the debt and its ledger go together.
+  /// The run is complete: the debt goes, the ledger stays.
+  ///
+  /// The ledger is the only durable record that the server has seen an
+  /// exercise, a unit preference, a folder or a template — those four have no
+  /// `synced` column the way workouts and goals do, so [_planFor] asks the
+  /// ledger and nothing else. Clearing it here meant every sign-out and back
+  /// in — which is an anonymous session becoming an account, so a replay is
+  /// owed every time — re-posted the whole account: 19 customs, 3 unit
+  /// preferences, 2 folders and 2 templates, answered `200` and reported as
+  /// "3 uploaded, 23 already there" forever.
+  ///
+  /// Keeping it costs one row per row the server has confirmed, and
+  /// [eraseUser] drops them with the rest of the uid's data.
   Future<void> settleUpsync(String userId) {
-    return _db.transaction(
-      (txn) async {
-        await txn.delete(_upsync, where: 'user_id = ?', whereArgs: [userId]);
-        await txn.delete(_syncs, where: 'table_name = ?', whereArgs: [_owedKey(userId)]);
-      },
-    );
+    return _db.delete(_syncs, where: 'table_name = ?', whereArgs: [_owedKey(userId)]);
   }
 
   /// The server answered a replayed custom exercise with an id other than the
