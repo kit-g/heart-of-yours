@@ -199,11 +199,13 @@ developers run:
 - `android-prod.yml` / `ios-prod.yml` — prod deploys, from tags only (`v*`, `android*` / `ios*`),
   also test-gated.
 - `google-play-deployment.yml` / `testflight-ios-deployment.yml` — reusable deploy recipes the
-  above call; secrets come from S3 via OIDC. The Play recipe takes `track` and `status`, and both
-  callers publish rather than draft: dev to the internal track, prod to the closed `alpha` track —
-  only a published release on a closed track counts toward the 12-testers-for-14-days rule that
-  gates production access on a personal Play account. The input still defaults to `draft`, so a
-  new caller has to ask for distribution rather than get it by accident.
+  above call; secrets come from S3 via OIDC. The Play recipe takes `track` and `status`: dev goes
+  to the internal track, prod to the closed `alpha` track, because only a published release on a
+  *closed* track counts toward the 12-testers-for-14-days rule that gates production access on a
+  personal Play account. Both send `draft` for now — Play refuses a non-draft release on an app it
+  still considers a draft, and leaving that state needs a first publish from the console with a
+  complete store listing. Flip both to `completed` once that is done; until then a release reaches
+  no tester and the 14 days do not accrue.
 
 A newer deploy cancels a superseded in-flight one (latest code wins); every workflow installs
 the Flutter version pinned in `.flutter-version`.

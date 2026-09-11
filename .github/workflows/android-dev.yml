@@ -40,4 +40,5 @@ jobs:
       flavor: 'dev'
       secrets_bucket: '583168578067-ca-central-1-static'
       track: 'internal'
-      status: 'completed'
+      # see android-prod.yml: draft-app apps take draft releases only
+      status: 'draft'
