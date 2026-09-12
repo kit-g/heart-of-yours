@@ -10,6 +10,9 @@ class LEn extends L {
   LEn([String locale = 'en']) : super(locale);
 
   @override
+  String get calendar => 'Calendar';
+
+  @override
   String get appearance => 'Appearance';
 
   @override
@@ -1779,6 +1782,9 @@ class LEn extends L {
 /// The translations for English, as used in Canada (`en_CA`).
 class LEnCa extends LEn {
   LEnCa() : super('en_CA');
+
+  @override
+  String get calendar => 'Calendar';
 
   @override
   String get appearance => 'Appearance';

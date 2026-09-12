@@ -1,5 +1,11 @@
 {
   "@@locale": "en_CA",
+  "calendar": "Calendar",
+  "@calendar": {
+    "description": "History calendar action and dialog title",
+    "type": "text",
+    "placeholders": {}
+  },
   "appearance": "Appearance",
   "@appearance": {
     "description": "Label",

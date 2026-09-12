@@ -10,6 +10,9 @@ class LRu extends L {
   LRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get calendar => 'Календарь';
+
+  @override
   String get appearance => 'Внешний вид';
 
   @override

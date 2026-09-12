@@ -10,6 +10,9 @@ class LEs extends L {
   LEs([String locale = 'es']) : super(locale);
 
   @override
+  String get calendar => 'Calendario';
+
+  @override
   String get appearance => 'Apariencia';
 
   @override
