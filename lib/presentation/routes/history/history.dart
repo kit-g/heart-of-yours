@@ -23,6 +23,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
 
 part 'page.dart';
+part 'calendar.dart';
 part 'utils.dart';
 part 'workout_editor.dart';
 part 'workout_item.dart';
