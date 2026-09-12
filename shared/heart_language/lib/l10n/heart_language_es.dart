@@ -162,7 +162,7 @@ class LEs extends L {
   String get profile => 'Perfil';
 
   @override
-  String get workout => 'Entrenamiento';
+  String get workout => 'Entreno';
 
   @override
   String get history => 'Historial';
