@@ -201,7 +201,7 @@ void main() {
       expect(ledger, contains((resource: 'workout', id: 'w2', outcome: 'existing')));
     });
 
-    test('settling clears the debt and the ledger together, for that uid only', () async {
+    test('settling clears that uid\'s debt and leaves the ledger standing', () async {
       await local.oweUpsync(account);
       await local.oweUpsync(anonymous);
       await local.recordUpsync(account, (resource: 'goal', id: 'g1', outcome: 'created'));
@@ -210,7 +210,14 @@ void main() {
       await local.settleUpsync(account);
 
       expect(await local.isUpsyncOwed(account), isFalse);
-      expect(await local.upsyncLedger(account), isEmpty);
+      expect(
+        await local.upsyncLedger(account),
+        hasLength(1),
+        reason:
+            'exercises, unit preferences, folders and templates have no synced flag of '
+            'their own, so this table is the only record that the server has seen them. '
+            'Dropping it here re-posted the whole account on the next sign-in',
+      );
       expect(await local.isUpsyncOwed(anonymous), isTrue);
       expect(await local.upsyncLedger(anonymous), hasLength(1));
     });

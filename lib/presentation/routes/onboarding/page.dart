@@ -1,6 +1,7 @@
 part of 'onboarding.dart';
 
-/// The first-launch carousel: three screens, a way out on every one of them.
+/// The first-launch carousel: three screens, a way out on every one of them
+/// — Skip until the last, where Continue is the same door under a better name.
 ///
 /// Shown once, before the anonymous session lands anyone in the app, and never
 /// again — the router decides that on `Preferences.onboardingSeen`, this page
@@ -8,7 +9,7 @@ part of 'onboarding.dart';
 /// there is no "remind me later", because a reminder is the one thing a
 /// first launch must not turn into.
 class OnboardingPage extends StatefulWidget {
-  /// The way into the app: Skip on any screen, Continue on the last.
+  /// The way into the app: Skip on the first two screens, Continue on the last.
   final VoidCallback onContinue;
 
   /// The way to the login page, offered on the last screen only — the one
@@ -64,17 +65,31 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Column(
           children: [
-            Align(
-              alignment: .centerRight,
-              child: Padding(
-                padding: const .symmetric(horizontal: 8, vertical: 4),
-                child: TextButton(
-                  key: AppKeys.onboardingSkip,
-                  // the theme's text button is dialog-footer sized; a lone
-                  // control in a corner gets a full tap target
-                  style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
-                  onPressed: widget.onContinue,
-                  child: Text(skip),
+            // The last screen offers Continue, which is this button's own
+            // destination; two ways through one door is noise. Hidden rather
+            // than dropped, so the carousel under it keeps its height and the
+            // screens do not shift as the reader pages across.
+            ValueListenableBuilder<int>(
+              valueListenable: _page,
+              builder: (_, page, child) => Visibility(
+                visible: page < _screens - 1,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: child!,
+              ),
+              child: Align(
+                alignment: .centerRight,
+                child: Padding(
+                  padding: const .symmetric(horizontal: 8, vertical: 4),
+                  child: TextButton(
+                    key: AppKeys.onboardingSkip,
+                    // the theme's text button is dialog-footer sized; a lone
+                    // control in a corner gets a full tap target
+                    style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+                    onPressed: widget.onContinue,
+                    child: Text(skip),
+                  ),
                 ),
               ),
             ),
@@ -146,7 +161,7 @@ class _Screen extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final BoxConstraints(:maxWidth, :maxHeight) = constraints;
-        final size = (math.min(maxWidth, maxHeight) * .3).clamp(96.0, 160.0);
+        final size = (math.min(maxWidth, maxHeight) * .3).clamp(96.0, 200.0);
 
         // Scrolls only when it has to — a large text scale on a short phone —
         // and centres otherwise; see the login page for the same construction.
@@ -300,6 +315,7 @@ class _Footer extends StatelessWidget {
             spacing: 16,
             children: [
               Semantics(
+                key: AppKeys.onboardingScreenCount,
                 label: onboardingScreenOf(page + 1, screens),
                 liveRegion: true,
                 excludeSemantics: true,
@@ -309,32 +325,44 @@ class _Footer extends StatelessWidget {
                   children: List.generate(screens, (i) => _Dot(active: i == page)),
                 ),
               ),
-              switch (isLast) {
-                false => PrimaryButton.wide(
-                  key: AppKeys.onboardingNext,
-                  margin: _margin,
-                  onPressed: onNext,
-                  child: Center(child: Text(onboardingNext)),
-                ),
-                true => Column(
-                  spacing: 8,
-                  children: [
-                    PrimaryButton.wide(
+              Column(
+                spacing: 8,
+                children: [
+                  // Its space is held on every screen, not just the one that
+                  // uses it: built only where it appears, the footer grew by a
+                  // button on the last screen and shoved the dots — and the
+                  // action under them — up the page as the reader arrived.
+                  Visibility(
+                    visible: isLast,
+                    maintainSize: true,
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: PrimaryButton.wide(
                       key: AppKeys.onboardingSignIn,
                       margin: _margin,
                       backgroundColor: colorScheme.surfaceContainerHighest,
                       onPressed: onLogIn,
                       child: Center(child: Text(logIn)),
                     ),
-                    PrimaryButton.wide(
+                  ),
+                  // One button in one place the whole way through; the last
+                  // screen changes its label and where it goes, nothing else
+                  switch (isLast) {
+                    false => PrimaryButton.wide(
+                      key: AppKeys.onboardingNext,
+                      margin: _margin,
+                      onPressed: onNext,
+                      child: Center(child: Text(onboardingNext)),
+                    ),
+                    true => PrimaryButton.wide(
                       key: AppKeys.onboardingContinue,
                       margin: _margin,
                       onPressed: onContinue,
                       child: Center(child: Text(onboardingContinue)),
                     ),
-                  ],
-                ),
-              },
+                  },
+                ],
+              ),
             ],
           ),
         ),
