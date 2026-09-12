@@ -49,6 +49,16 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
       controller: Scrolls.of(context).historyScrollController,
       slivers: [
         SliverAppBar(
+          actions: [
+            IconButton(
+              tooltip: L.of(context).calendar,
+              icon: const Icon(Icons.calendar_month_rounded),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => HistoryCalendar(onTapImage: widget.onTapImage),
+              ),
+            ),
+          ],
           scrolledUnderElevation: 0,
           backgroundColor: backgroundColor,
           pinned: true,
@@ -315,6 +325,7 @@ class _HistoryTail extends StatelessWidget {
         children: [
           Text(historyLoadMoreError, style: muted, textAlign: .center),
           TextButton.icon(
+            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
             onPressed: onRetry,
             icon: const Icon(Icons.refresh, size: 18),
             label: Text(retry),
