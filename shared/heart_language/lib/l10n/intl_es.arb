@@ -291,7 +291,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "workout": "Entrenamiento",
+  "workout": "Entreno",
   "@workout": {
     "description": "Generic label, e.g. bottom nav bar",
     "type": "text",

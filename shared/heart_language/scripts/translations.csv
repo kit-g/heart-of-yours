@@ -62,7 +62,7 @@ onboardingNext,First-launch onboarding: moves to the next screen,Next,Next,Да�
 onboardingContinue,"First-launch onboarding, last screen: closes the onboarding and enters the app",Continue,Continue,Продолжить,Continuar,Continuer
 onboardingScreenOf,First-launch onboarding: screen-reader label of the page indicator dots,Screen {current} of {total},Screen {current} of {total},Экран {current} из {total},Pantalla {current} de {total},Écran {current} sur {total}
 profile,"Generic label, e.g. bottom nav bar",Profile,Profile,Профиль,Perfil,Profil
-workout,"Generic label, e.g. bottom nav bar",Workout,Workout,Тренировка,Entrenamiento,Séance
+workout,"Generic label, e.g. bottom nav bar",Workout,Workout,Тренировка,Entreno,Séance
 history,"Generic label, e.g. bottom nav bar",History,History,История,Historial,Historique
 exercises,"Generic label, e.g. bottom nav bar",Exercises,Exercises,Упражнения,Ejercicios,Exercices
 search,"Generic label, e.g. bin the search bar",Search,Search,Поиск,Buscar,Rechercher
