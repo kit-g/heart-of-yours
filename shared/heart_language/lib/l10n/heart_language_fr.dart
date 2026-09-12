@@ -10,6 +10,9 @@ class LFr extends L {
   LFr([String locale = 'fr']) : super(locale);
 
   @override
+  String get calendar => 'Calendrier';
+
+  @override
   String get appearance => 'Apparence';
 
   @override
