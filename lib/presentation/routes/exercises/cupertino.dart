@@ -12,6 +12,7 @@ class _CupertinoExerciseDetailPage extends StatefulWidget {
   final Future<void> Function(Exercise)? onAddToWorkout;
 
   const new({
+    super.key,
     required this.exercise,
     required this.onTapWorkout,
     required this.allowOptions,

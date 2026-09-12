@@ -127,14 +127,14 @@ class LEn extends L {
       'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.';
 
   @override
-  String get onboardingLocalTitle => 'Your data stays on your phone';
+  String get onboardingLocalTitle => 'Your data stays on this device';
 
   @override
   String get onboardingLocalBody =>
       'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.';
 
   @override
-  String get onboardingLocalTrade => 'The honest trade: lose the phone and you lose the data, unless you log in.';
+  String get onboardingLocalTrade => 'The honest trade: lose this device and you lose the data, unless you log in.';
 
   @override
   String get onboardingAccountTitle => 'Log in whenever you like';
@@ -646,6 +646,9 @@ class LEn extends L {
 
   @override
   String get templates => 'Templates';
+
+  @override
+  String get noTemplatesYet => 'No templates yet';
 
   @override
   String get exampleTemplates => 'Example templates';
@@ -1838,19 +1841,19 @@ class LEnCa extends LEn {
   String get logInTitle => 'Welcome Back';
 
   @override
-  String get logInBody => 'You\'ve already started something important.\r\nLet\'s keep going.';
+  String get logInBody => 'You\'ve already started something important.\nLet\'s keep going.';
 
   @override
   String get signUpTitle => 'Begin with Heart';
 
   @override
-  String get signUpBody => 'Every journey starts with one decision.\r\nThis one\'s yours.';
+  String get signUpBody => 'Every journey starts with one decision.\nThis one\'s yours.';
 
   @override
   String get recoverTitle => 'Still with You';
 
   @override
-  String get recoverBody => 'Your journey isn\'t lost.\r\nJust a moment of pause — we\'ll reset together.';
+  String get recoverBody => 'Your journey isn\'t lost.\nJust a moment of pause — we\'ll reset together.';
 
   @override
   String get logInWithGoogle => 'Log in with Google';
@@ -1895,14 +1898,14 @@ class LEnCa extends LEn {
       'A workout log that gets out of your way: plan a session, tick off every set, watch your lifts grow.';
 
   @override
-  String get onboardingLocalTitle => 'Your data stays on your phone';
+  String get onboardingLocalTitle => 'Your data stays on this device';
 
   @override
   String get onboardingLocalBody =>
       'No account needed: your workouts, and any health data you let Heart read, live on this device and nowhere else.';
 
   @override
-  String get onboardingLocalTrade => 'The honest trade: lose the phone and you lose the data, unless you log in.';
+  String get onboardingLocalTrade => 'The honest trade: lose this device and you lose the data, unless you log in.';
 
   @override
   String get onboardingAccountTitle => 'Log in whenever you like';
@@ -1984,10 +1987,10 @@ class LEnCa extends LEn {
 
   @override
   String get archiveConfirmBody =>
-      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\r\n Archiving won\'t affect any of your past workouts — your history stays intact.';
+      'This exercise will be moved to Archived Exercises (find it under Exercises → More → Show archived).\n Archiving won\'t affect any of your past workouts — your history stays intact.';
 
   @override
-  String get exerciseArchived => 'This exercise is archived\r\nand won\'t appear in your main library anymore.';
+  String get exerciseArchived => 'This exercise is archived\nand won\'t appear in your main library anymore.';
 
   @override
   String get deleteSet => 'Delete set';
@@ -2416,6 +2419,9 @@ class LEnCa extends LEn {
   String get templates => 'Templates';
 
   @override
+  String get noTemplatesYet => 'No templates yet';
+
+  @override
   String get exampleTemplates => 'Example templates';
 
   @override
@@ -2539,7 +2545,7 @@ class LEnCa extends LEn {
 
   @override
   String leaveFeedbackBody(Object emoji) {
-    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\r\n\r\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
+    return 'Snap a screenshot, doodle your feelings, and drop us a note. You can roam the app while you\'re at it.\n\nWe love feedback. Every squiggle and comment helps us make the app better—for you and everyone else. So thanks. Seriously. $emoji';
   }
 
   @override
@@ -2598,7 +2604,7 @@ class LEnCa extends LEn {
 
   @override
   String accountDeletedBody(Object date) {
-    return 'Your account has been scheduled for deletion on $date.\r\n\r\nIf you change your mind, you can restore your account anytime before this date.\r\n\r\nSimply click the button below to cancel the deletion and keep your account safe.';
+    return 'Your account has been scheduled for deletion on $date.\n\nIf you change your mind, you can restore your account anytime before this date.\n\nSimply click the button below to cancel the deletion and keep your account safe.';
   }
 
   @override
@@ -2779,7 +2785,7 @@ class LEnCa extends LEn {
 
   @override
   String get updateRequiredBody =>
-      'There\'s an important update waiting — one that keeps your app working as it should.\r\n\r\nYou\'ll need to install it before continuing.\r\nThanks for your patience — and sorry for the interruption.';
+      'There\'s an important update waiting — one that keeps your app working as it should.\n\nYou\'ll need to install it before continuing.\nThanks for your patience — and sorry for the interruption.';
 
   @override
   String updateRequiredCta(String storeName) {
@@ -3243,7 +3249,7 @@ class LEnCa extends LEn {
 
   @override
   String get importExplainerStrong =>
-      'Lifted with Strong before? Bring your history along.\r\n\r\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.';
+      'Lifted with Strong before? Bring your history along.\n\nIn the Strong app, go to Profile → Settings → Export Strong Data. It emails you a CSV file — save it, then pick it here.';
 
   @override
   String get importSafeToRetry =>

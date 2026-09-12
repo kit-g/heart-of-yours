@@ -1,0 +1,15 @@
+{
+  "@@locale": "en_CA",
+  "iosHealthShareUsageDescription": "Heart shows your resting heart rate, sleep and body data alongside your training, so you can see how they move together. This data stays on your device — Heart never uploads it.",
+  "@iosHealthShareUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthShareUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosHealthUpdateUsageDescription": "Heart saves each workout you finish to the Health app, so your rings credit your lifting. It writes how long you trained and that it was strength training — nothing else, and nothing leaves your device.",
+  "@iosHealthUpdateUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthUpdateUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  }
+}

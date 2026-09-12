@@ -37,7 +37,8 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   @override
   Widget build(BuildContext context) {
     final ThemeData(:scaffoldBackgroundColor, :textTheme, :colorScheme) = Theme.of(context);
-    final L(:startWorkout, templates: copy, :template, :exampleTemplates, :newFolder, :noFolder) = L.of(context);
+    final L(:startWorkout, templates: copy, :template, :exampleTemplates, :newFolder, :noFolder, :noTemplatesYet) = L
+        .of(context);
     final templates = Templates.watch(context);
     final preferences = Preferences.watch(context);
     final isAnonymous = Auth.watch(context).isAnonymous;
@@ -102,6 +103,19 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             ),
           ),
         ),
+        // Nothing of the user's own yet: say so, rather than leaving the
+        // header hanging over the example grid as if those were theirs. Same
+        // sentence shape as the goals card next door.
+        if (templates.folders.isEmpty && unfiled.isEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const .fromLTRB(8, 0, 8, 8),
+              child: Text(
+                noTemplatesYet,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+            ),
+          ),
         for (final folder in templates.folders)
           _FolderSection(
             key: ValueKey(folder.id),
@@ -724,7 +738,10 @@ class _FolderSection extends StatelessWidget {
         // a header, not a list row: 56pt of it above a grid of cards is a band
         // of empty space
         minTileHeight: 44,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+        // The section is already inset by 8; a second 8 here put the folder
+        // glyph in from the header above it and the card edges below it, with
+        // nothing to line up against
+        tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(bottom: 8),
         title: Row(
           spacing: 8,

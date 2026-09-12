@@ -47,7 +47,9 @@ abstract interface class LocalUpsyncService {
 
   Future<void> record(String userId, UpsyncResource resource, String id, UpsyncOutcome outcome);
 
-  /// The run is complete: the debt and the ledger go together.
+  /// The run is complete: the debt goes. The ledger stays — it is the only
+  /// durable record that the server has seen an exercise, a unit preference, a
+  /// folder or a template, none of which carry a `synced` flag of their own.
   Future<void> settle(String userId);
 
   /// The server merged a replayed custom onto the account's own by that name:
@@ -239,6 +241,12 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> _run(String uid) async {
+    // A retry after a stall is the same backup carrying on, so it keeps the
+    // numbers the interrupted attempt left. A relaunch is not: a fresh
+    // notifier has no memory of the earlier attempt, and the ledger cannot
+    // supply one — it now outlives the debt, so it says what the server holds
+    // rather than what this backup did.
+    final resuming = _status == .failed && userId == uid;
     userId = uid;
     if (!await _local.isOwed(uid)) {
       _access.replaying = false;
@@ -246,13 +254,20 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     }
     _access.replaying = true;
     _status = .running;
+    if (!resuming) {
+      _done = 0;
+      _total = 0;
+      _report = (uploaded: 0, existing: 0, skipped: 0);
+    }
     notifyListeners();
 
+    // Everything the server has already answered for this account, from this
+    // backup or any before it. It suppresses steps, and that is all it does:
+    // the report is counted as the steps are answered, because tallying the
+    // ledger would report a sign-in that replayed nothing as the numbers of
+    // whichever run last did — the "3 uploaded, 23 already there" that came
+    // back on every login.
     final ledger = await _local.ledger(uid);
-    _report = _tally(ledger);
-    _done = ledger.values.fold(0, (sum, rows) => sum + rows.length);
-    _total = _done;
-    notifyListeners();
 
     // Passes rather than one plan: a row written while the run was under way
     // — a workout finished with the remote leg closed — is picked up by the
@@ -274,7 +289,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
             final (id, outcome) = await step.replay();
             await _local.record(uid, step.resource, id, outcome);
             ledger.putIfAbsent(step.resource, () => {})[id] = outcome;
-            _report = _tally(ledger);
+            _report = _counting(_report, outcome);
           } catch (error, stacktrace) {
             if (userId != uid) return;
             onError?.call(error, stacktrace: stacktrace);
@@ -283,7 +298,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
             if (_isRefusal(error)) {
               await _local.record(uid, step.resource, step.id, .skipped);
               ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
-              _report = _tally(ledger);
+              _report = _counting(_report, .skipped);
             } else {
               _reachedServer = _isServerAnswer(error);
               _status = .failed;
@@ -299,7 +314,15 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
 
     if (userId != uid) return;
     await _local.settle(uid);
-    _status = .done;
+    // A sign-in whose store the server already holds has not backed anything
+    // up, and a line reporting that is worse than no line. `onComplete` still
+    // fires: the remote leg was closed for the length of the run whether or
+    // not it had anything to do, and the pull it triggers is what opens the
+    // account's data back up.
+    _status = switch (_done) {
+      0 => .idle,
+      _ => .done,
+    };
     _access.replaying = false;
     notifyListeners();
     onComplete?.call();
@@ -308,21 +331,14 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// Guards the pass loop against a store that keeps producing rows.
   static const _maxPasses = 3;
 
-  static UpsyncReport _tally(Map<UpsyncResource, Map<String, UpsyncOutcome>> ledger) {
-    var uploaded = 0;
-    var existing = 0;
-    var skipped = 0;
-    for (final outcome in ledger.values.expand((rows) => rows.values)) {
-      switch (outcome) {
-        case .created:
-          uploaded++;
-        case .existing:
-          existing++;
-        case .skipped:
-          skipped++;
-      }
-    }
-    return (uploaded: uploaded, existing: existing, skipped: skipped);
+  /// [report] with one more answer in it.
+  static UpsyncReport _counting(UpsyncReport report, UpsyncOutcome outcome) {
+    final (:uploaded, :existing, :skipped) = report;
+    return switch (outcome) {
+      .created => (uploaded: uploaded + 1, existing: existing, skipped: skipped),
+      .existing => (uploaded: uploaded, existing: existing + 1, skipped: skipped),
+      .skipped => (uploaded: uploaded, existing: existing, skipped: skipped + 1),
+    };
   }
 
   /// `id_taken` should never occur in a normal replay; the goal cap can.

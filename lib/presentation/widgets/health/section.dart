@@ -47,7 +47,17 @@ const _healthCardHeight = 96.0;
 /// declined, and granted but no watch — are indistinguishable to us and neither
 /// is fixable from this page, so a card that reappears every launch to report
 /// one of them is pure nagging.
-class const HealthSection({super.key}) extends StatelessWidget {
+class const HealthSection({
+  super.key,
+
+  /// Whether the band above this section is split into two tiles.
+  ///
+  /// Only the notice reads it, and only to end on the same line the tile above
+  /// it does: a 480pt card under a 580pt chart, both starting at the same inset,
+  /// is a ragged right edge on a page that is otherwise nothing but empty
+  /// states. With cards to show, the grid measures its own width as before.
+  final bool besideColumn = false,
+}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final health = Health.watch(context);
@@ -104,6 +114,7 @@ class const HealthSection({super.key}) extends StatelessWidget {
 
       return headed(
         _HealthNotice(
+          besideColumn: besideColumn,
           body: l.healthInviteBody,
           action: l.healthInviteAction,
           onAction: () async {
@@ -242,57 +253,74 @@ class const _HealthNotice({
   required final VoidCallback onAction,
   final VoidCallback? onDismiss,
   final String? dismissTooltip,
+  final bool besideColumn = false,
 }) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :dividerColor) = Theme.of(context);
-
     return SliverToBoxAdapter(
       child: Padding(
         padding: const .only(left: 16, right: 16, bottom: 16),
         child: Align(
           alignment: .centerLeft,
-          // Prose, so it gets a measure rather than the full width of an iPad.
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: readableWidth),
-            child: Container(
-              decoration: BoxDecoration(
-                border: .all(color: dividerColor, width: .5),
-                borderRadius: const .all(.circular(12)),
-              ),
-              padding: const .all(16),
-              child: Column(
-                crossAxisAlignment: .start,
-                children: [
-                  Row(
-                    crossAxisAlignment: .start,
-                    children: [
-                      Expanded(child: Text(body, style: textTheme.bodyMedium)),
-                      // Beside the copy rather than above it: with the title
-                      // gone there is no header row left to hang it on.
-                      if (onDismiss case VoidCallback dismiss) ...[
-                        const SizedBox(width: 8),
-                        FeedbackButton.circular(
-                          tooltip: dismissTooltip,
-                          onPressed: dismiss,
-                          child: Icon(Icons.close_rounded, size: 20, color: dividerColor),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: .centerRight,
-                    child: PrimaryButton.shrunk(
-                      onPressed: onAction,
-                      child: Text(action),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Prose, so it gets a measure rather than the full width of an
+              // iPad — except where it stands under one of two tiles with
+              // nothing in either, when ending on the same line as the tile
+              // above beats a short card under a long one.
+              final width = switch (besideColumn) {
+                true => (constraints.maxWidth - tileGutter) / 2,
+                false => readableWidth,
+              };
+
+              return ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: width),
+                child: _card(context),
+              );
+            },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _card(BuildContext context) {
+    final ThemeData(:textTheme, :dividerColor) = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        border: .all(color: dividerColor, width: .5),
+        borderRadius: const .all(.circular(12)),
+      ),
+      padding: const .all(16),
+      child: Column(
+        crossAxisAlignment: .start,
+        children: [
+          Row(
+            crossAxisAlignment: .start,
+            children: [
+              Expanded(child: Text(body, style: textTheme.bodyMedium)),
+              // Beside the copy rather than above it: with the title gone there
+              // is no header row left to hang it on.
+              if (onDismiss case VoidCallback dismiss) ...[
+                const SizedBox(width: 8),
+                FeedbackButton.circular(
+                  tooltip: dismissTooltip,
+                  onPressed: dismiss,
+                  child: Icon(Icons.close_rounded, size: 20, color: dividerColor),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: .centerRight,
+            child: PrimaryButton.shrunk(
+              onPressed: onAction,
+              child: Text(action),
+            ),
+          ),
+        ],
       ),
     );
   }

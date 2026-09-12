@@ -43,7 +43,7 @@ class _ProfileArea extends StatelessWidget {
           padding: const .symmetric(horizontal: 16),
           child: Row(
             crossAxisAlignment: .start,
-            spacing: 10,
+            spacing: tileGutter,
             children: [
               Expanded(child: chart),
               Expanded(

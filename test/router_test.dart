@@ -281,9 +281,10 @@ void main() {
         await tester.tapByKey(AppKeys.onboardingNext);
         await tester.pumpTimes(4);
 
-        // the last screen trades Next for the two ways out
+        // the last screen trades Next for the two ways out, and stands Skip
+        // down — Continue is the same door
         expect(find.byKey(AppKeys.onboardingNext), findsNothing);
-        expect(find.byKey(AppKeys.onboardingSkip), findsOneWidget);
+        expect(find.byKey(AppKeys.onboardingSkip).hitTestable(), findsNothing);
         expect(find.byKey(AppKeys.onboardingSignIn), findsOneWidget);
 
         await tester.tapByKey(AppKeys.onboardingContinue);

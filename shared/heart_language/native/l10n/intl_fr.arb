@@ -1,0 +1,15 @@
+{
+  "@@locale": "fr",
+  "iosHealthShareUsageDescription": "Heart affiche votre fréquence cardiaque au repos, votre sommeil et vos données corporelles à côté de vos entraînements pour vous aider à voir leurs liens. Ces données restent sur votre appareil : Heart ne les envoie jamais à un serveur.",
+  "@iosHealthShareUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthShareUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosHealthUpdateUsageDescription": "Heart enregistre chaque entraînement terminé dans l’app Santé pour que vos séances de musculation comptent dans vos anneaux d’activité. Seules la durée et la nature de la séance — un entraînement de musculation — sont enregistrées. Rien d’autre, et aucune donnée ne quitte votre appareil.",
+  "@iosHealthUpdateUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthUpdateUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  }
+}

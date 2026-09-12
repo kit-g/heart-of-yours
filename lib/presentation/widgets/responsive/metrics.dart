@@ -10,3 +10,11 @@ library;
 /// Caps running text; it is not a general page-width limit. Lists, grids and
 /// tables have their own answers.
 const readableWidth = 480.0;
+
+/// The gap between two tiles sharing a row, and the number anything wanting to
+/// line up with one of them has to subtract before halving the width.
+///
+/// Shared because the profile's chart/goals band and the health notice below it
+/// are separate widgets that have to end on the same line; a literal in each
+/// would drift the moment one of them changed.
+const tileGutter = 10.0;

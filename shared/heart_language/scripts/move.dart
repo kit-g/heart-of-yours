@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:csv/csv.dart';
 
+import 'ios_localizations.dart';
+
 void main(List<String> arguments) {
   final parser = ArgParser()
     ..addCommand('export')
@@ -65,7 +67,10 @@ void runExport(ArgResults args) {
   final csvPath = args['csv-file'] as String;
 
   print('Loading source ARB: $sourceArbPath');
-  final sourceData = loadJsonFile(sourceArbPath);
+  final sourceData = {
+    ...loadJsonFile(sourceArbPath),
+    ...loadJsonFile('native/l10n/intl_en.arb'),
+  };
   if (sourceData.isEmpty) {
     print('Error: Source ARB file is empty or not found: $sourceArbPath');
     exit(1);
@@ -141,7 +146,9 @@ void runImport(ArgResults args) {
   // Load the source ARB to get all metadata
   final sourceArbPath = '$l10nDir/intl_$sourceLang.arb';
   print('Loading source ARB for metadata: $sourceArbPath');
-  final sourceArb = loadJsonFile(sourceArbPath);
+  final flutterSource = loadJsonFile(sourceArbPath);
+  final nativeSource = loadJsonFile('native/l10n/intl_$sourceLang.arb');
+  final sourceArb = {...flutterSource, ...nativeSource};
 
   // Identify target language columns
   final sourceLangLower = sourceLang.toLowerCase();
@@ -152,12 +159,14 @@ void runImport(ArgResults args) {
     return;
   }
 
+  final translations = <String, Map<String, dynamic>>{sourceLang: sourceArb};
   print('Found target languages: ${langCols.join(", ")}');
 
   for (final lang in langCols) {
     final targetArbData = <String, dynamic>{};
     targetArbData['@@locale'] = lang;
 
+    translations[lang] = targetArbData;
     var stringsImported = 0;
     for (final row in data) {
       final key = row['id'];
@@ -184,13 +193,21 @@ void runImport(ArgResults args) {
     if (stringsImported > 0) {
       final targetFilePath = '$l10nDir/intl_$lang.arb';
       print('Saving $stringsImported strings to: $targetFilePath');
-      saveJsonFile(targetFilePath, targetArbData);
+      saveJsonFile(targetFilePath, {
+        for (final entry in targetArbData.entries)
+          if (entry.key == '@@locale' || flutterSource.containsKey(entry.key)) entry.key: entry.value,
+      });
+      saveJsonFile('native/l10n/intl_$lang.arb', {
+        for (final entry in targetArbData.entries)
+          if (entry.key == '@@locale' || nativeSource.containsKey(entry.key)) entry.key: entry.value,
+      });
     } else {
       print('Skipping $lang: No translations found in CSV.');
     }
   }
 
-  print('--- Import Complete ---');
+  writeIosLocalizations(translations, Directory('../../ios/Runner'));
+  print('--- Import Complete (including iOS permission descriptions) ---');
 
   // Run flutter gen-l10n
   print('\n--- Running flutter gen-l10n ---');

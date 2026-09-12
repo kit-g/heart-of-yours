@@ -47,6 +47,7 @@ class EditableAvatar extends StatelessWidget {
               radius: radius,
               local: local,
               remote: remote,
+              bordered: true,
             ),
             Positioned(
               bottom: 0,
@@ -87,10 +88,19 @@ class Avatar extends StatelessWidget {
   final Uint8List? local;
   final double radius;
 
-  const new({super.key, this.remote, this.local, required this.radius});
+  /// Rings the placeholder as well as filling it.
+  ///
+  /// The account screen's avatar is a control — tapping it picks a photo — and
+  /// while it is empty the ring is what says so. The profile's is a label for
+  /// the row it sits in, so it stays flat.
+  final bool bordered;
+
+  const new({super.key, this.remote, this.local, required this.radius, this.bordered = false});
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData(:colorScheme, :dividerColor) = Theme.of(context);
+
     return Container(
       height: radius * 2,
       width: radius * 2,
@@ -108,8 +118,29 @@ class Avatar extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
-        _ => CircleAvatar(
-          child: Icon(Icons.person_rounded, size: radius),
+        // Stated rather than inherited. [CircleAvatar]'s Material default fill
+        // is `primaryContainer`, and the preset rework maps that role onto
+        // `surface` — the page's own colour — so the placeholder went invisible
+        // without anything here changing. The fill and the glyph are a
+        // placeholder's, not content's: the neutral container and muted ink.
+        _ => Container(
+          alignment: .center,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            shape: .circle,
+            // dividerColor, not outlineVariant: this preset puts the latter
+            // within a shade of the fill, so the ring vanished into it. The
+            // health notice and the chart cards draw their edges the same way.
+            border: switch (bordered) {
+              true => Border.all(color: dividerColor),
+              false => null,
+            },
+          ),
+          child: Icon(
+            Icons.person_rounded,
+            size: radius,
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
       },
     );
