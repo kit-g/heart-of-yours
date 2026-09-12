@@ -8,7 +8,10 @@ import 'package:heart_state/heart_state.dart';
 class AppTheme with ChangeNotifier implements SignOutStateSentry {
   ThemeMode _mode;
 
-  Preset _preset = .forge;
+  /// Ink, light-first, with the brightness left to the system — the house
+  /// style, and what the marketing site is drawn in. A first launch should
+  /// look like the thing that sold it.
+  Preset _preset = .ink;
 
   Preset get preset => _preset;
 
@@ -64,7 +67,7 @@ class AppTheme with ChangeNotifier implements SignOutStateSentry {
 
   @override
   FutureOr<void> onSignOut() {
-    _preset = .forge;
+    _preset = .ink;
     _mode = ThemeMode.system;
   }
 }

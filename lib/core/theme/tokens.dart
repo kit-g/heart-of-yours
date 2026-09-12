@@ -333,9 +333,11 @@ enum Preset {
       if (preset.name == stored) return preset;
     }
     return switch (_legacyHue(stored)) {
+      // a stored legacy seed still maps to whichever preset it was closest to
       double hue when hue >= 45 && hue <= 180 => .forge,
       double() => .ink,
-      null => .forge,
+      // nothing stored at all is a first launch, and that is the house style
+      null => .ink,
     };
   }
 
