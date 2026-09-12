@@ -1,0 +1,15 @@
+{
+  "@@locale": "ru",
+  "iosHealthShareUsageDescription": "Heart показывает пульс в покое, сон и данные о теле рядом с тренировками, чтобы вы могли видеть, как они связаны. Эти данные остаются на вашем устройстве — Heart никогда их не отправляет на сервер.",
+  "@iosHealthShareUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthShareUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosHealthUpdateUsageDescription": "Heart сохраняет каждую завершённую тренировку в приложении «Здоровье», чтобы ваши силовые занятия учитывались в кольцах активности. Записываются только продолжительность и тип занятия — силовая тренировка. Ничего больше, и никакие данные не покидают ваше устройство.",
+  "@iosHealthUpdateUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthUpdateUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  }
+}

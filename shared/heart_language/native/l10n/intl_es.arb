@@ -1,0 +1,15 @@
+{
+  "@@locale": "es",
+  "iosHealthShareUsageDescription": "Heart muestra tu frecuencia cardíaca en reposo, tu sueño y tus datos corporales junto a tus entrenamientos para que puedas ver cómo se relacionan. Estos datos se quedan en tu dispositivo: Heart nunca los sube a ningún servidor.",
+  "@iosHealthShareUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthShareUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosHealthUpdateUsageDescription": "Heart guarda cada entrenamiento que terminas en la app Salud para que tus sesiones de fuerza cuenten para tus anillos de actividad. Solo registra cuánto tiempo has entrenado y que fue un entrenamiento de fuerza. Nada más, y ningún dato sale de tu dispositivo.",
+  "@iosHealthUpdateUsageDescription": {
+    "description": "iOS Health permission sheet: NSHealthUpdateUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
+    "type": "text",
+    "placeholders": {}
+  }
+}
