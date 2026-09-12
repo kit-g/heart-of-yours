@@ -40,6 +40,7 @@ enum _Screen {
   noAccountDialog,
   workout,
   history,
+  calendar,
   exercises,
   settings,
   anonymousSettings,
@@ -151,6 +152,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'bottom nav bar items and the set-row weight/reps buttons are below 44x44 — visual-density change, out of scope',
   ),
+
+  (_Screen.calendar, _Guideline.labeledTapTarget, null),
+  (_Screen.calendar, _Guideline.textContrastLight, null),
+  (_Screen.calendar, _Guideline.textContrastDark, null),
+  (_Screen.calendar, _Guideline.androidTapTarget, null),
+  (_Screen.calendar, _Guideline.iosTapTarget, null),
 
   (_Screen.history, _Guideline.labeledTapTarget, null),
   (_Screen.history, _Guideline.textContrastLight, null),
@@ -487,6 +494,14 @@ void main() {
         await tester.tapByKey(AppKeys.noAccountLogIn);
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
+      case _Screen.calendar:
+        final completed = Workout.fromJson(_unsynced().toMap());
+        when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
+        when(api.getWorkouts(any, pageSize: anyNamed('pageSize'), since: anyNamed('since')))
+            .thenAnswer((_) async => [completed]);
+        await tester.tapByKey(AppKeys.historyStack);
+        await tester.pumpTimes();
+        await tester.tap(find.byTooltip('Calendar'));
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.exercises:
