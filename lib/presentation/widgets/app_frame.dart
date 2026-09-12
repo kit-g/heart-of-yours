@@ -158,23 +158,29 @@ Future<void> _customCallbacks(BuildContext context, int index) async {
       return Scrolls.of(context).scrollWorkoutToTop();
     // history stack
     case 2:
-      // workout detail, brittle
-      if (GoRouterState.of(context).matchedLocation.startsWith('/history/')) {
-        return Scrolls.of(context).scrollEditableWorkoutToTop();
-      }
+      // The editor is its own scrollable, so take it to the top as well — but
+      // *as well*, not instead. Returning here meant that with a workout open
+      // the tap never reached the list: on two panes the list is right beside
+      // the editor and visibly ignored the button, and on one pane it stayed
+      // where it was for whenever you backed out. Scrolling a list that
+      // nothing is covering is free; scrolling the wrong one is the bug.
+      // Still keyed off the location — workout detail, brittle.
+      final scrolls = Scrolls.of(context);
+      final editing = GoRouterState.of(context).matchedLocation.startsWith('/history/');
 
-      if (!context.canPop()) {
-        return Scrolls.of(context).resetHistoryStack();
-      }
+      await Future.wait([
+        if (editing) scrolls.scrollEditableWorkoutToTop(),
+        scrolls.resetHistoryStack(),
+      ]);
+
+      return;
     // exercises stack
     case 3:
-      if (!context.canPop()) {
-        return Scrolls.of(context).resetExerciseStack();
-      } else {
-        while (context.canPop()) {
-          context.pop();
-        }
+      while (context.canPop()) {
+        context.pop();
       }
+
+      return Scrolls.of(context).resetExerciseStack();
   }
 }
 
