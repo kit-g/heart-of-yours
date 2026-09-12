@@ -1,4 +1,10 @@
 {
+  "calendar": "Calendar",
+  "@calendar": {
+    "description": "History calendar action and dialog title",
+    "type": "text",
+    "placeholders": {}
+  },
   "@@last_modified": "2025-11-02T13:39:55.263327",
   "appearance": "Appearance",
   "@appearance": {
