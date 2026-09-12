@@ -1,5 +1,11 @@
 {
   "@@locale": "ru",
+  "calendar": "Календарь",
+  "@calendar": {
+    "description": "History calendar action and dialog title",
+    "type": "text",
+    "placeholders": {}
+  },
   "appearance": "Внешний вид",
   "@appearance": {
     "description": "Label",

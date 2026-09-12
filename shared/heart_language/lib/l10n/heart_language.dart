@@ -100,6 +100,12 @@ abstract class L {
     Locale('ru'),
   ];
 
+  /// History calendar action and dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendar;
+
   /// Label
   ///
   /// In en, this message translates to:
