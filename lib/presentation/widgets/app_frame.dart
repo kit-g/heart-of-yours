@@ -197,13 +197,13 @@ class _KeyMap extends StatelessWidget {
   Widget build(BuildContext context) {
     return Shortcuts(
       shortcuts: {
-        LogicalKeySet(LogicalKeyboardKey.bracketRight): _NextTabIntent(),
-        LogicalKeySet(LogicalKeyboardKey.bracketLeft): _PreviousTabIntent(),
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit1): const _TabIntent(0),
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit2): const _TabIntent(1),
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit3): const _TabIntent(2),
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit4): const _TabIntent(3),
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyN): _NewWorkoutIntent(),
+        LogicalKeySet(.bracketRight): _NextTabIntent(),
+        LogicalKeySet(.bracketLeft): _PreviousTabIntent(),
+        LogicalKeySet(.meta, .digit1): const _TabIntent(0),
+        LogicalKeySet(.meta, .digit2): const _TabIntent(1),
+        LogicalKeySet(.meta, .digit3): const _TabIntent(2),
+        LogicalKeySet(.meta, .digit4): const _TabIntent(3),
+        LogicalKeySet(.meta, .keyN): _NewWorkoutIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
