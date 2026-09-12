@@ -80,3 +80,29 @@ Note: This package already contains generated files (messages_*.dart). If you ar
 
 ### License and contributions
 This package is internal to the Heart project. File issues and contributions within this repository.
+
+### iOS Health permission descriptions
+
+The `iosHealthShareUsageDescription` and `iosHealthUpdateUsageDescription` ARB keys
+live in `native/l10n/intl_en.arb`, outside the Flutter ARB directory. They supply only native iOS permission copy. From this package directory:
+
+1. Edit `native/l10n/intl_en.arb`, then run `dart run scripts/move.dart export`.
+2. Fill the two CSV rows in every locale column (`en_CA`, `ru`, `es`, `fr`).
+3. Run `dart run scripts/move.dart import`.
+
+Export merges both English ARB sources into the same master CSV. Import writes
+Flutter messages to `lib/l10n` and native messages to `native/l10n`, so even a
+standalone `flutter gen-l10n` never generates native permission getters.
+
+Import generates each base language's `ios/Runner/<language>.lproj/InfoPlist.strings`
+and updates the English fallback in `ios/Runner/Info.plist`, as well as regenerating
+Flutter localizations. Do not edit the native strings files directly. Missing
+base-language Health copy fails the import instead of silently shipping English.
+Regional system languages inherit the base resources (`en_CA` → `en`, `es_ES` →
+`es`, `fr_CA` → `fr`); they do not need duplicate `.lproj` directories.
+
+When adding a base language, also register its resource in the Runner Xcode
+project and add it to `CFBundleLocalizations`. `make test-heart_language` checks
+native copy and declared language parity. Build iOS and verify the actual Health
+permission sheet on a fresh test simulator; Flutter hot reload cannot update
+native bundle resources.
