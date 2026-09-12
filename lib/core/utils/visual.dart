@@ -135,6 +135,9 @@ class FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
 /// dialog. No phone is this wide, so nothing changes there.
 const dialogWidth = 560.0;
 
+/// Keeps the seven-column calendar at phone proportions even on tablets.
+const calendarDialogWidth = 400.0;
+
 Future<T?> showBrandedDialog<T>(
   BuildContext context, {
   required Widget title,
