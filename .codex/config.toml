@@ -1,0 +1,15 @@
+# Codex reads AGENTS.md; this repo keeps its instructions in CLAUDE.md, and
+# there is deliberately no AGENTS.md to drift from it. Codex checks each
+# directory for AGENTS.override.md, then AGENTS.md, then these fallbacks.
+#
+# No project_doc_max_bytes here: the whole chain is one 3 KB root CLAUDE.md,
+# well inside Codex's 32 KiB default. Set it only if that stops being true.
+#
+# Per-machine settings and MCP tokens belong in ~/.codex/config.toml, never in
+# this committed file — Codex can read tokens from the environment via
+# mcp_servers.<id>.bearer_token_env_var.
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+[mcp_servers.dart]
+command = "dart"
+args = ["mcp-server"]
