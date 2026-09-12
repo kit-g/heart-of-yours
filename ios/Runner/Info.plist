@@ -10,6 +10,13 @@
         <true/>
         <key>CFBundleDevelopmentRegion</key>
         <string>$(DEVELOPMENT_LANGUAGE)</string>
+        <key>CFBundleLocalizations</key>
+        <array>
+            <string>en</string>
+            <string>es</string>
+            <string>fr</string>
+            <string>ru</string>
+        </array>
         <key>CFBundleDisplayName</key>
         <string>$(DISPLAY_NAME)</string>
         <key>CFBundleExecutable</key>
