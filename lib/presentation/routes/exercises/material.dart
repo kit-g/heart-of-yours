@@ -86,6 +86,11 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
           preferredSize: const Size.fromHeight(56),
           child: TabBar(
             controller: _controller,
+            // Centred rather than start-aligned so the English four, which do
+            // fit, stay where they have always been instead of bunching to the
+            // left of a tablet's detail pane.
+            isScrollable: true,
+            tabAlignment: .center,
             tabs: _sections.map((section) => Tab(text: _copy(context, section))).toList(),
           ),
         ),
