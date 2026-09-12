@@ -158,26 +158,36 @@ Future<void> _customCallbacks(BuildContext context, int index) async {
       return Scrolls.of(context).scrollWorkoutToTop();
     // history stack
     case 2:
-      // The editor is its own scrollable, so take it to the top as well — but
-      // *as well*, not instead. Returning here meant that with a workout open
-      // the tap never reached the list: on two panes the list is right beside
-      // the editor and visibly ignored the button, and on one pane it stayed
-      // where it was for whenever you backed out. Scrolling a list that
-      // nothing is covering is free; scrolling the wrong one is the bug.
-      // Still keyed off the location — workout detail, brittle.
+      // Both scrollables, and no question asked about where the router is. A
+      // controller with nothing attached scrolls nothing — see
+      // [Scrolls._scrollToTop] — so the editor's is a no-op while the editor
+      // is closed, which is all the old `/history/` location match was
+      // standing in for. It broke the moment the route moved, and it read the
+      // URL to answer a question the controller already answers.
       final scrolls = Scrolls.of(context);
-      final editing = GoRouterState.of(context).matchedLocation.startsWith('/history/');
 
       await Future.wait([
-        if (editing) scrolls.scrollEditableWorkoutToTop(),
+        scrolls.scrollEditableWorkoutToTop(),
         scrolls.resetHistoryStack(),
       ]);
 
       return;
     // exercises stack
     case 3:
-      while (context.canPop()) {
-        context.pop();
+      // A navbar button is a back action: scroll the page's scrollable to the
+      // top if there is one, otherwise back out. On one pane the detail is
+      // covering the list and carries no controller of its own, so there is
+      // nothing here to scroll and backing out is the whole action. On two it
+      // sits *beside* the list, which is on screen and scrollable — so the
+      // list goes to the top and the selection is left alone, the way the
+      // history stack's editor is.
+      // ...and one tap does one of them. While the detail is up the tap is
+      // spent backing out of it; the list is only taken to the top once it is
+      // the page you are actually looking at. Doing both at once meant a
+      // single tap moved a list you could not see, and popping the whole
+      // branch meant one tap undid several steps of "also try".
+      if (LayoutProvider.of(context) == .compact && context.canPop()) {
+        return context.pop();
       }
 
       return Scrolls.of(context).resetExerciseStack();
