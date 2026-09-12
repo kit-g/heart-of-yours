@@ -180,11 +180,20 @@ class _Card extends StatelessWidget {
     switch (set.category) {
       case .weightedBodyWeight:
         return switch (set) {
+          // Logged at bodyweight — no *added* weight, which is the ordinary
+          // way to do one of these. The clause below wants a non-null weight,
+          // so every such set fell through to '' and drew a bare ordinal with
+          // nothing beside it: 42 of this exercise's 44 sets here, and a
+          // ragged half of the next one's. Bodyweight is the reps, read the
+          // way .repsOnly reads them.
+          ExerciseSet(:int reps, :var weight) when weight == null || weight == 0 => '$reps x',
           ExerciseSet(:double weight, :int reps) => '+${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
       case .assistedBodyWeight:
         return switch (set) {
+          // and no assistance is unassisted — same blank line, same reading
+          ExerciseSet(:int reps, :var weight) when weight == null || weight == 0 => '$reps x',
           ExerciseSet(:double weight, :int reps) => '-${prefs.weight(weight, unit: unit)} x $reps',
           _ => '',
         };
