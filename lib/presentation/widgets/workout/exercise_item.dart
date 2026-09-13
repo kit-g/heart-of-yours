@@ -203,12 +203,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         child: Row(
                           children: [
                             SizedBox(
-                              width: _fixedColumnWidth,
-                              child: Center(child: Text(firstColumnCopy)),
+                              width: _setColumnWidth,
+                              child: _ColumnLabel(firstColumnCopy),
                             ),
                             Expanded(
                               flex: 3,
-                              child: Center(child: Text(secondColumnCopy)),
+                              child: _ColumnLabel(secondColumnCopy),
                             ),
                             ..._buttonsHeader(context),
                             SizedBox(
@@ -299,71 +299,51 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       case .barbell:
         return [
           Expanded(
-            child: Center(
-              child: Text(
-                weightUnit(),
-              ),
-            ),
+            child: _ColumnLabel(weightUnit()),
           ),
           Expanded(
-            child: Center(
-              child: Text(l.reps),
-            ),
+            child: _ColumnLabel(l.reps),
           ),
         ];
       case .weightedBodyWeight:
         return [
           Expanded(
-            child: Center(child: Text('+${weightUnit()}')),
+            child: _ColumnLabel('+${weightUnit()}'),
           ),
           Expanded(
-            child: Center(
-              child: Text(l.reps),
-            ),
+            child: _ColumnLabel(l.reps),
           ),
         ];
       case .assistedBodyWeight:
         return [
           Expanded(
-            child: Center(child: Text('-${weightUnit()}')),
+            child: _ColumnLabel('-${weightUnit()}'),
           ),
           Expanded(
-            child: Center(
-              child: Text(l.reps),
-            ),
+            child: _ColumnLabel(l.reps),
           ),
         ];
       case .repsOnly:
         return [
           Expanded(
             flex: 2,
-            child: Center(
-              child: Text(l.reps),
-            ),
+            child: _ColumnLabel(l.reps),
           ),
         ];
       case .cardio:
         return [
           Expanded(
-            child: Center(
-              child: Text(
-                distanceUnit(),
-              ),
-            ),
+            child: _ColumnLabel(distanceUnit()),
           ),
           Expanded(
-            child: Center(
-              child: Text(l.time),
-            ),
+            child: _ColumnLabel(l.time),
           ),
         ];
       case .duration:
         return [
           Expanded(
             flex: 2,
-            child: Center(
-              child: Text(l.time),
-            ),
+            child: _ColumnLabel(l.time),
           ),
         ];
     }
@@ -508,5 +488,29 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     if (enabled || !context.mounted) return;
     final L(:notificationsDisabledReminder, :settings) = L.of(context);
     remindNotificationsOff(context, message: notificationsDisabledReminder, settingsLabel: settings);
+  }
+}
+
+/// One column header of the set table, on one line whatever language it is in.
+///
+/// The columns are sized for the values under them — a set number, a weight,
+/// a rep count — and several of the headers are longer words than any value
+/// they sit over. Left to wrap, Spanish's "Serie" broke as "Seri / e" in a
+/// 32pt column and Russian's "Повторения" split in two. Shrinking the label
+/// is the smaller loss: the header is a hint, and the figures below it are
+/// what the eye is actually reading.
+class _ColumnLabel extends StatelessWidget {
+  final String label;
+
+  const new(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: FittedBox(
+        fit: .scaleDown,
+        child: Text(label, maxLines: 1, softWrap: false),
+      ),
+    );
   }
 }

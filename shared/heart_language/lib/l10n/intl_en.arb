@@ -345,6 +345,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "yourWorkouts": "Your workouts",
+  "@yourWorkouts": {
+    "description": "Workout tab app bar title, above the button that starts a new workout",
+    "type": "text",
+    "placeholders": {}
+  },
   "cancelWorkout": "Cancel workout",
   "@cancelWorkout": {
     "description": "Button text",

@@ -704,11 +704,18 @@ class NewWorkoutHeader extends StatelessWidget {
             child: Selector<Workouts, bool>(
               selector: (_, provider) => provider.hasActiveWorkout,
               builder: (_, hasActiveWorkout, _) {
-                if (hasActiveWorkout) {
-                  return Text(L.of(context).goToWorkout);
-                } else {
-                  return Text(L.of(context).startNewWorkout);
-                }
+                return switch (hasActiveWorkout) {
+                  true => Text(L.of(context).goToWorkout),
+                  // the label says "new", and the plus says it again without a
+                  // verb — the same pairing the template button next door uses
+                  false => Row(
+                    mainAxisSize: .min,
+                    children: [
+                      const Icon(Icons.add_rounded, size: 18),
+                      Text(L.of(context).startNewWorkout),
+                    ],
+                  ),
+                };
               },
             ),
           ),

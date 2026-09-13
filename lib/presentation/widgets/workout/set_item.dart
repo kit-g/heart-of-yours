@@ -178,7 +178,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               margin: EdgeInsets.zero,
               backgroundColor: fill,
               child: SizedBox(
-                width: _fixedColumnWidth,
+                width: _setColumnWidth,
                 height: _fixedButtonHeight,
                 child: Center(
                   child: Text('${widget.index}'),
