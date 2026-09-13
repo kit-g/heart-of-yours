@@ -99,4 +99,8 @@ const _migrations = <int, List<String>>{
   13: [
     upsync,
   ],
+  14: [
+    addWorkoutExerciseNote,
+    addPinnedExerciseNote,
+  ],
 };
