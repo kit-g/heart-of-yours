@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:mockito/mockito.dart';
@@ -39,6 +40,7 @@ enum _Screen {
   profile,
   noAccountDialog,
   workout,
+  exerciseNoteEditor,
   history,
   calendar,
   exercises,
@@ -140,6 +142,19 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
+  (_Screen.exerciseNoteEditor, _Guideline.labeledTapTarget, null),
+  (_Screen.exerciseNoteEditor, _Guideline.textContrastLight, null),
+  (_Screen.exerciseNoteEditor, _Guideline.textContrastDark, null),
+  (
+    _Screen.exerciseNoteEditor,
+    _Guideline.androidTapTarget,
+    'dialog actions use the shared 32pt button height (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), below 48pt',
+  ),
+  (
+    _Screen.exerciseNoteEditor,
+    _Guideline.iosTapTarget,
+    'dialog actions use the shared 32pt button height (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), below 44pt',
+  ),
   (_Screen.workout, _Guideline.textContrastLight, null),
   (_Screen.workout, _Guideline.textContrastDark, null),
   (
@@ -492,6 +507,19 @@ void main() {
         await tester.tapByKey(AppKeys.noAccount);
         await tester.pumpTimes();
         await tester.tapByKey(AppKeys.noAccountLogIn);
+      case _Screen.exerciseNoteEditor:
+        final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+        final workout = Workout(name: 'Notes')..add(exercise);
+        await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(template: workout);
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        await tester.tap(find.byKey(WorkoutDetailKeys.exerciseOptionsFor(exercise.id)));
+        await tester.pumpTimes();
+        await tester.tap(find.text('Add note'));
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
       case _Screen.calendar:
