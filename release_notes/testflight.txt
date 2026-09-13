@@ -1,18 +1,21 @@
-Heart now works without an account.
-
-• Start straight away. No sign-up: your workouts, templates, goals and any Apple Health data you allow live on this phone and nowhere else.
-• A short intro on first launch explains the trade. Skip it any time.
-• Log in whenever you like, and everything you logged before you did is backed up to your account. Your profile shows it going up.
-• Your full workout history now downloads in the background, so charts, goals and records count everything you have done — not just the recent sessions your phone had already fetched.
-• Export my data, in Settings: your whole log as a JSON or CSV file through the share sheet. Health data is never included.
-• Erase my data, in Settings: wipe everything on this phone when you are not signed in.
-
-Fixed: workouts could lose their exercises after syncing; an abandoned session could come back as a workout in progress; dialogs now follow a light/dark switch while open; charts stay readable on very busy weeks.
+- Exercise notes. Add a note to any exercise while you train. Sign in to
+  pin one, and it comes back on every workout with that exercise.
+- A calendar view of your history. History has a calendar button; tap a
+  day to open that workout.
+- New logotype, app icon and splash screen, in light and dark. Fresh
+  installs open in Ink.
+- Apple Health permission prompts now read in Spanish, French and Russian.
+- Bodyweight exercises: fixed a broken average working weight chart, and
+  sets that showed no reps in history.
+- Plus a batch of smaller fixes.
 
 What to test
 
-• Fresh install: walk the intro, log a workout, then open History and your profile — all without signing in.
-• Log in from that same session and watch the backup line on your profile run to the end.
-• On an account with a long history, open the profile after launch and watch the weekly chart fill in.
-• Settings › Export my data: try both JSON and CSV, and save one to Files.
-• Settings › Erase my data while signed out, and confirm the app starts over.
+- Add a note to an exercise mid-workout. Sign in, pin it, start a workout
+  from a template that uses that exercise, and check the note came along.
+- Open History's calendar, scroll back a few months, tap a day, and check
+  the workout opens and the calendar holds its place when you come back.
+- Fresh install: walk the onboarding screens, then check the icon, launch
+  screen and Ink theme in both light and dark.
+- On a Spanish, French or Russian device, check the Apple Health prompt
+  the first time you open the Health section.
