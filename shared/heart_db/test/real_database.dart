@@ -90,6 +90,9 @@ const _schema = [
   addSyncsEtag,
   // v13
   upsync,
+  // v14
+  addWorkoutExerciseNote,
+  addPinnedExerciseNote,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -99,7 +102,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 13,
+      version: 14,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);

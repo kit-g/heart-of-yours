@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 13);
+          expect(await userVersion(db), 14);
           expect(
             await tables(db),
             {
@@ -191,6 +191,9 @@ void main() {
           // v12: the catalog stamp beside the cached rows
           expect(await columns(db, 'syncs'), containsPair('version', 'TEXT'));
           expect(await columns(db, 'syncs'), containsPair('etag', 'TEXT'));
+          // v14: session notes and pinned exercise notes
+          expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
+          expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
 
           expect(await indexesOn(db, 'template_exercises'), {'template_idx'});
           // `exercise_idx` is claimed three times in 0001.dart (workout_exercises,
@@ -484,7 +487,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 13);
+          expect(await userVersion(db), 14);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -507,7 +510,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 13);
+          expect(await userVersion(db), 14);
           expect(await tables(db), contains('upsync'));
           expect(
             await columns(db, 'upsync'),
@@ -522,6 +525,23 @@ void main() {
       );
     },
   );
+
+  test('v13 upgrades through production init without losing replay confirmations', () async {
+    await LocalDatabase.init(version: 13);
+    var db = await raw();
+    final confirmation = {'user_id': 'u1', 'resource': 'exercise', 'id': 'e1', 'outcome': 'confirmed'};
+    await db.insert('upsync', confirmation);
+    expect(await columns(db, 'workout_exercises'), isNot(contains('note')));
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 14);
+    expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
+    expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
+    expect(await db.query('upsync'), [confirmation]);
+    await db.close();
+  });
 
   group(
     'idempotence',
@@ -548,7 +568,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 13);
+          expect(await userVersion(db), 14);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
