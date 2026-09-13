@@ -280,6 +280,53 @@ void main() {
   });
 
   group('exercise preferences', () {
+    test('pin writes only the note and unpin uses the note query parameter', () async {
+      when(client.post(any, headers: anyNamed('headers'), body: anyNamed('body'), encoding: anyNamed('encoding')))
+          .thenAnswer(
+            (_) async => http.Response(
+              '{}',
+              200,
+              request: http.Request('POST', Uri.https('api.example.com', Router.exercisePreferences)),
+            ),
+          );
+      await api.setExerciseNote('e1', 'Pause');
+      final request =
+          verify(
+                client.post(
+                  any,
+                  headers: anyNamed('headers'),
+                  body: captureAnyNamed('body'),
+                  encoding: anyNamed('encoding'),
+                ),
+              ).captured.single
+              as String;
+      expect(jsonDecode(request), {'exerciseId': 'e1', 'note': 'Pause'});
+      when(client.delete(any, headers: anyNamed('headers'), body: anyNamed('body'), encoding: anyNamed('encoding')))
+          .thenAnswer(
+            (_) async => http.Response(
+              '',
+              204,
+              request: http.Request(
+                'DELETE',
+                Uri.https('api.example.com', '${Router.exercisePreferences}/e1', {'pref': 'note'}),
+              ),
+            ),
+          );
+      await api.setExerciseNote('e1', null);
+      final uri =
+          verify(
+                client.delete(
+                  captureAny,
+                  headers: anyNamed('headers'),
+                  body: anyNamed('body'),
+                  encoding: anyNamed('encoding'),
+                ),
+              ).captured.single
+              as Uri;
+      expect(uri.path, '/v1/exercise-preferences/e1');
+      expect(uri.queryParameters, {'pref': 'note'});
+    });
+
     test('getExercisePreferences parses every row, whichever fields it carries', () async {
       _response(
         client: client,
@@ -290,16 +337,18 @@ void main() {
           'preferences': [
             {'exerciseId': 'e1', 'unitSystem': 'imperial'},
             {'exerciseId': 'e2', 'restTimer': 90},
-            {'exerciseId': 'e3', 'unitSystem': 'metric', 'restTimer': 60},
+            {'exerciseId': 'e3', 'unitSystem': 'metric', 'restTimer': 60, 'note': 'Pause'},
+            {'exerciseId': 'e4', 'note': 'Slow'},
           ],
         },
       );
 
       final result = (await api.getExercisePreferences()).toList();
 
-      expect(result.map((each) => each.exerciseId), ['e1', 'e2', 'e3']);
-      expect(result.map((each) => each.unitSystem), [MeasurementUnit.imperial, null, MeasurementUnit.metric]);
-      expect(result.map((each) => each.restTimer), [null, 90, 60]);
+      expect(result.map((each) => each.exerciseId), ['e1', 'e2', 'e3', 'e4']);
+      expect(result.map((each) => each.unitSystem), [MeasurementUnit.imperial, null, MeasurementUnit.metric, null]);
+      expect(result.map((each) => each.restTimer), [null, 90, 60, null]);
+      expect(result.map((each) => each.note), [null, null, 'Pause', 'Slow']);
     });
 
     test('getExercisePreferences is empty when the response carries nothing named', () async {

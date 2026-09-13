@@ -162,17 +162,22 @@ void main() {
   group('workouts', () {
     test('the client id is on the wire and a retry is told from a create', () async {
       final workout = Workout(name: 'Morning')..finish(DateTime.timestamp());
+      workout.add(Exercise(name: 'Bench', category: .barbell, target: .chest)).note = 'Pause';
       _post(client, Router.workouts, 200, workout.toMap());
 
       final (:row, :created) = await api.replayWorkout(workout);
 
       expect(created, isFalse);
       expect(row.id, workout.id);
-      expect(sentBody(), containsPair('id', workout.id));
+      expect(row.first.note, 'Pause');
+      final body = sentBody();
+      expect(((body['exercises'] as List).single as Map)['note'], 'Pause');
+      expect(body, containsPair('id', workout.id));
     });
 
     test('saveWorkout reads the row off the same call', () async {
       final workout = Workout(name: 'Morning')..finish(DateTime.timestamp());
+      workout.add(Exercise(name: 'Bench', category: .barbell, target: .chest)).note = 'Pause';
       _post(client, Router.workouts, 201, workout.toMap());
 
       final saved = await api.saveWorkout(workout);
