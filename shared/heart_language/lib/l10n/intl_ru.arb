@@ -345,6 +345,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "yourWorkouts": "Ваши тренировки",
+  "@yourWorkouts": {
+    "description": "Workout tab app bar title, above the button that starts a new workout",
+    "type": "text",
+    "placeholders": {}
+  },
   "cancelWorkout": "Отменить тренировку",
   "@cancelWorkout": {
     "description": "Button text",
@@ -437,7 +443,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "reps": "Повторения",
+  "reps": "Раз",
   "@reps": {
     "description": "Workout table, column header",
     "type": "text",

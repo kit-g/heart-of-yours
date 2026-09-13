@@ -190,6 +190,9 @@ class LFr extends L {
   String get startWorkout => 'Commencer la séance';
 
   @override
+  String get yourWorkouts => 'Vos séances';
+
+  @override
   String get cancelWorkout => 'Annuler la séance';
 
   @override

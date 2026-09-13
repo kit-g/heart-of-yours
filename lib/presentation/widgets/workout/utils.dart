@@ -1,6 +1,15 @@
 part of 'workout_detail.dart';
 
 const _fixedColumnWidth = 32.0;
+
+/// The set column, which is wider than the number it holds.
+///
+/// Its header is a *word* — "Set" fits in a number's worth of space, "Serie"
+/// and "Подход" do not, and at 32pt Spanish came out as "Seri / e". The column
+/// is sized for the header and the chip follows it, so the number stays
+/// centred under its own label. [_ColumnLabel] catches whatever still does not
+/// fit.
+const _setColumnWidth = 44.0;
 const _fixedButtonHeight = 24.0;
 const _emptyValue = '-';
 

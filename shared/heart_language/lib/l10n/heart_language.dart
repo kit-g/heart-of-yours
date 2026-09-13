@@ -442,6 +442,12 @@ abstract class L {
   /// **'Start workout'**
   String get startWorkout;
 
+  /// Workout tab app bar title, above the button that starts a new workout
+  ///
+  /// In en, this message translates to:
+  /// **'Your workouts'**
+  String get yourWorkouts;
+
   /// Button text
   ///
   /// In en, this message translates to:
