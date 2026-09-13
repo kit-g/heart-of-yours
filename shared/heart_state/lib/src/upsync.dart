@@ -3,6 +3,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 import 'goals.dart';
+import 'exercises.dart';
 import 'remote.dart';
 import 'templates.dart';
 
@@ -64,7 +65,7 @@ abstract interface class LocalUpsyncService {
 /// The kinds of row the replay carries, in the order it carries them. Later
 /// resources reference earlier ones, and a name-merge changes the id they
 /// must reference — so the order is the contract, not a preference.
-enum UpsyncResource { exercise, unit, folder, template, workout, goal }
+enum UpsyncResource { exercise, unit, note, folder, template, workout, goal }
 
 /// What the server said about one step.
 enum UpsyncOutcome {
@@ -111,6 +112,7 @@ typedef _Step = ({UpsyncResource resource, String id, Future<(String, UpsyncOutc
 /// The remote leg is closed to everyone else for the length of the run — see
 /// [RemoteAccess.replaying] — and opened when it completes.
 class Upsync with ChangeNotifier implements SignOutStateSentry {
+  final ExerciseNoteService? _notes;
   final LocalUpsyncService _local;
   final UpsyncService _remote;
   final ExerciseService _exercises;
@@ -126,6 +128,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
 
   new({
     required this._local,
+    this._notes,
     required this._remote,
     required this._exercises,
     required this._folders,
@@ -393,6 +396,18 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
       .unit => [
         for (final MapEntry(key: exerciseId, value: unit) in (await _exercises.getExerciseUnits(uid)).entries)
           if (pending(exerciseId)) (resource: resource, id: exerciseId, replay: () => _replayUnit(exerciseId, unit)),
+      ],
+      .note => [
+        for (final MapEntry(key: exerciseId, value: note) in (await _notes?.read(uid) ?? <String, String>{}).entries)
+          if (pending(exerciseId))
+            (
+              resource: resource,
+              id: exerciseId,
+              replay: () async {
+                await _notes!.sync(exerciseId, note);
+                return (exerciseId, UpsyncOutcome.created);
+              },
+            ),
       ],
       .folder => [
         for (final folder in await _folders.getFolders(uid))

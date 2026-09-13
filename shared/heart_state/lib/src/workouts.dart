@@ -17,12 +17,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final WorkoutService _localService;
   final RemoteWorkoutService _remoteService;
   final RemoteAccess _remote;
+  final Future<void> Function(String id, String? note)? _persistNote;
+  final String? Function(String exerciseId)? _noteFor;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
   new({
     required WorkoutService service,
     required this._remoteService,
     this.onError,
+    this._persistNote,
+    this._noteFor,
     RemoteAccess? remote,
   }) : _localService = service,
        _remote = remote ?? RemoteAccess();
@@ -239,9 +243,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return workout.any((exercise) => exercise.isNotEmpty);
   }
 
-  Future<void> startWorkout({String? name, Workout? template}) {
+  Future<void> startWorkout({String? name, Workout? template, bool applyPinnedNotes = false}) {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     final workout = template ?? Workout(name: name);
+    if (applyPinnedNotes) {
+      for (final exercise in workout) {
+        exercise.note ??= _noteFor?.call(exercise.exercise.id);
+      }
+    }
     workout.end = null;
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
@@ -432,10 +441,17 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> startExercise(Exercise exercise) async {
     if (activeWorkout case Workout workout) {
-      final starter = workout.add(exercise);
+      final starter = workout.add(exercise)..note = _noteFor?.call(exercise.id);
       notifyListeners();
       return _localService.startExercise(workout.id, starter);
     }
+  }
+
+  Future<void> setNote(WorkoutExercise exercise, String? note) async {
+    if (!(activeWorkout?.contains(exercise) ?? false)) return;
+    await _persistNote?.call(exercise.id, note);
+    exercise.note = note;
+    notifyListeners();
   }
 
   void _forExercise(WorkoutExercise exercise, void Function(WorkoutExercise) action, {bool notifies = true}) {
