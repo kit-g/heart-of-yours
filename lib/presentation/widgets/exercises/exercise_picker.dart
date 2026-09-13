@@ -86,37 +86,15 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                       },
                       key: _targetKey,
                       // a Row, not a Stack with a left-pinned icon: a wide
-                      // label (ru «Категория») slid under the icon. The
-                      // trailing spacer mirrors the icon so the label centers
-                      // on the button, and long copy ellipsizes.
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.filter_alt_rounded,
-                            // an active filter sits on the accent fill,
-                            // where the muted grey blends away
-                            color: switch (exercises.targets.isEmpty) {
-                              true => colorScheme.onSurfaceVariant,
-                              false => colorScheme.onTertiaryContainer,
-                            },
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                target,
-                                maxLines: 1,
-                                overflow: .ellipsis,
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: switch (exercises.targets.isEmpty) {
-                                    true => colorScheme.onSurfaceVariant,
-                                    false => colorScheme.onTertiaryContainer,
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                        ],
+                      // label (ru «Категория») slid under the icon.
+                      child: _FilterLabel(
+                        label: target,
+                        // an active filter sits on the accent fill,
+                        // where the muted grey blends away
+                        color: switch (exercises.targets.isEmpty) {
+                          true => colorScheme.onSurfaceVariant,
+                          false => colorScheme.onTertiaryContainer,
+                        },
                       ),
                       onPressed: () async {
                         return showMenu(
@@ -163,33 +141,13 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                         false => null,
                       },
                       key: _categoryKey,
-                      // Row for the same reason as the target button above
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.filter_alt_rounded,
-                            color: switch (exercises.categories.isEmpty) {
-                              true => colorScheme.onSurfaceVariant,
-                              false => colorScheme.onTertiaryContainer,
-                            },
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                category,
-                                maxLines: 1,
-                                overflow: .ellipsis,
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: switch (exercises.categories.isEmpty) {
-                                    true => colorScheme.onSurfaceVariant,
-                                    false => colorScheme.onTertiaryContainer,
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                        ],
+                      // same shape as the target button above
+                      child: _FilterLabel(
+                        label: category,
+                        color: switch (exercises.categories.isEmpty) {
+                          true => colorScheme.onSurfaceVariant,
+                          false => colorScheme.onTertiaryContainer,
+                        },
                       ),
                       onPressed: () async {
                         return showMenu(
@@ -224,6 +182,26 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                     false => const SizedBox.shrink(),
                     true => ChoiceChip(
                       selectedColor: colorScheme.tertiaryContainer,
+                      // the tick is a second foreground on that fill, with its
+                      // own colour slot the chip theme leaves unset — so it
+                      // stayed dark while the label went light
+                      checkmarkColor: colorScheme.onTertiaryContainer,
+                      // The accent fill needs the accent's own ink. The chip
+                      // theme sets no label style at all, so a selected chip
+                      // keeps the unselected one and reads as dark text on the
+                      // accent — while the two filter buttons beside it switch
+                      // to onTertiaryContainer for exactly this reason.
+                      //
+                      // Set here rather than on the theme because the three
+                      // selectable chips in the app do not agree on a selected
+                      // fill: this one overrides to the accent, while the
+                      // movement sheet's and the new-exercise dialog's take
+                      // Material's secondaryContainer. One label colour across
+                      // all of them would be wrong for two.
+                      labelStyle: switch (exercises.showingMine) {
+                        true => textTheme.labelLarge?.copyWith(color: colorScheme.onTertiaryContainer),
+                        false => null,
+                      },
                       label: Text(mine),
                       selected: exercises.showingMine,
                       onSelected: (v) => exercises.showingMine = v,
@@ -321,6 +299,58 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
           ),
         },
       ],
+    );
+  }
+}
+
+/// A filter button's contents: the funnel, the label, and a trailing spacer
+/// that mirrors the funnel so the label reads as centred on the button.
+///
+/// The spacer is symmetry, not information, so it is the first thing given up
+/// when the label needs the room: ru «Категория» and es «Categoría» spent 48pt
+/// of a half-width button on the icon and its mirror and ellipsised into
+/// «Категор…». Measured rather than guessed at a breakpoint — the button is
+/// half of whatever pane it is in, which on a two-pane iPad is not a fraction
+/// of the window (see CLAUDE.md).
+class _FilterLabel extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const new({required this.label, required this.color});
+
+  /// Matches the [Icon] beside it; [IconTheme]'s default size.
+  static const _icon = 24.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.titleSmall?.copyWith(color: color);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: label, style: style),
+          maxLines: 1,
+          textDirection: Directionality.of(context),
+        )..layout();
+        final room = constraints.maxWidth - _icon;
+
+        return Row(
+          children: [
+            Icon(Icons.filter_alt_rounded, color: color),
+            Expanded(
+              child: Center(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: .ellipsis,
+                  style: style,
+                ),
+              ),
+            ),
+            if (painter.width <= room - _icon) const SizedBox(width: _icon),
+          ],
+        );
+      },
     );
   }
 }
