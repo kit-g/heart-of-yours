@@ -189,6 +189,9 @@ class LEn extends L {
   String get startWorkout => 'Start workout';
 
   @override
+  String get yourWorkouts => 'Your workouts';
+
+  @override
   String get cancelWorkout => 'Cancel workout';
 
   @override
@@ -1961,6 +1964,9 @@ class LEnCa extends LEn {
 
   @override
   String get startWorkout => 'Start workout';
+
+  @override
+  String get yourWorkouts => 'Your workouts';
 
   @override
   String get cancelWorkout => 'Cancel workout';

@@ -189,6 +189,9 @@ class LRu extends L {
   String get startWorkout => 'Начать тренировку';
 
   @override
+  String get yourWorkouts => 'Ваши тренировки';
+
+  @override
   String get cancelWorkout => 'Отменить тренировку';
 
   @override
@@ -238,7 +241,7 @@ class LRu extends L {
   String get previous => 'Предыдущий';
 
   @override
-  String get reps => 'Повторения';
+  String get reps => 'Раз';
 
   @override
   String get time => 'Время';

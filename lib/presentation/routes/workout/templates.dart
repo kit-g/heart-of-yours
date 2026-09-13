@@ -37,8 +37,17 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   @override
   Widget build(BuildContext context) {
     final ThemeData(:scaffoldBackgroundColor, :textTheme, :colorScheme) = Theme.of(context);
-    final L(:startWorkout, templates: copy, :template, :exampleTemplates, :newFolder, :noFolder, :noTemplatesYet) = L
-        .of(context);
+    final L(
+      :yourWorkouts,
+      templates: copy,
+      :template,
+      :exampleTemplates,
+      :newFolder,
+      :noFolder,
+      :noTemplatesYet,
+    ) = L.of(
+      context,
+    );
     final templates = Templates.watch(context);
     final preferences = Preferences.watch(context);
     final isAnonymous = Auth.watch(context).isAnonymous;
@@ -52,7 +61,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           expandedHeight: 80.0,
           flexibleSpace: FlexibleSpaceBar(
             centerTitle: true,
-            title: Text(startWorkout),
+            title: Text(yourWorkouts),
           ),
         ),
         NewWorkoutHeader(openWorkoutSheet: widget.onNewWorkout),

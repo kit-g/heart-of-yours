@@ -174,7 +174,7 @@ class LEs extends L {
   String get search => 'Buscar';
 
   @override
-  String get startNewWorkout => 'Empezar un nuevo entrenamiento';
+  String get startNewWorkout => 'Nuevo entrenamiento';
 
   @override
   String get cancelCurrentWorkoutTitle => '¿Cancelar el entrenamiento actual?';
@@ -187,6 +187,9 @@ class LEs extends L {
 
   @override
   String get startWorkout => 'Empezar entrenamiento';
+
+  @override
+  String get yourWorkouts => 'Tus entrenamientos';
 
   @override
   String get cancelWorkout => 'Cancelar entrenamiento';
@@ -554,7 +557,7 @@ class LEs extends L {
   String get goals => 'Metas';
 
   @override
-  String get addGoal => 'Agregar meta';
+  String get addGoal => 'Nueva meta';
 
   @override
   String get noGoalsYet => 'Aún no hay metas';
@@ -655,7 +658,7 @@ class LEs extends L {
   String get noTemplatesYet => 'Aún no hay plantillas';
 
   @override
-  String get exampleTemplates => 'Plantillas de ejemplo';
+  String get exampleTemplates => 'Plantillas preestablecidas';
 
   @override
   String get template => 'Plantilla';
@@ -845,28 +848,28 @@ class LEs extends L {
   String get accountDeletedAction => '🔥🏆 Deshacer la despedida 🥇🔥';
 
   @override
-  String get movement => 'Movimiento';
+  String get movement => 'Ejercicio';
 
   @override
-  String get pattern => 'Patrón';
+  String get pattern => 'Tipo';
 
   @override
-  String get stability => 'Estabilidad';
+  String get stability => 'Modo';
 
   @override
-  String get skillAtMost => 'Técnica máxima';
+  String get skillAtMost => 'Nivel';
 
   @override
   String get patternHelp =>
-      'El movimiento en sí — más general que el equipo, más específico que la parte del cuerpo. Los ejercicios que comparten un patrón pueden sustituirse entre sí.';
+      'Este filtro de ejercicios es más amplio que el botón Categoría y más específico que el Músculo. Los ejercicios que pertenecen al mismo Tipo pueden sustituirse entre sí.';
 
   @override
   String get stabilityHelp =>
-      'Cuánto sostiene el equipo la trayectoria por ti. Libre significa que tú equilibras el peso; máquina, que la trayectoria es fija.';
+      'Es la elección del nivel de asistencia. Peso libre te permite elegir la trayectoria y el peso. Al elegir la máquina la trayectoria es fija.';
 
   @override
   String get skillAtMostHelp =>
-      'Cuánta técnica exige un ejercicio antes de poder cargarlo con seguridad. Elegir Moderada también incluye Baja.';
+      'Qué nivel y qué preparación física requiere cada ejercicio. El nivel Medio también incluye el nivel Bajo.';
 
   @override
   String get clearFilters => 'Limpiar';
@@ -1258,11 +1261,11 @@ class LEs extends L {
   String get healthHoursShort => 'h';
 
   @override
-  String get healthInviteAction => 'Mostrar mis datos de salud';
+  String get healthInviteAction => 'Mis datos de salud';
 
   @override
   String get healthInviteBody =>
-      'Heart puede mostrar tu frecuencia cardiaca en reposo, sueño, pasos y masa corporal junto a tus entrenamientos. Los lee del almacén de salud de tu teléfono y los guarda en este dispositivo.';
+      'Heart puede mostrar tu frecuencia cardiaca en reposo, sueño, pasos y masa corporal junto a tus entrenamientos. Heart puede sacar tus datos de salud de otras aplicaciones y guardarlos en este dispositivo.';
 
   @override
   String get healthInviteDismiss => 'Ahora no';

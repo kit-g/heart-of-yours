@@ -315,7 +315,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "startNewWorkout": "Empezar un nuevo entrenamiento",
+  "startNewWorkout": "Nuevo entrenamiento",
   "@startNewWorkout": {
     "description": "Button label",
     "type": "text",
@@ -342,6 +342,12 @@
   "startWorkout": "Empezar entrenamiento",
   "@startWorkout": {
     "description": "App bar title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "yourWorkouts": "Tus entrenamientos",
+  "@yourWorkouts": {
+    "description": "Workout tab app bar title, above the button that starts a new workout",
     "type": "text",
     "placeholders": {}
   },
@@ -1019,7 +1025,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "addGoal": "Agregar meta",
+  "addGoal": "Nueva meta",
   "@addGoal": {
     "description": "Button that starts creating a goal",
     "type": "text",
@@ -1218,7 +1224,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "exampleTemplates": "Plantillas de ejemplo",
+  "exampleTemplates": "Plantillas preestablecidas",
   "@exampleTemplates": {
     "description": "Workout templates section header",
     "type": "text",
@@ -1580,43 +1586,43 @@
     "type": "text",
     "placeholders": {}
   },
-  "movement": "Movimiento",
+  "movement": "Ejercicio",
   "@movement": {
     "description": "Title of the movement filter sheet in the exercise library",
     "type": "text",
     "placeholders": {}
   },
-  "pattern": "Patrón",
+  "pattern": "Tipo",
   "@pattern": {
     "description": "Movement filter section listing movement patterns, e.g. Horizontal Press",
     "type": "text",
     "placeholders": {}
   },
-  "stability": "Estabilidad",
+  "stability": "Modo",
   "@stability": {
     "description": "Movement filter section for how constrained the movement path is",
     "type": "text",
     "placeholders": {}
   },
-  "skillAtMost": "Técnica máxima",
+  "skillAtMost": "Nivel",
   "@skillAtMost": {
     "description": "Movement filter section capping how technical an exercise may be",
     "type": "text",
     "placeholders": {}
   },
-  "patternHelp": "El movimiento en sí — más general que el equipo, más específico que la parte del cuerpo. Los ejercicios que comparten un patrón pueden sustituirse entre sí.",
+  "patternHelp": "Este filtro de ejercicios es más amplio que el botón Categoría y más específico que el Músculo. Los ejercicios que pertenecen al mismo Tipo pueden sustituirse entre sí.",
   "@patternHelp": {
     "description": "Help tooltip on the Pattern section of the movement filter sheet",
     "type": "text",
     "placeholders": {}
   },
-  "stabilityHelp": "Cuánto sostiene el equipo la trayectoria por ti. Libre significa que tú equilibras el peso; máquina, que la trayectoria es fija.",
+  "stabilityHelp": "Es la elección del nivel de asistencia. Peso libre te permite elegir la trayectoria y el peso. Al elegir la máquina la trayectoria es fija.",
   "@stabilityHelp": {
     "description": "Help tooltip on the Stability section of the movement filter sheet",
     "type": "text",
     "placeholders": {}
   },
-  "skillAtMostHelp": "Cuánta técnica exige un ejercicio antes de poder cargarlo con seguridad. Elegir Moderada también incluye Baja.",
+  "skillAtMostHelp": "Qué nivel y qué preparación física requiere cada ejercicio. El nivel Medio también incluye el nivel Bajo.",
   "@skillAtMostHelp": {
     "description": "Help tooltip on the Skill section of the movement filter sheet, explaining that the choice is a ceiling",
     "type": "text",
@@ -2378,13 +2384,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "healthInviteAction": "Mostrar mis datos de salud",
+  "healthInviteAction": "Mis datos de salud",
   "@healthInviteAction": {
     "description": "Button that opens the operating system's health permission sheet",
     "type": "text",
     "placeholders": {}
   },
-  "healthInviteBody": "Heart puede mostrar tu frecuencia cardiaca en reposo, sueño, pasos y masa corporal junto a tus entrenamientos. Los lee del almacén de salud de tu teléfono y los guarda en este dispositivo.",
+  "healthInviteBody": "Heart puede mostrar tu frecuencia cardiaca en reposo, sueño, pasos y masa corporal junto a tus entrenamientos. Heart puede sacar tus datos de salud de otras aplicaciones y guardarlos en este dispositivo.",
   "@healthInviteBody": {
     "description": "Body of the card offering to read health data. The last clause is a genuine selling point, not fine print — keep it plain and avoid words like private or secure",
     "type": "text",

@@ -50,10 +50,7 @@ class GreetingsPane extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       title,
-                      style: textTheme.displaySmall?.copyWith(
-                        color: fontColor,
-                        fontFamily: 'Daydream',
-                      ),
+                      style: textTheme.displaySmall?.copyWith(color: fontColor),
                       textAlign: TextAlign.center,
                     ),
                   ),

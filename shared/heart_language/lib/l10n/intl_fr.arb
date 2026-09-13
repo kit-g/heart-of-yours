@@ -345,6 +345,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "yourWorkouts": "Vos séances",
+  "@yourWorkouts": {
+    "description": "Workout tab app bar title, above the button that starts a new workout",
+    "type": "text",
+    "placeholders": {}
+  },
   "cancelWorkout": "Annuler la séance",
   "@cancelWorkout": {
     "description": "Button text",
