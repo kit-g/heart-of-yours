@@ -8,6 +8,9 @@ import 'package:provider/provider.dart';
 
 import 'mocks.mocks.dart';
 import 'test_utils.dart';
+import 'note_service_fake.dart';
+
+import 'package:heart_state/src/remote.dart';
 
 void main() {
   final remote = MockRemoteExerciseService();
@@ -17,6 +20,8 @@ void main() {
   final preferences = MockRemoteExercisePreferenceService();
 
   /// What [Exercises] hands `Timers`, keyed by exercise id.
+  final notes = NoteStore();
+  final access = RemoteAccess();
   final timers = <String, int>{};
   late Exercises sut;
 
@@ -25,6 +30,8 @@ void main() {
   Exercises build({void Function(dynamic error, {dynamic stacktrace})? onError}) {
     return Exercises(
       remoteService: remote,
+      noteService: notes,
+      remote: access,
       service: local,
       libraryService: library,
       catalogService: catalog,
@@ -40,6 +47,10 @@ void main() {
     reset(catalog);
     reset(preferences);
     timers.clear();
+    notes.values.clear();
+    notes.sent.clear();
+    notes.fails = false;
+    access.account = true;
 
     when(preferences.getExercisePreferences()).thenAnswer((_) async => <ExercisePreference>[]);
 
@@ -64,6 +75,29 @@ void main() {
     when(local.getWeightHistory(any, any, limit: anyNamed('limit'))).thenAnswer((_) async => <(num, DateTime)>[]);
 
     sut = build()..userId = 'u1';
+  });
+
+  test('anonymous pin persists, restores, and clears without a remote call', () async {
+    access.account = false;
+    await sut.setNote('bench', '  Pause  ');
+    expect(sut.noteFor('bench'), 'Pause');
+    expect(notes.values, {'bench': 'Pause'});
+    expect(notes.sent, isEmpty);
+    final reopened = build()..userId = 'u1';
+    await reopened.init();
+    expect(reopened.noteFor('bench'), 'Pause');
+    await reopened.setNote('bench', null);
+    expect(notes.values, isEmpty);
+  });
+
+  test('failed signed-in pin leaves local default intact', () async {
+    await sut.setNote('bench', 'Original');
+    notes.fails = true;
+    await expectLater(sut.setNote('bench', 'Changed'), throwsStateError);
+    expect(sut.noteFor('bench'), 'Original');
+    await expectLater(sut.setNote('bench', 'x' * 201), throwsArgumentError);
+    sut.onSignOut();
+    expect(sut.noteFor('bench'), isNull);
   });
 
   group('Provider helpers', () {
@@ -204,6 +238,34 @@ void main() {
 
       expect(sut.unitFor(bench.id), MeasurementUnit.imperial);
       verify(local.setExerciseUnit(exerciseName: bench.id, userId: 'u1', unit: MeasurementUnit.imperial)).called(1);
+    });
+
+    test('note-only preferences restore and cancelled pins clear the cache', () async {
+      final bench = ex('Bench Press');
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(preferences.getExercisePreferences()).thenAnswer(
+        (_) async => [ExercisePreference(exerciseId: bench.id, note: 'Pause')],
+      );
+      await sut.init();
+      expect(sut.noteFor(bench.id), 'Pause');
+      expect(notes.values[bench.id], 'Pause');
+      when(preferences.getExercisePreferences()).thenAnswer((_) async => []);
+      await sut.init();
+      expect(sut.noteFor(bench.id), isNull);
+      expect(notes.values, isEmpty);
+    });
+
+    test('a catalog gap preserves a cached pin until its exercise can be reconciled', () async {
+      final bench = ex('Bench Press');
+      notes.values[bench.id] = 'Pause';
+      await sut.init();
+      expect(sut.noteFor(bench.id), 'Pause');
+      expect(notes.values[bench.id], 'Pause');
+
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      await sut.init();
+      expect(sut.noteFor(bench.id), isNull);
+      expect(notes.values, isEmpty);
     });
 
     test('a rest timer goes to Timers rather than a store of its own', () async {
