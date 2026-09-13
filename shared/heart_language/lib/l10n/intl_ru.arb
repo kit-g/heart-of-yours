@@ -3233,5 +3233,57 @@
     "placeholders": {
       "skipped": {}
     }
+  },
+  "exerciseNote": "Заметка к упражнению",
+  "@exerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addExerciseNote": "Добавить заметку",
+  "@addExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editExerciseNote": "Изменить заметку",
+  "@editExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeExerciseNote": "Удалить заметку",
+  "@removeExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pinExerciseNote": "Закрепить для будущих тренировок",
+  "@pinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "unpinExerciseNote": "Открепить для будущих тренировок",
+  "@unpinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseNoteLimit": "Не более {limit} символов",
+  "@exerciseNoteLimit": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseNoteSaveFailed": "Не удалось сохранить заметку. Попробуйте ещё раз.",
+  "@exerciseNoteSaveFailed": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
   }
 }

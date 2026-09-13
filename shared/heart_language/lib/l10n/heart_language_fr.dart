@@ -1786,4 +1786,30 @@ class LFr extends L {
     );
     return '$_temp0';
   }
+
+  @override
+  String get exerciseNote => 'Note de l’exercice';
+
+  @override
+  String get addExerciseNote => 'Ajouter une note';
+
+  @override
+  String get editExerciseNote => 'Modifier la note';
+
+  @override
+  String get removeExerciseNote => 'Supprimer la note';
+
+  @override
+  String get pinExerciseNote => 'Épingler pour les prochaines séances';
+
+  @override
+  String get unpinExerciseNote => 'Désépingler pour les prochaines séances';
+
+  @override
+  String exerciseNoteLimit(int limit) {
+    return 'Utilisez au maximum $limit caractères';
+  }
+
+  @override
+  String get exerciseNoteSaveFailed => 'Impossible d’enregistrer la note. Réessayez.';
 }

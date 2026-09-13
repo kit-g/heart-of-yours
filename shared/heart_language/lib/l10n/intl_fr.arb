@@ -3233,5 +3233,57 @@
     "placeholders": {
       "skipped": {}
     }
+  },
+  "exerciseNote": "Note de l’exercice",
+  "@exerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addExerciseNote": "Ajouter une note",
+  "@addExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editExerciseNote": "Modifier la note",
+  "@editExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeExerciseNote": "Supprimer la note",
+  "@removeExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pinExerciseNote": "Épingler pour les prochaines séances",
+  "@pinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "unpinExerciseNote": "Désépingler pour les prochaines séances",
+  "@unpinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseNoteLimit": "Utilisez au maximum {limit} caractères",
+  "@exerciseNoteLimit": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseNoteSaveFailed": "Impossible d’enregistrer la note. Réessayez.",
+  "@exerciseNoteSaveFailed": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
   }
 }

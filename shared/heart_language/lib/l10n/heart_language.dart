@@ -3165,6 +3165,54 @@ abstract class L {
   /// In en, this message translates to:
   /// **'{skipped, plural, =1{1 item could not be uploaded.} other{{skipped} items could not be uploaded.}}'**
   String upsyncSkipped(num skipped);
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise note'**
+  String get exerciseNote;
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get addExerciseNote;
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get editExerciseNote;
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Remove note'**
+  String get removeExerciseNote;
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Pin for future workouts'**
+  String get pinExerciseNote;
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin for future workouts'**
+  String get unpinExerciseNote;
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Use at most {limit} characters'**
+  String exerciseNoteLimit(int limit);
+
+  /// Exercise note control or feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the note. Please try again.'**
+  String get exerciseNoteSaveFailed;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

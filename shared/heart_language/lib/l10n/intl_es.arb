@@ -3233,5 +3233,57 @@
     "placeholders": {
       "skipped": {}
     }
+  },
+  "exerciseNote": "Nota del ejercicio",
+  "@exerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addExerciseNote": "Añadir nota",
+  "@addExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editExerciseNote": "Editar nota",
+  "@editExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeExerciseNote": "Eliminar nota",
+  "@removeExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pinExerciseNote": "Fijar para futuros entrenamientos",
+  "@pinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "unpinExerciseNote": "Desfijar para futuros entrenamientos",
+  "@unpinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseNoteLimit": "Usa un máximo de {limit} caracteres",
+  "@exerciseNoteLimit": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseNoteSaveFailed": "No se pudo guardar la nota. Inténtalo de nuevo.",
+  "@exerciseNoteSaveFailed": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
   }
 }
