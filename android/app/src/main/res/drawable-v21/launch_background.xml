@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+    <item android:drawable="@color/splash_background" />
+    <!-- `item` rather than `bitmap`: bitmap only takes a raster source, and
+         inflating a vector through it throws at launch. `gravity` on an item
+         needs API 23; minSdk is 26. -->
+    <item
+        android:drawable="@drawable/ic_splash_heart"
+        android:gravity="center" />
 </layer-list>

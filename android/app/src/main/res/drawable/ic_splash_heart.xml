@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The confetti heart (lib/presentation/routes/done/heart.dart), fitted to the
+     viewport. Same curves as the launcher icon — one shape, one source. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:fillColor="@color/splash_mark"
+        android:pathData="M32.00,13.42 C10.07,-8.51 -22.82,28.04 32.00,57.27 C86.82,28.04 53.93,-8.51 32.00,13.42 Z" />
+</vector>

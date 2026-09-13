@@ -13,7 +13,9 @@
 
          This Theme is only used starting with V2 of Flutter's Android embedding. -->
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+        <!-- the window behind the Flutter UI, so it matches the launch window
+             rather than the platform default -->
+        <item name="android:windowBackground">@color/splash_background</item>
     </style>
     <style name="Ucrop.CropTheme" parent="Theme.AppCompat.Light.NoActionBar"/>
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch window. Ink's light ground and ink, so the splash hands over to
+         the first frame without a flash of a different colour. -->
+    <color name="splash_background">#FFFFFF</color>
+    <color name="splash_mark">#1A1815</color>
+</resources>
