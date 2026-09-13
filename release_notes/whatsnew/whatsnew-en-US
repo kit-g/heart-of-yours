@@ -1,9 +1,9 @@
-Heart now works without an account.
+Exercise notes: add a note to any exercise. Sign in to pin one and it comes back on every workout with that exercise.
 
-• Start straight away — no sign-up. Your workouts, and any Health Connect data you allow, stay on this phone.
-• Log in whenever you like and everything you logged so far is backed up.
-• Your full history now downloads in the background, so charts and goals count every workout.
-• Export my data as JSON or CSV.
-• Erase my data when you're not signed in.
+A calendar view of your history.
 
-Fixed: workouts could lose their exercises after syncing.
+New logotype, app icon and splash screen.
+
+Bodyweight exercises: fixed a broken chart and sets that showed no reps in history.
+
+Plus a batch of smaller fixes.
