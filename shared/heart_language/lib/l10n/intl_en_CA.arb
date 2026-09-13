@@ -3233,5 +3233,57 @@
     "placeholders": {
       "skipped": {}
     }
+  },
+  "exerciseNote": "Exercise note",
+  "@exerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addExerciseNote": "Add note",
+  "@addExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editExerciseNote": "Edit note",
+  "@editExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeExerciseNote": "Remove note",
+  "@removeExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pinExerciseNote": "Pin for future workouts",
+  "@pinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "unpinExerciseNote": "Unpin for future workouts",
+  "@unpinExerciseNote": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "exerciseNoteLimit": "Use at most {limit} characters",
+  "@exerciseNoteLimit": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseNoteSaveFailed": "Could not save the note. Please try again.",
+  "@exerciseNoteSaveFailed": {
+    "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
   }
 }
