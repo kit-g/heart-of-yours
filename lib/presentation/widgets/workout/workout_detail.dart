@@ -16,6 +16,7 @@ import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
@@ -35,6 +36,7 @@ import 'timer.dart';
 
 part 'empty_state.dart';
 part 'exercise_item.dart';
+part 'exercise_note.dart';
 part 'feedback.dart';
 part 'keys.dart';
 part 'set_item.dart';
@@ -50,6 +52,7 @@ class WorkoutDetail extends StatefulWidget {
   final List<Widget>? slivers;
   final void Function(WorkoutExercise) onDragExercise;
   final void Function(WorkoutExercise) onAddSet;
+  final Future<void> Function(WorkoutExercise, String?)? onNoteChanged;
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
@@ -71,6 +74,7 @@ class WorkoutDetail extends StatefulWidget {
     this.slivers,
     required this.onDragExercise,
     required this.onAddSet,
+    this.onNoteChanged,
     required this.onRemoveSet,
     this.onSetDone,
     required this.onRemoveExercise,
@@ -326,6 +330,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                           duration: const Duration(milliseconds: 500),
                           color: isPointedAt ? colorScheme.primary : Colors.transparent,
                           child: _WorkoutExerciseItem(
+                            onNoteChanged: widget.onNoteChanged,
                             index: index,
                             exercise: set,
                             copy: addSet,
@@ -829,6 +834,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             onSwapExercise: workouts.swap,
             allowsCompletingSet: true,
             onAddSet: workouts.addSet,
+            onNoteChanged: workouts.setNote,
             onRemoveSet: workouts.removeSet,
             onRemoveExercise: workouts.removeExercise,
             onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),

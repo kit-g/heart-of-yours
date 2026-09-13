@@ -1,6 +1,7 @@
 part of 'workout_detail.dart';
 
 class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerciseItem> {
+  final Future<void> Function(WorkoutExercise, String?)? onNoteChanged;
   final int index;
   final String copy;
   final WorkoutExercise exercise;
@@ -20,6 +21,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
 
   const new({
     required this.index,
+    this.onNoteChanged,
     required this.exercise,
     required this.onAddSet,
     required this.onRemoveSet,
@@ -40,6 +42,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   @override
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final exercises = Exercises.watch(context);
 
     return DragTarget<WorkoutExercise>(
       key: ValueKey<String>('_WorkoutExerciseItem.${exercise.id}'),
@@ -155,6 +158,23 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         },
                         menuChildren: [
                           _exerciseOptionButton(context, .inspectExercise, textTheme, colorScheme),
+                          if (onNoteChanged != null &&
+                              exercises.canPinNote &&
+                              exercises.noteFor(exercise.exercise.id) != null)
+                            MenuItemButton(
+                              leadingIcon: const Icon(Icons.push_pin_outlined),
+                              onPressed: () => _unpinNote(context),
+                              child: Text(L.of(context).unpinExerciseNote, style: textTheme.titleSmall),
+                            ),
+                          if (onNoteChanged != null)
+                            MenuItemButton(
+                              leadingIcon: const Icon(Icons.edit_note_rounded),
+                              onPressed: () => _editNote(context),
+                              child: Text(switch (exercise.note) {
+                                String _ => L.of(context).editExerciseNote,
+                                null => L.of(context).addExerciseNote,
+                              }, style: textTheme.titleSmall),
+                            ),
                           _exerciseOptionButton(context, .autoRestTimer, textTheme, colorScheme),
                           if (_showsUnitOption) _unitSubmenu(context, textTheme),
                           _exerciseOptionButton(context, .remove, textTheme, colorScheme),
@@ -198,6 +218,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         maxSimultaneousDrags: 1,
                         child: header,
                       ),
+                      if (exercise.note case String note when note.isNotEmpty)
+                        _ExerciseNote(
+                          exercise: exercise,
+                          onChanged: onNoteChanged,
+                          onEdit: () => _editNote(context),
+                        ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
@@ -272,6 +298,30 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         );
       },
     );
+  }
+
+  Future<void> _unpinNote(BuildContext context) async {
+    try {
+      await Exercises.of(context).setNote(exercise.exercise.id, null);
+    } catch (_) {
+      if (context.mounted) _noteError(context);
+    }
+  }
+
+  Future<void> _editNote(BuildContext context) async {
+    final onChanged = onNoteChanged;
+    if (onChanged == null) return;
+    final note = await showBrandedDialog<String>(
+      context,
+      title: Text(L.of(context).exerciseNote),
+      content: _NoteEditor(initial: exercise.note),
+    );
+    if (note == null) return;
+    try {
+      await onChanged(exercise, note.isEmpty ? null : note);
+    } catch (_) {
+      if (context.mounted) _noteError(context);
+    }
   }
 
   List<Widget> _buttonsHeader(BuildContext context) {

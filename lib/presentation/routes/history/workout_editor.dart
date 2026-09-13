@@ -186,17 +186,19 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onDragExercise: _notifier.append,
                 onSwapExercise: _notifier.swap,
                 onAddSet: _notifier.addSet,
+                onNoteChanged: _notifier.setNote,
                 onRemoveSet: _notifier.removeSet,
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
                 workoutImages: workout.images?.values,
                 onTapImage: widget.onTapImage,
                 onAddExercises: (exercises) async {
+                  final preferences = Exercises.of(context);
                   for (final each in exercises.toList()) {
                     await Future.delayed(
                       // for different IDs
                       const Duration(milliseconds: 2),
-                      () => _notifier.add(each),
+                      () => _notifier.add(each, note: preferences.noteFor(each.id)),
                     );
                   }
                 },
@@ -483,9 +485,13 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
-  void add(Exercise exercise) {
-    workout.add(exercise);
+  void add(Exercise exercise, {String? note}) {
+    workout.add(exercise).note = note;
     notifyListeners();
+  }
+
+  Future<void> setNote(WorkoutExercise exercise, String? note) async {
+    _forExercise(exercise, (each) => each.note = note);
   }
 
   void markSet(WorkoutExercise _, ExerciseSet set) {

@@ -37,6 +37,24 @@ class RemoteExercisePreferences implements RemoteExercisePreferenceService {
   }
 }
 
+/// Local pins and their account copy share the same adapter during replay.
+class ExerciseNotes implements ExerciseNoteService {
+  final LocalDatabase _db;
+  final Api _api;
+
+  const new(this._db, this._api);
+
+  @override
+  Future<Map<String, String>> read(String userId) => _db.getExerciseNotes(userId);
+
+  @override
+  Future<void> store(String exerciseId, String userId, String? note, {bool pending = false}) =>
+      _db.setExerciseNote(exerciseId, userId, note, pending: pending);
+
+  @override
+  Future<void> sync(String exerciseId, String? note) => _api.setExerciseNote(exerciseId, note);
+}
+
 /// Presents [LocalDatabase] as the [LocalCatalogService] the [Exercises]
 /// notifier wants — the catalog rows travel as `ExerciseService`, which the
 /// database implements itself, and this carries the stamp that interface

@@ -177,7 +177,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                 _showStartWorkoutDialog(context, template, allowsEditing: false);
               },
               onStartWorkout: (template) async {
-                await Workouts.of(context).startWorkout(template: template.toWorkout());
+                await Workouts.of(context).startWorkout(template: template.toWorkout(), applyPinnedNotes: true);
                 widget.onNewWorkout();
               },
               options: const [.startWorkout],
@@ -209,7 +209,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
         _showMoveDialog(context, template);
       },
       onStartWorkout: (template) async {
-        await Workouts.of(context).startWorkout(template: template.toWorkout());
+        await Workouts.of(context).startWorkout(template: template.toWorkout(), applyPinnedNotes: true);
         widget.onNewWorkout();
       },
       onTap: (template) {
@@ -589,7 +589,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
               ),
               onPressed: () async {
                 Navigator.of(context, rootNavigator: true).pop();
-                await Workouts.of(context).startWorkout(template: template.toWorkout());
+                await Workouts.of(context).startWorkout(template: template.toWorkout(), applyPinnedNotes: true);
                 widget.onNewWorkout();
               },
             ),
