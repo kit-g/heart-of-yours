@@ -77,6 +77,7 @@ class HeartApp extends StatelessWidget {
               libraryService: CdnExerciseLibrary(cdn),
               catalogService: LocalCatalog(db),
               preferenceService: RemoteExercisePreferences(api),
+              noteService: ExerciseNotes(db, api),
               remote: RemoteAccess.of(context),
               onRestTimer: Timers.of(context).setRestTimer,
             );
@@ -98,6 +99,8 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
             service: db,
+            persistNote: db.setWorkoutExerciseNote,
+            noteFor: Exercises.of(context).noteFor,
             remoteService: api,
             remote: RemoteAccess.of(context),
             onError: (error, {stacktrace}) {
@@ -195,6 +198,7 @@ class HeartApp extends StatelessWidget {
         // it is done the notifiers above re-pull what the server now holds.
         ChangeNotifierProvider<Upsync>(
           create: (context) => Upsync(
+            notes: ExerciseNotes(db, api),
             local: LocalUpsync(db),
             remote: RemoteUpsync(api),
             exercises: db,
