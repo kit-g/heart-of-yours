@@ -57,6 +57,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'order', _ex.exercise_order,
+                'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
                 'sets', (
                     SELECT json_group_array(
@@ -132,6 +133,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'order', _ex.exercise_order,
+                'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
                 'sets', (
                     SELECT json_group_array(
@@ -205,6 +207,7 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'order', _ex.exercise_order,
+                'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
                 'sets', (
                     SELECT json_group_array(
