@@ -32,10 +32,20 @@ class LogoTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Heart of yours',
+      // lowercase is the logotype, not the name: the app is still called
+      // "Heart of yours" everywhere a name is read — the stores, the home
+      // screen label, `APP_NAME`
+      'heart of yours',
       style: TextStyle(
-        fontFamily: 'Daydream',
+        // The wordmark does not follow the preset, and is deliberately not one
+        // of the preset faces. It has to agree with the launcher icon and the
+        // site, neither of which knows which preset a user picked — and a
+        // logotype set in the UI's own face stops reading as a mark, which is
+        // what Literata did on Ink.
+        fontFamily: 'Space Grotesk',
+        fontWeight: .w600,
         fontSize: fontSize,
+        letterSpacing: fontSize * -0.015,
       ),
     );
   }
@@ -55,8 +65,9 @@ class Motto extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       L.of(context).motto,
+      // the motto is copy, not the mark: it wears whatever face the preset
+      // dresses the rest of the app in
       style: TextStyle(
-        fontFamily: 'Daydream',
         fontSize: fontSize,
         fontWeight: weight,
       ),
