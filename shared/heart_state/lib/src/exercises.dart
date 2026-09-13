@@ -52,6 +52,16 @@ abstract interface class LocalCatalogService {
   Future<void> storeCatalog(Iterable<Exercise> exercises, {required CatalogStamp stamp});
 }
 
+/// Local pinned defaults and the account write. The pending flag invalidates an old
+/// replay confirmation when an anonymous user changes a previously saved pin.
+abstract interface class ExerciseNoteService {
+  Future<Map<String, String>> read(String userId);
+
+  Future<void> store(String exerciseId, String userId, String? note, {bool pending = false});
+
+  Future<void> sync(String exerciseId, String? note);
+}
+
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
@@ -74,6 +84,9 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// `exercise_details` locally and `exercise_preferences` remotely.
   final _units = <ExerciseId, MeasurementUnit>{};
 
+  final ExerciseNoteService? _noteService;
+  final _notes = <String, String>{};
+
   bool isInitialized = false;
   String? userId;
 
@@ -94,6 +107,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   new({
     this.onError,
     this.onRestTimer,
+    this._noteService,
     required this._remoteService,
     required this._service,
     required this._libraryService,
@@ -110,6 +124,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     _exercises.clear();
     _selectedExercises.clear();
     _units.clear();
+    _notes.clear();
   }
 
   @override
@@ -186,6 +201,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
       if (userId case String id) {
         _units.addAll(await _service.getExerciseUnits(id));
+        _notes.addAll(await _noteService?.read(id) ?? {});
       }
 
       if (local.isNotEmpty) {
@@ -301,6 +317,21 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
         (each) => _exercises.containsKey(each.exerciseId),
       );
 
+      if (userId != id) return;
+      final notes = {
+        // A catalog gap is not a server-side deletion of the stored pin.
+        for (final entry in _notes.entries)
+          if (!_exercises.containsKey(entry.key)) entry.key: entry.value,
+        for (final each in held)
+          if (each.note case String note) each.exerciseId: note,
+      };
+      for (final exerciseId in {..._notes.keys, ...notes.keys}.where(_exercises.containsKey)) {
+        await _noteService?.store(exerciseId, id, notes[exerciseId]);
+      }
+      if (userId != id) return;
+      _notes
+        ..clear()
+        ..addAll(notes);
       for (final each in held) {
         if (each.unitSystem case MeasurementUnit unit) {
           _units[each.exerciseId] = unit;
@@ -407,6 +438,31 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       case null:
         await _remoteService.deleteUnitPreference(exercise.id);
     }
+  }
+
+  String? noteFor(String exerciseId) => _notes[exerciseId];
+
+  bool get canPinNote => _noteService != null && userId != null && !_remote.replaying;
+
+  Future<void> setNote(String exerciseId, String? value) async {
+    final note = switch (value?.trim()) {
+      null || '' => null,
+      final text => text,
+    };
+    if (note != null && note.length > ExercisePreference.maxNoteLength) throw ArgumentError('Note too long');
+    final id = userId;
+    if (!canPinNote || id == null) return;
+    // Publish only after success; a rejected pin must not look saved.
+    if (_remote.allowed) await _noteService!.sync(exerciseId, note);
+    await _noteService!.store(exerciseId, id, note, pending: !_remote.allowed);
+    if (userId != id) return;
+    switch (note) {
+      case String text:
+        _notes[exerciseId] = text;
+      case null:
+        _notes.remove(exerciseId);
+    }
+    notifyListeners();
   }
 
   Iterable<Exercise> get selected => _selectedExercises;
