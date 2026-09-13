@@ -1780,6 +1780,32 @@ class LEn extends L {
     );
     return '$_temp0';
   }
+
+  @override
+  String get exerciseNote => 'Exercise note';
+
+  @override
+  String get addExerciseNote => 'Add note';
+
+  @override
+  String get editExerciseNote => 'Edit note';
+
+  @override
+  String get removeExerciseNote => 'Remove note';
+
+  @override
+  String get pinExerciseNote => 'Pin for future workouts';
+
+  @override
+  String get unpinExerciseNote => 'Unpin for future workouts';
+
+  @override
+  String exerciseNoteLimit(int limit) {
+    return 'Use at most $limit characters';
+  }
+
+  @override
+  String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -3557,4 +3583,30 @@ class LEnCa extends LEn {
     );
     return '$_temp0';
   }
+
+  @override
+  String get exerciseNote => 'Exercise note';
+
+  @override
+  String get addExerciseNote => 'Add note';
+
+  @override
+  String get editExerciseNote => 'Edit note';
+
+  @override
+  String get removeExerciseNote => 'Remove note';
+
+  @override
+  String get pinExerciseNote => 'Pin for future workouts';
+
+  @override
+  String get unpinExerciseNote => 'Unpin for future workouts';
+
+  @override
+  String exerciseNoteLimit(int limit) {
+    return 'Use at most $limit characters';
+  }
+
+  @override
+  String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
 }

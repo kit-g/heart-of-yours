@@ -1809,4 +1809,30 @@ class LRu extends L {
     );
     return '$_temp0';
   }
+
+  @override
+  String get exerciseNote => 'Заметка к упражнению';
+
+  @override
+  String get addExerciseNote => 'Добавить заметку';
+
+  @override
+  String get editExerciseNote => 'Изменить заметку';
+
+  @override
+  String get removeExerciseNote => 'Удалить заметку';
+
+  @override
+  String get pinExerciseNote => 'Закрепить для будущих тренировок';
+
+  @override
+  String get unpinExerciseNote => 'Открепить для будущих тренировок';
+
+  @override
+  String exerciseNoteLimit(int limit) {
+    return 'Не более $limit символов';
+  }
+
+  @override
+  String get exerciseNoteSaveFailed => 'Не удалось сохранить заметку. Попробуйте ещё раз.';
 }

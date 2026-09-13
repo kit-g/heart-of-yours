@@ -1784,4 +1784,30 @@ class LEs extends L {
     );
     return '$_temp0';
   }
+
+  @override
+  String get exerciseNote => 'Nota del ejercicio';
+
+  @override
+  String get addExerciseNote => 'Añadir nota';
+
+  @override
+  String get editExerciseNote => 'Editar nota';
+
+  @override
+  String get removeExerciseNote => 'Eliminar nota';
+
+  @override
+  String get pinExerciseNote => 'Fijar para futuros entrenamientos';
+
+  @override
+  String get unpinExerciseNote => 'Desfijar para futuros entrenamientos';
+
+  @override
+  String exerciseNoteLimit(int limit) {
+    return 'Usa un máximo de $limit caracteres';
+  }
+
+  @override
+  String get exerciseNoteSaveFailed => 'No se pudo guardar la nota. Inténtalo de nuevo.';
 }
