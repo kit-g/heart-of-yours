@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ink's dark ground and ink. Without this the launch window stayed white
+         in dark mode and flashed before the app's first frame. -->
+    <color name="splash_background">#141311</color>
+    <color name="splash_mark">#F2F0EA</color>
+</resources>
