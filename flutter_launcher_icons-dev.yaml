@@ -1,14 +1,23 @@
 flutter_launcher_icons:
   android: true
   image_path: "assets/icons/launcher_dev.png"
-  min_sdk_android: 23
+  adaptive_icon_background: "#1F4EC8"
+  adaptive_icon_foreground: "assets/icons/launcher_dev_fg.png"
+  # the foreground already carries its safe area; the default 16% inset
+  # would compound with it and shrink the mark to ~39% of the tile
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icons/launcher_dev_mono.png"
+  min_sdk_android: 26
   ios: true
   remove_alpha_ios: true
+  image_path_ios_dark_transparent: "assets/icons/launcher_dev_dark.png"
+  image_path_ios_tinted_grayscale: "assets/icons/launcher_dev_mono.png"
   macos:
     generate: true
+    image_path: "assets/icons/launcher_dev.png"
   web:
     generate: true
     image_path: "assets/icons/launcher_dev_macos.png"
 
-# to generate: dart run flutter_launcher_icons
+# to generate: dart run flutter_launcher_icons -f flutter_launcher_icons-dev.yaml
 # https://www.figma.com/community/file/1040708197994685442
