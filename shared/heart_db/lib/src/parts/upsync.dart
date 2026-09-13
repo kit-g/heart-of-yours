@@ -35,6 +35,13 @@ mixin _Upsync on _LocalDatabase {
     return _db.transaction(
       (txn) async {
         final batch = txn.batch();
+        // A pin authored anonymously supersedes any old confirmation under
+        // the destination account, even when the exercise id is unchanged.
+        batch.rawDelete(
+          'DELETE FROM $_upsync WHERE user_id = ? AND resource = ? AND id IN '
+          '(SELECT exercise_id FROM $_exerciseDetails WHERE user_id = ? AND note IS NOT NULL)',
+          [to, 'note', from],
+        );
         for (final table in [
           _workouts,
           _templates,

@@ -210,6 +210,37 @@ mixin _Exercises on _LocalDatabase
     );
   }
 
+  Future<Map<String, String>> getExerciseNotes(String userId) async {
+    final rows = await _db.query(
+      _exerciseDetails,
+      columns: ['exercise_id', 'note'],
+      where: 'user_id = ? AND note IS NOT NULL',
+      whereArgs: [userId],
+    );
+    return {for (final row in rows) row['exercise_id'] as String: row['note'] as String};
+  }
+
+  Future<void> setExerciseNote(String exerciseId, String userId, String? note, {bool pending = false}) async {
+    await _db.transaction((txn) async {
+      if (pending) {
+        await txn.delete(
+          _upsync,
+          where: 'user_id = ? AND resource = ? AND id = ?',
+          whereArgs: [userId, 'note', exerciseId],
+        );
+      }
+      final count = await txn.update(
+        _exerciseDetails,
+        {'note': note},
+        where: 'exercise_id = ? AND user_id = ?',
+        whereArgs: [exerciseId, userId],
+      );
+      if (count == 0 && note != null) {
+        await txn.insert(_exerciseDetails, {'exercise_id': exerciseId, 'user_id': userId, 'note': note});
+      }
+    });
+  }
+
   @override
   Future<Map<String, MeasurementUnit>> getExerciseUnits(String userId) async {
     final rows = await _db.query(

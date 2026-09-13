@@ -97,7 +97,7 @@ class LocalDatabase extends _LocalDatabase
 
   new _(this._db);
 
-  static Future<LocalDatabase> init({int version = 13, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 14, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';
@@ -162,7 +162,8 @@ class LocalDatabase extends _LocalDatabase
       return e.key > oldVersion && e.key <= newVersion;
     }
 
-    final migrations = _migrations.entries.where(unmigrated).expand((e) => e.value);
+    final versions = _migrations.entries.where(unmigrated).toList()..sort((a, b) => a.key.compareTo(b.key));
+    final migrations = versions.expand((e) => e.value);
 
     return db.transaction(
       (txn) async {

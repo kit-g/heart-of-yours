@@ -60,6 +60,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       final exerciseRow = {
         'workout_id': workoutId,
         'exercise_id': exercise.exercise.id,
+        'note': ?exercise.note,
         'exercise_order': order,
         'id': exercise.id,
       };
@@ -132,6 +133,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
         final row = {
           'workout_id': workoutId,
           'exercise_id': exercise.exercise.id,
+          'note': ?exercise.note,
           'id': exercise.id,
           // a freshly started exercise lands at the end of the workout
           'exercise_order': await _nextExerciseOrder(txn, workoutId),
@@ -154,6 +156,10 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
         await batch.commit(noResult: true);
       },
     );
+  }
+
+  Future<void> setWorkoutExerciseNote(String id, String? note) async {
+    await _db.update(_workoutExercises, {'note': note}, where: 'id = ?', whereArgs: [id]);
   }
 
   Future<int> _nextExerciseOrder(DatabaseExecutor txn, String workoutId) async {
