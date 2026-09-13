@@ -7,6 +7,7 @@ import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 import 'test_utils.dart';
+import 'note_service_fake.dart';
 
 /// A ledger and a debt that live in memory, the way the database keeps them.
 class _Ledger extends Fake implements LocalUpsyncService {
@@ -128,6 +129,7 @@ class SocketException implements Exception {
 
 void main() {
   const uid = 'acct-1';
+  late NoteStore notes;
   late _Ledger ledger;
   late _Server server;
   late MockExerciseService exercises;
@@ -189,6 +191,7 @@ void main() {
   }
 
   setUp(() {
+    notes = NoteStore();
     ledger = _Ledger();
     server = _Server();
     exercises = MockExerciseService();
@@ -201,6 +204,7 @@ void main() {
     completions = 0;
     sut = Upsync(
       local: ledger,
+      notes: notes,
       remote: server,
       exercises: exercises,
       folders: folders,
@@ -217,6 +221,30 @@ void main() {
     when(templates.deleteTemplate(any)).thenAnswer((_) async {});
     when(workouts.storeWorkoutHistory(any, any)).thenAnswer((_) async {});
     when(goals.reconcileGoalId(any, any, any)).thenAnswer((_) async {});
+  });
+
+  test('pins replay after exercise merges and resume after failure', () async {
+    seedStore();
+    notes.values[custom.id] = 'Pause';
+    server.merged[custom.id] = 'merged-exercise';
+    ledger.onMergeExercise = (from, to) {
+      notes.values[to] = notes.values.remove(from)!;
+      final theirs = Exercise.fromJson({...custom.toMap(), 'id': to});
+      when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, theirs]));
+    };
+    notes.fails = true;
+    await sut.claim(from: uid, to: uid);
+    await sut.run(uid);
+    expect(sut.status, UpsyncStatus.failed);
+    expect(ledger.owed, contains(uid));
+    notes.fails = false;
+    await sut.retry();
+    expect(notes.sent, [('merged-exercise', 'Pause')]);
+    expect(ledger.entries[uid]![UpsyncResource.note], {'merged-exercise': UpsyncOutcome.created});
+    expect(sut.status, UpsyncStatus.done);
+    await sut.claim(from: uid, to: uid);
+    await sut.run(uid);
+    expect(notes.sent, hasLength(1));
   });
 
   group('claim', () {
@@ -366,6 +394,7 @@ void main() {
       // a pre-cutover timestamp id is left off the wire and the server mints
       sut = Upsync(
         local: ledger,
+        notes: notes,
         remote: _RemintingServer(),
         exercises: exercises,
         folders: folders,
@@ -442,6 +471,7 @@ void main() {
       server.deadAfter = null;
       final relaunched = Upsync(
         local: ledger,
+        notes: notes,
         remote: server,
         exercises: exercises,
         folders: folders,

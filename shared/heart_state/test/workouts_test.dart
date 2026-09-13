@@ -21,6 +21,33 @@ void main() {
   final squat = ex('Squat');
   final press = ex('Overhead Press');
 
+  test('fresh exercises inherit pins; session edits and repeats stay independent', () async {
+    final persisted = <(String, String?)>[];
+    final notes = {'bench': 'Pause'};
+    final state = Workouts(
+      service: local,
+      remoteService: remote,
+      noteFor: (id) => notes[id],
+      persistNote: (id, note) async {
+        persisted.add((id, note));
+      },
+    )..userId = 'anon';
+    final exercise = Exercise.fromJson({'id': 'bench', 'name': 'Bench', 'category': 'Barbell', 'target': 'Chest'});
+    await state.startWorkout(name: 'Push');
+    await state.startExercise(exercise);
+    final entry = state.activeWorkout!.first;
+    expect(entry.note, 'Pause');
+    await state.setNote(entry, null);
+    expect(notes['bench'], 'Pause');
+    expect(persisted, [(entry.id, null)]);
+    final repeat = state.activeWorkout!.copy();
+    await state.startWorkout(template: repeat);
+    expect(state.activeWorkout!.first.note, isNull);
+    final template = Workout()..add(exercise);
+    await state.startWorkout(template: template, applyPinnedNotes: true);
+    expect(state.activeWorkout!.first.note, 'Pause');
+  });
+
   setUp(() {
     when(local.startWorkout(any, any)).thenAnswer((_) async {});
     when(local.finishWorkout(any, any)).thenAnswer((_) async {});
