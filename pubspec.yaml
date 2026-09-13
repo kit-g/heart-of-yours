@@ -144,6 +144,14 @@ flutter:
         - asset: assets/fonts/Literata/Literata-600.ttf
           weight: 600
 
+    # The wordmark only. Deliberately not one of the preset faces: a logotype
+    # set in the UI's own face reads as a heading, which is what happened when
+    # this was Literata on the Ink preset.
+    - family: "Space Grotesk"
+      fonts:
+        - asset: assets/fonts/Space_Grotesk/Space_Grotesk-600.ttf
+          weight: 600
+
     - family: "IBM Plex Sans"
       fonts:
         - asset: assets/fonts/IBM_Plex_Sans/IBM_Plex_Sans-400.ttf
@@ -158,12 +166,6 @@ flutter:
     - family: "Noto Sans"
       fonts:
         - asset: assets/fonts/Noto_Sans/NotoSans-VariableFont_wdth,wght.ttf
-
-    - family: "Daydream"
-      fonts:
-        - asset: assets/fonts/Daydream.ttf
-          weight: 400
-          style: normal
 
     - family: "Icons"
       fonts:
