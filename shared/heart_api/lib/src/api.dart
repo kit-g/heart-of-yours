@@ -453,6 +453,14 @@ class Api
     };
   }
 
+  Future<void> setExerciseNote(String exerciseId, String? note) async {
+    final (body, status) = switch (note) {
+      String text => await post(Router.exercisePreferences, body: {'exerciseId': exerciseId, 'note': text}),
+      null => await delete('${Router.exercisePreferences}/$exerciseId', query: {'pref': 'note'}),
+    };
+    if (status < 200 || status >= 300) throw {'code': body['code'], 'status': status};
+  }
+
   @override
   Future<void> saveUnitPreference(String exerciseId, MeasurementUnit unit) {
     return post(
