@@ -59,8 +59,20 @@ lib/firebase_options.dart lib/firebase_options_prod.dart:
 	  '  static FirebaseOptions get currentPlatform => throw UnimplementedError();' \
 	  '}' > $@
 
-lint: format-check lib/firebase_options.dart lib/firebase_options_prod.dart
+lint: format-check dates lib/firebase_options.dart lib/firebase_options_prod.dart
 	flutter analyze
+
+# `DateFormat.yMMMd()` with no locale formats in en_US wherever it is called.
+# It is invisible while you develop in English and it is why the History header
+# read "SEPTEMBER 2026" on a Russian phone — and why one health card read an
+# English date out to VoiceOver. Every call site passes a locale now; this is
+# what keeps it that way. The analyzer has no rule for it.
+dates:
+	@if git ls-files '*.dart' | xargs grep -n 'DateFormat\.[a-zA-Z]*()' ; then \
+		echo "" ; \
+		echo "DateFormat without a locale — pass L.of(context).localeName or l.localeName" ; \
+		exit 1 ; \
+	fi
 
 format-check:
 	git ls-files -co --exclude-standard '*.dart' | xargs dart format --output=none --set-exit-if-changed
