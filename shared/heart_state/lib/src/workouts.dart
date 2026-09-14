@@ -287,12 +287,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   /// Sets the user filled in but never ticked.
   ///
-  /// `Workout.removeEmptySets` drops every set that is not complete, so without
-  /// this a set typed and left unticked is thrown away by the save — and
-  /// [showFinishWorkoutDialog] used to offer no way to finish at all when they
-  /// were the only sets there. Completing them is what the finish dialog has
-  /// always promised: *any empty or invalid sets will be discarded, and all
-  /// valid sets will be marked as completed*.
+  /// `Workout.removeEmptySets` drops every set that is not complete, so one of
+  /// these is thrown away by the save unless something marks it done first —
+  /// and the finish dialog used to offer no way to finish at all when they were
+  /// the only sets there. Whether they count is not the app's guess to make:
+  /// the dialog puts the choice to the user and calls [completeTypedSets] only
+  /// if they take it.
   Iterable<ExerciseSet> get _typedButUnticked {
     return switch (activeWorkout) {
       Workout workout => workout.expand(
@@ -310,10 +310,22 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return (activeWorkout?.isStarted ?? false) || _typedButUnticked.isNotEmpty;
   }
 
-  Future<Workout?> _finishActiveWorkout() async {
+  /// Whether the user left anything filled in but unticked, which the finish
+  /// has to ask about before it either keeps it or throws it away.
+  bool get hasTypedButUntickedSets => _typedButUnticked.isNotEmpty;
+
+  /// Takes the user at their word: what they typed counts as done.
+  ///
+  /// Called only from the finish dialog's "save them" answer — the save drops
+  /// these sets otherwise, which is the other answer.
+  void completeTypedSets() {
     for (final set in _typedButUnticked.toList()) {
       set.isCompleted = true;
     }
+    notifyListeners();
+  }
+
+  Future<Workout?> _finishActiveWorkout() async {
     _edited.clear();
     activeWorkout?.finish(DateTime.timestamp());
 

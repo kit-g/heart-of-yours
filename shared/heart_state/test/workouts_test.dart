@@ -191,10 +191,27 @@ void main() {
       expect(sut.activeWorkout!.isStarted, isFalse, reason: 'nothing is ticked');
       expect(sut.activeWorkoutHasContent, isTrue, reason: 'so Finish must not offer only a discard');
 
+      expect(sut.hasTypedButUntickedSets, isTrue, reason: 'so the finish has something to ask about');
+
+      // the user answers "save them as completed"
+      sut.completeTypedSets();
       await sut.finishActiveWorkout();
 
       expect(typed.isCompleted, isTrue, reason: 'the set the user logged is kept and marked done');
       expect(prescribed.isCompleted, isFalse, reason: 'a template prescription is not a set anyone did');
+    });
+
+    test('answering "finish without them" leaves the typed sets unticked, so the save drops them', () async {
+      await sut.startWorkout(name: 'Push');
+      await sut.startExercise(bench);
+      final typed = sut.activeWorkout!.first.first;
+      typed.setMeasurements(weight: 60, reps: 8);
+      sut.markEdited(typed);
+
+      // the other answer: finish, and do not claim the set was done
+      await sut.finishActiveWorkout();
+
+      expect(typed.isCompleted, isFalse);
     });
 
     test('a workout with nothing typed and nothing ticked has no content to keep', () async {
