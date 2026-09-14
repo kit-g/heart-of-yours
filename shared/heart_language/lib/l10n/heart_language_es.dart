@@ -658,6 +658,9 @@ class LEs extends L {
   String get noTemplatesYet => 'Aún no hay plantillas';
 
   @override
+  String get noChartsYet => 'Aún no hay gráficos';
+
+  @override
   String get exampleTemplates => 'Plantillas preestablecidas';
 
   @override
