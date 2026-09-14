@@ -217,6 +217,7 @@ restCompleteBody,Rest notification banner,Next: {exercise},Next: {exercise},Сл
 weightedSetRepresentation,Rest notification banner,{weight} x {reps},{weight} x {reps},{weight} x {reps},{weight} x {reps},{weight} x {reps}
 templates,Workout templates section header,Templates,Templates,Шаблоны,Plantillas,Modèles
 noTemplatesYet,"Shown under the Templates section header when the user has made none of their own, the way the goals card says the same of goals",No templates yet,No templates yet,Шаблонов пока нет,Aún no hay plantillas,Aucun modèle pour l’instant
+noChartsYet,Empty state under the Charts section of the profile,No charts yet,No charts yet,Графиков пока нет,Aún no hay gráficos,Aucun graphique pour l’instant
 exampleTemplates,Workout templates section header,Example templates,Example templates,Примеры шаблонов,Plantillas preestablecidas,Exemples de modèles
 template,A single workout template,Template,Template,Шаблон,Plantilla,Modèle
 newTemplate,New template form header,New Template,New Template,Новый шаблон,Nueva plantilla,Nouveau modèle

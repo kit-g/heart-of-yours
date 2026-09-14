@@ -657,6 +657,9 @@ class LEn extends L {
   String get noTemplatesYet => 'No templates yet';
 
   @override
+  String get noChartsYet => 'No charts yet';
+
+  @override
   String get exampleTemplates => 'Example templates';
 
   @override
@@ -2458,6 +2461,9 @@ class LEnCa extends LEn {
 
   @override
   String get noTemplatesYet => 'No templates yet';
+
+  @override
+  String get noChartsYet => 'No charts yet';
 
   @override
   String get exampleTemplates => 'Example templates';

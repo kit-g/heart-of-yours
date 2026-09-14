@@ -660,6 +660,9 @@ class LRu extends L {
   String get noTemplatesYet => 'Шаблонов пока нет';
 
   @override
+  String get noChartsYet => 'Графиков пока нет';
+
+  @override
   String get exampleTemplates => 'Примеры шаблонов';
 
   @override

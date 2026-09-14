@@ -221,6 +221,42 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     return owed;
   }
 
+  /// The four resources that can arrive on this device by *download*.
+  ///
+  /// Workouts and goals carry a `synced` flag of their own, so the plan can
+  /// tell a local one from the server's. These four cannot: an exercise, a unit
+  /// preference, a folder and a template look identical whether the user
+  /// authored them offline or the account's own pull just put them there.
+  static const _downloaded = {
+    UpsyncResource.exercise,
+    UpsyncResource.unit,
+    UpsyncResource.folder,
+    UpsyncResource.template,
+  };
+
+  /// Writes down what the account's pull has just put in the store, so the next
+  /// sign-in does not offer it all back.
+  ///
+  /// Without this the replay re-posts every row it downloaded the session
+  /// before — 19 customs, 3 unit preferences, 2 folders and 2 templates on a
+  /// real account — and the server answers `200` to all of them, which is the
+  /// "3 uploaded, 23 already there" that greeted the second login on a fresh
+  /// device. They are on the server by definition: that is where they came
+  /// from.
+  ///
+  /// Refuses to run while a replay is still owed. At that point the store holds
+  /// the user's own unsent rows, and marking those as already-there would drop
+  /// them on the floor.
+  Future<void> adopt(String uid) async {
+    if (await _local.isOwed(uid)) return;
+    final ledger = await _local.ledger(uid);
+    for (final resource in _downloaded) {
+      for (final step in await _planFor(resource, uid, ledger)) {
+        await _local.record(uid, resource, step.id, .existing);
+      }
+    }
+  }
+
   /// Nothing more to show for the last run.
   void dismiss() {
     if (_status != .done && _status != .failed) return;
