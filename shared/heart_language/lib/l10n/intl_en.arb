@@ -857,6 +857,30 @@
     "type": "text",
     "placeholders": {}
   },
+  "untickedSetsTitle": "Some sets aren't ticked",
+  "@untickedSetsTitle": {
+    "description": "Finish dialog when sets carry values but were never marked done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "untickedSetsBody": "You filled them in but never ticked them off. Save them as completed, or finish without them?",
+  "@untickedSetsBody": {
+    "description": "Finish dialog when sets carry values but were never marked done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "saveUntickedSets": "Save them as completed",
+  "@saveUntickedSets": {
+    "description": "Finish dialog action: keep the filled-in sets and mark them done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "discardUntickedSets": "Finish without them",
+  "@discardUntickedSets": {
+    "description": "Finish dialog action: finish the workout and drop the filled-in but unticked sets",
+    "type": "text",
+    "placeholders": {}
+  },
   "finishWorkoutBody": "Ready to finish this workout?",
   "@finishWorkoutBody": {
     "description": "Workout completion confirmation dialog",

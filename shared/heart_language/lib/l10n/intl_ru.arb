@@ -857,6 +857,30 @@
     "type": "text",
     "placeholders": {}
   },
+  "untickedSetsTitle": "Некоторые подходы не отмечены",
+  "@untickedSetsTitle": {
+    "description": "Finish dialog when sets carry values but were never marked done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "untickedSetsBody": "Вы заполнили их, но не отметили. Сохранить как выполненные или завершить без них?",
+  "@untickedSetsBody": {
+    "description": "Finish dialog when sets carry values but were never marked done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "saveUntickedSets": "Сохранить как выполненные",
+  "@saveUntickedSets": {
+    "description": "Finish dialog action: keep the filled-in sets and mark them done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "discardUntickedSets": "Завершить без них",
+  "@discardUntickedSets": {
+    "description": "Finish dialog action: finish the workout and drop the filled-in but unticked sets",
+    "type": "text",
+    "placeholders": {}
+  },
   "finishWorkoutBody": "Готовы завершить эту тренировку?",
   "@finishWorkoutBody": {
     "description": "Workout completion confirmation dialog",

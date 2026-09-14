@@ -472,6 +472,19 @@ class LEs extends L {
       'Las series vacías o inválidas se descartarán, y todas las series válidas se marcarán como completadas.';
 
   @override
+  String get untickedSetsTitle => 'Algunas series no están marcadas';
+
+  @override
+  String get untickedSetsBody =>
+      'Las rellenaste pero no las marcaste. ¿Guardarlas como completadas o terminar sin ellas?';
+
+  @override
+  String get saveUntickedSets => 'Guardar como completadas';
+
+  @override
+  String get discardUntickedSets => 'Terminar sin ellas';
+
+  @override
   String get finishWorkoutBody => '¿Todo listo para terminar este entrenamiento?';
 
   @override

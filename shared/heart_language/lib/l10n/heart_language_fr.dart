@@ -473,6 +473,19 @@ class LFr extends L {
       'Les séries vides ou invalides seront supprimées, et toutes les séries valides seront marquées comme terminées.';
 
   @override
+  String get untickedSetsTitle => 'Certaines séries ne sont pas cochées';
+
+  @override
+  String get untickedSetsBody =>
+      'Vous les avez remplies sans les cocher. Les enregistrer comme faites, ou terminer sans elles ?';
+
+  @override
+  String get saveUntickedSets => 'Les enregistrer comme faites';
+
+  @override
+  String get discardUntickedSets => 'Terminer sans elles';
+
+  @override
   String get finishWorkoutBody => 'On termine cette séance ?';
 
   @override
