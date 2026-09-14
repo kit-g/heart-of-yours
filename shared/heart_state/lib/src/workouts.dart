@@ -21,6 +21,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final String? Function(String exerciseId)? _noteFor;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
+  /// Ids of sets in the active workout the user has typed a measurement into.
+  ///
+  /// The difference between a set the user logged and one a template merely
+  /// prescribed, and there is nothing on the model that tells them apart: a
+  /// template's sets arrive carrying its weights and reps (`Template.toWorkout`
+  /// copies them), so "carries values" would credit someone with fifteen sets
+  /// when they did three. Only an edit through the set row lands here.
+  final _edited = <String>{};
+
   new({
     required WorkoutService service,
     required this._remoteService,
@@ -34,6 +43,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   @override
   void onSignOut() {
     _workouts.clear();
+    _edited.clear();
     _activeWorkoutId = null;
     userId = null;
     historyInitialized = false;
@@ -252,6 +262,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       }
     }
     workout.end = null;
+    _edited.clear();
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 
@@ -274,7 +285,36 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _finishing = _finishActiveWorkout();
   }
 
+  /// Sets the user filled in but never ticked.
+  ///
+  /// `Workout.removeEmptySets` drops every set that is not complete, so without
+  /// this a set typed and left unticked is thrown away by the save — and
+  /// [showFinishWorkoutDialog] used to offer no way to finish at all when they
+  /// were the only sets there. Completing them is what the finish dialog has
+  /// always promised: *any empty or invalid sets will be discarded, and all
+  /// valid sets will be marked as completed*.
+  Iterable<ExerciseSet> get _typedButUnticked {
+    return switch (activeWorkout) {
+      Workout workout => workout.expand(
+        (exercise) => exercise.where(
+          (set) => !set.isCompleted && set.canBeCompleted && _edited.contains(set.id),
+        ),
+      ),
+      null => const <ExerciseSet>[],
+    };
+  }
+
+  /// Whether finishing now would keep anything — a ticked set, or one the user
+  /// typed into and did not tick.
+  bool get activeWorkoutHasContent {
+    return (activeWorkout?.isStarted ?? false) || _typedButUnticked.isNotEmpty;
+  }
+
   Future<Workout?> _finishActiveWorkout() async {
+    for (final set in _typedButUnticked.toList()) {
+      set.isCompleted = true;
+    }
+    _edited.clear();
     activeWorkout?.finish(DateTime.timestamp());
 
     final active = activeWorkout;
@@ -413,6 +453,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> cancelActiveWorkout() async {
+    _edited.clear();
     if (_activeWorkoutId case String id) {
       _workouts.remove(id);
       try {
@@ -446,6 +487,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       return _localService.startExercise(workout.id, starter);
     }
   }
+
+  /// The user typed a measurement into [set]. See [_edited].
+  void markEdited(ExerciseSet set) => _edited.add(set.id);
 
   Future<void> setNote(WorkoutExercise exercise, String? note) async {
     if (!(activeWorkout?.contains(exercise) ?? false)) return;

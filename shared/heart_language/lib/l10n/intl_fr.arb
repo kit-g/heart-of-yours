@@ -1224,6 +1224,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "noChartsYet": "Aucun graphique pour l’instant",
+  "@noChartsYet": {
+    "description": "Empty state under the Charts section of the profile",
+    "type": "text",
+    "placeholders": {}
+  },
   "exampleTemplates": "Exemples de modèles",
   "@exampleTemplates": {
     "description": "Workout templates section header",

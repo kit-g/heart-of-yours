@@ -1224,6 +1224,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "noChartsYet": "No charts yet",
+  "@noChartsYet": {
+    "description": "Empty state under the Charts section of the profile",
+    "type": "text",
+    "placeholders": {}
+  },
   "exampleTemplates": "Example templates",
   "@exampleTemplates": {
     "description": "Workout templates section header",

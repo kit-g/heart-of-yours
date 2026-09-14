@@ -660,6 +660,9 @@ class LFr extends L {
   String get noTemplatesYet => 'Aucun modèle pour l’instant';
 
   @override
+  String get noChartsYet => 'Aucun graphique pour l’instant';
+
+  @override
   String get exampleTemplates => 'Exemples de modèles';
 
   @override

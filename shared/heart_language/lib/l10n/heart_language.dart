@@ -1258,6 +1258,12 @@ abstract class L {
   /// **'No templates yet'**
   String get noTemplatesYet;
 
+  /// Empty state under the Charts section of the profile
+  ///
+  /// In en, this message translates to:
+  /// **'No charts yet'**
+  String get noChartsYet;
+
   /// Workout templates section header
   ///
   /// In en, this message translates to:

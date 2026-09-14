@@ -494,6 +494,50 @@ void main() {
       );
     });
 
+    test('a second login does not offer the server the rows it downloaded', () async {
+      // The ledger only ever recorded what this device *replayed*. Everything
+      // the account's own pull brings down afterwards — customs, unit
+      // preferences, folders, templates — looked identical to rows authored
+      // offline, so the next login posted all of them back and the server
+      // answered 200 to every one: "3 uploaded, 23 already there".
+      seedStore();
+      await sut.claim(from: uid, to: uid);
+      await sut.run(uid);
+      final afterFirstLogin = server.calls.length;
+
+      // the pull lands: rows this device did not author and never replayed
+      final theirs = Exercise.fromJson({
+        'id': 'theirs',
+        'name': 'Theirs',
+        'category': 'Barbell',
+        'target': 'Chest',
+        'own': 1,
+      });
+      when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, custom, theirs]));
+      when(exercises.getExerciseUnits(uid)).thenAnswer(
+        (_) async => {unitOn.id: MeasurementUnit.imperial, 'theirs': MeasurementUnit.metric},
+      );
+      await sut.adopt(uid);
+
+      sut.onSignOut();
+      await sut.claim(from: 'anon-2', to: uid);
+      await sut.run(uid);
+
+      expect(server.calls, hasLength(afterFirstLogin), reason: 'nothing was posted a second time');
+      expect(sut.report, (uploaded: 0, existing: 0, skipped: 0));
+      expect(sut.status, UpsyncStatus.idle, reason: 'and so there is no line to show');
+    });
+
+    test('adopt stands down while a replay is still owed', () async {
+      // Otherwise it would mark the user's own unsent rows as already-there.
+      seedStore();
+      await sut.claim(from: uid, to: uid);
+      await sut.adopt(uid);
+      await sut.run(uid);
+
+      expect(sut.report.uploaded, greaterThan(0), reason: 'the local store still went up');
+    });
+
     test('signing out and back in replays nothing and says nothing', () async {
       seedStore();
       await sut.claim(from: uid, to: uid);

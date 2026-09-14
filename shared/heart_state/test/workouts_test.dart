@@ -173,6 +173,38 @@ void main() {
       verify(remote.saveWorkout(activeBefore)).called(1);
     });
 
+    test('a set typed into but never ticked is kept by the finish, a prescribed one is not', () async {
+      // What separates the two dialogs the user can meet on Finish, and what
+      // decides whether the set they just typed survives the save.
+      await sut.startWorkout(name: 'Push');
+      await sut.startExercise(bench);
+      final exercise = sut.activeWorkout!.first;
+      exercise.add(exercise.first.copy());
+      final [typed, prescribed] = exercise.toList();
+
+      // both carry values — a template's sets arrive this way — but only one
+      // of them came from the user's fingers
+      typed.setMeasurements(weight: 60, reps: 8);
+      prescribed.setMeasurements(weight: 135, reps: 5);
+      sut.markEdited(typed);
+
+      expect(sut.activeWorkout!.isStarted, isFalse, reason: 'nothing is ticked');
+      expect(sut.activeWorkoutHasContent, isTrue, reason: 'so Finish must not offer only a discard');
+
+      await sut.finishActiveWorkout();
+
+      expect(typed.isCompleted, isTrue, reason: 'the set the user logged is kept and marked done');
+      expect(prescribed.isCompleted, isFalse, reason: 'a template prescription is not a set anyone did');
+    });
+
+    test('a workout with nothing typed and nothing ticked has no content to keep', () async {
+      await sut.startWorkout(name: 'Push');
+      await sut.startExercise(bench);
+      sut.activeWorkout!.first.first.setMeasurements(weight: 135, reps: 5);
+
+      expect(sut.activeWorkoutHasContent, isFalse, reason: 'only the template spoke; Finish offers the discard');
+    });
+
     test('cancelActiveWorkout removes locally and best-effort deletes remotely', () async {
       final probe = ListenerProbe()..attach(sut);
       await sut.startWorkout(name: 'Arms');
