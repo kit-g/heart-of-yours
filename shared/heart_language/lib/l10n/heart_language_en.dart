@@ -471,6 +471,19 @@ class LEn extends L {
       'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
 
   @override
+  String get untickedSetsTitle => 'Some sets aren\'t ticked';
+
+  @override
+  String get untickedSetsBody =>
+      'You filled them in but never ticked them off. Save them as completed, or finish without them?';
+
+  @override
+  String get saveUntickedSets => 'Save them as completed';
+
+  @override
+  String get discardUntickedSets => 'Finish without them';
+
+  @override
   String get finishWorkoutBody => 'Ready to finish this workout?';
 
   @override
@@ -2275,6 +2288,19 @@ class LEnCa extends LEn {
   @override
   String get finishWorkoutWarningBody =>
       'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
+
+  @override
+  String get untickedSetsTitle => 'Some sets aren\'t ticked';
+
+  @override
+  String get untickedSetsBody =>
+      'You filled them in but never ticked them off. Save them as completed, or finish without them?';
+
+  @override
+  String get saveUntickedSets => 'Save them as completed';
+
+  @override
+  String get discardUntickedSets => 'Finish without them';
 
   @override
   String get finishWorkoutBody => 'Ready to finish this workout?';

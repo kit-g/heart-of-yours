@@ -474,6 +474,18 @@ class LRu extends L {
       'Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные.';
 
   @override
+  String get untickedSetsTitle => 'Некоторые подходы не отмечены';
+
+  @override
+  String get untickedSetsBody => 'Вы заполнили их, но не отметили. Сохранить как выполненные или завершить без них?';
+
+  @override
+  String get saveUntickedSets => 'Сохранить как выполненные';
+
+  @override
+  String get discardUntickedSets => 'Завершить без них';
+
+  @override
   String get finishWorkoutBody => 'Готовы завершить эту тренировку?';
 
   @override

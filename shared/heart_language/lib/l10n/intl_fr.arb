@@ -857,6 +857,30 @@
     "type": "text",
     "placeholders": {}
   },
+  "untickedSetsTitle": "Certaines séries ne sont pas cochées",
+  "@untickedSetsTitle": {
+    "description": "Finish dialog when sets carry values but were never marked done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "untickedSetsBody": "Vous les avez remplies sans les cocher. Les enregistrer comme faites, ou terminer sans elles ?",
+  "@untickedSetsBody": {
+    "description": "Finish dialog when sets carry values but were never marked done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "saveUntickedSets": "Les enregistrer comme faites",
+  "@saveUntickedSets": {
+    "description": "Finish dialog action: keep the filled-in sets and mark them done",
+    "type": "text",
+    "placeholders": {}
+  },
+  "discardUntickedSets": "Terminer sans elles",
+  "@discardUntickedSets": {
+    "description": "Finish dialog action: finish the workout and drop the filled-in but unticked sets",
+    "type": "text",
+    "placeholders": {}
+  },
   "finishWorkoutBody": "On termine cette séance ?",
   "@finishWorkoutBody": {
     "description": "Workout completion confirmation dialog",

@@ -910,6 +910,30 @@ abstract class L {
   /// **'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.'**
   String get finishWorkoutWarningBody;
 
+  /// Finish dialog when sets carry values but were never marked done
+  ///
+  /// In en, this message translates to:
+  /// **'Some sets aren\'t ticked'**
+  String get untickedSetsTitle;
+
+  /// Finish dialog when sets carry values but were never marked done
+  ///
+  /// In en, this message translates to:
+  /// **'You filled them in but never ticked them off. Save them as completed, or finish without them?'**
+  String get untickedSetsBody;
+
+  /// Finish dialog action: keep the filled-in sets and mark them done
+  ///
+  /// In en, this message translates to:
+  /// **'Save them as completed'**
+  String get saveUntickedSets;
+
+  /// Finish dialog action: finish the workout and drop the filled-in but unticked sets
+  ///
+  /// In en, this message translates to:
+  /// **'Finish without them'**
+  String get discardUntickedSets;
+
   /// Workout completion confirmation dialog
   ///
   /// In en, this message translates to:
