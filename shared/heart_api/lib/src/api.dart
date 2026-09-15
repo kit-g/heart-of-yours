@@ -172,8 +172,13 @@ class Api
 
   @override
   Future<PreSignedUrl?> getAvatarUploadLink(String userId, {String? imageMimeType}) async {
+    // `Router.accounts` bare, not `accounts/$userId`: the API registers
+    // `('/accounts', .put)` and nothing under an id, so the id in the path
+    // matched no route and came back `404 not_found` — while the handler was
+    // reading the user off the auth token all along, which is why every
+    // sibling call here (upsert, delete, undo) posts to the bare path.
     final (json, code) = await put(
-      '${Router.accounts}/$userId',
+      Router.accounts,
       body: {
         'action': 'uploadAvatar',
         'mimeType': ?imageMimeType,
@@ -199,8 +204,10 @@ class Api
 
   @override
   Future<bool> removeAvatar(String userId) async {
+    // See [getAvatarUploadLink] — the same wrong path, and unreported only
+    // because removing an avatar needs one to have been uploaded first.
     final (_, code) = await put(
-      '${Router.accounts}/$userId',
+      Router.accounts,
       body: {'action': 'removeAvatar'},
     );
     return 200 <= code && code < 300;
