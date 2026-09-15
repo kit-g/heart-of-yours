@@ -71,31 +71,39 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     :finishWorkoutWarningBody,
     :readyToFinish,
     :notReadyToFinish,
+    :untickedSetsTitle,
+    :untickedSetsBody,
+    :saveUntickedSets,
+    :discardUntickedSets,
   ) = L.of(
     context,
   );
+
+  /// Finishes, and tells the caller it has.
+  void finishNow() {
+    Navigator.of(context, rootNavigator: true).pop();
+    _finishWorkout(context, workouts);
+    onFinish?.call();
+  }
+
   final actions = [
     Column(
       spacing: 8,
       children: [
         PrimaryButton.wide(
           backgroundColor: colorScheme.surfaceContainerHighest,
+          onPressed: () {
+            Navigator.of(context, rootNavigator: true).pop();
+          },
           child: Center(
             child: Text(notReadyToFinish),
           ),
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).pop();
-          },
         ),
         PrimaryButton.wide(
+          onPressed: finishNow,
           child: Center(
             child: Text(readyToFinish),
           ),
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).pop();
-            _finishWorkout(context, workouts);
-            onFinish?.call();
-          },
         ),
       ],
     ),
@@ -118,14 +126,64 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     );
   }
 
-  if (isStarted) {
+  // Sets carrying values that were never ticked. Whether they count is the
+  // user's call and nobody else's: completing them silently credits a session
+  // somebody may only have planned, and dropping them silently is how a typed
+  // set used to vanish. So the finish asks, in as many words, and the two
+  // answers are both spelled out.
+  if (workouts.hasTypedButUntickedSets) {
+    return showBrandedDialog(
+      context,
+      title: Text(untickedSetsTitle),
+      titleTextStyle: textTheme.titleMedium,
+      icon: Icon(
+        Icons.checklist_rounded,
+        color: colorScheme.error,
+      ),
+      content: Text(
+        untickedSetsBody,
+        textAlign: .center,
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+              child: Center(child: Text(notReadyToFinish)),
+            ),
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              onPressed: finishNow,
+              child: Center(child: Text(discardUntickedSets)),
+            ),
+            PrimaryButton.wide(
+              child: Center(child: Text(saveUntickedSets)),
+              onPressed: () {
+                workouts.completeTypedSets();
+                finishNow();
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Not "did a set get ticked" but "would finishing keep anything": a set typed
+  // and left unticked counts, and used to fall through to the cancel dialog —
+  // the only way out of which is discarding the session (#F3).
+  if (isStarted || workouts.activeWorkoutHasContent) {
     return showBrandedDialog(
       context,
       title: Text(finishWorkoutWarningTitle),
       titleTextStyle: textTheme.titleMedium,
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       content: Text(
         finishWorkoutWarningBody,
@@ -158,7 +216,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
     ),
     icon: Icon(
       Icons.error_outline_rounded,
-      color: colorScheme.onErrorContainer,
+      color: colorScheme.error,
     ),
     actions: [
       Column(
@@ -273,7 +331,7 @@ Future<void> showDeleteImageDialog(
     ),
     icon: Icon(
       Icons.delete_forever,
-      color: colorScheme.onErrorContainer,
+      color: colorScheme.error,
     ),
     actions: [
       Column(

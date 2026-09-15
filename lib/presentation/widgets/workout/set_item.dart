@@ -644,6 +644,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     final Preferences(:distanceUnit, :weightUnit) = Preferences.of(context);
     final override = _unitOverride;
 
+    // the user typed this, as opposed to a template having prescribed it —
+    // `Workouts` needs the difference to know what a finish may keep
+    Workouts.of(context).markEdited(set);
+
     // we're storing in metric, converting from the exercise's effective unit
     set.setMeasurements(
       duration: duration,
