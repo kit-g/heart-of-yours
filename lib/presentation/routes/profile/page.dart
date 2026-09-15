@@ -46,12 +46,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
       :workoutsPerWeekTitle,
       :workoutsPerWeekBody,
       :newChart,
+      :charts,
+      :noChartsYet,
       :viewAccountDetails,
       :viewProfilePhoto,
     ) = L.of(
       context,
     );
-    final ThemeData(:textTheme, :platform) = Theme.of(context);
+    final ThemeData(:textTheme, :platform, :colorScheme) = Theme.of(context);
 
     final auth = Auth.watch(context);
     final user = auth.user;
@@ -177,8 +179,14 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 child: Padding(
                   padding: const .symmetric(vertical: 6, horizontal: 16),
                   child: Row(
-                    mainAxisAlignment: .end,
+                    mainAxisAlignment: .spaceBetween,
                     children: [
+                      // The section had a button and nothing else: on a tablet
+                      // that left one control floating over an empty screen,
+                      // with nothing to say what it was for. Goals and
+                      // Templates both name themselves and both say when they
+                      // are empty; this is the one that was missed.
+                      Text(charts, style: textTheme.headlineSmall),
                       PrimaryButton.shrunk(
                         onPressed: () async {
                           final charts = Charts.of(context);
@@ -204,6 +212,16 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                   ),
                 ),
               ),
+              if (Charts.watch(context).isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const .fromLTRB(16, 0, 16, 8),
+                    child: Text(
+                      noChartsYet,
+                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+                ),
               const _Dashboard(),
             ],
           );
