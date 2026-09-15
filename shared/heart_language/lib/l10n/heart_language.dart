@@ -118,7 +118,7 @@ abstract class L {
   /// **'Units'**
   String get units;
 
-  /// App's motto
+  /// App's motto. A tagline, not copy — it stays in English in every locale, the way 'Just do it' does. Do not translate.
   ///
   /// In en, this message translates to:
   /// **'Every beat counts.'**

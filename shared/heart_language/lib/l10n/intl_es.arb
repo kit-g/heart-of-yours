@@ -18,9 +18,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "motto": "Cada latido cuenta.",
+  "motto": "Every beat counts.",
   "@motto": {
-    "description": "App's motto",
+    "description": "App's motto. A tagline, not copy — it stays in English in every locale, the way 'Just do it' does. Do not translate.",
     "type": "text",
     "placeholders": {}
   },
