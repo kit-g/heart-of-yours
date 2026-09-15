@@ -10,6 +10,15 @@ final _logger = Logger('Notifications');
 
 const _currentExercise = 0;
 const _workoutTimeout = 1;
+
+/// The status-bar icon, `res/drawable/ic_stat_heart.xml`.
+///
+/// A drawable rather than the launcher icon: Android masks a small icon down to
+/// its alpha channel and tints the result, so a full-bleed launcher icon arrives
+/// as a silhouette — the app showed a hollow ring. Flat white on transparent is
+/// the only thing that survives the mask intact.
+const _androidIcon = 'ic_stat_heart';
+
 const _defaultChannelId = 'Rest Timers';
 const _defaultChannelName = 'Rest Timers';
 
@@ -37,7 +46,7 @@ Future<void> initNotifications({
         requestBadgePermission: false,
         requestAlertPermission: false,
       ),
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings(_androidIcon),
       macOS: DarwinInitializationSettings(
         requestSoundPermission: false,
         requestBadgePermission: false,
@@ -120,7 +129,7 @@ NotificationDetails _details({
     android: AndroidNotificationDetails(
       _defaultChannelId,
       _defaultChannelName,
-      icon: '@mipmap/ic_launcher',
+      icon: _androidIcon,
       enableVibration: false,
       playSound: true,
       styleInformation: switch ((body, subtitle)) {
