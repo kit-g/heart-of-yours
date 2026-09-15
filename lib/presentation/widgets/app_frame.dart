@@ -8,6 +8,60 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 
 class AppFrame extends StatelessWidget {
+  /// `BottomNavigationBar`'s own defaults, named so the scale below has
+  /// something to scale.
+  static const _selectedLabel = 14.0;
+  static const _unselectedLabel = 12.0;
+
+  /// Below this the labels stop being words, so nothing is gained by shrinking
+  /// further — the bar keeps its icons and lets the longest label ellipsise.
+  static const _floor = 0.7;
+
+  /// How much the destination labels have to shrink to all fit on one line.
+  ///
+  /// `BottomNavigationBarItem.label` is a `String`, so the bar builds the text
+  /// itself and ellipsises what does not fit — which is what Russian met:
+  /// `Тренировка` and `Упражнения` came out as `Трениров…` and `Упражне…`,
+  /// and which two were cut changed with the selection, because the selected
+  /// destination is given more room. English, Spanish and French fit at full
+  /// size and are untouched by this.
+  ///
+  /// Measured rather than guessed, and applied to all four at once: a bar with
+  /// one smaller label would read as a mistake.
+  static double _labelScale(BuildContext context, Iterable<String> labels, double width, TextStyle style) {
+    final direction = Directionality.of(context);
+
+    // the bar divides its width evenly and each item keeps a little air
+    final room = width / labels.length - _itemPadding;
+
+    var widest = 0.0;
+    for (final label in labels) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: style),
+        maxLines: 1,
+        textDirection: direction,
+      )..layout();
+      widest = switch (painter.width > widest) {
+        true => painter.width,
+        false => widest,
+      };
+    }
+
+    if (widest <= room) return 1;
+    return switch (room / widest) {
+      final scale when scale >= _floor => scale,
+      _ => _floor,
+    };
+  }
+
+  /// What the bar keeps for itself either side of a label.
+  ///
+  /// Measured on a 393pt phone with four destinations: the label box came out
+  /// 67pt against the 98pt each item nominally gets. `BottomNavigationBar`
+  /// gives the selected destination more room than the rest, so the unselected
+  /// width is what has to fit.
+  static const _itemPadding = 31.0;
+
   final StatefulNavigationShell shell;
 
   const new({
@@ -82,16 +136,36 @@ class AppFrame extends StatelessWidget {
                   value: overlayStyle,
                   child: shell,
                 ),
-                bottomNavigationBar: BottomNavigationBar(
-                  type: BottomNavigationBarType.shifting,
-                  currentIndex: shell.currentIndex,
-                  onTap: (index) => _onTap(context, index),
-                  items: destinations.map((d) {
-                    return BottomNavigationBarItem(
-                      icon: d.$2(),
-                      label: d.$1,
+                bottomNavigationBar: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bar = Theme.of(context).bottomNavigationBarTheme;
+                    final selected = bar.selectedLabelStyle ?? const TextStyle(fontSize: _selectedLabel);
+                    final unselected = bar.unselectedLabelStyle ?? const TextStyle(fontSize: _unselectedLabel);
+                    final scale = _labelScale(
+                      context,
+                      destinations.map((d) => d.$1),
+                      constraints.maxWidth,
+                      unselected,
                     );
-                  }).toList(),
+                    return BottomNavigationBar(
+                      type: BottomNavigationBarType.shifting,
+                      currentIndex: shell.currentIndex,
+                      onTap: (index) => _onTap(context, index),
+                      // through the styles, not `selectedFontSize`: the theme
+                      // sets both label styles, and a style's own `fontSize`
+                      // wins over the widget's size parameters
+                      selectedLabelStyle: selected.copyWith(fontSize: (selected.fontSize ?? _selectedLabel) * scale),
+                      unselectedLabelStyle: unselected.copyWith(
+                        fontSize: (unselected.fontSize ?? _unselectedLabel) * scale,
+                      ),
+                      items: destinations.map((d) {
+                        return BottomNavigationBarItem(
+                          icon: d.$2(),
+                          label: d.$1,
+                        );
+                      }).toList(),
+                    );
+                  },
                 ),
               ),
             );
