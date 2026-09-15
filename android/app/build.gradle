@@ -47,13 +47,20 @@ android {
         compileSdk 36
     }
 
+    // Guarded, because Gradle evaluates this block whichever build type you
+    // asked for: without `key.properties` — which is gitignored — a fresh
+    // checkout could not even build debug, dying at configuration time with
+    // "Cannot convert 'null' to File" and pointing at the *release* keystore.
+    // `buildTypes` below already guards the same way.
     signingConfigs {
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            // use rootProject.file to ensure we look in the 'android' folder
-            storeFile rootProject.file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
+        if (keystorePropertiesFile.exists()) {
+            release {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                // use rootProject.file to ensure we look in the 'android' folder
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
         }
     }
 
