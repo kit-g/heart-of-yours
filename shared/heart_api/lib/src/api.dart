@@ -433,7 +433,7 @@ class Api
   @override
   Future<Exercise> editExercise(Exercise exercise) async {
     final (json, code) = await put(
-      '${Router.exercises}/${exercise.name}',
+      '${Router.exercises}/${exercise.id}',
       body: {
         'category': exercise.category.value,
         'target': exercise.target.value,
