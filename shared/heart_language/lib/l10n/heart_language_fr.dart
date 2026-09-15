@@ -19,7 +19,7 @@ class LFr extends L {
   String get units => 'Unités';
 
   @override
-  String get motto => 'Chaque battement compte.';
+  String get motto => 'Every beat counts.';
 
   @override
   String get toLightMode => 'Clair';

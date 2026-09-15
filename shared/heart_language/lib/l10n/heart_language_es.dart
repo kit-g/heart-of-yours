@@ -19,7 +19,7 @@ class LEs extends L {
   String get units => 'Unidades';
 
   @override
-  String get motto => 'Cada latido cuenta.';
+  String get motto => 'Every beat counts.';
 
   @override
   String get toLightMode => 'Claro';

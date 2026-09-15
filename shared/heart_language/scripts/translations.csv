@@ -2,7 +2,7 @@ id,description,en,en_CA,ru,es,fr
 calendar,History calendar action and dialog title,Calendar,Calendar,Календарь,Calendario,Calendrier
 appearance,Label,Appearance,Appearance,Внешний вид,Apariencia,Apparence
 units,Label,Units,Units,Единицы измерения,Unidades,Unités
-motto,App's motto,Every beat counts.,Every beat counts.,Every beat counts.,Cada latido cuenta.,Chaque battement compte.
+motto,"App's motto. A tagline, not copy — it stays in English in every locale, the way 'Just do it' does. Do not translate.",Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.,Every beat counts.
 toLightMode,tooltip,Light,Light,Светлая,Claro,Clair
 toDarkMode,tooltip,Dark,Dark,Темная,Oscuro,Sombre
 toSystemMode,tooltip,System,System,Системная,Sistema,Système
