@@ -97,11 +97,15 @@ void main() {
       expect(() => api.deleteAccount(accountId: '42'), throwsA(isA<Map>()));
     });
 
+    // The path is the assertion here, not decoration: these four stubbed
+    // `accounts/42` for years, so they passed against an app that PUT to a
+    // route the API never registered and got `404 not_found` every time. The
+    // user is read off the auth token; the id never belonged in the URL.
     test('getAvatarUploadLink returns PreSignedUrl on valid json', () async {
       _response(
         client: client,
         method: 'PUT',
-        path: '${Router.accounts}/42',
+        path: Router.accounts,
         statusCode: 200,
         body: {
           'url': 'https://bucket.example.com/upload',
@@ -119,7 +123,7 @@ void main() {
       _response(
         client: client,
         method: 'PUT',
-        path: '${Router.accounts}/42',
+        path: Router.accounts,
         statusCode: 200,
         body: {'message': 'bad response'},
       );
@@ -132,7 +136,7 @@ void main() {
       _response(
         client: client,
         method: 'PUT',
-        path: '${Router.accounts}/42',
+        path: Router.accounts,
         statusCode: 200,
         body: {},
       );
@@ -145,7 +149,7 @@ void main() {
       _response(
         client: client,
         method: 'PUT',
-        path: '${Router.accounts}/42',
+        path: Router.accounts,
         statusCode: 500,
         body: {},
       );
