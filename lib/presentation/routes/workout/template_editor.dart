@@ -134,7 +134,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
       ),
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(

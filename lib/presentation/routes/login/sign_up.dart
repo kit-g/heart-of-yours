@@ -343,7 +343,7 @@ class _SignUpPageState extends State<SignUpPage>
       ),
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(

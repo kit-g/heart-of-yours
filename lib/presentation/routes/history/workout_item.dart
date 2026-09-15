@@ -309,7 +309,7 @@ class WorkoutItem extends StatelessWidget {
       ),
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(
@@ -369,7 +369,7 @@ class WorkoutItem extends StatelessWidget {
       ),
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(

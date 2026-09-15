@@ -262,7 +262,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       ),
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(
@@ -347,7 +347,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       titleTextStyle: textTheme.titleMedium,
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       content: Text(
         finishWorkoutWarningBody,

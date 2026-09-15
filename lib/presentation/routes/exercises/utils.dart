@@ -156,7 +156,7 @@ Future<void> _onArchive(BuildContext context, Exercise exercise) async {
     ),
     icon: Icon(
       Icons.error_outline_rounded,
-      color: colorScheme.onErrorContainer,
+      color: colorScheme.error,
     ),
     actions: [
       Column(

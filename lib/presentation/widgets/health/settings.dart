@@ -141,14 +141,17 @@ class const HealthSettings({super.key}) extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, Health health, L l) async {
-    final ThemeData(:colorScheme) = Theme.of(context);
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
     await showBrandedDialog(
       context,
       title: Text(l.healthDeleteTitle, textAlign: .center),
       content: Text(l.healthDeleteBody, textAlign: .center),
-      icon: Icon(Icons.error_outline_rounded, color: colorScheme.onErrorContainer),
+      // `error`, not `onErrorContainer`: this icon sits on the dialog's own
+      // surface, and a container foreground is near-white — it was being drawn
+      // white on white, like the other sixteen.
+      icon: Icon(Icons.error_outline_rounded, color: colorScheme.error),
       actions: [
         Column(
           spacing: 8,
@@ -165,7 +168,17 @@ class const HealthSettings({super.key}) extends StatelessWidget {
                 await health.forget();
                 messenger.showSnackBar(SnackBar(content: Text(l.deleted)));
               },
-              child: Center(child: Text(l.deleteThis)),
+              // On an `errorContainer` fill the label has to be its ink:
+              // `PrimaryButton` only owns the content colour when the caller
+              // passes no background, so without this the label inherited the
+              // ambient dark text and came out black on red. The one
+              // destructive button in the app that was missing it.
+              child: Center(
+                child: Text(
+                  l.deleteThis,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                ),
+              ),
             ),
           ],
         ),
