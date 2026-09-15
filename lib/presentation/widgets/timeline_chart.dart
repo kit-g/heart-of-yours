@@ -372,10 +372,10 @@ class _TimelineChartState extends State<TimelineChart> {
       // one place a two-digit year earns its ambiguity — nobody reads "Aug '26"
       // as anything but a month in a year.
       .month => switch (years) {
-        true => "${DateFormat.MMM().format(at)} '${DateFormat('yy').format(at)}",
-        false => DateFormat.MMM().format(at),
+        true => "${DateFormat.MMM(l.localeName).format(at)} '${DateFormat('yy', l.localeName).format(at)}",
+        false => DateFormat.MMM(l.localeName).format(at),
       },
-      .year => DateFormat.y().format(at),
+      .year => DateFormat.y(l.localeName).format(at),
     };
   }
 

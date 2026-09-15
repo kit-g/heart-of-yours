@@ -44,7 +44,7 @@ String goalStatus(
     .week => ' · ${l.goalPerWeek}',
     .month => ' · ${l.goalPerMonth}',
     null => switch (stage.dueOn) {
-      final DateTime due => ' · ${l.goalDue(DateFormat.yMMMd().format(due))}',
+      final DateTime due => ' · ${l.goalDue(DateFormat.yMMMd(l.localeName).format(due))}',
       _ => '',
     },
   };
