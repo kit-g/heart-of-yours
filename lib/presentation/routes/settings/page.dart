@@ -333,7 +333,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       ),
       icon: Icon(
         Icons.delete_forever_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         _EraseDataActions(
