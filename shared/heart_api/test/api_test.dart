@@ -205,6 +205,32 @@ void main() {
       expect(result.first.name, equals('Squat'));
     });
 
+    test('editExercise addresses the exercise by id, not by its display name', () async {
+      // The route is `('/exercises/:exerciseId', .put)` and the query behind it
+      // is `WHERE id = @exerciseId::uuid`. This call used to send
+      // `exercise.name` — which is localized copy and cannot cast to a uuid, so
+      // every edit of a custom exercise died in the database. The path shape
+      // matched, so it never even surfaced as a 404, and nothing tested it.
+      final custom = Exercise.fromJson({
+        'id': '019e8b5d-c52d-729e-be9c-a5403b04fd1b',
+        'name': 'Bench Press (Barbell)',
+        'category': 'Barbell',
+        'target': 'Chest',
+        'own': 1,
+      });
+
+      _response(
+        client: client,
+        method: 'PUT',
+        path: '${Router.exercises}/019e8b5d-c52d-729e-be9c-a5403b04fd1b',
+        statusCode: 200,
+        body: custom.toMap(),
+      );
+
+      final result = await api.editExercise(custom);
+      expect(result.id, equals('019e8b5d-c52d-729e-be9c-a5403b04fd1b'));
+    });
+
     test('getExercises returns empty list when response is invalid', () async {
       _response(
         client: client,
