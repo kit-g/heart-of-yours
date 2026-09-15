@@ -408,7 +408,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
       ),
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(
@@ -470,7 +470,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
       ),
       icon: Icon(
         Icons.error_outline_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(

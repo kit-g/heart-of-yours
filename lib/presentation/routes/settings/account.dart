@@ -283,7 +283,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       ),
       icon: Icon(
         Icons.auto_delete_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(
@@ -354,7 +354,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       ),
       icon: Icon(
         Icons.auto_delete_rounded,
-        color: colorScheme.onErrorContainer,
+        color: colorScheme.error,
       ),
       actions: [
         Column(
