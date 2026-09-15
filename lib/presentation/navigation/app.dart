@@ -197,19 +197,25 @@ class HeartApp extends StatelessWidget {
         // notifiers use, talks to the server through the same Api, and when
         // it is done the notifiers above re-pull what the server now holds.
         ChangeNotifierProvider<Upsync>(
-          create: (context) => Upsync(
-            notes: ExerciseNotes(db, api),
-            local: LocalUpsync(db),
-            remote: RemoteUpsync(api),
-            exercises: db,
-            folders: LocalTemplateFolders(db),
-            templates: db,
-            workouts: db,
-            goals: LocalGoals(db),
-            access: RemoteAccess.of(context),
-            onError: reportToSentry,
-            onComplete: () => _resync(context),
-          ),
+          // Held in a local and handed to its own callback rather than read
+          // back with `Upsync.of`: this context is the one creating the
+          // provider, so it cannot resolve it.
+          create: (context) {
+            late final Upsync upsync;
+            return upsync = Upsync(
+              notes: ExerciseNotes(db, api),
+              local: LocalUpsync(db),
+              remote: RemoteUpsync(api),
+              exercises: db,
+              folders: LocalTemplateFolders(db),
+              templates: db,
+              workouts: db,
+              goals: LocalGoals(db),
+              access: RemoteAccess.of(context),
+              onError: reportToSentry,
+              onComplete: () => _resync(context, upsync),
+            );
+          },
         ),
         // Last of the state classes: its callbacks below reach every one of
         // them through this context, which only sees what is provided above.
@@ -653,6 +659,7 @@ Future<void> _initApp(
                 stats: stats,
                 templates: templates,
                 backfill: backfill,
+                upsync: upsync,
               );
             },
           );
@@ -675,6 +682,7 @@ Future<void> _initTrainingData({
   required Stats stats,
   required Templates templates,
   required Backfill backfill,
+  required Upsync upsync,
 }) {
   templates.init();
   // Pulls what other devices logged into the local mirror, and heals anything
@@ -701,6 +709,11 @@ Future<void> _initTrainingData({
       if (workouts.userId case String uid) {
         await backfill.run(uid);
         readMirror();
+
+        // Everything above arrived from the account. Write it into the replay's
+        // ledger so the next sign-in does not offer the server its own rows
+        // back — `adopt` stands down while a replay is still owed.
+        await upsync.adopt(uid);
       }
     },
   );
@@ -709,7 +722,7 @@ Future<void> _initTrainingData({
 /// The replay is done and the remote leg is open: pull what the account holds
 /// — its own exercises, the history the mirror is now part of, its templates
 /// and goals — over a mirror that so far only knew this device.
-void _resync(BuildContext context) {
+void _resync(BuildContext context, Upsync upsync) {
   if (!context.mounted) return;
   final exercises = Exercises.of(context);
   final config = RemoteConfig.of(context);
@@ -728,6 +741,7 @@ void _resync(BuildContext context) {
         stats: stats,
         templates: templates,
         backfill: backfill,
+        upsync: upsync,
       );
     },
   );
