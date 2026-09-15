@@ -206,8 +206,8 @@ class _Rung extends StatelessWidget {
   /// "No deadline" there was noise advertising a thing that cannot apply.
   String? _state(L l) {
     return switch ((stage.achievedAt, stage.dueOn)) {
-      (final DateTime at, _) => l.goalAchievedOn(DateFormat.yMMMd().format(at)),
-      (_, final DateTime due) => l.goalDue(DateFormat.yMMMd().format(due)),
+      (final DateTime at, _) => l.goalAchievedOn(DateFormat.yMMMd(l.localeName).format(at)),
+      (_, final DateTime due) => l.goalDue(DateFormat.yMMMd(l.localeName).format(due)),
       _ when goal.cadence != null => null,
       _ => l.goalNoDeadline,
     };

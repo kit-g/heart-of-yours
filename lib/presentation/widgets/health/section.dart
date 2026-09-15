@@ -345,7 +345,11 @@ class const _HealthCard({
       // The label carries the whole card, and the children are excluded rather
       // than announced a second time. See `docs/a11y.md`.
       button: true,
-      label: l.healthCardSummary(metric.label(l), '$value $unit'.trim(), DateFormat.MMMd().format(latest.day)),
+      label: l.healthCardSummary(
+        metric.label(l),
+        '$value $unit'.trim(),
+        DateFormat.MMMd(l.localeName).format(latest.day),
+      ),
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
@@ -438,7 +442,7 @@ class const _HealthCard({
                 // A reading is only as current as the day it was taken. Without
                 // this, three-week-old resting HR reads as today's.
                 Text(
-                  DateFormat.MMMd().format(latest.day),
+                  DateFormat.MMMd(l.localeName).format(latest.day),
                   style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
               ],

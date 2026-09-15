@@ -82,7 +82,7 @@ class _RungFormState extends State<_RungForm> {
               icon: const Icon(Icons.event_rounded, size: 20),
               label: Text(
                 switch (_dueOn) {
-                  final DateTime due => DateFormat.yMMMd().format(due),
+                  final DateTime due => DateFormat.yMMMd(l.localeName).format(due),
                   null => l.goalSetDeadline,
                 },
               ),

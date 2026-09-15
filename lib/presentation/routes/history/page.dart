@@ -217,7 +217,7 @@ class _MonthHeader extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme, :header) = Theme.of(context);
 
     final date = DateTime.parse('$monthKey-01');
-    final label = DateFormat.yMMMM().format(date);
+    final label = DateFormat.yMMMM(L.of(context).localeName).format(date);
 
     return Container(
       padding: const .symmetric(horizontal: 16, vertical: 8),
