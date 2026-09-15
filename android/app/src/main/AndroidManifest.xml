@@ -2,6 +2,26 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Both scheduled notifications — the rest timer and the idle-workout
+         reminder — go through `AlarmManager.setExactAndAllowWhileIdle`
+         (`androidScheduleMode: .exactAllowWhileIdle`, notifications.dart:236
+         and :259). Since Android 12 that call needs an exact-alarm permission,
+         and without one it fails: the user was asked for POST_NOTIFICATIONS,
+         granted it, and then nothing ever arrived — verified on API 35.
+
+         `USE_EXACT_ALARM` rather than `SCHEDULE_EXACT_ALARM` because a rest
+         timer is the case it exists for. It is granted at install and cannot be
+         revoked, so a timer the user set always fires; `SCHEDULE_EXACT_ALARM`
+         is user-revocable and would need a second permission journey for the
+         same feature. Play reviews this declaration — it belongs in the
+         questionnaire beside the health ones. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- So a rest timer that was running when the phone rebooted still fires.
+         Paired with ScheduledNotificationBootReceiver below, which is the only
+         thing that reads it. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <!-- Health Connect, and exactly the six metrics `Health.tracked` names.
          Every entry here is a permission the user is asked to grant, so the
          list is a product decision rather than a convenience: no background
@@ -151,6 +171,33 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+
+        <!-- flutter_local_notifications stopped declaring these in its own
+             manifest (its AndroidManifest.xml carries permissions only), so the
+             app has to. Without them `zonedSchedule` succeeds, AlarmManager
+             holds the alarm, the alarm fires on time — and the broadcast
+             reaches no receiver, so nothing is ever posted. It fails in total
+             silence: no exception, no log line, an entry in `dumpsys alarm`
+             that looks perfectly healthy. Both scheduled notifications were
+             dead this way on Android: the rest timer and the idle-workout
+             reminder. Verified on API 35 by watching an alarm fire with an
+             empty notification list, then again with these present.
+
+             The boot receiver re-arms pending alarms after a reboot or an app
+             update, which Android otherwise drops on the floor. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
