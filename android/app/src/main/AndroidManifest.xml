@@ -1,4 +1,23 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Heart runs no ads, and the advertising ID is a cross-app tracking
+         identifier — squarely against what the listing promises about a
+         user's data. None of these four are ours: `firebase_analytics`
+         merges them in through play-services-measurement, and Play then
+         asks us to declare that the app uses an advertising ID.
+
+         Removing the permission is only half of it — see
+         `google_analytics_adid_collection_enabled` on the application
+         below, which is the switch that actually stops the collection.
+         Verify with the merged manifest, never this file:
+           build/app/intermediates/merged_manifest/prodRelease/…/AndroidManifest.xml -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID"
+        tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION"
+        tools:node="remove" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -208,6 +227,14 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
+        <!-- The permission removal above keeps the advertising ID out of the
+             manifest; this keeps Analytics from asking for it at runtime. Both
+             are needed — the permission alone is what Play reads, the flag is
+             what the SDK obeys. -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
