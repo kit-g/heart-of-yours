@@ -118,8 +118,10 @@ class _GoalsCardState extends State<GoalsCard> {
         crossAxisAlignment: .stretch,
         mainAxisSize: .min,
         children: [
-          SizedBox(
-            height: widget.headerHeight,
+          ConstrainedBox(
+            // matches the aggregation chart beside it: the shared height is a
+            // floor so the two headings line up, not a clip
+            constraints: BoxConstraints(minHeight: widget.headerHeight),
             child: Row(
               children: [
                 Expanded(

@@ -169,12 +169,11 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 workouts: workouts,
                 emptyState: emptyState,
               ),
-              // On a wide window with no workouts logged, the band above is two
-              // empty tiles and the notice is the only other thing on the page;
-              // it lines up with the left one rather than stopping short of it.
-              HealthSection(
-                besideColumn: workouts.isEmpty && LayoutProvider.of(context) == .wide,
-              ),
+              // With no workouts logged, the band above is two empty tiles and
+              // the notice is the only other thing on the page; it lines up
+              // with the left one rather than stopping short of it. Whether
+              // that band really is two tiles is the section's own measurement.
+              HealthSection(besideColumn: workouts.isEmpty),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const .symmetric(vertical: 6, horizontal: 16),
