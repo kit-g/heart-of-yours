@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Resources the shrinker cannot see.
+
+  A release build runs AGP's resource shrinker, which keeps a resource only if
+  something references it statically — from code, from the manifest, or from
+  another resource. `ic_stat_heart` is named by a *string* in Dart
+  (`_androidIcon` in lib/core/env/notifications.dart), so nothing static points
+  at it and it was dropped. The shrinker said so plainly in its own report,
+  `build/app/outputs/mapping/devRelease/resources.txt`:
+
+      drawable:ic_stat_heart:2131230850 is not reachable.
+
+  What that cost: `initNotifications` threw at startup —
+
+      PlatformException(invalid_icon, The resource ic_stat_heart could not be
+      found. Please make sure it has been added as a drawable resource to your
+      Android head project.)
+
+  — unhandled, fatal, caught only by Sentry. So notifications were dead in every
+  release build while working perfectly in debug, which is exactly the shape of
+  bug that gets shipped: the icon is present in the debug APK, and the debug
+  build is what anyone tests.
+
+  Any future resource named only from Dart belongs in this list.
+-->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_heart" />
