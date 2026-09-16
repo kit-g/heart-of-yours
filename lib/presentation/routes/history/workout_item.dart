@@ -33,9 +33,15 @@ class WorkoutItem extends StatelessWidget {
     final prefs = Preferences.watch(context);
     // The hero slot: total volume when the workout has one, else the best
     // set of its first exercise — labeled by the exercise itself.
-    final (String heroValue, String heroLabel) = switch ((workout.total?.toInt(), prefs.weightUnit)) {
-      (int total, MeasurementUnit.imperial) when total > 0 => (l.lb(total.asPounds.toInt()), l.totalVolume),
-      (int total, MeasurementUnit.metric) when total > 0 => ('$total ${l.kg}', l.totalVolume),
+    // Convert once, round once. This used to truncate twice — `toInt()` on the
+    // metric total and again after `asPounds` — which always lost volume and
+    // could make the total smaller than the single set it was the total of: one
+    // set of 13 lbs × 7 showed "Best set volume 91 lbs" beside "TOTAL VOLUME
+    // 90 lbs". 7 × 5.8967 kg is 41.277, truncated to 41, converted to 90.38,
+    // truncated to 90; the honest answer is 91.
+    final (String heroValue, String heroLabel) = switch ((workout.total, prefs.weightUnit)) {
+      (double total, MeasurementUnit.imperial) when total > 0 => (l.lb(total.asPounds.round()), l.totalVolume),
+      (double total, MeasurementUnit.metric) when total > 0 => ('${total.round()} ${l.kg}', l.totalVolume),
       _ => switch (workout.firstOrNull) {
         null => ('-', l.totalVolume),
         var exercise => (
