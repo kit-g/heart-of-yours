@@ -1,7 +1,9 @@
 package me.heart
 
 import android.content.Intent
+import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.OnBackPressedCallback
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -18,6 +20,40 @@ class MainActivity : FlutterFragmentActivity() {
     /// Declared by the `heart_health` package, which has no native side of its
     /// own. Keep the name in sync with `healthPlatformChannel`.
     private val healthChannel = "heart_health/platform"
+
+    // Back with nothing left to pop: background the task rather than destroy it.
+    //
+    // Flutter's default ends at `finish()`, so the next launch is a cold start —
+    // engine, plugins, database and the account's history all over again.
+    // Android users press back constantly and iOS has no equivalent gesture, so
+    // the cost lands on one platform only. Backgrounding is what the platform's
+    // own apps do, and it is what the user means: leave, not quit.
+    //
+    // Why a dispatcher callback and not an override. `FlutterActivity` exposes
+    // `popSystemNavigator()` for exactly this, but `FlutterFragmentActivity`
+    // does not — it delegates to the `FlutterFragment` it hosts, and we are on
+    // the fragment variant for the Health Connect reason above. The fragment's
+    // own `popSystemNavigator` disables its `OnBackPressedCallback` and
+    // re-dispatches through the activity, which is what falls through to
+    // `finish()`. Registering here catches precisely that fall-through.
+    //
+    // Order is the whole trick, and it is why this is added without a
+    // `LifecycleOwner`: a bare `addCallback` enters the dispatcher immediately,
+    // before `super.onCreate` creates the Flutter fragment, so Flutter's
+    // callback lands *above* ours. The dispatcher runs the topmost enabled
+    // callback, so Flutter still sees every back first and every in-app back —
+    // a route, a sheet, a dialog — behaves exactly as before. Ours runs only on
+    // the re-dispatch, once Dart has said there is nothing to pop.
+    private val backgroundInsteadOfFinishing = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+            moveTaskToBack(true)
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        onBackPressedDispatcher.addCallback(backgroundInsteadOfFinishing)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
