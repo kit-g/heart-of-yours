@@ -23,7 +23,25 @@
   build is what anyone tests.
 
   Any future resource named only from Dart belongs in this list.
+
+  `default_web_client_id` is the same bug with a different victim, and it cost
+  more. The google-services Gradle plugin generates it from the web OAuth
+  client in `google-services.json`, and `google_sign_in_android` reads it *by
+  name* at runtime to use as the `serverClientId`. Nothing references it
+  statically, so the shrinker dropped it from every release build and Google
+  sign-in failed on the store app with
+
+      GoogleSignInException(clientConfigurationError,
+                            serverClientId must be provided on Android)
+
+  while working perfectly in debug. 317 events across 21 users before anyone
+  connected the two. Its siblings survive only because Play Services ships keep
+  rules for them — the shrinker report lists `gcm_defaultSenderId`,
+  `google_api_key` and `google_app_id` as "reachable from keep xml file" and
+  `default_web_client_id` as "is not reachable". That asymmetry is the whole
+  bug: three of the four generated strings are protected by someone else, and
+  the fourth is ours to protect.
 -->
 <resources
     xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_stat_heart" />
+    tools:keep="@drawable/ic_stat_heart,@string/default_web_client_id" />
