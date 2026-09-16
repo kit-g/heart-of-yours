@@ -59,7 +59,55 @@
 			</array>
 		</dict>
 		<dict>
-			<!-- workouts, templates, goals: the backup an account buys -->
+			<!-- The workouts themselves. Separate from OtherUserContent and from
+			     Health below, and the distinction is the one a reviewer checks:
+			     a logged session syncs to the account, so it is fitness data
+			     that leaves the device. The six metrics read from HealthKit do
+			     not leave it, and nothing derived from them does either, so
+			     there is deliberately no Health entry here. See
+			     docs/2026-09-05.health-data.md for the guards that enforce it. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeFitness</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- the account's uid, which every synced row is keyed on -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Firebase Analytics, and only the navigator observer: screen
+			     views, no custom events, and never a health parameter. Not
+			     linked, and its purpose is Analytics rather than App
+			     Functionality — the one entry here where that is true. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- templates, goals, notes: the rest of the backup an account buys -->
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
