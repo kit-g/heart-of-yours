@@ -268,7 +268,10 @@ class const _HealthNotice({
               // iPad — except where it stands under one of two tiles with
               // nothing in either, when ending on the same line as the tile
               // above beats a short card under a long one.
-              final width = switch (besideColumn) {
+              // and only while the band above it actually is two tiles —
+              // below that width it stacks, and the notice is under a
+              // full-width card again
+              final width = switch (besideColumn && tilesShareRow(constraints.maxWidth)) {
                 true => (constraints.maxWidth - tileGutter) / 2,
                 false => readableWidth,
               };
