@@ -12,6 +12,7 @@ const _distanceUnit = 'distanceUnit';
 const _collapsedFolders = 'collapsedTemplateFolders';
 const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
+const _installed = 'installed';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -40,6 +41,29 @@ class Preferences with ChangeNotifier {
   MeasurementUnit get weightUnit => _weight;
 
   MeasurementUnit get distanceUnit => _distance;
+
+  /// Whether this is the app's first run since it was installed, recording
+  /// that it has now run. True exactly once per install.
+  ///
+  /// Static, and deliberately not part of [init]: the one caller needs the
+  /// answer before `runApp`, earlier than any provider exists. It is a
+  /// preference only in the sense that this is where the store lives.
+  ///
+  /// The signal is the absence of a key from `shared_preferences`, which is
+  /// wiped with the app container — unlike the iOS keychain, which is not, and
+  /// which is the reason anyone asks. Recorded after the caller's work rather
+  /// than before, so a failure is retried on the next launch instead of being
+  /// marked done.
+  static Future<bool> claimFirstRunAfterInstall({
+    required Future<void> Function() onFirstRun,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_installed) ?? false) return false;
+
+    await onFirstRun();
+    await prefs.setBool(_installed, true);
+    return true;
+  }
 
   static Preferences of(BuildContext context) {
     return Provider.of<Preferences>(context, listen: false);
