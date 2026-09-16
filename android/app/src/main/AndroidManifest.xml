@@ -159,18 +159,28 @@
             </intent-filter>
         </activity>
         <!-- Android 14 and up route "why does this app have my health data?"
-             here, from the system privacy screens. Same activity; the alias only
-             exists to carry the intent-filter. -->
-        <activity-alias
-            android:name="ViewPermissionUsageActivity"
+             here, from the system privacy screens and Health Connect's consent
+             sheet. It used to be an alias onto MainActivity, which met the
+             manifest requirement and answered nothing: the app opened on
+             Profile. The activity now hands the policy to the browser and
+             finishes — see its class comment.
+
+             `permission` is what keeps this to the system: only a caller
+             holding START_VIEW_PERMISSION_USAGE may start it, which is also why
+             it cannot be exercised from `adb`. Translucent and out of recents
+             because it draws nothing and lives for one `onCreate`. -->
+        <activity
+            android:name=".ViewPermissionUsageActivity"
+            android:excludeFromRecents="true"
             android:exported="true"
+            android:noHistory="true"
             android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
-            android:targetActivity=".MainActivity">
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
-        </activity-alias>
+        </activity>
 
         <!-- flutter_local_notifications stopped declaring these in its own
              manifest (its AndroidManifest.xml carries permissions only), so the
