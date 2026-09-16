@@ -69,13 +69,18 @@ class _WorkoutsAggregationChartState extends State<WorkoutsAggregationChart> wit
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                SizedBox(
-                  height: _tileHeaderHeight,
+                ConstrainedBox(
+                  // a floor, not a fixed height: the title is one line in
+                  // English and two in Spanish, and a box that cannot grow
+                  // paints the second line over the chart
+                  constraints: const BoxConstraints(minHeight: _tileHeaderHeight),
                   child: Align(
                     alignment: .centerLeft,
                     child: Text(
                       workoutsPerWeek,
                       style: textTheme.titleLarge,
+                      maxLines: 2,
+                      overflow: .ellipsis,
                     ),
                   ),
                 ),

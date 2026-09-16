@@ -18,3 +18,17 @@ const readableWidth = 480.0;
 /// are separate widgets that have to end on the same line; a literal in each
 /// would drift the moment one of them changed.
 const tileGutter = 10.0;
+
+/// Narrowest a profile tile may be before two of them stop sharing a row.
+///
+/// Below it the pair is worse than the stack it replaced: the chart loses its
+/// plot to its own axis labels, and a heading that fits in English wraps in
+/// every other language.
+const minTileWidth = 320.0;
+
+/// Whether a band [width] wide has room for two tiles side by side.
+///
+/// Measured, never asked of the window: on a 7" tablet the window clears the
+/// tablet breakpoint while the band itself is ~520pt, which halves into two
+/// tiles too narrow to hold either.
+bool tilesShareRow(double width) => width >= minTileWidth * 2 + tileGutter;
