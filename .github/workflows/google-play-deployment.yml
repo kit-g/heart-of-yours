@@ -95,6 +95,53 @@ jobs:
       - name: "Build app bundle"
         run: flutter build appbundle --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }} --dart-define-from-file=appconfig.json
 
+      # A resource named only at runtime — by a Dart string, or by a library
+      # calling getIdentifier() — is invisible to the resource shrinker, which
+      # drops it from release builds while debug keeps working.
+      #
+      # The list is read out of keep.xml rather than repeated here, so the guard
+      # and the keep rules cannot drift apart. Add a resource there and it is
+      # checked here automatically.
+      - name: "Shrinker kept everything keep.xml asks for"
+        run: |
+          set -euo pipefail
+          report="build/app/outputs/mapping/${{ inputs.flavor }}Release/resources.txt"
+          keep="android/app/src/main/res/raw/keep.xml"
+
+          if [ ! -f "$report" ]; then
+            echo "::error::No shrinker report at $report. Either resource shrinking is off \
+          (then this guard is pointless and should go) or the path moved in an AGP upgrade \
+          (then fix the path — do not delete the check)."
+            exit 1
+          fi
+
+          # `while read` rather than `for x in $list`: word-splitting an
+          # unquoted expansion is a bash-ism, and a guard that checks one entry
+          # under zsh and all of them under bash is not a guard.
+          grep -o 'tools:keep="[^"]*"' "$keep" | sed 's/tools:keep="//; s/"//' | tr ',' '\n' > /tmp/keep-entries
+          [ -s /tmp/keep-entries ] || { echo "::error::No tools:keep entries found in $keep"; exit 1; }
+
+          failed=0
+          checked=0
+          while IFS= read -r entry; do
+            [ -n "$entry" ] || continue
+            checked=$((checked + 1))
+            res=$(printf '%s' "$entry" | sed 's|^@||; s|/|:|')
+            line=$(grep -m1 "^${res}:" "$report" || true)
+            if [ -z "$line" ]; then
+              echo "::error::$res is not in the shrinker report at all — was it renamed or removed?"
+              failed=1
+            elif printf '%s' "$line" | grep -q "is not reachable"; then
+              echo "::error::$res was shrunk out of the release build: $line"
+              failed=1
+            else
+              echo "ok: $line"
+            fi
+          done < /tmp/keep-entries
+
+          echo "checked $checked resource(s)"
+          exit $failed
+
       - name: "Upload to Play Store"
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
