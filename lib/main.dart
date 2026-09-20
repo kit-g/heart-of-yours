@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/licenses.dart';
 import 'package:heart/core/env/logging.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/firebase.dart';
@@ -38,6 +39,7 @@ Future<void> bootstrap({
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
   initLogging?.call(config.logLevel);
+  registerLicenses();
 
   final api = Api(gateway: config.api);
   final cdn = Cdn(gateway: config.mediaLink);
