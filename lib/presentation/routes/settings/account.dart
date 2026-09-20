@@ -3,7 +3,16 @@ part of 'settings.dart';
 class AccountManagementPage extends StatefulWidget {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  const new({super.key, this.onError});
+  /// Where to go once the account is scheduled for deletion.
+  ///
+  /// The sign-out that follows does not move anyone on its own: on mobile a
+  /// missing user is replaced by an anonymous one at once (`Auth.ensureSession`),
+  /// so the session stays valid, the router's gate never fires, and the page
+  /// that manages an account sits there managing one that is on its way out.
+  /// The anonymous "Erase my data" path has always had this, as `onErased`.
+  final VoidCallback? onDeleted;
+
+  const new({super.key, this.onError, this.onDeleted});
 
   @override
   State<AccountManagementPage> createState() => _AccountManagementPageState();
@@ -421,6 +430,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
         },
       );
       _passwordController.clear();
+      widget.onDeleted?.call();
     } on AuthException {
       messenger.snack(l.invalidCredentials);
     } catch (e, s) {
