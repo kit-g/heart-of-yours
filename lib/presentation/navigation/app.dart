@@ -226,6 +226,9 @@ class HeartApp extends StatelessWidget {
             return Auth(
               service: api,
               remote: RemoteAccess.of(context),
+              // Read on use, not now: `AppInfo` fills in asynchronously and
+              // has not finished at this point in the tree.
+              appleBundleId: () => AppInfo.of(context).packageName,
               onEnter: (session, userId) => _initApp(
                 context,
                 session,
@@ -754,6 +757,7 @@ Future<void> _initAppInfo(BuildContext context) {
         (info) {
           return (
             appName: info.appName,
+            packageName: info.packageName,
             version: info.version,
             build: info.buildNumber,
           );
