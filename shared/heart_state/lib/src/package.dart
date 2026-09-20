@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-typedef Package = ({String appName, String version, String build});
+typedef Package = ({String appName, String packageName, String version, String build});
 
 class AppInfo with ChangeNotifier {
   /// [init] reports a failed lookup and carries on, so this cannot be `late`:
   /// every later read would throw a LateInitializationError far from the actual
   /// failure. An unknown version is worth sending in a header; a crash is not.
-  Package _package = (appName: '', version: '', build: '');
+  Package _package = (appName: '', packageName: '', version: '', build: '');
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
   new({this.onError});
@@ -17,6 +17,11 @@ class AppInfo with ChangeNotifier {
   }
 
   String get appName => _package.appName;
+
+  /// The running build's bundle id — `me.heart-of.ios` against
+  /// `me.heart-of.ios.dev`. Account deletion names it to Apple, which signs
+  /// its client secret for one client at a time.
+  String get packageName => _package.packageName;
 
   String get version => _package.version;
 
