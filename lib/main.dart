@@ -15,6 +15,7 @@ import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 typedef AppRunner = Future<void> Function({
@@ -41,8 +42,32 @@ Future<void> bootstrap({
   initLogging?.call(config.logLevel);
   registerLicenses();
 
-  final api = Api(gateway: config.api);
-  final cdn = Cdn(gateway: config.mediaLink);
+  // One client for the whole session, rather than one per request.
+  //
+  // `Requests` falls back to package:http's top-level functions when nothing is
+  // injected, and those build a client, spend it on a single call and close it.
+  // So every request paid its own TCP handshake and TLS negotiation: measured
+  // against the gateway on a wired connection, ~25ms of a ~66ms call, and on a
+  // phone two to three round trips, so 150-300ms each. Reusing one client keeps
+  // the connection alive between calls and pays that once per session.
+  //
+  // One client serves both even though they are different hosts: dart:io's
+  // HttpClient pools per host:port, so this is two pools reached through one
+  // object, not the API and the CDN sharing a connection.
+  //
+  // Nothing closes it — it lives exactly as long as the process. The wrinkle to
+  // watch, rather than pre-empt, is that a pooled socket can die while the app
+  // is backgrounded and be handed back on resume. `IOClient` times idle sockets
+  // out, which covers most of it; what is left would surface as a
+  // `ClientException` on the first call after a resume. Nothing in this app
+  // retries a transport failure today, so Sentry is where that would show up.
+  final client = http.Client();
+
+  final api = Api(gateway: config.api, client: client);
+  // `Cdn`'s factory takes no client, but the field is public and settable, so
+  // the injection still happens here rather than by adding a parameter to the
+  // shared package.
+  final cdn = Cdn(gateway: config.mediaLink)..client = client;
 
   return Future.wait<dynamic>([
     initFirebase(config.env),
