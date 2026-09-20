@@ -177,6 +177,47 @@ void main() {
     });
   });
 
+  group('account deletion schedule', () {
+    test('cancelling clears the deletion timestamp so the router stops sending the user back', () async {
+      final firebase = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'acct-1', email: 'acct@test', displayName: 'Sam'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      // the profile the server returns is the one carrying the schedule
+      when(account.registerAccount(any)).thenAnswer(
+        (inv) async => User(
+          id: (inv.positionalArguments.first as User).id,
+          email: 'acct@test',
+          displayName: 'Sam',
+          scheduledForDeletionAt: DateTime.utc(2026, 10, 19),
+        ),
+      );
+      when(account.undoAccountDeletion()).thenAnswer((_) async => null);
+
+      final sut = Auth(service: account, firebase: firebase);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(
+        sut.user?.scheduledForDeletionAt,
+        isNotNull,
+        reason: 'the account came back scheduled; the goodbye page is shown off this',
+      );
+
+      await sut.deleteAccountDeletionSchedule();
+
+      // The regression this guards: `copyWith()` used to null the timestamp
+      // because it was a parameter there. It is now carried over from `this`,
+      // so a copy keeps the schedule, the router keeps redirecting, and undo
+      // looks broken while the server has already cancelled it.
+      expect(sut.user?.scheduledForDeletionAt, isNull);
+      expect(sut.user?.id, 'acct-1', reason: 'everything else survives the rebuild');
+      expect(sut.user?.email, 'acct@test');
+      expect(sut.user?.displayName, 'Sam');
+      verify(account.undoAccountDeletion()).called(1);
+    });
+  });
+
   group('lifecycle/init', () {
     test('subscribes to userChanges, sets user and notifies, then sets initialized and notifies again', () async {
       final firebase = MockFirebaseAuth();
