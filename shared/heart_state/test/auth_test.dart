@@ -58,6 +58,30 @@ class _TakenCredential extends MockUser {
   }
 }
 
+/// The same refusal as [_TakenCredential], but carrying the replacement
+/// credential the way Firebase really does.
+///
+/// This is the Apple case. An Apple identity token may be redeemed once, so
+/// the token the link just spent cannot be sent again — doing so is a replay
+/// and comes back as `[missing-or-invalid-nonce] Duplicate credential
+/// received`, which reads like a nonce bug and is a double-use. Firebase hands
+/// back a fresh credential on the exception for exactly this handover, and the
+/// sign-in has to use *that* one.
+// ignore: must_be_immutable — see _LinkableAnonymous
+class _TakenCredentialWithFresh extends MockUser {
+  final MockFirebaseAuth auth;
+
+  static final fresh = fb.OAuthProvider('apple.com').credential(idToken: 'fresh-token');
+
+  new(this.auth) : super(isAnonymous: true, uid: 'anon-1');
+
+  @override
+  Future<fb.UserCredential> linkWithCredential(fb.AuthCredential credential) async {
+    auth.mockUser = MockUser(uid: 'acct-1', email: 'acct@test');
+    throw fb.FirebaseAuthException(code: 'credential-already-in-use', credential: fresh);
+  }
+}
+
 /// A user whose link attempt fails for any other reason — the SDK's own
 /// refusal, a dropped network.
 // ignore: must_be_immutable — see _LinkableAnonymous
@@ -76,6 +100,16 @@ class _UnlinkableAnonymous extends MockUser {
 /// session is the session itself.
 class _Firebase extends MockFirebaseAuth {
   new() : super(signedIn: false);
+
+  /// Every credential a sign-in was asked to redeem, in order. Which one
+  /// arrives here is the whole question when a link is refused.
+  final redeemed = <fb.AuthCredential>[];
+
+  @override
+  Future<fb.UserCredential> signInWithCredential(fb.AuthCredential? credential) {
+    if (credential != null) redeemed.add(credential);
+    return super.signInWithCredential(credential);
+  }
 
   @override
   Future<fb.PasswordValidationStatus> validatePassword(fb.FirebaseAuth auth, String? password) async {
@@ -368,6 +402,7 @@ void main() {
     late List<String> events;
     late RemoteAccess remote;
     late MockGoogleSignIn google;
+    late _Firebase firebase;
 
     /// An [Auth] over a Firebase that has minted [anonymous] as the session,
     /// with the Google sheet answering an account whose credential the
@@ -380,7 +415,7 @@ void main() {
       when(google.authenticate(scopeHint: anyNamed('scopeHint'))).thenAnswer((_) async => _GoogleAccount());
       when(account.isAuthenticated).thenReturn(true);
       when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
-      final firebase = _Firebase();
+      firebase = _Firebase();
       firebase.mockUser = anonymous(firebase);
       final sut = Auth(
         service: account,
@@ -428,6 +463,21 @@ void main() {
       expect(sut.isAnonymous, isFalse);
       expect(events, ['link anon-1→acct-1 allowed=false', 'user acct-1', 'enter acct-1']);
       expect(remote.allowed, isFalse);
+    });
+
+    test('an existing Apple account signs in with the credential Firebase hands back, not the spent one', () async {
+      final sut = await build(_TakenCredentialWithFresh.new);
+
+      await sut.loginWithGoogle();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user?.id, 'acct-1', reason: 'the handover still lands on the account');
+      expect(sut.isAnonymous, isFalse);
+      expect(
+        firebase.redeemed.last,
+        same(_TakenCredentialWithFresh.fresh),
+        reason: 'the spent credential would come back as a duplicate nonce',
+      );
     });
 
     test('a link that fails for any other reason puts the leg back and links nothing', () async {

@@ -65,6 +65,27 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   /// user arrives (see [ensureSession], retried on resume).
   bool get sessionUnavailable => _sessionUnavailable;
 
+  /// The Apple client a native sign-in is issued against — this build's bundle
+  /// id, `me.heart-of.ios` or `me.heart-of.ios.dev`.
+  ///
+  /// Needed because revoking a Sign in with Apple grant is per-client: the
+  /// server signs Apple's client secret for one client at a time, and the web
+  /// flow runs against [appleServiceId] instead. Whoever obtained the code
+  /// names the client rather than letting the server guess.
+  ///
+  /// A callback rather than a value: the bundle id comes from `AppInfo`, whose
+  /// lookup is asynchronous and has usually not finished when this is built.
+  /// Read on use, it is always the real one.
+  final String? Function()? appleBundleId;
+
+  /// Whether the signed-in account can prove itself with a password.
+  ///
+  /// False for Apple and Google accounts, which never had one — asking them
+  /// for it is how account deletion came to be impossible for them.
+  bool get hasPassword {
+    return _firebase.currentUser?.providerData.any((each) => each.providerId == 'password') ?? false;
+  }
+
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
@@ -84,6 +105,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.isWeb = false,
     this.appleServiceId,
     this.appleSignInRedirect,
+    this.appleBundleId,
     fb.FirebaseAuth? firebase,
     GoogleSignIn? googleSignIn,
     RemoteAccess? remote,
@@ -255,7 +277,24 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           return await anonymous.linkWithCredential(credential);
         } on fb.FirebaseAuthException catch (e) {
           if (e.code != 'credential-already-in-use') rethrow;
-          return await _firebase.signInWithCredential(credential);
+          // `credential` is spent. An Apple identity token may be presented to
+          // Firebase exactly once — the link above consumed it deciding the
+          // account already existed — so re-sending it is a replay, and
+          // Firebase says so in the least helpful way available:
+          //   [missing-or-invalid-nonce] Duplicate credential received.
+          // which reads like a nonce bug and is really a double-use.
+          //
+          // Firebase returns a fresh, unconsumed credential on this exception
+          // for precisely this handover, so prefer it.
+          //
+          // Falling back to the spent one when it is absent is deliberate, and
+          // it is not a fix — it is the behaviour that shipped. Google's
+          // credential survives the second use, so retrying it is how this
+          // path has always worked; rethrowing instead would break a working
+          // sign-in whenever the plugin declines to populate `e.credential`.
+          // Apple in that case fails exactly as it does today, which is no
+          // worse, and the case that matters in practice is the one above.
+          return await _firebase.signInWithCredential(e.credential ?? credential);
         }
       },
     );
@@ -298,11 +337,12 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         },
       );
 
+      // The identity token alone. The authorization code beside it is what a
+      // server exchanges with Apple, and Apple honours it exactly once — so
+      // handing it to Firebase here spends it for nothing, and leaves account
+      // deletion with no grant to revoke. Firebase needs only the id token.
       final oAuth = fb.OAuthProvider('apple.com');
-      final appleToken = oAuth.credential(
-        idToken: credential.identityToken,
-        accessToken: credential.authorizationCode,
-      );
+      final appleToken = oAuth.credential(idToken: credential.identityToken);
 
       final name = switch ((credential.givenName, credential.familyName)) {
         (String first, String last) when first.isNotEmpty && last.isNotEmpty => '$first $last',
@@ -465,26 +505,84 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<String?>? get sessionToken => _firebase.currentUser?.getIdToken();
 
+  /// Re-authenticates the way the account was actually created, then schedules
+  /// it for deletion.
+  ///
+  /// [password] is only read for an account that has one. Apple and Google
+  /// accounts never did, and asking them for it is how deletion came to be
+  /// impossible for them: they were shown a prompt they could not answer and
+  /// told their credentials were invalid.
+  ///
+  /// An Apple re-authentication yields one more thing than proof — the
+  /// authorization code the server needs to revoke the Sign in with Apple
+  /// grant when the deletion eventually runs. It is taken from *this*
+  /// re-authentication rather than from sign-in because Apple honours a code
+  /// once and expires it in minutes, and this is the only moment close enough
+  /// to the deletion to matter.
   Future<void> scheduleAccountForDeletion({
-    required String password,
+    String? password,
     required void Function(String?) onAuthenticate,
   }) async {
     Future<void> callback() async {
-      switch (_user) {
-        case User(:String email, id: String accountId):
-          final cred = fb.EmailAuthProvider.credential(email: email, password: password);
-          final authenticated = await _firebase.currentUser?.reauthenticateWithCredential(cred);
-          onAuthenticate(await authenticated?.user?.getIdToken());
-          try {
-            await _service.deleteAccount(accountId: accountId);
-            await _logout();
-          } on UpgradeRequired catch (e) {
-            onError?.call(e);
-          }
+      if (_user?.id case String accountId) {
+        final (credential, appleGrant) = await _reauthentication(password);
+        final authenticated = await _firebase.currentUser?.reauthenticateWithCredential(credential);
+        onAuthenticate(await authenticated?.user?.getIdToken());
+        try {
+          await _service.deleteAccount(accountId: accountId, appleGrant: appleGrant);
+          await _logout();
+        } on UpgradeRequired catch (e) {
+          onError?.call(e);
+        }
       }
     }
 
     return _toFirebase(callback());
+  }
+
+  /// A fresh credential for the provider this account signs in with, plus the
+  /// Apple grant where there is one.
+  ///
+  /// Apple's credential is built from the identity token **only**. The
+  /// authorization code beside it is single-use, and spending it on Firebase
+  /// here would leave nothing for the server to exchange — the revocation
+  /// would fail silently weeks later, which is the failure this whole path
+  /// exists to avoid.
+  Future<(fb.AuthCredential, AppleDeletionGrant?)> _reauthentication(String? password) async {
+    final providers = _firebase.currentUser?.providerData.map((each) => each.providerId).toSet() ?? {};
+
+    if (providers.contains('apple.com')) {
+      final apple = await SignInWithApple.getAppleIDCredential(
+        scopes: [.email, .fullName],
+        webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
+          (String clientId, String redirect) => WebAuthenticationOptions(
+            clientId: clientId,
+            redirectUri: Uri.parse(redirect),
+          ),
+          _ => null,
+        },
+      );
+      final credential = fb.OAuthProvider('apple.com').credential(idToken: apple.identityToken);
+      // The web flow is issued against the Services ID, a native one against
+      // the bundle id. Without a client there is nothing the server could sign
+      // for, so the deletion goes ahead unrevoked rather than not at all.
+      final client = isWeb ? appleServiceId : appleBundleId?.call();
+      return (
+        credential,
+        switch ((apple.authorizationCode, client)) {
+          (String code, String id) when code.isNotEmpty => AppleDeletionGrant(authorizationCode: code, clientId: id),
+          _ => null,
+        },
+      );
+    }
+
+    if (providers.contains('google.com')) {
+      await _googleSignIn.initialize();
+      final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
+      return (fb.GoogleAuthProvider.credential(idToken: account.authentication.idToken), null);
+    }
+
+    return (fb.EmailAuthProvider.credential(email: _user?.email ?? '', password: password ?? ''), null);
   }
 
   /// "Erase my data", the anonymous session's counterpart to account deletion.
