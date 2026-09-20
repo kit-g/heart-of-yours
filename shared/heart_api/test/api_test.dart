@@ -72,23 +72,57 @@ void main() {
       expect(() => api.registerAccount(user), throwsA(isA<Map>()));
     });
 
-    test('deleteAccount returns null on success (<400)', () async {
+    // Scheduling a deletion is an action on `PUT /accounts`, not `DELETE` —
+    // the body is the point, so these assert on it rather than on the verb
+    // alone. A stub that matches the method and ignores the payload would pass
+    // against an app sending the wrong action, or half an Apple grant, which
+    // the server rejects with `incomplete_apple_grant`.
+    test('deleteAccount PUTs the scheduling action and returns null on success', () async {
       _response(
         client: client,
-        method: 'DELETE',
+        method: 'PUT',
         path: Router.accounts,
-        statusCode: 204,
-        body: {},
+        statusCode: 200,
+        body: {'id': '42', 'scheduledForDeletionAt': '2026-10-19T01:14:36.000Z'},
       );
 
       final result = await api.deleteAccount(accountId: '42');
       expect(result, isNull);
+
+      final sent = verify(
+        client.put(any, headers: anyNamed('headers'), body: captureAnyNamed('body')),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {'action': 'scheduleAccountDeletion'});
+    });
+
+    test('deleteAccount carries both Apple fields when a grant is given', () async {
+      _response(
+        client: client,
+        method: 'PUT',
+        path: Router.accounts,
+        statusCode: 200,
+        body: {'id': '42'},
+      );
+
+      await api.deleteAccount(
+        accountId: '42',
+        appleGrant: const AppleDeletionGrant(authorizationCode: 'c1a2b3', clientId: 'me.heart-of.ios'),
+      );
+
+      final sent = verify(
+        client.put(any, headers: anyNamed('headers'), body: captureAnyNamed('body')),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {
+        'action': 'scheduleAccountDeletion',
+        'appleAuthorizationCode': 'c1a2b3',
+        'appleClientId': 'me.heart-of.ios',
+      });
     });
 
     test('deleteAccount throws on error (>=400)', () async {
       _response(
         client: client,
-        method: 'DELETE',
+        method: 'PUT',
         path: Router.accounts,
         statusCode: 404,
         body: {'error': 'Not Found'},
