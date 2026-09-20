@@ -46,7 +46,12 @@ RouteBase _profileRoute() {
         routes: [
           GoRoute(
             path: _accountManagementPath,
-            builder: (_, _) => const AccountManagementPage(onError: reportToSentry),
+            builder: (context, _) {
+              return AccountManagementPage(
+                onError: reportToSentry,
+                onDeleted: context.goToProfile,
+              );
+            },
             name: _accountManagementName,
           ),
           GoRoute(
