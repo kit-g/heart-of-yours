@@ -26,13 +26,17 @@ class GreetingsPane extends StatelessWidget {
       },
       child: Stack(
         children: [
+          // A watermark, so it is tinted to the pane's own foreground rather
+          // than stamped in the brand's near-black: this ground is
+          // `primary`/`primaryContainer`, and every preset picks its own.
           Positioned(
-            bottom: 0,
-            right: 0,
-            child: SizedBox(
-              width: 100,
-              height: 100,
-              child: Image.asset(Assets.logo),
+            bottom: 16,
+            right: 16,
+            child: Image.asset(
+              Assets.heart,
+              width: 72,
+              color: fontColor,
+              colorBlendMode: .srcIn,
             ),
           ),
           Center(
