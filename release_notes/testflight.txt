@@ -1,3 +1,1 @@
 Bug fixes and performance improvements.
-
-We took the bugs to failure. No spotter. They will not be back next week.
