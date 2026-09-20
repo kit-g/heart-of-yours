@@ -611,10 +611,24 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> deleteAccountDeletionSchedule() async {
     switch (_user) {
-      case User(id: String()):
+      case User(:final id, :final displayName, :final email, :final avatar, :final createdAt, :final settings):
         await _service.undoAccountDeletion();
-        // copy without the deletion timestamp
-        _user = _user?.copyWith();
+        // Rebuilt rather than copied, because clearing the schedule is the
+        // whole point and `copyWith` cannot express it: it carries
+        // `scheduledForDeletionAt` over from `this` and takes no parameter for
+        // it. This used to be `copyWith()` and worked only because that field
+        // was once a parameter there, so omitting it nulled the value — a
+        // dependency bump changed that quietly, the timestamp survived the
+        // undo, and the router sent the user straight back to the goodbye
+        // page. Naming every field keeps the omission deliberate and visible.
+        _user = User(
+          id: id,
+          displayName: displayName,
+          email: email,
+          avatar: avatar,
+          createdAt: createdAt,
+          settings: settings,
+        );
         notifyListeners();
     }
   }
