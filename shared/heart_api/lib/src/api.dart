@@ -161,8 +161,14 @@ class Api
   }
 
   @override
-  Future<String?> deleteAccount({required String accountId}) async {
-    final (json, code) = await delete(Router.accounts);
+  Future<String?> deleteAccount({required String accountId, AppleDeletionGrant? appleGrant}) async {
+    final (json, code) = await put(
+      Router.accounts,
+      body: {
+        'action': 'scheduleAccountDeletion',
+        ...?appleGrant?.toMap(),
+      },
+    );
     return switch (code) {
       < 400 => null,
       426 => throw UpgradeRequired(),
