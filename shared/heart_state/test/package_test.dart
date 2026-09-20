@@ -20,7 +20,7 @@ void main() {
     test('adopts the package the initializer resolves', () async {
       final sut = AppInfo();
 
-      await sut.init(() async => (appName: 'Heart', version: '1.2.3', build: '45'));
+      await sut.init(() async => (appName: 'Heart', packageName: 'me.heart-of.ios.dev', version: '1.2.3', build: '45'));
 
       expect(sut.appName, 'Heart');
       expect(sut.version, '1.2.3');
@@ -34,7 +34,7 @@ void main() {
       final sut = AppInfo();
       final probe = ListenerProbe()..attach(sut);
 
-      await sut.init(() async => (appName: 'Heart', version: '1.2.3', build: '45'));
+      await sut.init(() async => (appName: 'Heart', packageName: 'me.heart-of.ios.dev', version: '1.2.3', build: '45'));
 
       expect(probe.notifications, 0);
     });
@@ -66,8 +66,8 @@ void main() {
     test('a later init overwrites an earlier one', () async {
       final sut = AppInfo();
 
-      await sut.init(() async => (appName: 'Heart', version: '1.0.0', build: '1'));
-      await sut.init(() async => (appName: 'Heart', version: '1.1.0', build: '2'));
+      await sut.init(() async => (appName: 'Heart', packageName: 'me.heart-of.ios.dev', version: '1.0.0', build: '1'));
+      await sut.init(() async => (appName: 'Heart', packageName: 'me.heart-of.ios.dev', version: '1.1.0', build: '2'));
 
       expect(sut.fullVersion, '1.1.0+2');
     });
@@ -75,7 +75,7 @@ void main() {
     test('a failed init does not clobber a previously resolved package', () async {
       final sut = AppInfo(onError: (_, {stacktrace}) {});
 
-      await sut.init(() async => (appName: 'Heart', version: '1.0.0', build: '1'));
+      await sut.init(() async => (appName: 'Heart', packageName: 'me.heart-of.ios.dev', version: '1.0.0', build: '1'));
       await sut.init(() => throw StateError('flaky'));
 
       expect(sut.fullVersion, '1.0.0+1');
