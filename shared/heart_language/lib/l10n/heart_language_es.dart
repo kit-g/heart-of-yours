@@ -127,25 +127,25 @@ class LEs extends L {
 
   @override
   String get onboardingWelcomeBody =>
-      'Un diario de entrenamientos que no estorba: planifica una sesión, marca cada serie y mira cómo crecen tus marcas.';
+      'Un tracker de entrenamiento que no se interpone en tu camino: planifica una sesión, registra cada serie y sigue tu progreso.';
 
   @override
   String get onboardingLocalTitle => 'Tus datos se quedan en este dispositivo';
 
   @override
   String get onboardingLocalBody =>
-      'No hace falta cuenta: tus entrenamientos, y los datos de salud que dejes leer a Heart, viven en este dispositivo y en ningún otro sitio.';
+      'No necesitas una cuenta. Tus entrenamientos y los datos de salud que permitas que Heart lea se guardan en este dispositivo y en ningún otro lugar.';
 
   @override
   String get onboardingLocalTrade =>
-      'El trato honesto: si pierdes este dispositivo, pierdes los datos, a menos que inicies sesión.';
+      'La cuestión es sencilla: si pierdes el dispositivo, también pierdes los datos, a menos que hayas iniciado sesión.';
 
   @override
   String get onboardingAccountTitle => 'Inicia sesión cuando quieras';
 
   @override
   String get onboardingAccountBody =>
-      'Una cuenta añade una copia de seguridad y sincronización entre tus dispositivos, y más adelante compartir con amigos y coaching. Nada cambia hasta que tú lo decidas.';
+      'Una cuenta añade una copia de seguridad y permite sincronizar tus datos entre dispositivos. Más adelante, también podrá permitirte compartirlos con amigos y coaches. Nada cambia hasta que tú decidas hacerlo.';
 
   @override
   String get onboardingNext => 'Siguiente';

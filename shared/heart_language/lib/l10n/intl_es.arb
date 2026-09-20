@@ -228,7 +228,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "onboardingWelcomeBody": "Un diario de entrenamientos que no estorba: planifica una sesión, marca cada serie y mira cómo crecen tus marcas.",
+  "onboardingWelcomeBody": "Un tracker de entrenamiento que no se interpone en tu camino: planifica una sesión, registra cada serie y sigue tu progreso.",
   "@onboardingWelcomeBody": {
     "description": "First-launch onboarding, screen 1 of 3: what Heart is, in one line",
     "type": "text",
@@ -240,13 +240,13 @@
     "type": "text",
     "placeholders": {}
   },
-  "onboardingLocalBody": "No hace falta cuenta: tus entrenamientos, y los datos de salud que dejes leer a Heart, viven en este dispositivo y en ningún otro sitio.",
+  "onboardingLocalBody": "No necesitas una cuenta. Tus entrenamientos y los datos de salud que permitas que Heart lea se guardan en este dispositivo y en ningún otro lugar.",
   "@onboardingLocalBody": {
     "description": "First-launch onboarding, screen 2 of 3: the anonymous promise and the health-data promise as one sentence",
     "type": "text",
     "placeholders": {}
   },
-  "onboardingLocalTrade": "El trato honesto: si pierdes este dispositivo, pierdes los datos, a menos que inicies sesión.",
+  "onboardingLocalTrade": "La cuestión es sencilla: si pierdes el dispositivo, también pierdes los datos, a menos que hayas iniciado sesión.",
   "@onboardingLocalTrade": {
     "description": "First-launch onboarding, screen 2 of 3: the trade-off of having no account",
     "type": "text",
@@ -258,7 +258,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "onboardingAccountBody": "Una cuenta añade una copia de seguridad y sincronización entre tus dispositivos, y más adelante compartir con amigos y coaching. Nada cambia hasta que tú lo decidas.",
+  "onboardingAccountBody": "Una cuenta añade una copia de seguridad y permite sincronizar tus datos entre dispositivos. Más adelante, también podrá permitirte compartirlos con amigos y coaches. Nada cambia hasta que tú decidas hacerlo.",
   "@onboardingAccountBody": {
     "description": "First-launch onboarding, screen 3 of 3: what an account adds",
     "type": "text",
