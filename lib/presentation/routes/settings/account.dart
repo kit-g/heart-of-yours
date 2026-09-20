@@ -308,7 +308,17 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               ),
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
-                _onConfirmDeleteAccount(context);
+                // Only an account that has a password can be asked for one.
+                // Apple and Google accounts re-authenticate through their
+                // provider instead, which is a sheet rather than a prompt —
+                // asking them to type a password they never set is how
+                // deletion used to be impossible for them.
+                switch (Auth.of(context).hasPassword) {
+                  case true:
+                    _onConfirmDeleteAccount(context);
+                  case false:
+                    _requestAccountDeletion(context);
+                }
               },
             ),
           ],
@@ -394,6 +404,8 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     final l = L.of(context);
     try {
       await Auth.of(context).scheduleAccountForDeletion(
+        // Empty for a provider account; `Auth` only reads it where there is a
+        // password to read.
         password: _passwordController.text.trim(),
         onAuthenticate: (token) {
           if (token != null) {
