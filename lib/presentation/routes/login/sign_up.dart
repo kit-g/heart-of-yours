@@ -190,24 +190,10 @@ class _SignUpPageState extends State<SignUpPage>
                                   padding: const EdgeInsets.all(8.0),
                                   child: Text(orConnector),
                                 ),
-                                Stack(
-                                  children: [
-                                    const Positioned(
-                                      top: 0,
-                                      bottom: 0,
-                                      left: 24,
-                                      child: Icon(CustomIcons.google),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: () => run(Auth.of(context).loginWithGoogle),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(signUpWithGoogle),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                _ProviderButton(
+                                  icon: CustomIcons.google,
+                                  label: signUpWithGoogle,
+                                  onPressed: () => run(Auth.of(context).loginWithGoogle),
                                 ),
                                 // what is up with padding on macOS?
                                 if (Theme.of(context).platform case TargetPlatform.macOS) const SizedBox(height: 8),
@@ -221,24 +207,10 @@ class _SignUpPageState extends State<SignUpPage>
                                       duration: const Duration(milliseconds: 100),
                                       child: switch (hasAppleSignIn) {
                                         false => const SizedBox.shrink(),
-                                        true => Stack(
-                                          children: [
-                                            const Positioned(
-                                              top: 0,
-                                              bottom: 0,
-                                              left: 24,
-                                              child: Icon(CustomIcons.appstore),
-                                            ),
-                                            OutlinedButton(
-                                              onPressed: () => run(Auth.of(context).loginWithApple),
-                                              child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Text(signUpWithApple),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
+                                        true => _ProviderButton(
+                                          icon: CustomIcons.appstore,
+                                          label: signUpWithApple,
+                                          onPressed: () => run(Auth.of(context).loginWithApple),
                                         ),
                                       },
                                     );
