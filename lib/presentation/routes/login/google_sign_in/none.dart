@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 class GoogleSignInButton extends StatelessWidget {
-  final void Function()? onPressed;
+  final String label;
+  final VoidCallback? onPressed;
 
   const new({
     super.key,
+    required this.label,
     this.onPressed,
   });
 
