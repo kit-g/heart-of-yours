@@ -76,7 +76,19 @@ class const HealthSection({
 
     if (!health.initialized) return const SliverToBoxAdapter(child: SizedBox.shrink());
 
-    final metrics = health.available.toList();
+    // Paired with their series here, rather than looked up per card.
+    //
+    // `available` is already filtered to metrics holding at least one day, but
+    // a sliver builds its children lazily: looking the series up inside that
+    // closure reads a map that a backfill may have cleared and not yet refilled
+    // since the count was fixed. That came back empty for a metric that had data
+    // a frame earlier, and the card read `series.last` on it — `Bad state: No
+    // element`, thrown out of `build` during layout, unhandled and fatal, on the
+    // screen the app opens to.
+    //
+    // Capturing both together is what makes that impossible rather than merely
+    // unlikely: the count and the data are now the same snapshot.
+    final metrics = health.available.map((metric) => (metric, health[metric])).toList();
     final userId = health.userId;
 
     // Every visible state wears the same header, so the section reads as one
@@ -146,10 +158,10 @@ class const HealthSection({
                 delegate: SliverChildBuilderDelegate(
                   childCount: metrics.length,
                   (context, index) {
-                    final metric = metrics[index];
+                    final (metric, series) = metrics[index];
                     return _HealthCard(
                       metric: metric,
-                      series: health[metric],
+                      series: series,
                       settings: settings,
                       l: l,
                     );

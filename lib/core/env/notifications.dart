@@ -1,5 +1,6 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logging/logging.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -225,6 +226,28 @@ Future<bool> hasNotificationsPermission(TargetPlatform platform) async {
   }
 }
 
+/// Schedules [request], and treats "the user said no" as the non-event it is.
+///
+/// iOS refuses a schedule when notification permission was never granted or
+/// has been revoked — `PlatformException(Error 2003, Repository could not save
+/// notification. Source is not authorized., UNErrorDomain)`. Nothing in the app
+/// awaits these, so the throw escaped to `PlatformDispatcher.onError` and was
+/// recorded fatal, on the screen that ends a workout, for the ordinary act of
+/// declining a permission prompt.
+///
+/// There is nothing to do about it and nothing to tell the user: they chose
+/// this, and the workout is already saved. So the refusal is swallowed and
+/// everything else rethrown — an unauthorized schedule is a preference, while
+/// a missing icon or a bad channel is a bug we need to keep hearing about.
+Future<void> _scheduleUnlessRefused(Future<void> Function() request) async {
+  try {
+    await request();
+  } on PlatformException catch (e) {
+    final refused = e.code.contains('2003') || (e.message?.contains('not authorized') ?? false);
+    if (!refused) rethrow;
+  }
+}
+
 Future<void> scheduleExerciseNotification(
   String exerciseId,
   DateTime time, {
@@ -236,14 +259,16 @@ Future<void> scheduleExerciseNotification(
   if (delay.isNegative) return;
 
   final details = _details(title: title, body: body, subtitle: subtitle);
-  return _plugin.zonedSchedule(
-    id: _currentExercise,
-    title: title,
-    body: body,
-    scheduledDate: TZDateTime.from(time, local),
-    notificationDetails: details,
-    androidScheduleMode: .exactAllowWhileIdle,
-    payload: exerciseId,
+  return _scheduleUnlessRefused(
+    () => _plugin.zonedSchedule(
+      id: _currentExercise,
+      title: title,
+      body: body,
+      scheduledDate: TZDateTime.from(time, local),
+      notificationDetails: details,
+      androidScheduleMode: .exactAllowWhileIdle,
+      payload: exerciseId,
+    ),
   );
 }
 
@@ -259,13 +284,15 @@ Future<void> scheduleWorkoutTimeoutNotification(
   if (delay.isNegative) return;
 
   final details = _details(title: title, body: body);
-  return _plugin.zonedSchedule(
-    id: _workoutTimeout,
-    title: title,
-    body: body,
-    scheduledDate: TZDateTime.from(time, local),
-    notificationDetails: details,
-    androidScheduleMode: .exactAllowWhileIdle,
+  return _scheduleUnlessRefused(
+    () => _plugin.zonedSchedule(
+      id: _workoutTimeout,
+      title: title,
+      body: body,
+      scheduledDate: TZDateTime.from(time, local),
+      notificationDetails: details,
+      androidScheduleMode: .exactAllowWhileIdle,
+    ),
   );
 }
 
