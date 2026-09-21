@@ -80,6 +80,21 @@ jobs:
 
       - name: "Deploy via Fastlane"
         working-directory: ios
+        # `xcodebuild -showBuildSettings` has to resolve the Swift package graph
+        # before it can answer, and fastlane's defaults — a 3 second base timeout,
+        # 4 retries — are tuned for CocoaPods, where there is no graph to resolve.
+        # On a cold runner the resolution routinely outlasts the whole retry
+        # budget, and the lane dies before it compiles a line: "xcodebuild
+        # -showBuildSettings timed out after 4 retries with a base timeout of 3".
+        # It is a race, so it fails intermittently and on one platform at a time —
+        # v1.8.4 lost it on prod and won it on dev, same commit, same lane.
+        #
+        # Runner minutes are free on a public repo, so the budget is generous
+        # rather than tight: these only matter when the machine is slow, and an
+        # unused timeout costs nothing.
+        env:
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 6
         # Read the passphrase downloaded from S3 and pass it to Fastlane via MATCH_PASSWORD
         run: |
           MATCH_PASSWORD=$(cat fastlane/passphrase.txt)
