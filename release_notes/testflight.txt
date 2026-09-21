@@ -1,1 +1,8 @@
 Bug fixes and performance improvements.
+
+What to test
+• Anything that loads from the server. Cold start, sign in, then open History, Templates and Exercises. This build talks to a new address, so a failure here looks like empty screens or a spinner that never settles.
+• Send the app to the background for a few minutes, come back, and load data again. Connections are now held open between requests, and a resumed one is the case worth watching.
+• Sign in and out, then sign in again — with a password, with Google, and with Apple.
+• Finish a workout that sets several personal records, and check the OK button is reachable.
+• The login, sign-up and password-recovery screens on an iPad, in both orientations.
