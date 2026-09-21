@@ -74,11 +74,24 @@ harness. Check what the commit touched before you trust its prefix either way.
 - **Internal correctness is not a note.** Test flakes, CI, lints, dependency bumps and
   refactors are invisible even when they were most of the work.
 
-If the filter leaves one line, ship one line. If it leaves nothing, **"Bug fixes and stability
-improvements" is a perfectly good release note when it's true** — a cycle really can be all
-plumbing, and a quiet note is honest. What's not allowed is reaching for it to avoid the work
-of reading the diff, or padding a thin cycle into a fake feature list. The reader learns
-whether these notes mean anything from the ones that say nothing.
+### A fix-only cycle gets one line, always
+
+If nothing in the range is a new capability — no new screen, no new control, nothing the user
+can now do that they could not before — then the description is **"Bug fixes and performance
+improvements."** or a variation of it, in all three renderings. Not a bulleted list of the
+things that were wrong.
+
+This is a rule, not a fallback. Enumerating fixes advertises the bugs: it tells a reader who
+never hit them that the app had them, and it reads as a changelog rather than a release note.
+The store description is not where repairs get itemised.
+
+So the work of reading the diff is still the work — but on a fix-only cycle it decides
+**What to test**, not the description. That is where everything you learned from the diff
+goes, and it is why the reading matters: the testers cannot know which paths this build put
+at risk unless you tell them.
+
+`release_notes/v<version>.md` is the exception and the place for detail. It is the archive, it
+is read on purpose by someone who came looking, and it can say exactly what broke and why.
 
 ## 4. Write it
 
@@ -87,13 +100,16 @@ Voice: second person, present tense, plain. "Charts now go back through your who
 - Never internal names. The reader has never heard of `heart_state`, a `ChangeNotifier`, an ARB
   or a notifier. Name the screen or the thing, not the class.
 - No commit prefixes, no PR or issue numbers, no file paths, no version numbers inside the body.
-- Lead with the biggest new capability. Fixes go last, in one short group.
+- Lead with the biggest new capability — and if there is no new capability, see the fix-only
+  rule above: the description is one line and the detail belongs in **What to test**.
 - **Say the platform's own words.** Apple Health / VoiceOver / Settings for TestFlight and the
   App Store; Health Connect / TalkBack / permissions for Play. Same summary, different nouns —
   this is why the two files aren't a copy-paste of each other.
-- `testflight.txt` ends with a short **What to test** list: the two or three paths a tester
-  should actually walk, especially anything with a permission prompt or a cold start. Testers
-  skim; give them a to-do, not a press release.
+- `testflight.txt` ends with a **What to test** list, and on a fix-only build it is the whole
+  point of the file. Name the paths *this build* put at risk, and say what failure looks like
+  where that isn't obvious — a moved endpoint shows up as an empty screen, not an error. Cold
+  starts, permission prompts, resume-from-background and anything the range touched belong
+  here. Testers skim; give them a to-do, not a press release.
 - The Play file has no room for that — capabilities and fixes only.
 
 Then check the limit that actually bites:
@@ -148,6 +164,8 @@ below has to be **committed before the tag**: prod CI checks out the tagged comm
 
 - [ ] Range starts at the last `v*` tag, not at an arbitrary commit
 - [ ] Every bullet is something a user could point at on their screen
+- [ ] No new capability in the range → description is "Bug fixes and performance improvements",
+      and the diff's findings went into **What to test** instead
 - [ ] No internal names, file paths, PR numbers, or commit prefixes survived
 - [ ] `wc -m` on the Play file is under 500
 - [ ] TestFlight copy says Apple Health/VoiceOver; Play copy says Health Connect/TalkBack
