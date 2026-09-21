@@ -190,8 +190,7 @@ class _SignUpPageState extends State<SignUpPage>
                                   padding: const EdgeInsets.all(8.0),
                                   child: Text(orConnector),
                                 ),
-                                _ProviderButton(
-                                  icon: CustomIcons.google,
+                                GoogleSignInButton(
                                   label: signUpWithGoogle,
                                   onPressed: () => run(Auth.of(context).loginWithGoogle),
                                 ),
@@ -207,7 +206,7 @@ class _SignUpPageState extends State<SignUpPage>
                                       duration: const Duration(milliseconds: 100),
                                       child: switch (hasAppleSignIn) {
                                         false => const SizedBox.shrink(),
-                                        true => _ProviderButton(
+                                        true => ProviderButton(
                                           icon: CustomIcons.appstore,
                                           label: signUpWithApple,
                                           onPressed: () => run(Auth.of(context).loginWithApple),
