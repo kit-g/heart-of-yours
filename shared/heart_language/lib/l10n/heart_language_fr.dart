@@ -1850,4 +1850,23 @@ class LFr extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'Impossible d’enregistrer la note. Réessayez.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Séance en cours';
+
+  @override
+  String get ongoingWorkoutRest => 'Repos';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Suivant : série $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Suivant : série $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'Toutes les séries terminées';
 }

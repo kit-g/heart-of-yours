@@ -3285,6 +3285,36 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Could not save the note. Please try again.'**
   String get exerciseNoteSaveFailed;
+
+  /// Android notification channel name for the ongoing-workout notification, shown in the system notification settings
+  ///
+  /// In en, this message translates to:
+  /// **'Workout in progress'**
+  String get ongoingWorkoutChannel;
+
+  /// Lock screen / Dynamic Island label beside the running rest countdown during a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Rest'**
+  String get ongoingWorkoutRest;
+
+  /// Lock screen line naming the set the user is about to do, when it has no weight or reps filled in yet
+  ///
+  /// In en, this message translates to:
+  /// **'Next: set {number}'**
+  String ongoingWorkoutNextSet(int number);
+
+  /// Lock screen line naming the set the user is about to do and what it holds, e.g. 'Next: set 4 · 50 kg x 6'
+  ///
+  /// In en, this message translates to:
+  /// **'Next: set {number} · {detail}'**
+  String ongoingWorkoutNextSetDetail(int number, Object detail);
+
+  /// Lock screen line once every set in the active workout is ticked
+  ///
+  /// In en, this message translates to:
+  /// **'All sets done'**
+  String get ongoingWorkoutAllDone;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
