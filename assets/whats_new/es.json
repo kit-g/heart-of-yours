@@ -1,0 +1,212 @@
+[
+  {
+    "version": "1.8.0",
+    "items": [
+      {
+        "id": "exercise-notes",
+        "title": "Notas de ejercicio",
+        "body": "Añade una nota a cualquier ejercicio mientras entrenas: una indicación, una configuración, un peso para probar la próxima vez. Con la sesión iniciada, puedes **fijar** una nota para que vuelva cada vez que aparezca el ejercicio, también en los entrenamientos que empiezas desde una plantilla."
+      },
+      {
+        "id": "history-calendar",
+        "title": "Un calendario para tu historial",
+        "body": "Abre **Historial** y toca el calendario para ver tus entrenamientos mes a mes. Toca un día para abrir su entrenamiento."
+      },
+      {
+        "id": "new-look",
+        "title": "Un nuevo aspecto",
+        "body": "Un logotipo nuevo, un icono de app nuevo y una pantalla de inicio que sigue el modo claro y el oscuro."
+      }
+    ]
+  },
+  {
+    "version": "1.7.0",
+    "items": [
+      {
+        "id": "no-account",
+        "title": "Sin necesidad de cuenta",
+        "body": "Abre la app y empieza a entrenar. Tus entrenamientos, plantillas, ejercicios propios y metas se guardan en tu dispositivo desde la primera sesión, y todo lo que no necesita un servidor funciona sin él."
+      },
+      {
+        "id": "sign-in-later",
+        "title": "Inicia sesión cuando quieras",
+        "body": "Inicia sesión más adelante y todo lo que hayas registrado pasa a tu cuenta. Si esa cuenta ya tiene entrenamientos de otro dispositivo, ambos se combinan en lugar de sobrescribirse."
+      },
+      {
+        "id": "whole-history",
+        "title": "Todo tu historial cuenta",
+        "body": "El gráfico semanal, tus metas y tus récords ahora cuentan todo lo que has registrado, no solo la parte más reciente."
+      },
+      {
+        "id": "export-erase",
+        "title": "Exporta o borra tus datos",
+        "body": "**Ajustes → Tus datos → Exportar mis datos** guarda todo lo que hay en este dispositivo como JSON o CSV, sin conexión y con o sin cuenta. Sin cuenta, **Borrar mis datos** lo elimina del dispositivo."
+      }
+    ]
+  },
+  {
+    "version": "1.6.0",
+    "items": [
+      {
+        "id": "languages",
+        "title": "Español, francés y ruso",
+        "body": "Configura tu dispositivo en uno de ellos y todas las pantallas lo siguen, incluidos los nombres y las instrucciones de la biblioteca de ejercicios."
+      },
+      {
+        "id": "themes",
+        "title": "Cuatro temas",
+        "body": "**Ajustes → Apariencia** ofrece cuatro temas, cada uno con su propia tipografía y sus colores en modo claro y oscuro."
+      },
+      {
+        "id": "records",
+        "title": "Récords",
+        "body": "La pestaña **Récords** de un ejercicio muestra tu mejor serie, el máximo de repeticiones, tu mejor ritmo, una tabla de máximos por repeticiones y los totales de siempre. Cuando un entrenamiento bate un récord personal, el resumen lo celebra."
+      },
+      {
+        "id": "dashboard-charts",
+        "title": "Gráficos de ejercicios en tu perfil",
+        "body": "Añade a tu perfil cualquier gráfico de la pestaña **Gráficos** de un ejercicio con un toque, y quítalo de la misma forma."
+      }
+    ]
+  },
+  {
+    "version": "1.5.0",
+    "items": [
+      {
+        "id": "strong-import",
+        "title": "Trae tu historial de Strong",
+        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** lee el archivo CSV que exporta Strong y trae tus entrenamientos, series y ejercicios. Tú apruebas cada ejercicio que Heart no conoce, e importar el mismo archivo dos veces nunca duplica nada."
+      }
+    ]
+  },
+  {
+    "version": "1.4.0",
+    "items": [
+      {
+        "id": "health-workouts",
+        "title": "Entrenamientos en Apple Salud y Health Connect",
+        "body": "Los entrenamientos terminados se guardan en la app de salud de tu dispositivo, así tus sesiones de fuerza cuentan en tu actividad. Heart registra cuánto entrenaste y qué tipo de sesión fue, y nunca estima calorías. Puedes desactivarlo en **Ajustes**."
+      }
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "items": [
+      {
+        "id": "health-data",
+        "title": "Datos de salud en tu perfil",
+        "body": "Heart puede leer la frecuencia cardíaca en reposo, la variabilidad de la frecuencia cardíaca, el sueño, los pasos, la energía activa y el peso corporal de Apple Salud o Health Connect, y mostrarlos en gráficos en tu perfil. Esos datos nunca salen de tu dispositivo."
+      },
+      {
+        "id": "chart-ranges",
+        "title": "Gráficos que llegan hasta el principio",
+        "body": "Los gráficos de ejercicios y de salud abarcan todo tu historial. Cambia entre 1M, 3M, 1A y Todo, y arrastra para moverte en el tiempo."
+      },
+      {
+        "id": "screen-readers",
+        "title": "VoiceOver y TalkBack",
+        "body": "Los botones, gráficos, temporizadores y campos se anuncian en los lectores de pantalla."
+      }
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "items": [
+      {
+        "id": "template-folders",
+        "title": "Carpetas de plantillas",
+        "body": "Organiza tus plantillas en carpetas. Créalas, cámbiales el nombre o elimínalas, y mueve plantillas entre ellas. Al eliminar una carpeta, sus plantillas se conservan."
+      }
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "items": [
+      {
+        "id": "goals",
+        "title": "Metas",
+        "body": "Fija una meta semanal o mensual de entrenamientos, o una escalera de hitos con fecha límite opcional. Las metas aparecen como líneas en tus gráficos, el resumen del entrenamiento te avisa cuando alcanzas una, y cada meta alcanzada enlaza con el entrenamiento que lo logró."
+      }
+    ]
+  },
+  {
+    "version": "1.0.13",
+    "items": [
+      {
+        "id": "tablets",
+        "title": "Pensada para tabletas",
+        "body": "En un iPad o una tableta Android, Historial y Ejercicios muestran la lista y los detalles uno al lado del otro, y el resto de la app aprovecha el espacio."
+      }
+    ]
+  },
+  {
+    "version": "1.0.12",
+    "items": [
+      {
+        "id": "movement-filters",
+        "title": "Filtra ejercicios por movimiento",
+        "body": "Filtra los ejercicios por patrón de movimiento, estabilidad y nivel de técnica, en la biblioteca y al añadir un ejercicio a un entrenamiento."
+      }
+    ]
+  },
+  {
+    "version": "1.0.10",
+    "items": [
+      {
+        "id": "workout-times",
+        "title": "Edita las horas de un entrenamiento",
+        "body": "Corrige cuándo empezó y terminó un entrenamiento pasado."
+      },
+      {
+        "id": "also-try",
+        "title": "Prueba también",
+        "body": "La página de un ejercicio sugiere otros basados en el mismo movimiento."
+      }
+    ]
+  },
+  {
+    "version": "1.0.9",
+    "items": [
+      {
+        "id": "idle-workout",
+        "title": "¿Sigues entrenando?",
+        "body": "Si un entrenamiento se queda un rato sin actividad, Heart te envía una notificación para preguntarte si sigues."
+      }
+    ]
+  },
+  {
+    "version": "1.0.5",
+    "items": [
+      {
+        "id": "log-sets",
+        "title": "Registra cada serie",
+        "body": "Empieza un entrenamiento vacío o uno desde una plantilla, y registra peso y repeticiones, tiempo o distancia en cada serie. La columna **Anterior** muestra lo que hiciste la última vez."
+      },
+      {
+        "id": "rest-timer",
+        "title": "Temporizador de descanso",
+        "body": "Un temporizador de descanso corre entre series, y una notificación te avisa cuando toca la siguiente."
+      },
+      {
+        "id": "templates",
+        "title": "Plantillas",
+        "body": "Crea tus propias plantillas, guarda cualquier entrenamiento terminado como plantilla o empieza con los ejemplos."
+      },
+      {
+        "id": "history",
+        "title": "Historial",
+        "body": "Todos tus entrenamientos pasados, listos para editar, repetir o compartir."
+      },
+      {
+        "id": "exercise-library",
+        "title": "Biblioteca de ejercicios",
+        "body": "Busca y filtra en la biblioteca, o añade tus propios ejercicios. Cada uno tiene su historial, sus récords y sus gráficos."
+      },
+      {
+        "id": "dashboard",
+        "title": "Tu panel",
+        "body": "Tu perfil muestra los entrenamientos por semana y cualquier gráfico que añadas: 1RM estimado, volumen, mejor serie y más."
+      }
+    ]
+  }
+]
