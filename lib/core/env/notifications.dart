@@ -97,7 +97,76 @@ void remindNotificationsOff(
       content: Text(message),
       action: SnackBarAction(
         label: settingsLabel,
-        onPressed: () => AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true),
+        onPressed: openNotificationSettings,
+      ),
+    ),
+  );
+}
+
+/// Sends the user to the OS notification settings for this app.
+void openNotificationSettings() {
+  AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
+}
+
+/// The notifications-off nudge shown when a workout starts: what is lost, and
+/// the three things the user might want to do about it.
+///
+/// A snackbar rather than a dialog, because it is information the user did not
+/// ask for and must be able to ignore by walking past it. `SnackBarAction`
+/// carries exactly one action, so the three live in the content instead — which
+/// also lets them wrap, since "Never remind me" in French does not share a line
+/// with anything.
+///
+/// [onNever] is the price of being allowed to raise this at all: a nudge with
+/// no off switch is a nag, and this one appears at the top of a workout, which
+/// is the worst possible moment to be argued with.
+void promptNotificationsOff(
+  BuildContext context, {
+  required String message,
+  required String enableLabel,
+  required String laterLabel,
+  required String neverLabel,
+  required VoidCallback onNever,
+}) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) return;
+
+  void close() => messenger.hideCurrentSnackBar();
+
+  messenger.showSnackBar(
+    SnackBar(
+      duration: const Duration(seconds: 10),
+      content: Column(
+        crossAxisAlignment: .start,
+        mainAxisSize: .min,
+        children: [
+          Text(message),
+          const SizedBox(height: 4),
+          Wrap(
+            alignment: .end,
+            spacing: 8,
+            children: [
+              TextButton(
+                onPressed: () {
+                  close();
+                  onNever();
+                },
+                child: Text(neverLabel),
+              ),
+              TextButton(
+                onPressed: close,
+                child: Text(laterLabel),
+              ),
+              TextButton(
+                onPressed: () {
+                  close();
+                  openNotificationSettings();
+                },
+                child: Text(enableLabel),
+              ),
+            ],
+          ),
+        ],
       ),
     ),
   );
