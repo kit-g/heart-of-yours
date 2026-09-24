@@ -60,6 +60,8 @@
         <string>$(GOOGLE_CLIENT_ID)</string>
         <key>LSRequiresIPhoneOS</key>
         <true/>
+        <key>NSSupportsLiveActivities</key>
+        <true/>
         <key>NSCameraUsageDescription</key>
         <string>Allow camera access to take a new avatar photo.</string>
         <key>NSHealthShareUsageDescription</key>

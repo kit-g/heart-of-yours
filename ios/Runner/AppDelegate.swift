@@ -20,5 +20,9 @@ import flutter_local_notifications
         UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "OngoingWorkoutChannel") {
+      OngoingWorkoutChannel.register(with: registrar.messenger())
+    }
   }
 }
