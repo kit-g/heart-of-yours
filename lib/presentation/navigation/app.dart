@@ -34,6 +34,7 @@ class HeartApp extends StatelessWidget {
   final Cdn cdn;
   final LocalDatabase db;
   final HeartRouter router;
+  final Analytics analytics;
   final bool? hasLocalNotifications;
   final FirebaseAuth? firebaseAuth;
 
@@ -44,6 +45,7 @@ class HeartApp extends StatelessWidget {
     required this.cdn,
     required this.db,
     required this.router,
+    required this.analytics,
     this.hasLocalNotifications = true,
     this.firebaseAuth,
   });
@@ -54,6 +56,10 @@ class HeartApp extends StatelessWidget {
       providers: [
         Provider<AppConfig>.value(value: appConfig),
         Provider<HeartRouter>.value(value: router),
+        // Above everything that reports, which is most of the tree: the state
+        // classes take it at construction and the presentation reads it for
+        // the intent events a notifier cannot see.
+        Provider<Analytics>.value(value: analytics),
         // One gate for every remote leg below; Auth decides, the rest consult.
         // Above them all because each takes it at construction.
         Provider<RemoteAccess>(
@@ -212,6 +218,7 @@ class HeartApp extends StatelessWidget {
               workouts: db,
               goals: LocalGoals(db),
               access: RemoteAccess.of(context),
+              analytics: analytics,
               onError: reportToSentry,
               onComplete: () => _resync(context, upsync),
             );
@@ -226,6 +233,7 @@ class HeartApp extends StatelessWidget {
             return Auth(
               service: api,
               remote: RemoteAccess.of(context),
+              analytics: analytics,
               // Read on use, not now: `AppInfo` fills in asynchronously and
               // has not finished at this point in the tree.
               appleBundleId: () => AppInfo.of(context).packageName,
