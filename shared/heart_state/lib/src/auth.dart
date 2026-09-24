@@ -788,6 +788,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     return null;
   }
 
+  /// Reported on the way in rather than on success: the 404 that broke avatar
+  /// upload on prod was invisible precisely because nothing counted attempts.
   Future<bool> updateAvatar(
     (Uint8List, {String? mimeType, String? name}) localImage,
     String avatarStorage, {
@@ -795,6 +797,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     void Function(String url)? onDone,
   }) async {
     if (user case User user) {
+      analytics?.avatarUpdated();
       // update local image and notify the UI
       user.localAvatar = localImage.$1;
       notifyListeners();

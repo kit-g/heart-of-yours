@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'remote.dart';
 
 /// Local persistence of the user's template folders.
@@ -59,8 +60,13 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     required this._filingService,
     this.onError,
     this.maxTemplates,
+    this.analytics,
     RemoteAccess? remote,
   }) : _remote = remote ?? RemoteAccess();
+
+  /// Whether templates are a feature or a graveyard, and which of the two ways
+  /// of making one people actually use. Absent in tests.
+  final Analytics? analytics;
 
   Template? editable;
 
@@ -103,6 +109,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
         _templates.addAll(local);
         notifyListeners();
       }
+      // The user's own, never the samples: every account has those, so
+      // counting them would put everyone in the same bucket.
+      analytics?.setTemplatesBucket(_templates.length);
 
       final localFolders = await _folderService.getFolders(id);
       if (localFolders.isNotEmpty) {
@@ -204,6 +213,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// reaches the server.
   Future<void> saveEditable() async {
     if (editable case Template template) {
+      // `local` is the server-id-not-yet-assigned mark, which is exactly what
+      // separates a new template from an edit to an existing one.
+      if (template.local) analytics?.templateCreated(source: .editor);
       _templates.add(template);
       await _service.updateTemplate(template);
 
@@ -288,6 +300,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   Future<void> workoutToTemplate(Workout workout) async {
+    analytics?.templateCreated(source: .fromWorkout);
     final raw = await _service.startTemplate(userId: userId);
     editable = Template.fromWorkout(raw.id, workout, raw.order);
     return notifyListeners();
@@ -305,6 +318,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// duplicate name throws here — the caller owns the apology — and nothing is
   /// kept locally that the server has not confirmed.
   Future<TemplateFolder> createFolder(String name) async {
+    analytics?.templateFolderCreated();
     _requireRemote();
     final order = (_folders.lastOrNull?.order ?? -1) + 1;
     final created = await _remoteFolderService.createFolder(
@@ -347,6 +361,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   /// Files [template] under [folder], or unfiles it when null. Optimistic: the
   /// move shows immediately and is rolled back if the server rejects it.
   Future<void> moveToFolder(Template template, TemplateFolder? folder) async {
+    analytics?.templateMoved(filed: folder != null);
     if (template.folderId == folder?.id) return;
     _requireRemote();
 

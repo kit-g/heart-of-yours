@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'backfill.dart';
 import 'remote.dart';
 
@@ -36,9 +37,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this.onError,
     this._persistNote,
     this._noteFor,
+    this.analytics,
     RemoteAccess? remote,
   }) : _localService = service,
        _remote = remote ?? RemoteAccess();
+
+  /// The habit loop is reported from here: started, finished, abandoned. Only
+  /// this class knows how a workout began by the time it ends. Absent in
+  /// tests.
+  final Analytics? analytics;
+
+  /// How the active workout was started, held so that finishing it can say so
+  /// too — by then the template it came from is long gone. A workout restored
+  /// from the store on launch has no answer here, and reports [.blank]:
+  /// guessing would be worse than the one case being slightly under-counted.
+  WorkoutSource _startedFrom = WorkoutSource.blank;
 
   @override
   void onSignOut() {
@@ -253,9 +266,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return workout.any((exercise) => exercise.isNotEmpty);
   }
 
-  Future<void> startWorkout({String? name, Workout? template, bool applyPinnedNotes = false}) {
+  /// [source] is stated by the caller rather than inferred from [template],
+  /// because the three template cases are indistinguishable from here: a
+  /// sample, one of the user's own, and a past workout being repeated all
+  /// arrive as a `Workout`. Which one it was is the question retention turns
+  /// on, and only the surface that offered it knows.
+  Future<void> startWorkout({
+    required WorkoutSource source,
+    String? name,
+    Workout? template,
+    bool applyPinnedNotes = false,
+  }) {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     final workout = template ?? Workout(name: name);
+    _startedFrom = source;
+    analytics?.workoutStarted(source: source, pinnedNotes: applyPinnedNotes);
     if (applyPinnedNotes) {
       for (final exercise in workout) {
         exercise.note ??= _noteFor?.call(exercise.exercise.id);
@@ -326,15 +351,38 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<Workout?> _finishActiveWorkout() async {
+    // Counted before `_edited` is cleared, which is what empties it.
+    final unticked = _typedButUnticked.length;
     _edited.clear();
     activeWorkout?.finish(DateTime.timestamp());
 
     final active = activeWorkout;
     if (active == null) return null;
 
+    // Measured here, before the save: `saveWorkout` round-trips through the
+    // server, whose echo is known to come back without its exercises
+    // (heart-of-yours#85). Counting afterwards reports every finished workout
+    // as empty, and looks entirely plausible in the console.
+    _reportFinished(active, unticked: unticked);
+
     final saved = await saveWorkout(active);
     _activeWorkout = null;
     return saved;
+  }
+
+  void _reportFinished(Workout workout, {required int unticked}) {
+    final start = workout.start;
+    final end = workout.end;
+    analytics?.workoutFinished(
+      source: _startedFrom,
+      exerciseCount: workout.length,
+      setCount: workout.expand((exercise) => exercise).length,
+      durationMin: switch ((start, end)) {
+        (DateTime from, DateTime to) => to.difference(from).inMinutes,
+        _ => 0,
+      },
+      untickedSets: unticked,
+    );
   }
 
   /// Returns the workout as it ended up — the server's copy where the push
@@ -397,6 +445,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> editWorkout(Workout workout) async {
+    analytics?.workoutEdited(field: .sets);
     _workouts[workout.id] = workout;
     notifyListeners();
 
@@ -441,6 +490,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   ///
   /// With the remote leg closed the mirror's copy is edited in place instead.
   Future<Workout?> editWorkoutTimes(String workoutId, {DateTime? start, DateTime? end}) async {
+    analytics?.workoutEdited(field: .times);
     if (start == null && end == null) return null;
     if (!_remote.allowed) {
       final workout = _workouts[workoutId];
@@ -465,6 +515,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> cancelActiveWorkout() async {
+    // Both read off the workout that is about to be removed, so they are taken
+    // while there is still something to read.
+    analytics?.workoutCancelled(
+      hadContent: activeWorkoutHasContent,
+      exerciseCount: activeWorkout?.length ?? 0,
+    );
     _edited.clear();
     if (_activeWorkoutId case String id) {
       _workouts.remove(id);
