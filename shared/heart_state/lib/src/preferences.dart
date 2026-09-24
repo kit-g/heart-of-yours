@@ -12,6 +12,7 @@ const _distanceUnit = 'distanceUnit';
 const _collapsedFolders = 'collapsedTemplateFolders';
 const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
+const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 
 class Preferences with ChangeNotifier {
@@ -195,6 +196,23 @@ class Preferences with ChangeNotifier {
     return _prefs?.setBool('$_healthInviteDismissed-$userId', true);
   }
 
+  /// Whether the user has told us to stop mentioning that notifications are off.
+  ///
+  /// The reminder only appears when they are off *and* a workout has just
+  /// started — the moment the app begins depending on a permission it may not
+  /// have. One tap turns it off for good, which is the price of being allowed
+  /// to raise it at all.
+  bool notificationsReminderDismissed(String? userId) {
+    if (userId == null) return false;
+    return _prefs?.getBool('$_notificationsReminderDismissed-$userId') ?? false;
+  }
+
+  Future<bool>? dismissNotificationsReminder(String? userId) {
+    if (userId == null) return null;
+    notifyListeners();
+    return _prefs?.setBool('$_notificationsReminderDismissed-$userId', true);
+  }
+
   /// Whether the OS permission sheet has ever been shown on this device.
   ///
   /// The only thing separating "we have not asked yet" from "we asked and
@@ -221,7 +239,12 @@ class Preferences with ChangeNotifier {
     final prefs = _prefs;
     if (prefs == null) return;
     await Future.wait([
-      for (final key in ['$_baseColor-$userId', '$_healthInviteDismissed-$userId', '$_healthAsked-$userId'])
+      for (final key in [
+        '$_baseColor-$userId',
+        '$_healthInviteDismissed-$userId',
+        '$_healthAsked-$userId',
+        '$_notificationsReminderDismissed-$userId',
+      ])
         prefs.remove(key),
     ]);
     notifyListeners();
@@ -235,7 +258,7 @@ class Preferences with ChangeNotifier {
   Future<void> rekeyUser(String from, String to) async {
     final prefs = _prefs;
     if (prefs == null) return;
-    for (final key in [_baseColor, _healthInviteDismissed, _healthAsked]) {
+    for (final key in [_baseColor, _healthInviteDismissed, _healthAsked, _notificationsReminderDismissed]) {
       final value = prefs.get('$key-$from');
       if (value == null) continue;
       await switch (value) {
