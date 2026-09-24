@@ -2,6 +2,7 @@ import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:logging/logging.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart';
@@ -11,6 +12,7 @@ final _logger = Logger('Notifications');
 
 const _currentExercise = 0;
 const _workoutTimeout = 1;
+const _ongoingWorkout = 2;
 
 /// The status-bar icon, `res/drawable/ic_stat_heart.xml`.
 ///
@@ -23,6 +25,11 @@ const _androidIcon = 'ic_stat_heart';
 const _defaultChannelId = 'Rest Timers';
 const _defaultChannelName = 'Rest Timers';
 
+/// Its own channel because it behaves nothing like the rest-timer one: low
+/// importance, so it sits in the shade without a sound or a heads-up every
+/// time a set is ticked. The name is copy and comes with each update.
+const _ongoingChannelId = 'Ongoing Workout';
+
 @pragma('vm:entry-point')
 void _notificationTapBackground(NotificationResponse notificationResponse) {
   _logger.info('onDidReceiveBackgroundNotificationResponse $notificationResponse');
@@ -32,6 +39,7 @@ Future<void> initNotifications({
   required TargetPlatform platform,
   void Function(String exerciseId)? onExerciseNotification,
   VoidCallback? onWorkoutTimeoutNotification,
+  VoidCallback? onOngoingWorkoutNotification,
   void Function(Map)? onUnknownNotification,
   void Function(Object error, {StackTrace? stacktrace})? onError,
 }) async {
@@ -68,6 +76,8 @@ Future<void> initNotifications({
             return onExerciseNotification?.call(payload);
           case NotificationResponse(:int id) when id == _workoutTimeout:
             return onWorkoutTimeoutNotification?.call();
+          case NotificationResponse(:int id) when id == _ongoingWorkout:
+            return onOngoingWorkoutNotification?.call();
           default:
             return onUnknownNotification?.call(notification.toMap());
         }
@@ -407,6 +417,99 @@ Future<void> cancelWorkoutTimeoutNotification() {
 /// workout-timeout notification must survive a skip.
 Future<void> cancelExerciseNotification() {
   return _plugin.cancel(id: _currentExercise);
+}
+
+/// Shows [workout] as Android's ongoing notification (#133), or updates the
+/// one already up — same id, so there is only ever one.
+///
+/// The clock is the notification's own chronometer: counting up from the
+/// workout's start, or — while resting — down to the rest's end. Android draws
+/// one chronometer per notification, which is why rest *replaces* the elapsed
+/// time here instead of sitting beside it as on the Live Activity. When the
+/// rest runs out the app puts the elapsed clock back; if the process was
+/// frozen by then, the countdown shows a negative until the next update, and
+/// the "rest complete" notification has already said the same thing louder.
+///
+/// Ongoing, so it cannot be swiped away mid-workout; it goes when the workout
+/// does ([cancelOngoingWorkoutNotification]). Nothing here needs a foreground
+/// service — the chronometer ticks without the app.
+Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
+  final resting = switch (workout.rest) {
+    OngoingRest(:final end) => end.isAfter(DateTime.now()),
+    null => false,
+  };
+  final (clock, body) = switch ((resting, workout.rest)) {
+    (true, OngoingRest(:final end, :final label)) => (end, '$label · ${workout.next}'),
+    _ => (workout.startedAt, workout.next),
+  };
+
+  final details = NotificationDetails(
+    android: AndroidNotificationDetails(
+      _ongoingChannelId,
+      workout.channel,
+      icon: _androidIcon,
+      color: workout.preset.light.accentInk,
+      importance: .low,
+      priority: .low,
+      ongoing: true,
+      autoCancel: false,
+      onlyAlertOnce: true,
+      silent: true,
+      playSound: false,
+      enableVibration: false,
+      showWhen: true,
+      when: clock.millisecondsSinceEpoch,
+      usesChronometer: true,
+      chronometerCountDown: resting,
+      subText: workout.title,
+      visibility: .public,
+      category: .progress,
+    ),
+  );
+
+  return _guarded(
+    () async {
+      await _ensureOngoingChannel(workout.channel);
+      await _plugin.show(
+        id: _ongoingWorkout,
+        title: workout.exercise,
+        body: body,
+        notificationDetails: details,
+        payload: workout.workoutId,
+      );
+    },
+  );
+}
+
+/// The name [_ongoingChannelId] was last created under, in this process.
+String? _ongoingChannelName;
+
+/// Creates the ongoing-workout channel, or renames it after a language change.
+///
+/// Explicit because the plugin's per-notification channel handling cannot do
+/// both: its default creates a missing channel but never renames one, and
+/// `channelAction: .update` renames an existing channel but never creates a
+/// missing one — the notification is then posted to nothing and silently
+/// dropped. Android's own `createNotificationChannel` does both.
+Future<void> _ensureOngoingChannel(String name) async {
+  if (name == _ongoingChannelName) return;
+  await _plugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(
+        AndroidNotificationChannel(
+          _ongoingChannelId,
+          name,
+          importance: .low,
+          playSound: false,
+          enableVibration: false,
+          showBadge: false,
+        ),
+      );
+  _ongoingChannelName = name;
+}
+
+Future<void> cancelOngoingWorkoutNotification() {
+  return _guarded(() => _plugin.cancel(id: _ongoingWorkout));
 }
 
 Future<void> cancelAllNotifications() {
