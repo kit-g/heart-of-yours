@@ -333,6 +333,7 @@ void main() {
       expect(next, isNotNull);
       expect(next!.$1, we);
       expect(next.$2, second);
+      expect(sut.latestMarkedSet, (we, first), reason: 'the anchor "next" is counted from');
 
       await sut.markSetAsIncomplete(we, first);
       expect(first.isCompleted, isFalse);
@@ -418,6 +419,21 @@ void main() {
 
       expect(sut.activeWorkout, isNotNull);
       expect(probe.notifications, 1);
+    });
+
+    test('init resolves the active workout even when there is none, and a sign-out forgets it', () async {
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => null);
+      expect(sut.hasResolvedActiveWorkout, isFalse, reason: 'not loaded yet is not "none"');
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.init();
+
+      expect(sut.hasActiveWorkout, isFalse);
+      expect(sut.hasResolvedActiveWorkout, isTrue);
+      expect(probe.notifications, 1, reason: 'listeners must hear that "none" is now an answer');
+
+      sut.onSignOut();
+      expect(sut.hasResolvedActiveWorkout, isFalse);
     });
 
     test('initHistory: uses local if present, otherwise remote + store', () async {

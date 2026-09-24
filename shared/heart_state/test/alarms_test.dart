@@ -120,6 +120,19 @@ void main() {
       expect(alarms.remainsInActiveExercise, isNull);
     });
 
+    test('activeExerciseEnd is the countdown\'s wall-clock end, moved by adjustments', () async {
+      expect(alarms.activeExerciseEnd, isNull);
+
+      alarms.startActiveExerciseTimer(90, exerciseId: 'bench');
+      expect(alarms.activeExerciseEnd, clock.add(const Duration(seconds: 90)));
+
+      alarms.adjustActiveExerciseTime(-30);
+      expect(alarms.activeExerciseEnd, clock.add(const Duration(seconds: 60)));
+
+      alarms.stopActiveExerciseTimer();
+      expect(alarms.activeExerciseEnd, isNull);
+    });
+
     test('starting a new timer cancels previous timer and disposes the old remains', () async {
       alarms.startActiveExerciseTimer(5, exerciseId: 'bench');
       final firstRemains = alarms.remainsInActiveExercise!;

@@ -46,6 +46,11 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
 
   num? get activeExerciseTotal => _activeExercise?.total;
 
+  /// When the running countdown runs out — the wall-clock end the ticks are
+  /// derived from, moved by every adjustment. For surfaces that count down on
+  /// their own (the lock screen) and need an instant rather than a stream.
+  DateTime? get activeExerciseEnd => _activeExercise?.end;
+
   /// The exercise the running countdown belongs to. There is only ever one
   /// countdown; this is what lets the UI draw it on that exercise alone.
   String? get activeExerciseId => _activeExercise?.exerciseId;
