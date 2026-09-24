@@ -424,6 +424,15 @@ class LRu extends L {
   String get aboutApp => 'О приложении';
 
   @override
+  String get whatsNew => 'Что нового';
+
+  @override
+  String get whatsNewThisVersion => 'Эта версия';
+
+  @override
+  String get whatsNewEmpty => 'В этой версии приложения нет описания изменений.';
+
+  @override
   String get congratulations => 'Поздравляем!';
 
   @override

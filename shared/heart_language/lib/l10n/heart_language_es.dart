@@ -424,6 +424,15 @@ class LEs extends L {
   String get aboutApp => 'Acerca de la app';
 
   @override
+  String get whatsNew => 'Novedades';
+
+  @override
+  String get whatsNewThisVersion => 'Esta versión';
+
+  @override
+  String get whatsNewEmpty => 'Esta versión de la app no incluye notas de la versión.';
+
+  @override
   String get congratulations => '¡Felicidades!';
 
   @override
