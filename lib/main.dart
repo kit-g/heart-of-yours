@@ -194,6 +194,9 @@ Future<void> _runner({
       api
         ..onUpgradeRequired = (j) {
           AppVersionSentry.instance.requireUpgrade();
+          // Nothing else in this app can strand someone as completely, and
+          // until now its volume was invisible.
+          analytics.upgradeGateShown();
           router.refresh();
           return (j, 426);
         }

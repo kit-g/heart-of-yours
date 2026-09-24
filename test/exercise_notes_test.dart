@@ -57,7 +57,7 @@ void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDev
         settle: false,
       );
       final state = Workouts.of(tester.element(find.byType(MaterialApp)));
-      await state.startWorkout(template: workout);
+      await state.startWorkout(source: .template, template: workout);
       await tester.tapByKey(AppKeys.workoutStack);
       await tester.pumpTimes();
       if (find.byType(WorkoutDetail).evaluate().isEmpty) {
