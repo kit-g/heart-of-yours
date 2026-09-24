@@ -74,6 +74,9 @@ dev_dependencies:
   flutter_test: { sdk: flutter }
   flutter_lints: ^6.0.0
   health: any
+  # walks the What's new bodies in test/whats_new_content_test.dart; the
+  # parser markdown_widget renders them with
+  markdown: any
   mockito: ^5.8.1
   test: ^1.31.0
 
@@ -86,6 +89,7 @@ flutter:
     - assets/
     - assets/icons/
     - assets/svg/
+    - assets/whats_new/
 
   fonts:
     - family: "Lato"
