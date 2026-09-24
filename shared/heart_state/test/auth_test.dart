@@ -445,6 +445,11 @@ void main() {
     late MockGoogleSignIn google;
     late _Firebase firebase;
 
+    /// Fresh per [build], unlike the file-level mocks: these assertions are
+    /// about what one run reported, and a shared one would carry the previous
+    /// test's events in.
+    late ReportedAnalytics reported;
+
     /// An [Auth] over a Firebase that has minted [anonymous] as the session,
     /// with the Google sheet answering an account whose credential the
     /// anonymous user decides the fate of.
@@ -458,11 +463,13 @@ void main() {
       when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
       firebase = _Firebase();
       firebase.mockUser = anonymous(firebase);
+      reported = ReportedAnalytics();
       final sut = Auth(
         service: account,
         firebase: firebase,
         remote: remote,
         googleSignIn: google,
+        analytics: Analytics(service: reported),
         onLink: (from, to) async => events.add('link $from→$to allowed=${remote.allowed}'),
         onUserChange: (user) => events.add('user ${user?.id}'),
         onEnter: (token, uid) async => events.add('enter $uid'),
@@ -492,6 +499,7 @@ void main() {
       // the profile is registered — the first authenticated call creates it —
       // and the sign-in path and the stream handler both make sure of that
       verify(account.registerAccount(any)).called(greaterThanOrEqualTo(1));
+      expect(reported.arrivals, ['linked'], reason: 'the uid survived, so nothing had to be rekeyed');
     });
 
     test('existing account: linking is refused, the session signs in, the uid changes', () async {
@@ -504,6 +512,28 @@ void main() {
       expect(sut.isAnonymous, isFalse);
       expect(events, ['link anon-1→acct-1 allowed=false', 'user acct-1', 'enter acct-1']);
       expect(remote.allowed, isFalse);
+      // The dimension the whole funnel turns on, and the only place the two
+      // paths can still be told apart: by the time anything downstream looks,
+      // both are an account with a replay owed.
+      expect(reported.arrivals, ['takeover']);
+    });
+
+    test('backing out of the sheet is a sign-in that did not start, not one that failed', () async {
+      final sut = await build(_LinkableAnonymous.new);
+      when(
+        google.authenticate(scopeHint: anyNamed('scopeHint')),
+      ).thenThrow(const GoogleSignInException(code: GoogleSignInExceptionCode.canceled));
+
+      await sut.loginWithGoogle();
+
+      // Cancelling is the most common way any of these ends. Counted as a
+      // failure it would be most of `signup_failed`, and the errors worth
+      // finding would be a rounding error inside it.
+      expect(reported.names, isNot(contains('signup_failed')));
+      // The attempt itself still counts: started-and-abandoned is the drop
+      // the funnel exists to show.
+      expect(reported.names, contains('signup_started'));
+      expect(reported.arrivals, isEmpty);
     });
 
     test('an existing Apple account signs in with the credential Firebase hands back, not the spent one', () async {

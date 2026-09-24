@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
 
 // Increments and returns a function to attach as a listener for ChangeNotifier
 int addCounterListener(ChangeNotifier notifier) {
@@ -81,4 +82,40 @@ WorkoutExercise wEx(Exercise exercise, {int sets = 1}) {
     we.add(starter.copy());
   }
   return we;
+}
+
+/// Records what was reported instead of verifying it.
+///
+/// Analytics assertions are about order and about absence, and a mock's
+/// verified-call bookkeeping makes both awkward: `verify` throws rather than
+/// returning nothing when a run logged nothing, and each call consumes the
+/// calls it matched.
+class ReportedAnalytics implements AnalyticsService {
+  final events = <(String, Map<String, Object>)>[];
+  final properties = <String, String?>{};
+
+  Iterable<String> get names => events.map((each) => each.$1);
+
+  /// The parameters of the one event called [name].
+  Map<String, Object> parametersOf(String name) {
+    return events.firstWhere((each) => each.$1 == name).$2;
+  }
+
+  /// The `arrival` of every sign-in event, in order.
+  List<String> get arrivals {
+    return events
+        .where((each) => each.$1 == 'signup_completed' || each.$1 == 'login_completed')
+        .map((each) => each.$2['arrival'] as String)
+        .toList();
+  }
+
+  @override
+  Future<void> logEvent(String name, Map<String, Object> parameters) async {
+    events.add((name, parameters));
+  }
+
+  @override
+  Future<void> setUserProperty(String name, String? value) async {
+    properties[name] = value;
+  }
 }

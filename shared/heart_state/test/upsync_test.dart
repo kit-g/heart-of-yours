@@ -140,6 +140,7 @@ void main() {
   late RemoteAccess access;
   late List<Object> errors;
   late int completions;
+  late ReportedAnalytics reported;
   late Upsync sut;
 
   final bench = ex('Bench Press');
@@ -202,6 +203,7 @@ void main() {
     access = RemoteAccess();
     errors = [];
     completions = 0;
+    reported = ReportedAnalytics();
     sut = Upsync(
       local: ledger,
       notes: notes,
@@ -212,6 +214,7 @@ void main() {
       workouts: workouts,
       goals: goals,
       access: access,
+      analytics: Analytics(service: reported),
       onError: (error, {stacktrace}) => errors.add(error),
       onComplete: () => completions++,
     );
@@ -308,6 +311,15 @@ void main() {
       expect(ledger.owed, isEmpty, reason: 'settled');
       expect(completions, 1);
       expect(errors, isEmpty);
+
+      // One line per run, carrying what the account's first day actually
+      // cost: the leg was shut for all of it.
+      expect(reported.names.where((each) => each == 'upsync_replay_finished'), hasLength(1));
+      final replay = reported.parametersOf('upsync_replay_finished');
+      expect(replay['rows'], 7);
+      expect(replay['uploaded'], 7);
+      expect(replay['ok'], 'true');
+      expect(replay['duration_ms'], isA<int>());
     });
 
     test('each confirmed row is written back as the server\'s copy', () async {
@@ -441,6 +453,12 @@ void main() {
       expect(ledger.owed, {uid});
       expect(errors, hasLength(1));
       expect(completions, 0);
+
+      // Reported at this exit too, and the exit that matters most: the leg
+      // stays shut on a failure, so these are the accounts still waiting.
+      final replay = reported.parametersOf('upsync_replay_finished');
+      expect(replay['ok'], 'false');
+      expect(replay['rows'], 4);
     });
 
     test('a resumed run picks up after the last confirmed row and posts nothing twice', () async {
