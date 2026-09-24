@@ -425,6 +425,15 @@ class LFr extends L {
   String get aboutApp => 'À propos de l’app';
 
   @override
+  String get whatsNew => 'Nouveautés';
+
+  @override
+  String get whatsNewThisVersion => 'Cette version';
+
+  @override
+  String get whatsNewEmpty => 'Aucune note de version dans cette version de l’app.';
+
+  @override
   String get congratulations => 'Félicitations !';
 
   @override

@@ -856,6 +856,24 @@ abstract class L {
   /// **'About app'**
   String get aboutApp;
 
+  /// Settings row and page title: the list of release notes, one card per app version
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new'**
+  String get whatsNew;
+
+  /// What's new page, a small label on the card of the release the installed app is running
+  ///
+  /// In en, this message translates to:
+  /// **'This version'**
+  String get whatsNewThisVersion;
+
+  /// What's new page, shown when there are no release notes to list
+  ///
+  /// In en, this message translates to:
+  /// **'No release notes in this version of the app.'**
+  String get whatsNewEmpty;
+
   /// Workout complete screen, title
   ///
   /// In en, this message translates to:

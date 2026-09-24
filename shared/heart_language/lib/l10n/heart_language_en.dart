@@ -423,6 +423,15 @@ class LEn extends L {
   String get aboutApp => 'About app';
 
   @override
+  String get whatsNew => 'What\'s new';
+
+  @override
+  String get whatsNewThisVersion => 'This version';
+
+  @override
+  String get whatsNewEmpty => 'No release notes in this version of the app.';
+
+  @override
   String get congratulations => 'Congratulations!';
 
   @override
@@ -2240,6 +2249,15 @@ class LEnCa extends LEn {
 
   @override
   String get aboutApp => 'About app';
+
+  @override
+  String get whatsNew => 'What\'s new';
+
+  @override
+  String get whatsNewThisVersion => 'This version';
+
+  @override
+  String get whatsNewEmpty => 'No release notes in this version of the app.';
 
   @override
   String get congratulations => 'Congratulations!';

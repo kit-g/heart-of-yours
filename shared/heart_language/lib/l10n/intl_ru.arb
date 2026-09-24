@@ -781,6 +781,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "whatsNew": "Что нового",
+  "@whatsNew": {
+    "description": "Settings row and page title: the list of release notes, one card per app version",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewThisVersion": "Эта версия",
+  "@whatsNewThisVersion": {
+    "description": "What's new page, a small label on the card of the release the installed app is running",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewEmpty": "В этой версии приложения нет описания изменений.",
+  "@whatsNewEmpty": {
+    "description": "What's new page, shown when there are no release notes to list",
+    "type": "text",
+    "placeholders": {}
+  },
   "congratulations": "Поздравляем!",
   "@congratulations": {
     "description": "Workout complete screen, title",
