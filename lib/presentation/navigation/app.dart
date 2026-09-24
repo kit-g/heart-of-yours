@@ -86,6 +86,7 @@ class HeartApp extends StatelessWidget {
               noteService: ExerciseNotes(db, api),
               remote: RemoteAccess.of(context),
               onRestTimer: Timers.of(context).setRestTimer,
+              analytics: analytics,
             );
             // sample templates arrive as content slugs plus per-locale
             // names; the CDN client resolves the slugs through the catalog
@@ -109,6 +110,7 @@ class HeartApp extends StatelessWidget {
             noteFor: Exercises.of(context).noteFor,
             remoteService: api,
             remote: RemoteAccess.of(context),
+            analytics: analytics,
             onError: (error, {stacktrace}) {
               Logger('Workouts')
                 ..shout('${error.runtimeType}: $error')
@@ -132,6 +134,7 @@ class HeartApp extends StatelessWidget {
             remoteFolderService: api,
             filingService: RemoteTemplateFiling(api),
             remote: RemoteAccess.of(context),
+            analytics: analytics,
             onError: reportToSentry,
           ),
         ),
@@ -195,6 +198,7 @@ class HeartApp extends StatelessWidget {
             remote: RemoteAccountSummary(api),
             nextPage: Workouts.of(context).backfillPage,
             access: RemoteAccess.of(context),
+            analytics: analytics,
             onError: reportToSentry,
           ),
         ),

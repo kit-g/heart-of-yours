@@ -304,7 +304,7 @@ class _KeyMap extends StatelessWidget {
             onInvoke: (_) {
               shell.goBranch(1);
               final name = L.of(context).defaultWorkoutName();
-              return Workouts.of(context).startWorkout(name: name);
+              return Workouts.of(context).startWorkout(source: .blank, name: name);
             },
           ),
         },
