@@ -8,6 +8,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'analytics.dart';
 import 'password.dart';
 import 'remote.dart';
 
@@ -33,6 +34,12 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   /// be moved and the replay owed before anything reads under the new uid.
   final Future<void> Function(String fromUid, String toUid)? onLink;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
+
+  /// The ladder funnel is reported from here because this is the only place
+  /// that can tell a link from a takeover, or a new account from a returning
+  /// one. Absent in tests and in any run that must not report.
+  final Analytics? analytics;
+
   final bool isWeb;
   final String? appleServiceId;
   final String? appleSignInRedirect;
@@ -102,6 +109,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     this.onEnter,
     this.onErase,
     this.onLink,
+    this.analytics,
     this.isWeb = false,
     this.appleServiceId,
     this.appleSignInRedirect,
@@ -222,6 +230,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   Future<void> _mintAnonymous() async {
     try {
       await _firebase.signInAnonymously();
+      analytics?.anonymousSessionMinted();
     } catch (error, stacktrace) {
       _sessionUnavailable = true;
       onError?.call(error, stacktrace: stacktrace);
@@ -235,6 +244,30 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     _isAnonymous = user?.isAnonymous ?? false;
     remote.account = user != null && !_isAnonymous;
     if (user != null) _sessionUnavailable = false;
+    analytics
+      ?..setAccountState(
+        switch (user) {
+          fb.User(isAnonymous: false) => .account,
+          fb.User() => .anonymous,
+          null => null,
+        },
+      )
+      ..setAuthProvider(_providerOf(user));
+  }
+
+  /// The account's sign-in, as the reports name it.
+  ///
+  /// Firebase lists every provider on the user; the first is the one the
+  /// account was made with, which is the one worth segmenting by — a second
+  /// linked later is a different question and not one this property answers.
+  /// Null for an anonymous session, which has no provider at all.
+  AuthProvider? _providerOf(fb.User? user) {
+    return switch (user?.providerData.firstOrNull?.providerId) {
+      'google.com' => .google,
+      'apple.com' => .apple,
+      'password' => .password,
+      _ => null,
+    };
   }
 
   /// The anonymous uid a sign-in is under way from, until the stream delivers
@@ -268,13 +301,18 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   /// uid survives, the account is new — and signs in with it instead where it
   /// already has an account, which is the one case linking refuses. Without
   /// an anonymous session it is a sign-in like any other.
-  Future<fb.UserCredential> _linkOrSignIn(fb.AuthCredential credential) {
+  /// The [AccountArrival] beside the credential is this method's alone to
+  /// report: it is the only place that knows which of the three branches
+  /// below ran, and the caller cannot tell them apart afterwards.
+  Future<(fb.UserCredential, AccountArrival)> _linkOrSignIn(fb.AuthCredential credential) {
     return _fromAnonymous(
       () async {
         final anonymous = _firebase.currentUser;
-        if (anonymous == null || !anonymous.isAnonymous) return _firebase.signInWithCredential(credential);
+        if (anonymous == null || !anonymous.isAnonymous) {
+          return (await _firebase.signInWithCredential(credential), AccountArrival.direct);
+        }
         try {
-          return await anonymous.linkWithCredential(credential);
+          return (await anonymous.linkWithCredential(credential), AccountArrival.linked);
         } on fb.FirebaseAuthException catch (e) {
           if (e.code != 'credential-already-in-use') rethrow;
           // `credential` is spent. An Apple identity token may be presented to
@@ -294,7 +332,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
           // sign-in whenever the plugin declines to populate `e.credential`.
           // Apple in that case fails exactly as it does today, which is no
           // worse, and the case that matters in practice is the one above.
-          return await _firebase.signInWithCredential(e.credential ?? credential);
+          return (await _firebase.signInWithCredential(e.credential ?? credential), AccountArrival.takeover);
         }
       },
     );
@@ -303,7 +341,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   Future<void> _loginWithGoogle(GoogleSignInAccount user) async {
     if (user.authentication case GoogleSignInAuthentication(:String? idToken)) {
       final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
-      return _loginWithCredential(cred);
+      return _loginWithCredential(cred, provider: .google);
     }
   }
 
@@ -312,19 +350,22 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> loginWithGoogle() async {
+    analytics?.signupStarted(provider: .google, fromAnonymous: _isAnonymous);
     try {
       await _googleSignIn.initialize();
       final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
       if (account.authentication case GoogleSignInAuthentication(:String? idToken)) {
         final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
-        return await _loginWithCredential(cred);
+        return await _loginWithCredential(cred, provider: .google);
       }
     } catch (e, s) {
+      _reportFailure(e, provider: .google);
       onError?.call(e, stacktrace: s);
     }
   }
 
   Future<void> loginWithApple() async {
+    analytics?.signupStarted(provider: .apple, fromAnonymous: _isAnonymous);
     try {
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [.email, .fullName],
@@ -353,6 +394,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
       return await _loginWithCredential(
         appleToken,
+        provider: .apple,
         appleEmail: credential.email,
         appleName: name,
       );
@@ -360,16 +402,25 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       if (e.message.contains('popup_closed_by_user')) {
         return;
       }
+      _reportFailure(e, provider: .apple);
     } catch (e, s) {
+      _reportFailure(e, provider: .apple);
       return onError?.call(e, stacktrace: s);
     }
   }
 
-  Future<void> _loginWithCredential(fb.OAuthCredential credential, {String? appleName, String? appleEmail}) {
+  Future<void> _loginWithCredential(
+    fb.OAuthCredential credential, {
+    required AuthProvider provider,
+    String? appleName,
+    String? appleEmail,
+  }) {
     return _linkOrSignIn(credential).then<void>(
       (result) {
-        _adopt(result.user);
+        final (cred, arrival) = result;
+        _adopt(cred.user);
         _user = _user?.copyWith(displayName: appleName, email: appleEmail);
+        _reportArrival(cred, provider: provider, arrival: arrival);
 
         return _registerUser(_user).then(
           (user) {
@@ -381,26 +432,102 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  /// A new account or a returning one, as Firebase saw it rather than as the
+  /// method that was called would guess — a social sign-in is both doors.
+  /// `isNewUser` is absent on a credential that came from somewhere other than
+  /// a sign-in, and "returning" is the safer reading of that silence.
+  void _reportArrival(
+    fb.UserCredential cred, {
+    required AuthProvider provider,
+    required AccountArrival arrival,
+  }) {
+    switch (_isNewAccount(cred)) {
+      case true:
+        analytics?.signupCompleted(provider: provider, arrival: arrival);
+      case false:
+        analytics?.loginCompleted(provider: provider, arrival: arrival);
+    }
+  }
+
+  bool _isNewAccount(fb.UserCredential cred) {
+    try {
+      return cred.additionalUserInfo?.isNewUser ?? false;
+    } catch (_) {
+      // Not every `UserCredential` implementation answers this — the test
+      // double throws on it. A sign-in that worked must not fail because the
+      // line about it could not be written, and "returning" is the safer
+      // reading of an answer nobody gave.
+      return false;
+    }
+  }
+
+  /// Counts a sign-in that did not happen, by *code* — a
+  /// `FirebaseAuthException`'s message is copy, and an Apple one is localized
+  /// before it ever reaches here. An error with no code of its own reports its
+  /// type, which is an identifier too.
+  void _reportFailure(Object error, {required AuthProvider provider}) {
+    if (_isCancellation(error)) return;
+    analytics?.signupFailed(
+      provider: provider,
+      reason: switch (error) {
+        AuthException(:final reason) => reason.name,
+        fb.FirebaseAuthException(:final code) => code,
+        GoogleSignInException(:final code) => code.name,
+        SignInWithAppleAuthorizationException(:final code) => code.name,
+        _ => error.runtimeType.toString(),
+      },
+    );
+  }
+
+  /// Backing out of a sign-in sheet is not a failure.
+  ///
+  /// It is the most common way any of these ends, and counting it would bury
+  /// the errors the metric exists to find under a number that only says how
+  /// often people change their mind.
+  bool _isCancellation(Object error) {
+    return switch (error) {
+      GoogleSignInException(:final code) => code == GoogleSignInExceptionCode.canceled,
+      SignInWithAppleAuthorizationException(:final code) => code == AuthorizationErrorCode.canceled,
+      SignInWithAppleCredentialsException(:final message) => message.contains('popup_closed_by_user'),
+      _ => false,
+    };
+  }
+
   /// Logging in is signing into an account that exists, so from an anonymous
   /// session this is always the uid-changing case: the session's store moves
   /// onto the account (see [onLink]), never the other way round.
   Future<void> logInWithEmailAndPassword({required String email, required String password}) {
     final wasAnonymous = _isAnonymous;
     return _toFirebase<fb.UserCredential>(
-      _fromAnonymous(() => _firebase.signInWithEmailAndPassword(email: email, password: password)),
-    ).then(
-      (cred) async {
-        // the stream usually got here first; adopting again is harmless and
-        // makes sure an anonymous session does not read as one past this point
-        _adopt(cred?.user);
-        // from an anonymous session the stream handler owns the rest: it moves
-        // the store first, and only then keys the new uid in — starting the
-        // app up here as well would read the store while the rows are moving
-        if (wasAnonymous) return;
-        onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
-        _user = await _registerUser(_user);
-      },
-    );
+          _fromAnonymous(() => _firebase.signInWithEmailAndPassword(email: email, password: password)),
+        )
+        .onError<Object>(
+          (error, stacktrace) {
+            _reportFailure(error, provider: .password);
+            // Reported, not handled: the presentation layer still has to see this
+            // exactly as it did before, stack trace included.
+            Error.throwWithStackTrace(error, stacktrace);
+          },
+        )
+        .then(
+          (cred) async {
+            // Signing in with a password never links: an anonymous session that
+            // does it is always the takeover path, and `onLink` moves its rows.
+            analytics?.loginCompleted(
+              provider: .password,
+              arrival: wasAnonymous ? .takeover : .direct,
+            );
+            // the stream usually got here first; adopting again is harmless and
+            // makes sure an anonymous session does not read as one past this point
+            _adopt(cred?.user);
+            // from an anonymous session the stream handler owns the rest: it moves
+            // the store first, and only then keys the new uid in — starting the
+            // app up here as well would read the store while the rows are moving
+            if (wasAnonymous) return;
+            onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
+            _user = await _registerUser(_user);
+          },
+        );
   }
 
   /// From an anonymous session the account is made *on* the session — the
@@ -408,21 +535,40 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   /// the device holds is already the account's; only the replay is owed. An
   /// email that already has an account is the same refusal it always was.
   Future<void> signUpWithEmailAndPassword({required String email, required String password, String? name}) async {
+    analytics?.signupStarted(provider: .password, fromAnonymous: _isAnonymous);
+
     final status = await validatePassword(password);
     if (!status.isValid) {
-      throw PasswordRequirementsNotMet(status: status);
+      final refusal = PasswordRequirementsNotMet(status: status);
+      // A refused password is a sign-up that did not happen, and the only one
+      // of these the app decides on its own — worth telling from Firebase's.
+      _reportFailure(refusal, provider: .password);
+      throw refusal;
     }
 
     final wasAnonymous = _isAnonymous;
-    final cred = await _toFirebase<fb.UserCredential>(
-      _fromAnonymous(
-        () => switch (_firebase.currentUser) {
-          fb.User(isAnonymous: true) && final session => session.linkWithCredential(
-            fb.EmailAuthProvider.credential(email: email, password: password),
+    final cred =
+        await _toFirebase<fb.UserCredential>(
+          _fromAnonymous(
+            () => switch (_firebase.currentUser) {
+              fb.User(isAnonymous: true) && final session => session.linkWithCredential(
+                fb.EmailAuthProvider.credential(email: email, password: password),
+              ),
+              _ => _firebase.createUserWithEmailAndPassword(email: email, password: password),
+            },
           ),
-          _ => _firebase.createUserWithEmailAndPassword(email: email, password: password),
-        },
-      ),
+        ).onError<Object>(
+          (error, stacktrace) {
+            _reportFailure(error, provider: .password);
+            Error.throwWithStackTrace(error, stacktrace);
+          },
+        );
+
+    // An anonymous session links the credential on, so the uid it already had
+    // survives; anything else creates the account outright.
+    analytics?.signupCompleted(
+      provider: .password,
+      arrival: wasAnonymous ? .linked : .direct,
     );
 
     if (name case String name) {
@@ -530,6 +676,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
         onAuthenticate(await authenticated?.user?.getIdToken());
         try {
           await _service.deleteAccount(accountId: accountId, appleGrant: appleGrant);
+          analytics?.accountDeletionScheduled();
           await _logout();
         } on UpgradeRequired catch (e) {
           onError?.call(e);
@@ -613,6 +760,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     switch (_user) {
       case User(:final id, :final displayName, :final email, :final avatar, :final createdAt, :final settings):
         await _service.undoAccountDeletion();
+        analytics?.accountDeletionCancelled();
         // Rebuilt rather than copied, because clearing the schedule is the
         // whole point and `copyWith` cannot express it: it carries
         // `scheduledForDeletionAt` over from `this` and takes no parameter for
