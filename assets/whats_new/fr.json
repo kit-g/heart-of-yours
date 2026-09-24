@@ -1,0 +1,212 @@
+[
+  {
+    "version": "1.8.0",
+    "items": [
+      {
+        "id": "exercise-notes",
+        "title": "Notes d’exercice",
+        "body": "Ajoutez une note à n’importe quel exercice pendant la séance : un repère, un réglage, une charge à essayer la prochaine fois. Une fois connecté, vous pouvez **épingler** une note pour qu’elle revienne à chaque fois que l’exercice revient, y compris dans les séances lancées depuis un modèle."
+      },
+      {
+        "id": "history-calendar",
+        "title": "Un calendrier pour votre historique",
+        "body": "Ouvrez **Historique** et touchez le calendrier pour voir vos séances mois par mois. Touchez un jour pour ouvrir sa séance."
+      },
+      {
+        "id": "new-look",
+        "title": "Un nouveau look",
+        "body": "Un nouveau logotype, une nouvelle icône et un écran de lancement qui suit le mode clair et le mode sombre."
+      }
+    ]
+  },
+  {
+    "version": "1.7.0",
+    "items": [
+      {
+        "id": "no-account",
+        "title": "Pas besoin de compte",
+        "body": "Ouvrez l’app et commencez à vous entraîner. Séances, modèles, exercices personnalisés et objectifs vivent sur votre appareil dès la première séance, et tout ce qui n’a pas besoin d’un serveur fonctionne sans."
+      },
+      {
+        "id": "sign-in-later",
+        "title": "Connectez-vous quand vous voulez",
+        "body": "Connectez-vous plus tard et tout ce que vous avez enregistré rejoint votre compte. Si ce compte contient déjà des séances d’un autre appareil, les deux sont fusionnés, pas écrasés."
+      },
+      {
+        "id": "whole-history",
+        "title": "Tout votre historique compte",
+        "body": "Le graphique hebdomadaire, vos objectifs et vos records comptent désormais tout ce que vous avez enregistré, pas seulement la partie la plus récente."
+      },
+      {
+        "id": "export-erase",
+        "title": "Exportez ou effacez vos données",
+        "body": "**Paramètres → Vos données → Exporter mes données** enregistre tout ce que contient cet appareil en JSON ou en CSV, hors ligne et avec ou sans compte. Sans compte, **Effacer mes données** le supprime de l’appareil."
+      }
+    ]
+  },
+  {
+    "version": "1.6.0",
+    "items": [
+      {
+        "id": "languages",
+        "title": "Espagnol, français et russe",
+        "body": "Réglez votre appareil sur l’une de ces langues et chaque écran suit, jusqu’aux noms et aux instructions de la bibliothèque d’exercices."
+      },
+      {
+        "id": "themes",
+        "title": "Quatre thèmes",
+        "body": "**Paramètres → Apparence** propose quatre thèmes, chacun avec sa typographie et ses couleurs, en clair comme en sombre."
+      },
+      {
+        "id": "records",
+        "title": "Records",
+        "body": "L’onglet **Records** d’un exercice montre votre meilleure série, le plus de répétitions, votre meilleure allure, un tableau des maximums par répétitions et vos totaux cumulés. Quand une séance bat un record personnel, le résumé le fête."
+      },
+      {
+        "id": "dashboard-charts",
+        "title": "Graphiques d’exercice sur votre profil",
+        "body": "Ajoutez à votre profil n’importe quel graphique de l’onglet **Graphiques** d’un exercice d’un seul geste, et retirez-le de la même façon."
+      }
+    ]
+  },
+  {
+    "version": "1.5.0",
+    "items": [
+      {
+        "id": "strong-import",
+        "title": "Récupérez votre historique Strong",
+        "body": "**Paramètres → Vos données → Importer l’historique de séances** lit le fichier CSV exporté par Strong et récupère vos séances, séries et exercices. Vous validez chaque exercice que Heart ne connaît pas, et importer deux fois le même fichier ne crée jamais de doublon."
+      }
+    ]
+  },
+  {
+    "version": "1.4.0",
+    "items": [
+      {
+        "id": "health-workouts",
+        "title": "Vos séances dans Santé et Health Connect",
+        "body": "Les séances terminées sont enregistrées dans l’app santé de votre appareil, pour que votre musculation compte dans votre activité. Heart enregistre la durée et le type de séance, et n’estime jamais les calories. Vous pouvez le désactiver dans **Paramètres**."
+      }
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "items": [
+      {
+        "id": "health-data",
+        "title": "Données de santé sur votre profil",
+        "body": "Heart peut lire la fréquence cardiaque au repos, la variabilité de la fréquence cardiaque, le sommeil, les pas, l’énergie active et le poids depuis Santé ou Health Connect, et les afficher en graphiques sur votre profil. Ces données ne quittent jamais votre appareil."
+      },
+      {
+        "id": "chart-ranges",
+        "title": "Des graphiques qui remontent jusqu’au début",
+        "body": "Les graphiques d’exercice et de santé couvrent tout votre historique. Passez de 1M à 3M, 1A ou Tout, et faites glisser pour remonter le temps."
+      },
+      {
+        "id": "screen-readers",
+        "title": "VoiceOver et TalkBack",
+        "body": "Les boutons, graphiques, minuteurs et champs s’annoncent aux lecteurs d’écran."
+      }
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "items": [
+      {
+        "id": "template-folders",
+        "title": "Dossiers de modèles",
+        "body": "Rangez vos modèles dans des dossiers. Créez-les, renommez-les, supprimez-les et déplacez des modèles de l’un à l’autre. Supprimer un dossier conserve ses modèles."
+      }
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "items": [
+      {
+        "id": "goals",
+        "title": "Objectifs",
+        "body": "Fixez un objectif de séances par semaine ou par mois, ou une échelle de paliers avec une échéance facultative. Les objectifs apparaissent sous forme de lignes sur vos graphiques, le résumé de séance vous prévient quand vous en atteignez un, et chaque objectif atteint renvoie à la séance qui l’a permis."
+      }
+    ]
+  },
+  {
+    "version": "1.0.13",
+    "items": [
+      {
+        "id": "tablets",
+        "title": "Pensée pour les tablettes",
+        "body": "Sur un iPad ou une tablette Android, Historique et Exercices affichent la liste et le détail côte à côte, et le reste de l’app profite de la place."
+      }
+    ]
+  },
+  {
+    "version": "1.0.12",
+    "items": [
+      {
+        "id": "movement-filters",
+        "title": "Filtrez les exercices par mouvement",
+        "body": "Filtrez les exercices par schéma de mouvement, stabilité et niveau technique, dans la bibliothèque et quand vous ajoutez un exercice à une séance."
+      }
+    ]
+  },
+  {
+    "version": "1.0.10",
+    "items": [
+      {
+        "id": "workout-times",
+        "title": "Modifiez les horaires d’une séance",
+        "body": "Corrigez l’heure de début et de fin d’une séance passée."
+      },
+      {
+        "id": "also-try",
+        "title": "À essayer aussi",
+        "body": "La page d’un exercice en suggère d’autres fondés sur le même mouvement."
+      }
+    ]
+  },
+  {
+    "version": "1.0.9",
+    "items": [
+      {
+        "id": "idle-workout",
+        "title": "Toujours en séance ?",
+        "body": "Si une séance reste un moment sans activité, Heart vous envoie une notification pour vous demander si vous êtes toujours en train de vous entraîner."
+      }
+    ]
+  },
+  {
+    "version": "1.0.5",
+    "items": [
+      {
+        "id": "log-sets",
+        "title": "Enregistrez chaque série",
+        "body": "Lancez une séance vide ou à partir d’un modèle, et notez charge et répétitions, durée ou distance pour chaque série. La colonne **Précédent** montre ce que vous avez fait la dernière fois."
+      },
+      {
+        "id": "rest-timer",
+        "title": "Minuteur de repos",
+        "body": "Un minuteur de repos tourne entre les séries, et une notification vous prévient quand vient la suivante."
+      },
+      {
+        "id": "templates",
+        "title": "Modèles",
+        "body": "Créez vos propres modèles, enregistrez n’importe quelle séance terminée comme modèle ou partez des exemples."
+      },
+      {
+        "id": "history",
+        "title": "Historique",
+        "body": "Toutes vos séances passées, prêtes à être modifiées, refaites ou partagées."
+      },
+      {
+        "id": "exercise-library",
+        "title": "Bibliothèque d’exercices",
+        "body": "Cherchez et filtrez dans la bibliothèque, ou ajoutez vos propres exercices. Chacun a son historique, ses records et ses graphiques."
+      },
+      {
+        "id": "dashboard",
+        "title": "Votre tableau de bord",
+        "body": "Votre profil affiche les séances par semaine, et tout graphique que vous ajoutez : 1RM estimé, volume, meilleure série et plus encore."
+      }
+    ]
+  }
+]

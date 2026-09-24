@@ -1,0 +1,225 @@
+[
+  {
+    "version": "1.8.0",
+    "date": "2026-09-13",
+    "items": [
+      {
+        "id": "exercise-notes",
+        "title": "Exercise notes",
+        "body": "Add a note to any exercise while you train: a cue, a setup, a weight to try next time. Signed in, you can **pin** a note so it comes back every time the exercise does, including in workouts started from a template."
+      },
+      {
+        "id": "history-calendar",
+        "title": "A calendar for your history",
+        "body": "Open **History** and tap the calendar to see your training month by month. Tap a day to open its workout."
+      },
+      {
+        "id": "new-look",
+        "title": "A new look",
+        "body": "A new logotype, a new app icon, and a launch screen that follows light and dark mode."
+      }
+    ]
+  },
+  {
+    "version": "1.7.0",
+    "date": "2026-09-08",
+    "items": [
+      {
+        "id": "no-account",
+        "title": "No account needed",
+        "body": "Open the app and start training. Workouts, templates, custom exercises and goals live on your device from the first session, and everything that doesn’t need a server works without one."
+      },
+      {
+        "id": "sign-in-later",
+        "title": "Sign in whenever you like",
+        "body": "Sign in later and everything you’ve logged moves to your account. If that account already has workouts from another device, the two are merged, not overwritten."
+      },
+      {
+        "id": "whole-history",
+        "title": "Your whole history counts",
+        "body": "The weekly chart, your goals and your records now count everything you’ve ever logged, not only the most recent part."
+      },
+      {
+        "id": "export-erase",
+        "title": "Export or erase your data",
+        "body": "**Settings → Your data → Export my data** saves everything on this device as JSON or CSV, offline and with or without an account. Without an account, **Erase my data** wipes it from the device."
+      }
+    ]
+  },
+  {
+    "version": "1.6.0",
+    "date": "2026-08-31",
+    "items": [
+      {
+        "id": "languages",
+        "title": "Spanish, French and Russian",
+        "body": "Set your device to one of them and every screen follows, down to the exercise library’s names and instructions."
+      },
+      {
+        "id": "themes",
+        "title": "Four themes",
+        "body": "**Settings → Appearance** has four themes, each with its own type and colours in light and dark."
+      },
+      {
+        "id": "records",
+        "title": "Records",
+        "body": "An exercise’s **Records** tab shows your best set, most reps, best pace, a rep-max table and lifetime totals. When a workout sets a personal record, the summary celebrates it."
+      },
+      {
+        "id": "dashboard-charts",
+        "title": "Exercise charts on your profile",
+        "body": "Add any chart from an exercise’s **Charts** tab to your profile with one tap, and take it off the same way."
+      }
+    ]
+  },
+  {
+    "version": "1.5.0",
+    "date": "2026-08-20",
+    "items": [
+      {
+        "id": "strong-import",
+        "title": "Bring your Strong history",
+        "body": "**Settings → Your data → Import workout history** reads the CSV file from Strong’s export and brings over your workouts, sets and exercises. You approve any exercise Heart doesn’t know, and importing the same file twice never duplicates anything."
+      }
+    ]
+  },
+  {
+    "version": "1.4.0",
+    "date": "2026-08-19",
+    "items": [
+      {
+        "id": "health-workouts",
+        "title": "Workouts in Apple Health and Health Connect",
+        "body": "Finished workouts are saved to your device’s health app, so your lifting counts toward your activity. Heart writes how long you trained and what kind of session it was, and never estimates calories. You can turn it off in **Settings**."
+      }
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "date": "2026-08-17",
+    "items": [
+      {
+        "id": "health-data",
+        "title": "Health data on your profile",
+        "body": "Heart can read resting heart rate, heart rate variability, sleep, steps, active energy and body weight from Apple Health or Health Connect, and chart them on your profile. That data never leaves your device."
+      },
+      {
+        "id": "chart-ranges",
+        "title": "Charts that go all the way back",
+        "body": "Exercise and health charts cover your whole history. Switch between 1M, 3M, 1Y and All, and drag to move through time."
+      },
+      {
+        "id": "screen-readers",
+        "title": "VoiceOver and TalkBack",
+        "body": "Buttons, charts, timers and inputs announce themselves to screen readers."
+      }
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-08-13",
+    "items": [
+      {
+        "id": "template-folders",
+        "title": "Template folders",
+        "body": "Sort your templates into folders. Create, rename and delete them, and move templates between them. Deleting a folder keeps its templates."
+      }
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-08-11",
+    "items": [
+      {
+        "id": "goals",
+        "title": "Goals",
+        "body": "Set a weekly or monthly workout goal, or a ladder of milestones with an optional deadline. Goals show up as lines on your charts, the workout summary tells you when you reach one, and every goal you’ve reached links back to the workout that did it."
+      }
+    ]
+  },
+  {
+    "version": "1.0.13",
+    "date": "2026-08-03",
+    "items": [
+      {
+        "id": "tablets",
+        "title": "Made for tablets",
+        "body": "On an iPad or Android tablet, History and Exercises show the list and the details side by side, and the rest of the app makes use of the room."
+      }
+    ]
+  },
+  {
+    "version": "1.0.12",
+    "date": "2026-08-01",
+    "items": [
+      {
+        "id": "movement-filters",
+        "title": "Filter exercises by movement",
+        "body": "Filter exercises by movement pattern, stability and skill level, in the library and when adding an exercise to a workout."
+      }
+    ]
+  },
+  {
+    "version": "1.0.10",
+    "date": "2026-07-31",
+    "items": [
+      {
+        "id": "workout-times",
+        "title": "Edit a workout’s times",
+        "body": "Correct when a past workout started and ended."
+      },
+      {
+        "id": "also-try",
+        "title": "Also try",
+        "body": "An exercise’s page suggests others built on the same movement."
+      }
+    ]
+  },
+  {
+    "version": "1.0.9",
+    "date": "2026-07-26",
+    "items": [
+      {
+        "id": "idle-workout",
+        "title": "Still working out?",
+        "body": "If a workout sits untouched for a while, Heart sends a notification asking whether you’re still going."
+      }
+    ]
+  },
+  {
+    "version": "1.0.5",
+    "date": "2026-07-18",
+    "items": [
+      {
+        "id": "log-sets",
+        "title": "Log every set",
+        "body": "Start an empty workout or one from a template, and log weight and reps, time or distance for each set. The **Previous** column shows what you did last time."
+      },
+      {
+        "id": "rest-timer",
+        "title": "Rest timer",
+        "body": "A rest timer runs between sets, and a notification tells you when it’s time for the next one."
+      },
+      {
+        "id": "templates",
+        "title": "Templates",
+        "body": "Build your own templates, save any finished workout as one, or start from the examples."
+      },
+      {
+        "id": "history",
+        "title": "History",
+        "body": "Every past workout, ready to edit, repeat or share."
+      },
+      {
+        "id": "exercise-library",
+        "title": "Exercise library",
+        "body": "Search and filter the library, or add exercises of your own. Each one has its own history, records and charts."
+      },
+      {
+        "id": "dashboard",
+        "title": "Your dashboard",
+        "body": "Your profile charts workouts per week, plus any chart you add: estimated one-rep max, volume, top set and more."
+      }
+    ]
+  }
+]
