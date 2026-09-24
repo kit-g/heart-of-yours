@@ -523,6 +523,9 @@ Future<void> _initApp(
     if (hasLocalNotifications ?? false) {
       initNotifications(
         platform: Theme.of(context).platform,
+        // A notification that will not schedule is reported rather than thrown,
+        // so it reaches Sentry without taking a screen down with it.
+        onError: (error, {stacktrace}) => reportToSentry(error, stacktrace: stacktrace),
         onExerciseNotification: (exerciseId) {
           // exercises with a timer emit a local notification
           // when tapped on, it will:
