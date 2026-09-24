@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
@@ -18,6 +19,7 @@ import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart_api/heart_api.dart';
@@ -391,7 +393,15 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       // reach a ScaffoldMessenger for the notifications-off reminder.
       builder: (context, child) => _WorkoutTimeoutScheduler(
         enabled: widget.hasLocalNotifications,
-        child: child ?? const SizedBox.shrink(),
+        child: OngoingWorkoutPresenter(
+          // the same gate: off means tests, web, or a build that never
+          // initialised the notifications plugin the Android side posts through
+          surface: switch (widget.hasLocalNotifications) {
+            true => ongoingWorkoutSurface(Theme.of(context).platform),
+            false => null,
+          },
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
       // Every locale heart_language ships — the backend serves exercise
       // content per request from `Accept-Language` (which states the raw
@@ -571,15 +581,9 @@ Future<void> _initApp(
             goToWorkouts();
           }
         },
-        onWorkoutTimeoutNotification: () {
-          final HeartRouter(:goToActiveWorkout, :goToWorkouts) = HeartRouter.of(context);
-          switch (Workouts.of(context).activeWorkout) {
-            case null:
-              goToWorkouts();
-            case _:
-              goToActiveWorkout();
-          }
-        },
+        onWorkoutTimeoutNotification: () => _openActiveWorkout(context),
+        // the ongoing workout on Android's lock screen and shade
+        onOngoingWorkoutNotification: () => _openActiveWorkout(context),
         onUnknownNotification: reportToSentry,
       );
     }
@@ -696,6 +700,18 @@ Future<void> _initApp(
       );
     }
   });
+}
+
+/// Where a workout notification lands: the workout if it is still going, the
+/// workouts tab if it finished in the meantime.
+void _openActiveWorkout(BuildContext context) {
+  final HeartRouter(:goToActiveWorkout, :goToWorkouts) = HeartRouter.of(context);
+  switch (Workouts.of(context).activeWorkout) {
+    case null:
+      goToWorkouts();
+    case _:
+      goToActiveWorkout();
+  }
 }
 
 /// Everything that reads the mirror against the server: the history pull, the
