@@ -4,6 +4,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
   final VoidCallback onImportData;
   final VoidCallback onExportData;
+  final VoidCallback onWhatsNew;
 
   /// Where the app goes once an anonymous session's data is erased.
   final VoidCallback onErased;
@@ -13,6 +14,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     required this.onAccountManagement,
     required this.onImportData,
     required this.onExportData,
+    required this.onWhatsNew,
     required this.onErased,
   });
 
@@ -20,6 +22,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
   Widget build(BuildContext context) {
     final L(
       :aboutApp,
+      :whatsNew,
       :accountControl,
       :appearance,
       :distanceUnit,
@@ -253,6 +256,12 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         applicationName: AppConfig.of(context).appName,
                       );
                     },
+                  ),
+                  ListTile(
+                    key: AppKeys.whatsNew,
+                    leading: const Icon(Icons.update_rounded),
+                    title: Text(whatsNew),
+                    onTap: onWhatsNew,
                   ),
                   if (!isAnonymous)
                     ListTile(
