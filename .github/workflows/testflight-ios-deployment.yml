@@ -71,6 +71,13 @@ jobs:
       - name: "Enable native asset bundling"
         run: flutter config --enable-native-assets
 
+      - name: "Date this release in What's new"
+        # the release's entry is committed undated: its tag is pushed after the
+        # commit, so only the prod build knows the day it shipped. Dev builds
+        # leave it undated, and the card shows no date.
+        if: inputs.environment == 'prod'
+        run: dart scripts/whats_new.dart stamp
+
       - name: "Build"
         run: flutter build ios --release --flavor ${{ inputs.flavor }} --no-codesign --dart-define-from-file=appconfig.json
 
