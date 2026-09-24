@@ -16,8 +16,12 @@
         <dict>
             <key>me.heart-of.ios.dev</key>
             <string>match AppStore me.heart-of.ios.dev</string>
+            <key>me.heart-of.ios.dev.OngoingWorkout</key>
+            <string>match AppStore me.heart-of.ios.dev.OngoingWorkout</string>
             <key>me.heart-of.ios</key>
             <string>match AppStore me.heart-of.ios</string>
+            <key>me.heart-of.ios.OngoingWorkout</key>
+            <string>match AppStore me.heart-of.ios.OngoingWorkout</string>
         </dict>
     </dict>
 </plist>
