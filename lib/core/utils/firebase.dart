@@ -1,17 +1,23 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:heart/core/env/app_check.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/sentry.dart';
 import 'package:heart/firebase_options.dart' as dev;
 import 'package:heart/firebase_options_prod.dart' as prod;
 import 'package:heart_state/heart_state.dart';
 
-Future<void> initializeFirebase(Env env) {
-  return Firebase.initializeApp(
+Future<void> initializeFirebase(Env env) async {
+  await Firebase.initializeApp(
     options: switch (env) {
       .dev || .test => dev.DefaultFirebaseOptions.currentPlatform,
       .prod => prod.DefaultFirebaseOptions.currentPlatform,
     },
   );
+  // Immediately after the app exists and before anything signs in: the first
+  // thing this app does with Firebase is mint an anonymous session, and that
+  // is the call App Check is here to put a device behind.
+  await initAppCheck(env, onError: reportToSentry);
 }
 
 /// Signs out when the app is running for the first time since it was installed.
