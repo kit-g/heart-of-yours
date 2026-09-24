@@ -1,43 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/telemetry.dart';
+import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-/// A test for whether the current run should be kept out of Sentry entirely:
-/// its events are noise, not signal (e.g. automated test devices). Returns
-/// `true` to exclude. Register new ones in [_sentryExclusions].
-typedef SentryExclusion = Future<bool> Function();
-
-/// Environments whose events pollute Sentry. Add to this list to expand
-/// coverage; [initSentry] skips setup if any one matches.
-const List<SentryExclusion> _sentryExclusions = [
-  _isFirebaseTestLab,
-];
-
-Future<bool> _excludedFromSentry() async {
-  for (final excluded in _sentryExclusions) {
-    if (await excluded()) return true;
-  }
-  return false;
-}
-
-/// Google's Firebase Test Lab / Play pre-launch report robot. It drives the app
-/// on virtualized devices and trips config-only errors no real user hits.
-/// Detected via the documented `firebase.test.lab` system setting (Android only).
-Future<bool> _isFirebaseTestLab() async {
-  if (kIsWeb || defaultTargetPlatform != .android) return false;
-  try {
-    const channel = MethodChannel('me.heart/device');
-    return await channel.invokeMethod<bool>('isFirebaseTestLab') ?? false;
-  } on Exception {
-    return false;
-  }
-}
-
 FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config) async {
-  if (kDebugMode || await _excludedFromSentry()) return appRunner();
+  if (kDebugMode || await excludedFromTelemetry()) return appRunner();
   return SentryFlutter.init(
     (options) {
       options
@@ -46,7 +16,22 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         ..enableWatchdogTerminationTracking = true
         ..enableMemoryPressureBreadcrumbs = true
         ..dsn = config.sentryDsn
-        ..tracesSampleRate = 1.0
+        // Nothing to stitch a client span to: heart-api runs no Sentry, so the
+        // `sentry-trace` and `baggage` headers `SentryHttpClient` would add to
+        // every request buy nothing. Left at the default `['.*']` they go to
+        // the CDN as well as the API, and neither allows them through CORS —
+        // both allow-lists are closed, so on the web the browser would refuse
+        // the request before it left the machine. Spans are recorded either
+        // way: propagation is gated on this list, span creation is not.
+        // (Cleared rather than assigned: the option is a final list.)
+        ..tracePropagationTargets.clear()
+        // Every transaction in production is a span per API and CDN call
+        // uploaded on the user's battery and bandwidth, for a volume no one
+        // reads. Full rate stays where it is being watched.
+        ..tracesSampleRate = switch (config.env) {
+          .prod => 0.2,
+          .dev || .test => 1.0,
+        }
         ..diagnosticLevel = switch (config.env) {
           .dev => .debug,
           .test => .info,
@@ -55,6 +40,25 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
     },
     appRunner: appRunner,
   );
+}
+
+/// The app's one HTTP client, instrumented where the run reports.
+///
+/// Wrapping is not a proxy: `SentryHttpClient` is a decorator whose `send`
+/// delegates straight to [inner], so the request still goes to the gateway
+/// over the same pooled socket. What it adds is a span per call — method,
+/// sanitized URL, status, content length, and the throwable on a failure —
+/// plus a breadcrumb trail that the next crash arrives carrying. Bodies are
+/// never read.
+///
+/// Only wrapped in a run that will actually initialize Sentry. The client
+/// consults the *global* options for `tracePropagationTargets`, and in a run
+/// where `Sentry.init` never ran those are the defaults — which propagate
+/// `sentry-trace` and `baggage` to every host for spans no hub will collect.
+Future<http.Client> instrumentedClient({http.Client? inner}) async {
+  final client = inner ?? http.Client();
+  if (kDebugMode || await excludedFromTelemetry()) return client;
+  return SentryHttpClient(client: client);
 }
 
 Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
