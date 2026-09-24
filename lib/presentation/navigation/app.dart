@@ -500,12 +500,34 @@ class _WorkoutTimeoutSchedulerState extends State<_WorkoutTimeoutScheduler> {
     );
   }
 
+  /// Says what is lost while notifications are off, once a workout has started.
+  ///
+  /// It used to open with `if (!Timers.of(context).isNotEmpty) return` — only
+  /// worth mentioning to someone using rest timers. That made sense when rest
+  /// timers were the only notification the app sent. They are not: the
+  /// unfinished-workout reminder goes to everyone who starts a workout, and
+  /// gating its warning on a feature it has nothing to do with meant the people
+  /// most likely to be surprised were the ones never told. The gate is now the
+  /// user's own answer instead.
   Future<void> _remindIfNotificationsOff() async {
-    if (!Timers.of(context).isNotEmpty) return;
+    final preferences = Preferences.of(context);
+    final userId = Auth.of(context).user?.id;
+    if (preferences.notificationsReminderDismissed(userId)) return;
+
     final enabled = await hasNotificationsPermission(Theme.of(context).platform);
     if (enabled || !mounted) return;
-    final L(:notificationsDisabledReminder, :settings) = L.of(context);
-    remindNotificationsOff(context, message: notificationsDisabledReminder, settingsLabel: settings);
+
+    final L(:notificationsOffPrompt, :notificationsOffEnable, :notificationsOffLater, :notificationsOffNever) = L.of(
+      context,
+    );
+    promptNotificationsOff(
+      context,
+      message: notificationsOffPrompt,
+      enableLabel: notificationsOffEnable,
+      laterLabel: notificationsOffLater,
+      neverLabel: notificationsOffNever,
+      onNever: () => preferences.dismissNotificationsReminder(userId),
+    );
   }
 
   @override
