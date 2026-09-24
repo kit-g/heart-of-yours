@@ -1872,4 +1872,23 @@ class LRu extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'Не удалось сохранить заметку. Попробуйте ещё раз.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Идёт тренировка';
+
+  @override
+  String get ongoingWorkoutRest => 'Отдых';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Далее: подход $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Далее: подход $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'Все подходы выполнены';
 }

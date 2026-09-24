@@ -3387,5 +3387,44 @@
     "description": "Exercise note control or feedback",
     "type": "text",
     "placeholders": {}
+    },
+  "ongoingWorkoutChannel": "Workout in progress",
+  "@ongoingWorkoutChannel": {
+    "description": "Android notification channel name for the ongoing-workout notification, shown in the system notification settings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "ongoingWorkoutRest": "Rest",
+  "@ongoingWorkoutRest": {
+    "description": "Lock screen / Dynamic Island label beside the running rest countdown during a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "ongoingWorkoutNextSet": "Next: set {number}",
+  "@ongoingWorkoutNextSet": {
+    "description": "Lock screen line naming the set the user is about to do, when it has no weight or reps filled in yet",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "ongoingWorkoutNextSetDetail": "Next: set {number} · {detail}",
+  "@ongoingWorkoutNextSetDetail": {
+    "description": "Lock screen line naming the set the user is about to do and what it holds, e.g. 'Next: set 4 · 50 kg x 6'",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "detail": {}
+    }
+  },
+  "ongoingWorkoutAllDone": "All sets done",
+  "@ongoingWorkoutAllDone": {
+    "description": "Lock screen line once every set in the active workout is ticked",
+    "type": "text",
+    "placeholders": {}
   }
 }
