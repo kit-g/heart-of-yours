@@ -53,6 +53,10 @@ extension on BuildContext {
     return goNamed(_exportDataName);
   }
 
+  void goToWhatsNew() {
+    return goNamed(_whatsNewName);
+  }
+
   void goToAvatar() {
     return goNamed(_avatarName);
   }
