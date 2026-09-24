@@ -473,6 +473,19 @@ class LFr extends L {
       'Les séries vides ou invalides seront supprimées, et toutes les séries valides seront marquées comme terminées.';
 
   @override
+  String get notificationsOffPrompt =>
+      'Les notifications sont désactivées : nous ne pourrons pas vous rappeler une séance laissée en cours.';
+
+  @override
+  String get notificationsOffEnable => 'Activer';
+
+  @override
+  String get notificationsOffLater => 'Me le rappeler plus tard';
+
+  @override
+  String get notificationsOffNever => 'Ne plus me le rappeler';
+
+  @override
   String get untickedSetsTitle => 'Certaines séries ne sont pas cochées';
 
   @override

@@ -910,6 +910,30 @@ abstract class L {
   /// **'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.'**
   String get finishWorkoutWarningBody;
 
+  /// Shown when a workout starts while notifications are off: what the user loses by leaving them off
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off, so we can\'t remind you about a workout you leave unfinished.'**
+  String get notificationsOffPrompt;
+
+  /// Action on the notifications-off reminder: opens the system notification settings
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get notificationsOffEnable;
+
+  /// Action on the notifications-off reminder: dismisses it, and it may appear again next time
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me later'**
+  String get notificationsOffLater;
+
+  /// Action on the notifications-off reminder: stops it appearing ever again
+  ///
+  /// In en, this message translates to:
+  /// **'Never remind me'**
+  String get notificationsOffNever;
+
   /// Finish dialog when sets carry values but were never marked done
   ///
   /// In en, this message translates to:

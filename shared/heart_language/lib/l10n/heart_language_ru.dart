@@ -474,6 +474,19 @@ class LRu extends L {
       'Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные.';
 
   @override
+  String get notificationsOffPrompt =>
+      'Уведомления выключены, поэтому мы не сможем напомнить о незавершённой тренировке.';
+
+  @override
+  String get notificationsOffEnable => 'Включить';
+
+  @override
+  String get notificationsOffLater => 'Напомнить позже';
+
+  @override
+  String get notificationsOffNever => 'Больше не напоминать';
+
+  @override
   String get untickedSetsTitle => 'Некоторые подходы не отмечены';
 
   @override

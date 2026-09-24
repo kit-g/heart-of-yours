@@ -472,6 +472,19 @@ class LEs extends L {
       'Las series vacías o inválidas se descartarán, y todas las series válidas se marcarán como completadas.';
 
   @override
+  String get notificationsOffPrompt =>
+      'Las notificaciones están desactivadas, así que no podremos recordarte un entrenamiento sin terminar.';
+
+  @override
+  String get notificationsOffEnable => 'Activar';
+
+  @override
+  String get notificationsOffLater => 'Recordármelo luego';
+
+  @override
+  String get notificationsOffNever => 'No volver a recordármelo';
+
+  @override
   String get untickedSetsTitle => 'Algunas series no están marcadas';
 
   @override

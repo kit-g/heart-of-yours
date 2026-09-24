@@ -471,6 +471,19 @@ class LEn extends L {
       'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
 
   @override
+  String get notificationsOffPrompt =>
+      'Notifications are off, so we can\'t remind you about a workout you leave unfinished.';
+
+  @override
+  String get notificationsOffEnable => 'Enable';
+
+  @override
+  String get notificationsOffLater => 'Remind me later';
+
+  @override
+  String get notificationsOffNever => 'Never remind me';
+
+  @override
   String get untickedSetsTitle => 'Some sets aren\'t ticked';
 
   @override
@@ -2288,6 +2301,19 @@ class LEnCa extends LEn {
   @override
   String get finishWorkoutWarningBody =>
       'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
+
+  @override
+  String get notificationsOffPrompt =>
+      'Notifications are off, so we can\'t remind you about a workout you leave unfinished.';
+
+  @override
+  String get notificationsOffEnable => 'Enable';
+
+  @override
+  String get notificationsOffLater => 'Remind me later';
+
+  @override
+  String get notificationsOffNever => 'Never remind me';
 
   @override
   String get untickedSetsTitle => 'Some sets aren\'t ticked';

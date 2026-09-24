@@ -3315,5 +3315,29 @@
     "description": "Exercise note control or feedback",
     "type": "text",
     "placeholders": {}
+  },
+  "notificationsOffPrompt": "Las notificaciones están desactivadas, así que no podremos recordarte un entrenamiento sin terminar.",
+  "@notificationsOffPrompt": {
+    "description": "Shown when a workout starts while notifications are off: what the user loses by leaving them off",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsOffEnable": "Activar",
+  "@notificationsOffEnable": {
+    "description": "Action on the notifications-off reminder: opens the system notification settings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsOffLater": "Recordármelo luego",
+  "@notificationsOffLater": {
+    "description": "Action on the notifications-off reminder: dismisses it, and it may appear again next time",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsOffNever": "No volver a recordármelo",
+  "@notificationsOffNever": {
+    "description": "Action on the notifications-off reminder: stops it appearing ever again",
+    "type": "text",
+    "placeholders": {}
   }
 }
