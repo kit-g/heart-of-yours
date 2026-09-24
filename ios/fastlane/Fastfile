@@ -14,6 +14,10 @@ def appstore_api_key
   )
 end
 
+# The workout Live Activity's widget extension (#133): its target name, and
+# the suffix of its bundle id under the app's.
+LIVE_ACTIVITY = "OngoingWorkout"
+
 platform :ios do
   # Regenerate the App Store provisioning profile for one environment. Needed after a
   # capability changes on the App ID — match caches profiles in S3 and `beta` reads them
@@ -28,7 +32,7 @@ platform :ios do
 
     match(
       type: "appstore",
-      app_identifier: app_id,
+      app_identifier: [app_id, "#{app_id}.#{LIVE_ACTIVITY}"],
       api_key: appstore_api_key,
       readonly: false,
       force: true
@@ -50,7 +54,7 @@ platform :ios do
 
     match(
       type: "appstore",
-      app_identifier: app_id,
+      app_identifier: [app_id, "#{app_id}.#{LIVE_ACTIVITY}"],
       readonly: true
     )
 
@@ -73,6 +77,17 @@ platform :ios do
       code_sign_identity: "Apple Distribution",
       profile_name: "match AppStore #{app_id}",
       targets: ["Runner"],
+      build_configurations: [configuration]
+    )
+
+    # the extension is signed with its own profile, or the archive's export fails
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "DFX2JYT8BM",
+      code_sign_identity: "Apple Distribution",
+      profile_name: "match AppStore #{app_id}.#{LIVE_ACTIVITY}",
+      targets: [LIVE_ACTIVITY],
       build_configurations: [configuration]
     )
 
