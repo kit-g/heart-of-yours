@@ -150,6 +150,9 @@ themePresetInk,"Name of the light-first, paper-and-ink theme preset with a cobal
 themePresetUtility,"Name of the quiet, cool-neutral theme preset with a forest-green accent; a calm everyday tool",Utility,Utility,Инструмент,Utilitario,Utilitaire
 themePresetEmber,Name of the warm theme preset with a true-orange accent; a glowing coal,Ember,Ember,Жар,Brasa,Braise
 aboutApp,Setting item title,About app,About app,О приложении,Acerca de la app,À propos de l’app
+whatsNew,"Settings row and page title: the list of release notes, one card per app version",What's new,What's new,Что нового,Novedades,Nouveautés
+whatsNewThisVersion,"What's new page, a small label on the card of the release the installed app is running",This version,This version,Эта версия,Esta versión,Cette version
+whatsNewEmpty,"What's new page, shown when there are no release notes to list",No release notes in this version of the app.,No release notes in this version of the app.,В этой версии приложения нет описания изменений.,Esta versión de la app no incluye notas de la versión.,Aucune note de version dans cette version de l’app.
 congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!,¡Felicidades!,Félicitations !
 congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!,¡Completaste tu entrenamiento!,Votre séance est terminée !
 recordsAchievedHeading,"Workout complete screen, heading above the personal records this session set","{count, plural, one{New record} other{New records}}","{count, plural, one{New record} other{New records}}","{count, plural, one{Новый рекорд} other{Новые рекорды}}","{count, plural, one{Nuevo récord} other{Nuevos récords}}","{count, plural, one{Nouveau record} other{Nouveaux records}}"
