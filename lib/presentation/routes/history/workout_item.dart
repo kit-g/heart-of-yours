@@ -408,7 +408,7 @@ class WorkoutItem extends StatelessWidget {
                 workouts.cancelActiveWorkout().then(
                   (_) {
                     onStartNewWorkout?.call();
-                    return workouts.startWorkout(template: workout.copy());
+                    return workouts.startWorkout(source: .repeat, template: workout.copy());
                   },
                 );
                 Navigator.of(context, rootNavigator: true).pop();
@@ -466,7 +466,7 @@ class WorkoutItem extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
                 onStartNewWorkout?.call();
-                Workouts.of(context).startWorkout(template: workout.copy());
+                Workouts.of(context).startWorkout(source: .repeat, template: workout.copy());
               },
             ),
           ],

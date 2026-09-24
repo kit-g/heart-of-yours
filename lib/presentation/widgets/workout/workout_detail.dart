@@ -734,7 +734,7 @@ class NewWorkoutHeader extends StatelessWidget {
     final Workouts(:startWorkout, :hasActiveWorkout) = Workouts.of(context);
 
     if (!hasActiveWorkout) {
-      startWorkout(name: L.of(context).defaultWorkoutName());
+      startWorkout(source: .blank, name: L.of(context).defaultWorkoutName());
     }
 
     openWorkoutSheet();

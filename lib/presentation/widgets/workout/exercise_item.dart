@@ -534,7 +534,10 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   }
 
   Future<void> _ensureNotifications(BuildContext context) async {
-    final enabled = await ensureNotificationPermission(Theme.of(context).platform);
+    final enabled = await ensureNotificationPermission(
+      Theme.of(context).platform,
+      analytics: Analytics.of(context),
+    );
     if (enabled || !context.mounted) return;
     final L(:notificationsDisabledReminder, :settings) = L.of(context);
     remindNotificationsOff(context, message: notificationsDisabledReminder, settingsLabel: settings);

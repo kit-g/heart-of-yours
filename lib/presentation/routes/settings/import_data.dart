@@ -199,6 +199,9 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
         // Strong timestamps are naive local time
         tzOffset: DateTime.now().timeZoneOffset,
       );
+      // Held for the commit, which happens either immediately or a consent
+      // step later and cannot see the preview by then.
+      _unmatchedInPreview = preview.exercisesUnmatched.length;
       switch (preview.exercisesUnmatched) {
         case []:
           await _commit(csv);
@@ -218,6 +221,10 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
   /// The commit half. [createCustom] carries the user's decision (absent when
   /// the preview found nothing to decide); sets on a declined name are
   /// skipped server-side and come back counted in the report.
+  /// How many exercise names the preview could not resolve. Zero until one
+  /// has run, which is the only way [_commit] is ever reached.
+  int _unmatchedInPreview = 0;
+
   Future<void> _commit(String csv, {List<String>? createCustom}) async {
     buzz();
     final workouts = Workouts.of(context);
@@ -225,6 +232,11 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     final backfill = Backfill.of(context);
     final userId = Auth.of(context).user?.id;
     final messenger = ScaffoldMessenger.of(context);
+
+    Analytics.of(context).dataImported(
+      unmatched: _unmatchedInPreview,
+      createdCustom: createCustom?.length ?? 0,
+    );
 
     startLoading();
     // drops the consent card, so its button cannot double-submit while the
