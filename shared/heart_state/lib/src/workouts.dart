@@ -52,6 +52,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _loadingMoreHistory = false;
     _historyPageError = false;
     _notifiedOfActiveWorkout = false;
+    _hasResolvedActiveWorkout = false;
     _latestMarkedSet = null;
     _progress.clear();
     _healChecked.clear();
@@ -103,6 +104,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   bool get hasActiveWorkout => _activeWorkoutId != null;
 
+  bool _hasResolvedActiveWorkout = false;
+
+  /// Whether [init] has looked for an unfinished workout. Until it has,
+  /// [hasActiveWorkout] being false means "not loaded yet", not "none" — the
+  /// difference between tearing down a lock-screen workout left over from a
+  /// killed process and re-attaching to it.
+  bool get hasResolvedActiveWorkout => _hasResolvedActiveWorkout;
+
   bool get hasUnNotifiedActiveWorkout => hasActiveWorkout && !_notifiedOfActiveWorkout;
 
   Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
@@ -135,6 +144,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   List<WorkoutImage> get images => UnmodifiableListView(_progress);
 
   (WorkoutExercise exercise, ExerciseSet set)? _latestMarkedSet;
+
+  /// The set most recently ticked in this session, and its exercise — where
+  /// "next" is counted from. In memory only: null again after a restart.
+  (WorkoutExercise, ExerciseSet)? get latestMarkedSet => _latestMarkedSet;
 
   (WorkoutExercise, ExerciseSet)? get nextIncomplete {
     return switch (_latestMarkedSet) {
@@ -169,7 +182,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> init() async {
     if (userId case String userId) {
-      _activeWorkout = await _getActiveWorkout(userId);
+      final active = await _getActiveWorkout(userId);
+      _hasResolvedActiveWorkout = true;
+      // the setter notifies, so listeners see both at once
+      _activeWorkout = active;
     }
   }
 
