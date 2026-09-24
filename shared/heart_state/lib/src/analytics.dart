@@ -56,6 +56,44 @@ enum AccountArrival {
   new(this.id);
 }
 
+/// Where a workout came from. The distinction the retention questions turn on:
+/// a blank workout is someone who came to log, a template is someone with a
+/// routine, and a sample is someone still finding out what the app is for.
+enum WorkoutSource {
+  blank('blank'),
+  template('template'),
+  sample('sample'),
+
+  /// Started from a workout already in the history — "do this one again".
+  repeat('repeat');
+
+  final String id;
+
+  new(this.id);
+}
+
+/// How a template came to exist. `fromWorkout` is the interesting one: it is
+/// the user turning something they already did into something they intend to
+/// repeat, which is the habit forming in one action.
+enum TemplateSource {
+  editor('editor'),
+  fromWorkout('from_workout');
+
+  final String id;
+
+  new(this.id);
+}
+
+/// Which part of a logged workout was changed after the fact.
+enum WorkoutEditField {
+  times('times'),
+  sets('sets');
+
+  final String id;
+
+  new(this.id);
+}
+
 /// The rung of the ladder a session is on — the property every report segments
 /// by. Gains `premium` and `coach` when those ship.
 enum AccountState {
@@ -106,9 +144,42 @@ const _skipped = 'skipped';
 const _durationMs = 'duration_ms';
 const _ok = 'ok';
 
+const _workoutStarted = 'workout_started';
+const _workoutFinished = 'workout_finished';
+const _workoutCancelled = 'workout_cancelled';
+const _workoutEdited = 'workout_edited';
+const _templateCreated = 'template_created';
+const _templateFolderCreated = 'template_folder_created';
+const _templateMoved = 'template_moved';
+const _exerciseCreated = 'exercise_created';
+const _historyBackfilled = 'history_backfilled';
+
+const _dataExported = 'data_exported';
+const _dataImported = 'data_imported';
+const _avatarUpdated = 'avatar_updated';
+const _upgradeGateShown = 'upgrade_gate_shown';
+const _notificationPermission = 'notification_permission_result';
+
+const _source = 'source';
+const _pinnedNotes = 'pinned_notes';
+const _exerciseCount = 'exercise_count';
+const _setCount = 'set_count';
+const _durationMin = 'duration_min';
+const _untickedSets = 'unticked_sets';
+const _hadContent = 'had_content';
+const _field = 'field';
+const _pages = 'pages';
+const _format = 'format';
+const _unmatched = 'unmatched';
+const _createdCustom = 'created_custom';
+const _filed = 'filed';
+const _granted = 'granted';
+
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
 const _formFactorProperty = 'form_factor';
+const _workoutsBucketProperty = 'workouts_bucket';
+const _templatesBucketProperty = 'templates_bucket';
 
 /// A boolean as GA4 can hold it.
 ///
@@ -117,6 +188,22 @@ const _formFactorProperty = 'form_factor';
 /// custom *dimension* is what these read as in reports — "of the sign-ups that
 /// completed, what share carried the session's work" is a breakdown, not a sum.
 String _flag(bool value) => value ? 'true' : 'false';
+
+/// A count as a user property can hold it.
+///
+/// Raw counts make terrible user properties: every distinct value becomes its
+/// own segment, and "users who have logged 37 workouts" is a cohort of one.
+/// Bucketed, the same number answers the question anyone actually asks, which
+/// is how far along someone is.
+String _bucket(int count) {
+  return switch (count) {
+    <= 0 => '0',
+    <= 3 => '1_3',
+    <= 10 => '4_10',
+    <= 30 => '11_30',
+    _ => '31_plus',
+  };
+}
 
 /// The app's analytics vocabulary: every event it sends, named once.
 ///
@@ -217,7 +304,91 @@ class Analytics {
   /// Null where there is no session at all — the web's gate, or the moment
   /// after a sign-out. That is neither rung, and saying so beats leaving the
   /// last session's answer standing against the next one's events.
+  // Tier 2
+  //
+  // None of these carries a health value. A set count and an exercise count
+  // are what the user typed into this app, never anything read back out of
+  // the health store — see the note at the top of this class.
+
+  void workoutStarted({required WorkoutSource source, required bool pinnedNotes}) {
+    _log(_workoutStarted, {_source: source.id, _pinnedNotes: _flag(pinnedNotes)});
+  }
+
+  /// [untickedSets] is the UX smell: sets that were typed into and never
+  /// ticked. A number that stays high means the tick affordance is not
+  /// landing, which no crash report would ever say.
+  void workoutFinished({
+    required WorkoutSource source,
+    required int exerciseCount,
+    required int setCount,
+    required int durationMin,
+    required int untickedSets,
+  }) {
+    _log(_workoutFinished, {
+      _source: source.id,
+      _exerciseCount: exerciseCount,
+      _setCount: setCount,
+      _durationMin: durationMin,
+      _untickedSets: untickedSets,
+    });
+  }
+
+  /// [hadContent] separates the two cancellations that look identical from
+  /// here: opening a workout and thinking better of it, and abandoning one
+  /// with sets already in it.
+  void workoutCancelled({required bool hadContent, required int exerciseCount}) {
+    _log(_workoutCancelled, {_hadContent: _flag(hadContent), _exerciseCount: exerciseCount});
+  }
+
+  void workoutEdited({required WorkoutEditField field}) {
+    _log(_workoutEdited, {_field: field.id});
+  }
+
+  void templateCreated({required TemplateSource source}) {
+    _log(_templateCreated, {_source: source.id});
+  }
+
+  void templateFolderCreated() => _log(_templateFolderCreated);
+
+  /// [filed] is false when the template was moved *out* of a folder — the one
+  /// case that says the filing was not wanted after all.
+  void templateMoved({required bool filed}) {
+    _log(_templateMoved, {_filed: _flag(filed)});
+  }
+
+  void exerciseCreated() => _log(_exerciseCreated);
+
+  void historyBackfilled({required int pages}) {
+    _log(_historyBackfilled, {_pages: pages});
+  }
+
+  void dataExported({required String format}) {
+    _log(_dataExported, {_format: format});
+  }
+
+  /// [unmatched] is how many exercise names the preview could not resolve —
+  /// how messy the incoming file was — and [createdCustom] how many of those
+  /// the user agreed to create. The gap between them is the consent step
+  /// being declined, which is the only part of this flow that can lose data.
+  void dataImported({required int unmatched, required int createdCustom}) {
+    _log(_dataImported, {_unmatched: unmatched, _createdCustom: createdCustom});
+  }
+
+  void avatarUpdated() => _log(_avatarUpdated);
+
+  /// The forced-upgrade gate was put in front of someone. Nothing else in the
+  /// app can strand a user this completely, and today its volume is invisible.
+  void upgradeGateShown() => _log(_upgradeGateShown);
+
+  void notificationPermissionResult({required bool granted}) {
+    _log(_notificationPermission, {_granted: _flag(granted)});
+  }
+
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);
+
+  void setWorkoutsBucket(int count) => _property(_workoutsBucketProperty, _bucket(count));
+
+  void setTemplatesBucket(int count) => _property(_templatesBucketProperty, _bucket(count));
 
   /// Null where there is no account behind the session, which is a different
   /// statement from any of the providers and is worth segmenting on.
