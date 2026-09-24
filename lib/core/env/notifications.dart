@@ -33,38 +33,47 @@ Future<void> initNotifications({
   void Function(String exerciseId)? onExerciseNotification,
   VoidCallback? onWorkoutTimeoutNotification,
   void Function(Map)? onUnknownNotification,
+  void Function(Object error, {StackTrace? stacktrace})? onError,
 }) async {
   tz.initializeTimeZones();
+  _report = onError;
 
   await _createNotificationChannel(platform);
   // Permission is no longer requested here — we ask lazily, the first time the
   // user sets a rest timer (see [ensureNotificationPermission]). The Darwin
   // request flags are off for the same reason, so init never prompts.
-  await _plugin.initialize(
-    settings: const InitializationSettings(
-      iOS: DarwinInitializationSettings(
-        requestSoundPermission: false,
-        requestBadgePermission: false,
-        requestAlertPermission: false,
+  //
+  // Guarded like the schedules: `initialize` resolves the status-bar drawable
+  // by name too, so the same `invalid_icon` that kills a schedule killed the
+  // app on start — the notifications simply do not work on such an install,
+  // which is not a reason to refuse to launch.
+  await _guarded(
+    () => _plugin.initialize(
+      settings: const InitializationSettings(
+        iOS: DarwinInitializationSettings(
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+          requestAlertPermission: false,
+        ),
+        android: AndroidInitializationSettings(_androidIcon),
+        macOS: DarwinInitializationSettings(
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+          requestAlertPermission: false,
+        ),
       ),
-      android: AndroidInitializationSettings(_androidIcon),
-      macOS: DarwinInitializationSettings(
-        requestSoundPermission: false,
-        requestBadgePermission: false,
-        requestAlertPermission: false,
-      ),
+      onDidReceiveNotificationResponse: (notification) async {
+        switch (notification) {
+          case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
+            return onExerciseNotification?.call(payload);
+          case NotificationResponse(:int id) when id == _workoutTimeout:
+            return onWorkoutTimeoutNotification?.call();
+          default:
+            return onUnknownNotification?.call(notification.toMap());
+        }
+      },
+      onDidReceiveBackgroundNotificationResponse: _notificationTapBackground,
     ),
-    onDidReceiveNotificationResponse: (notification) async {
-      switch (notification) {
-        case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
-          return onExerciseNotification?.call(payload);
-        case NotificationResponse(:int id) when id == _workoutTimeout:
-          return onWorkoutTimeoutNotification?.call();
-        default:
-          return onUnknownNotification?.call(notification.toMap());
-      }
-    },
-    onDidReceiveBackgroundNotificationResponse: _notificationTapBackground,
   );
 }
 
@@ -226,25 +235,49 @@ Future<bool> hasNotificationsPermission(TargetPlatform platform) async {
   }
 }
 
-/// Schedules [request], and treats "the user said no" as the non-event it is.
+/// Where a notification failure that is not a refusal is reported, on top of
+/// the log every one of them gets.
 ///
-/// iOS refuses a schedule when notification permission was never granted or
-/// has been revoked — `PlatformException(Error 2003, Repository could not save
-/// notification. Source is not authorized., UNErrorDomain)`. Nothing in the app
-/// awaits these, so the throw escaped to `PlatformDispatcher.onError` and was
-/// recorded fatal, on the screen that ends a workout, for the ordinary act of
-/// declining a permission prompt.
+/// Wired to Sentry by [initNotifications]; a test substitutes its own to assert
+/// what got reported. Null is a real state, not just a test's: [initNotifications]
+/// only runs when the app asked for local notifications, so on the web and in
+/// widget tests nobody is listening — which is exactly why [_guarded] logs
+/// first and reports second, instead of letting the failure evaporate when
+/// this happens to be unset.
+void Function(Object error, {StackTrace? stacktrace})? _report;
+
+/// Runs a notification-plugin call and never lets it reach the zone.
 ///
-/// There is nothing to do about it and nothing to tell the user: they chose
-/// this, and the workout is already saved. So the refusal is swallowed and
-/// everything else rethrown — an unauthorized schedule is a preference, while
-/// a missing icon or a bad channel is a bug we need to keep hearing about.
-Future<void> _scheduleUnlessRefused(Future<void> Function() request) async {
+/// Two kinds of failure arrive here and they deserve opposite treatment.
+///
+/// **The user declined.** iOS refuses to store a notification for an app
+/// without permission — `PlatformException(Error 2003, Repository could not
+/// save notification. Source is not authorized., UNErrorDomain)`. That is an
+/// answer, not a fault: they chose it, the workout is already saved, and there
+/// is nothing to tell them. Swallowed silently.
+///
+/// **Everything else**, of which the live example is `invalid_icon` — the
+/// plugin resolves the status-bar drawable by name through
+/// `getIdentifier(name, "drawable", getPackageName())`, and on some installs
+/// that returns 0 for a resource that is demonstrably in the APK under exactly
+/// that name and package. It is reported, and then swallowed too.
+///
+/// Reported-and-swallowed rather than rethrown, which is what this used to do.
+/// Nothing awaits these calls, so a throw became an unhandled error on the
+/// zone — recorded fatal, on the screen that ends a workout and, through
+/// `initialize`, on app start. The app cannot repair a resource table it did
+/// not break, and a notification that will not schedule is not worth taking the
+/// screen down for. Reporting keeps the signal we would otherwise lose by
+/// silencing it; not rethrowing stops it being a crash.
+Future<void> _guarded(Future<void> Function() request) async {
   try {
     await request();
-  } on PlatformException catch (e) {
+  } on PlatformException catch (e, stacktrace) {
     final refused = e.code.contains('2003') || (e.message?.contains('not authorized') ?? false);
-    if (!refused) rethrow;
+    if (refused) return;
+
+    _logger.severe('Notification call failed', e, stacktrace);
+    _report?.call(e, stacktrace: stacktrace);
   }
 }
 
@@ -259,7 +292,7 @@ Future<void> scheduleExerciseNotification(
   if (delay.isNegative) return;
 
   final details = _details(title: title, body: body, subtitle: subtitle);
-  return _scheduleUnlessRefused(
+  return _guarded(
     () => _plugin.zonedSchedule(
       id: _currentExercise,
       title: title,
@@ -284,7 +317,7 @@ Future<void> scheduleWorkoutTimeoutNotification(
   if (delay.isNegative) return;
 
   final details = _details(title: title, body: body);
-  return _scheduleUnlessRefused(
+  return _guarded(
     () => _plugin.zonedSchedule(
       id: _workoutTimeout,
       title: title,
