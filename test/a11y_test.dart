@@ -510,7 +510,7 @@ void main() {
       case _Screen.exerciseNoteEditor:
         final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
         final workout = Workout(name: 'Notes')..add(exercise);
-        await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(template: workout);
+        await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(source: .template, template: workout);
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         if (find.byType(WorkoutDetail).evaluate().isEmpty) {
