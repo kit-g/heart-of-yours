@@ -1835,6 +1835,25 @@ class LEn extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Workout in progress';
+
+  @override
+  String get ongoingWorkoutRest => 'Rest';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Next: set $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Next: set $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'All sets done';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -3667,4 +3686,23 @@ class LEnCa extends LEn {
 
   @override
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Workout in progress';
+
+  @override
+  String get ongoingWorkoutRest => 'Rest';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Next: set $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Next: set $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'All sets done';
 }

@@ -1839,4 +1839,23 @@ class LEs extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'No se pudo guardar la nota. Inténtalo de nuevo.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Entrenamiento en curso';
+
+  @override
+  String get ongoingWorkoutRest => 'Descanso';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Siguiente: serie $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Siguiente: serie $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'Todas las series completadas';
 }

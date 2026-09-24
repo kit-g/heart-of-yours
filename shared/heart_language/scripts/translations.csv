@@ -609,3 +609,8 @@ notificationsOffPrompt,Shown when a workout starts while notifications are off: 
 notificationsOffEnable,Action on the notifications-off reminder: opens the system notification settings,Enable,Enable,Включить,Activar,Activer
 notificationsOffLater,"Action on the notifications-off reminder: dismisses it, and it may appear again next time",Remind me later,Remind me later,Напомнить позже,Recordármelo luego,Me le rappeler plus tard
 notificationsOffNever,Action on the notifications-off reminder: stops it appearing ever again,Never remind me,Never remind me,Больше не напоминать,No volver a recordármelo,Ne plus me le rappeler
+ongoingWorkoutChannel,"Android notification channel name for the ongoing-workout notification, shown in the system notification settings",Workout in progress,Workout in progress,Идёт тренировка,Entrenamiento en curso,Séance en cours
+ongoingWorkoutRest,Lock screen / Dynamic Island label beside the running rest countdown during a workout,Rest,Rest,Отдых,Descanso,Repos
+ongoingWorkoutNextSet,"Lock screen line naming the set the user is about to do, when it has no weight or reps filled in yet",Next: set {number},Next: set {number},Далее: подход {number},Siguiente: serie {number},Suivant : série {number}
+ongoingWorkoutNextSetDetail,"Lock screen line naming the set the user is about to do and what it holds, e.g. 'Next: set 4 · 50 kg x 6'",Next: set {number} · {detail},Next: set {number} · {detail},Далее: подход {number} · {detail},Siguiente: serie {number} · {detail},Suivant : série {number} · {detail}
+ongoingWorkoutAllDone,Lock screen line once every set in the active workout is ticked,All sets done,All sets done,Все подходы выполнены,Todas las series completadas,Toutes les séries terminées
