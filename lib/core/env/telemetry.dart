@@ -1,6 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+/// Forces this run to report even where it normally would not.
+///
+///     flutter run --dart-define=HEART_FORCE_TELEMETRY=true
+///
+/// For verifying the telemetry itself: a debug build otherwise sends nothing
+/// at all — the analytics transport is the silent one and `initSentry` returns
+/// early — so without this there is no way to see an event reach Firebase or a
+/// span reach Sentry short of shipping a release.
+///
+/// It lifts the debug-build rule only. [excludedFromTelemetry] still applies:
+/// a Test Lab robot must never report, whatever the build says.
+const forceTelemetry = bool.fromEnvironment('HEART_FORCE_TELEMETRY');
+
 /// A test for whether the current run should be kept out of telemetry
 /// entirely: its events are noise, not signal (e.g. automated test devices).
 /// Returns `true` to exclude. Register new ones in [_exclusions].

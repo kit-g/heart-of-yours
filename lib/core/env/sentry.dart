@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config) async {
-  if (kDebugMode || await excludedFromTelemetry()) return appRunner();
+  if ((kDebugMode && !forceTelemetry) || await excludedFromTelemetry()) return appRunner();
   return SentryFlutter.init(
     (options) {
       options
@@ -57,7 +57,7 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
 /// `sentry-trace` and `baggage` to every host for spans no hub will collect.
 Future<http.Client> instrumentedClient({http.Client? inner}) async {
   final client = inner ?? http.Client();
-  if (kDebugMode || await excludedFromTelemetry()) return client;
+  if ((kDebugMode && !forceTelemetry) || await excludedFromTelemetry()) return client;
   return SentryHttpClient(client: client);
 }
 
