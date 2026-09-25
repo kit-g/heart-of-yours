@@ -280,6 +280,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     final workout = template ?? Workout(name: name);
     _startedFrom = source;
+    _untickedAtPrompt = 0;
     analytics?.workoutStarted(source: source, pinnedNotes: applyPinnedNotes);
     if (applyPinnedNotes) {
       for (final exercise in workout) {
@@ -344,15 +345,29 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Called only from the finish dialog's "save them" answer — the save drops
   /// these sets otherwise, which is the other answer.
   void completeTypedSets() {
-    for (final set in _typedButUnticked.toList()) {
+    final typed = _typedButUnticked.toList();
+    // Counted here because this is the only place it survives: taking the
+    // prompt's offer ticks every one of them, so by the time the workout
+    // finishes there is nothing left to count and the smell this measures —
+    // sets filled in but never ticked — would read as zero on the very path
+    // that proves it happened.
+    _untickedAtPrompt = typed.length;
+    for (final set in typed) {
       set.isCompleted = true;
     }
     notifyListeners();
   }
 
+  /// How many typed-but-unticked sets the finish prompt found, if it ran.
+  /// Reset with each workout, so it never carries into the next one.
+  int _untickedAtPrompt = 0;
+
   Future<Workout?> _finishActiveWorkout() async {
-    // Counted before `_edited` is cleared, which is what empties it.
-    final unticked = _typedButUnticked.length;
+    // Both branches of the finish prompt, added: whatever it ticked on the
+    // user's behalf, plus whatever is still unticked because they chose to
+    // finish without it. Counted before `_edited` is cleared, which is what
+    // empties the second half.
+    final unticked = _untickedAtPrompt + _typedButUnticked.length;
     _edited.clear();
     activeWorkout?.finish(DateTime.timestamp());
 

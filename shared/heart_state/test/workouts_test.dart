@@ -206,6 +206,9 @@ void main() {
 
       expect(typed.isCompleted, isTrue, reason: 'the set the user logged is kept and marked done');
       expect(prescribed.isCompleted, isFalse, reason: 'a template prescription is not a set anyone did');
+      // Taking the offer ticks every typed set, so a count taken afterwards
+      // reads zero on the very path that proves the affordance was missed.
+      expect(reported.parametersOf('workout_finished')['unticked_sets'], 1);
     });
 
     test('answering "finish without them" leaves the typed sets unticked, so the save drops them', () async {
@@ -219,6 +222,7 @@ void main() {
       await sut.finishActiveWorkout();
 
       expect(typed.isCompleted, isFalse);
+      expect(reported.parametersOf('workout_finished')['unticked_sets'], 1, reason: 'the same smell, the other answer');
     });
 
     test('a workout with nothing typed and nothing ticked has no content to keep', () async {
