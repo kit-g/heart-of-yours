@@ -1882,4 +1882,10 @@ class LRu extends L {
 
   @override
   String get ongoingWorkoutAllDone => 'Все подходы выполнены';
+
+  @override
+  String get lockScreenWorkout => 'Тренировка на экране блокировки';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Время, следующий подход и отдых во время тренировки';
 }

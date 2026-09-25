@@ -8,7 +8,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
 /// Keeps the active workout on the lock screen (#133): the iOS Live Activity
-/// and Dynamic Island, Android's ongoing notification.
+/// and Dynamic Island, Android's ongoing notification. Only when the user has
+/// turned it on (`Preferences.lockScreenWorkout`, off by default).
 ///
 /// Sits below Localizations (MaterialApp's builder) because everything it
 /// sends is finished copy. It speaks only when the summary *changes* — a set
@@ -89,6 +90,8 @@ class _OngoingWorkoutPresenterState extends State<OngoingWorkoutPresenter> {
   }
 
   OngoingWorkout? _snapshot() {
+    // opt-in: off reads as "no workout", which also takes down one already up
+    if (!Preferences.of(context).lockScreenWorkout) return null;
     final workout = _workouts?.activeWorkout;
     if (workout == null) return null;
 

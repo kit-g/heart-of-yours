@@ -1860,4 +1860,10 @@ class LFr extends L {
 
   @override
   String get ongoingWorkoutAllDone => 'Toutes les séries terminées';
+
+  @override
+  String get lockScreenWorkout => 'Séance sur l’écran de verrouillage';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Durée, série suivante et repos pendant la séance';
 }

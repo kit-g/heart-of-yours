@@ -228,6 +228,26 @@ void main() {
     });
   });
 
+  group('workout on the lock screen (#133)', () {
+    test('is off until the user turns it on', () async {
+      await sut.init();
+      expect(sut.lockScreenWorkout, isFalse);
+    });
+
+    test('turning it on notifies, and survives a new instance', () async {
+      await sut.init();
+      final probe = ListenerProbe()..attach(sut);
+
+      sut.lockScreenWorkout = true;
+      expect(sut.lockScreenWorkout, isTrue);
+      expect(probe.notifications, 1);
+
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.lockScreenWorkout, isTrue);
+    });
+  });
+
   group('forgetUser', () {
     test('drops the uid\'s keys and leaves the device\'s, the onboarding flag first among them', () async {
       SharedPreferences.setMockInitialValues({

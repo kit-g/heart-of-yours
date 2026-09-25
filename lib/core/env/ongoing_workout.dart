@@ -40,6 +40,11 @@ typedef OngoingWorkout = ({
 /// Where [OngoingWorkout] is shown. [show] starts or updates it, [end]
 /// withdraws it; both are safe to repeat.
 abstract interface class OngoingWorkoutSurface {
+  /// Whether this device can show it at all — what decides if the setting is
+  /// offered. False on an iPad or below iOS 16.2, which have no Live
+  /// Activities.
+  Future<bool> isSupported();
+
   Future<void> show(OngoingWorkout workout);
 
   Future<void> end();
@@ -65,6 +70,18 @@ class _LiveActivity implements OngoingWorkoutSurface {
   static const _channel = MethodChannel('heart/ongoing_workout');
 
   const new();
+
+  @override
+  Future<bool> isSupported() async {
+    try {
+      return await _channel.invokeMethod<bool>('supported') ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException catch (e, stacktrace) {
+      _logger.warning('Live Activity support check failed', e, stacktrace);
+      return false;
+    }
+  }
 
   @override
   Future<void> show(OngoingWorkout workout) {
@@ -107,6 +124,9 @@ class _LiveActivity implements OngoingWorkoutSurface {
 
 class _OngoingNotification implements OngoingWorkoutSurface {
   const new();
+
+  @override
+  Future<bool> isSupported() async => true;
 
   @override
   Future<void> show(OngoingWorkout workout) => showOngoingWorkoutNotification(workout);

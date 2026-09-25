@@ -3378,5 +3378,17 @@
     "description": "Lock screen line once every set in the active workout is ticked",
     "type": "text",
     "placeholders": {}
+  },
+  "lockScreenWorkout": "Séance sur l’écran de verrouillage",
+  "@lockScreenWorkout": {
+    "description": "Settings switch: show the active workout on the lock screen (iOS Live Activity, Android notification). Off by default",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lockScreenWorkoutSubtitle": "Durée, série suivante et repos pendant la séance",
+  "@lockScreenWorkoutSubtitle": {
+    "description": "Subtitle under the lock-screen workout switch in Settings, saying what it shows",
+    "type": "text",
+    "placeholders": {}
   }
 }

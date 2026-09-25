@@ -14,6 +14,11 @@ void main() {
   const channel = MethodChannel('dexterous.com/flutter/local_notifications');
   late List<MethodCall> calls;
 
+  /// What Android reports as showing. The notification is up unless a test
+  /// says the user swiped it away.
+  late List<Map<String, Object?>> active;
+  PlatformException? activeError;
+
   setUpAll(() {
     tz.initializeTimeZones();
     // no plugin registrant runs under `flutter test` — see notification_refusal_test
@@ -22,9 +27,18 @@ void main() {
 
   setUp(() async {
     calls = [];
+    active = [
+      {'id': 2},
+    ];
+    activeError = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
       calls.add(call);
-      return call.method == 'initialize' ? true : null;
+      return switch (call.method) {
+        'initialize' => true,
+        'getActiveNotifications' when activeError != null => throw activeError!,
+        'getActiveNotifications' => active,
+        _ => null,
+      };
     });
     await initNotifications(platform: TargetPlatform.android);
     calls.clear();
@@ -36,9 +50,9 @@ void main() {
 
   final started = DateTime.now().subtract(const Duration(minutes: 20));
 
-  OngoingWorkout workout({OngoingRest? rest, String channel = 'Workout in progress'}) {
+  OngoingWorkout workout({String id = 'w1', OngoingRest? rest, String channel = 'Workout in progress'}) {
     return (
-      workoutId: 'w1',
+      workoutId: id,
       startedAt: started,
       title: 'Push day',
       exercise: 'Bench Press (Barbell)',
@@ -64,7 +78,7 @@ void main() {
     expect(shown()['body'], 'Next: set 2 · 60 kg x 5');
     expect(shown()['payload'], 'w1');
     expect(details()['channelId'], 'Ongoing Workout');
-    expect(details()['ongoing'], isTrue);
+    expect(details()['ongoing'], isFalse, reason: 'the user can swipe it away (#133)');
     expect(details()['autoCancel'], isFalse);
     expect(details()['onlyAlertOnce'], isTrue);
     expect(details()['usesChronometer'], isTrue);
@@ -112,6 +126,36 @@ void main() {
         .where((call) => call.method == 'createNotificationChannel')
         .map((call) => (call.arguments as Map)['name']);
     expect(created, ['Entrenamiento en curso', 'Séance en cours']);
+  });
+
+  group('a swipe', () {
+    int shows() => calls.where((call) => call.method == 'show').length;
+
+    test('keeps it away for the rest of that workout', () async {
+      await showOngoingWorkoutNotification(workout(id: 'swiped'));
+      expect(shows(), 1);
+
+      active = [];
+      await showOngoingWorkoutNotification(workout(id: 'swiped'));
+      expect(shows(), 1, reason: 'posted for this workout and gone: the user dismissed it');
+
+      active = [
+        {'id': 2},
+      ];
+      await showOngoingWorkoutNotification(workout(id: 'swiped'));
+      expect(shows(), 1, reason: 'a dismissal holds even once something else is showing again');
+
+      await showOngoingWorkoutNotification(workout(id: 'the next one'));
+      expect(shows(), 2, reason: 'the next workout gets it back');
+    });
+
+    test('is never inferred from a question the platform cannot answer', () async {
+      await showOngoingWorkoutNotification(workout(id: 'unanswered'));
+      activeError = PlatformException(code: 'unavailable');
+      await showOngoingWorkoutNotification(workout(id: 'unanswered'));
+
+      expect(shows(), 2);
+    });
   });
 
   test('ending cancels only its own notification', () async {

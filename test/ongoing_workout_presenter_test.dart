@@ -42,6 +42,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     preferences = Preferences();
     await preferences.init();
+    // opt-in (#133); the tests below that are about it switch it back off
+    preferences.lockScreenWorkout = true;
 
     local = MockWorkoutService();
     workouts = Workouts(service: local, remoteService: MockRemoteWorkoutService())..userId = 'u1';
@@ -191,6 +193,38 @@ void main() {
     expect(surface.calls.last, 'end');
   });
 
+  group('the setting', () {
+    testWidgets('is off on a fresh install, and nothing is shown', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      preferences = Preferences();
+      await preferences.init();
+      expect(preferences.lockScreenWorkout, isFalse);
+
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => push());
+      await pump(tester);
+      await workouts.init();
+      await tester.pump();
+
+      expect(surface.calls, ['end'], reason: 'off means no workout — and one left up by a previous run goes');
+    });
+
+    testWidgets('turned off mid-workout takes it down, turned on puts it back', (tester) async {
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => push());
+      await pump(tester);
+      await workouts.init();
+      await tester.pump();
+      expect(surface.calls, ['show']);
+
+      preferences.lockScreenWorkout = false;
+      await tester.pump();
+      expect(surface.calls, ['show', 'end']);
+
+      preferences.lockScreenWorkout = true;
+      await tester.pump();
+      expect(surface.calls, ['show', 'end', 'show']);
+    });
+  });
+
   testWidgets('without a surface nothing is attempted', (tester) async {
     when(local.getActiveWorkout('u1')).thenAnswer((_) async => push());
     await tester.pumpWidget(
@@ -221,6 +255,9 @@ void main() {
 class _Surface implements OngoingWorkoutSurface {
   final calls = <String>[];
   OngoingWorkout? last;
+
+  @override
+  Future<bool> isSupported() async => true;
 
   @override
   Future<void> show(OngoingWorkout workout) async {

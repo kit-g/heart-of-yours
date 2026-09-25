@@ -3297,6 +3297,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'All sets done'**
   String get ongoingWorkoutAllDone;
+
+  /// Settings switch: show the active workout on the lock screen (iOS Live Activity, Android notification). Off by default
+  ///
+  /// In en, this message translates to:
+  /// **'Workout on lock screen'**
+  String get lockScreenWorkout;
+
+  /// Subtitle under the lock-screen workout switch in Settings, saying what it shows
+  ///
+  /// In en, this message translates to:
+  /// **'Time, next set and rest while you train'**
+  String get lockScreenWorkoutSubtitle;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
