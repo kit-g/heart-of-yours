@@ -153,13 +153,7 @@ class _About extends StatelessWidget {
           if (instructions case String instructions when instructions.isNotEmpty)
             Padding(
               padding: const .symmetric(horizontal: 16),
-              child: MarkdownBlock(
-                data: instructions,
-                config: switch (Theme.of(context).brightness) {
-                  .dark => .defaultConfig,
-                  .light => .defaultConfig,
-                },
-              ),
+              child: Prose(instructions, selectable: true),
             ),
         ],
       ),
