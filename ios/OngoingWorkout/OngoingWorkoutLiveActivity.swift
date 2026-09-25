@@ -11,15 +11,21 @@ struct OngoingWorkoutBundle: WidgetBundle {
 
 /// The workout on the lock screen and in the Dynamic Island (#133).
 ///
-/// Display only in v1: tapping opens the app, there are no buttons (#141).
+/// Display only in v1: tapping opens the workout, there are no buttons (#141).
 /// Every clock here ticks on its own — `Text(timerInterval:)`, `Text(_:style:
 /// .timer)`, `ProgressView(timerInterval:)` — so the app updates the activity
 /// only when the workout changes.
 struct OngoingWorkoutLiveActivity: Widget {
+    /// Where a tap lands: the app's own scheme onto the active-workout route
+    /// (`_activeWorkoutPath` in the router). Without it a tap only opens the
+    /// app, on whatever tab it was left.
+    private static let openWorkout = URL(string: "heart:///activeWorkout")
+
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: OngoingWorkoutAttributes.self) { context in
             LockScreenView(context: context)
                 .activitySystemActionForegroundColor(.primary)
+                .widgetURL(Self.openWorkout)
         } dynamicIsland: { context in
             // The island is always drawn on black, so it always takes the
             // dark half of the theme.
@@ -33,7 +39,7 @@ struct OngoingWorkoutLiveActivity: Widget {
                     HeartMark()
                         .fill(accent)
                         .frame(width: 22, height: 22)
-                        .padding(.leading, 4)
+                        .padding(.leading, 8)
                         .accessibilityHidden(true)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -41,6 +47,7 @@ struct OngoingWorkoutLiveActivity: Widget {
                         .font(.headline.monospacedDigit())
                         .foregroundStyle(ink)
                         .frame(maxWidth: 80, alignment: .trailing)
+                        .padding(.trailing, 8)
                 }
                 DynamicIslandExpandedRegion(.center) {
                     Text(state.title)
@@ -53,6 +60,10 @@ struct OngoingWorkoutLiveActivity: Widget {
                         RestRow(state: state, isStale: context.isStale, accent: accent, ink: ink)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    // the expanded island's corners are deep: flush content
+                    // is clipped at both bottom corners
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
                 }
             } compactLeading: {
                 HeartMark()
@@ -82,6 +93,7 @@ struct OngoingWorkoutLiveActivity: Widget {
                 }
             }
             .keylineTint(accent)
+            .widgetURL(Self.openWorkout)
         }
     }
 }
