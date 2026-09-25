@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
+import 'package:heart/presentation/widgets/prose.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:markdown_widget/markdown_widget.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -23,14 +26,14 @@ void main() {
   /// [instructions] is not decoration: `Exercise.hasInfo` gates whether the
   /// About tab exists at all, and it looks only at asset, thumbnail and
   /// instructions — never at movement.
-  Exercise ex(String name, {Map<String, dynamic>? movement, bool? validated}) {
+  Exercise ex(String name, {Map<String, dynamic>? movement, bool? validated, String? instructions}) {
     return Exercise.fromJson({
       'id': 'id-${name.toLowerCase().replaceAll(' ', '-')}',
       'name': name,
       'category': 'Machine',
       'target': 'Back',
       'archived': false,
-      'instructions': 'Pull the bar down.',
+      'instructions': instructions ?? 'Pull the bar down.',
       'movement': ?movement,
       'validated': ?validated,
     });
@@ -174,6 +177,53 @@ void main() {
       await pumpAbout(tester, ex('My Curl'));
 
       expect(find.text('Machine-translated'), findsNothing);
+    });
+  });
+
+  // Library instructions are heading-heavy — `## Overview`, `## How to Perform`,
+  // `### 1. Starting Position` in every entry — so the headings are most of what
+  // the block looks like.
+  group('instructions', () {
+    const instructions = '## Overview\nPull the bar down.\n\n### 1. Starting Position\n- Sit tall';
+
+    /// The style the text [label] is actually painted in.
+    TextStyle? paintedStyle(WidgetTester tester, String label) {
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.text(label), matching: find.byType(RichText)),
+      );
+      TextStyle? style;
+      paragraph.text.visitChildren((span) {
+        if (span case TextSpan(:final text?, style: final found?) when text == label) {
+          style = found;
+          return false;
+        }
+        return true;
+      });
+      return style;
+    }
+
+    testWidgets('headings take the theme title roles, not markdown_widget sizes', (tester) async {
+      await pumpAbout(tester, ex('Lat Pulldown (Machine)', instructions: instructions));
+      final textTheme = Theme.of(tester.element(find.byType(Prose))).textTheme;
+
+      expect(paintedStyle(tester, 'Overview')?.fontSize, textTheme.titleMedium?.fontSize);
+      expect(paintedStyle(tester, '1. Starting Position')?.fontSize, textTheme.titleSmall?.fontSize);
+    });
+
+    testWidgets('headings announce themselves as headers', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpAbout(tester, ex('Lat Pulldown (Machine)', instructions: instructions));
+
+      expect(tester.getSemantics(find.text('Overview')), isSemantics(isHeader: true));
+      expect(tester.getSemantics(find.text('1. Starting Position')), isSemantics(isHeader: true));
+      handle.dispose();
+    });
+
+    testWidgets('headings carry no rule under them', (tester) async {
+      await pumpAbout(tester, ex('Lat Pulldown (Machine)', instructions: instructions));
+
+      expect(find.text('Overview'), findsOneWidget);
+      expect(find.descendant(of: find.byType(MarkdownBlock), matching: find.byType(Divider)), findsNothing);
     });
   });
 }
