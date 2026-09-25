@@ -1863,6 +1863,12 @@ class LEn extends L {
 
   @override
   String get ongoingWorkoutAllDone => 'All sets done';
+
+  @override
+  String get lockScreenWorkout => 'Workout on lock screen';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -3723,4 +3729,10 @@ class LEnCa extends LEn {
 
   @override
   String get ongoingWorkoutAllDone => 'All sets done';
+
+  @override
+  String get lockScreenWorkout => 'Workout on lock screen';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
 }

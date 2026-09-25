@@ -1867,4 +1867,10 @@ class LEs extends L {
 
   @override
   String get ongoingWorkoutAllDone => 'Todas las series completadas';
+
+  @override
+  String get lockScreenWorkout => 'Entrenamiento en la pantalla de bloqueo';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Tiempo, siguiente serie y descanso mientras entrenas';
 }
