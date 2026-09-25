@@ -558,13 +558,15 @@ Future<void> _initApp(
         // A notification that will not schedule is reported rather than thrown,
         // so it reaches Sentry without taking a screen down with it.
         onError: (error, {stacktrace}) => reportToSentry(error, stacktrace: stacktrace),
-        onExerciseNotification: (exerciseId) {
+        onExerciseNotification: (exerciseId) async {
           // exercises with a timer emit a local notification
           // when tapped on, it will:
           // - redirect the user to the workout page
           final HeartRouter(:goToActiveWorkout, :config, :goToWorkouts) = HeartRouter.of(context);
+          // a tap that launched the app arrives before the workout is loaded
+          await _activeWorkoutResolved(workouts);
 
-          if (Workouts.of(context).activeWorkout != null) {
+          if (workouts.activeWorkout != null) {
             if (config.state.path != '/activeWorkout') {
               goToActiveWorkout();
               Future.delayed(const Duration(milliseconds: 300)).then(
@@ -704,14 +706,39 @@ Future<void> _initApp(
 
 /// Where a workout notification lands: the workout if it is still going, the
 /// workouts tab if it finished in the meantime.
-void _openActiveWorkout(BuildContext context) {
+Future<void> _openActiveWorkout(BuildContext context) async {
   final HeartRouter(:goToActiveWorkout, :goToWorkouts) = HeartRouter.of(context);
-  switch (Workouts.of(context).activeWorkout) {
+  final workouts = Workouts.of(context);
+  await _activeWorkoutResolved(workouts);
+  switch (workouts.activeWorkout) {
     case null:
       goToWorkouts();
     case _:
-      goToActiveWorkout();
+      await goToActiveWorkout();
   }
+}
+
+/// Completes once [workouts] knows whether a workout is in progress.
+///
+/// A notification tap can arrive before that: one that launched the app is
+/// routed while `Workouts.init` is still reading the mirror, and asked then,
+/// "no active workout" would send it to the workouts tab. Bounded, so a
+/// session that never resolves (no exercise catalog, a sign-out) cannot leave
+/// the tap waiting forever — it then routes on what is known.
+Future<void> _activeWorkoutResolved(Workouts workouts) {
+  if (workouts.hasResolvedActiveWorkout) return Future.value();
+  final resolved = Completer<void>();
+  void check() {
+    if (!workouts.hasResolvedActiveWorkout || resolved.isCompleted) return;
+    workouts.removeListener(check);
+    resolved.complete();
+  }
+
+  workouts.addListener(check);
+  return resolved.future.timeout(
+    const Duration(seconds: 10),
+    onTimeout: () => workouts.removeListener(check),
+  );
 }
 
 /// Everything that reads the mirror against the server: the history pull, the

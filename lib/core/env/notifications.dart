@@ -46,6 +46,21 @@ Future<void> initNotifications({
   tz.initializeTimeZones();
   _report = onError;
 
+  // One router for every tap, whether it reaches a running app or is the one
+  // that launched it.
+  void route(NotificationResponse notification) {
+    switch (notification) {
+      case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
+        return onExerciseNotification?.call(payload);
+      case NotificationResponse(:int id) when id == _workoutTimeout:
+        return onWorkoutTimeoutNotification?.call();
+      case NotificationResponse(:int id) when id == _ongoingWorkout:
+        return onOngoingWorkoutNotification?.call();
+      default:
+        return onUnknownNotification?.call(notification.toMap());
+    }
+  }
+
   await _createNotificationChannel(platform);
   // Permission is no longer requested here — we ask lazily, the first time the
   // user sets a rest timer (see [ensureNotificationPermission]). The Darwin
@@ -70,21 +85,23 @@ Future<void> initNotifications({
           requestAlertPermission: false,
         ),
       ),
-      onDidReceiveNotificationResponse: (notification) async {
-        switch (notification) {
-          case NotificationResponse(:int id, :String payload) when id == _currentExercise && payload.isNotEmpty:
-            return onExerciseNotification?.call(payload);
-          case NotificationResponse(:int id) when id == _workoutTimeout:
-            return onWorkoutTimeoutNotification?.call();
-          case NotificationResponse(:int id) when id == _ongoingWorkout:
-            return onOngoingWorkoutNotification?.call();
-          default:
-            return onUnknownNotification?.call(notification.toMap());
-        }
-      },
+      onDidReceiveNotificationResponse: route,
       onDidReceiveBackgroundNotificationResponse: _notificationTapBackground,
     ),
   );
+
+  // A tap that *launched* the app never reaches the callback above: the plugin
+  // only reports it here. Without this a cold start from any notification —
+  // the rest timer, the idle reminder, the workout on the lock screen — opened
+  // wherever the app would have opened anyway.
+  try {
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    if (launch case NotificationAppLaunchDetails(didNotificationLaunchApp: true, :final notificationResponse?)) {
+      route(notificationResponse);
+    }
+  } on PlatformException catch (e, stacktrace) {
+    _logger.warning('Notification launch details unavailable', e, stacktrace);
+  }
 }
 
 /// Requests notification permission if it isn't already granted, returning
