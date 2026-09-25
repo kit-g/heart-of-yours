@@ -244,6 +244,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                       );
                     },
                   ),
+                  const _LockScreenWorkoutSwitch(),
                   ListTile(
                     leading: const Icon(Icons.info_outline_rounded),
                     title: Text(aboutApp),
@@ -446,6 +447,65 @@ class _EraseDataActions extends StatelessWidget {
 ///
 /// The title is a real header to assistive tech, so a screen reader can jump
 /// section to section instead of row by row.
+/// The opt-in for the workout on the lock screen (#133): the Live Activity
+/// on iOS, the workout notification on Android. Off until turned on.
+///
+/// Absent rather than dead where there is nothing to show it on — the web,
+/// the desktop, an iPad, iOS below 16.2. Turning it on for Android asks for
+/// the notification permission it needs, if it was never granted; iOS asks
+/// its own question the first time the activity reaches the lock screen.
+class _LockScreenWorkoutSwitch extends StatefulWidget {
+  const new();
+
+  @override
+  State<_LockScreenWorkoutSwitch> createState() => _LockScreenWorkoutSwitchState();
+}
+
+class _LockScreenWorkoutSwitchState extends State<_LockScreenWorkoutSwitch> {
+  /// Asked once: the answer is a fact about the device, and a new future on
+  /// every rebuild would blank the row each time the switch is flipped.
+  late final Future<bool> _supported = switch ((kIsWeb, ongoingWorkoutSurface(Theme.of(context).platform))) {
+    (false, OngoingWorkoutSurface surface) => surface.isSupported(),
+    _ => Future.value(false),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:lockScreenWorkout, :lockScreenWorkoutSubtitle) = L.of(context);
+    final preferences = Preferences.watch(context);
+    final ThemeData(
+      :platform,
+      colorScheme: ColorScheme(:tertiaryContainer, :onTertiaryContainer, :outlineVariant),
+    ) = Theme.of(
+      context,
+    );
+
+    return FutureBuilder<bool>(
+      future: _supported,
+      builder: (context, snapshot) {
+        return switch (snapshot.data) {
+          true => SwitchListTile.adaptive(
+            secondary: const Icon(Icons.screen_lock_portrait_rounded),
+            title: Text(lockScreenWorkout),
+            subtitle: Text(lockScreenWorkoutSubtitle),
+            value: preferences.lockScreenWorkout,
+            // the accent as a fill, like PrimaryButton — not the platform's
+            // green; and a hairline track, so "off" is still a visible control
+            activeTrackColor: tertiaryContainer,
+            activeThumbColor: onTertiaryContainer,
+            inactiveTrackColor: outlineVariant,
+            onChanged: (on) {
+              preferences.lockScreenWorkout = on;
+              if (on && platform == .android) ensureNotificationPermission(platform);
+            },
+          ),
+          _ => const SizedBox.shrink(),
+        };
+      },
+    );
+  }
+}
+
 class _Section extends StatelessWidget {
   final String title;
   final List<Widget> children;

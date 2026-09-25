@@ -14,6 +14,7 @@ const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
 const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
+const _lockScreenWorkout = 'lockScreenWorkout';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -280,6 +281,20 @@ class Preferences with ChangeNotifier {
   /// nothing is shown on a guess.
   bool get onboardingSeen {
     return _prefs?.getBool(onboardingSeenKey) ?? !_isInitialized;
+  }
+
+  /// Whether the active workout is shown outside the app — the iOS Live
+  /// Activity, Android's workout notification (#133).
+  ///
+  /// Off until the user turns it on: something that sits on the lock screen
+  /// for an hour is a feature to choose, not a default to discover. A fact
+  /// about the device rather than a user, like the theme mode and the units — it
+  /// is this phone's lock screen.
+  bool get lockScreenWorkout => _prefs?.getBool(_lockScreenWorkout) ?? false;
+
+  set lockScreenWorkout(bool value) {
+    _prefs?.setBool(_lockScreenWorkout, value);
+    notifyListeners();
   }
 
   Future<bool>? markOnboardingSeen() {

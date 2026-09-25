@@ -430,9 +430,11 @@ Future<void> cancelExerciseNotification() {
 /// frozen by then, the countdown shows a negative until the next update, and
 /// the "rest complete" notification has already said the same thing louder.
 ///
-/// Ongoing, so it cannot be swiped away mid-workout; it goes when the workout
-/// does ([cancelOngoingWorkoutNotification]). Nothing here needs a foreground
-/// service — the chronometer ticks without the app.
+/// Not pinned: the user can swipe it away, and a swipe holds for the rest of
+/// that workout — see [_ongoingDismissedFor]. A notification that comes back
+/// every time a set is ticked would be worse than none. It otherwise goes when
+/// the workout does ([cancelOngoingWorkoutNotification]). Nothing here needs a
+/// foreground service — the chronometer ticks without the app.
 Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
   final resting = switch (workout.rest) {
     OngoingRest(:final end) => end.isAfter(DateTime.now()),
@@ -451,7 +453,6 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
       color: workout.preset.light.accentInk,
       importance: .low,
       priority: .low,
-      ongoing: true,
       autoCancel: false,
       onlyAlertOnce: true,
       silent: true,
@@ -469,6 +470,12 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
 
   return _guarded(
     () async {
+      if (workout.workoutId == _ongoingDismissedFor) return;
+      if (workout.workoutId == _ongoingShownFor && !await _isOngoingShowing()) {
+        _ongoingDismissedFor = workout.workoutId;
+        return;
+      }
+
       await _ensureOngoingChannel(workout.channel);
       await _plugin.show(
         id: _ongoingWorkout,
@@ -477,8 +484,32 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
         notificationDetails: details,
         payload: workout.workoutId,
       );
+      _ongoingShownFor = workout.workoutId;
     },
   );
+}
+
+/// The workout the ongoing notification was last posted for, in this process.
+String? _ongoingShownFor;
+
+/// A workout whose ongoing notification the user swiped away.
+///
+/// Android says nothing when that happens, so it is inferred: posted for this
+/// workout, and no longer among the app's active notifications. From then on
+/// the workout stays off the shade and the lock screen — the next one gets it
+/// again. In memory only, so a process restarted mid-workout posts it once
+/// more; the swipe it would take to dismiss it again is the cost.
+String? _ongoingDismissedFor;
+
+/// Whether the ongoing notification is still up. Assumes it is when the
+/// platform cannot say, so an unanswerable question never silences it.
+Future<bool> _isOngoingShowing() async {
+  try {
+    final active = await _plugin.getActiveNotifications();
+    return active.any((notification) => notification.id == _ongoingWorkout);
+  } on PlatformException {
+    return true;
+  }
 }
 
 /// The name [_ongoingChannelId] was last created under, in this process.
@@ -509,6 +540,7 @@ Future<void> _ensureOngoingChannel(String name) async {
 }
 
 Future<void> cancelOngoingWorkoutNotification() {
+  _ongoingShownFor = null;
   return _guarded(() => _plugin.cancel(id: _ongoingWorkout));
 }
 

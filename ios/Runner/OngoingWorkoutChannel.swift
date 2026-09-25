@@ -16,6 +16,10 @@ enum OngoingWorkoutChannel {
             guard #available(iOS 16.2, *) else { return result(nil) }
 
             switch call.method {
+            case "supported":
+                // Live Activities are an iPhone feature; an iPad has the API
+                // and never shows one, so the setting would be a dead switch
+                result(UIDevice.current.userInterfaceIdiom == .phone)
             case "show":
                 guard let arguments = call.arguments as? [String: Any],
                       let request = OngoingWorkoutRequest(arguments)
@@ -84,10 +88,20 @@ struct OngoingWorkoutRequest {
 enum OngoingWorkoutActivities {
     typealias WorkoutActivity = Activity<OngoingWorkoutAttributes>
 
+    /// The workout an activity was last requested for. Persisted, because it
+    /// is what tells "never shown" from "the user swiped it away" — and a
+    /// process relaunched mid-workout must not undo their swipe.
+    private static let requestedKey = "ongoingWorkout.requestedFor"
+
     /// Starts the workout's activity, or updates it if one is already up —
     /// including one left behind by a process that was killed mid-workout,
     /// which is found again by the workout's id. Activities for any other
     /// workout are strays and go.
+    ///
+    /// An activity already requested for this workout that is no longer live
+    /// was dismissed — swiped off the lock screen, or ended by the system — and
+    /// stays gone until the next workout: one that came back on every ticked
+    /// set would be worse than none.
     static func show(_ request: OngoingWorkoutRequest) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
@@ -105,18 +119,23 @@ enum OngoingWorkoutActivities {
             return
         }
 
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: requestedKey) != request.workoutId else { return }
+
         do {
             _ = try WorkoutActivity.request(
                 attributes: .init(workoutId: request.workoutId, startedAt: request.startedAt),
                 content: content,
                 pushType: nil
             )
+            defaults.set(request.workoutId, forKey: requestedKey)
         } catch {
             log.error("Live Activity request failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
     static func end() async {
+        UserDefaults.standard.removeObject(forKey: requestedKey)
         for activity in WorkoutActivity.activities {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
