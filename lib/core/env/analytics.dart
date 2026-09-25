@@ -48,7 +48,7 @@ class const SilentAnalyticsService() implements AnalyticsService {
 ///
 /// Firebase must be initialized first: this touches `FirebaseAnalytics.instance`.
 Future<AnalyticsService> initAnalytics() async {
-  final reports = !kDebugMode && !await excludedFromTelemetry();
+  final reports = (!kDebugMode || forceTelemetry) && !await excludedFromTelemetry();
   try {
     await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(reports);
   } catch (_) {
