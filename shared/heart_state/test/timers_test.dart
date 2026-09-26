@@ -143,6 +143,20 @@ void main() {
       expect(service.setCalls.length, 3);
       expect(service.setCalls.last, (exercise: 'Push Up', userId: 'u1', seconds: 35));
     });
+
+    test('all lists every timer, follows removals, and cannot be written through', () async {
+      timers.userId = 'u1';
+
+      await timers.setRestTimer('Push Up', 30);
+      await timers.setRestTimer('Squat', 90);
+      expect(timers.all, {'Push Up': 30, 'Squat': 90});
+      expect(timers.isNotEmpty, isTrue);
+
+      await timers.remove('Push Up');
+      expect(timers.all, {'Squat': 90});
+
+      expect(() => timers.all['Deadlift'] = 60, throwsUnsupportedError);
+    });
   });
 
   group('Timers with Provider (widget)', () {
