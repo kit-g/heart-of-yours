@@ -374,13 +374,17 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     final active = activeWorkout;
     if (active == null) return null;
 
-    // Measured here, before the save: `saveWorkout` round-trips through the
-    // server, whose echo is known to come back without its exercises
-    // (heart-of-yours#85). Counting afterwards reports every finished workout
-    // as empty, and looks entirely plausible in the console.
+    final saved = await saveWorkout(active);
+
+    // Measured after the save, and off `active` rather than `saved`, because
+    // `saveWorkout` opens with `removeEmptySets` — which drops every set that
+    // was never ticked, and then any exercise left holding none. What survives
+    // is the workout that gets stored and shown in history, so it is the only
+    // honest answer to "how much did they log": counting first would credit a
+    // template's fifteen prescribed sets to someone who ticked three. What was
+    // set up and abandoned is [unticked]'s job, counted above.
     _reportFinished(active, unticked: unticked);
 
-    final saved = await saveWorkout(active);
     _activeWorkout = null;
     return saved;
   }
