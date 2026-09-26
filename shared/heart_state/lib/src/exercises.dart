@@ -199,7 +199,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// The library comes from the CDN in both modes — the one network call an
   /// anonymous session makes. Only the user's own exercises need the account,
   /// and they follow once the library is in.
-  Future<bool> init({DateTime? lastSync, String? locale}) async {
+  Future<bool> init({String? locale}) async {
     _catalogLocale = locale;
     try {
       final (localSync, local) = await _service.getExercises(userId: userId);

@@ -9,7 +9,6 @@ export 'src/auth.dart';
 export 'src/backfill.dart';
 export 'src/charts.dart';
 export 'src/clear.dart';
-export 'src/config.dart';
 export 'src/exercises.dart';
 export 'src/export.dart';
 export 'src/goals.dart';
