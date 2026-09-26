@@ -423,6 +423,15 @@ class LEn extends L {
   String get aboutApp => 'About app';
 
   @override
+  String get whatsNew => 'What\'s new';
+
+  @override
+  String get whatsNewThisVersion => 'This version';
+
+  @override
+  String get whatsNewEmpty => 'No release notes in this version of the app.';
+
+  @override
   String get congratulations => 'Congratulations!';
 
   @override
@@ -469,6 +478,19 @@ class LEn extends L {
   @override
   String get finishWorkoutWarningBody =>
       'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
+
+  @override
+  String get notificationsOffPrompt =>
+      'Notifications are off, so we can\'t remind you about a workout you leave unfinished.';
+
+  @override
+  String get notificationsOffEnable => 'Enable';
+
+  @override
+  String get notificationsOffLater => 'Remind me later';
+
+  @override
+  String get notificationsOffNever => 'Never remind me';
 
   @override
   String get untickedSetsTitle => 'Some sets aren\'t ticked';
@@ -1822,6 +1844,31 @@ class LEn extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Workout in progress';
+
+  @override
+  String get ongoingWorkoutRest => 'Rest';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Next: set $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Next: set $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'All sets done';
+
+  @override
+  String get lockScreenWorkout => 'Workout on lock screen';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -2242,6 +2289,15 @@ class LEnCa extends LEn {
   String get aboutApp => 'About app';
 
   @override
+  String get whatsNew => 'What\'s new';
+
+  @override
+  String get whatsNewThisVersion => 'This version';
+
+  @override
+  String get whatsNewEmpty => 'No release notes in this version of the app.';
+
+  @override
   String get congratulations => 'Congratulations!';
 
   @override
@@ -2288,6 +2344,19 @@ class LEnCa extends LEn {
   @override
   String get finishWorkoutWarningBody =>
       'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
+
+  @override
+  String get notificationsOffPrompt =>
+      'Notifications are off, so we can\'t remind you about a workout you leave unfinished.';
+
+  @override
+  String get notificationsOffEnable => 'Enable';
+
+  @override
+  String get notificationsOffLater => 'Remind me later';
+
+  @override
+  String get notificationsOffNever => 'Never remind me';
 
   @override
   String get untickedSetsTitle => 'Some sets aren\'t ticked';
@@ -3641,4 +3710,29 @@ class LEnCa extends LEn {
 
   @override
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Workout in progress';
+
+  @override
+  String get ongoingWorkoutRest => 'Rest';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Next: set $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Next: set $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'All sets done';
+
+  @override
+  String get lockScreenWorkout => 'Workout on lock screen';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
 }

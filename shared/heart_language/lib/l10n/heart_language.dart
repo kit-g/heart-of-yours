@@ -856,6 +856,24 @@ abstract class L {
   /// **'About app'**
   String get aboutApp;
 
+  /// Settings row and page title: the list of release notes, one card per app version
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new'**
+  String get whatsNew;
+
+  /// What's new page, a small label on the card of the release the installed app is running
+  ///
+  /// In en, this message translates to:
+  /// **'This version'**
+  String get whatsNewThisVersion;
+
+  /// What's new page, shown when there are no release notes to list
+  ///
+  /// In en, this message translates to:
+  /// **'No release notes in this version of the app.'**
+  String get whatsNewEmpty;
+
   /// Workout complete screen, title
   ///
   /// In en, this message translates to:
@@ -909,6 +927,30 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.'**
   String get finishWorkoutWarningBody;
+
+  /// Shown when a workout starts while notifications are off: what the user loses by leaving them off
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off, so we can\'t remind you about a workout you leave unfinished.'**
+  String get notificationsOffPrompt;
+
+  /// Action on the notifications-off reminder: opens the system notification settings
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get notificationsOffEnable;
+
+  /// Action on the notifications-off reminder: dismisses it, and it may appear again next time
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me later'**
+  String get notificationsOffLater;
+
+  /// Action on the notifications-off reminder: stops it appearing ever again
+  ///
+  /// In en, this message translates to:
+  /// **'Never remind me'**
+  String get notificationsOffNever;
 
   /// Finish dialog when sets carry values but were never marked done
   ///
@@ -3243,6 +3285,48 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Could not save the note. Please try again.'**
   String get exerciseNoteSaveFailed;
+
+  /// Android notification channel name for the ongoing-workout notification, shown in the system notification settings
+  ///
+  /// In en, this message translates to:
+  /// **'Workout in progress'**
+  String get ongoingWorkoutChannel;
+
+  /// Lock screen / Dynamic Island label beside the running rest countdown during a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Rest'**
+  String get ongoingWorkoutRest;
+
+  /// Lock screen line naming the set the user is about to do, when it has no weight or reps filled in yet
+  ///
+  /// In en, this message translates to:
+  /// **'Next: set {number}'**
+  String ongoingWorkoutNextSet(int number);
+
+  /// Lock screen line naming the set the user is about to do and what it holds, e.g. 'Next: set 4 · 50 kg x 6'
+  ///
+  /// In en, this message translates to:
+  /// **'Next: set {number} · {detail}'**
+  String ongoingWorkoutNextSetDetail(int number, Object detail);
+
+  /// Lock screen line once every set in the active workout is ticked
+  ///
+  /// In en, this message translates to:
+  /// **'All sets done'**
+  String get ongoingWorkoutAllDone;
+
+  /// Settings switch: show the active workout on the lock screen (iOS Live Activity, Android notification). Off by default
+  ///
+  /// In en, this message translates to:
+  /// **'Workout on lock screen'**
+  String get lockScreenWorkout;
+
+  /// Subtitle under the lock-screen workout switch in Settings, saying what it shows
+  ///
+  /// In en, this message translates to:
+  /// **'Time, next set and rest while you train'**
+  String get lockScreenWorkoutSubtitle;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -424,6 +424,15 @@ class LEs extends L {
   String get aboutApp => 'Acerca de la app';
 
   @override
+  String get whatsNew => 'Novedades';
+
+  @override
+  String get whatsNewThisVersion => 'Esta versión';
+
+  @override
+  String get whatsNewEmpty => 'Esta versión de la app no incluye notas de la versión.';
+
+  @override
   String get congratulations => '¡Felicidades!';
 
   @override
@@ -470,6 +479,19 @@ class LEs extends L {
   @override
   String get finishWorkoutWarningBody =>
       'Las series vacías o inválidas se descartarán, y todas las series válidas se marcarán como completadas.';
+
+  @override
+  String get notificationsOffPrompt =>
+      'Las notificaciones están desactivadas, así que no podremos recordarte un entrenamiento sin terminar.';
+
+  @override
+  String get notificationsOffEnable => 'Activar';
+
+  @override
+  String get notificationsOffLater => 'Recordármelo luego';
+
+  @override
+  String get notificationsOffNever => 'No volver a recordármelo';
 
   @override
   String get untickedSetsTitle => 'Algunas series no están marcadas';
@@ -1826,4 +1848,29 @@ class LEs extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'No se pudo guardar la nota. Inténtalo de nuevo.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Entrenamiento en curso';
+
+  @override
+  String get ongoingWorkoutRest => 'Descanso';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Siguiente: serie $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Siguiente: serie $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'Todas las series completadas';
+
+  @override
+  String get lockScreenWorkout => 'Entrenamiento en la pantalla de bloqueo';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Tiempo, siguiente serie y descanso mientras entrenas';
 }

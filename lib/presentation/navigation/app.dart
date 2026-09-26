@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
@@ -18,6 +19,7 @@ import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart_api/heart_api.dart';
@@ -397,7 +399,15 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       // reach a ScaffoldMessenger for the notifications-off reminder.
       builder: (context, child) => _WorkoutTimeoutScheduler(
         enabled: widget.hasLocalNotifications,
-        child: child ?? const SizedBox.shrink(),
+        child: OngoingWorkoutPresenter(
+          // the same gate: off means tests, web, or a build that never
+          // initialised the notifications plugin the Android side posts through
+          surface: switch (widget.hasLocalNotifications) {
+            true => ongoingWorkoutSurface(Theme.of(context).platform),
+            false => null,
+          },
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
       // Every locale heart_language ships — the backend serves exercise
       // content per request from `Accept-Language` (which states the raw
@@ -506,12 +516,34 @@ class _WorkoutTimeoutSchedulerState extends State<_WorkoutTimeoutScheduler> {
     );
   }
 
+  /// Says what is lost while notifications are off, once a workout has started.
+  ///
+  /// It used to open with `if (!Timers.of(context).isNotEmpty) return` — only
+  /// worth mentioning to someone using rest timers. That made sense when rest
+  /// timers were the only notification the app sent. They are not: the
+  /// unfinished-workout reminder goes to everyone who starts a workout, and
+  /// gating its warning on a feature it has nothing to do with meant the people
+  /// most likely to be surprised were the ones never told. The gate is now the
+  /// user's own answer instead.
   Future<void> _remindIfNotificationsOff() async {
-    if (!Timers.of(context).isNotEmpty) return;
+    final preferences = Preferences.of(context);
+    final userId = Auth.of(context).user?.id;
+    if (preferences.notificationsReminderDismissed(userId)) return;
+
     final enabled = await hasNotificationsPermission(Theme.of(context).platform);
     if (enabled || !mounted) return;
-    final L(:notificationsDisabledReminder, :settings) = L.of(context);
-    remindNotificationsOff(context, message: notificationsDisabledReminder, settingsLabel: settings);
+
+    final L(:notificationsOffPrompt, :notificationsOffEnable, :notificationsOffLater, :notificationsOffNever) = L.of(
+      context,
+    );
+    promptNotificationsOff(
+      context,
+      message: notificationsOffPrompt,
+      enableLabel: notificationsOffEnable,
+      laterLabel: notificationsOffLater,
+      neverLabel: notificationsOffNever,
+      onNever: () => preferences.dismissNotificationsReminder(userId),
+    );
   }
 
   @override
@@ -529,13 +561,18 @@ Future<void> _initApp(
     if (hasLocalNotifications ?? false) {
       initNotifications(
         platform: Theme.of(context).platform,
-        onExerciseNotification: (exerciseId) {
+        // A notification that will not schedule is reported rather than thrown,
+        // so it reaches Sentry without taking a screen down with it.
+        onError: (error, {stacktrace}) => reportToSentry(error, stacktrace: stacktrace),
+        onExerciseNotification: (exerciseId) async {
           // exercises with a timer emit a local notification
           // when tapped on, it will:
           // - redirect the user to the workout page
           final HeartRouter(:goToActiveWorkout, :config, :goToWorkouts) = HeartRouter.of(context);
+          // a tap that launched the app arrives before the workout is loaded
+          await _activeWorkoutResolved(workouts);
 
-          if (Workouts.of(context).activeWorkout != null) {
+          if (workouts.activeWorkout != null) {
             if (config.state.path != '/activeWorkout') {
               goToActiveWorkout();
               Future.delayed(const Duration(milliseconds: 300)).then(
@@ -552,15 +589,9 @@ Future<void> _initApp(
             goToWorkouts();
           }
         },
-        onWorkoutTimeoutNotification: () {
-          final HeartRouter(:goToActiveWorkout, :goToWorkouts) = HeartRouter.of(context);
-          switch (Workouts.of(context).activeWorkout) {
-            case null:
-              goToWorkouts();
-            case _:
-              goToActiveWorkout();
-          }
-        },
+        onWorkoutTimeoutNotification: () => _openActiveWorkout(context),
+        // the ongoing workout on Android's lock screen and shade
+        onOngoingWorkoutNotification: () => _openActiveWorkout(context),
         onUnknownNotification: reportToSentry,
       );
     }
@@ -675,6 +706,43 @@ Future<void> _initApp(
       );
     }
   });
+}
+
+/// Where a workout notification lands: the workout if it is still going, the
+/// workouts tab if it finished in the meantime.
+Future<void> _openActiveWorkout(BuildContext context) async {
+  final HeartRouter(:goToActiveWorkout, :goToWorkouts) = HeartRouter.of(context);
+  final workouts = Workouts.of(context);
+  await _activeWorkoutResolved(workouts);
+  switch (workouts.activeWorkout) {
+    case null:
+      goToWorkouts();
+    case _:
+      await goToActiveWorkout();
+  }
+}
+
+/// Completes once [workouts] knows whether a workout is in progress.
+///
+/// A notification tap can arrive before that: one that launched the app is
+/// routed while `Workouts.init` is still reading the mirror, and asked then,
+/// "no active workout" would send it to the workouts tab. Bounded, so a
+/// session that never resolves (no exercise catalog, a sign-out) cannot leave
+/// the tap waiting forever — it then routes on what is known.
+Future<void> _activeWorkoutResolved(Workouts workouts) {
+  if (workouts.hasResolvedActiveWorkout) return Future.value();
+  final resolved = Completer<void>();
+  void check() {
+    if (!workouts.hasResolvedActiveWorkout || resolved.isCompleted) return;
+    workouts.removeListener(check);
+    resolved.complete();
+  }
+
+  workouts.addListener(check);
+  return resolved.future.timeout(
+    const Duration(seconds: 10),
+    onTimeout: () => workouts.removeListener(check),
+  );
 }
 
 /// Everything that reads the mirror against the server: the history pull, the

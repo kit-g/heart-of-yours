@@ -424,6 +424,15 @@ class LRu extends L {
   String get aboutApp => 'О приложении';
 
   @override
+  String get whatsNew => 'Что нового';
+
+  @override
+  String get whatsNewThisVersion => 'Эта версия';
+
+  @override
+  String get whatsNewEmpty => 'В этой версии приложения нет описания изменений.';
+
+  @override
   String get congratulations => 'Поздравляем!';
 
   @override
@@ -472,6 +481,19 @@ class LRu extends L {
   @override
   String get finishWorkoutWarningBody =>
       'Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные.';
+
+  @override
+  String get notificationsOffPrompt =>
+      'Уведомления выключены, поэтому мы не сможем напомнить о незавершённой тренировке.';
+
+  @override
+  String get notificationsOffEnable => 'Включить';
+
+  @override
+  String get notificationsOffLater => 'Напомнить позже';
+
+  @override
+  String get notificationsOffNever => 'Больше не напоминать';
 
   @override
   String get untickedSetsTitle => 'Некоторые подходы не отмечены';
@@ -1850,4 +1872,29 @@ class LRu extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'Не удалось сохранить заметку. Попробуйте ещё раз.';
+
+  @override
+  String get ongoingWorkoutChannel => 'Идёт тренировка';
+
+  @override
+  String get ongoingWorkoutRest => 'Отдых';
+
+  @override
+  String ongoingWorkoutNextSet(int number) {
+    return 'Далее: подход $number';
+  }
+
+  @override
+  String ongoingWorkoutNextSetDetail(int number, Object detail) {
+    return 'Далее: подход $number · $detail';
+  }
+
+  @override
+  String get ongoingWorkoutAllDone => 'Все подходы выполнены';
+
+  @override
+  String get lockScreenWorkout => 'Тренировка на экране блокировки';
+
+  @override
+  String get lockScreenWorkoutSubtitle => 'Время, следующий подход и отдых во время тренировки';
 }
