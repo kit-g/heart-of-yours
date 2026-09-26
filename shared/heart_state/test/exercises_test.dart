@@ -398,7 +398,7 @@ void main() {
       sut = build(onError: (e, {stacktrace}) => err = e);
       when(local.getExercises()).thenThrow(Exception('boom'));
 
-      await sut.init(lastSync: DateTime(2020, 1, 1));
+      await sut.init();
 
       expect(err, isNotNull);
     });
@@ -474,7 +474,7 @@ void main() {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer((_) async => (null, <Exercise>[e]));
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
 
       expect(sut.search('bench').toList(), contains(e));
       expect(sut.search('incline press').toList(), contains(e));
@@ -499,7 +499,7 @@ void main() {
       ).thenAnswer(
         (_) async => (null, <Exercise>[a, b]),
       );
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
 
       sut.addFilter(Category.weightedBodyWeight);
       sut.addFilter(Target.chest);
@@ -530,7 +530,7 @@ void main() {
         ).thenAnswer(
           (_) async => (null, <Exercise>[own, publicEx]),
         );
-        await sut.init(lastSync: DateTime(2000));
+        await sut.init();
 
         final result = sut.search('bench').toList();
         expect(result, containsAll([own, publicEx]));
@@ -554,7 +554,7 @@ void main() {
           <Exercise>[own, publicEx],
         ),
       );
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
 
       final result = sut.search('bench', isMine: true).toList();
       expect(result, [own]);
@@ -579,7 +579,7 @@ void main() {
           <Exercise>[ownChest, ownBack, publicChest],
         ),
       );
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
 
       // query narrows to "bench"
       final q = sut.search('bench', isMine: true).toList();
@@ -624,7 +624,7 @@ void main() {
         ),
       );
 
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
 
       final result = sut.search('bench', isMine: true).toList();
       expect(result, [ownActive]);
@@ -640,7 +640,7 @@ void main() {
       ).thenAnswer(
         (_) async => (null, <Exercise>[own, publicEx]),
       );
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
 
       final result = sut.search('', isMine: true).toList();
       expect(result, [own]);
@@ -765,7 +765,7 @@ void main() {
       ).thenAnswer(
         (_) async => (null, <Exercise>[ex('A'), ex('B')]),
       );
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
 
       // iterator and []
       expect(sut.map((e) => e.name).toList(), ['A', 'B']);
@@ -785,7 +785,7 @@ void main() {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer((_) async => (null, exercises));
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
     }
 
     test('offers everyone else in the group and never the exercise itself', () async {
@@ -886,7 +886,7 @@ void main() {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer((_) async => (null, exercises));
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
     }
 
     test('narrows the library to a movement pattern', () async {
@@ -938,7 +938,7 @@ void main() {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer((_) async => (null, exercises));
-      await sut.init(lastSync: DateTime(2000));
+      await sut.init();
     }
 
     test('lists what the library uses, most common first', () async {

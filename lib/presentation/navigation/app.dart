@@ -119,12 +119,6 @@ class HeartApp extends StatelessWidget {
             },
           ),
         ),
-        Provider<RemoteConfig>(
-          create: (_) => RemoteConfig(
-            service: cdn,
-            onError: reportToSentry,
-          ),
-        ),
         ChangeNotifierProvider<Templates>(
           create: (context) => Templates(
             service: db,
@@ -600,7 +594,6 @@ Future<void> _initApp(
     final theme = AppTheme.of(context);
     final timers = Timers.of(context);
     final previous = PreviousExercises.of(context);
-    final config = RemoteConfig.of(context);
     final router = HeartRouter.of(context);
     final charts = Charts.of(context);
     final stats = Stats.of(context);
@@ -608,7 +601,6 @@ Future<void> _initApp(
 
     await Future.wait(
       [
-        config.init(),
         prefs.init(locale: View.of(context).platformDispatcher.locale),
       ],
     );
@@ -655,7 +647,7 @@ Future<void> _initApp(
       // never-granted permission simply yields nothing.
       health.init();
 
-      init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
+      init(locale: languageTag()).then<void>(
         (hasExercises) {
           // everything below reads or writes against the exercise catalog —
           // templates and workouts persist rows with a foreign key onto
@@ -740,14 +732,13 @@ Future<void> _initTrainingData({
 void _resync(BuildContext context, Upsync upsync) {
   if (!context.mounted) return;
   final exercises = Exercises.of(context);
-  final config = RemoteConfig.of(context);
   final workouts = Workouts.of(context);
   final previous = PreviousExercises.of(context);
   final stats = Stats.of(context);
   final templates = Templates.of(context);
   final backfill = Backfill.of(context);
   Goals.of(context).init();
-  exercises.init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
+  exercises.init(locale: languageTag()).then<void>(
     (hasExercises) {
       if (!hasExercises) return;
       _initTrainingData(
