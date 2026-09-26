@@ -3408,5 +3408,45 @@
     "description": "Subtitle under the lock-screen workout switch in Settings, saying what it shows",
     "type": "text",
     "placeholders": {}
+  },
+  "restTimers": "Temporizadores de descanso",
+  "@restTimers": {
+    "description": "Settings row and page title: every exercise that has a rest timer set, in one list",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restTimersEmpty": "No hay temporizadores de descanso. Configura uno desde el menú de un ejercicio durante un entrenamiento.",
+  "@restTimersEmpty": {
+    "description": "Rest timers page, shown once the last timer on it has been cleared",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restTimerExerciseGone": "El ejercicio ya no está disponible",
+  "@restTimerExerciseGone": {
+    "description": "Rest timers page: stands in for the name of a deleted exercise that still has a rest timer, so the timer can be cleared",
+    "type": "text",
+    "placeholders": {}
+  },
+  "clearRestTimerFor": "Quitar el temporizador de descanso de {exercise}",
+  "@clearRestTimerFor": {
+    "description": "Tooltip and screen-reader label of the button that removes one exercise's rest timer",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      }
+    }
+  },
+  "restTimerCleared": "Temporizador de descanso quitado",
+  "@restTimerCleared": {
+    "description": "Snackbar after a rest timer is removed from the Rest timers page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "undo": "Deshacer",
+  "@undo": {
+    "description": "Snackbar action that reverses what was just done",
+    "type": "text",
+    "placeholders": {}
   }
 }

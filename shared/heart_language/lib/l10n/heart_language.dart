@@ -3327,6 +3327,42 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Time, next set and rest while you train'**
   String get lockScreenWorkoutSubtitle;
+
+  /// Settings row and page title: every exercise that has a rest timer set, in one list
+  ///
+  /// In en, this message translates to:
+  /// **'Rest timers'**
+  String get restTimers;
+
+  /// Rest timers page, shown once the last timer on it has been cleared
+  ///
+  /// In en, this message translates to:
+  /// **'No rest timers. Set one from an exercise\'s menu during a workout.'**
+  String get restTimersEmpty;
+
+  /// Rest timers page: stands in for the name of a deleted exercise that still has a rest timer, so the timer can be cleared
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise no longer available'**
+  String get restTimerExerciseGone;
+
+  /// Tooltip and screen-reader label of the button that removes one exercise's rest timer
+  ///
+  /// In en, this message translates to:
+  /// **'Clear rest timer for {exercise}'**
+  String clearRestTimerFor(String exercise);
+
+  /// Snackbar after a rest timer is removed from the Rest timers page
+  ///
+  /// In en, this message translates to:
+  /// **'Rest timer cleared'**
+  String get restTimerCleared;
+
+  /// Snackbar action that reverses what was just done
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
