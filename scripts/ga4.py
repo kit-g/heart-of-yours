@@ -43,6 +43,7 @@ from functools import cache
 # all, which is the first thing to know when a report comes back empty.
 SCOPES = (
     'https://www.googleapis.com/auth/analytics.readonly',
+    'https://www.googleapis.com/auth/analytics.edit',
     'https://www.googleapis.com/auth/firebase.readonly',
 )
 ADMIN_API = 'https://analyticsadmin.googleapis.com/v1beta'
@@ -64,6 +65,52 @@ KEY_OBJECT = 'secrets/firebase/gcp-sa-key.json'
 # macOS keeps one here; fall back to whatever the interpreter was built with.
 _CA = '/etc/ssl/cert.pem'
 SSL_CONTEXT = ssl.create_default_context(cafile=_CA if os.path.exists(_CA) else None)
+
+# The taxonomy's parameters, as GA4 has to be told about them. Mirrors the constants in
+# `shared/heart_state/lib/src/analytics.dart` — anything added there needs a row here, or it is
+# collected and never reportable, which looks exactly like the app not sending it.
+#
+# Strings are dimensions and numbers are metrics; the split follows what `Analytics` encodes, so
+# a bool flag is a dimension because it ships as 'true'/'false'. GA4 allows 50 of each.
+EVENT_DIMENSIONS = {
+    'provider': 'Auth provider',
+    'arrival': 'Account arrival',
+    'from_anonymous': 'From anonymous session',
+    'reason': 'Failure reason',
+    'placement': 'Prompt placement',
+    'ok': 'Succeeded',
+    'source': 'Source',
+    'pinned_notes': 'Pinned notes applied',
+    'had_content': 'Had content',
+    'field': 'Edited field',
+    'format': 'Export format',
+    'filed': 'Filed into a folder',
+    'granted': 'Permission granted',
+}
+
+# User properties are user-scoped dimensions; GA4 draws no other distinction.
+USER_DIMENSIONS = {
+    'account_state': 'Account state',
+    'auth_provider': 'Auth provider (user)',
+    'form_factor': 'Form factor',
+    'workouts_bucket': 'Workouts bucket',
+    'templates_bucket': 'Templates bucket',
+}
+
+METRICS = {
+    'rows': 'Replay rows',
+    'uploaded': 'Replay uploaded',
+    'existing': 'Replay already there',
+    'skipped': 'Replay skipped',
+    'duration_ms': 'Duration (ms)',
+    'exercise_count': 'Exercises',
+    'set_count': 'Sets',
+    'duration_min': 'Duration (min)',
+    'unticked_sets': 'Unticked sets',
+    'pages': 'Backfill pages',
+    'unmatched': 'Unmatched exercises',
+    'created_custom': 'Custom exercises created',
+}
 
 
 @cache
@@ -163,11 +210,22 @@ def _http(
 
 
 def _call(method: str, url: str, token: str, body: dict | None = None) -> dict:
-    status, payload = _http(method, url, body=body, token=token)
+    for attempt in range(3):
+        status, payload = _http(method, url, body=body, token=token)
+        # The admin API returns a transient 503 often enough to be worth riding out — but only
+        # on a read. A create that succeeded and lost its response would come back as a
+        # duplicate, and a write's recovery is re-running the command, which by then sends only
+        # what is still missing.
+        if status < 500 or method != 'GET' or attempt == 2:
+            break
+        time.sleep(1 + attempt)
+
     if status != 200:
         # 403 here is nearly always the property grant rather than the token: the scope is
-        # right or the exchange would have failed, so say which one to go and check.
-        hint = ' — is the service account a Viewer on the GA4 property?' if status == 403 else ''
+        # right or the exchange would have failed, so say which one to go and check. Reads want
+        # Viewer on the property, writes — registering a dimension — want Editor.
+        grant = 'Editor' if method == 'POST' else 'Viewer'
+        hint = f' — is the service account an Analytics {grant} on this property?' if status == 403 else ''
         sys.exit(f'ga4: {method} {url} failed ({status}){hint}\n{payload}')
     return json.loads(payload) if payload else {}
 
@@ -228,6 +286,69 @@ def resolve_property(token: str, environment: str, requested: str | None) -> str
     sys.exit(f'ga4: no property linked to this project, and several visible — pass --property:\n{listed}')
 
 
+def _registered(token: str, property_id: str, kind: str) -> set[str]:
+    """The parameter names already registered on the property, for `customDimensions` or
+    `customMetrics`.
+
+    Archived definitions do not come back from these lists and their parameter name stays taken,
+    so a create can still fail on a name this says is missing. That is rare enough to report
+    rather than pre-empt.
+    """
+    names: set[str] = set()
+    token_param = ''
+    while True:
+        page = _call('GET', f'{ADMIN_API}/properties/{property_id}/{kind}{token_param}', token)
+        names.update(entry['parameterName'] for entry in page.get(kind) or [])
+        cursor = page.get('nextPageToken')
+        if not cursor:
+            return names
+        token_param = f'?pageToken={cursor}'
+
+
+def register(token: str, property_id: str, apply: bool) -> int:
+    """Reports which of the taxonomy's parameters the property is missing, and creates them
+    when [apply].
+
+    Idempotent by construction: what exists is read first and only the difference is sent, so a
+    re-run after a taxonomy change adds the new rows and leaves the rest alone.
+    """
+    wanted = [
+        ('customDimensions', EVENT_DIMENSIONS, {'scope': 'EVENT'}),
+        ('customDimensions', USER_DIMENSIONS, {'scope': 'USER'}),
+        ('customMetrics', METRICS, {'scope': 'EVENT', 'measurementUnit': 'STANDARD'}),
+    ]
+
+    missing: list[tuple[str, str, str, dict]] = []
+    for kind, table, extra in wanted:
+        have = _registered(token, property_id, kind)
+        for parameter, label in table.items():
+            if parameter not in have:
+                missing.append((kind, parameter, label, extra))
+
+    if not missing:
+        print(f'property {property_id}: every parameter in the taxonomy is registered')
+        return 0
+
+    for kind, parameter, label, extra in missing:
+        scope = extra['scope'].lower()
+        what = 'metric' if kind == 'customMetrics' else f'{scope} dimension'
+        print(f'{"creating" if apply else "missing"}: {parameter} ({what}) — {label}')
+        if apply:
+            _call(
+                'POST',
+                f'{ADMIN_API}/properties/{property_id}/{kind}',
+                token,
+                {'parameterName': parameter, 'displayName': label} | extra,
+            )
+
+    if apply:
+        print(f'\nregistered {len(missing)} on property {property_id}')
+        return 0
+
+    print(f'\n{len(missing)} missing on property {property_id}; re-run with --apply to create them')
+    return 1
+
+
 def event_counts(token: str, property_id: str, days: int | None) -> list[tuple[str, int]]:
     """Event name -> count, from the realtime API when [days] is None and the report API otherwise.
 
@@ -266,8 +387,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--env', required=True, choices=tuple(ENVIRONMENTS), help='which environment to read')
     parser.add_argument('--property', help='GA4 property id; defaults to the one Firebase reports as linked')
-    parser.add_argument('command', choices=('properties', 'realtime', 'events'), help='what to ask for')
+    parser.add_argument(
+        'command',
+        choices=('properties', 'realtime', 'events', 'dimensions'),
+        help='what to ask for',
+    )
     parser.add_argument('--days', type=int, default=7, help='date-range size for `events` (default: 7)')
+    parser.add_argument('--apply', action='store_true', help='for `dimensions`: create what is missing')
     args = parser.parse_args()
 
     token = access_token(args.env)
@@ -291,6 +417,8 @@ def main() -> int:
         return 0 if found else 1
 
     property_id = resolve_property(token, args.env, args.property)
+    if args.command == 'dimensions':
+        return register(token, property_id, args.apply)
     if args.command == 'realtime':
         return report(event_counts(token, property_id, None), 'the last 30 minutes')
     return report(event_counts(token, property_id, args.days), f'the last {args.days} days')
