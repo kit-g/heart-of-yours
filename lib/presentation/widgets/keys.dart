@@ -105,4 +105,15 @@ abstract final class AppKeys {
   /// The onboarding's page dots: what a test measures to prove the footer
   /// stops resizing under them on the last screen.
   static const onboardingScreenCount = Key('Onboarding.screenCount');
+
+  /// The credential form's fields, shared by logging in and signing up.
+  ///
+  /// Keyed because nothing else on them can be aimed at: the value lives in an
+  /// `EditableText`, which `find.text` does not match, and the hint — the one
+  /// thing it does match — sits in the decoration layer, where a tap cannot
+  /// land. Without these the sign-up flow is undrivable, which is what kept
+  /// the export page (account-only) out of reach of a driver run.
+  static const loginEmail = Key('Login.email');
+  static const loginName = Key('Login.name');
+  static const loginPassword = Key('Login.password');
 }
