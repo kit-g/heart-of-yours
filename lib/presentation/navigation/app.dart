@@ -36,6 +36,7 @@ class HeartApp extends StatelessWidget {
   final Cdn cdn;
   final LocalDatabase db;
   final HeartRouter router;
+  final Analytics analytics;
   final bool? hasLocalNotifications;
   final FirebaseAuth? firebaseAuth;
 
@@ -46,6 +47,7 @@ class HeartApp extends StatelessWidget {
     required this.cdn,
     required this.db,
     required this.router,
+    required this.analytics,
     this.hasLocalNotifications = true,
     this.firebaseAuth,
   });
@@ -56,6 +58,10 @@ class HeartApp extends StatelessWidget {
       providers: [
         Provider<AppConfig>.value(value: appConfig),
         Provider<HeartRouter>.value(value: router),
+        // Above everything that reports, which is most of the tree: the state
+        // classes take it at construction and the presentation reads it for
+        // the intent events a notifier cannot see.
+        Provider<Analytics>.value(value: analytics),
         // One gate for every remote leg below; Auth decides, the rest consult.
         // Above them all because each takes it at construction.
         Provider<RemoteAccess>(
@@ -82,6 +88,7 @@ class HeartApp extends StatelessWidget {
               noteService: ExerciseNotes(db, api),
               remote: RemoteAccess.of(context),
               onRestTimer: Timers.of(context).setRestTimer,
+              analytics: analytics,
             );
             // sample templates arrive as content slugs plus per-locale
             // names; the CDN client resolves the slugs through the catalog
@@ -105,18 +112,13 @@ class HeartApp extends StatelessWidget {
             noteFor: Exercises.of(context).noteFor,
             remoteService: api,
             remote: RemoteAccess.of(context),
+            analytics: analytics,
             onError: (error, {stacktrace}) {
               Logger('Workouts')
                 ..shout('${error.runtimeType}: $error')
                 ..shout(stacktrace);
               reportToSentry(error, stacktrace: stacktrace);
             },
-          ),
-        ),
-        Provider<RemoteConfig>(
-          create: (_) => RemoteConfig(
-            service: cdn,
-            onError: reportToSentry,
           ),
         ),
         ChangeNotifierProvider<Templates>(
@@ -128,6 +130,7 @@ class HeartApp extends StatelessWidget {
             remoteFolderService: api,
             filingService: RemoteTemplateFiling(api),
             remote: RemoteAccess.of(context),
+            analytics: analytics,
             onError: reportToSentry,
           ),
         ),
@@ -191,6 +194,7 @@ class HeartApp extends StatelessWidget {
             remote: RemoteAccountSummary(api),
             nextPage: Workouts.of(context).backfillPage,
             access: RemoteAccess.of(context),
+            analytics: analytics,
             onError: reportToSentry,
           ),
         ),
@@ -214,6 +218,7 @@ class HeartApp extends StatelessWidget {
               workouts: db,
               goals: LocalGoals(db),
               access: RemoteAccess.of(context),
+              analytics: analytics,
               onError: reportToSentry,
               onComplete: () => _resync(context, upsync),
             );
@@ -228,6 +233,7 @@ class HeartApp extends StatelessWidget {
             return Auth(
               service: api,
               remote: RemoteAccess.of(context),
+              analytics: analytics,
               // Read on use, not now: `AppInfo` fills in asynchronously and
               // has not finished at this point in the tree.
               appleBundleId: () => AppInfo.of(context).packageName,
@@ -619,7 +625,6 @@ Future<void> _initApp(
     final theme = AppTheme.of(context);
     final timers = Timers.of(context);
     final previous = PreviousExercises.of(context);
-    final config = RemoteConfig.of(context);
     final router = HeartRouter.of(context);
     final charts = Charts.of(context);
     final stats = Stats.of(context);
@@ -627,7 +632,6 @@ Future<void> _initApp(
 
     await Future.wait(
       [
-        config.init(),
         prefs.init(locale: View.of(context).platformDispatcher.locale),
       ],
     );
@@ -674,7 +678,7 @@ Future<void> _initApp(
       // never-granted permission simply yields nothing.
       health.init();
 
-      init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
+      init(locale: languageTag()).then<void>(
         (hasExercises) {
           // everything below reads or writes against the exercise catalog —
           // templates and workouts persist rows with a foreign key onto
@@ -796,14 +800,13 @@ Future<void> _initTrainingData({
 void _resync(BuildContext context, Upsync upsync) {
   if (!context.mounted) return;
   final exercises = Exercises.of(context);
-  final config = RemoteConfig.of(context);
   final workouts = Workouts.of(context);
   final previous = PreviousExercises.of(context);
   final stats = Stats.of(context);
   final templates = Templates.of(context);
   final backfill = Backfill.of(context);
   Goals.of(context).init();
-  exercises.init(lastSync: config.exercisesLastSynced, locale: languageTag()).then<void>(
+  exercises.init(locale: languageTag()).then<void>(
     (hasExercises) {
       if (!hasExercises) return;
       _initTrainingData(

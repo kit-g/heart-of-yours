@@ -70,15 +70,6 @@ class _Previous extends PreviousExercises {
   void onSignOut() => calls++;
 }
 
-class _RemoteConfig extends RemoteConfig {
-  int calls = 0;
-
-  new() : super(service: MockRemoteConfigService());
-
-  @override
-  void onSignOut() => calls++;
-}
-
 class _Stats extends Stats {
   int calls = 0;
 
@@ -251,7 +242,6 @@ void main() {
     late _Goals goals;
     late _Health health;
     late _Previous previous;
-    late _RemoteConfig config;
     late _Stats stats;
     late _Templates templates;
     late _Timers timers;
@@ -268,7 +258,6 @@ void main() {
       goals = _Goals();
       health = _Health();
       previous = _Previous();
-      config = _RemoteConfig();
       stats = _Stats();
       templates = _Templates();
       timers = _Timers();
@@ -286,7 +275,6 @@ void main() {
             ChangeNotifierProvider<Goals>.value(value: goals),
             ChangeNotifierProvider<Health>.value(value: health),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
-            Provider<RemoteConfig>.value(value: config),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Timers>.value(value: timers),
@@ -312,7 +300,6 @@ void main() {
         goals.calls,
         health.calls,
         previous.calls,
-        config.calls,
         stats.calls,
         templates.calls,
         timers.calls,
@@ -347,7 +334,6 @@ void main() {
     late _Goals goals;
     late _Health health;
     late _Previous previous;
-    late _RemoteConfig config;
     late _Stats stats;
     late _Templates templates;
     late _Timers timers;
@@ -372,7 +358,6 @@ void main() {
       goals = _Goals();
       health = _Health();
       previous = _Previous();
-      config = _RemoteConfig();
       stats = _Stats();
       templates = _Templates();
       timers = _Timers();
@@ -401,7 +386,6 @@ void main() {
             ChangeNotifierProvider<Goals>.value(value: goals),
             ChangeNotifierProvider<Health>.value(value: health),
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
-            Provider<RemoteConfig>.value(value: config),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
             ChangeNotifierProvider<Timers>.value(value: timers),
@@ -428,7 +412,6 @@ void main() {
         goals.calls,
         health.calls,
         previous.calls,
-        config.calls,
         stats.calls,
         templates.calls,
         timers.calls,
@@ -528,7 +511,6 @@ void main() {
         'Goals',
         'Health',
         'PreviousExercises',
-        'RemoteConfig',
         'Stats',
         'Templates',
         'Timers',

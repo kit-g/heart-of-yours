@@ -43,6 +43,13 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
   }
 
   @override
+  /// Nothing reads this. It is `RemoteConfigService`'s other half, and that
+  /// interface lives in `heart_models`, where removal is not additive — so it
+  /// stays until that package takes a breaking bump. The app's config once
+  /// came through here as an `exercisesLastSynced` stamp; the catalog's
+  /// freshness is the ETag's answer now, and nothing replaced the reader.
+  ///
+  /// The live half of this interface is [getSampleTemplates], below.
   Future<Map> getRemoteConfig() async {
     return {};
   }

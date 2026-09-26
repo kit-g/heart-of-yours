@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' hide Page;
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'backfill.dart';
 import 'remote.dart';
 
@@ -36,9 +37,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this.onError,
     this._persistNote,
     this._noteFor,
+    this.analytics,
     RemoteAccess? remote,
   }) : _localService = service,
        _remote = remote ?? RemoteAccess();
+
+  /// The habit loop is reported from here: started, finished, abandoned. Only
+  /// this class knows how a workout began by the time it ends. Absent in
+  /// tests.
+  final Analytics? analytics;
+
+  /// How the active workout was started, held so that finishing it can say so
+  /// too — by then the template it came from is long gone. A workout restored
+  /// from the store on launch has no answer here, and reports [.blank]:
+  /// guessing would be worse than the one case being slightly under-counted.
+  WorkoutSource _startedFrom = WorkoutSource.blank;
 
   @override
   void onSignOut() {
@@ -269,9 +282,22 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return workout.any((exercise) => exercise.isNotEmpty);
   }
 
-  Future<void> startWorkout({String? name, Workout? template, bool applyPinnedNotes = false}) {
+  /// [source] is stated by the caller rather than inferred from [template],
+  /// because the three template cases are indistinguishable from here: a
+  /// sample, one of the user's own, and a past workout being repeated all
+  /// arrive as a `Workout`. Which one it was is the question retention turns
+  /// on, and only the surface that offered it knows.
+  Future<void> startWorkout({
+    required WorkoutSource source,
+    String? name,
+    Workout? template,
+    bool applyPinnedNotes = false,
+  }) {
     assert(name == null || template == null, 'Pass only the name or the full workout');
     final workout = template ?? Workout(name: name);
+    _startedFrom = source;
+    _untickedAtPrompt = 0;
+    analytics?.workoutStarted(source: source, pinnedNotes: applyPinnedNotes);
     if (applyPinnedNotes) {
       for (final exercise in workout) {
         exercise.note ??= _noteFor?.call(exercise.exercise.id);
@@ -335,13 +361,29 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Called only from the finish dialog's "save them" answer — the save drops
   /// these sets otherwise, which is the other answer.
   void completeTypedSets() {
-    for (final set in _typedButUnticked.toList()) {
+    final typed = _typedButUnticked.toList();
+    // Counted here because this is the only place it survives: taking the
+    // prompt's offer ticks every one of them, so by the time the workout
+    // finishes there is nothing left to count and the smell this measures —
+    // sets filled in but never ticked — would read as zero on the very path
+    // that proves it happened.
+    _untickedAtPrompt = typed.length;
+    for (final set in typed) {
       set.isCompleted = true;
     }
     notifyListeners();
   }
 
+  /// How many typed-but-unticked sets the finish prompt found, if it ran.
+  /// Reset with each workout, so it never carries into the next one.
+  int _untickedAtPrompt = 0;
+
   Future<Workout?> _finishActiveWorkout() async {
+    // Both branches of the finish prompt, added: whatever it ticked on the
+    // user's behalf, plus whatever is still unticked because they chose to
+    // finish without it. Counted before `_edited` is cleared, which is what
+    // empties the second half.
+    final unticked = _untickedAtPrompt + _typedButUnticked.length;
     _edited.clear();
     activeWorkout?.finish(DateTime.timestamp());
 
@@ -349,8 +391,33 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (active == null) return null;
 
     final saved = await saveWorkout(active);
+
+    // Measured after the save, and off `active` rather than `saved`, because
+    // `saveWorkout` opens with `removeEmptySets` — which drops every set that
+    // was never ticked, and then any exercise left holding none. What survives
+    // is the workout that gets stored and shown in history, so it is the only
+    // honest answer to "how much did they log": counting first would credit a
+    // template's fifteen prescribed sets to someone who ticked three. What was
+    // set up and abandoned is [unticked]'s job, counted above.
+    _reportFinished(active, unticked: unticked);
+
     _activeWorkout = null;
     return saved;
+  }
+
+  void _reportFinished(Workout workout, {required int unticked}) {
+    final start = workout.start;
+    final end = workout.end;
+    analytics?.workoutFinished(
+      source: _startedFrom,
+      exerciseCount: workout.length,
+      setCount: workout.expand((exercise) => exercise).length,
+      durationMin: switch ((start, end)) {
+        (DateTime from, DateTime to) => to.difference(from).inMinutes,
+        _ => 0,
+      },
+      untickedSets: unticked,
+    );
   }
 
   /// Returns the workout as it ended up — the server's copy where the push
@@ -413,6 +480,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> editWorkout(Workout workout) async {
+    analytics?.workoutEdited(field: .sets);
     _workouts[workout.id] = workout;
     notifyListeners();
 
@@ -457,6 +525,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   ///
   /// With the remote leg closed the mirror's copy is edited in place instead.
   Future<Workout?> editWorkoutTimes(String workoutId, {DateTime? start, DateTime? end}) async {
+    analytics?.workoutEdited(field: .times);
     if (start == null && end == null) return null;
     if (!_remote.allowed) {
       final workout = _workouts[workoutId];
@@ -481,6 +550,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> cancelActiveWorkout() async {
+    // Both read off the workout that is about to be removed, so they are taken
+    // while there is still something to read.
+    analytics?.workoutCancelled(
+      hadContent: activeWorkoutHasContent,
+      exerciseCount: activeWorkout?.length ?? 0,
+    );
     _edited.clear();
     if (_activeWorkoutId case String id) {
       _workouts.remove(id);

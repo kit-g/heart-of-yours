@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics.dart';
 import 'remote.dart';
 
 /// The account's own totals, collection by collection.
@@ -83,8 +84,14 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
     required this._remote,
     required this._nextPage,
     RemoteAccess? access,
+    this.analytics,
     this.onError,
   }) : _access = access ?? RemoteAccess();
+
+  /// The account's true workout count passes through here — the server's own,
+  /// not the page the mirror happens to hold — which makes this the only
+  /// honest place to say how far along a user is. Absent in tests.
+  final Analytics? analytics;
 
   static Backfill of(BuildContext context) => Provider.of<Backfill>(context, listen: false);
 
@@ -156,6 +163,9 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
 
     final held = await _heldWorkouts(uid);
     final target = await _accountWorkouts();
+    // The server's count where it answered, the mirror's otherwise. Set on
+    // every launch, because the bucket someone is in is the thing that moves.
+    analytics?.setWorkoutsBucket(target ?? held);
 
     // Already whole — the common case for an install upgrading into this,
     // and the whole point of asking before paging. One request, no row.
@@ -169,9 +179,11 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
     _status = .running;
     notifyListeners();
 
+    var pages = 0;
     while (true) {
       // signed out mid-run: the pages that follow would be someone else's
       if (userId != uid) return;
+      pages++;
 
       final BackfillPage(:stored, :more) = switch (await _page()) {
         BackfillPage page => page,
@@ -200,6 +212,9 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
 
     _done = settled;
     _status = .idle;
+    // Only a run that actually paged. Reaching here having fetched nothing is
+    // the already-whole case, which is not a backfill.
+    if (pages > 0) analytics?.historyBackfilled(pages: pages);
     notifyListeners();
   }
 

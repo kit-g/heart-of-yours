@@ -19,6 +19,7 @@ import 'package:mockito/annotations.dart';
     MockSpec<Workout>(),
     MockSpec<RemoteTemplateService>(),
     MockSpec<RemoteConfigService>(),
+    MockSpec<AnalyticsService>(),
     MockSpec<WorkoutService>(),
     MockSpec<RemoteWorkoutService>(),
     MockSpec<RemoteExerciseService>(),

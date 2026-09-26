@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'goals.dart';
 import 'exercises.dart';
+import 'analytics.dart';
 import 'remote.dart';
 import 'templates.dart';
 
@@ -136,9 +137,15 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     required this._workouts,
     required this._goals,
     RemoteAccess? access,
+    this.analytics,
     this.onError,
     this.onComplete,
   }) : _access = access ?? RemoteAccess();
+
+  /// Every remote leg is held shut for the length of a run, so how long one
+  /// takes and whether it lands is the difference between a new account that
+  /// works and one that looks broken. Absent in tests.
+  final Analytics? analytics;
 
   static Upsync of(BuildContext context) => Provider.of<Upsync>(context, listen: false);
 
@@ -292,6 +299,9 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
       return;
     }
     _access.replaying = true;
+    // Started after the owed check, so a launch with nothing to replay is not
+    // timed as a run that took no time.
+    final elapsed = Stopwatch()..start();
     _status = .running;
     if (!resuming) {
       _done = 0;
@@ -341,6 +351,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
             } else {
               _reachedServer = _isServerAnswer(error);
               _status = .failed;
+              _reportReplay(elapsed, ok: false);
               notifyListeners();
               return;
             }
@@ -363,8 +374,25 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
       _ => .done,
     };
     _access.replaying = false;
+    _reportReplay(elapsed, ok: true);
     notifyListeners();
     onComplete?.call();
+  }
+
+  /// One line per run that actually had something to replay, at whichever of
+  /// the two exits it reached. A run abandoned because the account changed
+  /// under it reports nothing: it is the previous account's, and its numbers
+  /// would be read as this one's.
+  void _reportReplay(Stopwatch elapsed, {required bool ok}) {
+    final (:uploaded, :existing, :skipped) = _report;
+    analytics?.replayFinished(
+      rows: _done,
+      uploaded: uploaded,
+      existing: existing,
+      skipped: skipped,
+      durationMs: elapsed.elapsedMilliseconds,
+      ok: ok,
+    );
   }
 
   /// Guards the pass loop against a store that keeps producing rows.

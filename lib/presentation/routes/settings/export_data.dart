@@ -140,6 +140,7 @@ class _ExportDataPageState extends State<ExportDataPage> with LoadingState<Expor
     final userId = Auth.of(context).user?.id;
     if (userId == null) return;
     final preferences = Preferences.of(context);
+    Analytics.of(context).dataExported(format: format.name);
     // where the iPad's popover points; ignored everywhere else
     final origin = switch (context.findRenderObject()) {
       RenderBox box => box.localToGlobal(Offset.zero) & box.size,

@@ -3,6 +3,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 
 import 'movement_filters.dart';
+import 'analytics.dart';
 import 'remote.dart';
 
 /// How the CDN identifies the catalog copy the local cache holds: the
@@ -113,8 +114,12 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     required this._libraryService,
     required this._catalogService,
     required this._preferenceService,
+    this.analytics,
     RemoteAccess? remote,
   }) : _remote = remote ?? RemoteAccess();
+
+  /// Whether people outgrow the catalog. Absent in tests.
+  final Analytics? analytics;
 
   @override
   void onSignOut() {
@@ -194,7 +199,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// The library comes from the CDN in both modes — the one network call an
   /// anonymous session makes. Only the user's own exercises need the account,
   /// and they follow once the library is in.
-  Future<bool> init({DateTime? lastSync, String? locale}) async {
+  Future<bool> init({String? locale}) async {
     _catalogLocale = locale;
     try {
       final (localSync, local) = await _service.getExercises(userId: userId);
@@ -550,6 +555,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// A custom exercise is the user's own row, so with the remote leg closed it
   /// simply lives in the local catalog under its client-minted id.
   Future<void> makeExercise(Exercise exercise) async {
+    analytics?.exerciseCreated();
     if (_remote.allowed) await _remoteService.makeExercise(exercise);
     _exercises[exercise.id] = exercise;
     await _storeLocalExercise(exercise);

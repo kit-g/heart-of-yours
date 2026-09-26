@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
@@ -71,6 +72,9 @@ class TestAppHarness {
     bool hasLocalNotifications = false,
     HeartRouter? router,
     fb.FirebaseAuth? firebaseAuth,
+    // Drops everything by default. A test asserting on an event passes an
+    // `Analytics` over a mock transport instead.
+    Analytics? analytics,
     // The app has animations that never stop, so pumpAndSettle can hang on it.
     // Tests that only need a rendered frame can pump a fixed number instead.
     bool settle = true,
@@ -93,6 +97,7 @@ class TestAppHarness {
         db: db,
         api: api,
         cdn: cdn,
+        analytics: analytics ?? Analytics(service: const SilentAnalyticsService()),
         hasLocalNotifications: hasLocalNotifications,
         appConfig: cfg,
         firebaseAuth: firebaseAuth ?? MockFirebaseAuth(),

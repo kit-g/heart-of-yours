@@ -54,7 +54,7 @@ void main() {
     });
 
     test('a finished workout is saved locally and never pushed', () async {
-      await sut.startWorkout(name: 'Push');
+      await sut.startWorkout(source: .blank, name: 'Push');
 
       final saved = await sut.finishActiveWorkout();
 
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('cancelling the active workout is local only', () async {
-      await sut.startWorkout(name: 'Push');
+      await sut.startWorkout(source: .blank, name: 'Push');
 
       await sut.cancelActiveWorkout();
 
@@ -140,7 +140,7 @@ void main() {
     });
 
     test('photos have nowhere to go', () async {
-      await sut.startWorkout(name: 'Push');
+      await sut.startWorkout(source: .blank, name: 'Push');
       final image = (Uint8List(0), mimeType: 'image/png', name: 'a.png');
 
       expect(await sut.attachImageToActiveWorkout(image), isNull);
