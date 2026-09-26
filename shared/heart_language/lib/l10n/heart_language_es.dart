@@ -1873,4 +1873,25 @@ class LEs extends L {
 
   @override
   String get lockScreenWorkoutSubtitle => 'Tiempo, siguiente serie y descanso mientras entrenas';
+
+  @override
+  String get restTimers => 'Temporizadores de descanso';
+
+  @override
+  String get restTimersEmpty =>
+      'No hay temporizadores de descanso. Configura uno desde el menú de un ejercicio durante un entrenamiento.';
+
+  @override
+  String get restTimerExerciseGone => 'El ejercicio ya no está disponible';
+
+  @override
+  String clearRestTimerFor(String exercise) {
+    return 'Quitar el temporizador de descanso de $exercise';
+  }
+
+  @override
+  String get restTimerCleared => 'Temporizador de descanso quitado';
+
+  @override
+  String get undo => 'Deshacer';
 }

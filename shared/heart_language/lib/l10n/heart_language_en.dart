@@ -1869,6 +1869,26 @@ class LEn extends L {
 
   @override
   String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
+
+  @override
+  String get restTimers => 'Rest timers';
+
+  @override
+  String get restTimersEmpty => 'No rest timers. Set one from an exercise\'s menu during a workout.';
+
+  @override
+  String get restTimerExerciseGone => 'Exercise no longer available';
+
+  @override
+  String clearRestTimerFor(String exercise) {
+    return 'Clear rest timer for $exercise';
+  }
+
+  @override
+  String get restTimerCleared => 'Rest timer cleared';
+
+  @override
+  String get undo => 'Undo';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -3735,4 +3755,24 @@ class LEnCa extends LEn {
 
   @override
   String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
+
+  @override
+  String get restTimers => 'Rest timers';
+
+  @override
+  String get restTimersEmpty => 'No rest timers. Set one from an exercise\'s menu during a workout.';
+
+  @override
+  String get restTimerExerciseGone => 'Exercise no longer available';
+
+  @override
+  String clearRestTimerFor(String exercise) {
+    return 'Clear rest timer for $exercise';
+  }
+
+  @override
+  String get restTimerCleared => 'Rest timer cleared';
+
+  @override
+  String get undo => 'Undo';
 }
