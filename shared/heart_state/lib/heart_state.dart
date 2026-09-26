@@ -4,11 +4,11 @@ export 'package:provider/provider.dart';
 export 'package:shared_preferences/shared_preferences.dart';
 
 export 'src/alarms.dart';
+export 'src/analytics.dart';
 export 'src/auth.dart';
 export 'src/backfill.dart';
 export 'src/charts.dart';
 export 'src/clear.dart';
-export 'src/config.dart';
 export 'src/exercises.dart';
 export 'src/export.dart';
 export 'src/goals.dart';

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/licenses.dart';
@@ -15,7 +16,7 @@ import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
-import 'package:http/http.dart' as http;
+import 'package:heart_state/heart_state.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 typedef AppRunner = Future<void> Function({
@@ -23,6 +24,7 @@ typedef AppRunner = Future<void> Function({
   required LocalDatabase db,
   required Api api,
   required Cdn cdn,
+  required Analytics analytics,
   bool? hasLocalNotifications,
   FirebaseAuth? firebase,
 });
@@ -60,8 +62,12 @@ Future<void> bootstrap({
   // is backgrounded and be handed back on resume. `IOClient` times idle sockets
   // out, which covers most of it; what is left would surface as a
   // `ClientException` on the first call after a resume. Nothing in this app
-  // retries a transport failure today, so Sentry is where that would show up.
-  final client = http.Client();
+  // retries a transport failure today, so Sentry is where that would show up —
+  // and now with the timing beside it, because the wrapper spans every call.
+  //
+  // The wrapper decorates this client rather than replacing it: one pool, one
+  // set of keep-alive connections, exactly as measured above.
+  final client = await instrumentedClient();
 
   final api = Api(gateway: config.api, client: client);
   // `Cdn`'s factory takes no client, but the field is public and settable, so
@@ -73,14 +79,22 @@ Future<void> bootstrap({
     initFirebase(config.env),
     initDb(isWeb: kIsWeb),
   ]).then<void>(
-    (initialized) {
+    (initialized) async {
       final [_, db] = initialized;
+
+      // After `initFirebase`, which the wait above covers: the transport
+      // reaches for `FirebaseAnalytics.instance`.
+      final analytics = Analytics(
+        service: await initAnalytics(),
+        onError: reportToSentry,
+      );
 
       Future<void> run() {
         return appRunner(
           db: db as LocalDatabase,
           api: api,
           cdn: cdn,
+          analytics: analytics,
           hasLocalNotifications: hasLocalNotifications,
           appConfig: config,
           firebase: firebase ?? FirebaseAuth.instance,
@@ -126,6 +140,7 @@ Future<void> _runner({
   required AppConfig appConfig,
   required Cdn cdn,
   required LocalDatabase db,
+  required Analytics analytics,
   bool? hasLocalNotifications,
   Future<void> Function(List<DeviceOrientation> orientations) setOrientations = SystemChrome.setPreferredOrientations,
   FirebaseAuth? firebase,
@@ -141,10 +156,20 @@ Future<void> _runner({
   // An unmeasured display answers neither: ask again after the first frame,
   // the first moment the size is certainly real. Nothing is on screen until
   // then, so the wait costs nothing.
+  //
+  // The form factor is reported from here for the same reason: this is where
+  // the answer is settled, deferral included, so the property can never
+  // disagree with the split the app actually acted on.
   Future<void> applyOrientations() {
     return switch (_isPhone) {
-      true => setOrientations(const [DeviceOrientation.portraitUp]),
-      false => setOrientations(const <DeviceOrientation>[]),
+      true => Future.sync(() {
+        analytics.setFormFactor(.phone);
+        return setOrientations(const [DeviceOrientation.portraitUp]);
+      }),
+      false => Future.sync(() {
+        analytics.setFormFactor(.tablet);
+        return setOrientations(const <DeviceOrientation>[]);
+      }),
       null => Future.sync(
         () => WidgetsBinding.instance.addPostFrameCallback((_) => applyOrientations()),
       ),
@@ -169,6 +194,9 @@ Future<void> _runner({
       api
         ..onUpgradeRequired = (j) {
           AppVersionSentry.instance.requireUpgrade();
+          // Nothing else in this app can strand someone as completely, and
+          // until now its volume was invisible.
+          analytics.upgradeGateShown();
           router.refresh();
           return (j, 426);
         }
@@ -189,6 +217,7 @@ Future<void> _runner({
           db: db,
           api: api,
           cdn: cdn,
+          analytics: analytics,
           hasLocalNotifications: hasLocalNotifications,
           appConfig: appConfig,
           firebaseAuth: firebase,

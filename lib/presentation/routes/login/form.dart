@@ -59,6 +59,7 @@ class _Form extends StatelessWidget {
                   return Column(
                     children: [
                       TextFormField(
+                        key: AppKeys.loginEmail,
                         selectionControls: context.platformSpecificSelectionControls(),
                         controller: emailController,
                         decoration: InputDecoration(
@@ -77,6 +78,7 @@ class _Form extends StatelessWidget {
                       if (nameController != null) ...[
                         const SizedBox(height: 12),
                         TextFormField(
+                          key: AppKeys.loginName,
                           selectionControls: context.platformSpecificSelectionControls(),
                           controller: nameController,
                           decoration: InputDecoration(
@@ -91,6 +93,7 @@ class _Form extends StatelessWidget {
                       ],
                       const SizedBox(height: 12),
                       TextFormField(
+                        key: AppKeys.loginPassword,
                         controller: passwordController,
                         selectionControls: context.platformSpecificSelectionControls(),
                         autocorrect: false,

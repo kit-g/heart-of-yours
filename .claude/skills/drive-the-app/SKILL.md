@@ -1,3 +1,9 @@
+---
+name: drive-the-app
+description: "Run the app with flutter driver and interact with it."
+---
+
+
 # Driving the running app (simulator or device)
 
 See a change actually rendered, and interact with it, without asking the user to tap things.

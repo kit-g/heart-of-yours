@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_models/heart_models.dart' as models;
+import 'package:heart_state/src/analytics.dart';
 import 'package:heart_state/src/workouts.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +16,7 @@ void main() {
   final local = MockWorkoutService();
   final remote = MockRemoteWorkoutService();
   late Workouts sut;
+  late ReportedAnalytics reported;
 
   // simple registry of a couple of real Exercises
   final bench = ex('Bench Press');
@@ -33,7 +35,7 @@ void main() {
       },
     )..userId = 'anon';
     final exercise = Exercise.fromJson({'id': 'bench', 'name': 'Bench', 'category': 'Barbell', 'target': 'Chest'});
-    await state.startWorkout(name: 'Push');
+    await state.startWorkout(source: .blank, name: 'Push');
     await state.startExercise(exercise);
     final entry = state.activeWorkout!.first;
     expect(entry.note, 'Pause');
@@ -41,10 +43,10 @@ void main() {
     expect(notes['bench'], 'Pause');
     expect(persisted, [(entry.id, null)]);
     final repeat = state.activeWorkout!.copy();
-    await state.startWorkout(template: repeat);
+    await state.startWorkout(source: .template, template: repeat);
     expect(state.activeWorkout!.first.note, isNull);
     final template = Workout()..add(exercise);
-    await state.startWorkout(template: template, applyPinnedNotes: true);
+    await state.startWorkout(source: .template, template: template, applyPinnedNotes: true);
     expect(state.activeWorkout!.first.note, 'Pause');
   });
 
@@ -80,7 +82,12 @@ void main() {
     when(remote.editWorkout(any)).thenAnswer((inv) async => inv.positionalArguments.first as Workout);
     when(remote.deleteWorkout(any)).thenAnswer((_) async => true);
 
-    sut = Workouts(service: local, remoteService: remote)..userId = 'u1';
+    reported = ReportedAnalytics();
+    sut = Workouts(
+      service: local,
+      remoteService: remote,
+      analytics: Analytics(service: reported),
+    )..userId = 'u1';
   });
 
   tearDown(() {
@@ -120,7 +127,7 @@ void main() {
       );
       expect(builds, 1);
 
-      await sut.startWorkout(name: 'Chest');
+      await sut.startWorkout(source: .blank, name: 'Chest');
       await tester.pump();
 
       expect(builds, 2); // rebuilt due to notifyListeners in startWorkout
@@ -148,7 +155,7 @@ void main() {
     test('startWorkout sets active, notifies, and calls service', () async {
       final probe = ListenerProbe()..attach(sut);
 
-      await sut.startWorkout(name: 'Push');
+      await sut.startWorkout(source: .blank, name: 'Push');
 
       expect(sut.hasActiveWorkout, isTrue);
       expect(sut.activeWorkout, isNotNull);
@@ -158,7 +165,7 @@ void main() {
 
     test('finishActiveWorkout saves workout, clears active, notifies', () async {
       final probe = ListenerProbe()..attach(sut);
-      await sut.startWorkout(name: 'Legs');
+      await sut.startWorkout(source: .blank, name: 'Legs');
       probe.notifications = 0; // isolate
 
       final activeBefore = sut.activeWorkout!;
@@ -176,7 +183,7 @@ void main() {
     test('a set typed into but never ticked is kept by the finish, a prescribed one is not', () async {
       // What separates the two dialogs the user can meet on Finish, and what
       // decides whether the set they just typed survives the save.
-      await sut.startWorkout(name: 'Push');
+      await sut.startWorkout(source: .blank, name: 'Push');
       await sut.startExercise(bench);
       final exercise = sut.activeWorkout!.first;
       exercise.add(exercise.first.copy());
@@ -199,10 +206,13 @@ void main() {
 
       expect(typed.isCompleted, isTrue, reason: 'the set the user logged is kept and marked done');
       expect(prescribed.isCompleted, isFalse, reason: 'a template prescription is not a set anyone did');
+      // Taking the offer ticks every typed set, so a count taken afterwards
+      // reads zero on the very path that proves the affordance was missed.
+      expect(reported.parametersOf('workout_finished')['unticked_sets'], 1);
     });
 
     test('answering "finish without them" leaves the typed sets unticked, so the save drops them', () async {
-      await sut.startWorkout(name: 'Push');
+      await sut.startWorkout(source: .blank, name: 'Push');
       await sut.startExercise(bench);
       final typed = sut.activeWorkout!.first.first;
       typed.setMeasurements(weight: 60, reps: 8);
@@ -212,10 +222,11 @@ void main() {
       await sut.finishActiveWorkout();
 
       expect(typed.isCompleted, isFalse);
+      expect(reported.parametersOf('workout_finished')['unticked_sets'], 1, reason: 'the same smell, the other answer');
     });
 
     test('a workout with nothing typed and nothing ticked has no content to keep', () async {
-      await sut.startWorkout(name: 'Push');
+      await sut.startWorkout(source: .blank, name: 'Push');
       await sut.startExercise(bench);
       sut.activeWorkout!.first.first.setMeasurements(weight: 135, reps: 5);
 
@@ -224,7 +235,7 @@ void main() {
 
     test('cancelActiveWorkout removes locally and best-effort deletes remotely', () async {
       final probe = ListenerProbe()..attach(sut);
-      await sut.startWorkout(name: 'Arms');
+      await sut.startWorkout(source: .blank, name: 'Arms');
       probe.notifications = 0;
       final id = sut.activeWorkout!.id;
 
@@ -240,7 +251,7 @@ void main() {
 
     test('deleteWorkout removes by id, notifies, local+remote delete', () async {
       // prepare a workout in cache
-      await sut.startWorkout(name: 'Temp');
+      await sut.startWorkout(source: .blank, name: 'Temp');
       final id = sut.activeWorkout!.id;
       // switch off active so deleteWorkout path is different from cancel
       await sut.cancelActiveWorkout();
@@ -262,7 +273,7 @@ void main() {
 
   group('exercises and sets', () {
     test('startExercise adds WorkoutExercise, notifies and calls service', () async {
-      await sut.startWorkout(name: 'Chest');
+      await sut.startWorkout(source: .blank, name: 'Chest');
       final wid = sut.activeWorkout!.id;
 
       final probe = ListenerProbe()..attach(sut);
@@ -274,7 +285,7 @@ void main() {
     });
 
     test('addSet copies last set and calls service', () async {
-      await sut.startWorkout(name: 'Chest');
+      await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);
       final we = sut.activeWorkout!.first;
       // have one set by default; add one more
@@ -287,7 +298,7 @@ void main() {
     });
 
     test('removeSet removes and calls service', () async {
-      await sut.startWorkout(name: 'Chest');
+      await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);
       final we = sut.activeWorkout!.first;
       final set = we.first;
@@ -301,7 +312,7 @@ void main() {
     });
 
     test('removeExercise removes and calls service', () async {
-      await sut.startWorkout(name: 'Chest');
+      await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);
       final we = sut.activeWorkout!.first;
 
@@ -314,7 +325,7 @@ void main() {
     });
 
     test('markSetAsComplete and nextIncomplete reflect state, notify and persist', () async {
-      await sut.startWorkout(name: 'Chest');
+      await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);
       final we = sut.activeWorkout!.first;
       // ensure two sets
@@ -341,7 +352,7 @@ void main() {
     });
 
     test('storeMeasurements delegates to service', () async {
-      await sut.startWorkout(name: 'Chest');
+      await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);
       final set = sut.activeWorkout!.first.first;
 
@@ -350,7 +361,7 @@ void main() {
     });
 
     test('swap and append reorder exercises and notify', () async {
-      await sut.startWorkout(name: 'Mix');
+      await sut.startWorkout(source: .blank, name: 'Mix');
       await sut.startExercise(bench);
       await sut.startExercise(squat);
       final a = sut.activeWorkout!.first;
@@ -368,7 +379,7 @@ void main() {
     });
 
     test('swap persists the new order', () async {
-      await sut.startWorkout(name: 'Mix');
+      await sut.startWorkout(source: .blank, name: 'Mix');
       await sut.startExercise(bench);
       await sut.startExercise(squat);
       await sut.startExercise(press);
@@ -383,7 +394,7 @@ void main() {
     });
 
     test('append persists the new order', () async {
-      await sut.startWorkout(name: 'Mix');
+      await sut.startWorkout(source: .blank, name: 'Mix');
       await sut.startExercise(bench);
       await sut.startExercise(squat);
 
@@ -397,7 +408,7 @@ void main() {
     });
 
     test('renameWorkout calls local service and notifies', () async {
-      await sut.startWorkout(name: 'Old');
+      await sut.startWorkout(source: .blank, name: 'Old');
       final id = sut.activeWorkout!.id;
       final probe = ListenerProbe()..attach(sut);
 
@@ -605,7 +616,7 @@ void main() {
         // anything that refers to the session afterwards — a goal rung crediting
         // it, most of all — uses the id it came back with; the server keeps the
         // one it was sent (heart-api#66), so that is the local id, now synced
-        await sut.startWorkout(name: 'Chest');
+        await sut.startWorkout(source: .blank, name: 'Chest');
         final localId = sut.activeWorkout!.id;
         final confirmed = Workout.fromJson({
           'id': localId,
@@ -626,7 +637,7 @@ void main() {
       test('falls back to the local copy when the push fails', () async {
         // the workout is still real and still finished; only the server has
         // not confirmed it, so its own id is the best there is
-        await sut.startWorkout(name: 'Chest');
+        await sut.startWorkout(source: .blank, name: 'Chest');
         final localId = sut.activeWorkout!.id;
         when(remote.saveWorkout(any)).thenThrow(Exception('offline'));
 
@@ -1314,12 +1325,74 @@ void main() {
   group('misc', () {
     test('notifyOfActiveWorkout toggles flag and does NOT notify', () async {
       final probe = ListenerProbe()..attach(sut);
-      await sut.startWorkout(name: 'any');
+      await sut.startWorkout(source: .blank, name: 'any');
       expect(probe.notifications, 1);
       probe.notifications = 0;
 
       sut.notifyOfActiveWorkout();
       expect(probe.notifications, 0);
+    });
+  });
+
+  group('the habit loop is reported', () {
+    final exercise = Exercise.fromJson({
+      'id': 'bench',
+      'name': 'Bench',
+      'category': 'Barbell',
+      'target': 'Chest',
+    });
+
+    test('a workout says how it began, and still says so when it ends', () async {
+      await sut.startWorkout(
+        source: .sample,
+        template: Workout(name: 'Sample'),
+      );
+      await sut.startExercise(exercise);
+
+      expect(reported.parametersOf('workout_started')['source'], 'sample');
+
+      // One set ticked and one left alone. `saveWorkout` drops the untouched
+      // one, so the counts below are what was logged rather than what the
+      // sheet held — the distinction this event turns on.
+      final entry = sut.activeWorkout!.first;
+      entry.add(entry.first.copy());
+      entry.first.isCompleted = true;
+
+      await sut.finishActiveWorkout();
+
+      // The template is long gone by the time the workout ends, so the source
+      // is held rather than re-derived — that holding is what is tested here.
+      final finished = reported.parametersOf('workout_finished');
+      expect(finished['source'], 'sample');
+      expect(finished['exercise_count'], 1);
+      expect(finished['set_count'], 1, reason: 'the unticked set is not a set anyone did');
+      expect(finished['duration_min'], isA<int>());
+    });
+
+    test('an abandoned workout is told apart from one that was never started', () async {
+      await sut.startWorkout(source: .blank, name: 'Push');
+
+      await sut.cancelActiveWorkout();
+
+      // Nothing was typed into it, so this is the harmless case — opening the
+      // sheet and thinking better of it, not losing work.
+      final cancelled = reported.parametersOf('workout_cancelled');
+      expect(cancelled['had_content'], 'false');
+      expect(cancelled['exercise_count'], 0);
+    });
+
+    test('the counts are read before the workout is torn down', () async {
+      await sut.startWorkout(
+        source: .template,
+        template: Workout(name: 'Legs'),
+      );
+      await sut.startExercise(exercise);
+
+      await sut.cancelActiveWorkout();
+
+      // Reading these after the removal would report zero for everything and
+      // look perfectly plausible in the console.
+      expect(reported.parametersOf('workout_cancelled')['exercise_count'], 1);
     });
   });
 }

@@ -39,6 +39,15 @@ Screens keep their entries in `test/a11y_test.dart`'s screen×guideline
 matrix honest: enable what passes, skip what doesn't with a file:line
 reason. Patterns, the adoption rule, and what maps to WCAG: `docs/a11y.md`.
 
+## Analytics
+Every event the app sends is named once, on `Analytics` in `heart_state`;
+call sites pass domain types and it decides the wire names and encoding. A
+parameter also has to be registered as a GA4 custom dimension or metric
+(`scripts/ga4.py … dimensions --apply`) or it is collected and never
+reportable — which looks exactly like the app not sending it. Never a health
+value, never copy. The taxonomy: `docs/2026-09-24.analytics.md`; the workflow
+and how to prove an event arrives: the `analytics` skill.
+
 ## Health data
 Anything read from HealthKit / Health Connect is device-only: no server,
 no Sentry message, no screenshot, no analytics event. The contract, the

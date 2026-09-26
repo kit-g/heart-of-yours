@@ -4,7 +4,6 @@ import 'alarms.dart';
 import 'auth.dart';
 import 'backfill.dart';
 import 'charts.dart';
-import 'config.dart';
 import 'exercises.dart';
 import 'goals.dart';
 import 'health.dart';
@@ -55,7 +54,6 @@ void clearUserState(BuildContext context) {
   Goals.of(context).onSignOut();
   Health.of(context).onSignOut();
   PreviousExercises.of(context).onSignOut();
-  RemoteConfig.of(context).onSignOut();
   Stats.of(context).onSignOut();
   Templates.of(context).onSignOut();
   Timers.of(context).onSignOut();

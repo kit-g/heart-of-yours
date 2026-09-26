@@ -2,6 +2,7 @@ import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:logging/logging.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -107,9 +108,15 @@ Future<void> initNotifications({
 /// Requests notification permission if it isn't already granted, returning
 /// whether notifications are enabled afterwards. Safe to call repeatedly — the
 /// OS only surfaces its prompt on the first, undecided call.
-Future<bool> ensureNotificationPermission(TargetPlatform platform) async {
+///
+/// [analytics] is told only when a prompt was actually put in front of someone
+/// — the already-granted path is not a decision, and counting it would report
+/// a near-100% grant rate for a dialog nobody saw.
+Future<bool> ensureNotificationPermission(TargetPlatform platform, {Analytics? analytics}) async {
   if (await hasNotificationsPermission(platform)) return true;
-  return await requestNotificationPermission(platform) ?? false;
+  final granted = await requestNotificationPermission(platform) ?? false;
+  analytics?.notificationPermissionResult(granted: granted);
+  return granted;
 }
 
 /// Nudges the user, via a snackbar, that notifications are off and offers a
