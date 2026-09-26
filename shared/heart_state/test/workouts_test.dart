@@ -1335,6 +1335,13 @@ void main() {
 
       expect(reported.parametersOf('workout_started')['source'], 'sample');
 
+      // One set ticked and one left alone. `saveWorkout` drops the untouched
+      // one, so the counts below are what was logged rather than what the
+      // sheet held — the distinction this event turns on.
+      final entry = sut.activeWorkout!.first;
+      entry.add(entry.first.copy());
+      entry.first.isCompleted = true;
+
       await sut.finishActiveWorkout();
 
       // The template is long gone by the time the workout ends, so the source
@@ -1342,7 +1349,7 @@ void main() {
       final finished = reported.parametersOf('workout_finished');
       expect(finished['source'], 'sample');
       expect(finished['exercise_count'], 1);
-      expect(finished['set_count'], isA<int>());
+      expect(finished['set_count'], 1, reason: 'the unticked set is not a set anyone did');
       expect(finished['duration_min'], isA<int>());
     });
 
