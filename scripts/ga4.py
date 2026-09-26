@@ -31,6 +31,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import ssl
 import subprocess
 import sys
@@ -91,7 +92,7 @@ EVENT_DIMENSIONS = {
 # User properties are user-scoped dimensions; GA4 draws no other distinction.
 USER_DIMENSIONS = {
     'account_state': 'Account state',
-    'auth_provider': 'Auth provider (user)',
+    'auth_provider': 'User auth provider',
     'form_factor': 'Form factor',
     'workouts_bucket': 'Workouts bucket',
     'templates_bucket': 'Templates bucket',
@@ -102,10 +103,10 @@ METRICS = {
     'uploaded': 'Replay uploaded',
     'existing': 'Replay already there',
     'skipped': 'Replay skipped',
-    'duration_ms': 'Duration (ms)',
+    'duration_ms': 'Duration ms',
     'exercise_count': 'Exercises',
     'set_count': 'Sets',
-    'duration_min': 'Duration (min)',
+    'duration_min': 'Duration min',
     'unticked_sets': 'Unticked sets',
     'pages': 'Backfill pages',
     'unmatched': 'Unmatched exercises',
@@ -317,6 +318,15 @@ def register(token: str, property_id: str, apply: bool) -> int:
         ('customDimensions', USER_DIMENSIONS, {'scope': 'USER'}),
         ('customMetrics', METRICS, {'scope': 'EVENT', 'measurementUnit': 'STANDARD'}),
     ]
+
+    # Checked before anything is sent. GA4 accepts only alphanumerics, underscores and spaces in
+    # a display name, and finding that out mid-run leaves the property half-registered — which
+    # is how this check came to exist.
+    illegal = [
+        label for _, table, _ in wanted for label in table.values() if not re.fullmatch(r'[A-Za-z0-9_ ]+', label)
+    ]
+    if illegal:
+        sys.exit(f'ga4: these display names are not alphanumeric/underscore/space: {illegal}')
 
     missing: list[tuple[str, str, str, dict]] = []
     for kind, table, extra in wanted:
