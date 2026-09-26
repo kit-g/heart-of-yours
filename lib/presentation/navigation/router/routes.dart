@@ -39,6 +39,7 @@ RouteBase _profileRoute() {
             onAccountManagement: context.goToAccountManagement,
             onImportData: context.goToImportData,
             onExportData: context.goToExportData,
+            onWhatsNew: context.goToWhatsNew,
             onErased: context.goToProfile,
           );
         },
@@ -63,6 +64,11 @@ RouteBase _profileRoute() {
             path: _exportDataPath,
             builder: (_, _) => const ExportDataPage(onError: reportToSentry),
             name: _exportDataName,
+          ),
+          GoRoute(
+            path: _whatsNewPath,
+            builder: (_, _) => const WhatsNewPage(onError: reportToSentry),
+            name: _whatsNewName,
           ),
         ],
       ),

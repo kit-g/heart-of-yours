@@ -64,6 +64,9 @@ abstract final class AppKeys {
   /// The settings row that opens the export page; present in both sessions.
   static const exportData = Key('Settings.exportData');
 
+  /// The settings row that opens the release notes.
+  static const whatsNew = Key('Settings.whatsNew');
+
   /// The export page's two actions, one per format.
   static const exportJson = Key('Export.json');
   static const exportCsv = Key('Export.csv');

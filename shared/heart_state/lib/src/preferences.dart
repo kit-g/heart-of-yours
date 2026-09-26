@@ -12,7 +12,9 @@ const _distanceUnit = 'distanceUnit';
 const _collapsedFolders = 'collapsedTemplateFolders';
 const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
+const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
+const _lockScreenWorkout = 'lockScreenWorkout';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -195,6 +197,23 @@ class Preferences with ChangeNotifier {
     return _prefs?.setBool('$_healthInviteDismissed-$userId', true);
   }
 
+  /// Whether the user has told us to stop mentioning that notifications are off.
+  ///
+  /// The reminder only appears when they are off *and* a workout has just
+  /// started — the moment the app begins depending on a permission it may not
+  /// have. One tap turns it off for good, which is the price of being allowed
+  /// to raise it at all.
+  bool notificationsReminderDismissed(String? userId) {
+    if (userId == null) return false;
+    return _prefs?.getBool('$_notificationsReminderDismissed-$userId') ?? false;
+  }
+
+  Future<bool>? dismissNotificationsReminder(String? userId) {
+    if (userId == null) return null;
+    notifyListeners();
+    return _prefs?.setBool('$_notificationsReminderDismissed-$userId', true);
+  }
+
   /// Whether the OS permission sheet has ever been shown on this device.
   ///
   /// The only thing separating "we have not asked yet" from "we asked and
@@ -221,7 +240,12 @@ class Preferences with ChangeNotifier {
     final prefs = _prefs;
     if (prefs == null) return;
     await Future.wait([
-      for (final key in ['$_baseColor-$userId', '$_healthInviteDismissed-$userId', '$_healthAsked-$userId'])
+      for (final key in [
+        '$_baseColor-$userId',
+        '$_healthInviteDismissed-$userId',
+        '$_healthAsked-$userId',
+        '$_notificationsReminderDismissed-$userId',
+      ])
         prefs.remove(key),
     ]);
     notifyListeners();
@@ -235,7 +259,7 @@ class Preferences with ChangeNotifier {
   Future<void> rekeyUser(String from, String to) async {
     final prefs = _prefs;
     if (prefs == null) return;
-    for (final key in [_baseColor, _healthInviteDismissed, _healthAsked]) {
+    for (final key in [_baseColor, _healthInviteDismissed, _healthAsked, _notificationsReminderDismissed]) {
       final value = prefs.get('$key-$from');
       if (value == null) continue;
       await switch (value) {
@@ -257,6 +281,20 @@ class Preferences with ChangeNotifier {
   /// nothing is shown on a guess.
   bool get onboardingSeen {
     return _prefs?.getBool(onboardingSeenKey) ?? !_isInitialized;
+  }
+
+  /// Whether the active workout is shown outside the app — the iOS Live
+  /// Activity, Android's workout notification (#133).
+  ///
+  /// Off until the user turns it on: something that sits on the lock screen
+  /// for an hour is a feature to choose, not a default to discover. A fact
+  /// about the device rather than a user, like the theme mode and the units — it
+  /// is this phone's lock screen.
+  bool get lockScreenWorkout => _prefs?.getBool(_lockScreenWorkout) ?? false;
+
+  set lockScreenWorkout(bool value) {
+    _prefs?.setBool(_lockScreenWorkout, value);
+    notifyListeners();
   }
 
   Future<bool>? markOnboardingSeen() {

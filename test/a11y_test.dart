@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
+import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_models/heart_models.dart';
@@ -49,6 +50,7 @@ enum _Screen {
   eraseDataDialog,
   importData,
   exportData,
+  whatsNew,
   upsyncRunning,
   upsyncFailed,
   upsyncDone,
@@ -264,6 +266,14 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.exportData, _Guideline.textContrastDark, null),
   (_Screen.exportData, _Guideline.androidTapTarget, null),
   (_Screen.exportData, _Guideline.iosTapTarget, null),
+
+  // What's new (lib/presentation/routes/settings/whats_new.dart): cards of
+  // text over the real bundled notes, with nothing to tap but the back button.
+  (_Screen.whatsNew, _Guideline.labeledTapTarget, null),
+  (_Screen.whatsNew, _Guideline.textContrastLight, null),
+  (_Screen.whatsNew, _Guideline.textContrastDark, null),
+  (_Screen.whatsNew, _Guideline.androidTapTarget, null),
+  (_Screen.whatsNew, _Guideline.iosTapTarget, null),
 
   // The upsync row on the profile (lib/presentation/widgets/upsync_row.dart) in
   // each of its three states: the bar, the Retry button, the dismiss. The tap
@@ -548,6 +558,29 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tapByKey(AppKeys.exportData);
+      case _Screen.whatsNew:
+        // rootBundle caches each load's future, and one cached under an
+        // earlier test's fake clock never delivers to a later test
+        rootBundle.clear();
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.scrollUntilVisible(
+          find.byKey(AppKeys.whatsNew),
+          200,
+          scrollable: find.descendant(of: find.byType(SettingsPage), matching: find.byType(Scrollable)).first,
+        );
+        await tester.ensureVisible(find.byKey(AppKeys.whatsNew));
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.whatsNew);
+        await tester.pumpTimes();
+        // the notes are real asset I/O, which fake time never advances
+        final notes = find.descendant(of: find.byType(WhatsNewPage), matching: find.byType(Card));
+        for (final _ in Iterable.generate(50)) {
+          if (notes.evaluate().isNotEmpty) break;
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+          await tester.pump();
+        }
+        expect(notes, findsWidgets);
     }
     await tester.pumpTimes();
   }

@@ -1,6 +1,6 @@
 ---
 name: release-notes
-description: Draft the user-facing changelog for the next build — TestFlight "What to Test", Play Store "What's new", and the GitHub release body — from the diff since the last shipped version. Use when cutting a release, bumping the version, tagging, or preparing notes for testers. Triggers: "release notes", "changelog", "what to test", "what's new", "cut a release", "tag a version", "TestFlight notes", "store notes", "ship it".
+description: Draft the user-facing changelog for the next build — TestFlight "What to Test", Play Store "What's new", the GitHub release body, and the in-app What's new list (assets/whats_new) — from the diff since the last shipped version. Use when cutting a release, bumping the version, tagging, or preparing notes for testers. Triggers: "release notes", "changelog", "what to test", "what's new", "cut a release", "tag a version", "TestFlight notes", "store notes", "ship it".
 ---
 
 # Release notes
@@ -138,9 +138,77 @@ below has to be **committed before the tag**: prod CI checks out the tagged comm
 1. Bump `version:` in `pubspec.yaml` by hand (the `+build` suffix is CI's, leave it).
 2. Copy the agreed notes to `release_notes/v<version>.md` — the archive and the GitHub release
    body.
-3. Leave `testflight.txt` and `whatsnew-en-US` in place; the next cycle overwrites them.
-4. Hand off. The user commits, tags, and pushes — that push is the release. Then
+3. Add the release to the app's **What's new** list — section 7. Skip it on a fix-only cycle.
+4. Leave `testflight.txt` and `whatsnew-en-US` in place; the next cycle overwrites them.
+5. Hand off. The user commits, tags, and pushes — that push is the release. Then
    `gh release create v<version> --notes-file release_notes/v<version>.md`.
+
+## 7. What's new, in the app
+
+Settings → What's new lists every release that brought something new, newest first. Its copy is
+the fourth rendering of the same summary, and the only one users can open again later. It ships
+**inside the build**, as `assets/whats_new/<locale>.json`, so the list never describes a feature
+the installed app doesn't have.
+
+| File                         | Holds                                                   |
+|------------------------------|---------------------------------------------------------|
+| `assets/whats_new/en.json`   | every release: `version`, `date`, `items`               |
+| `assets/whats_new/es.json` … | `version` and `items` only; a subset of `en`, no dates  |
+
+```json
+{
+  "version": "1.9.0",
+  "date": null,
+  "items": [
+    { "id": "plate-calculator", "title": "Plate calculator", "body": "Tap a weight to see **which plates** go on each side." }
+  ]
+}
+```
+
+**Which releases get an entry.** Only a release with a new capability, the same test as the
+fix-only rule in section 3. A fix-only release gets no entry at all, not a "Bug fixes" one: the
+list is for what users can go and try. The page marks the newest entry at or below the running
+version as "This version", so a fix-only 1.9.3 still points at 1.9.0.
+
+**Writing the items.** Shorter than the archive — one item per capability from the agreed notes,
+a plain-text `title` and a one- to three-sentence `body`. Same voice as section 4. Unlike the
+store notes, this copy is identical on both platforms, so name both when it matters ("Apple Health
+or Health Connect") and leave out anything that exists on one platform only.
+
+- `id` is a stable kebab-case slug, unique within its version. Translations are matched to their
+  English original by version + id, and a locale missing an item shows the English one.
+- `body` is markdown, limited to paragraphs, **bold**, *italic*, lists and links. No headings (the
+  card owns them), images, code, tables or raw HTML.
+- Quote on-screen labels exactly as the app shows them in each language, taken from that locale's
+  ARB: **Settings → Your data**, **Ajustes → Tus datos**.
+- Links are app routes, `[Open the calendar](/history)`, never web addresses. Today they render
+  as plain text, so a sentence must still read correctly without the link.
+
+**The date.** The entry goes in with `"date": null`: it is committed before the tag, and the date
+is the day the prod build ran. The prod workflows run `dart scripts/whats_new.dart stamp` before
+building, which fills in today's date inside that build only. The committed file stays undated
+until the **next** release, which fills it in from CI:
+
+```sh
+gh run list --workflow "iOS Prod Deployment" --branch v<previous> --json createdAt,conclusion
+# the first successful run, on either platform, of that version or a later one
+dart scripts/whats_new.dart stamp --version=<previous> --date=<yyyy-mm-dd>
+```
+
+A release whose prod deploy never succeeded takes the date of the first later release that did.
+For example, 1.3.0 was cancelled, so its date comes from 1.3.1.
+
+**Translations.** Machine-translate each item into `es`, `fr` and `ru` with the same rules as the
+translations skill: keep the tone, and keep markdown and link targets exactly as they are. There is
+no machine-translated mark; the user reads them. This is **not** the ARB workflow. Don't run the
+translations skill for these.
+
+**Check.** Run `flutter test test/whats_new_content_test.dart`. It fails on a malformed file, a
+locale item with no English original, a translation that changed a link, disallowed markdown, a
+version newer than `pubspec.yaml`, an undated entry that isn't the release being cut, or
+formatting that differs from what the stamp script writes (2-space JSON, trailing newline). The
+page shows an empty state rather than crashing on a broken file, but the test is what keeps one
+from shipping.
 
 ## Facts and gotchas
 
@@ -171,3 +239,6 @@ below has to be **committed before the tag**: prod CI checks out the tagged comm
 - [ ] TestFlight copy says Apple Health/VoiceOver; Play copy says Health Connect/TalkBack
 - [ ] `testflight.txt` ends with a **What to test** list
 - [ ] The draft was shown, with the dropped list, and the user approved it before writing
+- [ ] A release with a new capability has an undated entry in every `assets/whats_new/*.json`,
+      and the previous release's entry is now dated from CI
+- [ ] `flutter test test/whats_new_content_test.dart` passes

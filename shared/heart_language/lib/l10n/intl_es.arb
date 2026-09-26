@@ -781,6 +781,24 @@
     "type": "text",
     "placeholders": {}
   },
+  "whatsNew": "Novedades",
+  "@whatsNew": {
+    "description": "Settings row and page title: the list of release notes, one card per app version",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewThisVersion": "Esta versión",
+  "@whatsNewThisVersion": {
+    "description": "What's new page, a small label on the card of the release the installed app is running",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewEmpty": "Esta versión de la app no incluye notas de la versión.",
+  "@whatsNewEmpty": {
+    "description": "What's new page, shown when there are no release notes to list",
+    "type": "text",
+    "placeholders": {}
+  },
   "congratulations": "¡Felicidades!",
   "@congratulations": {
     "description": "Workout complete screen, title",
@@ -3313,6 +3331,81 @@
   "exerciseNoteSaveFailed": "No se pudo guardar la nota. Inténtalo de nuevo.",
   "@exerciseNoteSaveFailed": {
     "description": "Exercise note control or feedback",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsOffPrompt": "Las notificaciones están desactivadas, así que no podremos recordarte un entrenamiento sin terminar.",
+  "@notificationsOffPrompt": {
+    "description": "Shown when a workout starts while notifications are off: what the user loses by leaving them off",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsOffEnable": "Activar",
+  "@notificationsOffEnable": {
+    "description": "Action on the notifications-off reminder: opens the system notification settings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsOffLater": "Recordármelo luego",
+  "@notificationsOffLater": {
+    "description": "Action on the notifications-off reminder: dismisses it, and it may appear again next time",
+    "type": "text",
+    "placeholders": {}
+  },
+  "notificationsOffNever": "No volver a recordármelo",
+  "@notificationsOffNever": {
+    "description": "Action on the notifications-off reminder: stops it appearing ever again",
+    "type": "text",
+    "placeholders": {}
+  },
+  "ongoingWorkoutChannel": "Entrenamiento en curso",
+  "@ongoingWorkoutChannel": {
+    "description": "Android notification channel name for the ongoing-workout notification, shown in the system notification settings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "ongoingWorkoutRest": "Descanso",
+  "@ongoingWorkoutRest": {
+    "description": "Lock screen / Dynamic Island label beside the running rest countdown during a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "ongoingWorkoutNextSet": "Siguiente: serie {number}",
+  "@ongoingWorkoutNextSet": {
+    "description": "Lock screen line naming the set the user is about to do, when it has no weight or reps filled in yet",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "ongoingWorkoutNextSetDetail": "Siguiente: serie {number} · {detail}",
+  "@ongoingWorkoutNextSetDetail": {
+    "description": "Lock screen line naming the set the user is about to do and what it holds, e.g. 'Next: set 4 · 50 kg x 6'",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "detail": {}
+    }
+  },
+  "ongoingWorkoutAllDone": "Todas las series completadas",
+  "@ongoingWorkoutAllDone": {
+    "description": "Lock screen line once every set in the active workout is ticked",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lockScreenWorkout": "Entrenamiento en la pantalla de bloqueo",
+  "@lockScreenWorkout": {
+    "description": "Settings switch: show the active workout on the lock screen (iOS Live Activity, Android notification). Off by default",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lockScreenWorkoutSubtitle": "Tiempo, siguiente serie y descanso mientras entrenas",
+  "@lockScreenWorkoutSubtitle": {
+    "description": "Subtitle under the lock-screen workout switch in Settings, saying what it shows",
     "type": "text",
     "placeholders": {}
   }
