@@ -5,6 +5,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onImportData;
   final VoidCallback onExportData;
   final VoidCallback onWhatsNew;
+  final VoidCallback onRestTimers;
 
   /// Where the app goes once an anonymous session's data is erased.
   final VoidCallback onErased;
@@ -15,6 +16,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     required this.onImportData,
     required this.onExportData,
     required this.onWhatsNew,
+    required this.onRestTimers,
     required this.onErased,
   });
 
@@ -29,6 +31,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :imperial,
       :metric,
       :notificationSettings,
+      :restTimers,
       :settings,
       :units,
       :weightUnit,
@@ -242,6 +245,22 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                           AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
                         },
                       );
+                    },
+                  ),
+                  // absent until there is a timer to list: an entry that can
+                  // only open onto an empty page is a dead end
+                  Selector<Timers, bool>(
+                    selector: (_, timers) => timers.isNotEmpty,
+                    builder: (_, any, _) {
+                      return switch (any) {
+                        true => ListTile(
+                          key: AppKeys.restTimers,
+                          leading: const Icon(Icons.timer_outlined),
+                          title: Text(restTimers),
+                          onTap: onRestTimers,
+                        ),
+                        false => const SizedBox.shrink(),
+                      };
                     },
                   ),
                   const _LockScreenWorkoutSwitch(),
