@@ -1,6 +1,29 @@
-Bug fixes and performance improvements.
+Your workout on the lock screen
+Elapsed time, the next set and your rest countdown, on the lock screen and in
+the Dynamic Island. Off until you turn it on in Settings.
+
+Rest timers in one place
+Settings now lists every rest timer you have set, with a way to clear one —
+and an undo if you didn't mean it.
+
+What's new
+Settings now has a What's new page: what each update brought, and which
+version you are on.
+
+Fixed
+Tapping a workout notification opens the workout you left running, instead of
+wherever you were last.
 
 What to test
-• Open the app to Profile with health data on the device, and leave it there a moment. The health cards and the code that fills them were both reworked; this is where the last build could show an error box instead of a card.
-• Finish a workout with notifications turned OFF for Heart, then again with them ON. The first path used to fail silently in the background; the second has to still deliver the rest timer.
-• Sign in with Google and with Apple, on both the sign-in and the sign-up screens. All four buttons now share one control, so it is the rendering and the tap that want checking, not just one of them.
+- Turn the lock screen workout on, start a workout, lock the phone. Time, next
+  set and rest should keep up, and tapping it should open the workout.
+- Leave it off and confirm nothing appears.
+- Settings > Rest timers: set timers on a few exercises mid-workout, clear one,
+  undo it.
+- Sign in with email and with Apple. The sign-in libraries moved in this build,
+  so this is the likeliest thing to break.
+- Cold start, then start a workout four ways: blank, from a template, from an
+  example, and by repeating a past one. All four paths changed.
+- Export your data, and import a Strong CSV. Both were touched.
+- Anything that loads over the network — exercises, history, images — should
+  look normal. The app's networking was rewrapped underneath.
