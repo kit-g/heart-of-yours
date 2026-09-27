@@ -1,6 +1,6 @@
 ---
 name: release-notes
-description: Draft the user-facing changelog for the next build — TestFlight "What to Test", Play Store "What's new", the GitHub release body, and the in-app What's new list (assets/whats_new) — from the diff since the last shipped version. Use when cutting a release, bumping the version, tagging, or preparing notes for testers. Triggers: "release notes", "changelog", "what to test", "what's new", "cut a release", "tag a version", "TestFlight notes", "store notes", "ship it".
+description: Draft the user-facing changelog for the next build — TestFlight "What to Test", Play Store "What's new", the GitHub release body, and the in-app What's new list (assets/whats_new), and keep the marketing feature list (docs/features.json) current — from the diff since the last shipped version. Use when cutting a release, bumping the version, tagging, or preparing notes for testers. Triggers: "release notes", "changelog", "what to test", "what's new", "cut a release", "tag a version", "TestFlight notes", "store notes", "ship it".
 ---
 
 # Release notes
@@ -139,6 +139,7 @@ below has to be **committed before the tag**: prod CI checks out the tagged comm
 2. Copy the agreed notes to `release_notes/v<version>.md` — the archive and the GitHub release
    body.
 3. Add the release to the app's **What's new** list — section 7. Skip it on a fix-only cycle.
+   Then update the **feature list** — section 8. That one runs every cycle, fix-only included.
 4. Leave `testflight.txt` and `whatsnew-en-US` in place; the next cycle overwrites them.
 5. Hand off. The user commits, tags, and pushes — that push is the release. Then
    `gh release create v<version> --notes-file release_notes/v<version>.md`.
@@ -210,6 +211,59 @@ formatting that differs from what the stamp script writes (2-space JSON, trailin
 page shows an empty state rather than crashing on a broken file, but the test is what keeps one
 from shipping.
 
+## 8. The feature list
+
+`docs/features.json` is the marketing list of what Heart does *today*, one entry per capability. It
+is not a changelog: an entry describes the feature as it stands, and a release that improves one
+rewrites its pitch rather than adding a new entry. It is also the source for store descriptions
+and comparison pages. Nothing reads it inside the app.
+
+The feature page on heart-of.me renders this file as it is, in the browser (`site/features.html`
+in heart-api). Every mobile deploy uploads it to its own environment's site `data/` prefix (the
+"Publish feature list" step): dev deploys to dev.heart-of.me, prod deploys to heart-of.me. So
+**everything in it is public at the tag**. The one exception is a `"since": null` entry, which the page hides. Upload is not invalidated, and `max-age=3600` lets it propagate within the hour.
+`id` is also the public anchor (`features.html#<id>`), so renaming one breaks outside links.
+
+```json
+{
+  "id": "rest-timers",
+  "category": "train",
+  "title": "Rest timers",
+  "pitch": "Set a rest timer per exercise and it runs between sets …",
+  "since": "1.0.5",
+  "tier": "free",
+  "platforms": ["ios", "android"],
+  "highlight": false
+}
+```
+
+- `id` is stable forever. The site and later comparison pages join on it. Rename the title, never
+  the id.
+- `category` points into the top-level `categories` array, whose order is the page's order.
+- `since` is the first release a user could use it in. A feature merged but not yet tagged goes
+  in with `"since": null`, and the page hides it. At tag time, set every `null` to
+  the version being cut.
+- `tier` is `free` for everything shipped so far, and it never goes the other way. A shipped
+  feature stays free (see the monetization ladder). Only something born premium says so.
+- `platforms` lists only where a user can actually use it. `highlight` marks the handful the page
+  leads with. Keep it to about six.
+- `title` and `pitch` are **plain text**, with no markdown and no HTML. The page shows markup literally
+  rather than rendering it, and the pitch has to fit a card: 200 characters at most. Same voice as section 4,
+  and both platforms' nouns where it matters ("Apple Health or Health Connect").
+- English only for now. If the site goes multilingual, pitches become keys through the CSV
+  translations flow. Don't hand-translate them into this file.
+
+**Every cycle, fix-only included**, walk the range once more with this question: does anything
+here add a feature, change what an existing pitch says, or make a claim untrue? A new capability
+gets an entry. A widened one gets its pitch rewritten. A removed or narrowed one is edited *now*,
+because the page is public and a stale claim is the thing people check. Show the changed entries
+alongside the release-notes draft in step 5.
+
+**Check.** `flutter test test/features_content_test.dart`. It fails on unknown fields, a
+duplicate or malformed id, an undeclared or empty category, a `since` newer than `pubspec.yaml`,
+markup in the copy, an over-long pitch, or formatting that differs from
+`JsonEncoder.withIndent('  ')` with a trailing newline.
+
 ## Facts and gotchas
 
 - **Both stores are automatic.** The Fastfile reads `release_notes/testflight.txt` into
@@ -242,3 +296,5 @@ from shipping.
 - [ ] A release with a new capability has an undated entry in every `assets/whats_new/*.json`,
       and the previous release's entry is now dated from CI
 - [ ] `flutter test test/whats_new_content_test.dart` passes
+- [ ] `docs/features.json` matches what this release ships, no `"since": null` is left at tag
+      time, and `flutter test test/features_content_test.dart` passes

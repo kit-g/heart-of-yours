@@ -55,6 +55,15 @@ jobs:
           role-to-assume: ${{ inputs.aws_role }}
           aws-region: ${{ inputs.aws_region }}
 
+      # The feature page on heart-of.me renders this file as-is (#153). The
+      # release-notes skill keeps it current, and unit tests have already held
+      # it to its contract. Early rather than last: the role session expires
+      # before a long build ends. Both platforms upload the same file.
+      - name: "Publish feature list"
+        run: |
+          aws s3 cp docs/features.json s3://${{ inputs.secrets_bucket }}/site/data/features.json \
+            --content-type application/json --cache-control 'max-age=3600'
+
       - name: "Fetch secrets from S3"
         run: |
           aws s3 cp s3://${{ inputs.secrets_bucket }}/secrets/appconfig.json appconfig.json
@@ -96,7 +105,6 @@ jobs:
         # the release's entry is committed undated: its tag is pushed after the
         # commit, so only the prod build knows the day it shipped. Dev builds
         # leave it undated, and the card shows no date.
-        if: inputs.environment == 'prod'
         run: dart scripts/whats_new.dart stamp
 
       - name: "Build app bundle"
