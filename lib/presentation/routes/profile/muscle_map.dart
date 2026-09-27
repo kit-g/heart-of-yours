@@ -374,10 +374,7 @@ class const _MuscleMapBody({
 
     final heatmap = Padding(
       padding: const .only(top: 8),
-      child: _Panel(
-        help: l.muscleMapHeatmapHelp,
-        child: _Heatmap(rows: rows, now: now, month: month),
-      ),
+      child: _Heatmap(rows: rows, now: now, month: month),
     );
 
     return LayoutBuilder(
@@ -504,31 +501,59 @@ class _HeatmapState extends State<_Heatmap> {
           key: AppKeys.muscleMapHeatmap,
           crossAxisAlignment: .stretch,
           children: [
-            Padding(
-              // clear of the corner's help button
-              padding: const .only(right: _Help.size - 12, bottom: 8),
-              child: Text(
-                switch (range) {
-                  .quarter => l.muscleMapWeekly,
-                  .year => l.muscleMapMonthly,
-                },
-                style: textTheme.titleSmall,
+            _Panel(
+              help: l.muscleMapHeatmapHelp,
+              child: Column(
+                crossAxisAlignment: .stretch,
+                children: [
+                  Padding(
+                    // clear of the corner's help button
+                    padding: const .only(right: _Help.size - 12, bottom: 8),
+                    child: _Swap(
+                      child: Text(
+                        switch (range) {
+                          .quarter => l.muscleMapWeekly,
+                          .year => l.muscleMapMonthly,
+                        },
+                        key: ValueKey(range),
+                        style: textTheme.titleSmall,
+                      ),
+                    ),
+                  ),
+                  // Weeks and months are different grids — thirteen columns against
+                  // twelve, and often a different set of rows — so one fades into
+                  // the other while the box eases to its new height, rather than the
+                  // card jumping between them.
+                  AnimatedSize(
+                    duration: _Swap.duration,
+                    curve: _Swap.curve,
+                    alignment: .topCenter,
+                    child: FutureBuilder<List<MuscleSets>>(
+                      future: _rowsFor(range),
+                      builder: (context, snapshot) {
+                        return _Swap(
+                          child: switch (snapshot.data) {
+                            List<MuscleSets> rows => KeyedSubtree(
+                              key: ValueKey(range),
+                              child: _grid(context, range, rows),
+                            ),
+                            null => const SizedBox(
+                              key: ValueKey('loading'),
+                              height: _HeatmapRow.height * 4,
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-            FutureBuilder<List<MuscleSets>>(
-              future: _rowsFor(range),
-              builder: (context, snapshot) {
-                return switch (snapshot.data) {
-                  List<MuscleSets> rows => _grid(context, range, rows),
-                  null => const SizedBox(
-                    height: _HeatmapRow.height * 4,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                };
-              },
-            ),
-            const SizedBox(height: 12),
-            // under the plot and centred, as on the app's other charts
+            const SizedBox(height: 8),
+            // Under the box, not in it: the switcher's track is the panel's own
+            // fill, and inside the box it vanished. Out here it sits on the page,
+            // like the 7/30 one above — and under the plot, as on the other charts.
             Center(
               child: SettingSwitcher<_HeatmapRange>(
                 value: range,
@@ -645,6 +670,42 @@ class _HeatmapState extends State<_Heatmap> {
           ],
         );
       },
+    );
+  }
+}
+
+/// A crossfade between two versions of the same thing, the incoming one
+/// settling in from a hair smaller. Both are laid out from the top, so a
+/// shorter grid replacing a taller one does not float to the middle.
+class const _Swap({
+  required final Widget child,
+}) extends StatelessWidget {
+  static const duration = Duration(milliseconds: 280);
+  static const curve = Curves.easeOutCubic;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: duration,
+      switchInCurve: curve,
+      switchOutCurve: curve,
+      layoutBuilder: (current, previous) {
+        return Stack(
+          alignment: .topLeft,
+          children: [...previous, ?current],
+        );
+      },
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween(begin: .98, end: 1.0).animate(animation),
+            alignment: .topCenter,
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 }
