@@ -1,5 +1,25 @@
 [
   {
+    "version": "1.9.0",
+    "items": [
+      {
+        "id": "lock-screen-workout",
+        "title": "Votre séance sur l'écran verrouillé",
+        "body": "Temps écoulé, série suivante et décompte du repos, sur l'écran verrouillé : dans la Dynamic Island sur iPhone, en notification active sur Android. À activer dans les **Paramètres**."
+      },
+      {
+        "id": "rest-timers-settings",
+        "title": "Les minuteurs de repos au même endroit",
+        "body": "**Paramètres → Minuteurs de repos** liste tous ceux que vous avez définis. Effacez-en un depuis là, et annulez si ce n'était pas voulu."
+      },
+      {
+        "id": "whats-new",
+        "title": "Nouveautés",
+        "body": "Cette liste. **Paramètres → Nouveautés** montre ce qu'a apporté chaque mise à jour et indique votre version."
+      }
+    ]
+  },
+  {
     "version": "1.8.0",
     "items": [
       {

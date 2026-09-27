@@ -1,5 +1,26 @@
 [
   {
+    "version": "1.9.0",
+    "date": null,
+    "items": [
+      {
+        "id": "lock-screen-workout",
+        "title": "Your workout on the lock screen",
+        "body": "Elapsed time, the next set and your rest countdown, on your lock screen — in the Dynamic Island on iPhone, as a live notification on Android. Turn it on in **Settings**."
+      },
+      {
+        "id": "rest-timers-settings",
+        "title": "Rest timers in one place",
+        "body": "**Settings → Rest timers** lists every timer you have set. Clear one from there, and undo it if you did not mean to."
+      },
+      {
+        "id": "whats-new",
+        "title": "What's new",
+        "body": "This list. **Settings → What's new** shows what each update brought, and marks the version you are running."
+      }
+    ]
+  },
+  {
     "version": "1.8.0",
     "date": "2026-09-13",
     "items": [

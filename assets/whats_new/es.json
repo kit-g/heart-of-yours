@@ -1,5 +1,25 @@
 [
   {
+    "version": "1.9.0",
+    "items": [
+      {
+        "id": "lock-screen-workout",
+        "title": "Tu entrenamiento en la pantalla de bloqueo",
+        "body": "Tiempo transcurrido, la siguiente serie y la cuenta atrás del descanso, en la pantalla de bloqueo: en la Dynamic Island en iPhone y como notificación activa en Android. Actívalo en **Ajustes**."
+      },
+      {
+        "id": "rest-timers-settings",
+        "title": "Los descansos, en un solo sitio",
+        "body": "**Ajustes → Temporizadores de descanso** lista todos los que has puesto. Borra uno desde ahí, y deshazlo si no querías."
+      },
+      {
+        "id": "whats-new",
+        "title": "Novedades",
+        "body": "Esta lista. **Ajustes → Novedades** muestra qué trajo cada actualización y señala la versión que usas."
+      }
+    ]
+  },
+  {
     "version": "1.8.0",
     "items": [
       {

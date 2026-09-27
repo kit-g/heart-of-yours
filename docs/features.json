@@ -53,7 +53,7 @@
       "category": "train",
       "title": "Your workout on the lock screen",
       "pitch": "Elapsed time, the next set and your rest countdown on the lock screen, in the Dynamic Island on iPhone and as a live notification on Android. Off until you turn it on.",
-      "since": null,
+      "since": "1.9.0",
       "tier": "free",
       "platforms": [
         "ios",

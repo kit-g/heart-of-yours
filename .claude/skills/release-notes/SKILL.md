@@ -10,7 +10,7 @@ One summary, three renderings, three limits. Everything lives in `release_notes/
 | File                                    | Consumer                                              | Limit                             |
 |-----------------------------------------|-------------------------------------------------------|-----------------------------------|
 | `release_notes/testflight.txt`          | TestFlight **What to Test**, App Store **What's New** | 4000 chars, but keep it skimmable |
-| `release_notes/whatsnew/whatsnew-en-US` | Play Console release notes, uploaded by CI            | **500 chars, hard**               |
+| `release_notes/whatsnew/whatsnew-<loc>` | Play Console release notes, uploaded by CI            | **500 chars, hard, per file**     |
 | `release_notes/v<version>.md`           | GitHub release body; the archive                      | none                              |
 
 The first two are the *pending* build and get overwritten every time. The archive is written
@@ -112,14 +112,41 @@ Voice: second person, present tense, plain. "Charts now go back through your who
   here. Testers skim; give them a to-do, not a press release.
 - The Play file has no room for that — capabilities and fixes only.
 
-Then check the limit that actually bites:
+### The Play file exists once per store locale
 
-```sh
-wc -m release_notes/whatsnew/whatsnew-en-US   # must be < 500
+The listing ships in five languages (`docs/store-copy/play.json` is the source of truth for
+which), so the notes do too — a localized storefront with English-only notes is the one place
+the seam shows. Write the English file first, then one per locale beside it:
+
+```
+release_notes/whatsnew/whatsnew-en-US
+release_notes/whatsnew/whatsnew-en-GB
+release_notes/whatsnew/whatsnew-es-ES
+release_notes/whatsnew/whatsnew-fr-FR
+release_notes/whatsnew/whatsnew-ru-RU
 ```
 
-`wc -m` counts characters, `wc -c` counts bytes — Play counts characters, and any localized
-copy is multibyte. Over 500 and Play rejects the upload, failing the deploy.
+No workflow change is needed — `whatsNewDirectory` uploads every `whatsnew-*` it finds, and a
+locale with no file falls back to the default listing language.
+
+- **`en-GB` is a copy of `en-US`.** These notes are too short to carry a spelling difference
+  worth the divergence; copy it verbatim unless a word actually differs.
+- **Translate the meaning, not the words.** Same rules as the app's Russian copy
+  (`.prompts/translate-en-ru.md`, repo root): keep the tone, keep it short, no calques. These
+  are not `L` getters — store notes are their own copy and never go through
+  `shared/heart_language`, so do **not** run the translations skill.
+- **If a locale cannot be written well, leave the file out.** Play falls back to the default
+  language, and absent English beats a bad translation of a sentence nobody needed.
+
+Then check the limit that actually bites, on every file:
+
+```sh
+wc -m release_notes/whatsnew/whatsnew-*   # each must be < 500
+```
+
+`wc -m` counts characters, `wc -c` counts bytes — Play counts characters, and localized copy is
+multibyte. Russian runs noticeably longer than English, so a 460-character English file can push
+its translation over. Over 500 and Play rejects the upload, failing the deploy.
 
 ## 5. Show the draft before writing anything
 
@@ -140,7 +167,7 @@ below has to be **committed before the tag**: prod CI checks out the tagged comm
    body.
 3. Add the release to the app's **What's new** list — section 7. Skip it on a fix-only cycle.
    Then update the **feature list** — section 8. That one runs every cycle, fix-only included.
-4. Leave `testflight.txt` and `whatsnew-en-US` in place; the next cycle overwrites them.
+4. Leave `testflight.txt` and the `whatsnew-*` files in place; the next cycle overwrites them.
 5. Hand off. The user commits, tags, and pushes — that push is the release. Then
    `gh release create v<version> --notes-file release_notes/v<version>.md`.
 
@@ -274,12 +301,22 @@ markup in the copy, an over-long pitch, or formatting that differs from
   but would stop the build reaching the tester groups. Waiting is free on a public repo, and
   the wall-clock only matters because a tag fires both platforms at once.
 - **Play notes are automatic.** `google-play-deployment.yml` points `whatsNewDirectory` at
-  `release_notes/whatsnew`. The filename must be exactly `whatsnew-en-US`, and that directory
-  must hold nothing but `whatsnew-*` files. Add a locale by adding `whatsnew-ru-RU` beside it.
+  `release_notes/whatsnew`, and that directory must hold nothing but `whatsnew-*` files. Every
+  file in it is uploaded, keyed by the locale in its name.
+- **iOS notes are English only, and that is a gap, not a decision.** `ios/fastlane/Fastfile`
+  reads one `release_notes/testflight.txt` into `pilot`'s `changelog`, which is a single string
+  for every locale — so the App Store's What's New and TestFlight's What to Test ship in English
+  to all five storefronts. Localizing them means per-locale ASC calls (`store_listing.py` already
+  has the auth and the locale list), not a second file. Not worth doing on a whim; worth knowing
+  before promising a translated release.
 - Play prod uploads to the `internal` track as a **draft**, so notes stay editable in the
   console after the deploy. TestFlight goes to "Primary Testers" immediately.
-- The app localizes to `en`, `en_CA` and `ru`, but store notes are their own copy and do **not**
-  go through `shared/heart_language`. Don't run the translations skill for these.
+- **Locale sets differ and none follows another.** The app's ARBs are `en`, `en_CA`, `es`,
+  `fr`, `ru`; the store is `en-US`, `en-GB`, `es-ES`, `fr-FR`, `ru-RU`; the in-app What's new is
+  `en`, `es`, `fr`, `ru` (no `en_CA`); `docs/features.json` is English only. Check which one you
+  are in before assuming a list — and read the ARB for the locale you are writing, because the
+  What's new copy quotes on-screen labels and those come from there. Neither the store notes nor
+  the What's new copy goes through `shared/heart_language`.
 - A tag fires iOS and Android prod at once, and both workflows are `cancel-in-progress`.
 
 ## Self-check
@@ -289,7 +326,9 @@ markup in the copy, an over-long pitch, or formatting that differs from
 - [ ] No new capability in the range → description is "Bug fixes and performance improvements",
       and the diff's findings went into **What to test** instead
 - [ ] No internal names, file paths, PR numbers, or commit prefixes survived
-- [ ] `wc -m` on the Play file is under 500
+- [ ] one `whatsnew-<locale>` per locale in `docs/store-copy/play.json`, or the locale is
+      deliberately absent
+- [ ] `wc -m` on **every** Play file is under 500 — check the Russian one, it runs longest
 - [ ] TestFlight copy says Apple Health/VoiceOver; Play copy says Health Connect/TalkBack
 - [ ] `testflight.txt` ends with a **What to test** list
 - [ ] The draft was shown, with the dropped list, and the user approved it before writing
