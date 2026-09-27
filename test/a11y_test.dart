@@ -39,6 +39,8 @@ enum _Screen {
   onboarding,
   login,
   profile,
+  muscleMapOffer,
+  muscleMap,
   noAccountDialog,
   workout,
   exerciseNoteEditor,
@@ -127,6 +129,36 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   (
     _Screen.profile,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // The muscle map (#136) on the profile: the one-time offer, and the card
+  // once it is on (lib/presentation/routes/profile/muscle_map.dart). Same
+  // page, so the same bottom nav stands behind both tap-target skips.
+  (_Screen.muscleMapOffer, _Guideline.labeledTapTarget, null),
+  (_Screen.muscleMapOffer, _Guideline.textContrastLight, null),
+  (_Screen.muscleMapOffer, _Guideline.textContrastDark, null),
+  (
+    _Screen.muscleMapOffer,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items, and the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.muscleMapOffer,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items, and the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart), are below 44x44 — visual-density change, out of scope',
+  ),
+  (_Screen.muscleMap, _Guideline.labeledTapTarget, null),
+  (_Screen.muscleMap, _Guideline.textContrastLight, null),
+  (_Screen.muscleMap, _Guideline.textContrastDark, null),
+  (
+    _Screen.muscleMap,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.muscleMap,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
@@ -447,6 +479,30 @@ void main() {
     // `_initApp` runs in `Zone.root`, which this fake-async zone never yields
     // to, so its own restore-and-run never gets that far in a widget test.
     switch (screen) {
+      case _Screen.muscleMapOffer || _Screen.muscleMap:
+        // history to map, and for the card, a device that has said yes
+        when(
+          db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => WorkoutAggregation.dummy());
+        when(db.getMuscleSets(any, any, userId: anyNamed('userId'))).thenAnswer(
+          (_) async => [
+            (
+              muscles: MuscleTagging.fromJson({
+                'primary': {
+                  'groups': ['chest'],
+                },
+                'secondary': {
+                  'groups': ['arms', 'shoulders'],
+                },
+              }),
+              sets: 12,
+            ),
+            (muscles: MuscleTagging.empty(), sets: 3),
+          ],
+        );
+        if (screen == _Screen.muscleMap) {
+          SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
+        }
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         when(db.isUpsyncOwed(any)).thenAnswer((_) async => true);
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [_unsynced()]);
@@ -523,6 +579,10 @@ void main() {
     switch (screen) {
       case _Screen.profile:
         break;
+      case _Screen.muscleMapOffer:
+        await tester.ensureVisible(find.byKey(AppKeys.muscleMapOffer));
+      case _Screen.muscleMap:
+        await tester.ensureVisible(find.byKey(AppKeys.muscleMapCard));
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         unawaited(Upsync.of(tester.element(find.byType(MaterialApp))).run('u1'));
       case _Screen.backfillRunning || _Screen.backfillFailed:
