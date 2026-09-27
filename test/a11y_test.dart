@@ -51,12 +51,16 @@ enum _Screen {
   importData,
   exportData,
   whatsNew,
+  restTimers,
   upsyncRunning,
   upsyncFailed,
   upsyncDone,
   backfillRunning,
   backfillFailed,
 }
+
+/// The exercise the rest-timers screen resolves one of its timers to.
+final _bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
 
 /// A finished workout the server has not confirmed — what the upsync replays.
 Workout _unsynced() {
@@ -275,6 +279,14 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.whatsNew, _Guideline.androidTapTarget, null),
   (_Screen.whatsNew, _Guideline.iosTapTarget, null),
 
+  // Rest timers (lib/presentation/routes/settings/rest_timers.dart): one row,
+  // its thumbnail, duration and clear button.
+  (_Screen.restTimers, _Guideline.labeledTapTarget, null),
+  (_Screen.restTimers, _Guideline.textContrastLight, null),
+  (_Screen.restTimers, _Guideline.textContrastDark, null),
+  (_Screen.restTimers, _Guideline.androidTapTarget, null),
+  (_Screen.restTimers, _Guideline.iosTapTarget, null),
+
   // The upsync row on the profile (lib/presentation/widgets/upsync_row.dart) in
   // each of its three states: the bar, the Retry button, the dismiss. The tap
   // target rows inherit the profile's bottom-nav reason; the row's own
@@ -467,6 +479,17 @@ void main() {
             _ => Future.error(const SocketException('offline')),
           },
         );
+      case _Screen.restTimers:
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
+        when(api.getExercises()).thenAnswer((_) async => [_bench]);
+        when(db.getExerciseUnits(any)).thenAnswer((_) async => {});
+        when(
+          db.setRestTimer(
+            exerciseName: anyNamed('exerciseName'),
+            userId: anyNamed('userId'),
+            seconds: anyNamed('seconds'),
+          ),
+        ).thenAnswer((_) async {});
       default:
         break;
     }
@@ -581,6 +604,26 @@ void main() {
           await tester.pump();
         }
         expect(notes, findsWidgets);
+      case _Screen.restTimers:
+        final context = tester.element(find.byType(MaterialApp));
+        // started here for the reason the upsync run is: `_initApp` never gets
+        // this far in a widget test, and the page waits on the catalog. The
+        // local read alone initializes it; the sync behind it is not awaited.
+        unawaited(Exercises.of(context).init());
+        await tester.pumpTimes();
+        final timers = Timers.of(context);
+        await timers.setRestTimer(_bench.id, 90);
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.scrollUntilVisible(
+          find.byKey(AppKeys.restTimers),
+          200,
+          scrollable: find.descendant(of: find.byType(SettingsPage), matching: find.byType(Scrollable)).first,
+        );
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.restTimers);
+        await tester.pumpTimes();
+        expect(find.byType(ListTile), findsOneWidget);
     }
     await tester.pumpTimes();
   }
