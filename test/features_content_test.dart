@@ -1,5 +1,5 @@
-// docs/features.json, held to the contract the site generator assumes. The
-// file is data for heart-of.me and the store copy: the generator renders it
+// docs/features.json, held to the contract the heart-of.me feature page assumes.
+// CI uploads it on every v* tag (site-data.yml) and the page renders it
 // without judgement, so anything malformed here is published as-is.
 //
 // The contract (release-notes skill, "Feature list"):
