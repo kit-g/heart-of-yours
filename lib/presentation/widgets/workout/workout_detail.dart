@@ -3,9 +3,8 @@ library;
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart' show AsyncCallback;
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/utils/assets.dart';
@@ -31,6 +30,7 @@ import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'timer.dart';
 

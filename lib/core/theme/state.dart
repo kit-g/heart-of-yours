@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppTheme with ChangeNotifier implements SignOutStateSentry {
   ThemeMode _mode;

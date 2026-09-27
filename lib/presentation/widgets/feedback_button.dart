@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Button with a haptic feedback and an [InkWell] around it
 class FeedbackButton extends StatelessWidget {

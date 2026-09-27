@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:google_sign_in_web/web_only.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 class GoogleSignInButton extends StatelessWidget {
   /// Accepted for one signature across the three platforms, and unused here:

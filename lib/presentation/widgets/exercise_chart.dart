@@ -1,9 +1,9 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:heart/presentation/widgets/timeline_chart.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ExerciseChart extends StatefulWidget {
   final Future<List<(num, DateTime)>?> Function() callback;

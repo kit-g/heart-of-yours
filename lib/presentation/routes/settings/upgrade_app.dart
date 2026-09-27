@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:heart/core/utils/assets.dart';
 import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:material_ui/material_ui.dart';
 
 class UpgradeRequiredPage extends StatelessWidget {
   const new({super.key});
