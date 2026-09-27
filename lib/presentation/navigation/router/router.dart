@@ -93,6 +93,10 @@ final class HeartRouter {
         redirect: _redirect,
         onException: (_, state, router) {
           router.go(_profilePath);
+          // The site's other pages. iOS's association claims all of
+          // heart-of.me, so a tap on the privacy policy lands here; that is
+          // not a broken route.
+          if (state.uri.path.endsWith('.html')) return;
           onError?.call('Router.onException: ${state.uri}');
         },
       );
@@ -129,6 +133,17 @@ final class HeartRouter {
     // redirect to upgrade page if required
     if (upgradeRequired) {
       return _upgradeAppPath;
+    }
+
+    // The Live Activity's tap target is an intent, not a screen:
+    // `_activeWorkoutPath` is a modal sheet *pushed* onto whatever stack is
+    // there (`_pushActiveWorkoutOnce`), so arriving at it as a location draws a
+    // barrier over an empty navigator — the grey screen a Dynamic Island tap
+    // produced in 1.9.0, with nothing to dismiss to. Land on the workouts tab
+    // and push the sheet over it, the way a notification tap does.
+    if (state.uri.path == _openWorkoutPath) {
+      unawaited(_openActiveWorkoutWhenResolved(Workouts.of(context)));
+      return _workoutPath;
     }
 
     switch (state.uri.path.split('/')) {
