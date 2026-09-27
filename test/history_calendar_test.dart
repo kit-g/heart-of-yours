@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/history/history.dart';
@@ -9,11 +8,13 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 
 import 'mocks.mocks.dart';
+import 'support/finders.dart';
 import 'support/harness.dart';
 
 class _Workouts extends Workouts {
@@ -63,7 +64,7 @@ void main() {
         value: workouts,
         child: MaterialApp(
           locale: locale,
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           home: const Scaffold(body: HistoryCalendar()),
         ),
@@ -163,7 +164,7 @@ void main() {
     );
     await tester.tapByKey(AppKeys.historyStack);
     await tester.pumpTimes();
-    await tester.tap(find.byTooltip('Calendar'));
+    await tester.tap(find.tooltip('Calendar'));
     await tester.pumpTimes();
     final calendarState = tester.state(find.byType(HistoryCalendar));
     final list = find.descendant(of: find.byType(HistoryCalendar), matching: find.byType(ListView));

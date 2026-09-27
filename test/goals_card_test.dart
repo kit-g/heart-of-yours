@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'mocks.mocks.dart';
 
@@ -84,7 +84,7 @@ void main() {
           ChangeNotifierProvider<Preferences>.value(value: settings ?? preferences),
         ],
         child: MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           // scrollable, as the profile screen always is: unbounded the card
           // grows with its list, and a long one overflows a bare test surface

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Set timer returns what the wheel shows. It used to read its starting value
 /// as a wheel row, so confirming 2:30 untouched saved 12:35 — and on Android
@@ -14,7 +14,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(platform: platform),
-        localizationsDelegates: L.localizationsDelegates,
+        localizationsDelegates: localizationsDelegates,
         supportedLocales: L.supportedLocales,
         home: Builder(
           builder: (c) {

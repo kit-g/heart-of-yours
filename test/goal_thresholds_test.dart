@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart_charts/heart_charts.dart';
@@ -66,7 +66,7 @@ void main() {
   Future<void> withContext(WidgetTester tester, void Function(BuildContext context) body) async {
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: L.localizationsDelegates,
+        localizationsDelegates: localizationsDelegates,
         supportedLocales: L.supportedLocales,
         home: Builder(
           builder: (context) {

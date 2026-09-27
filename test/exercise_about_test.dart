@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
@@ -7,6 +6,7 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -86,7 +86,7 @@ void main() {
           ChangeNotifierProvider<Preferences>.value(value: preferences),
         ],
         child: MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           // the detail page forks on platform; pin Material so the test is not
           // at the mercy of the host it runs on
