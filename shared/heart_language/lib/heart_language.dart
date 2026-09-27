@@ -1,10 +1,28 @@
 library;
 
+import 'package:cupertino_ui/cupertino_ui.dart' show GlobalCupertinoLocalizations;
 import 'package:intl/intl.dart' as intl;
+import 'package:material_ui/material_ui.dart' show GlobalMaterialLocalizations, LocalizationsDelegate;
 
 import 'l10n/heart_language.dart';
 
 export 'l10n/heart_language.dart';
+
+/// What an app passes as `localizationsDelegates`, in place of
+/// [L.localizationsDelegates].
+///
+/// gen-l10n writes that list against flutter_localizations, whose Material and
+/// Cupertino strings are flutter/material.dart's and flutter/cupertino.dart's
+/// types. material_ui and cupertino_ui look theirs up by their own types, and
+/// MaterialApp's built-in fallback speaks English only: in any other language
+/// they find nothing, and every back button, dialog and date picker that asks
+/// throws (test/material_localizations_test.dart). Theirs are added here; the
+/// generated ones stay for the dependencies still on the framework's copies.
+const localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  ...L.localizationsDelegates,
+  GlobalMaterialLocalizations.delegate,
+  GlobalCupertinoLocalizations.delegate,
+];
 
 extension MoreL on L {
   /// Full date with weekday, e.g. "Friday, 8 Aug 2026", in the user's language.
