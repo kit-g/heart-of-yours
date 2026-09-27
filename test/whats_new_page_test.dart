@@ -2,6 +2,9 @@
 // newest first, and capped at [readableWidth] on a tablet, where the column
 // would otherwise be the pane's width (docs/handoff.md #4 — the mechanism
 // export_page_layout_test.dart uses).
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -85,10 +88,18 @@ void main() {
   });
 
   testWidgets('the settings row opens the bundled notes, newest release first', (tester) async {
+    // Read off disk rather than through `rootBundle`: a bundle load inside
+    // `testWidgets` never completes under the fake clock. Naming a version
+    // instead would be worse — hard-coding today's newest release makes every
+    // release that adds one fail this test, which is what it did for 1.9.0.
+    final bundled = jsonDecode(File('assets/whats_new/en.json').readAsStringSync()) as List;
+    final newest = bundled.first as Map<String, dynamic>;
+    final firstItem = (newest['items'] as List).first as Map<String, dynamic>;
+
     await pumpWhatsNewAt(tester, const Size(1194, 834));
 
     final texts = tester.widgetList<Text>(find.descendant(of: column(), matching: find.byType(Text)));
-    expect(texts.first.data, '1.8.0');
-    expect(find.text('Exercise notes'), findsOneWidget);
+    expect(texts.first.data, newest['version']);
+    expect(find.text(firstItem['title'] as String), findsOneWidget);
   });
 }
