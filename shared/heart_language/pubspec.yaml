@@ -8,12 +8,12 @@ environment:
 
 dependencies:
   # their Material and Cupertino strings, for localizationsDelegates
-  cupertino_ui: ^1.0.1
+  cupertino_ui: ^1.1.1
   flutter:
     sdk: flutter
   # kept in lockstep with flutter_localizations' pin
   intl: ^0.20.2
-  material_ui: ^1.1.0
+  material_ui: ^1.4.0
 
 resolution: workspace
 
