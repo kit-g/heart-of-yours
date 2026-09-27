@@ -333,12 +333,12 @@ class Api
   @override
   Future<Workout> editWorkout(Workout updated) async {
     final (json, code) = await put(Router.workout(updated.id), body: updated.toMap());
-    return Workout.fromJson(json);
+    return _workoutOr(json, code);
   }
 
   @override
   Future<Workout> patchWorkout(String workoutId, {DateTime? start, DateTime? end, String? name}) async {
-    final (json, _) = await patch(
+    final (json, code) = await patch(
       Router.workout(workoutId),
       body: {
         'name': ?name,
@@ -346,7 +346,16 @@ class Api
         'end': ?end?.toIso8601String(),
       },
     );
-    return Workout.fromJson(json);
+    return _workoutOr(json, code);
+  }
+
+  /// A refusal with a JSON body comes back from `put` and `patch` as a result,
+  /// not an exception, and parsed as a workout it dies on a null `start`.
+  static Workout _workoutOr(Map<String, dynamic> json, int code) {
+    return switch (code) {
+      >= 200 && < 300 => Workout.fromJson(json),
+      _ => throw NetworkException(statusCode: code, body: json),
+    };
   }
 
   @override
