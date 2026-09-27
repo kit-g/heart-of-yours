@@ -40,6 +40,7 @@ RouteBase _profileRoute() {
             onImportData: context.goToImportData,
             onExportData: context.goToExportData,
             onWhatsNew: context.goToWhatsNew,
+            onRestTimers: context.goToRestTimers,
             onErased: context.goToProfile,
           );
         },
@@ -69,6 +70,11 @@ RouteBase _profileRoute() {
             path: _whatsNewPath,
             builder: (_, _) => const WhatsNewPage(onError: reportToSentry),
             name: _whatsNewName,
+          ),
+          GoRoute(
+            path: _restTimersPath,
+            builder: (_, _) => const RestTimersPage(),
+            name: _restTimersName,
           ),
         ],
       ),
