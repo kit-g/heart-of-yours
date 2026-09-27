@@ -163,6 +163,16 @@ void main() {
       verify(local.startWorkout(any, 'u1')).called(1);
     });
 
+    test('startWorkout without a session starts nothing, rather than a workout the mirror never gets', () async {
+      final probe = ListenerProbe()..attach(sut);
+      sut.userId = null;
+
+      await sut.startWorkout(source: .blank, name: 'Push');
+
+      expect(sut.hasActiveWorkout, isFalse);
+      expect(probe.notifications, 0);
+    });
+
     test('finishActiveWorkout saves workout, clears active, notifies', () async {
       final probe = ListenerProbe()..attach(sut);
       await sut.startWorkout(source: .blank, name: 'Legs');

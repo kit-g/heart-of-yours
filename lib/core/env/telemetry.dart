@@ -23,6 +23,7 @@ typedef TelemetryExclusion = Future<bool> Function();
 /// list to expand coverage; both `initSentry` and `initAnalytics` consult it.
 const List<TelemetryExclusion> _exclusions = [
   _isFirebaseTestLab,
+  _isEmulator,
 ];
 
 /// Whether this run reports at all.
@@ -52,11 +53,19 @@ Future<bool> _decide() async {
 /// Google's Firebase Test Lab / Play pre-launch report robot. It drives the app
 /// on virtualized devices and trips config-only errors no real user hits.
 /// Detected via the documented `firebase.test.lab` system setting (Android only).
-Future<bool> _isFirebaseTestLab() async {
+Future<bool> _isFirebaseTestLab() => _askDevice('isFirebaseTestLab');
+
+/// An x86 Android that is not a Chromebook — in practice Play's pre-launch
+/// crawler, which does *not* set the Test Lab flag. It poses as a OnePlus8Pro
+/// and reported the same ic_stat_heart and FindEntryByName faults on every
+/// release from 1.8.0 to 1.9.0. The rule lives in `MainActivity.isEmulator`.
+Future<bool> _isEmulator() => _askDevice('isEmulator');
+
+Future<bool> _askDevice(String method) async {
   if (kIsWeb || defaultTargetPlatform != .android) return false;
   try {
     const channel = MethodChannel('me.heart/device');
-    return await channel.invokeMethod<bool>('isFirebaseTestLab') ?? false;
+    return await channel.invokeMethod<bool>(method) ?? false;
   } on Exception {
     return false;
   }

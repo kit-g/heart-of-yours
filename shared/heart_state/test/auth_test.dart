@@ -519,7 +519,8 @@ void main() {
     });
 
     test('backing out of the sheet is a sign-in that did not start, not one that failed', () async {
-      final sut = await build(_LinkableAnonymous.new);
+      final errors = <Object>[];
+      final sut = await build(_LinkableAnonymous.new, onError: errors.add);
       when(
         google.authenticate(scopeHint: anyNamed('scopeHint')),
       ).thenThrow(const GoogleSignInException(code: GoogleSignInExceptionCode.canceled));
@@ -534,6 +535,8 @@ void main() {
       // the funnel exists to show.
       expect(reported.names, contains('signup_started'));
       expect(reported.arrivals, isEmpty);
+      // Nor is it an error: it was most of what Sentry heard from sign-in.
+      expect(errors, isEmpty);
     });
 
     test('an existing Apple account signs in with the credential Firebase hands back, not the spent one', () async {

@@ -16,10 +16,13 @@ struct OngoingWorkoutBundle: WidgetBundle {
 /// .timer)`, `ProgressView(timerInterval:)` — so the app updates the activity
 /// only when the workout changes.
 struct OngoingWorkoutLiveActivity: Widget {
-    /// Where a tap lands: the app's own scheme onto the active-workout route
-    /// (`_activeWorkoutPath` in the router). Without it a tap only opens the
-    /// app, on whatever tab it was left.
-    private static let openWorkout = URL(string: "heart:///activeWorkout")
+    /// Where a tap lands: the app's own scheme onto the router's open-workout
+    /// intent (`_openWorkoutPath`), which lands on the workouts tab and pushes
+    /// the workout sheet over it. Not `/activeWorkout` — that route is a modal
+    /// sheet meant to be pushed onto an existing stack, and as a deep-link
+    /// destination it drew a barrier over an empty navigator. Without any URL a
+    /// tap only opens the app, on whatever tab it was left.
+    private static let openWorkout = URL(string: "heart:///openWorkout")
 
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: OngoingWorkoutAttributes.self) { context in

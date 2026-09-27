@@ -234,6 +234,47 @@ void main() {
       expect(find.byType(ProfilePage), findsNothing);
     });
 
+    testWidgets('the Live Activity tap lands on the workouts tab, not on a bare sheet', (tester) async {
+      final user = MockUser(uid: 'u1', email: 'u1@test');
+      final firebase = MockFirebaseAuth(mockUser: user, signedIn: true);
+
+      // `FlutterDeepLinkingEnabled` hands the widget's URL to the engine as the
+      // initial route, so a Dynamic Island tap arrives as a *location*. Pointed
+      // at `/activeWorkout` — a modal sheet built to be pushed onto a stack —
+      // that drew a barrier over an empty navigator: a grey screen with nothing
+      // underneath and nothing to dismiss to, which is what 1.9.0 shipped. The
+      // intent path has to resolve to a page that can be shown on its own.
+      tester.binding.platformDispatcher.defaultRouteNameTestValue = '/openWorkout';
+      addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+
+      when(
+        cdn.getExerciseLibrary(cached: anyNamed('cached')),
+      ).thenAnswer((_) async => (<Exercise>[], (version: 'run-1', locale: 'en', etag: null)));
+
+      final router = HeartRouter();
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: firebase,
+        router: router,
+        hasLocalNotifications: false,
+        settle: false,
+      );
+      await tester.pumpTimes();
+      // `Workouts.init` runs in Zone.root and cannot land under the fake clock
+      // (see the cold-start test above), so ride out the bound the intent waits
+      // on. Where the tap lands is the point; whether the sheet then opens over
+      // it needs a resolved workout, which only a device has.
+      await tester.pump(const Duration(seconds: 11));
+
+      final location = router.config.routerDelegate.currentConfiguration.uri.toString();
+      expect(location, isNot(contains('openWorkout')));
+      expect(location, isNot(contains('activeWorkout')));
+      expect(find.byType(WorkoutPage), findsOneWidget);
+    });
+
     group('first-launch onboarding', () {
       /// A device that has never launched the app.
       setUp(() => SharedPreferences.setMockInitialValues({}));

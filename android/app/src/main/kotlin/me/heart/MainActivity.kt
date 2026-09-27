@@ -1,6 +1,7 @@
 package me.heart
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.OnBackPressedCallback
@@ -60,6 +61,7 @@ class MainActivity : FlutterFragmentActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel).setMethodCallHandler { call, result ->
             when (call.method) {
                 "isFirebaseTestLab" -> result.success(isFirebaseTestLab())
+                "isEmulator" -> result.success(isEmulator())
                 else -> result.notImplemented()
             }
         }
@@ -76,6 +78,21 @@ class MainActivity : FlutterFragmentActivity() {
     // runs under Firebase Test Lab / Play pre-launch report (virtual or physical).
     private fun isFirebaseTestLab(): Boolean {
         return "true" == Settings.System.getString(contentResolver, "firebase.test.lab")
+    }
+
+    // An x86 image pretending to be a phone. Play's crawler does not set the
+    // Test Lab flag: it arrives as a "OnePlus8Pro" at 288×448, 2 cores, every
+    // density split installed, and x86_64 as its primary ABI — which no phone
+    // sold in years has. Its resource table is broken the same way on every
+    // release (ic_stat_heart "missing", a SIGSEGV in FindEntryByName), so
+    // everything it reports is noise.
+    //
+    // ChromeOS is the one place real users run an x86 Android, so ARC is
+    // carved out.
+    private fun isEmulator(): Boolean {
+        val primary = Build.SUPPORTED_ABIS.firstOrNull() ?: return false
+        if (!primary.startsWith("x86")) return false
+        return !packageManager.hasSystemFeature("org.chromium.arc")
     }
 
     // Where Health Connect keeps what this app may read. An implicit intent
