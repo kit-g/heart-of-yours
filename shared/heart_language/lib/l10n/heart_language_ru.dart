@@ -1897,4 +1897,21 @@ class LRu extends L {
 
   @override
   String get lockScreenWorkoutSubtitle => 'Время, следующий подход и отдых во время тренировки';
+
+  @override
+  String get restTimers => 'Таймеры отдыха';
+
+  @override
+  String get restTimersEmpty => 'Таймеров отдыха нет. Задайте его в меню упражнения во время тренировки.';
+
+  @override
+  String clearRestTimerFor(String exercise) {
+    return 'Сбросить таймер отдыха для $exercise';
+  }
+
+  @override
+  String get restTimerCleared => 'Таймер отдыха сброшен';
+
+  @override
+  String get undo => 'Отменить';
 }

@@ -57,6 +57,10 @@ extension on BuildContext {
     return goNamed(_whatsNewName);
   }
 
+  void goToRestTimers() {
+    return goNamed(_restTimersName);
+  }
+
   void goToAvatar() {
     return goNamed(_avatarName);
   }

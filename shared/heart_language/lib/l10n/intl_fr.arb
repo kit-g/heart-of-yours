@@ -3408,5 +3408,39 @@
     "description": "Subtitle under the lock-screen workout switch in Settings, saying what it shows",
     "type": "text",
     "placeholders": {}
+  },
+  "restTimers": "Minuteurs de repos",
+  "@restTimers": {
+    "description": "Settings row and page title: every exercise that has a rest timer set, in one list",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restTimersEmpty": "Aucun minuteur de repos. Réglez-en un depuis le menu d’un exercice pendant une séance.",
+  "@restTimersEmpty": {
+    "description": "Rest timers page, shown once the last timer on it has been cleared",
+    "type": "text",
+    "placeholders": {}
+  },
+  "clearRestTimerFor": "Supprimer le minuteur de repos pour {exercise}",
+  "@clearRestTimerFor": {
+    "description": "Tooltip and screen-reader label of the button that removes one exercise's rest timer",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      }
+    }
+  },
+  "restTimerCleared": "Minuteur de repos supprimé",
+  "@restTimerCleared": {
+    "description": "Snackbar after a rest timer is removed from the Rest timers page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "undo": "Annuler",
+  "@undo": {
+    "description": "Snackbar action that reverses what was just done",
+    "type": "text",
+    "placeholders": {}
   }
 }

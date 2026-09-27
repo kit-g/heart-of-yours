@@ -1,9 +1,11 @@
 part of 'exercises.dart';
 
-class _Badge extends StatelessWidget {
+/// An exercise's thumbnail, or the letter and emoji of its target while there
+/// is none to show.
+class ExerciseBadge extends StatelessWidget {
   final Exercise exercise;
 
-  const new({required this.exercise});
+  const new({super.key, required this.exercise});
 
   @override
   Widget build(BuildContext context) {

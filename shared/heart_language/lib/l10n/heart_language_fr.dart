@@ -1875,4 +1875,22 @@ class LFr extends L {
 
   @override
   String get lockScreenWorkoutSubtitle => 'Durée, série suivante et repos pendant la séance';
+
+  @override
+  String get restTimers => 'Minuteurs de repos';
+
+  @override
+  String get restTimersEmpty =>
+      'Aucun minuteur de repos. Réglez-en un depuis le menu d’un exercice pendant une séance.';
+
+  @override
+  String clearRestTimerFor(String exercise) {
+    return 'Supprimer le minuteur de repos pour $exercise';
+  }
+
+  @override
+  String get restTimerCleared => 'Minuteur de repos supprimé';
+
+  @override
+  String get undo => 'Annuler';
 }

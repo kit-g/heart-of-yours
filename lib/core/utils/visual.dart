@@ -17,7 +17,7 @@ void snack(
       // stays until tapped and blocks every queued snack behind it. Ours are
       // passing confirmations, so they always time out, action or not.
       persist: false,
-      duration: duration = const Duration(seconds: 4),
+      duration: duration ?? const Duration(seconds: 4),
     ),
   );
 }
@@ -34,7 +34,7 @@ extension ScaffoldMessengerStateExtension on ScaffoldMessengerState {
         action: action,
         // see `snack` above: never persist, action or not
         persist: false,
-        duration: duration = const Duration(seconds: 4),
+        duration: duration ?? const Duration(seconds: 4),
       ),
     );
   }
