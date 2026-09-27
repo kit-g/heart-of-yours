@@ -9,10 +9,11 @@ import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'analytics.dart';
+import 'feature_sync.dart';
 import 'password.dart';
 import 'remote.dart';
 
-class Auth with ChangeNotifier implements SignOutStateSentry {
+class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   final GoogleSignIn _googleSignIn;
   final fb.FirebaseAuth _firebase;
   final void Function(User?)? onUserChange;
@@ -50,6 +51,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
 
   User? _user;
 
+  @override
   User? get user => _user;
 
   /// True for an anonymous session too: the rest of the app keys everything on
@@ -61,6 +63,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   /// Whether the session is Firebase's anonymous kind — a uid with no account
   /// behind it. What an account adds (sync, socials, a coach) is off, and so is
   /// the remote leg, see [RemoteAccess].
+  @override
   bool get isAnonymous => _isAnonymous;
 
   bool _sessionUnavailable = false;
@@ -159,6 +162,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
             if (_disposed) return;
             try {
               _user = await _registerUser(_user);
+              // what the server holds for the account — its settings among it
+              // — has only now arrived; listeners reading those need telling
+              notifyListeners();
             } on AccountDeleted {
               _logout();
             }
@@ -638,6 +644,23 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
   @override
   FutureOr<void> onSignOut() {
     return _logout();
+  }
+
+  /// Writes [settings] to the account and keeps what the server returns — it
+  /// merges into what it holds (heart-api#89), so the answer is the account's
+  /// settings as a whole. Null for a session with no account behind it, or no
+  /// token yet: those have nowhere to write to, and a later sign-in carries
+  /// the change instead.
+  @override
+  Future<Settings?> saveSettings(Settings settings) async {
+    final user = _user;
+    if (user == null || _isAnonymous || !_service.isAuthenticated) return null;
+    final saved = await _service.registerAccount(user.copyWith(settings: settings));
+    // the session may have changed hands while the write was out
+    if (_user?.id != saved.id) return null;
+    _user = saved;
+    notifyListeners();
+    return saved.settings;
   }
 
   Future<User?> _registerUser(User? user) async {
