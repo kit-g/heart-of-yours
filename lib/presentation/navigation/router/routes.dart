@@ -130,6 +130,45 @@ Future<void> _pushActiveWorkoutOnce(GoRouter router) {
   return router.push(_activeWorkoutPath);
 }
 
+/// Opens the active-workout sheet once [Workouts] knows whether there is one.
+///
+/// The Live Activity's tap ([_openWorkoutPath]) can arrive before that: one that
+/// launched the app is routed while `Workouts.init` is still reading the mirror,
+/// and asked then, "no active workout" opens a sheet with nothing in it. Bounded,
+/// so a session that never resolves cannot leave the tap waiting forever — it
+/// then opens nothing, and the workouts tab it landed on is the right answer
+/// anyway.
+///
+/// Always off the current turn: this is called from `_decide`, and pushing a
+/// route while a redirect is still being resolved is what the delay in its
+/// un-notified branch is also for.
+Future<void> _openActiveWorkoutWhenResolved(Workouts workouts) async {
+  await Future<void>.delayed(const Duration(milliseconds: 50));
+
+  if (!workouts.hasResolvedActiveWorkout) {
+    final resolved = Completer<void>();
+    void check() {
+      if (!workouts.hasResolvedActiveWorkout || resolved.isCompleted) return;
+      workouts.removeListener(check);
+      resolved.complete();
+    }
+
+    workouts.addListener(check);
+    await resolved.future.timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => workouts.removeListener(check),
+    );
+  }
+
+  // finished or cancelled while the activity was still on the lock screen
+  if (workouts.activeWorkout == null) return;
+
+  // read after the wait, not carried across it
+  if (_rootNavigatorKey.currentContext case BuildContext context when context.mounted) {
+    return _pushActiveWorkoutOnce(GoRouter.of(context));
+  }
+}
+
 RouteBase _activeWorkoutRoute() {
   return GoRoute(
     path: _activeWorkoutPath,
