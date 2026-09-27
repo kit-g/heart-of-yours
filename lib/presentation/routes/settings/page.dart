@@ -187,6 +187,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 ],
               ),
               const SizedBox(height: 24),
+              const _FeaturesSection(),
+              const SizedBox(height: 24),
               // owns its own header — the whole block is absent on platforms
               // with no health store, and a header over nothing would lie
               const HealthSettings(),
@@ -521,6 +523,47 @@ class _LockScreenWorkoutSwitchState extends State<_LockScreenWorkoutSwitch> {
           _ => const SizedBox.shrink(),
         };
       },
+    );
+  }
+}
+
+/// The opt-in features (#138, `docs/opt-in.md`): one switch each, always
+/// live, both ways. The switch is the answer — turning a feature on here does
+/// not ask again, and turning it off takes it out of the app on the spot.
+class const _FeaturesSection() extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final preferences = Preferences.watch(context);
+    final ThemeData(
+      :textTheme,
+      colorScheme: ColorScheme(:tertiaryContainer, :onTertiaryContainer, :outlineVariant, :onSurfaceVariant),
+    ) = Theme.of(
+      context,
+    );
+
+    return _Section(
+      title: l.features,
+      children: [
+        for (final feature in Feature.values)
+          SwitchListTile.adaptive(
+            key: ValueKey('feature-${feature.value}'),
+            secondary: Icon(feature.icon),
+            title: Text(feature.title(l)),
+            subtitle: Text(feature.subtitle(l)),
+            value: preferences.isOn(feature),
+            // the lock-screen switch's colors: the accent as a fill, and a
+            // hairline track so "off" is still a visible control
+            activeTrackColor: tertiaryContainer,
+            activeThumbColor: onTertiaryContainer,
+            inactiveTrackColor: outlineVariant,
+            onChanged: (on) => preferences.setFeature(feature, on: on),
+          ),
+        Padding(
+          padding: const .symmetric(horizontal: 16),
+          child: Text(l.featuresFooter, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
+        ),
+      ],
     );
   }
 }
