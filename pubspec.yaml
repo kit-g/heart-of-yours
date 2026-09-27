@@ -32,7 +32,11 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   flutter_svg: ^2.2.3
   flutter_web_plugins: { sdk: flutter }
-  go_router: ^18.0.1
+  # held below 18: its only change is importing MaterialApp from material_ui,
+  # which is not the MaterialApp this app builds on (flutter/material.dart), so
+  # 18 cannot recognise the app and gives every page no transition at all.
+  # Moves with the app's own move to material_ui, not before.
+  go_router: ^17.5.0
   google_sign_in_web: 1.1.3 # required for the sign-in button on the web
   heart_api:
   heart_charts:
