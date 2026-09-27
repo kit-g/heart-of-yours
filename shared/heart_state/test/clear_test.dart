@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'mocks.mocks.dart';
 

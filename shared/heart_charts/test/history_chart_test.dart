@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_charts/heart_charts.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   Future<void> pumpChart(WidgetTester tester, Widget chart) {
