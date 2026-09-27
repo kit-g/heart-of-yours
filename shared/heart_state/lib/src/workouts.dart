@@ -2,8 +2,8 @@ import 'dart:collection';
 import 'dart:typed_data';
 
 // hide Page: heart_models' pagination Page collides with Flutter's navigator Page.
-import 'package:flutter/material.dart' hide Page;
 import 'package:heart_models/heart_models.dart';
+import 'package:material_ui/material_ui.dart' hide Page;
 import 'package:provider/provider.dart';
 
 import 'analytics.dart';
