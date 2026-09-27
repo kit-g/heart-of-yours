@@ -3,15 +3,16 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/finders.dart';
 import 'support/harness.dart';
 
 void main() => exerciseNoteTests();
@@ -68,11 +69,11 @@ void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDev
       await tester.pumpTimes();
       expect(find.text('Pause at the bottom'), findsOneWidget);
       await onFrame?.call('note-${size.width.toInt()}');
-      await tester.tap(find.byTooltip('Pin for future workouts'));
+      await tester.tap(find.tooltip('Pin for future workouts'));
       await tester.pumpTimes();
       verify(db.setExerciseNote(ex.id, 'anon', 'Pause at the bottom', pending: true)).called(1);
       verifyNever(api.setExerciseNote(any, any));
-      expect(find.byTooltip('Unpin for future workouts'), findsOneWidget);
+      expect(find.tooltip('Unpin for future workouts'), findsOneWidget);
       await onFrame?.call('pinned-${size.width.toInt()}');
       await tester.drag(find.text('Pause at the bottom'), const Offset(-600, 0));
       await tester.pumpTimes();
@@ -92,15 +93,15 @@ void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDev
       await tester.pumpTimes();
       expect(workout.first.note, 'One hand at a time');
       expect(exercises.noteFor(ex.id), 'Pause at the bottom');
-      expect(find.byTooltip('Unpin for future workouts'), findsOneWidget);
-      await tester.tap(find.byTooltip('Unpin for future workouts'));
+      expect(find.tooltip('Unpin for future workouts'), findsOneWidget);
+      await tester.tap(find.tooltip('Unpin for future workouts'));
       await tester.pumpTimes();
       expect(exercises.noteFor(ex.id), isNull);
       expect(workout.first.note, 'One hand at a time');
 
-      await tester.tap(find.byTooltip('Pin for future workouts'));
+      await tester.tap(find.tooltip('Pin for future workouts'));
       await tester.pumpTimes();
-      await tester.tap(find.byTooltip('Remove note'));
+      await tester.tap(find.tooltip('Remove note'));
       await tester.pumpTimes();
       expect(workout.first.note, isNull);
       expect(exercises.noteFor(ex.id), 'One hand at a time');
@@ -113,7 +114,7 @@ void exerciseNoteTests({Future<void> Function(String name)? onFrame, bool useDev
       final longNote = 'x' * 180;
       await state.setNote(workout.first, longNote);
       await tester.pumpTimes();
-      await tester.tap(find.byTooltip('Pin for future workouts'));
+      await tester.tap(find.tooltip('Pin for future workouts'));
       await tester.pumpTimes();
       // Existing server notes can exceed the UI limit: validation still matters.
       expect(tester.widget<TextFormField>(find.byType(TextFormField)).controller!.text, longNote);

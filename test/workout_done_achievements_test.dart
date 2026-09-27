@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -65,7 +65,7 @@ void main() {
           ChangeNotifierProvider<Preferences>.value(value: preferences),
         ],
         child: MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           home: WorkoutDone(
             workout: null,

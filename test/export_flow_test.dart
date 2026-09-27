@@ -6,13 +6,13 @@ import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 // hide Page: heart_models' pagination Page collides with Flutter's navigator Page
-import 'package:flutter/material.dart' hide Page;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart' hide Page;
 import 'package:mockito/mockito.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';

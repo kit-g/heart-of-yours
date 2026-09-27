@@ -10,7 +10,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/theme/state.dart';
@@ -20,9 +19,11 @@ import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/finders.dart';
 import 'support/harness.dart';
 
 /// LoginPage's Apple button probes availability via this channel, unawaited,
@@ -562,7 +563,7 @@ void main() {
             .thenAnswer((_) async => [completed]);
         await tester.tapByKey(AppKeys.historyStack);
         await tester.pumpTimes();
-        await tester.tap(find.byTooltip('Calendar'));
+        await tester.tap(find.tooltip('Calendar'));
       case _Screen.history:
         await tester.tapByKey(AppKeys.historyStack);
       case _Screen.exercises:

@@ -7,9 +7,9 @@
 // whether the workout editor was open, which broke the moment that route moved.
 // Dropping the question is only safe because a controller with nothing attached
 // scrolls nothing. If that ever stops being true, every History tap throws.
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   late Scrolls scrolls;

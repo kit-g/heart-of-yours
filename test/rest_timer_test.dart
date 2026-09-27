@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One rest countdown at a time, owned by the exercise whose set started it.
 /// Two exercises with rest timers used to share the single countdown: the
@@ -18,7 +18,7 @@ void main() {
       ChangeNotifierProvider<Alarms>.value(
         value: alarms,
         child: MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           home: Scaffold(
             body: Countdown(
