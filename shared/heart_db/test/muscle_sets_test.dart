@@ -86,15 +86,16 @@ void main() {
     }
   }
 
-  test('counts completed sets per exercise, with the exercise\'s tagging', () async {
-    await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 2, 10), completed: 3, skipped: 2);
-    await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 4, 10), completed: 2);
+  test('counts completed sets per exercise per workout, with its start and the exercise\'s tagging', () async {
+    final monday = DateTime.utc(2026, 9, 2, 10);
+    final thursday = DateTime.utc(2026, 9, 4, 10);
+    await seed(exercise: 'bench', start: monday, completed: 3, skipped: 2);
+    await seed(exercise: 'bench', start: thursday, completed: 2);
 
     final rows = await local.getMuscleSets(from, to, userId: userId);
 
-    expect(rows, hasLength(1));
-    final [(:muscles, :sets)] = rows;
-    expect(sets, 5);
+    expect(rows.map((row) => (row.start, row.sets)), unorderedEquals([(monday.toLocal(), 3), (thursday.toLocal(), 2)]));
+    final (:muscles, start: _, sets: _) = rows.first;
     expect(muscles.primary.ids, ['pectoralis_major_l', 'pectoralis_major_r']);
     expect(muscles.secondary?.groups, ['arms']);
   });
@@ -102,7 +103,7 @@ void main() {
   test('an untagged custom exercise comes back with empty tagging, not dropped', () async {
     await seed(exercise: 'mine', start: DateTime.utc(2026, 9, 2, 10), completed: 4);
 
-    final [(:muscles, :sets)] = await local.getMuscleSets(from, to, userId: userId);
+    final [(:muscles, :sets, start: _)] = await local.getMuscleSets(from, to, userId: userId);
 
     expect(sets, 4);
     expect(muscles.isEmpty, isTrue);

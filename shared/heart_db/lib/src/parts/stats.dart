@@ -111,9 +111,13 @@ mixin _Stats on _LocalDatabase implements StatsService {
         );
   }
 
-  /// Completed sets per exercise in finished workouts started in [from, to),
-  /// each with the exercise's muscle tagging — what the muscle map (#136) is
-  /// counted from.
+  /// Completed sets per exercise per finished workout started in [from, to),
+  /// each with the workout's start and the exercise's muscle tagging — what
+  /// the muscle map (#136) is counted from.
+  ///
+  /// Per workout rather than summed over the period, so one read serves every
+  /// window and week the map shows: the caller buckets by `start` in the
+  /// user's own calendar, which SQLite's UTC strings cannot do for it.
   ///
   /// Grouped by exercise rather than by muscle: the tagging is a JSON blob,
   /// and which muscles a tag covers is the body atlas's knowledge, not the
@@ -123,7 +127,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// An exercise missing from `exercises` (a dangling id) comes back with
   /// empty tagging, as does a custom one nobody tagged: both are sets the map
   /// can only report as unmapped.
-  Future<List<({MuscleTagging muscles, int sets})>> getMuscleSets(
+  Future<List<({DateTime start, MuscleTagging muscles, int sets})>> getMuscleSets(
     DateTime from,
     DateTime to, {
     String? userId,
@@ -131,13 +135,13 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          'SELECT e.muscles AS muscles, count(*) AS sets '
+          'SELECT w.start AS start, e.muscles AS muscles, count(*) AS sets '
           'FROM workouts w '
           'JOIN workout_exercises we ON we.workout_id = w.id '
           'JOIN sets s ON s.exercise_id = we.id '
           'LEFT JOIN exercises e ON e.id = we.exercise_id '
           'WHERE w.user_id = ? AND w.end IS NOT NULL AND w.start >= ? AND w.start < ? AND s.completed = 1 '
-          'GROUP BY we.exercise_id',
+          'GROUP BY w.id, we.exercise_id',
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -150,7 +154,11 @@ mixin _Stats on _LocalDatabase implements StatsService {
                 },
                 _ => MuscleTagging.empty(),
               };
-              return (muscles: muscles, sets: (row['sets'] as num).toInt());
+              return (
+                start: DateTime.parse(row['start'] as String).toLocal(),
+                muscles: muscles,
+                sets: (row['sets'] as num).toInt(),
+              );
             },
           ).toList(),
         );
