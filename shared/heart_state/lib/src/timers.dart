@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
@@ -40,6 +42,11 @@ class Timers with ChangeNotifier implements SignOutStateSentry {
 
   /// Whether the user has any rest-timer preference configured.
   bool get isNotEmpty => _timers.isNotEmpty;
+
+  /// Every configured timer, in seconds, keyed by exercise id — including ids
+  /// the exercise catalog no longer resolves, which have nowhere else to be
+  /// seen or cleared.
+  Map<String, int> get all => UnmodifiableMapView(_timers);
 
   Future<void> setRestTimer(String exercise, int seconds) async {
     if (userId case String userId) {

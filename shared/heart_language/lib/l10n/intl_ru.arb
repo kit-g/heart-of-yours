@@ -3408,5 +3408,39 @@
     "description": "Subtitle under the lock-screen workout switch in Settings, saying what it shows",
     "type": "text",
     "placeholders": {}
+  },
+  "restTimers": "Таймеры отдыха",
+  "@restTimers": {
+    "description": "Settings row and page title: every exercise that has a rest timer set, in one list",
+    "type": "text",
+    "placeholders": {}
+  },
+  "restTimersEmpty": "Таймеров отдыха нет. Задайте его в меню упражнения во время тренировки.",
+  "@restTimersEmpty": {
+    "description": "Rest timers page, shown once the last timer on it has been cleared",
+    "type": "text",
+    "placeholders": {}
+  },
+  "clearRestTimerFor": "Сбросить таймер отдыха для {exercise}",
+  "@clearRestTimerFor": {
+    "description": "Tooltip and screen-reader label of the button that removes one exercise's rest timer",
+    "type": "text",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      }
+    }
+  },
+  "restTimerCleared": "Таймер отдыха сброшен",
+  "@restTimerCleared": {
+    "description": "Snackbar after a rest timer is removed from the Rest timers page",
+    "type": "text",
+    "placeholders": {}
+  },
+  "undo": "Отменить",
+  "@undo": {
+    "description": "Snackbar action that reverses what was just done",
+    "type": "text",
+    "placeholders": {}
   }
 }
