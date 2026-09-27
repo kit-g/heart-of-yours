@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The training quality a metric speaks to. Drives the chart color so a glance
 /// separates strength from volume from endurance from conditioning. Hues are a

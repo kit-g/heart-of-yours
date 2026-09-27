@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:heart/core/utils/assets.dart';
+import 'package:material_ui/material_ui.dart';
 
 class GreetingsPane extends StatelessWidget {
   final String title;

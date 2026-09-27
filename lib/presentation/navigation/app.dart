@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
@@ -28,6 +27,7 @@ import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:logging/logging.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class HeartApp extends StatelessWidget {
@@ -397,16 +397,27 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       routerConfig: widget.router.config,
       // Wraps every route below Localizations so it can read L/AppConfig and
       // reach a ScaffoldMessenger for the notifications-off reminder.
-      builder: (context, child) => _WorkoutTimeoutScheduler(
-        enabled: widget.hasLocalNotifications,
-        child: OngoingWorkoutPresenter(
-          // the same gate: off means tests, web, or a build that never
-          // initialised the notifications plugin the Android side posts through
-          surface: switch (widget.hasLocalNotifications) {
-            true => ongoingWorkoutSurface(Theme.of(context).platform),
-            false => null,
-          },
-          child: child ?? const SizedBox.shrink(),
+      //
+      // The bridge is for the dependencies still on flutter/material.dart
+      // (markdown_widget, flutter_body_atlas, reorderable_grid and friends —
+      // #188). Their `Theme.of` cannot see this app's theme and falls back to
+      // the framework's default light one, silently: list bullets went black
+      // on the dark theme. This hands them a copy of ours, and the framework's
+      // localizations. Deprecated as a migration crutch; it goes when the last
+      // of them moves to material_ui.
+      // ignore: deprecated_member_use
+      builder: (context, child) => MaterialUiCompatibilityBridge(
+        child: _WorkoutTimeoutScheduler(
+          enabled: widget.hasLocalNotifications,
+          child: OngoingWorkoutPresenter(
+            // the same gate: off means tests, web, or a build that never
+            // initialised the notifications plugin the Android side posts through
+            surface: switch (widget.hasLocalNotifications) {
+              true => ongoingWorkoutSurface(Theme.of(context).platform),
+              false => null,
+            },
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ),
       // Every locale heart_language ships — the backend serves exercise
@@ -417,32 +428,64 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
       // `DateFormat(…, localeName)`, so the resolved locale also carries
       // regional conventions (the `en_CA` "6/19" lesson).
       supportedLocales: L.supportedLocales,
-      localizationsDelegates: L.localizationsDelegates,
+      localizationsDelegates: localizationsDelegates,
     );
 
-    return switch (widget.config.allowsFeedbackFeature) {
-      false => app,
-      true => BetterFeedback(
-        themeMode: widget.theme.mode,
-        theme: FeedbackThemeData(
-          sheetIsDraggable: false,
-          feedbackSheetColor: light.colorScheme.surface,
-          bottomSheetDescriptionStyle: light.textTheme.titleMedium!,
-          colorScheme: light.colorScheme,
-          bottomSheetTextInputStyle: light.textTheme.bodyMedium!,
-          activeFeedbackModeColor: light.colorScheme.primary,
-        ),
-        darkTheme: FeedbackThemeData(
-          feedbackSheetColor: dark.colorScheme.surface,
-          bottomSheetDescriptionStyle: dark.textTheme.titleMedium!,
-          colorScheme: dark.colorScheme,
-          bottomSheetTextInputStyle: dark.textTheme.bodyMedium!,
-          activeFeedbackModeColor: dark.colorScheme.primary,
-        ),
-        child: app,
-      ),
-    };
+    if (!widget.config.allowsFeedbackFeature) return app;
+
+    final lightFeedback = _feedbackTheme(light, sheetIsDraggable: false);
+    final darkFeedback = _feedbackTheme(dark);
+    // feedback's ThemeMode is flutter/material.dart's, so ours cannot be passed
+    // on; the mode picks what goes in each slot instead, and feedback's own
+    // default — follow the platform — does the rest
+    return BetterFeedback(
+      theme: switch (widget.theme.mode) {
+        .dark => darkFeedback,
+        .light || .system => lightFeedback,
+      },
+      darkTheme: switch (widget.theme.mode) {
+        .light => lightFeedback,
+        .dark || .system => darkFeedback,
+      },
+      child: app,
+    );
   }
+}
+
+/// feedback's theme, from ours.
+///
+/// feedback is still on flutter/material.dart, and its colour scheme is that
+/// library's type, which ours is not. So its own default scheme is copied with
+/// our colours rather than ours passed in.
+FeedbackThemeData _feedbackTheme(ThemeData theme, {bool sheetIsDraggable = true}) {
+  final ThemeData(:colorScheme, :textTheme) = theme;
+  final data = FeedbackThemeData(
+    sheetIsDraggable: sheetIsDraggable,
+    brightness: colorScheme.brightness,
+    feedbackSheetColor: colorScheme.surface,
+    bottomSheetDescriptionStyle: textTheme.titleMedium!,
+    bottomSheetTextInputStyle: textTheme.bodyMedium!,
+    activeFeedbackModeColor: colorScheme.primary,
+  );
+  return data.copyWith(
+    colorScheme: data.colorScheme.copyWith(
+      brightness: colorScheme.brightness,
+      primary: colorScheme.primary,
+      onPrimary: colorScheme.onPrimary,
+      primaryContainer: colorScheme.primaryContainer,
+      onPrimaryContainer: colorScheme.onPrimaryContainer,
+      secondary: colorScheme.secondary,
+      onSecondary: colorScheme.onSecondary,
+      error: colorScheme.error,
+      onError: colorScheme.onError,
+      surface: colorScheme.surface,
+      onSurface: colorScheme.onSurface,
+      onSurfaceVariant: colorScheme.onSurfaceVariant,
+      surfaceContainerHighest: colorScheme.surfaceContainerHighest,
+      outline: colorScheme.outline,
+      outlineVariant: colorScheme.outlineVariant,
+    ),
+  );
 }
 
 /// Manages the active-workout idle-timeout notification and the

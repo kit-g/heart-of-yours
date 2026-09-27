@@ -3,7 +3,6 @@ library;
 import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/misc.dart';
@@ -26,6 +25,7 @@ import 'package:heart/presentation/widgets/upsync_row.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:reorderable_grid/reorderable_grid.dart';
 
 part 'charts.dart';

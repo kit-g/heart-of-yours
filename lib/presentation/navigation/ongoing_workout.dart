@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
@@ -6,6 +5,7 @@ import 'package:heart/core/utils/records.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Keeps the active workout on the lock screen (#133): the iOS Live Activity
 /// and Dynamic Island, Android's ongoing notification. Only when the user has

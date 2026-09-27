@@ -1,10 +1,10 @@
 import 'package:app_settings/app_settings.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:logging/logging.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart';
 
