@@ -248,6 +248,110 @@ void main() {
     });
   });
 
+  group('opt-in features (#138)', () {
+    const feature = Feature.muscleMap;
+
+    test('a fresh device has not been asked, and the feature is off', () async {
+      await sut.init();
+      expect(sut.featureAnswer(feature), FeatureAnswer.unasked);
+      expect(sut.isOn(feature), isFalse);
+      expect(sut.shouldOffer(feature), isTrue);
+    });
+
+    test('yes turns it on, and nothing is offered or owed after', () async {
+      await sut.init();
+      sut.markOffered(feature);
+      final probe = ListenerProbe()..attach(sut);
+
+      sut.answerOffer(feature, yes: true);
+
+      expect(sut.isOn(feature), isTrue);
+      expect(sut.shouldOffer(feature), isFalse);
+      expect(sut.owesDeclineNotice(feature), isFalse);
+      expect(probe.notifications, 1);
+    });
+
+    test('no turns it off and owes exactly one notice', () async {
+      await sut.init();
+      sut.markOffered(feature);
+
+      sut.answerOffer(feature, yes: false);
+      expect(sut.featureAnswer(feature), FeatureAnswer.off);
+      expect(sut.shouldOffer(feature), isFalse);
+      expect(sut.owesDeclineNotice(feature), isTrue);
+
+      sut.acknowledgeDeclineNotice(feature);
+      expect(sut.owesDeclineNotice(feature), isFalse);
+    });
+
+    test('the notice does not outlive the session it was owed in', () async {
+      await sut.init();
+      sut.markOffered(feature);
+      sut.answerOffer(feature, yes: false);
+
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.owesDeclineNotice(feature), isFalse);
+      expect(revived.shouldOffer(feature), isFalse);
+    });
+
+    test('marking an offer shown is silent, and it stays up for the rest of the session', () async {
+      await sut.init();
+      final probe = ListenerProbe()..attach(sut);
+
+      sut.markOffered(feature);
+      expect(probe.notifications, 0);
+      expect(sut.featureAnswer(feature), FeatureAnswer.pending);
+      expect(sut.shouldOffer(feature), isTrue);
+    });
+
+    test('an offer left unanswered is a no from the next launch on: off, and never offered again', () async {
+      await sut.init();
+      sut.markOffered(feature);
+
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.shouldOffer(feature), isFalse);
+      expect(revived.isOn(feature), isFalse);
+      expect(revived.owesDeclineNotice(feature), isFalse);
+    });
+
+    test('the Settings switch works both ways, any number of times, and persists', () async {
+      await sut.init();
+      final probe = ListenerProbe()..attach(sut);
+
+      for (final on in [true, false, true, false, true]) {
+        sut.setFeature(feature, on: on);
+        expect(sut.isOn(feature), on);
+      }
+      expect(probe.notifications, 5);
+
+      final revived = Preferences();
+      await revived.init();
+      expect(revived.isOn(feature), isTrue);
+    });
+
+    test('the switch is the answer: it retires an offer and a notice still on screen', () async {
+      await sut.init();
+      sut.markOffered(feature);
+      sut.setFeature(feature, on: false);
+      expect(sut.shouldOffer(feature), isFalse);
+      expect(sut.owesDeclineNotice(feature), isFalse);
+    });
+
+    test('marking an offer shown does not overwrite an answer', () async {
+      await sut.init();
+      sut.setFeature(feature, on: true);
+      sut.markOffered(feature);
+      expect(sut.isOn(feature), isTrue);
+    });
+
+    test('storage keys are pinned: renaming one would ask everyone again', () {
+      expect(Feature.values.map((each) => each.value), ['muscleMap']);
+      expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
+    });
+  });
+
   group('forgetUser', () {
     test('drops the uid\'s keys and leaves the device\'s, the onboarding flag first among them', () async {
       SharedPreferences.setMockInitialValues({
