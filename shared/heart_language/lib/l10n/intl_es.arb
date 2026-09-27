@@ -3421,12 +3421,6 @@
     "type": "text",
     "placeholders": {}
   },
-  "restTimerExerciseGone": "El ejercicio ya no está disponible",
-  "@restTimerExerciseGone": {
-    "description": "Rest timers page: stands in for the name of a deleted exercise that still has a rest timer, so the timer can be cleared",
-    "type": "text",
-    "placeholders": {}
-  },
   "clearRestTimerFor": "Quitar el temporizador de descanso de {exercise}",
   "@clearRestTimerFor": {
     "description": "Tooltip and screen-reader label of the button that removes one exercise's rest timer",
