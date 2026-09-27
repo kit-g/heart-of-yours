@@ -294,6 +294,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     bool applyPinnedNotes = false,
   }) {
     assert(name == null || template == null, 'Pass only the name or the full workout');
+    // Checked before any state moves. Without a session the workout could
+    // never reach the mirror, and a half-started one — live in memory, absent
+    // from SQLite — fails every set insert on a foreign key and then fails
+    // the finish.
+    final uid = userId;
+    if (uid == null) return Future.value();
     final workout = template ?? Workout(name: name);
     _startedFrom = source;
     _untickedAtPrompt = 0;
@@ -309,7 +315,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _activeWorkoutId = workout.id;
 
     notifyListeners();
-    return _localService.startWorkout(workout, userId!);
+    return _localService.startWorkout(workout, uid);
   }
 
   /// The finish most recently started, or null before one this session.
@@ -430,8 +436,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// exactly like a save that met a dead network — [syncPendingWorkouts] picks
   /// it up once there is an account to push it to.
   Future<Workout> saveWorkout(Workout active) async {
+    final uid = userId;
+    if (uid == null) return active;
     active.removeEmptySets();
-    await _localService.finishWorkout(active, userId!);
+    await _localService.finishWorkout(active, uid);
 
     _workouts[active.id] = active;
     notifyListeners();
@@ -486,7 +494,15 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     if (!_remote.allowed) return _storeLocally(workout);
 
-    final edited = await _remoteService.editWorkout(workout);
+    final Workout edited;
+    try {
+      edited = await _remoteService.editWorkout(workout);
+    } catch (error, stacktrace) {
+      // A refused or unreachable edit still happened on the device; the
+      // editor does not wait on this, so a throw would only surface as a crash.
+      onError?.call(error, stacktrace: stacktrace);
+      return _storeLocally(workout);
+    }
     if (userId case String id) {
       // The one empty copy that is authoritative: the user took every set
       // out. The mirror keeps a workout's exercises whenever a copy arrives
@@ -920,7 +936,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
     if (userId case String id) {
       final page = await _getRemoteHistory(id, since: _historyCursor);
-      if (page == null) throw StateError('history page could not be fetched');
+      if (page == null) throw const HistoryUnavailable();
 
       await _localService.storeWorkoutHistory(page, id);
       _absorb(page);
