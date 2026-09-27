@@ -328,6 +328,12 @@ markup in the copy, an over-long pitch, or formatting that differs from
   What's new copy quotes on-screen labels and those come from there. Neither the store notes nor
   the What's new copy goes through `shared/heart_language`.
 - A tag fires iOS and Android prod at once, and both workflows are `cancel-in-progress`.
+- **A new bundle id fails both iOS deploys**, and only at tag time. The `beta` lane reads
+  provisioning profiles from the match store readonly, so an id with no profile there dies at
+  `match` before it compiles anything — v1.9.0 lost both iOS builds to the Live Activity
+  extension, whose profile had never been generated. If the range added a target, run
+  `fastlane profiles env:dev` and `env:prod` (see the lane's comment in `ios/fastlane/Fastfile`)
+  before pushing the tag. Android has no equivalent gate.
 
 ## Self-check
 
