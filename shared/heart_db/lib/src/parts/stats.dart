@@ -110,4 +110,49 @@ mixin _Stats on _LocalDatabase implements StatsService {
           },
         );
   }
+
+  /// Completed sets per exercise in finished workouts started in [from, to),
+  /// each with the exercise's muscle tagging — what the muscle map (#136) is
+  /// counted from.
+  ///
+  /// Grouped by exercise rather than by muscle: the tagging is a JSON blob,
+  /// and which muscles a tag covers is the body atlas's knowledge, not the
+  /// database's. Read-only and schema-free, so the feature being off costs the
+  /// database nothing and can break nothing in it.
+  ///
+  /// An exercise missing from `exercises` (a dangling id) comes back with
+  /// empty tagging, as does a custom one nobody tagged: both are sets the map
+  /// can only report as unmapped.
+  Future<List<({MuscleTagging muscles, int sets})>> getMuscleSets(
+    DateTime from,
+    DateTime to, {
+    String? userId,
+  }) {
+    if (userId == null) return Future.value(const []);
+    return _db
+        .rawQuery(
+          'SELECT e.muscles AS muscles, count(*) AS sets '
+          'FROM workouts w '
+          'JOIN workout_exercises we ON we.workout_id = w.id '
+          'JOIN sets s ON s.exercise_id = we.id '
+          'LEFT JOIN exercises e ON e.id = we.exercise_id '
+          'WHERE w.user_id = ? AND w.end IS NOT NULL AND w.start >= ? AND w.start < ? AND s.completed = 1 '
+          'GROUP BY we.exercise_id',
+          [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
+        )
+        .then(
+          (rows) => rows.map(
+            (row) {
+              final muscles = switch (row['muscles']) {
+                String s when s.isNotEmpty => switch (jsonDecode(s)) {
+                  Map<String, dynamic> m when m.isNotEmpty => MuscleTagging.fromJson(m),
+                  _ => MuscleTagging.empty(),
+                },
+                _ => MuscleTagging.empty(),
+              };
+              return (muscles: muscles, sets: (row['sets'] as num).toInt());
+            },
+          ).toList(),
+        );
+  }
 }
