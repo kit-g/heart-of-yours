@@ -15,6 +15,10 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         ..enableAutoPerformanceTracing = true
         ..enableWatchdogTerminationTracking = true
         ..enableMemoryPressureBreadcrumbs = true
+        // The native HTTP capture sees every request the process makes, not
+        // just ours — on iOS it reported Firebase Analytics' own config fetch
+        // failing. Ours are captured on the Dart side, by SentryHttpClient.
+        ..captureNativeFailedRequests = false
         ..dsn = config.sentryDsn
         // Nothing to stitch a client span to: heart-api runs no Sentry, so the
         // `sentry-trace` and `baggage` headers `SentryHttpClient` would add to
@@ -68,6 +72,10 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
       print(stacktrace);
     }
   }
+  // A request that never got an answer — offline, DNS, a socket closed under a
+  // backgrounded app. Every caller already retries on the next launch or
+  // resume, and there is nothing in our code to fix.
+  if (exception is http.ClientException) return Future.value();
   return Sentry.captureException(exception, stackTrace: stacktrace);
 }
 
