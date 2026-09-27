@@ -49,7 +49,7 @@ class ExerciseItem extends StatelessWidget {
           child: Row(
             spacing: 8,
             children: [
-              _Badge(exercise: exercise),
+              ExerciseBadge(exercise: exercise),
               Expanded(
                 flex: 2,
                 child: SingleChildScrollView(
