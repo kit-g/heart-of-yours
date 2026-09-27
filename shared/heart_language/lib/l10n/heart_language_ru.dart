@@ -1914,4 +1914,70 @@ class LRu extends L {
 
   @override
   String get undo => 'Отменить';
+
+  @override
+  String get features => 'Функции';
+
+  @override
+  String get featuresFooter =>
+      'Дополнения, которые Heart показывает, только если вы их включите. Включайте и выключайте в любое время.';
+
+  @override
+  String get muscleMap => 'Карта мышц';
+
+  @override
+  String get muscleMapSubtitle => 'Подходы по группам мышц в вашем профиле';
+
+  @override
+  String get muscleMapOfferTitle => 'Смотреть, какие мышцы вы тренируете?';
+
+  @override
+  String get muscleMapOfferBody =>
+      'Карта тела в профиле, закрашенная по числу подходов на каждую группу мышц за последнее время.';
+
+  @override
+  String get turnOn => 'Включить';
+
+  @override
+  String get noThanks => 'Нет, спасибо';
+
+  @override
+  String get featureDeclinedNotice => 'Это всегда можно включить в настройках.';
+
+  @override
+  String get lastSevenDays => '7 дней';
+
+  @override
+  String get lastThirtyDays => '30 дней';
+
+  @override
+  String get muscleMapEmpty => 'За этот период подходов нет.';
+
+  @override
+  String get muscleMapFigure => 'Карта тела с подходами по группам мышц';
+
+  @override
+  String get muscleGroupGlutes => 'Ягодицы';
+
+  @override
+  String get muscleGroupHamstrings => 'Бицепс бедра';
+
+  @override
+  String get muscleGroupAdductors => 'Приводящие';
+
+  @override
+  String get muscleGroupNeck => 'Шея';
+
+  @override
+  String muscleMapUnmapped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода',
+      many: '$count подходов',
+      few: '$count подхода',
+      one: '$count подход',
+    );
+    return 'Не учтено: $_temp0 из упражнений без данных о мышцах';
+  }
 }

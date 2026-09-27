@@ -3472,5 +3472,117 @@
     "description": "Snackbar action that reverses what was just done",
     "type": "text",
     "placeholders": {}
+  },
+  "features": "Features",
+  "@features": {
+    "description": "Settings section title: the opt-in features the user can turn on and off",
+    "type": "text",
+    "placeholders": {}
+  },
+  "featuresFooter": "Extras Heart only shows when you turn them on. Switch them on or off any time.",
+  "@featuresFooter": {
+    "description": "Footnote under the Features section in Settings, explaining that these are opt-in",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMap": "Muscle map",
+  "@muscleMap": {
+    "description": "Name of the opt-in feature showing sets per muscle group on a body map; Settings switch title and profile card title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapSubtitle": "Sets per muscle group, on your profile",
+  "@muscleMapSubtitle": {
+    "description": "Subtitle under the muscle map switch in Settings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapOfferTitle": "See which muscles you train?",
+  "@muscleMapOfferTitle": {
+    "description": "Title of the one-time card on the profile offering to turn on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapOfferBody": "A body map on your profile, shaded by how many sets each muscle group got lately.",
+  "@muscleMapOfferBody": {
+    "description": "Body of the one-time card offering the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "turnOn": "Turn on",
+  "@turnOn": {
+    "description": "Button accepting an offer to turn a feature on",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noThanks": "No thanks",
+  "@noThanks": {
+    "description": "Button declining an offer to turn a feature on; also the tooltip of the offer's close button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "featureDeclinedNotice": "You can always turn this on in Settings.",
+  "@featureDeclinedNotice": {
+    "description": "Shown once, after the user declines an optional feature",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lastSevenDays": "7 days",
+  "@lastSevenDays": {
+    "description": "Period toggle on the muscle map: the last seven days",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lastThirtyDays": "30 days",
+  "@lastThirtyDays": {
+    "description": "Period toggle on the muscle map: the last thirty days",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapEmpty": "No sets in this period.",
+  "@muscleMapEmpty": {
+    "description": "Muscle map card when no completed sets fall in the chosen period",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapFigure": "Body map of sets per muscle group",
+  "@muscleMapFigure": {
+    "description": "Screen-reader label for the body figures on the muscle map; the list beside it carries the numbers",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupGlutes": "Glutes",
+  "@muscleGroupGlutes": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupHamstrings": "Hamstrings",
+  "@muscleGroupHamstrings": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupAdductors": "Adductors",
+  "@muscleGroupAdductors": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupNeck": "Neck",
+  "@muscleGroupNeck": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapUnmapped": "{count, plural, one{1 set} other{{count} sets}} from exercises without muscle data not counted",
+  "@muscleMapUnmapped": {
+    "description": "Note under the muscle map: completed sets from exercises that have no muscle tags (usually custom exercises), so they could not be placed",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

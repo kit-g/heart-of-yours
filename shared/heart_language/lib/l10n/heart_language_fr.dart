@@ -1893,4 +1893,68 @@ class LFr extends L {
 
   @override
   String get undo => 'Annuler';
+
+  @override
+  String get features => 'Fonctionnalités';
+
+  @override
+  String get featuresFooter =>
+      'Des extras que Heart n’affiche que si vous les activez. Activez-les ou désactivez-les à tout moment.';
+
+  @override
+  String get muscleMap => 'Carte musculaire';
+
+  @override
+  String get muscleMapSubtitle => 'Séries par groupe musculaire, sur votre profil';
+
+  @override
+  String get muscleMapOfferTitle => 'Voir quels muscles vous travaillez ?';
+
+  @override
+  String get muscleMapOfferBody =>
+      'Une carte du corps sur votre profil, colorée selon le nombre de séries de chaque groupe musculaire ces derniers temps.';
+
+  @override
+  String get turnOn => 'Activer';
+
+  @override
+  String get noThanks => 'Non merci';
+
+  @override
+  String get featureDeclinedNotice => 'Vous pourrez toujours l’activer dans les Réglages.';
+
+  @override
+  String get lastSevenDays => '7 jours';
+
+  @override
+  String get lastThirtyDays => '30 jours';
+
+  @override
+  String get muscleMapEmpty => 'Aucune série sur cette période.';
+
+  @override
+  String get muscleMapFigure => 'Carte du corps des séries par groupe musculaire';
+
+  @override
+  String get muscleGroupGlutes => 'Fessiers';
+
+  @override
+  String get muscleGroupHamstrings => 'Ischio-jambiers';
+
+  @override
+  String get muscleGroupAdductors => 'Adducteurs';
+
+  @override
+  String get muscleGroupNeck => 'Cou';
+
+  @override
+  String muscleMapUnmapped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count séries d’exercices sans données musculaires non comptées',
+      one: '1 série d’exercices sans données musculaires non comptée',
+    );
+    return '$_temp0';
+  }
 }
