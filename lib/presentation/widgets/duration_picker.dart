@@ -19,7 +19,9 @@ Future<int?> showDurationPicker(BuildContext context, {int? initialValue, String
 Future<int?> _cupertinoDialog(BuildContext context, {int? initialValue, String? subtitle}) {
   final L(:restTimer) = L.of(context);
   final ThemeData(:textTheme) = Theme.of(context);
-  final selected = ValueNotifier<int?>(initialValue);
+  // the wheel's index, not seconds: what the wheel reports as it turns, and
+  // what Set timer turns back into a duration
+  final selected = ValueNotifier<int>(_index(initialValue));
 
   return showAdaptiveDialog(
     barrierDismissible: true,
@@ -40,10 +42,16 @@ Future<int?> _cupertinoDialog(BuildContext context, {int? initialValue, String? 
                     style: textTheme.titleMedium,
                   ),
                 ),
+                // centred under the title and inset from the dialog's edge: a
+                // long exercise name wraps, and bare it ran edge to edge
                 if (subtitle != null)
-                  Text(
-                    subtitle,
-                    style: textTheme.bodyMedium,
+                  Padding(
+                    padding: const .symmetric(horizontal: 16),
+                    child: Text(
+                      subtitle,
+                      textAlign: .center,
+                      style: textTheme.bodyMedium,
+                    ),
                   ),
                 SizedBox(
                   height: 200,
@@ -75,7 +83,9 @@ Future<int?> _defaultDialog(BuildContext context, {int? initialValue, String? su
   final L(:restTimer) = L.of(context);
   final ThemeData(:textTheme) = Theme.of(context);
 
-  final selected = ValueNotifier<int?>(initialValue);
+  // the wheel's index, not seconds: what the wheel reports as it turns, and
+  // what Set timer turns back into a duration
+  final selected = ValueNotifier<int>(_index(initialValue));
 
   return showAdaptiveDialog<int?>(
     barrierDismissible: true,
@@ -96,16 +106,25 @@ Future<int?> _defaultDialog(BuildContext context, {int? initialValue, String? su
                     style: textTheme.titleMedium,
                   ),
                 ),
+                // centred under the title and inset from the dialog's edge: a
+                // long exercise name wraps, and bare it ran edge to edge
                 if (subtitle != null)
-                  Text(
-                    subtitle,
-                    style: textTheme.bodyMedium,
+                  Padding(
+                    padding: const .symmetric(horizontal: 16),
+                    child: Text(
+                      subtitle,
+                      textAlign: .center,
+                      style: textTheme.bodyMedium,
+                    ),
                   ),
                 SizedBox(
                   height: 200,
                   child: ListWheelScrollView(
                     itemExtent: 40,
-                    onSelectedItemChanged: (_) => HapticFeedback.lightImpact(),
+                    onSelectedItemChanged: (index) {
+                      HapticFeedback.lightImpact();
+                      selected.value = index;
+                    },
                     controller: _controller(initialValue),
                     children: List<Widget>.generate(
                       120,
@@ -141,7 +160,7 @@ class _Item extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatted = '${_pad(duration.inMinutes.remainder(60))}:${_pad(duration.inSeconds.remainder(60))}';
+    final formatted = formatRestTimer(duration.inSeconds);
     return Semantics(
       button: true,
       label: L.of(context).durationPickerSetTo(formatted),
@@ -166,15 +185,25 @@ class _Item extends StatelessWidget {
 
 Duration _duration(int index) => Duration(seconds: index * 5 + 5);
 
+/// A rest timer as the picker shows it, `mm:ss`, so a list of timers reads
+/// the same as the wheel that set them.
+String formatRestTimer(int seconds) {
+  final duration = Duration(seconds: seconds);
+  return '${_pad(duration.inMinutes.remainder(60))}:${_pad(duration.inSeconds.remainder(60))}';
+}
+
 String _pad(int n) => n.toString().padLeft(2, '0');
 
+/// The wheel row showing [seconds]; the first row when there is no timer yet.
+int _index(int? seconds) {
+  return switch (seconds) {
+    int v => (v / 5 - 1).toInt(),
+    null => 0,
+  };
+}
+
 FixedExtentScrollController _controller(int? initialValue) {
-  return FixedExtentScrollController(
-    initialItem: switch (initialValue) {
-      int v => (v / 5 - 1).toInt(),
-      null => 0,
-    },
-  );
+  return FixedExtentScrollController(initialItem: _index(initialValue));
 }
 
 class _Button extends StatelessWidget {
@@ -228,7 +257,7 @@ class _CancelButton extends StatelessWidget {
 }
 
 class _OkButton extends StatelessWidget {
-  final ValueNotifier<int?> currentValue;
+  final ValueNotifier<int> currentValue;
 
   const new({required this.currentValue});
 
@@ -240,7 +269,7 @@ class _OkButton extends StatelessWidget {
       copy: L.of(context).setTimer,
       onPressed: () {
         HapticFeedback.heavyImpact();
-        Navigator.pop(context, (currentValue.value ?? 0) * 5 + 5);
+        Navigator.pop(context, _duration(currentValue.value).inSeconds);
       },
     );
   }
