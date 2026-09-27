@@ -360,7 +360,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       }
     } catch (e, s) {
       _reportFailure(e, provider: .google);
-      onError?.call(e, stacktrace: s);
+      if (!_isCancellation(e)) onError?.call(e, stacktrace: s);
     }
   }
 
@@ -405,6 +405,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
       _reportFailure(e, provider: .apple);
     } catch (e, s) {
       _reportFailure(e, provider: .apple);
+      if (_isCancellation(e)) return;
       return onError?.call(e, stacktrace: s);
     }
   }
@@ -479,7 +480,8 @@ class Auth with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
-  /// Backing out of a sign-in sheet is not a failure.
+  /// Backing out of a sign-in sheet is not a failure — not for analytics, and
+  /// not for Sentry.
   ///
   /// It is the most common way any of these ends, and counting it would bury
   /// the errors the metric exists to find under a number that only says how

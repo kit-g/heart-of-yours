@@ -22,8 +22,12 @@ class Scrolls {
     return Provider.of<Scrolls>(context, listen: false);
   }
 
+  // `hasContentDimensions` as well as clients: a scrollable built under a
+  // pushed route and never shown is attached but not laid out, and its extents
+  // are null until it is — a navbar re-tap that pops back to it asks in the
+  // same frame.
   static Future<void> _scrollToTop(ScrollController controller) async {
-    if (controller.hasClients) {
+    if (controller.hasClients && controller.position.hasContentDimensions) {
       return controller.animateTo(
         controller.position.minScrollExtent,
         duration: const Duration(milliseconds: 1000),
@@ -33,7 +37,7 @@ class Scrolls {
   }
 
   static Future<void> _scrollToBottom(ScrollController controller) async {
-    if (controller.hasClients) {
+    if (controller.hasClients && controller.position.hasContentDimensions) {
       return controller.animateTo(
         controller.position.maxScrollExtent,
         duration: const Duration(milliseconds: 1000),

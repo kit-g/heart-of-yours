@@ -37,7 +37,11 @@ const _restTimersName = 'restTimers';
 const _restoreAccountName = 'restoreAccount';
 const _restoreAccountPath = '/$_restoreAccountName';
 const _applePath = '/apple';
-const _activeWorkoutPath = '/activeWorkout'; // a notifications redirect in app.dart and the Live Activity's widgetURL (ios/OngoingWorkout) rely on this
+const _activeWorkoutPath = '/activeWorkout'; // a notifications redirect in app.dart relies on this
+// What the Live Activity's tap opens (`ios/OngoingWorkout`), and the only
+// deep link that is an intent rather than a screen: see the `openWorkout`
+// case in `_decide`. Never navigated to internally.
+const _openWorkoutPath = '/openWorkout';
 const _upgradeAppName = 'upgradeApp';
 const _upgradeAppPath = '/$_upgradeAppName';
 const _galleryName = 'gallery';

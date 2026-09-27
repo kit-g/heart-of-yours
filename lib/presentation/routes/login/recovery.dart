@@ -153,6 +153,9 @@ class _RecoveryPageState extends State<RecoveryPage>
       focus.unfocus();
       startLoading();
       await Auth.of(context).sendPasswordRecoveryEmail(_emailController.text.trim());
+      // the page can be gone by the time the email is out, and onLinkSent
+      // navigates with the route's context
+      if (!mounted) return;
 
       widget.onLinkSent(_emailController.text.trim());
       await Future.delayed(const Duration(milliseconds: 500));
