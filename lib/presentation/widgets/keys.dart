@@ -67,6 +67,10 @@ abstract final class AppKeys {
   /// The settings row that opens the release notes.
   static const whatsNew = Key('Settings.whatsNew');
 
+  /// The settings row that opens the rest-timer list; present only while
+  /// there is a timer on it.
+  static const restTimers = Key('Settings.restTimers');
+
   /// The export page's two actions, one per format.
   static const exportJson = Key('Export.json');
   static const exportCsv = Key('Export.csv');
