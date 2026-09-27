@@ -5,6 +5,10 @@ import 'package:provider/provider.dart';
 import 'analytics.dart';
 import 'remote.dart';
 
+/// A history page the server could not hand over. The fetch has reported its
+/// own failure by the time this is thrown; this only stops the run.
+class const HistoryUnavailable() implements Exception;
+
 /// The account's own totals, collection by collection.
 ///
 /// Defined here rather than added to `AccountService`: that interface is the
@@ -223,6 +227,10 @@ class Backfill with ChangeNotifier implements SignOutStateSentry {
   Future<BackfillPage?> _page() async {
     try {
       return await _nextPage();
+    } on HistoryUnavailable {
+      // already reported, with its cause, where the fetch failed
+      _status = .failed;
+      return null;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
       _status = .failed;
