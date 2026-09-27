@@ -30,7 +30,6 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :distanceUnit,
       :imperial,
       :metric,
-      :notificationSettings,
       :restTimers,
       :settings,
       :units,
@@ -234,21 +233,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               _Section(
                 title: app,
                 children: [
-                  FutureBuilder<bool>(
-                    future: hasNotificationsPermission(Theme.of(context).platform),
-                    builder: (context, snapshot) {
-                      return ListTile(
-                        leading: switch (snapshot.hasData && (snapshot.data ?? false)) {
-                          true => const Icon(Icons.edit_notifications_rounded),
-                          false => const Icon(Icons.notifications_off_rounded),
-                        },
-                        title: Text(notificationSettings),
-                        onTap: () {
-                          AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
-                        },
-                      );
-                    },
-                  ),
+                  const _NotificationsRow(),
                   // absent until there is a timer to list: an entry that can
                   // only open onto an empty page is a dead end
                   Selector<Timers, bool>(
@@ -522,6 +507,36 @@ class _LockScreenWorkoutSwitchState extends State<_LockScreenWorkoutSwitch> {
           ),
           _ => const SizedBox.shrink(),
         };
+      },
+    );
+  }
+}
+
+/// The way to the system's notification settings, its icon saying whether
+/// they are on.
+///
+/// Its own widget so the permission is asked when the row is built, not when
+/// the page is. The page is a lazy list: built by the page, the check ran for
+/// a row that might never appear, and where the plugin is absent (a widget
+/// test) its failure had nobody listening — a crash of the test, surfaced the
+/// moment the Features section pushed this row below the first screen.
+class const _NotificationsRow() extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final L(:notificationSettings) = L.of(context);
+    return FutureBuilder<bool>(
+      future: hasNotificationsPermission(Theme.of(context).platform),
+      builder: (context, snapshot) {
+        return ListTile(
+          leading: switch (snapshot.hasData && (snapshot.data ?? false)) {
+            true => const Icon(Icons.edit_notifications_rounded),
+            false => const Icon(Icons.notifications_off_rounded),
+          },
+          title: Text(notificationSettings),
+          onTap: () {
+            AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
+          },
+        );
       },
     );
   }
