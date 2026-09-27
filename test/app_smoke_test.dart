@@ -1,10 +1,11 @@
+import 'package:cupertino_ui/cupertino_ui.dart' show GlobalCupertinoLocalizations;
 import 'package:feedback/feedback.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'mocks.mocks.dart';
 import 'support/harness.dart';
@@ -49,6 +50,22 @@ void main() {
       expect(delegateTypes, contains('_MaterialLocalizationsDelegate'));
       expect(delegateTypes, contains('_WidgetsLocalizationsDelegate'));
       expect(delegateTypes, contains('_GlobalCupertinoLocalizationsDelegate'));
+      // by identity: flutter_localizations' delegates carry the same names, and
+      // they translate flutter/material.dart's widgets, not material_ui's
+      expect(app.localizationsDelegates, contains(GlobalMaterialLocalizations.delegate));
+      expect(app.localizationsDelegates, contains(GlobalCupertinoLocalizations.delegate));
+
+      // the dependencies still on flutter/material.dart read the app's theme
+      // through this (see legacy_theme_bridge_test.dart); it has to sit above
+      // every route
+      expect(
+        find.ancestor(
+          of: find.byType(Navigator),
+          // ignore: deprecated_member_use
+          matching: find.byType(MaterialUiCompatibilityBridge),
+        ),
+        findsWidgets,
+      );
     });
 
     testWidgets('core providers are available via Provider.of(context)', (tester) async {

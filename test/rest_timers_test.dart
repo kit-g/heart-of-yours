@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/finders.dart';
 
 class _Timers implements TimersService {
   @override
@@ -52,7 +53,7 @@ void main() {
           ChangeNotifierProvider<Exercises>.value(value: exercises),
         ],
         child: const MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           home: RestTimersPage(),
         ),
@@ -86,7 +87,7 @@ void main() {
   testWidgets('clears on the spot, and Undo puts it back', (tester) async {
     await pump(tester);
 
-    await tester.tap(find.byTooltip('Clear rest timer for Squat'));
+    await tester.tap(find.tooltip('Clear rest timer for Squat'));
     await tester.pumpAndSettle();
 
     expect(timers[squat.id], isNull);
@@ -103,7 +104,7 @@ void main() {
   testWidgets('the Undo outlasts the default snackbar', (tester) async {
     await pump(tester);
 
-    await tester.tap(find.byTooltip('Clear rest timer for Squat'));
+    await tester.tap(find.tooltip('Clear rest timer for Squat'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 5));
 
@@ -114,7 +115,7 @@ void main() {
     await pump(tester);
 
     for (final tooltip in ['Bench press', 'Squat']) {
-      await tester.tap(find.byTooltip('Clear rest timer for $tooltip'));
+      await tester.tap(find.tooltip('Clear rest timer for $tooltip'));
       await tester.pumpAndSettle();
     }
 
