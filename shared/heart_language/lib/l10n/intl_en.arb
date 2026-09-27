@@ -3584,5 +3584,116 @@
         "type": "int"
       }
     }
+  },
+  "muscleMapWeekly": "Sets per week",
+  "@muscleMapWeekly": {
+    "description": "Heading of the weekly heatmap on the muscle map: sets per muscle group, one column per week",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapWeeklyRow": "{group}, sets per week, oldest first: {values}",
+  "@muscleMapWeeklyRow": {
+    "description": "Screen-reader summary and tooltip of one row of the muscle map's weekly heatmap. {values} is the sets per week, oldest first, comma-separated",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapMonthly": "Sets per month",
+  "@muscleMapMonthly": {
+    "description": "Heading of the muscle map's heatmap when it shows a year: sets per muscle group, one column per month",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapMonthlyRow": "{group}, sets per month, oldest first: {values}",
+  "@muscleMapMonthlyRow": {
+    "description": "Screen-reader summary and tooltip of one row of the muscle map's yearly heatmap. {values} is the sets per month, oldest first, comma-separated",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapMuscleSets": "{group}: {count, plural, =0{no sets} one{1 set} other{{count} sets}}",
+  "@muscleMapMuscleSets": {
+    "description": "Tooltip when a muscle is tapped on the muscle map's body figures: its group and that group's sets in the chosen window (whole numbers)",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "muscleMapMuscleSetsFractional": "{group}: {sets} sets",
+  "@muscleMapMuscleSetsFractional": {
+    "description": "Same tooltip as muscleMapMuscleSets when the count has a half (secondary muscles count half a set); {sets} is already formatted, e.g. 2.5",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "sets": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapBreakdown": "Sets per group",
+  "@muscleMapBreakdown": {
+    "description": "Title of the muscle map's list of sets per muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapFigureHelp": "Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.",
+  "@muscleMapFigureHelp": {
+    "description": "Help tooltip on the muscle map's body figures",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapBreakdownHelp": "Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms.",
+  "@muscleMapBreakdownHelp": {
+    "description": "Help tooltip on the muscle map's list: how sets are counted per muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapHeatmapHelp": "Sets per muscle group over time, counted the same way as the list: a column per week, or per month over a year, oldest on the left. Darker is more; a dot means none. Tap a row for its numbers.",
+  "@muscleMapHeatmapHelp": {
+    "description": "Help tooltip on the muscle map's heatmap",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapWeekOf": "Week of {week}",
+  "@muscleMapWeekOf": {
+    "description": "Names one column of the muscle map's weekly heatmap in the caption under it; {week} is the week's Monday as a short date",
+    "type": "text",
+    "placeholders": {
+      "week": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapCellCaption": "{period} · {detail}",
+  "@muscleMapCellCaption": {
+    "description": "Caption under the muscle map's heatmap for the tapped cell: {period} is the week or month (e.g. 'Week of 9/21'), {detail} the group and its sets (e.g. 'Chest: 4 sets')",
+    "type": "text",
+    "placeholders": {
+      "period": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
   }
 }

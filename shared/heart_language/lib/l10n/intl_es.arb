@@ -3554,5 +3554,116 @@
         "type": "int"
       }
     }
+  },
+  "muscleMapWeekly": "Series por semana",
+  "@muscleMapWeekly": {
+    "description": "Heading of the weekly heatmap on the muscle map: sets per muscle group, one column per week",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapWeeklyRow": "{group}, series por semana, de la más antigua: {values}",
+  "@muscleMapWeeklyRow": {
+    "description": "Screen-reader summary and tooltip of one row of the muscle map's weekly heatmap. {values} is the sets per week, oldest first, comma-separated",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapMonthly": "Series por mes",
+  "@muscleMapMonthly": {
+    "description": "Heading of the muscle map's heatmap when it shows a year: sets per muscle group, one column per month",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapMonthlyRow": "{group}, series por mes, del más antiguo: {values}",
+  "@muscleMapMonthlyRow": {
+    "description": "Screen-reader summary and tooltip of one row of the muscle map's yearly heatmap. {values} is the sets per month, oldest first, comma-separated",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapMuscleSets": "{group}: {count, plural, =0{sin series} one{1 serie} other{{count} series}}",
+  "@muscleMapMuscleSets": {
+    "description": "Tooltip when a muscle is tapped on the muscle map's body figures: its group and that group's sets in the chosen window (whole numbers)",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "muscleMapMuscleSetsFractional": "{group}: {sets} series",
+  "@muscleMapMuscleSetsFractional": {
+    "description": "Same tooltip as muscleMapMuscleSets when the count has a half (secondary muscles count half a set); {sets} is already formatted, e.g. 2.5",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "sets": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapBreakdown": "Series por grupo",
+  "@muscleMapBreakdown": {
+    "description": "Title of the muscle map's list of sets per muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapFigureHelp": "Cada grupo muscular se sombrea según las series que recibió en el periodo elegido: cuanto más oscuro, más. Toca un músculo para ver su número.",
+  "@muscleMapFigureHelp": {
+    "description": "Help tooltip on the muscle map's body figures",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapBreakdownHelp": "Series completadas por grupo muscular en el periodo elegido. Una serie cuenta entera para los músculos que el ejercicio trabaja principalmente y media para los que también trabaja: una serie de press de banca suma 1 a Pecho y ½ a Brazos.",
+  "@muscleMapBreakdownHelp": {
+    "description": "Help tooltip on the muscle map's list: how sets are counted per muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapHeatmapHelp": "Series por grupo muscular a lo largo del tiempo, contadas igual que en la lista: una columna por semana, o por mes en un año, la más antigua a la izquierda. Más oscuro es más; un punto significa ninguna. Toca una fila para ver sus números.",
+  "@muscleMapHeatmapHelp": {
+    "description": "Help tooltip on the muscle map's heatmap",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapWeekOf": "Semana del {week}",
+  "@muscleMapWeekOf": {
+    "description": "Names one column of the muscle map's weekly heatmap in the caption under it; {week} is the week's Monday as a short date",
+    "type": "text",
+    "placeholders": {
+      "week": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapCellCaption": "{period} · {detail}",
+  "@muscleMapCellCaption": {
+    "description": "Caption under the muscle map's heatmap for the tapped cell: {period} is the week or month (e.g. 'Week of 9/21'), {detail} the group and its sets (e.g. 'Chest: 4 sets')",
+    "type": "text",
+    "placeholders": {
+      "period": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
   }
 }

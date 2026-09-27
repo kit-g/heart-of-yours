@@ -1954,4 +1954,62 @@ class LEs extends L {
     );
     return '$_temp0 de ejercicios sin datos musculares sin contar';
   }
+
+  @override
+  String get muscleMapWeekly => 'Series por semana';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, series por semana, de la más antigua: $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Series por mes';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, series por mes, del más antiguo: $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count series',
+      one: '1 serie',
+      zero: 'sin series',
+    );
+    return '$group: $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group: $sets series';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Series por grupo';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Cada grupo muscular se sombrea según las series que recibió en el periodo elegido: cuanto más oscuro, más. Toca un músculo para ver su número.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Series completadas por grupo muscular en el periodo elegido. Una serie cuenta entera para los músculos que el ejercicio trabaja principalmente y media para los que también trabaja: una serie de press de banca suma 1 a Pecho y ½ a Brazos.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Series por grupo muscular a lo largo del tiempo, contadas igual que en la lista: una columna por semana, o por mes en un año, la más antigua a la izquierda. Más oscuro es más; un punto significa ninguna. Toca una fila para ver sus números.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Semana del $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }

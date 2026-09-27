@@ -1980,4 +1980,64 @@ class LRu extends L {
     );
     return 'Не учтено: $_temp0 из упражнений без данных о мышцах';
   }
+
+  @override
+  String get muscleMapWeekly => 'Подходы по неделям';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, подходы по неделям, с самой ранней: $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Подходы по месяцам';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, подходы по месяцам, с самого раннего: $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода',
+      many: '$count подходов',
+      few: '$count подхода',
+      one: '$count подход',
+      zero: 'нет подходов',
+    );
+    return '$group: $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group: $sets подхода';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Подходы по группам';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Каждая группа мышц закрашена по числу подходов за выбранный период: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Выполненные подходы по группам мышц за выбранный период. Подход засчитывается целиком основным мышцам упражнения и наполовину — вспомогательным: один подход жима лёжа добавляет 1 к груди и ½ к рукам.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Подходы по группам мышц во времени, посчитанные так же, как в списке: столбец — неделя, а за год — месяц, самые ранние слева. Темнее — больше; точка — ни одного. Нажмите на строку, чтобы увидеть числа.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Неделя с $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }
