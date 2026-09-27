@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -23,20 +25,37 @@ void main() {
 
   const feature = 'feature-muscleMap';
 
+  // today and twenty days back: inside both windows, and only the month's
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day, 7);
+  final threeWeeksAgo = DateTime(now.year, now.month, now.day - 20, 7);
+
   final benchPress = (
+    start: today,
     muscles: MuscleTagging.fromJson(
       jsonDecode('{"primary": {"groups": ["chest"]}, "secondary": {"groups": ["arms"]}}'),
     ),
     sets: 4,
   );
-  final untagged = (muscles: MuscleTagging.empty(), sets: 3);
+  final untagged = (start: today, muscles: MuscleTagging.empty(), sets: 3);
+  final raise = (
+    start: today,
+    muscles: MuscleTagging.fromJson(jsonDecode('{"primary": {"groups": []}, "secondary": {"groups": ["shoulders"]}}')),
+    sets: 3,
+  );
+  final deadlift = (
+    start: threeWeeksAgo,
+    muscles: MuscleTagging.fromJson(jsonDecode('{"primary": {"groups": ["back"]}}')),
+    sets: 5,
+  );
 
   setUp(() {
     db = MockLocalDatabase();
     api = MockApi();
     cdn = MockCdn();
     stubStartup(db, api);
-    when(db.getMuscleSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => [benchPress, untagged]);
+    when(db.getMuscleSets(any, any, userId: anyNamed('userId')))
+        .thenAnswer((_) async => [benchPress, untagged, deadlift, raise]);
   });
 
   /// A profile with [history] — some finished workouts, or none — on a device
@@ -107,17 +126,21 @@ void main() {
       expect(byKey(AppKeys.muscleMapCard), findsOneWidget);
       // chest primary (4), arms secondary (4 × ½), and the untagged sets owned up to
       Finder inCard(String text) => find.descendant(of: byKey(AppKeys.muscleMapCard), matching: find.text(text));
-      expect(inCard('Chest'), findsOneWidget);
+      // once in the list, once as a heatmap row
+      expect(inCard('Chest'), findsNWidgets(2));
       expect(inCard('4'), findsOneWidget);
-      expect(inCard('Arms'), findsOneWidget);
+      expect(inCard('Arms'), findsNWidgets(2));
       expect(inCard('2'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: byKey(AppKeys.muscleMapCard),
-          matching: find.textContaining('3 sets from exercises without muscle data'),
+      // the untagged sets are owned up to in the list's help, not under it
+      final help = find.descendant(
+        of: byKey(AppKeys.muscleMapCard),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Tooltip && (widget.message?.contains('3 sets from exercises without muscle data') ?? false),
         ),
-        findsOneWidget,
       );
+      expect(help, findsOneWidget);
+      expect(find.textContaining('without muscle data'), findsNothing);
     });
 
     testWidgets('no earns one notice, and closing it leaves nothing behind', (tester) async {
@@ -163,44 +186,156 @@ void main() {
     });
   });
 
-  testWidgets('the window toggle reads 30 days on demand, and each window once', (tester) async {
+  testWidgets('one read covers both windows and the eight weeks; the switcher only filters', (tester) async {
     await pumpProfile(tester, answer: 'on');
     // calendar days, not a Duration: a DST week is not 7 × 24h
-    final now = DateTime.now();
     DateTime day(int offset) => DateTime(now.year, now.month, now.day + offset);
+    Finder inCard(String text) => find.descendant(of: byKey(AppKeys.muscleMapCard), matching: find.text(text));
+    Finder rowOf(String group) => find.ancestor(of: inCard(group), matching: find.byType(MergeSemantics)).first;
 
-    final first = verify(db.getMuscleSets(captureAny, captureAny, userId: anyNamed('userId'))).captured;
+    final captured = verify(db.getMuscleSets(captureAny, captureAny, userId: anyNamed('userId'))).captured;
     // startup builds the aggregation more than once, and each new one
-    // invalidates the cache; the window read is what matters
-    expect(first.sublist(first.length - 2), [day(-6), day(1)]);
+    // invalidates the cache; the last read is the one on screen
+    final [from as DateTime, to as DateTime] = captured.sublist(captured.length - 2);
+    expect(to, day(1));
+    // eight calendar weeks back reaches further than thirty days
+    expect(from.isBefore(day(-29)), isTrue);
+    expect(from.weekday, DateTime.monday);
 
-    await tester.ensureVisible(find.text('30 days'));
+    // this week: back trained three weeks ago keeps its row, at zero
+    await tester.ensureVisible(byKey(AppKeys.muscleMapCard));
+    expect(find.descendant(of: rowOf('Back'), matching: find.text('0')), findsOneWidget);
+
     await tester.tap(find.text('30 days'));
-    await tester.pumpTimes(2);
-    final second = verify(db.getMuscleSets(captureAny, captureAny, userId: anyNamed('userId'))).captured;
-    expect(second, [day(-29), day(1)]);
+    await tester.pumpTimes(5);
+    expect(find.descendant(of: rowOf('Back'), matching: find.text('5')), findsOneWidget);
 
-    // back to 7: cached, not read again
     await tester.tap(find.text('7 days'));
+    await tester.pumpTimes(5);
+    expect(find.descendant(of: rowOf('Back'), matching: find.text('0')), findsOneWidget);
+    // flipping filtered what was read; it read nothing new
+    verifyNever(db.getMuscleSets(any, any, userId: anyNamed('userId')));
+  });
+
+  testWidgets('the heatmap: thirteen weeks by default, told in words, with empty weeks marked', (tester) async {
+    await pumpProfile(tester, answer: 'on');
+    final heatmap = byKey(AppKeys.muscleMapHeatmap);
+    await tester.ensureVisible(heatmap);
+
+    expect(find.descendant(of: heatmap, matching: find.text('Sets per week')), findsOneWidget);
+    for (final group in ['Chest', 'Arms', 'Back', 'Shoulders']) {
+      expect(find.descendant(of: heatmap, matching: find.text(group)), findsOneWidget);
+    }
+
+    final handle = tester.ensureSemantics();
+    // thirteen weeks, oldest first: chest's four sets are this week's, the last
+    expect(find.bySemanticsLabel(RegExp(r'^Chest, sets per week, oldest first: (0, ){12}4$')), findsOneWidget);
+    handle.dispose();
+
+    // a tap on a cell reads it out under the grid, and stays there
+    final chestRow = find
+        .ancestor(
+          of: find.descendant(of: heatmap, matching: find.text('Chest')),
+          matching: find.byType(GestureDetector),
+        )
+        .first;
+    final row = tester.getRect(chestRow);
+    final thisWeek = DateFormat.Md('en').format(getMonday(now));
+    final caption = byKey(AppKeys.muscleMapCellCaption);
+
+    await tester.tapAt(Offset(row.right - 4, row.center.dy));
+    await tester.pumpTimes(2);
+    expect(tester.widget<Text>(caption).data, 'Week of $thisWeek · Chest: 4 sets');
+    await tester.pump(const Duration(seconds: 5));
+    expect(caption, findsOneWidget);
+
+    // the same cell again clears it, and the span comes back
+    await tester.tapAt(Offset(row.right - 4, row.center.dy));
+    await tester.pumpTimes(2);
+    expect(caption, findsNothing);
+
+    // dragging along the row moves through the weeks: the oldest is empty
+    await tester.dragFrom(Offset(row.right - 4, row.center.dy), Offset(-(row.width - 100), 0));
+    await tester.pumpTimes(2);
+    expect(tester.widget<Text>(caption).data, endsWith('Chest: no sets'));
+  });
+
+  testWidgets('1Y reads a year once, on demand, and counts it by month', (tester) async {
+    await pumpProfile(tester, answer: 'on');
+    final heatmap = byKey(AppKeys.muscleMapHeatmap);
+    await tester.ensureVisible(heatmap);
+    clearInteractions(db);
+
+    await tester.tap(find.descendant(of: heatmap, matching: find.text('1Y')));
+    await tester.pumpTimes(3);
+
+    final [from as DateTime, to as DateTime] = verify(
+      db.getMuscleSets(captureAny, captureAny, userId: anyNamed('userId')),
+    ).captured;
+    expect(from, DateTime(now.year, now.month - 11));
+    expect(to, DateTime(now.year, now.month, now.day + 1));
+    expect(find.descendant(of: heatmap, matching: find.text('Sets per month')), findsOneWidget);
+
+    // back and forth: the year is kept, not read again
+    await tester.tap(find.descendant(of: heatmap, matching: find.text('3M')));
+    await tester.pumpTimes(2);
+    await tester.tap(find.descendant(of: heatmap, matching: find.text('1Y')));
     await tester.pumpTimes(2);
     verifyNever(db.getMuscleSets(any, any, userId: anyNamed('userId')));
   });
 
-  // The offer's two buttons are the house's 32pt density (`primaryButtonMinHeight`)
-  // and are named in the a11y matrix's skip reason; these are the rest.
-  testWidgets('the notice and the card clear the tap target the matrix skips for the nav bar', (tester) async {
+  testWidgets('each box explains itself behind a "?" in its corner, opened by a tap', (tester) async {
+    await pumpProfile(tester, answer: 'on');
+    final marks = find.descendant(of: byKey(AppKeys.muscleMapCard), matching: find.byIcon(Icons.help_outline_rounded));
+    expect(marks, findsNWidgets(3));
+
+    await tester.ensureVisible(marks.at(1));
+    await tester.tap(marks.at(1));
+    await tester.pumpTimes(3);
+    expect(find.textContaining('one set of bench press adds 1 to Chest and ½ to Arms'), findsOneWidget);
+    expect(find.textContaining('3 sets from exercises without muscle data'), findsOneWidget);
+
+    // the whole 48pt square answers, not only the glyph
+    final square = find.ancestor(of: marks.first, matching: find.byType(SizedBox)).first;
+    expect(tester.getSize(square), const Size.square(48));
+  });
+
+  testWidgets('tapping a muscle names its group and that group\'s sets for the window', (tester) async {
+    await pumpProfile(tester, answer: 'on');
+    await tester.ensureVisible(byKey(AppKeys.muscleMapCard));
+    // hit-testing the painted figure needs its SVG off the asset bundle, which
+    // fake time never loads; the callback is what a hit resolves to
+    final atlas = tester.widget<BodyAtlasView<MuscleInfo>>(find.byType(BodyAtlasView<MuscleInfo>).first);
+    MuscleInfo muscleOf(MuscleGroup group) => MuscleCatalog.all.firstWhere((muscle) => muscle.group == group);
+
+    atlas.onTapElement!(muscleOf(MuscleGroup.chest));
+    await tester.pumpTimes(3);
+    expect(find.text('Chest: 4 sets'), findsOneWidget);
+
+    // a secondary muscle's half sets, and a group idle this week
+    atlas.onTapElement!(muscleOf(MuscleGroup.shoulders));
+    await tester.pumpTimes(3);
+    expect(find.text('Shoulders: 1.5 sets'), findsOneWidget);
+    atlas.onTapElement!(muscleOf(MuscleGroup.back));
+    await tester.pumpTimes(3);
+    expect(find.text('Back: no sets'), findsOneWidget);
+
+    // and it fades on its own
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpTimes(3);
+    expect(byKey(AppKeys.muscleMapFigureTip), findsNothing);
+  });
+
+  // The offer's two buttons are the house's 32pt density (`primaryButtonMinHeight`),
+  // and the card's switcher is the house `SettingSwitcher`; both are named in the
+  // a11y matrix's skip reason. The notice's close is the rest.
+  testWidgets('the notice clears the tap target the matrix skips for the nav bar', (tester) async {
     final preferences = await pumpProfile(tester);
     await tester.pumpTimes();
 
     preferences.answerOffer(Feature.muscleMap, yes: false);
     await tester.pumpTimes(2);
     expect(tester.getSize(find.widgetWithIcon(IconButton, Icons.close_rounded)).height, greaterThanOrEqualTo(48));
-
-    preferences.setFeature(Feature.muscleMap, on: true);
-    await tester.pumpTimes();
-    for (final segment in find.byType(SegmentedButton<int>).evaluate()) {
-      expect(segment.size!.height, greaterThanOrEqualTo(48));
-    }
   });
 
   testWidgets('Settings › Features flips it, and says it is on', (tester) async {

@@ -2,15 +2,18 @@ import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/muscle_volume.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
 
-({MuscleTagging muscles, int sets}) row(
+MuscleSets row(
   int sets, {
+  DateTime? start,
   List<String> primaryIds = const [],
   List<String> primaryGroups = const [],
   List<String> secondaryIds = const [],
   List<String> secondaryGroups = const [],
 }) {
   return (
+    start: start ?? DateTime(2026, 9, 23),
     muscles: MuscleTagging.fromJson({
       'primary': {'ids': primaryIds, 'groups': primaryGroups},
       'secondary': {'ids': secondaryIds, 'groups': secondaryGroups},
@@ -62,7 +65,7 @@ void main() {
     final (:sets, :unmapped) = muscleVolume([
       row(4),
       row(2, primaryGroups: ['core']),
-      (muscles: MuscleTagging.empty(), sets: 3),
+      (start: DateTime(2026, 9, 23), muscles: MuscleTagging.empty(), sets: 3),
     ]);
 
     expect(sets, {MuscleGroup.core: 2});
@@ -82,5 +85,57 @@ void main() {
     final (:sets, :unmapped) = muscleVolume(const []);
     expect(sets, isEmpty);
     expect(unmapped, 0);
+  });
+
+  group('windows and weeks', () {
+    // a Sunday evening: the end of the week, and a DST-free stretch
+    final now = DateTime(2026, 9, 27, 21);
+
+    test('lastDays keeps today and the days before it, by the calendar', () {
+      final rows = [
+        row(1, start: DateTime(2026, 9, 21, 0, 0)), // 7 days back, first minute
+        row(2, start: DateTime(2026, 9, 20, 23, 59)), // one minute too early
+        row(4, start: DateTime(2026, 9, 27, 8)),
+      ];
+
+      expect(lastDays(rows, 7, now: now).map((each) => each.sets), [1, 4]);
+      expect(lastDays(rows, 30, now: now).map((each) => each.sets), [1, 2, 4]);
+    });
+
+    test('lastWeeks is the Mondays of the weeks ending with this one, oldest first', () {
+      expect(lastWeeks(3, now: now), [DateTime(2026, 9, 7), DateTime(2026, 9, 14), DateTime(2026, 9, 21)]);
+    });
+
+    test('weeklyMuscleVolume buckets by the week a workout started in, and drops the rest', () {
+      final weeks = lastWeeks(2, now: now);
+      final weekly = weeklyMuscleVolume([
+        row(3, start: DateTime(2026, 9, 14, 7), primaryGroups: ['chest']), // Monday of week one
+        row(2, start: DateTime(2026, 9, 20, 23), primaryGroups: ['chest']), // Sunday, still week one
+        row(5, start: DateTime(2026, 9, 21, 6), primaryGroups: ['back']), // Monday: week two
+        row(9, start: DateTime(2026, 9, 1), primaryGroups: ['legs']), // before both
+        row(1, start: DateTime(2026, 9, 25)), // untagged
+      ], weeks);
+
+      expect(weekly.keys, weeks);
+      expect(weekly[weeks.first]?.sets, {MuscleGroup.chest: 5});
+      expect(weekly[weeks.last]?.sets, {MuscleGroup.back: 5});
+      expect(weekly[weeks.last]?.unmapped, 1);
+    });
+    test('lastMonths is the first days of the months ending with this one, across a year boundary', () {
+      expect(lastMonths(3, now: DateTime(2026, 2, 14)), [DateTime(2025, 12), DateTime(2026, 1), DateTime(2026, 2)]);
+    });
+
+    test('monthlyMuscleVolume buckets by the month a workout started in, and drops the rest', () {
+      final months = lastMonths(2, now: now);
+      final monthly = monthlyMuscleVolume([
+        row(3, start: DateTime(2026, 8, 31, 23), primaryGroups: ['chest']),
+        row(4, start: DateTime(2026, 9, 1, 0, 5), primaryGroups: ['chest']),
+        row(9, start: DateTime(2026, 7, 31), primaryGroups: ['legs']),
+      ], months);
+
+      expect(monthly.keys, months);
+      expect(monthly[DateTime(2026, 8)]?.sets, {MuscleGroup.chest: 3});
+      expect(monthly[DateTime(2026, 9)]?.sets, {MuscleGroup.chest: 4});
+    });
   });
 }

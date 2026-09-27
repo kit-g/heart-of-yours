@@ -155,12 +155,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.muscleMap,
     _Guideline.androidTapTarget,
-    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s 7/30-day SettingSwitcher (lib/presentation/widgets/setting_picker.dart, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
   ),
   (
     _Screen.muscleMap,
     _Guideline.iosTapTarget,
-    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s 7/30-day SettingSwitcher (lib/presentation/widgets/setting_picker.dart, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
 
   // The no-account dialog over the profile of an anonymous session
@@ -487,6 +487,7 @@ void main() {
         when(db.getMuscleSets(any, any, userId: anyNamed('userId'))).thenAnswer(
           (_) async => [
             (
+              start: DateTime.now(),
               muscles: MuscleTagging.fromJson({
                 'primary': {
                   'groups': ['chest'],
@@ -497,7 +498,7 @@ void main() {
               }),
               sets: 12,
             ),
-            (muscles: MuscleTagging.empty(), sets: 3),
+            (start: DateTime.now(), muscles: MuscleTagging.empty(), sets: 3),
           ],
         );
         if (screen == _Screen.muscleMap) {
