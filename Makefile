@@ -7,6 +7,7 @@
 #   make lint        the CI gate: static analysis + format check
 #                    (`make format` fixes what the check reports)
 #   make test-<pkg>  one shared package, e.g. `make test-heart_db`
+#   make profiles    iOS signing profiles for one environment (ENV=dev|prod)
 
 # Packages with a test suite in the CI matrix.
 PACKAGES := heart_api heart_db heart_state heart_charts heart_language heart_health
@@ -16,7 +17,7 @@ CODEGEN_PACKAGES := heart_api heart_db heart_state heart_charts heart_health
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
-.PHONY: bootstrap deps hooks codegen codegen-app lint format format-check test test-app \
+.PHONY: bootstrap deps hooks codegen codegen-app lint format format-check test test-app profiles \
         $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
 bootstrap: hooks deps codegen codegen-app
@@ -104,3 +105,40 @@ test-app: codegen-app
 # just the screen×guideline accessibility matrix, for quick local runs
 a11y: codegen-app
 	flutter test test/a11y_test.dart
+
+# The two secrets buckets, one per AWS account. The fastlane match store lives
+# under `secrets/fastlane/` in each, and which bucket you point at is what makes
+# a profile dev's or prod's — they hold different distribution certificates.
+DEV_BUCKET := 583168578067-ca-central-1-static
+PROD_BUCKET := 922419543441-ca-central-1-static
+
+# Create the App Store provisioning profiles for one environment, or reissue them.
+#
+#   make profiles ENV=dev            # create whatever is missing
+#   make profiles ENV=prod FORCE=1   # reissue: after a capability change, or a
+#                                    # profile bound to the wrong certificate
+#
+# The deploy lanes read the match store readonly, so this is the only thing that
+# writes to it, and a bundle id with no profile there fails the deploy at `match`
+# — see the `profiles` lane in ios/fastlane/Fastfile. Everything the lane needs
+# comes from the environment's own bucket through its AWS profile; assembling
+# those five variables by hand is how a nil bucket turns into
+# "missing required option :name".
+profiles:
+	@case "$(ENV)" in dev|prod) ;; *) echo "ENV must be dev or prod"; exit 1 ;; esac
+	@set -e; \
+	case "$(ENV)" in prod) bucket=$(PROD_BUCKET) ;; *) bucket=$(DEV_BUCKET) ;; esac; \
+	aws_profile=heart-$(ENV); \
+	cd ios; \
+	for key in AuthKey_CKGD3LH3ZH.p8 appstore_key.json; do \
+		[ -f "fastlane/$$key" ] || \
+			aws s3 cp "s3://$$bucket/secrets/appstore/$$key" "fastlane/$$key" --profile "$$aws_profile"; \
+	done; \
+	AWS_PROFILE=$$aws_profile \
+	MATCH_S3_BUCKET=$$bucket \
+	FASTLANE_SKIP_UPDATE_CHECK=1 \
+	FASTLANE_HIDE_CHANGELOG=1 \
+	SKIP_SLOW_FASTLANE_WARNING=1 \
+	MATCH_PASSWORD=$$(aws s3 cp "s3://$$bucket/secrets/appstore/fastlane_passphrase.txt" - --profile "$$aws_profile") \
+	APPSTORE_USERNAME=$$(jq -r .username fastlane/appstore_key.json) \
+	fastlane profiles env:$(ENV) force:$(if $(FORCE),true,false)
