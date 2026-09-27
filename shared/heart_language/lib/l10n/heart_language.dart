@@ -3357,6 +3357,114 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Undo'**
   String get undo;
+
+  /// Settings section title: the opt-in features the user can turn on and off
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get features;
+
+  /// Footnote under the Features section in Settings, explaining that these are opt-in
+  ///
+  /// In en, this message translates to:
+  /// **'Extras Heart only shows when you turn them on. Switch them on or off any time.'**
+  String get featuresFooter;
+
+  /// Name of the opt-in feature showing sets per muscle group on a body map; Settings switch title and profile card title
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle map'**
+  String get muscleMap;
+
+  /// Subtitle under the muscle map switch in Settings
+  ///
+  /// In en, this message translates to:
+  /// **'Sets per muscle group, on your profile'**
+  String get muscleMapSubtitle;
+
+  /// Title of the one-time card on the profile offering to turn on the muscle map
+  ///
+  /// In en, this message translates to:
+  /// **'See which muscles you train?'**
+  String get muscleMapOfferTitle;
+
+  /// Body of the one-time card offering the muscle map
+  ///
+  /// In en, this message translates to:
+  /// **'A body map on your profile, shaded by how many sets each muscle group got lately.'**
+  String get muscleMapOfferBody;
+
+  /// Button accepting an offer to turn a feature on
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get turnOn;
+
+  /// Button declining an offer to turn a feature on; also the tooltip of the offer's close button
+  ///
+  /// In en, this message translates to:
+  /// **'No thanks'**
+  String get noThanks;
+
+  /// Shown once, after the user declines an optional feature
+  ///
+  /// In en, this message translates to:
+  /// **'You can always turn this on in Settings.'**
+  String get featureDeclinedNotice;
+
+  /// Period toggle on the muscle map: the last seven days
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get lastSevenDays;
+
+  /// Period toggle on the muscle map: the last thirty days
+  ///
+  /// In en, this message translates to:
+  /// **'30 days'**
+  String get lastThirtyDays;
+
+  /// Muscle map card when no completed sets fall in the chosen period
+  ///
+  /// In en, this message translates to:
+  /// **'No sets in this period.'**
+  String get muscleMapEmpty;
+
+  /// Screen-reader label for the body figures on the muscle map; the list beside it carries the numbers
+  ///
+  /// In en, this message translates to:
+  /// **'Body map of sets per muscle group'**
+  String get muscleMapFigure;
+
+  /// Muscle group name on the muscle map
+  ///
+  /// In en, this message translates to:
+  /// **'Glutes'**
+  String get muscleGroupGlutes;
+
+  /// Muscle group name on the muscle map
+  ///
+  /// In en, this message translates to:
+  /// **'Hamstrings'**
+  String get muscleGroupHamstrings;
+
+  /// Muscle group name on the muscle map
+  ///
+  /// In en, this message translates to:
+  /// **'Adductors'**
+  String get muscleGroupAdductors;
+
+  /// Muscle group name on the muscle map
+  ///
+  /// In en, this message translates to:
+  /// **'Neck'**
+  String get muscleGroupNeck;
+
+  /// Note under the muscle map: completed sets from exercises that have no muscle tags (usually custom exercises), so they could not be placed
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 set} other{{count} sets}} from exercises without muscle data not counted'**
+  String muscleMapUnmapped(int count);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
