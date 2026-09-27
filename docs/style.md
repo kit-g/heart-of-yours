@@ -103,6 +103,10 @@ row at a time. A literal in a widget is a finding.
   shapes get called out in review; contrast and affordance are chosen. Buttons
   are the `PrimaryButton` family and the theme's tokens, not ad-hoc
   `ElevatedButton`s with inline colours.
+- **Pick-one-of-a-few is `SettingSwitcher`** (`widgets/setting_picker.dart`):
+  the native-ish sliding control Settings uses for Imperial/Metric, Cupertino
+  on Apple platforms. Not Material's rounded `SegmentedButton`, which reads as
+  a different app.
 - **Absent, not dead.** A control that cannot work in the current state (no
   account, no server) is left out, not rendered disabled or made to fail on
   tap — a row that apologises when tapped is a reminder in disguise.
