@@ -58,6 +58,9 @@ abstract final class AppKeys {
   static const muscleMapDecline = ValueKey('muscleMapDecline');
   static const featureDeclinedNotice = ValueKey('featureDeclinedNotice');
   static const muscleMapCard = ValueKey('muscleMapCard');
+  static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
+  static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');
+  static const muscleMapCellCaption = ValueKey('muscleMapCellCaption');
 
   /// The no-account dialog's way to the login page.
   static const noAccountLogIn = Key('Profile.noAccount.logIn');
