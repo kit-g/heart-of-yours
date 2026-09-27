@@ -27,4 +27,9 @@ class LocalStats implements LocalStatsService {
 
   @override
   Future<int> getTotalWorkoutCount({String? userId}) => _db.getTotalWorkoutCount(userId: userId);
+
+  @override
+  Future<List<({MuscleTagging muscles, int sets})>> getMuscleSets(DateTime from, DateTime to, {String? userId}) {
+    return _db.getMuscleSets(from, to, userId: userId);
+  }
 }
