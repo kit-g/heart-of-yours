@@ -5,6 +5,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'features.dart';
+
 const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
 const _weightUnit = 'weightUnit';
@@ -15,6 +17,7 @@ const _healthAsked = 'healthAsked';
 const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
+const _feature = 'feature';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -294,6 +297,80 @@ class Preferences with ChangeNotifier {
 
   set lockScreenWorkout(bool value) {
     _prefs?.setBool(_lockScreenWorkout, value);
+    notifyListeners();
+  }
+
+  /// What the user said about [feature]: see [FeatureAnswer].
+  ///
+  /// A fact about the device, like [lockScreenWorkout]: nothing here syncs, so
+  /// a second phone asks its own question. Whether answers should follow the
+  /// account is still open in #138.
+  FeatureAnswer featureAnswer(Feature feature) {
+    return FeatureAnswer.fromString(_prefs?.getString('$_feature-${feature.value}'));
+  }
+
+  /// Whether [feature] is on. The only question most of the app asks: off —
+  /// whether declined, unanswered or never offered — is the app as it was
+  /// before the feature was built.
+  bool isOn(Feature feature) => featureAnswer(feature) == .on;
+
+  /// Offers already shown in this session. [FeatureAnswer.pending] outlives the
+  /// session and this does not, which is what makes an unanswered offer a no
+  /// from the next launch on.
+  final _offeredThisSession = <Feature>{};
+
+  /// Declined in this session: the features owed their one "you can turn this
+  /// on in Settings" notice.
+  final _declinedThisSession = <Feature>{};
+
+  /// Whether the offer for [feature] should be on screen.
+  bool shouldOffer(Feature feature) {
+    return switch (featureAnswer(feature)) {
+      .unasked => true,
+      .pending => _offeredThisSession.contains(feature),
+      .on || .off => false,
+    };
+  }
+
+  /// Records that the offer for [feature] has been put on screen, so it is
+  /// never shown in another session. Silent: it is called while the offer is
+  /// being built, and nothing on screen changes because of it.
+  void markOffered(Feature feature) {
+    if (featureAnswer(feature) != .unasked) return;
+    _offeredThisSession.add(feature);
+    _prefs?.setString('$_feature-${feature.value}', FeatureAnswer.pending.name);
+  }
+
+  /// The user's answer to the offer. A no — including waving the offer away —
+  /// is owed the one notice, [owesDeclineNotice].
+  void answerOffer(Feature feature, {required bool yes}) {
+    _offeredThisSession.remove(feature);
+    if (!yes) _declinedThisSession.add(feature);
+    _setFeature(feature, on: yes);
+  }
+
+  /// Whether [feature] was declined in this session and its notice is still
+  /// owed. Once acknowledged, or once the session ends, never again.
+  bool owesDeclineNotice(Feature feature) => _declinedThisSession.contains(feature);
+
+  void acknowledgeDeclineNotice(Feature feature) {
+    if (_declinedThisSession.remove(feature)) notifyListeners();
+  }
+
+  /// The Settings switch: always live, both ways. The switch is the answer, so
+  /// it retires any offer or notice still on screen.
+  void setFeature(Feature feature, {required bool on}) {
+    _offeredThisSession.remove(feature);
+    _declinedThisSession.remove(feature);
+    _setFeature(feature, on: on);
+  }
+
+  void _setFeature(Feature feature, {required bool on}) {
+    final answer = switch (on) {
+      true => FeatureAnswer.on,
+      false => FeatureAnswer.off,
+    };
+    _prefs?.setString('$_feature-${feature.value}', answer.name);
     notifyListeners();
   }
 
