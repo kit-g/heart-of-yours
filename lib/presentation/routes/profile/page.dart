@@ -169,6 +169,8 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                 workouts: workouts,
                 emptyState: emptyState,
               ),
+              // opt-in (#136): off, this is an empty sliver and nothing else
+              _MuscleMapSection(workouts: workouts),
               // With no workouts logged, the band above is two empty tiles and
               // the notice is the only other thing on the page; it lines up
               // with the left one rather than stopping short of it. Whether
