@@ -19,7 +19,7 @@ workspace:
 dependencies:
   app_settings: ^9.0.0
   cached_network_image: ^4.0.2
-  cupertino_ui: ^1.0.1
+  cupertino_ui: ^1.1.1
   feedback: ^3.1.0
   file_selector: ^1.0.3
   firebase_analytics: 12.6.0
@@ -59,7 +59,7 @@ dependencies:
   # flutter/material.dart or flutter/cupertino.dart. The two copies cannot see
   # each other's types; the dependencies still on the framework's are bridged
   # in HeartApp.
-  material_ui: ^1.1.0
+  material_ui: ^1.4.0
   mime: ^2.1.0
   package_info_plus: ^10.2.0
   reorderable_grid: ^1.0.13
