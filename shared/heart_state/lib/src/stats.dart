@@ -19,6 +19,10 @@ abstract interface class LocalStatsService implements StatsService {
   /// parameters — so both counts are scoped the same way.
   @override
   Future<int> getWeeklyWorkoutCount(DateTime d, {String? userId});
+
+  /// Completed sets per exercise in finished workouts started in [from, to),
+  /// each with the exercise's muscle tagging (#136).
+  Future<List<({MuscleTagging muscles, int sets})>> getMuscleSets(DateTime from, DateTime to, {String? userId});
 }
 
 class Stats with ChangeNotifier implements SignOutStateSentry {
@@ -71,5 +75,12 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   /// Every finished workout this device knows about.
   Future<int> getTotalWorkoutCount() {
     return _service.getTotalWorkoutCount(userId: userId);
+  }
+
+  /// What the muscle map (#136) is counted from: completed sets per exercise
+  /// in [from, to), with each exercise's tagging. Read on demand rather than
+  /// held here — nothing is computed or kept while the feature is off.
+  Future<List<({MuscleTagging muscles, int sets})>> getMuscleSets(DateTime from, DateTime to) {
+    return _service.getMuscleSets(from, to, userId: userId);
   }
 }
