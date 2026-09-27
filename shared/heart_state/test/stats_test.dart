@@ -40,10 +40,10 @@ class RecordingStatsService implements LocalStatsService {
   }
 
   final List<(DateTime, DateTime, String?)> muscleSetsCalls = [];
-  List<({MuscleTagging muscles, int sets})> muscleSetsToReturn = [];
+  List<MuscleSets> muscleSetsToReturn = [];
 
   @override
-  Future<List<({MuscleTagging muscles, int sets})>> getMuscleSets(DateTime from, DateTime to, {String? userId}) async {
+  Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to, {String? userId}) async {
     muscleSetsCalls.add((from, to, userId));
     return muscleSetsToReturn;
   }
@@ -126,7 +126,7 @@ void main() {
     test('getMuscleSets delegates with the user, and holds nothing or notifies', () async {
       final from = DateTime(2026, 9, 1);
       final to = DateTime(2026, 9, 8);
-      final rows = [(muscles: MuscleTagging.empty(), sets: 3)];
+      final rows = [(start: from, muscles: MuscleTagging.empty(), sets: 3)];
       service.muscleSetsToReturn = rows;
       stats.userId = 'u1';
 
