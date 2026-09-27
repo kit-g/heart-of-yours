@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
@@ -13,6 +12,7 @@ import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -146,8 +146,8 @@ void main() {
     // go_router picks a route's page by finding the app's MaterialApp above
     // it, and falls back to a no-transition page when it cannot — silently,
     // for every route without a pageBuilder. go_router 18 looks for
-    // material_ui's MaterialApp, not the flutter/material.dart one this app
-    // builds on, and every phone push stopped animating.
+    // material_ui's MaterialApp; while this app still built on the framework's
+    // copy, every phone push stopped animating.
     testWidgets('a pushed page slides in rather than appearing', (tester) async {
       final user = MockUser(uid: 'u1', email: 'u1@test');
       final firebase = MockFirebaseAuth(mockUser: user, signedIn: true);

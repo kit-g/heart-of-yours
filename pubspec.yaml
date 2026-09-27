@@ -19,6 +19,7 @@ workspace:
 dependencies:
   app_settings: ^9.0.0
   cached_network_image: ^4.0.2
+  cupertino_ui: ^1.0.1
   feedback: ^3.1.0
   file_selector: ^1.0.3
   firebase_analytics: 12.6.0
@@ -32,11 +33,7 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   flutter_svg: ^2.2.3
   flutter_web_plugins: { sdk: flutter }
-  # held below 18: its only change is importing MaterialApp from material_ui,
-  # which is not the MaterialApp this app builds on (flutter/material.dart), so
-  # 18 cannot recognise the app and gives every page no transition at all.
-  # Moves with the app's own move to material_ui, not before.
-  go_router: ^17.5.0
+  go_router: ^18.0.1
   google_sign_in_web: 1.1.3 # required for the sign-in button on the web
   heart_api:
   heart_charts:
@@ -58,6 +55,11 @@ dependencies:
   intl: ^0.20.2
   logging: ^1.3.0
   markdown_widget: ^2.3.2+8
+  # with cupertino_ui, the Material and Cupertino the app builds on — never
+  # flutter/material.dart or flutter/cupertino.dart. The two copies cannot see
+  # each other's types; the dependencies still on the framework's are bridged
+  # in HeartApp.
+  material_ui: ^1.1.0
   mime: ^2.1.0
   package_info_plus: ^10.2.0
   reorderable_grid: ^1.0.13
