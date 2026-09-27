@@ -30,12 +30,20 @@ satisfied or explicitly flagged in the handoff.
    `setState`; `switch` expressions over multi-line ternaries; `Iterable`
    methods over index loops; dot-shorthand constructors; copy only in
    presentation.
-6. **Git** — never commit or push. Leave work in the tree and run
+6. **Opt-in** — a new feature is opt-in unless the ticket says it is core
+   (`docs/opt-in.md`): asked once in context, a single Settings notice on
+   no, and switched off, the app looks as if it had never been built
+   (screenshot or test the *without* state as well as the *with*), the switch
+   works both ways live, the feature's data survives off and sync
+   round-trips it, with a switch in Settings › Features. If the ticket
+   didn't answer "is this opt-in?", building it as opt-in is the default,
+   and the handoff says so.
+7. **Git** — never commit or push. Leave work in the tree and run
    `git add -N .` so new files appear in `git diff`. Your worktree may be
    stacked on another agent's branch rather than `main` (the launcher's
    `--base`); your work is still exactly `git diff HEAD`, and the handoff
    names the base so the reviewer diffs and the PR targets the right branch.
-7. **Self-review** — run the `review-handoff` skill on the finished tree
+8. **Self-review** — run the `review-handoff` skill on the finished tree
    before writing the handoff. Fix what it finds, re-run, and leave
    `REVIEW.md` describing the tree as handed off. The reviewer runs the same
    skill, so anything it would catch is cheaper caught here.

@@ -19,14 +19,31 @@ end
 LIVE_ACTIVITY = "OngoingWorkout"
 
 platform :ios do
-  # Regenerate the App Store provisioning profile for one environment. Needed after a
-  # capability changes on the App ID — match caches profiles in S3 and `beta` reads them
-  # readonly, so a profile predating the capability is served forever until forced.
+  # Create or regenerate the App Store provisioning profiles for one environment — the
+  # app and the Live Activity extension. `beta` reads the match store readonly, so this
+  # lane is the only thing that writes to it, and it has to run before the first deploy
+  # of any *new* bundle id: an id with no profile in the store fails the deploy outright,
+  # which is how v1.9.0 lost both iOS builds to the extension added in #133.
   #
-  #   MATCH_S3_BUCKET=<bucket> bundle exec fastlane profiles env:prod
+  # The store is per environment, under `secrets/fastlane/` in that environment's own
+  # secrets bucket, so the bucket and the `env:` have to agree. They hold *different*
+  # distribution certificates — dev `266GN79443`, prod `QC7UNCH57V` — and both are
+  # installed on the release machine, which is how a dev profile ends up carrying prod's
+  # certificate: the build then fails at archive with "doesn't include signing
+  # certificate", long after match has happily installed everything. If that happens,
+  # regenerate that environment's profiles with `force:true` and check the certificate
+  # the new profile carries against `certs/distribution/` in the matching bucket.
+  #
+  #   MATCH_S3_BUCKET=<bucket> MATCH_PASSWORD=<passphrase> fastlane profiles env:dev
+  #   MATCH_S3_BUCKET=<bucket> MATCH_PASSWORD=<passphrase> fastlane profiles env:prod force:true
+  #
+  # Without `force` only missing profiles are created. That is what a new bundle id
+  # wants: regenerating the profile that already signs a shipped build invalidates it to
+  # produce an identical one. Pass `force:true` after a capability changes on the App ID,
+  # which is the one case where the cached profile is stale rather than absent.
   #
   # Passing the API key is what stops match falling back to interactive Apple ID prompts.
-  desc "Force-regenerate the App Store provisioning profile after a capability change"
+  desc "Create missing App Store provisioning profiles, or force-regenerate them"
   lane :profiles do |options|
     app_id = options[:env] == 'prod' ? "me.heart-of.ios" : "me.heart-of.ios.dev"
 
@@ -35,7 +52,7 @@ platform :ios do
       app_identifier: [app_id, "#{app_id}.#{LIVE_ACTIVITY}"],
       api_key: appstore_api_key,
       readonly: false,
-      force: true
+      force: options[:force].to_s == 'true'
     )
   end
 

@@ -6,6 +6,19 @@ resolution instead of grep: `resolveWorkspaceSymbol` to find a definition,
 `hover`/`signatureHelp` for types and signatures (positions are zero-based).
 No `references` command exists — for "find usages", fall back to grep.
 
+## Opt-in features
+The app as of 1.9.0 is core. Every feature built after it is opt-in: the app
+asks once, in context. On yes, the user gets the whole feature. On no or a
+dismissal, they see a single "you can turn this on in Settings" notice and are
+never asked again. The switch in Settings › Features is always live, both
+ways. Off, the app looks as if the feature had never been built (screens
+reflow, and every design has a *without* state). Below the UI, the feature's
+data stays intact and inert: no schema branches on the switch, off never
+deletes, and sync round-trips it untouched. Every feature ticket answers **is
+this opt-in?** When a ticket doesn't say, ask the user; autonomous agents
+build it as opt-in and flag it. The contract: `docs/opt-in.md`. The framework
+itself: #138.
+
 ## Large screens
 iPads and Android tablets are supported, in both orientations, and every new
 surface is expected to account for them. Phones stay portrait-locked (see
