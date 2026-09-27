@@ -1,8 +1,10 @@
 library;
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:heart/core/theme/state.dart';
@@ -19,9 +21,11 @@ import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/health/section.dart';
+import 'package:heart/presentation/widgets/heatmap_ink.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
+import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/upsync_row.dart';
