@@ -168,8 +168,12 @@ below has to be **committed before the tag**: prod CI checks out the tagged comm
 3. Add the release to the app's **What's new** list — section 7. Skip it on a fix-only cycle.
    Then update the **feature list** — section 8. That one runs every cycle, fix-only included.
 4. Leave `testflight.txt` and the `whatsnew-*` files in place; the next cycle overwrites them.
-5. Hand off. The user commits, tags, and pushes — that push is the release. Then
-   `gh release create v<version> --notes-file release_notes/v<version>.md`.
+5. **Run `make test-app`**, not just the two content tests. Those check the files are *valid*,
+   and a perfectly valid file can still break a widget test that reads it — which is how 1.9.0
+   went out red and had its tag moved. Every deploy workflow gates on Unit Tests, so a red suite
+   means nothing ships at all.
+6. Hand off. The user commits, tags, and pushes — that push is the release, and
+   `gh release create v<version> --notes-file release_notes/v<version>.md` is theirs too.
 
 ## 7. What's new, in the app
 
@@ -230,6 +234,12 @@ For example, 1.3.0 was cancelled, so its date comes from 1.3.1.
 translations skill: keep the tone, and keep markdown and link targets exactly as they are. There is
 no machine-translated mark; the user reads them. This is **not** the ARB workflow. Don't run the
 translations skill for these.
+
+**Tests that read this file must read it, never name a release.** `whats_new_page_test.dart`
+asserted the newest entry was literally `1.8.0`, so the first release to add an entry — which
+this procedure mandates — turned CI red. A test over the bundled notes takes the newest version
+and title from `assets/whats_new/en.json` itself, and reads it with `dart:io`, because a
+`rootBundle` load inside `testWidgets` never completes under the fake clock.
 
 **Check.** Run `flutter test test/whats_new_content_test.dart`. It fails on a malformed file, a
 locale item with no English original, a translation that changed a link, disallowed markdown, a
@@ -335,5 +345,7 @@ markup in the copy, an over-long pitch, or formatting that differs from
 - [ ] A release with a new capability has an undated entry in every `assets/whats_new/*.json`,
       and the previous release's entry is now dated from CI
 - [ ] `flutter test test/whats_new_content_test.dart` passes
+- [ ] **`make test-app` passes** — the content tests alone are not enough, and the deploys gate
+      on it
 - [ ] `docs/features.json` matches what this release ships, no `"since": null` is left at tag
       time, and `flutter test test/features_content_test.dart` passes
