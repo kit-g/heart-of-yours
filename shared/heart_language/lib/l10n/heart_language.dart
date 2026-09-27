@@ -3465,6 +3465,78 @@ abstract class L {
   /// In en, this message translates to:
   /// **'{count, plural, one{1 set} other{{count} sets}} from exercises without muscle data not counted'**
   String muscleMapUnmapped(int count);
+
+  /// Heading of the weekly heatmap on the muscle map: sets per muscle group, one column per week
+  ///
+  /// In en, this message translates to:
+  /// **'Sets per week'**
+  String get muscleMapWeekly;
+
+  /// Screen-reader summary and tooltip of one row of the muscle map's weekly heatmap. {values} is the sets per week, oldest first, comma-separated
+  ///
+  /// In en, this message translates to:
+  /// **'{group}, sets per week, oldest first: {values}'**
+  String muscleMapWeeklyRow(String group, String values);
+
+  /// Heading of the muscle map's heatmap when it shows a year: sets per muscle group, one column per month
+  ///
+  /// In en, this message translates to:
+  /// **'Sets per month'**
+  String get muscleMapMonthly;
+
+  /// Screen-reader summary and tooltip of one row of the muscle map's yearly heatmap. {values} is the sets per month, oldest first, comma-separated
+  ///
+  /// In en, this message translates to:
+  /// **'{group}, sets per month, oldest first: {values}'**
+  String muscleMapMonthlyRow(String group, String values);
+
+  /// Tooltip when a muscle is tapped on the muscle map's body figures: its group and that group's sets in the chosen window (whole numbers)
+  ///
+  /// In en, this message translates to:
+  /// **'{group}: {count, plural, =0{no sets} one{1 set} other{{count} sets}}'**
+  String muscleMapMuscleSets(String group, int count);
+
+  /// Same tooltip as muscleMapMuscleSets when the count has a half (secondary muscles count half a set); {sets} is already formatted, e.g. 2.5
+  ///
+  /// In en, this message translates to:
+  /// **'{group}: {sets} sets'**
+  String muscleMapMuscleSetsFractional(String group, String sets);
+
+  /// Title of the muscle map's list of sets per muscle group
+  ///
+  /// In en, this message translates to:
+  /// **'Sets per group'**
+  String get muscleMapBreakdown;
+
+  /// Help tooltip on the muscle map's body figures
+  ///
+  /// In en, this message translates to:
+  /// **'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.'**
+  String get muscleMapFigureHelp;
+
+  /// Help tooltip on the muscle map's list: how sets are counted per muscle group
+  ///
+  /// In en, this message translates to:
+  /// **'Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms.'**
+  String get muscleMapBreakdownHelp;
+
+  /// Help tooltip on the muscle map's heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'Sets per muscle group over time, counted the same way as the list: a column per week, or per month over a year, oldest on the left. Darker is more; a dot means none. Tap a row for its numbers.'**
+  String get muscleMapHeatmapHelp;
+
+  /// Names one column of the muscle map's weekly heatmap in the caption under it; {week} is the week's Monday as a short date
+  ///
+  /// In en, this message translates to:
+  /// **'Week of {week}'**
+  String muscleMapWeekOf(String week);
+
+  /// Caption under the muscle map's heatmap for the tapped cell: {period} is the week or month (e.g. 'Week of 9/21'), {detail} the group and its sets (e.g. 'Chest: 4 sets')
+  ///
+  /// In en, this message translates to:
+  /// **'{period} · {detail}'**
+  String muscleMapCellCaption(String period, String detail);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

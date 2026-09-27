@@ -1957,4 +1957,62 @@ class LFr extends L {
     );
     return '$_temp0';
   }
+
+  @override
+  String get muscleMapWeekly => 'Séries par semaine';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, séries par semaine, de la plus ancienne : $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Séries par mois';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, séries par mois, du plus ancien : $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count séries',
+      one: '1 série',
+      zero: 'aucune série',
+    );
+    return '$group : $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group : $sets séries';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Séries par groupe';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Chaque groupe musculaire est coloré selon le nombre de séries reçues sur la période choisie : plus c’est foncé, plus il y en a. Touchez un muscle pour voir son nombre.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Séries terminées par groupe musculaire sur la période choisie. Une série compte entièrement pour les muscles que l’exercice travaille surtout et pour moitié pour ceux qu’il sollicite aussi : une série de développé couché ajoute 1 aux Pectoraux et ½ aux Bras.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Séries par groupe musculaire dans le temps, comptées comme dans la liste : une colonne par semaine, ou par mois sur un an, la plus ancienne à gauche. Plus foncé, c’est plus ; un point signifie aucune. Touchez une ligne pour voir ses nombres.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Semaine du $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }

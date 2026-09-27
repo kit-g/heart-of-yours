@@ -1948,6 +1948,64 @@ class LEn extends L {
     );
     return '$_temp0 from exercises without muscle data not counted';
   }
+
+  @override
+  String get muscleMapWeekly => 'Sets per week';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, sets per week, oldest first: $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Sets per month';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, sets per month, oldest first: $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+      zero: 'no sets',
+    );
+    return '$group: $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group: $sets sets';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Sets per group';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Sets per muscle group over time, counted the same way as the list: a column per week, or per month over a year, oldest on the left. Darker is more; a dot means none. Tap a row for its numbers.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Week of $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -3892,5 +3950,63 @@ class LEnCa extends LEn {
       one: '1 set',
     );
     return '$_temp0 from exercises without muscle data not counted';
+  }
+
+  @override
+  String get muscleMapWeekly => 'Sets per week';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, sets per week, oldest first: $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Sets per month';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, sets per month, oldest first: $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+      zero: 'no sets',
+    );
+    return '$group: $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group: $sets sets';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Sets per group';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Sets per muscle group over time, counted the same way as the list: a column per week, or per month over a year, oldest on the left. Darker is more; a dot means none. Tap a row for its numbers.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Week of $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
   }
 }
