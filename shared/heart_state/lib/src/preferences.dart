@@ -302,9 +302,10 @@ class Preferences with ChangeNotifier {
 
   /// What the user said about [feature]: see [FeatureAnswer].
   ///
-  /// A fact about the device, like [lockScreenWorkout]: nothing here syncs, so
-  /// a second phone asks its own question. Whether answers should follow the
-  /// account is still open in #138.
+  /// Kept on the device, where it is read, and — for an account — mirrored to
+  /// the account's settings by [FeatureSync], so a second phone does not ask
+  /// what the first one already heard. Only a real answer travels: an
+  /// unanswered offer and the notice after a no are this device's business.
   FeatureAnswer featureAnswer(Feature feature) {
     return FeatureAnswer.fromString(_prefs?.getString('$_feature-${feature.value}'));
   }
@@ -366,11 +367,56 @@ class Preferences with ChangeNotifier {
   }
 
   void _setFeature(Feature feature, {required bool on}) {
-    final answer = switch (on) {
+    _store(feature, (on: on, at: DateTime.timestamp()));
+    notifyListeners();
+  }
+
+  void _store(Feature feature, FeatureRecord record) {
+    final answer = switch (record.on) {
       true => FeatureAnswer.on,
       false => FeatureAnswer.off,
     };
     _prefs?.setString('$_feature-${feature.value}', answer.name);
+    _prefs?.setString('$_feature-${feature.value}-at', record.at.toUtc().toIso8601String());
+  }
+
+  /// Every feature this device has a real answer for — on or off — and when it
+  /// was given. What [FeatureSync] compares with the account's.
+  ///
+  /// An answer from before answers carried a time reads as the oldest there
+  /// is, so any answer from another device outranks it.
+  Map<Feature, FeatureRecord> get featureRecords {
+    return {
+      for (final feature in Feature.values)
+        if (_answered(feature) case bool on)
+          feature: (
+            on: on,
+            at:
+                DateTime.tryParse(_prefs?.getString('$_feature-${feature.value}-at') ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+          ),
+    };
+  }
+
+  /// On or off, or null while there is no real answer yet.
+  bool? _answered(Feature feature) {
+    return switch (featureAnswer(feature)) {
+      .on => true,
+      .off => false,
+      .unasked || .pending => null,
+    };
+  }
+
+  /// Takes [records] as this device's answers — what another device said,
+  /// newer than what this one holds. An offer or notice still on screen for
+  /// one of them is retired: the question has been answered, elsewhere.
+  void adoptFeatureRecords(Map<Feature, FeatureRecord> records) {
+    if (records.isEmpty) return;
+    for (final MapEntry(key: feature, value: record) in records.entries) {
+      _offeredThisSession.remove(feature);
+      _declinedThisSession.remove(feature);
+      _store(feature, record);
+    }
     notifyListeners();
   }
 
