@@ -3340,12 +3340,6 @@ abstract class L {
   /// **'No rest timers. Set one from an exercise\'s menu during a workout.'**
   String get restTimersEmpty;
 
-  /// Rest timers page: stands in for the name of a deleted exercise that still has a rest timer, so the timer can be cleared
-  ///
-  /// In en, this message translates to:
-  /// **'Exercise no longer available'**
-  String get restTimerExerciseGone;
-
   /// Tooltip and screen-reader label of the button that removes one exercise's rest timer
   ///
   /// In en, this message translates to:

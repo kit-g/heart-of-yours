@@ -3421,12 +3421,6 @@
     "type": "text",
     "placeholders": {}
   },
-  "restTimerExerciseGone": "Exercice plus disponible",
-  "@restTimerExerciseGone": {
-    "description": "Rest timers page: stands in for the name of a deleted exercise that still has a rest timer, so the timer can be cleared",
-    "type": "text",
-    "placeholders": {}
-  },
   "clearRestTimerFor": "Supprimer le minuteur de repos pour {exercise}",
   "@clearRestTimerFor": {
     "description": "Tooltip and screen-reader label of the button that removes one exercise's rest timer",

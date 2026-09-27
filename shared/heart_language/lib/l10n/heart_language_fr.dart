@@ -1884,9 +1884,6 @@ class LFr extends L {
       'Aucun minuteur de repos. Réglez-en un depuis le menu d’un exercice pendant une séance.';
 
   @override
-  String get restTimerExerciseGone => 'Exercice plus disponible';
-
-  @override
   String clearRestTimerFor(String exercise) {
     return 'Supprimer le minuteur de repos pour $exercise';
   }

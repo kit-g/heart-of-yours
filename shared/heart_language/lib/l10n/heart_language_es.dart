@@ -1882,9 +1882,6 @@ class LEs extends L {
       'No hay temporizadores de descanso. Configura uno desde el menú de un ejercicio durante un entrenamiento.';
 
   @override
-  String get restTimerExerciseGone => 'El ejercicio ya no está disponible';
-
-  @override
   String clearRestTimerFor(String exercise) {
     return 'Quitar el temporizador de descanso de $exercise';
   }

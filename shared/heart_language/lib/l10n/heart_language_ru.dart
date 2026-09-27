@@ -1905,9 +1905,6 @@ class LRu extends L {
   String get restTimersEmpty => 'Таймеров отдыха нет. Задайте его в меню упражнения во время тренировки.';
 
   @override
-  String get restTimerExerciseGone => 'Упражнение больше недоступно';
-
-  @override
   String clearRestTimerFor(String exercise) {
     return 'Сбросить таймер отдыха для $exercise';
   }

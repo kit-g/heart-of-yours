@@ -1877,9 +1877,6 @@ class LEn extends L {
   String get restTimersEmpty => 'No rest timers. Set one from an exercise\'s menu during a workout.';
 
   @override
-  String get restTimerExerciseGone => 'Exercise no longer available';
-
-  @override
   String clearRestTimerFor(String exercise) {
     return 'Clear rest timer for $exercise';
   }
@@ -3761,9 +3758,6 @@ class LEnCa extends LEn {
 
   @override
   String get restTimersEmpty => 'No rest timers. Set one from an exercise\'s menu during a workout.';
-
-  @override
-  String get restTimerExerciseGone => 'Exercise no longer available';
 
   @override
   String clearRestTimerFor(String exercise) {
