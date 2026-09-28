@@ -467,6 +467,13 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
         .light => lightFeedback,
         .dark || .system => darkFeedback,
       },
+      // The app's own delegates, above the app. Flutter draws a text field's
+      // copy/paste toolbar in the *root* overlay, and feedback's overlay is the
+      // root one — above MaterialApp and its Localizations. feedback supplies
+      // flutter/material.dart's MaterialLocalizations only, while the toolbar is
+      // material_ui's and looks up material_ui's: without these, a long press in
+      // any text field threw "No MaterialLocalizations found".
+      localizationsDelegates: localizationsDelegates,
       child: app,
     );
   }
