@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:heart/core/utils/icons.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The Google button everywhere that is not the web: our own control, with
 /// Google's mark on it.

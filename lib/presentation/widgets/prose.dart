@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Markdown text — headings, paragraphs, emphasis, lists — set in the theme's
 /// own type and tokens.

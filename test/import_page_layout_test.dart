@@ -4,12 +4,12 @@
 // own LayoutBuilder constraints and caps the column at [readableWidth]
 // instead of stretching to whatever an iPad offers.
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';

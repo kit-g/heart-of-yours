@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
@@ -8,10 +7,12 @@ import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/routes/login/login.dart';
 import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
+import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -140,6 +141,35 @@ void main() {
       await tester.pumpTimes();
 
       expect(find.byType(WorkoutPage), findsOneWidget);
+    });
+
+    // go_router picks a route's page by finding the app's MaterialApp above
+    // it, and falls back to a no-transition page when it cannot — silently,
+    // for every route without a pageBuilder. go_router 18 looks for
+    // material_ui's MaterialApp; while this app still built on the framework's
+    // copy, every phone push stopped animating.
+    testWidgets('a pushed page slides in rather than appearing', (tester) async {
+      final user = MockUser(uid: 'u1', email: 'u1@test');
+      final firebase = MockFirebaseAuth(mockUser: user, signedIn: true);
+      final router = HeartRouter();
+
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: firebase,
+        router: router,
+        hasLocalNotifications: false,
+        settle: false,
+      );
+
+      router.config.go('/profile/settings');
+      await tester.pumpTimes();
+
+      final route = ModalRoute.of(tester.element(find.byType(SettingsPage)))!;
+      expect(route, isA<MaterialRouteTransitionMixin<void>>());
+      expect(route.transitionDuration, greaterThan(Duration.zero));
     });
 
     testWidgets('a device that cannot get a session at all falls back to LoginPage', (tester) async {

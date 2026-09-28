@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
@@ -7,6 +6,7 @@ import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 // letters, digits and whitespace
 final _formatter = FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9 ]'));

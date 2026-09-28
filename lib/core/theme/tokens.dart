@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The app's own design vocabulary — every color the UI is allowed to use.
 ///

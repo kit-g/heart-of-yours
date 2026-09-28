@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/theme/state.dart';
@@ -7,6 +6,7 @@ import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
@@ -70,7 +70,7 @@ void main() {
           ChangeNotifierProvider<Exercises>.value(value: exercises),
         ],
         child: MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           builder: (context, child) => OngoingWorkoutPresenter(surface: surface, child: child!),
           home: const SizedBox.shrink(),
@@ -237,7 +237,7 @@ void main() {
           ChangeNotifierProvider<Exercises>.value(value: exercises),
         ],
         child: MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           builder: (context, child) => OngoingWorkoutPresenter(surface: null, child: child!),
           home: const Text('home'),

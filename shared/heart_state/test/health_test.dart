@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/src/health.dart';
 import 'package:heart_state/src/workout_activity.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'test_utils.dart';

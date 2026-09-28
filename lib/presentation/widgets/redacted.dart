@@ -1,6 +1,6 @@
 import 'package:feedback/feedback.dart';
-import 'package:flutter/material.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Hides [child] while the in-app bug reporter is capturing the screen.
 ///

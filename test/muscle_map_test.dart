@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/finders.dart';
 import 'support/harness.dart';
 
 /// The muscle map on the profile (#136), the first opt-in feature (#138).
@@ -153,7 +154,7 @@ void main() {
       expect(byKey(AppKeys.featureDeclinedNotice), findsOneWidget);
       expect(find.text('You can always turn this on in Settings.', skipOffstage: false), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Close'));
+      await tester.tap(find.tooltip('Close'));
       await tester.pumpTimes(2);
 
       expectNothingOfTheFeature();
@@ -341,7 +342,7 @@ void main() {
   testWidgets('Settings › Features flips it, and says it is on', (tester) async {
     final preferences = await pumpProfile(tester, answer: 'off');
 
-    await tester.tap(find.byTooltip('Settings'));
+    await tester.tap(find.tooltip('Settings'));
     await tester.pumpTimes();
 
     final toggle = byKey(const ValueKey('feature-muscleMap'));

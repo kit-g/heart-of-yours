@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Picks an exercise, then the dimension to measure it by.
 ///

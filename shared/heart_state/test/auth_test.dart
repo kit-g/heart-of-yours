@@ -3,11 +3,11 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart' show PasswordPolicy;
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heart_models/heart_models.dart' show User;
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';

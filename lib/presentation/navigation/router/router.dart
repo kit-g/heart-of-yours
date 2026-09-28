@@ -3,7 +3,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/app_upgrade.dart';
@@ -30,6 +29,7 @@ import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'modal_route.dart';
 
