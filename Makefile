@@ -118,6 +118,12 @@ test-app: codegen-app
 a11y: codegen-app
 	flutter test test/a11y_test.dart
 
+# app-only line coverage (lib/, generated code excluded) — the number
+# test coverage tickets are measured against. `coverage/` is gitignored.
+coverage: codegen-app
+	flutter test --coverage
+	@python3 scripts/coverage_report.py
+
 # The two secrets buckets, one per AWS account. The fastlane match store lives
 # under `secrets/fastlane/` in each, and which bucket you point at is what makes
 # a profile dev's or prod's — they hold different distribution certificates.
