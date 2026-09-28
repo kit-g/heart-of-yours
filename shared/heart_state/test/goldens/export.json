@@ -14,6 +14,7 @@
       "name": "Push day",
       "start": "2026-03-01T10:00:00.000Z",
       "end": "2026-03-01T11:00:00.000Z",
+      "note": null,
       "exercises": [
         {
           "order": 0,
@@ -24,13 +25,17 @@
               "id": "s1",
               "completed": true,
               "reps": 8,
-              "weight": 60.0
+              "weight": 60.0,
+              "set_type": "normal",
+              "rpe": null
             },
             {
               "id": "s2",
               "completed": true,
               "reps": 6,
-              "weight": 62.5
+              "weight": 62.5,
+              "set_type": "normal",
+              "rpe": null
             }
           ]
         },
@@ -43,7 +48,9 @@
             {
               "id": "s3",
               "completed": true,
-              "reps": 10
+              "reps": 10,
+              "set_type": "normal",
+              "rpe": null
             }
           ]
         }
@@ -62,6 +69,7 @@
       "name": "Run, then plank",
       "start": "2026-03-03T07:30:00.000Z",
       "end": "2026-03-03T08:00:00.000Z",
+      "note": null,
       "exercises": [
         {
           "order": 0,
@@ -72,7 +80,9 @@
               "id": "s4",
               "completed": true,
               "duration": 1500,
-              "distance": 5.0
+              "distance": 5.0,
+              "set_type": "normal",
+              "rpe": null
             }
           ]
         },
@@ -84,7 +94,9 @@
             {
               "id": "s5",
               "completed": true,
-              "duration": 60
+              "duration": 60,
+              "set_type": "normal",
+              "rpe": null
             }
           ]
         }
@@ -111,7 +123,9 @@
               "id": "ts1",
               "completed": false,
               "reps": 5,
-              "weight": 80.0
+              "weight": 80.0,
+              "set_type": "normal",
+              "rpe": null
             }
           ]
         }
@@ -129,7 +143,9 @@
             {
               "id": "ts2",
               "completed": false,
-              "reps": 8
+              "reps": 8,
+              "set_type": "normal",
+              "rpe": null
             }
           ]
         }
