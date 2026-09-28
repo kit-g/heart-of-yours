@@ -309,12 +309,22 @@ class const _MuscleMapBody({
     final (:sets, :unmapped) = muscleVolume(lastDays(rows, days, now: now));
     final month = muscleVolume(lastDays(rows, _windows.last, now: now)).sets;
 
-    // One order for both windows: the month's. Ranked by whatever window is
-    // showing, flipping the switcher would reshuffle every row instead of
-    // letting each bar grow or shrink where it stands — and a group idle this
-    // week keeps its row, at zero, which is itself the thing worth seeing.
-    final listed = month.keys.where((group) => (month[group] ?? 0) > 0).toList()
-      ..sort((a, b) => (month[b] ?? 0).compareTo(month[a] ?? 0));
+    // One order for both windows and for the heatmap: the month's, ties broken
+    // by the whole read (thirteen weeks). Ranked by whatever window is showing,
+    // flipping the switcher would reshuffle every row instead of letting each
+    // bar grow or shrink where it stands — and a group idle this week keeps its
+    // row, at zero, which is itself the thing worth seeing.
+    final span = muscleVolume(rows).sets;
+    // and a full tie by the atlas's own order: List.sort is not stable, so
+    // without it two equal groups could swap places between the two
+    int rank(MuscleGroup a, MuscleGroup b) => switch ((
+      (month[b] ?? 0).compareTo(month[a] ?? 0),
+      (span[b] ?? 0).compareTo(span[a] ?? 0),
+    )) {
+      (0, 0) => a.index.compareTo(b.index),
+      (0, int order) || (int order, _) => order,
+    };
+    final listed = month.keys.where((group) => (month[group] ?? 0) > 0).toList()..sort(rank);
 
     final most = sets.values.fold(0.0, max);
     // Shaded by share of the busiest group, with a floor so one set still
@@ -374,7 +384,7 @@ class const _MuscleMapBody({
 
     final heatmap = Padding(
       padding: const .only(top: 8),
-      child: _Heatmap(rows: rows, now: now, month: month),
+      child: _Heatmap(rows: rows, now: now, rank: rank),
     );
 
     return LayoutBuilder(
@@ -440,11 +450,11 @@ class _Heatmap extends StatefulWidget {
   final List<MuscleSets> rows;
   final DateTime now;
 
-  /// The last 30 days' sets per group: the list's order, which the heatmap
-  /// keeps so a group sits in the same place in both.
-  final Map<MuscleGroup, double> month;
+  /// The list's order, which the heatmap keeps so a group sits in the same
+  /// place in both, whatever range either shows.
+  final int Function(MuscleGroup a, MuscleGroup b) rank;
 
-  const new({required this.rows, required this.now, required this.month});
+  const new({required this.rows, required this.now, required this.rank});
 
   @override
   State<_Heatmap> createState() => _HeatmapState();
@@ -587,14 +597,7 @@ class _HeatmapState extends State<_Heatmap> {
     double count(MuscleGroup group, DateTime bucket) => counted[bucket]?.sets[group] ?? 0;
     double total(MuscleGroup group) => buckets.fold(0, (sum, bucket) => sum + count(group, bucket));
 
-    final month = widget.month;
-    final groups = MuscleGroup.values.where((group) => total(group) > 0).toList()
-      ..sort(
-        (a, b) => switch ((month[b] ?? 0).compareTo(month[a] ?? 0)) {
-          0 => total(b).compareTo(total(a)),
-          int order => order,
-        },
-      );
+    final groups = MuscleGroup.values.where((group) => total(group) > 0).toList()..sort(widget.rank);
     final most = groups.fold(
       0.0,
       (most, group) => buckets.fold(most, (most, bucket) => max(most, count(group, bucket))),
