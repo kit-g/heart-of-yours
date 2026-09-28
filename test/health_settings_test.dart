@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/health/settings.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'support/health_fakes.dart';
 
@@ -33,7 +33,7 @@ void main() {
           ChangeNotifierProvider<Preferences>.value(value: preferences),
         ],
         child: const MaterialApp(
-          localizationsDelegates: L.localizationsDelegates,
+          localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           home: Scaffold(body: HealthSettings()),
         ),

@@ -3,10 +3,10 @@
 // ordering and "this version" rules the page relies on.
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/whats_new.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _Bundle extends CachingAssetBundle {
   final Map<String, String> files;

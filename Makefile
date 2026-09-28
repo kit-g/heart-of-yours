@@ -60,8 +60,20 @@ lib/firebase_options.dart lib/firebase_options_prod.dart:
 	  '  static FirebaseOptions get currentPlatform => throw UnimplementedError();' \
 	  '}' > $@
 
-lint: format-check dates lib/firebase_options.dart lib/firebase_options_prod.dart
+lint: format-check dates ui-imports lib/firebase_options.dart lib/firebase_options_prod.dart
 	flutter analyze
+
+# The app builds on material_ui and cupertino_ui. The framework's copies still
+# exist, and a file importing one compiles fine — then its Theme.of, its
+# MaterialApp and every widget it builds miss the app's, without a word. That is
+# how go_router 18 took every page transition away (#188). The analyzer cannot
+# tell the two apart; this can.
+ui-imports:
+	@if git ls-files -co --exclude-standard '*.dart' | xargs grep -n "package:flutter/\(material\|cupertino\)\.dart" ; then \
+		echo "" ; \
+		echo "import material_ui / cupertino_ui, not flutter/material.dart or flutter/cupertino.dart" ; \
+		exit 1 ; \
+	fi
 
 # `DateFormat.yMMMd()` with no locale formats in en_US wherever it is called.
 # It is invisible while you develop in English and it is why the History header

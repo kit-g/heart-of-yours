@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:material_ui/material_ui.dart';
 
 class Logo extends StatelessWidget {
   final double titleFontSize;

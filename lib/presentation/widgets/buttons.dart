@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Flat coloured (or transparent by default) button with an ink well
 class InkButton extends StatelessWidget {
