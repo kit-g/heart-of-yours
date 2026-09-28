@@ -1,11 +1,15 @@
 library;
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/muscle_volume.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
@@ -16,15 +20,18 @@ import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/health/section.dart';
+import 'package:heart/presentation/widgets/heatmap_ink.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
+import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/upsync_row.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:reorderable_grid/reorderable_grid.dart';
 
@@ -32,5 +39,6 @@ part 'charts.dart';
 part 'dashboard.dart';
 part 'empty_dashboard_widget.dart';
 part 'area.dart';
+part 'muscle_map.dart';
 part 'page.dart';
 part 'utils.dart';

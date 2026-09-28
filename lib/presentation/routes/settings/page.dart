@@ -30,7 +30,6 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :distanceUnit,
       :imperial,
       :metric,
-      :notificationSettings,
       :restTimers,
       :settings,
       :units,
@@ -187,6 +186,8 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 ],
               ),
               const SizedBox(height: 24),
+              const _FeaturesSection(),
+              const SizedBox(height: 24),
               // owns its own header — the whole block is absent on platforms
               // with no health store, and a header over nothing would lie
               const HealthSettings(),
@@ -232,21 +233,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               _Section(
                 title: app,
                 children: [
-                  FutureBuilder<bool>(
-                    future: hasNotificationsPermission(Theme.of(context).platform),
-                    builder: (context, snapshot) {
-                      return ListTile(
-                        leading: switch (snapshot.hasData && (snapshot.data ?? false)) {
-                          true => const Icon(Icons.edit_notifications_rounded),
-                          false => const Icon(Icons.notifications_off_rounded),
-                        },
-                        title: Text(notificationSettings),
-                        onTap: () {
-                          AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
-                        },
-                      );
-                    },
-                  ),
+                  const _NotificationsRow(),
                   // absent until there is a timer to list: an entry that can
                   // only open onto an empty page is a dead end
                   Selector<Timers, bool>(
@@ -521,6 +508,77 @@ class _LockScreenWorkoutSwitchState extends State<_LockScreenWorkoutSwitch> {
           _ => const SizedBox.shrink(),
         };
       },
+    );
+  }
+}
+
+/// The way to the system's notification settings, its icon saying whether
+/// they are on.
+///
+/// Its own widget so the permission is asked when the row is built, not when
+/// the page is. The page is a lazy list: built by the page, the check ran for
+/// a row that might never appear, and where the plugin is absent (a widget
+/// test) its failure had nobody listening — a crash of the test, surfaced the
+/// moment the Features section pushed this row below the first screen.
+class const _NotificationsRow() extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final L(:notificationSettings) = L.of(context);
+    return FutureBuilder<bool>(
+      future: hasNotificationsPermission(Theme.of(context).platform),
+      builder: (context, snapshot) {
+        return ListTile(
+          leading: switch (snapshot.hasData && (snapshot.data ?? false)) {
+            true => const Icon(Icons.edit_notifications_rounded),
+            false => const Icon(Icons.notifications_off_rounded),
+          },
+          title: Text(notificationSettings),
+          onTap: () {
+            AppSettings.openAppSettings(type: AppSettingsType.notification, asAnotherTask: true);
+          },
+        );
+      },
+    );
+  }
+}
+
+/// The opt-in features (#138, `docs/opt-in.md`): one switch each, always
+/// live, both ways. The switch is the answer — turning a feature on here does
+/// not ask again, and turning it off takes it out of the app on the spot.
+class const _FeaturesSection() extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final preferences = Preferences.watch(context);
+    final ThemeData(
+      :textTheme,
+      colorScheme: ColorScheme(:tertiaryContainer, :onTertiaryContainer, :outlineVariant, :onSurfaceVariant),
+    ) = Theme.of(
+      context,
+    );
+
+    return _Section(
+      title: l.features,
+      children: [
+        for (final feature in Feature.values)
+          SwitchListTile.adaptive(
+            key: ValueKey('feature-${feature.value}'),
+            secondary: Icon(feature.icon),
+            title: Text(feature.title(l)),
+            subtitle: Text(feature.subtitle(l)),
+            value: preferences.isOn(feature),
+            // the lock-screen switch's colors: the accent as a fill, and a
+            // hairline track so "off" is still a visible control
+            activeTrackColor: tertiaryContainer,
+            activeThumbColor: onTertiaryContainer,
+            inactiveTrackColor: outlineVariant,
+            onChanged: (on) => preferences.setFeature(feature, on: on),
+          ),
+        Padding(
+          padding: const .symmetric(horizontal: 16),
+          child: Text(l.featuresFooter, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
+        ),
+      ],
     );
   }
 }

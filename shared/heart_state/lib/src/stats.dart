@@ -2,6 +2,11 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+/// Completed sets of one exercise in one finished workout, with when the
+/// workout started and what the exercise trains — the muscle map's unit of
+/// data (#136).
+typedef MuscleSets = ({DateTime start, MuscleTagging muscles, int sets});
+
 /// [StatsService] plus the reads only the local mirror can answer.
 ///
 /// The same shape [LocalGoalService] uses: the shared interface ships from the
@@ -19,6 +24,10 @@ abstract interface class LocalStatsService implements StatsService {
   /// parameters — so both counts are scoped the same way.
   @override
   Future<int> getWeeklyWorkoutCount(DateTime d, {String? userId});
+
+  /// Completed sets per exercise per finished workout started in [from, to)
+  /// (#136).
+  Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to, {String? userId});
 }
 
 class Stats with ChangeNotifier implements SignOutStateSentry {
@@ -71,5 +80,12 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   /// Every finished workout this device knows about.
   Future<int> getTotalWorkoutCount() {
     return _service.getTotalWorkoutCount(userId: userId);
+  }
+
+  /// What the muscle map (#136) is counted from: completed sets per exercise
+  /// per workout in [from, to), with each exercise's tagging. Read on demand rather than
+  /// held here — nothing is computed or kept while the feature is off.
+  Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to) {
+    return _service.getMuscleSets(from, to, userId: userId);
   }
 }

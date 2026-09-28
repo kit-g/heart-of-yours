@@ -51,6 +51,17 @@ abstract final class AppKeys {
   /// opens the no-account dialog.
   static const noAccount = Key('Profile.noAccount');
 
+  /// The muscle map (#136) on the profile: the one offer, its two answers,
+  /// the notice a no earns, and the card itself.
+  static const muscleMapOffer = ValueKey('muscleMapOffer');
+  static const muscleMapAccept = ValueKey('muscleMapAccept');
+  static const muscleMapDecline = ValueKey('muscleMapDecline');
+  static const featureDeclinedNotice = ValueKey('featureDeclinedNotice');
+  static const muscleMapCard = ValueKey('muscleMapCard');
+  static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
+  static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');
+  static const muscleMapCellCaption = ValueKey('muscleMapCellCaption');
+
   /// The no-account dialog's way to the login page.
   static const noAccountLogIn = Key('Profile.noAccount.logIn');
 

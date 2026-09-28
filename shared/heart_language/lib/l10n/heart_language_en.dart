@@ -1886,6 +1886,126 @@ class LEn extends L {
 
   @override
   String get undo => 'Undo';
+
+  @override
+  String get features => 'Features';
+
+  @override
+  String get featuresFooter => 'Extras Heart only shows when you turn them on. Switch them on or off any time.';
+
+  @override
+  String get muscleMap => 'Muscle map';
+
+  @override
+  String get muscleMapSubtitle => 'Sets per muscle group, on your profile';
+
+  @override
+  String get muscleMapOfferTitle => 'See which muscles you train?';
+
+  @override
+  String get muscleMapOfferBody => 'A body map on your profile, shaded by how many sets each muscle group got lately.';
+
+  @override
+  String get turnOn => 'Turn on';
+
+  @override
+  String get noThanks => 'No thanks';
+
+  @override
+  String get featureDeclinedNotice => 'You can always turn this on in Settings.';
+
+  @override
+  String get lastSevenDays => '7 days';
+
+  @override
+  String get lastThirtyDays => '30 days';
+
+  @override
+  String get muscleMapEmpty => 'No sets in this period.';
+
+  @override
+  String get muscleMapFigure => 'Body map of sets per muscle group';
+
+  @override
+  String get muscleGroupGlutes => 'Glutes';
+
+  @override
+  String get muscleGroupHamstrings => 'Hamstrings';
+
+  @override
+  String get muscleGroupAdductors => 'Adductors';
+
+  @override
+  String get muscleGroupNeck => 'Neck';
+
+  @override
+  String muscleMapUnmapped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$_temp0 from exercises without muscle data not counted';
+  }
+
+  @override
+  String get muscleMapWeekly => 'Sets per week';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, sets per week, oldest first: $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Sets per month';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, sets per month, oldest first: $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+      zero: 'no sets',
+    );
+    return '$group: $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group: $sets sets';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Sets per group';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Sets per muscle group over time, counted the same way as the list: a column per week, or per month over a year, oldest on the left. Darker is more; a dot means none. Tap a row for its numbers.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Week of $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -3769,4 +3889,124 @@ class LEnCa extends LEn {
 
   @override
   String get undo => 'Undo';
+
+  @override
+  String get features => 'Features';
+
+  @override
+  String get featuresFooter => 'Extras Heart only shows when you turn them on. Switch them on or off any time.';
+
+  @override
+  String get muscleMap => 'Muscle map';
+
+  @override
+  String get muscleMapSubtitle => 'Sets per muscle group, on your profile';
+
+  @override
+  String get muscleMapOfferTitle => 'See which muscles you train?';
+
+  @override
+  String get muscleMapOfferBody => 'A body map on your profile, shaded by how many sets each muscle group got lately.';
+
+  @override
+  String get turnOn => 'Turn on';
+
+  @override
+  String get noThanks => 'No thanks';
+
+  @override
+  String get featureDeclinedNotice => 'You can always turn this on in Settings.';
+
+  @override
+  String get lastSevenDays => '7 days';
+
+  @override
+  String get lastThirtyDays => '30 days';
+
+  @override
+  String get muscleMapEmpty => 'No sets in this period.';
+
+  @override
+  String get muscleMapFigure => 'Body map of sets per muscle group';
+
+  @override
+  String get muscleGroupGlutes => 'Glutes';
+
+  @override
+  String get muscleGroupHamstrings => 'Hamstrings';
+
+  @override
+  String get muscleGroupAdductors => 'Adductors';
+
+  @override
+  String get muscleGroupNeck => 'Neck';
+
+  @override
+  String muscleMapUnmapped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$_temp0 from exercises without muscle data not counted';
+  }
+
+  @override
+  String get muscleMapWeekly => 'Sets per week';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, sets per week, oldest first: $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Sets per month';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, sets per month, oldest first: $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+      zero: 'no sets',
+    );
+    return '$group: $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group: $sets sets';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Sets per group';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Sets per muscle group over time, counted the same way as the list: a column per week, or per month over a year, oldest on the left. Darker is more; a dot means none. Tap a row for its numbers.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Week of $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }

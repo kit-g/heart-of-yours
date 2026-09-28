@@ -1914,4 +1914,130 @@ class LRu extends L {
 
   @override
   String get undo => 'Отменить';
+
+  @override
+  String get features => 'Функции';
+
+  @override
+  String get featuresFooter =>
+      'Дополнения, которые Heart показывает, только если вы их включите. Включайте и выключайте в любое время.';
+
+  @override
+  String get muscleMap => 'Карта мышц';
+
+  @override
+  String get muscleMapSubtitle => 'Подходы по группам мышц в вашем профиле';
+
+  @override
+  String get muscleMapOfferTitle => 'Смотреть, какие мышцы вы тренируете?';
+
+  @override
+  String get muscleMapOfferBody =>
+      'Карта тела в профиле, закрашенная по числу подходов на каждую группу мышц за последнее время.';
+
+  @override
+  String get turnOn => 'Включить';
+
+  @override
+  String get noThanks => 'Нет, спасибо';
+
+  @override
+  String get featureDeclinedNotice => 'Это всегда можно включить в настройках.';
+
+  @override
+  String get lastSevenDays => '7 дней';
+
+  @override
+  String get lastThirtyDays => '30 дней';
+
+  @override
+  String get muscleMapEmpty => 'За этот период подходов нет.';
+
+  @override
+  String get muscleMapFigure => 'Карта тела с подходами по группам мышц';
+
+  @override
+  String get muscleGroupGlutes => 'Ягодицы';
+
+  @override
+  String get muscleGroupHamstrings => 'Бицепс бедра';
+
+  @override
+  String get muscleGroupAdductors => 'Приводящие';
+
+  @override
+  String get muscleGroupNeck => 'Шея';
+
+  @override
+  String muscleMapUnmapped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода',
+      many: '$count подходов',
+      few: '$count подхода',
+      one: '$count подход',
+    );
+    return 'Не учтено: $_temp0 из упражнений без данных о мышцах';
+  }
+
+  @override
+  String get muscleMapWeekly => 'Подходы по неделям';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, подходы по неделям, с самой ранней: $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Подходы по месяцам';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, подходы по месяцам, с самого раннего: $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода',
+      many: '$count подходов',
+      few: '$count подхода',
+      one: '$count подход',
+      zero: 'нет подходов',
+    );
+    return '$group: $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group: $sets подхода';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Подходы по группам';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Каждая группа мышц закрашена по числу подходов за выбранный период: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Выполненные подходы по группам мышц за выбранный период. Подход засчитывается целиком основным мышцам упражнения и наполовину — вспомогательным: один подход жима лёжа добавляет 1 к груди и ½ к рукам.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Подходы по группам мышц во времени, посчитанные так же, как в списке: столбец — неделя, а за год — месяц, самые ранние слева. Темнее — больше; точка — ни одного. Нажмите на строку, чтобы увидеть числа.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Неделя с $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }

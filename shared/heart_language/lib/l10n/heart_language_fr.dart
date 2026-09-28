@@ -1893,4 +1893,126 @@ class LFr extends L {
 
   @override
   String get undo => 'Annuler';
+
+  @override
+  String get features => 'Fonctionnalités';
+
+  @override
+  String get featuresFooter =>
+      'Des extras que Heart n’affiche que si vous les activez. Activez-les ou désactivez-les à tout moment.';
+
+  @override
+  String get muscleMap => 'Carte musculaire';
+
+  @override
+  String get muscleMapSubtitle => 'Séries par groupe musculaire, sur votre profil';
+
+  @override
+  String get muscleMapOfferTitle => 'Voir quels muscles vous travaillez ?';
+
+  @override
+  String get muscleMapOfferBody =>
+      'Une carte du corps sur votre profil, colorée selon le nombre de séries de chaque groupe musculaire ces derniers temps.';
+
+  @override
+  String get turnOn => 'Activer';
+
+  @override
+  String get noThanks => 'Non merci';
+
+  @override
+  String get featureDeclinedNotice => 'Vous pourrez toujours l’activer dans les Réglages.';
+
+  @override
+  String get lastSevenDays => '7 jours';
+
+  @override
+  String get lastThirtyDays => '30 jours';
+
+  @override
+  String get muscleMapEmpty => 'Aucune série sur cette période.';
+
+  @override
+  String get muscleMapFigure => 'Carte du corps des séries par groupe musculaire';
+
+  @override
+  String get muscleGroupGlutes => 'Fessiers';
+
+  @override
+  String get muscleGroupHamstrings => 'Ischio-jambiers';
+
+  @override
+  String get muscleGroupAdductors => 'Adducteurs';
+
+  @override
+  String get muscleGroupNeck => 'Cou';
+
+  @override
+  String muscleMapUnmapped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count séries d’exercices sans données musculaires non comptées',
+      one: '1 série d’exercices sans données musculaires non comptée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get muscleMapWeekly => 'Séries par semaine';
+
+  @override
+  String muscleMapWeeklyRow(String group, String values) {
+    return '$group, séries par semaine, de la plus ancienne : $values';
+  }
+
+  @override
+  String get muscleMapMonthly => 'Séries par mois';
+
+  @override
+  String muscleMapMonthlyRow(String group, String values) {
+    return '$group, séries par mois, du plus ancien : $values';
+  }
+
+  @override
+  String muscleMapMuscleSets(String group, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count séries',
+      one: '1 série',
+      zero: 'aucune série',
+    );
+    return '$group : $_temp0';
+  }
+
+  @override
+  String muscleMapMuscleSetsFractional(String group, String sets) {
+    return '$group : $sets séries';
+  }
+
+  @override
+  String get muscleMapBreakdown => 'Séries par groupe';
+
+  @override
+  String get muscleMapFigureHelp =>
+      'Chaque groupe musculaire est coloré selon le nombre de séries reçues sur la période choisie : plus c’est foncé, plus il y en a. Touchez un muscle pour voir son nombre.';
+
+  @override
+  String get muscleMapBreakdownHelp =>
+      'Séries terminées par groupe musculaire sur la période choisie. Une série compte entièrement pour les muscles que l’exercice travaille surtout et pour moitié pour ceux qu’il sollicite aussi : une série de développé couché ajoute 1 aux Pectoraux et ½ aux Bras.';
+
+  @override
+  String get muscleMapHeatmapHelp =>
+      'Séries par groupe musculaire dans le temps, comptées comme dans la liste : une colonne par semaine, ou par mois sur un an, la plus ancienne à gauche. Plus foncé, c’est plus ; un point signifie aucune. Touchez une ligne pour voir ses nombres.';
+
+  @override
+  String muscleMapWeekOf(String week) {
+    return 'Semaine du $week';
+  }
+
+  @override
+  String muscleMapCellCaption(String period, String detail) {
+    return '$period · $detail';
+  }
 }
