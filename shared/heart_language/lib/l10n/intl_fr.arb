@@ -3442,5 +3442,228 @@
     "description": "Snackbar action that reverses what was just done",
     "type": "text",
     "placeholders": {}
+  },
+  "features": "Fonctionnalités",
+  "@features": {
+    "description": "Settings section title: the opt-in features the user can turn on and off",
+    "type": "text",
+    "placeholders": {}
+  },
+  "featuresFooter": "Des extras que Heart n’affiche que si vous les activez. Activez-les ou désactivez-les à tout moment.",
+  "@featuresFooter": {
+    "description": "Footnote under the Features section in Settings, explaining that these are opt-in",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMap": "Carte musculaire",
+  "@muscleMap": {
+    "description": "Name of the opt-in feature showing sets per muscle group on a body map; Settings switch title and profile card title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapSubtitle": "Séries par groupe musculaire, sur votre profil",
+  "@muscleMapSubtitle": {
+    "description": "Subtitle under the muscle map switch in Settings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapOfferTitle": "Voir quels muscles vous travaillez ?",
+  "@muscleMapOfferTitle": {
+    "description": "Title of the one-time card on the profile offering to turn on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapOfferBody": "Une carte du corps sur votre profil, colorée selon le nombre de séries de chaque groupe musculaire ces derniers temps.",
+  "@muscleMapOfferBody": {
+    "description": "Body of the one-time card offering the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "turnOn": "Activer",
+  "@turnOn": {
+    "description": "Button accepting an offer to turn a feature on",
+    "type": "text",
+    "placeholders": {}
+  },
+  "noThanks": "Non merci",
+  "@noThanks": {
+    "description": "Button declining an offer to turn a feature on; also the tooltip of the offer's close button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "featureDeclinedNotice": "Vous pourrez toujours l’activer dans les Réglages.",
+  "@featureDeclinedNotice": {
+    "description": "Shown once, after the user declines an optional feature",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lastSevenDays": "7 jours",
+  "@lastSevenDays": {
+    "description": "Period toggle on the muscle map: the last seven days",
+    "type": "text",
+    "placeholders": {}
+  },
+  "lastThirtyDays": "30 jours",
+  "@lastThirtyDays": {
+    "description": "Period toggle on the muscle map: the last thirty days",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapEmpty": "Aucune série sur cette période.",
+  "@muscleMapEmpty": {
+    "description": "Muscle map card when no completed sets fall in the chosen period",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapFigure": "Carte du corps des séries par groupe musculaire",
+  "@muscleMapFigure": {
+    "description": "Screen-reader label for the body figures on the muscle map; the list beside it carries the numbers",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupGlutes": "Fessiers",
+  "@muscleGroupGlutes": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupHamstrings": "Ischio-jambiers",
+  "@muscleGroupHamstrings": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupAdductors": "Adducteurs",
+  "@muscleGroupAdductors": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleGroupNeck": "Cou",
+  "@muscleGroupNeck": {
+    "description": "Muscle group name on the muscle map",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapUnmapped": "{count, plural, one{1 série d’exercices sans données musculaires non comptée} other{{count} séries d’exercices sans données musculaires non comptées}}",
+  "@muscleMapUnmapped": {
+    "description": "Note under the muscle map: completed sets from exercises that have no muscle tags (usually custom exercises), so they could not be placed",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "muscleMapWeekly": "Séries par semaine",
+  "@muscleMapWeekly": {
+    "description": "Heading of the weekly heatmap on the muscle map: sets per muscle group, one column per week",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapWeeklyRow": "{group}, séries par semaine, de la plus ancienne : {values}",
+  "@muscleMapWeeklyRow": {
+    "description": "Screen-reader summary and tooltip of one row of the muscle map's weekly heatmap. {values} is the sets per week, oldest first, comma-separated",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapMonthly": "Séries par mois",
+  "@muscleMapMonthly": {
+    "description": "Heading of the muscle map's heatmap when it shows a year: sets per muscle group, one column per month",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapMonthlyRow": "{group}, séries par mois, du plus ancien : {values}",
+  "@muscleMapMonthlyRow": {
+    "description": "Screen-reader summary and tooltip of one row of the muscle map's yearly heatmap. {values} is the sets per month, oldest first, comma-separated",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapMuscleSets": "{group} : {count, plural, =0{aucune série} one{1 série} other{{count} séries}}",
+  "@muscleMapMuscleSets": {
+    "description": "Tooltip when a muscle is tapped on the muscle map's body figures: its group and that group's sets in the chosen window (whole numbers)",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "muscleMapMuscleSetsFractional": "{group} : {sets} séries",
+  "@muscleMapMuscleSetsFractional": {
+    "description": "Same tooltip as muscleMapMuscleSets when the count has a half (secondary muscles count half a set); {sets} is already formatted, e.g. 2.5",
+    "type": "text",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "sets": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapBreakdown": "Séries par groupe",
+  "@muscleMapBreakdown": {
+    "description": "Title of the muscle map's list of sets per muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapFigureHelp": "Chaque groupe musculaire est coloré selon le nombre de séries reçues sur la période choisie : plus c’est foncé, plus il y en a. Touchez un muscle pour voir son nombre.",
+  "@muscleMapFigureHelp": {
+    "description": "Help tooltip on the muscle map's body figures",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapBreakdownHelp": "Séries terminées par groupe musculaire sur la période choisie. Une série compte entièrement pour les muscles que l’exercice travaille surtout et pour moitié pour ceux qu’il sollicite aussi : une série de développé couché ajoute 1 aux Pectoraux et ½ aux Bras.",
+  "@muscleMapBreakdownHelp": {
+    "description": "Help tooltip on the muscle map's list: how sets are counted per muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapHeatmapHelp": "Séries par groupe musculaire dans le temps, comptées comme dans la liste : une colonne par semaine, ou par mois sur un an, la plus ancienne à gauche. Plus foncé, c’est plus ; un point signifie aucune. Touchez une ligne pour voir ses nombres.",
+  "@muscleMapHeatmapHelp": {
+    "description": "Help tooltip on the muscle map's heatmap",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapWeekOf": "Semaine du {week}",
+  "@muscleMapWeekOf": {
+    "description": "Names one column of the muscle map's weekly heatmap in the caption under it; {week} is the week's Monday as a short date",
+    "type": "text",
+    "placeholders": {
+      "week": {
+        "type": "String"
+      }
+    }
+  },
+  "muscleMapCellCaption": "{period} · {detail}",
+  "@muscleMapCellCaption": {
+    "description": "Caption under the muscle map's heatmap for the tapped cell: {period} is the week or month (e.g. 'Week of 9/21'), {detail} the group and its sets (e.g. 'Chest: 4 sets')",
+    "type": "text",
+    "placeholders": {
+      "period": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -22,6 +22,7 @@ import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/presentation/widgets/avatar.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/feature_copy.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart' show ExerciseBadge;
 import 'package:heart/presentation/widgets/health/settings.dart';

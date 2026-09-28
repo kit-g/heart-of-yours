@@ -11,6 +11,8 @@ export 'src/charts.dart';
 export 'src/clear.dart';
 export 'src/exercises.dart';
 export 'src/export.dart';
+export 'src/feature_sync.dart';
+export 'src/features.dart';
 export 'src/goals.dart';
 export 'src/health.dart';
 export 'src/movement_filters.dart';

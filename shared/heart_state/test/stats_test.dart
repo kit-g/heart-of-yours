@@ -38,6 +38,15 @@ class RecordingStatsService implements LocalStatsService {
     totalCountCalls.add(userId);
     return totalCountToReturn;
   }
+
+  final List<(DateTime, DateTime, String?)> muscleSetsCalls = [];
+  List<MuscleSets> muscleSetsToReturn = [];
+
+  @override
+  Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to, {String? userId}) async {
+    muscleSetsCalls.add((from, to, userId));
+    return muscleSetsToReturn;
+  }
 }
 
 void main() {
@@ -112,6 +121,18 @@ void main() {
 
       expect(result, 5);
       expect(service.weeklyCountCalls, [when]);
+    });
+
+    test('getMuscleSets delegates with the user, and holds nothing or notifies', () async {
+      final from = DateTime(2026, 9, 1);
+      final to = DateTime(2026, 9, 8);
+      final rows = [(start: from, muscles: MuscleTagging.empty(), sets: 3)];
+      service.muscleSetsToReturn = rows;
+      stats.userId = 'u1';
+
+      expect(await stats.getMuscleSets(from, to), rows);
+      expect(service.muscleSetsCalls, [(from, to, 'u1')]);
+      expect(notifications, 0);
     });
   });
 
