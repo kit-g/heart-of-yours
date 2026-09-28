@@ -39,6 +39,8 @@ const _signInWithAppleChannel = MethodChannel('com.aboutyou.dart_packages.sign_i
 enum _Screen {
   onboarding,
   login,
+  signUp,
+  recovery,
   profile,
   muscleMapOffer,
   muscleMap,
@@ -50,6 +52,8 @@ enum _Screen {
   exercises,
   settings,
   anonymousSettings,
+  accountManagement,
+  newExerciseDialog,
   eraseDataDialog,
   importData,
   exportData,
@@ -119,6 +123,31 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'Google/Apple sign-in buttons are sized by the platform SDK widgets, below 44x44 — visual-density change, out of scope',
   ),
+
+  // Sign-up (lib/presentation/routes/login/sign_up.dart), reached from
+  // login's own "Sign up" link — plain text fields and buttons, no
+  // platform-SDK widgets.
+  (_Screen.signUp, _Guideline.labeledTapTarget, null),
+  (_Screen.signUp, _Guideline.textContrastLight, null),
+  (_Screen.signUp, _Guideline.textContrastDark, null),
+  (
+    _Screen.signUp,
+    _Guideline.androidTapTarget,
+    'the "Log in" link is sized to its text (117.5x42), below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.signUp,
+    _Guideline.iosTapTarget,
+    'the "Log in" link is sized to its text (117.5x42), below 44x44 — visual-density change, out of scope',
+  ),
+
+  // Password recovery (lib/presentation/routes/login/recovery.dart), reached
+  // from login's "Forgot password?" link.
+  (_Screen.recovery, _Guideline.labeledTapTarget, null),
+  (_Screen.recovery, _Guideline.textContrastLight, null),
+  (_Screen.recovery, _Guideline.textContrastDark, null),
+  (_Screen.recovery, _Guideline.androidTapTarget, null),
+  (_Screen.recovery, _Guideline.iosTapTarget, null),
 
   (_Screen.profile, _Guideline.labeledTapTarget, null),
   (_Screen.profile, _Guideline.textContrastLight, null),
@@ -273,6 +302,31 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'switch rows are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
+
+  // Account management (lib/presentation/routes/settings/account.dart),
+  // reached from Settings' "Account control" row for a signed-in,
+  // non-anonymous user.
+  (_Screen.accountManagement, _Guideline.labeledTapTarget, null),
+  (_Screen.accountManagement, _Guideline.textContrastLight, null),
+  (_Screen.accountManagement, _Guideline.textContrastDark, null),
+  (
+    _Screen.accountManagement,
+    _Guideline.androidTapTarget,
+    'the Name/email fields are inline text fields sized to their text (24pt tall), below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.accountManagement,
+    _Guideline.iosTapTarget,
+    'the Name/email fields are inline text fields sized to their text (24pt tall), below 44x44 — visual-density change, out of scope',
+  ),
+
+  // The new-exercise dialog (lib/presentation/widgets/exercises/new_exercise_dialog.dart),
+  // reached from the Exercises tab's options menu.
+  (_Screen.newExerciseDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.newExerciseDialog, _Guideline.textContrastLight, null),
+  (_Screen.newExerciseDialog, _Guideline.textContrastDark, null),
+  (_Screen.newExerciseDialog, _Guideline.androidTapTarget, null),
+  (_Screen.newExerciseDialog, _Guideline.iosTapTarget, null),
 
   // The erase-my-data confirmation over those settings
   // (lib/presentation/routes/settings/page.dart, _onEraseData).
@@ -557,8 +611,11 @@ void main() {
     final firebase = switch (screen) {
       _Screen.onboarding ||
       _Screen.login ||
+      _Screen.signUp ||
+      _Screen.recovery ||
       _Screen.noAccountDialog ||
       _Screen.anonymousSettings ||
+      _Screen.newExerciseDialog ||
       _Screen.eraseDataDialog => MockFirebaseAuth(signedIn: false),
       _ => MockFirebaseAuth(
         mockUser: MockUser(uid: 'u1', email: 'u1@test'),
@@ -602,6 +659,18 @@ void main() {
         await tester.tapByKey(AppKeys.noAccount);
         await tester.pumpTimes();
         await tester.tapByKey(AppKeys.noAccountLogIn);
+      case _Screen.signUp:
+        await tester.tapByKey(AppKeys.noAccount);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.noAccountLogIn);
+        await tester.pumpTimes();
+        await tester.tap(find.text('Sign up'));
+      case _Screen.recovery:
+        await tester.tapByKey(AppKeys.noAccount);
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.noAccountLogIn);
+        await tester.pumpTimes();
+        await tester.tap(find.text('Forgot password?'));
       case _Screen.exerciseNoteEditor:
         final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
         final workout = Workout(name: 'Notes')..add(exercise);
@@ -631,6 +700,16 @@ void main() {
         await tester.tapByKey(AppKeys.exercisesStack);
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
+      case _Screen.accountManagement:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.tap(find.text('Account control'));
+      case _Screen.newExerciseDialog:
+        await tester.tapByKey(AppKeys.exercisesStack);
+        await tester.pumpTimes();
+        await tester.tap(find.byTooltip('Exercise options'));
+        await tester.pumpTimes();
+        await tester.tap(find.text('New exercise'));
       case _Screen.eraseDataDialog:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
