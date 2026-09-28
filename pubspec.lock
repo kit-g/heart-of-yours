@@ -482,7 +482,7 @@ packages:
     source: hosted
     version: "0.15.2"
   firebase_auth_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: firebase_auth_platform_interface
       sha256: "9959a6e7338df4f725707a71fd9f727d8dfafd7c46cbaf59fcf7c8e94fb92d11"
@@ -756,10 +756,10 @@ packages:
     description:
       path: "shared/heart_models"
       ref: main
-      resolved-ref: "84c4a79f503919dfeb62c3aa5544fe80101f0b87"
+      resolved-ref: "9cc5770cc6c1aeddb9d2d22ea521804853cc437a"
       url: "https://github.com/kit-g/heart-api.git"
     source: git
-    version: "2.4.0"
+    version: "2.5.0"
   highlight:
     dependency: transitive
     description:
