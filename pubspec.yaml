@@ -45,7 +45,7 @@ dependencies:
       url: "https://github.com/kit-g/heart-api.git"
       path: "shared/heart_models"
       ref: "main"
-    version: 2.4.0
+    version: 2.5.0
   heart_state:
   # used directly by main.dart, which owns the app's one http.Client;
   # pinned to match shared/heart_api
@@ -77,6 +77,9 @@ dev_dependencies:
   # backs the fake share sheet in test/export_flow_test.dart
   share_plus_platform_interface: any
   firebase_auth_mocks: ^0.15.0
+  # backs the fake account details in test/account_management_test.dart and
+  # the fake password policy in test/sign_up_test.dart
+  firebase_auth_platform_interface: any
   flutter_launcher_icons: ^0.14.3
   flutter_test: { sdk: flutter }
   flutter_lints: ^6.0.0
