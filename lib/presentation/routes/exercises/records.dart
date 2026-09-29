@@ -330,8 +330,9 @@ class _RepMaxRow extends StatelessWidget {
           padding: const .symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              Text(l.repMaxCount(reps), style: textTheme.titleSmall),
-              const Spacer(),
+              // as in _LifetimeRow: the label gives way, the numbers don't
+              Expanded(child: Text(l.repMaxCount(reps), style: textTheme.titleSmall)),
+              const SizedBox(width: 12),
               Text(weight, style: textTheme.bodyLarge),
               const SizedBox(width: 12),
               Text(date, style: textTheme.bodySmall),
@@ -355,10 +356,12 @@ class _LifetimeRow extends StatelessWidget {
 
     return Padding(
       padding: const .symmetric(vertical: 4),
+      // the label gives way, not the number: a long label (or a long
+      // language) wraps under itself rather than pushing the value off-screen
       child: Row(
-        mainAxisAlignment: .spaceBetween,
         children: [
-          Text(name, style: textTheme.titleSmall),
+          Expanded(child: Text(name, style: textTheme.titleSmall)),
+          const SizedBox(width: 12),
           Text(value, style: textTheme.bodyMedium),
         ],
       ),
