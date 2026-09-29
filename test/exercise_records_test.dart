@@ -65,10 +65,6 @@ void main() {
       initialTab: 'records',
       state: state,
       onTapWorkout: (id) async => tapped = id,
-      // wider than the default phone width: the test font's metrics run
-      // wider than the app's for a couple of these lifetime rows, and a
-      // narrow phone isn't the point of this test
-      size: const Size(430, 900),
     );
     await tester.pumpAndSettle();
 
