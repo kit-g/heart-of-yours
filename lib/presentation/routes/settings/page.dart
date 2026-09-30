@@ -581,36 +581,112 @@ class const _FeaturesSection() extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
-    final preferences = Preferences.watch(context);
-    final ThemeData(
-      :textTheme,
-      colorScheme: ColorScheme(:tertiaryContainer, :onTertiaryContainer, :outlineVariant, :onSurfaceVariant),
-    ) = Theme.of(
-      context,
-    );
+    final ThemeData(:textTheme, colorScheme: ColorScheme(:onSurfaceVariant)) = Theme.of(context);
 
     return _Section(
       title: l.features,
       children: [
         for (final feature in Feature.values)
-          SwitchListTile.adaptive(
-            key: ValueKey('feature-${feature.value}'),
-            secondary: Icon(feature.icon),
-            title: Text(feature.title(l)),
-            subtitle: Text(feature.subtitle(l)),
-            value: preferences.isOn(feature),
-            // the lock-screen switch's colors: the accent as a fill, and a
-            // hairline track so "off" is still a visible control
-            activeTrackColor: tertiaryContainer,
-            activeThumbColor: onTertiaryContainer,
-            inactiveTrackColor: outlineVariant,
-            onChanged: (on) => preferences.setFeature(feature, on: on),
-          ),
+          switch (feature) {
+            // only where there is a watch with Heart on it
+            .watchApp => const _WatchAppSwitch(),
+            _ => _FeatureSwitch(feature),
+          },
         Padding(
           padding: const .symmetric(horizontal: 16),
           child: Text(l.featuresFooter, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
         ),
       ],
+    );
+  }
+}
+
+/// One feature's switch: the answer, always live, both ways.
+class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitched}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final preferences = Preferences.watch(context);
+    final ColorScheme(:tertiaryContainer, :onTertiaryContainer, :outlineVariant) = Theme.of(context).colorScheme;
+
+    return SwitchListTile.adaptive(
+      key: ValueKey('feature-${feature.value}'),
+      secondary: Icon(feature.icon),
+      title: Text(feature.title(l)),
+      subtitle: Text(feature.subtitle(l)),
+      value: preferences.isOn(feature),
+      // the lock-screen switch's colors: the accent as a fill, and a
+      // hairline track so "off" is still a visible control
+      activeTrackColor: tertiaryContainer,
+      activeThumbColor: onTertiaryContainer,
+      inactiveTrackColor: outlineVariant,
+      onChanged: (on) {
+        preferences.setFeature(feature, on: on);
+        onSwitched?.call();
+      },
+    );
+  }
+}
+
+/// The watch app's switch (#182) in Settings › Features.
+///
+/// Absent unless a paired watch has Heart installed — and it appears or goes
+/// while the page is open, as the watch is paired or the app added to it. Its
+/// value before the user has answered reads as off: the answer is opening
+/// Heart on the watch, which turns it on without passing through here.
+class _WatchAppSwitch extends StatefulWidget {
+  const new();
+
+  @override
+  State<_WatchAppSwitch> createState() => _WatchAppSwitchState();
+}
+
+class _WatchAppSwitchState extends State<_WatchAppSwitch> {
+  final _installed = ValueNotifier(false);
+  late final WatchLink? _link = switch (kIsWeb) {
+    false => watchLink(Theme.of(context).platform),
+    true => null,
+  };
+  StreamSubscription<WatchEvent>? _events;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_events != null) return;
+    if (_link case WatchLink link) {
+      _check(link);
+      _events = link.events.where((event) => event == .changed).listen((_) => _check(link));
+    }
+  }
+
+  Future<void> _check(WatchLink link) async {
+    final installed = await link.isInstalled();
+    if (mounted) _installed.value = installed;
+  }
+
+  @override
+  void dispose() {
+    _events?.cancel();
+    _installed.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _installed,
+      builder: (context, installed, _) {
+        return switch (installed) {
+          true => _FeatureSwitch(
+            .watchApp,
+            onSwitched: () {
+              final on = Preferences.of(context).isOn(.watchApp);
+              Analytics.of(context).watchAppSwitched(on: on, fromWatch: false);
+            },
+          ),
+          false => const SizedBox.shrink(),
+        };
+      },
     );
   }
 }

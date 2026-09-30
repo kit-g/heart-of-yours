@@ -3346,6 +3346,30 @@ abstract class L {
   /// **'Time, next set and rest while you train'**
   String get lockScreenWorkoutSubtitle;
 
+  /// Title of the Settings switch for the watch app, which mirrors the workout on the user's Apple Watch. The product name; keep it as Apple names it in the locale
+  ///
+  /// In en, this message translates to:
+  /// **'Apple Watch'**
+  String get watchApp;
+
+  /// Subtitle under the Apple Watch switch in Settings, saying what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Your workout on your wrist'**
+  String get watchAppSubtitle;
+
+  /// Shown on the Apple Watch when no workout is in progress. Short: it is a watch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Start a workout on your iPhone'**
+  String get watchAppIdle;
+
+  /// Shown on the Apple Watch when the user turned the watch app off in the phone's Settings. Short: it is a watch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Turned off in Heart on your iPhone'**
+  String get watchAppOff;
+
   /// Settings row and page title: every exercise that has a rest timer set, in one list
   ///
   /// In en, this message translates to:

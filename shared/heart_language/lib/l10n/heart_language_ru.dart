@@ -1930,6 +1930,18 @@ class LRu extends L {
   String get lockScreenWorkoutSubtitle => 'Время, следующий подход и отдых во время тренировки';
 
   @override
+  String get watchApp => 'Apple Watch';
+
+  @override
+  String get watchAppSubtitle => 'Тренировка на запястье';
+
+  @override
+  String get watchAppIdle => 'Начните тренировку на iPhone';
+
+  @override
+  String get watchAppOff => 'Отключено в Heart на iPhone';
+
+  @override
   String get restTimers => 'Таймеры отдыха';
 
   @override

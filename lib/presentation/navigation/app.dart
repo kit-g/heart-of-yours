@@ -7,6 +7,7 @@ import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/sentry.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
@@ -20,6 +21,7 @@ import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/navigation/watch.dart';
 import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
@@ -436,7 +438,15 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
               true => ongoingWorkoutSurface(Theme.of(context).platform),
               false => null,
             },
-            child: child ?? const SizedBox.shrink(),
+            child: WatchPresenter(
+              // the same gate, for tests and the web; the watch itself needs no
+              // notifications
+              link: switch (widget.hasLocalNotifications) {
+                true => watchLink(Theme.of(context).platform),
+                false => null,
+              },
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         ),
       ),

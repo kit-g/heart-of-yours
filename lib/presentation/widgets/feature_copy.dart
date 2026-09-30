@@ -8,18 +8,21 @@ extension FeatureCopy on Feature {
   String title(L l) {
     return switch (this) {
       .muscleMap => l.muscleMap,
+      .watchApp => l.watchApp,
     };
   }
 
   String subtitle(L l) {
     return switch (this) {
       .muscleMap => l.muscleMapSubtitle,
+      .watchApp => l.watchAppSubtitle,
     };
   }
 
   IconData get icon {
     return switch (this) {
       .muscleMap => Icons.accessibility_new_rounded,
+      .watchApp => Icons.watch_rounded,
     };
   }
 }

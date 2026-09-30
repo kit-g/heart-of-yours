@@ -8,6 +8,8 @@ import flutter_local_notifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // before anything else: the watch app may be what woke this process
+    WatchChannel.shared.activate()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -23,6 +25,9 @@ import flutter_local_notifications
 
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "OngoingWorkoutChannel") {
       OngoingWorkoutChannel.register(with: registrar.messenger())
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WatchChannel") {
+      WatchChannel.shared.register(with: registrar.messenger())
     }
   }
 }

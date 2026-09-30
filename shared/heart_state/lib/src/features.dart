@@ -8,7 +8,12 @@ import 'package:heart_models/heart_models.dart';
 /// asked" and ask again.
 enum Feature {
   /// Sets per muscle group on the body map, on the profile (#136).
-  muscleMap('muscleMap');
+  muscleMap('muscleMap'),
+
+  /// The workout on Apple Watch (#175). The one feature whose ask is not an
+  /// in-app offer: opening Heart on the watch for the first time is the yes
+  /// (`docs/opt-in.md`, *Precedent*).
+  watchApp('watchApp');
 
   final String value;
 
