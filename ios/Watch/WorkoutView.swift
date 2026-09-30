@@ -12,6 +12,12 @@ struct WorkoutView: View {
     @EnvironmentObject private var phone: PhoneSession
     @EnvironmentObject private var session: WorkoutSession
 
+    /// Wrist down, screen dimmed (#185) — only reachable while a workout
+    /// session keeps the app frontmost. What is worth a glance stays: where
+    /// the user is and how long the rest has left. The controls go, since
+    /// nothing can be tapped until the wrist comes up, and the rest dims.
+    @Environment(\.isLuminanceReduced) private var dimmed
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
@@ -48,7 +54,7 @@ struct WorkoutView: View {
                         .padding(.top, 4)
                 }
 
-                if let controls = workout.controls {
+                if let controls = workout.controls, !dimmed {
                     // absent, not dead: out of reach there is nothing a
                     // control could do, so there is none — only why
                     if phone.reachable {
@@ -68,6 +74,7 @@ struct WorkoutView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .opacity(dimmed ? 0.6 : 1)
         }
     }
 }

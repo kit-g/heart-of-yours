@@ -68,6 +68,9 @@ final class WatchChannel: NSObject {
                 let defaults = UserDefaults.standard
                 result(defaults.array(forKey: self.commandsKey) ?? [])
                 defaults.removeObject(forKey: self.commandsKey)
+            case "measures":
+                let workoutId = (call.arguments as? [String: Any])?["workoutId"] as? String
+                result(workoutId != nil && UserDefaults.standard.string(forKey: self.measuringKey) == workoutId)
             case "finish":
                 guard let arguments = call.arguments as? [String: Any],
                       let workoutId = arguments["workoutId"] as? String,

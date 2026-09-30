@@ -410,6 +410,9 @@ class _Link implements WatchLink {
   Future<bool> finish(String workoutId, {required DateTime end}) async => false;
 
   @override
+  Future<bool> measures(String workoutId) async => false;
+
+  @override
   Future<List<WatchCommand>> takeCommands() async {
     final taken = queued;
     queued = [];

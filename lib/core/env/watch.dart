@@ -239,6 +239,12 @@ abstract interface class WatchLink {
   /// A workout that ends any other way — cancelled — is never finished here,
   /// and the watch discards what it measured.
   Future<bool> finish(String workoutId, {required DateTime end});
+
+  /// Whether the watch is measuring [workoutId] with a workout session — and
+  /// so, awake with the wrist down, taps the wrist itself when a rest ends
+  /// (#185). The phone's rest notification would reach the same wrist a
+  /// second time; while this is true, the watch owns the tap.
+  Future<bool> measures(String workoutId);
 }
 
 /// The link for [platform], or null where there is no watch app.
@@ -298,6 +304,9 @@ class _WatchConnectivity implements WatchLink {
 
   @override
   Future<bool> isInstalled() => _ask('installed');
+
+  @override
+  Future<bool> measures(String workoutId) => _ask('measures', {'workoutId': workoutId});
 
   @override
   Future<bool> finish(String workoutId, {required DateTime end}) {
