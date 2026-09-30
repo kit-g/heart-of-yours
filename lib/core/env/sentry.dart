@@ -65,11 +65,19 @@ Future<http.Client> instrumentedClient({http.Client? inner}) async {
   return SentryHttpClient(client: client);
 }
 
+/// Whether reported errors are also printed. A debug run's console is where a
+/// developer reads them; a `flutter test` run is not, and there every mocked
+/// failure and simulated outage printed a full stack trace, burying the one
+/// line that says whether the suite passed. The app suite turns it off in
+/// `test/flutter_test_config.dart`.
+@visibleForTesting
+bool echoReportedErrors = true;
+
 Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
-  if (kDebugMode) {
-    print(exception);
+  if (kDebugMode && echoReportedErrors) {
+    debugPrint('$exception');
     if (stacktrace != null) {
-      print(stacktrace);
+      debugPrint('$stacktrace');
     }
   }
   // A request that never got an answer — offline, DNS, a socket closed under a
@@ -102,12 +110,12 @@ class const RedactedError(final Type original, final String domain) implements E
 /// Use this for anything touching [Health]; never pass a health error to
 /// [reportToSentry].
 Future<void> reportHealthFailure(dynamic exception, {dynamic stacktrace}) {
-  if (kDebugMode) {
+  if (kDebugMode && echoReportedErrors) {
     // Locally the full error is far more useful than a redacted one, and it
     // goes nowhere.
-    print(exception);
+    debugPrint('$exception');
     if (stacktrace != null) {
-      print(stacktrace);
+      debugPrint('$stacktrace');
     }
   }
   return Sentry.captureException(
