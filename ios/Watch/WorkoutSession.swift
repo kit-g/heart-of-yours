@@ -1,6 +1,7 @@
 import HealthKit
 import os
 import WatchConnectivity
+import WatchKit
 
 /// The watch's workout session for the workout the phone is running (#184):
 /// what makes Apple Watch measure heart rate and energy, keeps this app awake
@@ -28,6 +29,9 @@ final class WorkoutSession: NSObject, ObservableObject {
     @Published private(set) var heartRate: Double?
     /// Active energy since the session began, in kilocalories.
     @Published private(set) var energy: Double?
+    /// Whether a session is running — what decides who taps the wrist when a
+    /// rest ends.
+    @Published private(set) var measuring = false
 
     private let store = HKHealthStore()
     private var session: HKWorkoutSession?
@@ -85,6 +89,7 @@ final class WorkoutSession: NSObject, ObservableObject {
             try await builder.beginCollection(at: start)
             try? await session.startMirroringToCompanionDevice()
             tellPhone(["event": "measuring", "workoutId": workout.workoutId])
+            measuring = true
         } catch {
             log.error("Workout session failed to start: \(error.localizedDescription, privacy: .public)")
             discard()
@@ -133,6 +138,25 @@ final class WorkoutSession: NSObject, ObservableObject {
         }
     }
 
+    /// The rest the phone is counting ends at [end] (#185); nil for none.
+    ///
+    /// While a session runs, this app is awake with the wrist down and taps
+    /// the wrist itself when the rest is over — and the phone, told the watch
+    /// is measuring, does not schedule its own rest notification, which iOS
+    /// would forward to the same wrist. Without a session the watch cannot
+    /// wake to tap, so it leaves the rest to the phone's notification.
+    func rest(endingAt end: Date?) {
+        restAlarm?.cancel()
+        guard let end, session != nil, end > .now else { return }
+        restAlarm = Task {
+            try? await Task.sleep(for: .seconds(end.timeIntervalSinceNow))
+            guard !Task.isCancelled, self.session != nil else { return }
+            WKInterfaceDevice.current().play(.stop)
+        }
+    }
+
+    private var restAlarm: Task<Void, Never>?
+
     /// Ends the session without saving anything: cancelled, or never started.
     func discard() {
         session?.end()
@@ -146,6 +170,8 @@ final class WorkoutSession: NSObject, ObservableObject {
     private func clear() {
         heartRate = nil
         energy = nil
+        measuring = false
+        restAlarm?.cancel()
     }
 
     private func tellPhone(_ message: [String: Any]) {

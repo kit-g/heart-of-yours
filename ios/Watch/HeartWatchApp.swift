@@ -33,6 +33,10 @@ struct HeartWatchApp: App {
                         session.workoutEnded()
                     }
                 }
+                // the rest tap: the watch's while it measures, the phone's otherwise
+                .task(id: RestTrigger(end: phone.state.restEnd, measuring: session.measuring)) {
+                    session.rest(endingAt: phone.state.restEnd)
+                }
         }
     }
 }
@@ -50,6 +54,21 @@ private struct SessionTrigger: Equatable {
         default: nil
         }
         self.active = active
+    }
+}
+
+/// When the current rest ends, and whether the watch is the one to say so.
+private struct RestTrigger: Equatable {
+    let end: Date?
+    let measuring: Bool
+}
+
+private extension WatchState {
+    var restEnd: Date? {
+        switch self {
+        case .workout(let workout): workout.rest?.window.upperBound
+        default: nil
+        }
     }
 }
 
