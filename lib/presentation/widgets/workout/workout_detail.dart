@@ -7,6 +7,7 @@ import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart' show AsyncCallback;
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/assets.dart';
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';

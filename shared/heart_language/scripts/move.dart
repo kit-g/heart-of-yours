@@ -207,6 +207,7 @@ void runImport(ArgResults args) {
   }
 
   writeIosLocalizations(translations, Directory('../../ios/Runner'));
+  writeIosLocalizations(translations, Directory('../../ios/Watch'), healthKeys: watchHealthKeys);
   print('--- Import Complete (including iOS permission descriptions) ---');
 
   // Run flutter gen-l10n

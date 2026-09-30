@@ -76,7 +76,15 @@ final class PhoneSession: NSObject, ObservableObject {
     /// Counts commands, so a timeout or an error only clears its own.
     private var sent = 0
 
+    /// The phone finished a workout (#184): the workout id, and when it ended.
+    var onFinish: ((String, Date) -> Void)?
+
     private func apply(_ payload: [String: Any]) {
+        if payload["event"] as? String == "finish",
+           let workoutId = payload["workoutId"] as? String,
+           let end = payload["end"] as? NSNumber {
+            return onFinish?(workoutId, Date(timeIntervalSince1970: end.doubleValue / 1000)) ?? ()
+        }
         guard let state = WatchState(payload) else { return }
         // any state answers a pending command, even one identical to the last
         pending = false
@@ -117,6 +125,11 @@ extension PhoneSession: WCSessionDelegate {
 
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         Task { @MainActor in self.apply(message) }
+    }
+
+    /// The finish, queued by the phone so it arrives even out of reach.
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        Task { @MainActor in self.apply(userInfo) }
     }
 
     /// The phone came within reach: ask again, in case what the context holds

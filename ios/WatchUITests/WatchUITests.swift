@@ -10,7 +10,10 @@ import XCTest
 ///       -only-testing:WatchUITests/WatchUITests/testTickNextSet
 ///
 /// Neither `simctl` nor clicks on the Simulator window reach a watch app on
-/// this machine; XCUITest does, Digital Crown included.
+/// this machine; XCUITest does, Digital Crown included. What it cannot reach is
+/// Health's permission sheet (#184): a remote view, in no element tree, and a
+/// sheet dismissed by relaunching the app counts as declined — after which
+/// only erasing the simulator asks again. Tap through that one by hand.
 final class WatchUITests: XCTestCase {
     private let app = XCUIApplication()
 

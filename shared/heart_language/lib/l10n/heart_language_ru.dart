@@ -1914,6 +1914,9 @@ class LRu extends L {
   String get watchSetDone => 'Готово';
 
   @override
+  String get watchHeartRate => 'Пульс';
+
+  @override
   String get watchPhoneUnreachable => 'Поднесите iPhone ближе';
 
   @override

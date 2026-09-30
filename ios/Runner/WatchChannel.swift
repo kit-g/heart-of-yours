@@ -32,6 +32,11 @@ final class WatchChannel: NSObject {
     /// gone stale by then is dropped there, not here.
     private let commandsKey = "watch.pendingCommands"
 
+    /// The workout the watch is measuring with a workout session (#184), as the
+    /// watch reported it. Persisted: the phone app may be relaunched between
+    /// the session starting and the finish.
+    private let measuringKey = "watch.measuring"
+
     private var channel: FlutterMethodChannel?
 
     /// Callers that asked before the session finished activating.
@@ -63,6 +68,14 @@ final class WatchChannel: NSObject {
                 let defaults = UserDefaults.standard
                 result(defaults.array(forKey: self.commandsKey) ?? [])
                 defaults.removeObject(forKey: self.commandsKey)
+            case "finish":
+                guard let arguments = call.arguments as? [String: Any],
+                      let workoutId = arguments["workoutId"] as? String,
+                      let end = arguments["end"] as? NSNumber
+                else {
+                    return result(FlutterError(code: "bad_arguments", message: "finish needs a workout", details: nil))
+                }
+                self.whenActive { result(self.finish(workoutId, end: end)) }
             case "send":
                 guard let state = call.arguments as? [String: Any] else {
                     return result(FlutterError(code: "bad_arguments", message: "send needs a state", details: nil))
@@ -112,11 +125,33 @@ final class WatchChannel: NSObject {
         }
     }
 
+    /// Tells the watch that [workoutId] was finished, if it is the one the watch
+    /// is measuring: the watch then saves its workout to Health, and the answer
+    /// tells Dart not to write its own. Queued as user info as well as sent, so
+    /// a watch out of reach right now still hears it — a finish it never heard
+    /// would read as a cancel, and the measurement would be thrown away.
+    private func finish(_ workoutId: String, end: NSNumber) -> Bool {
+        let defaults = UserDefaults.standard
+        guard let session, defaults.string(forKey: measuringKey) == workoutId else { return false }
+        defaults.removeObject(forKey: measuringKey)
+
+        let finish: [String: Any] = ["event": "finish", "workoutId": workoutId, "end": end]
+        session.transferUserInfo(finish)
+        if session.isReachable {
+            session.sendMessage(finish, replyHandler: nil, errorHandler: nil)
+        }
+        return true
+    }
+
     private func received(_ message: [String: Any]) {
         guard let event = message["event"] as? String else { return }
         DispatchQueue.main.async {
             if event == "command" {
                 return self.forward(command: message)
+            }
+            if event == "measuring" {
+                UserDefaults.standard.set(message["workoutId"] as? String, forKey: self.measuringKey)
+                return
             }
             if event == "opened" {
                 // kept until Dart takes it: the channel may not exist yet, or

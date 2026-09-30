@@ -49,6 +49,13 @@ typedef WatchControls = ({
   String subtract,
   String reps,
   String unreachable,
+
+  /// Labels for what the watch's own workout session measures (#184). Only
+  /// the words cross over: the readings never leave the watch.
+  String heartRate,
+  String bpm,
+  String energy,
+  String kcal,
 });
 
 /// A workout is running: the same summary the lock screen shows, plus the set
@@ -58,12 +65,17 @@ final class WatchWorkout extends WatchState {
   final WatchSet? set;
   final WatchControls? controls;
 
-  const new(this.workout, {this.set, this.controls});
+  /// What the session is, as `WorkoutActivity` names it — what the watch's
+  /// workout session measures it as, and labels it with in Health (#184).
+  final String? activity;
+
+  const new(this.workout, {this.set, this.controls, this.activity});
 
   @override
   Map<String, Object?> toMap() {
     final OngoingWorkout(:workoutId, :startedAt, :title, :exercise, :next, :rest, :preset) = workout;
     return {
+      'activity': ?activity,
       if (set case WatchSet set) ...{
         'exerciseId': set.exerciseId,
         'setId': set.setId,
@@ -80,6 +92,10 @@ final class WatchWorkout extends WatchState {
         'subtract': controls.subtract,
         'repsLabel': controls.reps,
         'unreachable': controls.unreachable,
+        'heartRate': controls.heartRate,
+        'bpm': controls.bpm,
+        'energy': controls.energy,
+        'kcal': controls.kcal,
       },
       'state': 'workout',
       'workoutId': workoutId,
@@ -100,10 +116,14 @@ final class WatchWorkout extends WatchState {
 
   @override
   bool operator ==(Object other) =>
-      other is WatchWorkout && other.workout == workout && other.set == set && other.controls == controls;
+      other is WatchWorkout &&
+      other.workout == workout &&
+      other.set == set &&
+      other.controls == controls &&
+      other.activity == activity;
 
   @override
-  int get hashCode => Object.hash(workout, set, controls);
+  int get hashCode => Object.hash(workout, set, controls, activity);
 }
 
 /// Something the user did on the watch (#183): a request, never an edit. The
@@ -209,6 +229,16 @@ abstract interface class WatchLink {
   /// watch while the phone app was not running — oldest first. Asking clears
   /// them.
   Future<List<WatchCommand>> takeCommands();
+
+  /// [workoutId] was finished on the phone at [end] (#184). If the watch ran a
+  /// workout session for it, the watch saves that workout to Health — with the
+  /// heart rate and energy it measured — and this answers true, so the phone
+  /// does not write a second, unmeasured copy. False when the watch measured
+  /// nothing, and the phone writes as it always has.
+  ///
+  /// A workout that ends any other way — cancelled — is never finished here,
+  /// and the watch discards what it measured.
+  Future<bool> finish(String workoutId, {required DateTime end});
 }
 
 /// The link for [platform], or null where there is no watch app.
@@ -270,6 +300,11 @@ class _WatchConnectivity implements WatchLink {
   Future<bool> isInstalled() => _ask('installed');
 
   @override
+  Future<bool> finish(String workoutId, {required DateTime end}) {
+    return _ask('finish', {'workoutId': workoutId, 'end': end.millisecondsSinceEpoch});
+  }
+
+  @override
   Future<bool> takeOpened() => _ask('takeOpened');
 
   @override
@@ -283,9 +318,9 @@ class _WatchConnectivity implements WatchLink {
     }
   }
 
-  Future<bool> _ask(String method) async {
+  Future<bool> _ask(String method, [Map<String, Object?>? arguments]) async {
     try {
-      return await _channel.invokeMethod<bool>(method) ?? false;
+      return await _channel.invokeMethod<bool>(method, arguments) ?? false;
     } on MissingPluginException {
       return false;
     } on PlatformException catch (e, stacktrace) {

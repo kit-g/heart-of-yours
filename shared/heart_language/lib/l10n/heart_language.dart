@@ -3358,6 +3358,12 @@ abstract class L {
   /// **'Done'**
   String get watchSetDone;
 
+  /// Screen-reader label on the Apple Watch for the live heart rate its workout session measures
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate'**
+  String get watchHeartRate;
+
   /// Apple Watch line shown in place of the set controls while the phone is out of reach; logging needs it. Short: it is a watch screen
   ///
   /// In en, this message translates to:

@@ -20,8 +20,17 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Heart reads your heart rate and active energy on Apple Watch during a workout, to show them on your wrist. They stay on your devices — Heart never uploads them.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Heart saves each workout you track with Apple Watch to the Health app, with the heart rate and energy your watch measured, so your rings credit your training. Nothing leaves your devices.</string>
 	<key>WKApplication</key>
 	<true/>
+	<!-- keeps the app running, wrist down, while its workout session does (#184) -->
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+	</array>
 	<!-- Not a literal: `flutter build ios` finds a watch companion by reading this
 	     key from Watch/Info.plist and resolving it against Runner's build settings,
 	     which is why HOST_BUNDLE_IDENTIFIER is defined on both targets. Without the

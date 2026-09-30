@@ -10,6 +10,9 @@ import flutter_local_notifications
   ) -> Bool {
     // before anything else: the watch app may be what woke this process
     WatchChannel.shared.activate()
+    if #available(iOS 17.0, *) {
+      MirroredWorkout.shared.listen()
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

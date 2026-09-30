@@ -1886,6 +1886,9 @@ class LEn extends L {
   String get watchSetDone => 'Done';
 
   @override
+  String get watchHeartRate => 'Heart rate';
+
+  @override
   String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
 
   @override
@@ -3905,6 +3908,9 @@ class LEnCa extends LEn {
 
   @override
   String get watchSetDone => 'Done';
+
+  @override
+  String get watchHeartRate => 'Heart rate';
 
   @override
   String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
