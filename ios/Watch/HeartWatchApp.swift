@@ -13,6 +13,7 @@ struct HeartWatchApp: App {
     var body: some Scene {
         WindowGroup {
             PhoneStateView(state: phone.state)
+                .environmentObject(phone)
                 .task { phone.activate() }
         }
     }

@@ -71,11 +71,47 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     super.didChangeDependencies();
 
     l = L.of(context);
-    workouts = Workouts.of(context);
+    final current = Workouts.of(context);
+    if (!identical(current, _listened)) {
+      _listened?.removeListener(_syncFromSet);
+      _listened = current..addListener(_syncFromSet);
+    }
+    workouts = current;
+  }
+
+  /// The [Workouts] [_syncFromSet] listens to.
+  Workouts? _listened;
+
+  /// Brings the fields in line with the set when its values change under this
+  /// row — ticked from the watch with the numbers shown there (#183). The
+  /// fields are read into once, at first layout; without this they would go
+  /// on showing the old values, and the next edit would write them back.
+  ///
+  /// A field being typed into is left alone. The write is silent: each field's
+  /// listener stores what it holds, and a round trip through display rounding
+  /// would nudge the stored value (60 kg shown as 132.3 lb comes back 60.01).
+  void _syncFromSet() {
+    if (!mounted) return;
+    final prefs = Preferences.of(context);
+    _syncField(_weightController, _weightFocus, _weightListener, switch (set.weight) {
+      double weight => prefs.weight(weight, unit: _unitOverride),
+      null => null,
+    });
+    _syncField(_repsController, _repsFocus, _repsListener, set.reps?.toString());
+  }
+
+  void _syncField(TextEditingController field, FocusNode focus, VoidCallback listener, String? shown) {
+    if (shown == null || focus.hasFocus) return;
+    if (double.tryParse(field.text) == double.tryParse(shown)) return;
+    field
+      ..removeListener(listener)
+      ..text = shown
+      ..addListener(listener);
   }
 
   @override
   void dispose() {
+    _listened?.removeListener(_syncFromSet);
     _weightFocus.dispose();
     _repsFocus.dispose();
     _distanceFocus.dispose();
@@ -503,33 +539,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     );
   }
 
-  Future<void> _scheduleNotification(DateTime when) {
-    final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :kg, :lbs) = l;
-    final prefs = Preferences.of(context);
-    final next = workouts.nextIncomplete;
-    // Honour the next exercise's per-exercise unit, falling back to the global
-    // weight setting — the notification used to always emit the raw metric
-    // value with an "lbs" label regardless of preference.
-    final unit = switch (next?.$1.exercise.id) {
-      String id => Exercises.of(context).unitFor(id) ?? prefs.weightUnit,
-      null => prefs.weightUnit,
-    };
-    final body = switch (next?.$2) {
-      ExerciseSet(:double weight, :int reps) => weightedSetRepresentation(
-        '${prefs.weight(weight, unit: unit)} ${unit == MeasurementUnit.imperial ? lbs : kg}',
-        reps,
-      ),
-      _ => null,
-    };
-    final nextExercise = next?.$1 ?? exercise;
-    return scheduleExerciseNotification(
-      nextExercise.id,
-      when,
-      title: restComplete,
-      body: body,
-      subtitle: restCompleteBody(nextExercise.exercise.name),
-    );
-  }
+  Future<void> _scheduleNotification(DateTime when) => scheduleRestNotification(context, exercise, when);
 
   void _initTextControllers(BuildContext context) {
     final prefs = Preferences.of(context);

@@ -25,6 +25,13 @@ final class WatchChannel: NSObject {
     /// background for the message may be gone before Dart ever starts.
     private let openedKey = "watch.openedUnseen"
 
+    /// Commands from the watch (#183) that no Dart was listening for — the
+    /// message woke this process in the background, and the engine had not
+    /// started, or was not listening. Dart takes them once the active workout
+    /// is loaded; each names the workout and set it is about, so one that has
+    /// gone stale by then is dropped there, not here.
+    private let commandsKey = "watch.pendingCommands"
+
     private var channel: FlutterMethodChannel?
 
     /// Callers that asked before the session finished activating.
@@ -52,6 +59,10 @@ final class WatchChannel: NSObject {
                 let defaults = UserDefaults.standard
                 result(defaults.bool(forKey: self.openedKey))
                 defaults.removeObject(forKey: self.openedKey)
+            case "takeCommands":
+                let defaults = UserDefaults.standard
+                result(defaults.array(forKey: self.commandsKey) ?? [])
+                defaults.removeObject(forKey: self.commandsKey)
             case "send":
                 guard let state = call.arguments as? [String: Any] else {
                     return result(FlutterError(code: "bad_arguments", message: "send needs a state", details: nil))
@@ -104,6 +115,9 @@ final class WatchChannel: NSObject {
     private func received(_ message: [String: Any]) {
         guard let event = message["event"] as? String else { return }
         DispatchQueue.main.async {
+            if event == "command" {
+                return self.forward(command: message)
+            }
             if event == "opened" {
                 // kept until Dart takes it: the channel may not exist yet, or
                 // may belong to an engine that is not listening
@@ -111,6 +125,20 @@ final class WatchChannel: NSObject {
             }
             self.channel?.invokeMethod(event, arguments: nil)
         }
+    }
+
+    /// Hands a command to Dart, or keeps it if nothing there is listening.
+    private func forward(command: [String: Any]) {
+        guard let channel else { return keep(command) }
+        channel.invokeMethod("command", arguments: command) { [weak self] answer in
+            if (answer as? Bool) != true { self?.keep(command) }
+        }
+    }
+
+    private func keep(_ command: [String: Any]) {
+        let defaults = UserDefaults.standard
+        let kept = defaults.array(forKey: commandsKey) ?? []
+        defaults.set(kept + [command], forKey: commandsKey)
     }
 }
 
@@ -141,6 +169,13 @@ extension WatchChannel: WCSessionDelegate {
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         received(message)
+    }
+
+    /// A command, sent expecting an answer: the answer is only that it arrived.
+    /// What it did comes back as the next state, like every other change.
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        received(message)
+        replyHandler(["received": true])
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
