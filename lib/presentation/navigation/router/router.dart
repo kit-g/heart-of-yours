@@ -204,7 +204,15 @@ final class HeartRouter {
         break;
     }
 
-    if (Workouts.of(context).hasUnNotifiedActiveWorkout && state.fullPath != _donePath) {
+    // An active workout the user has not been shown: land on the workouts tab
+    // and open its sheet over it, once. Marked shown here, where the decision
+    // is made — it used to wait for WorkoutPage's first layout, and until then
+    // every navigation was rewritten to the tab, the sheet's own push
+    // included, each scheduling one more push: a stack of workouts pages and
+    // no sheet (test/router_test.dart). The sheet's route is never rewritten.
+    final workouts = Workouts.of(context);
+    if (workouts.hasUnNotifiedActiveWorkout && state.fullPath != _donePath && state.fullPath != _activeWorkoutPath) {
+      workouts.notifyOfActiveWorkout();
       Future.delayed(const Duration(milliseconds: 50)).then(
         (_) {
           _rootNavigatorKey.currentContext?.goToActiveWorkout();

@@ -305,6 +305,51 @@ void main() {
       expect(find.byType(WorkoutPage), findsOneWidget);
     });
 
+    testWidgets('an active workout opens its sheet over one workouts page, however often the router re-decides', (
+      tester,
+    ) async {
+      final firebase = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      );
+      final router = HeartRouter();
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: firebase,
+        router: router,
+        hasLocalNotifications: false,
+        settle: false,
+      );
+      await tester.pumpTimes();
+
+      // an active workout the user has not been shown yet — what a cold start
+      // with one in the mirror looks like
+      final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+      final workouts = Workouts.of(tester.element(find.byType(MaterialApp)));
+      await workouts.startWorkout(
+        source: .template,
+        template: Workout(name: 'Push')..add(bench),
+      );
+
+      // Every refresh re-runs the redirect: a sign-in, a theme change, a
+      // notification tap all do it. The redirect used to rewrite *every*
+      // navigation to the workouts tab while the workout was un-shown — the
+      // sheet's own push included — and schedule another sheet push, so each
+      // round stacked one more workouts page and the sheet never opened.
+      for (final _ in Iterable.generate(3)) {
+        router.refresh();
+        await tester.pumpTimes(4);
+      }
+
+      expect(find.byType(WorkoutPage, skipOffstage: false), findsOneWidget);
+      // the sheet is pushed, so it is on the stack rather than in the location
+      final stack = router.config.routerDelegate.currentConfiguration.matches;
+      expect(stack.where((match) => match.matchedLocation == '/activeWorkout'), hasLength(1));
+    });
+
     group('first-launch onboarding', () {
       /// A device that has never launched the app.
       setUp(() => SharedPreferences.setMockInitialValues({}));
