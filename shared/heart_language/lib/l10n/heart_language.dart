@@ -3352,6 +3352,18 @@ abstract class L {
   /// **'Turned off in Heart on your iPhone'**
   String get watchAppOff;
 
+  /// Apple Watch button that ticks off the set the user just did. One short word
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get watchSetDone;
+
+  /// Apple Watch line shown in place of the set controls while the phone is out of reach; logging needs it. Short: it is a watch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Bring your iPhone closer to log from here'**
+  String get watchPhoneUnreachable;
+
   /// Settings row and page title: every exercise that has a rest timer set, in one list
   ///
   /// In en, this message translates to:

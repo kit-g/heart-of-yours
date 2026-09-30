@@ -1889,6 +1889,12 @@ class LFr extends L {
   String get watchAppOff => 'Désactivé dans Heart sur votre iPhone';
 
   @override
+  String get watchSetDone => 'Terminé';
+
+  @override
+  String get watchPhoneUnreachable => 'Rapprochez votre iPhone pour noter d’ici';
+
+  @override
   String get restTimers => 'Minuteurs de repos';
 
   @override

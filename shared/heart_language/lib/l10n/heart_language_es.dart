@@ -1887,6 +1887,12 @@ class LEs extends L {
   String get watchAppOff => 'Desactivado en Heart en tu iPhone';
 
   @override
+  String get watchSetDone => 'Hecho';
+
+  @override
+  String get watchPhoneUnreachable => 'Acerca tu iPhone para registrar desde aquí';
+
+  @override
   String get restTimers => 'Temporizadores de descanso';
 
   @override

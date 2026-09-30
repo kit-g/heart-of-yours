@@ -3689,5 +3689,17 @@
     "description": "Shown on the Apple Watch when the user turned the watch app off in the phone's Settings. Short: it is a watch screen",
     "type": "text",
     "placeholders": {}
+  },
+  "watchSetDone": "Done",
+  "@watchSetDone": {
+    "description": "Apple Watch button that ticks off the set the user just did. One short word",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchPhoneUnreachable": "Bring your iPhone closer to log from here",
+  "@watchPhoneUnreachable": {
+    "description": "Apple Watch line shown in place of the set controls while the phone is out of reach; logging needs it. Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {}
   }
 }

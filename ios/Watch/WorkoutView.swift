@@ -1,13 +1,15 @@
 import SwiftUI
 
 /// The workout in progress, as the phone summarised it (#182): where the user
-/// is, what comes next, and the rest countdown.
+/// is, what comes next, the rest countdown — and the controls to log the next
+/// set and run the rest from here (#183).
 ///
 /// The clocks are instants, never counts: the countdown and the elapsed time
 /// tick here, natively, and the phone only speaks when something changes — the
 /// same contract as the lock screen's Live Activity (#133).
 struct WorkoutView: View {
     let workout: WatchState.Workout
+    @EnvironmentObject private var phone: PhoneSession
 
     var body: some View {
         ScrollView {
@@ -39,6 +41,25 @@ struct WorkoutView: View {
                 if let rest = workout.rest {
                     RestView(rest: rest, accent: workout.accent)
                         .padding(.top, 4)
+                }
+
+                if let controls = workout.controls {
+                    // absent, not dead: out of reach there is nothing a
+                    // control could do, so there is none — only why
+                    if phone.reachable {
+                        if workout.rest != nil {
+                            RestControls(workoutId: workout.workoutId, controls: controls)
+                        }
+                        if let set = workout.set {
+                            SetControls(workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent)
+                                .padding(.top, 4)
+                        }
+                    } else {
+                        Text(controls.unreachable)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -95,6 +116,119 @@ struct RestView: View {
     }
 }
 
+/// Shorter, longer, or over: the three things the phone's countdown offers.
+struct RestControls: View {
+    let workoutId: String
+    let controls: WatchState.Workout.Controls
+    @EnvironmentObject private var phone: PhoneSession
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button(controls.subtract) { phone.send(.adjustRest(workoutId: workoutId, seconds: -10)) }
+            Button(controls.add) { phone.send(.adjustRest(workoutId: workoutId, seconds: 10)) }
+            Button(controls.skip) { phone.send(.skipRest(workoutId: workoutId)) }
+        }
+        .font(.footnote)
+        .buttonStyle(.bordered)
+        .disabled(phone.pending)
+    }
+}
+
+/// The next set's values and its tick. The values start as the phone sent them
+/// and the Digital Crown moves whichever one is focused; they only become the
+/// set's when Done sends them — until the phone answers, nothing here claims
+/// the set is done.
+struct SetControls: View {
+    let workoutId: String
+    let set: WatchState.Workout.UpNext
+    let controls: WatchState.Workout.Controls
+    let accent: Color
+    @EnvironmentObject private var phone: PhoneSession
+
+    @State private var weight: Double = 0
+    @State private var reps: Double = 0
+    @FocusState private var focused: Field?
+
+    private enum Field { case weight, reps }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if set.weight != nil || set.reps != nil {
+                HStack(spacing: 6) {
+                    if set.weight != nil, let unit = set.unit {
+                        value(
+                            weight.formatted(.number.precision(.fractionLength(0...2))),
+                            unit: unit,
+                            field: .weight
+                        )
+                        .digitalCrownRotation($weight, from: 0, through: 1000, by: set.step, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true)
+                        .accessibilityAdjustableAction { direction in
+                            weight = max(0, weight + (direction == .increment ? set.step : -set.step))
+                        }
+                    }
+                    if set.reps != nil {
+                        value("\(Int(reps))", unit: controls.reps, field: .reps)
+                            .digitalCrownRotation($reps, from: 0, through: 200, by: 1, sensitivity: .low, isContinuous: false, isHapticFeedbackEnabled: true)
+                            .accessibilityAdjustableAction { direction in
+                                reps = max(0, reps + (direction == .increment ? 1 : -1))
+                            }
+                    }
+                }
+            }
+
+            if let previous = set.previous {
+                Text(previous)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
+                phone.send(.complete(
+                    workoutId: workoutId,
+                    setId: set.setId,
+                    weight: set.weight == nil ? nil : weight,
+                    reps: set.reps == nil ? nil : Int(reps)
+                ))
+            } label: {
+                if phone.pending {
+                    ProgressView()
+                } else {
+                    Text(controls.done)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(accent)
+            // a counted set needs a count; the phone would refuse it anyway
+            .disabled(phone.pending || (set.reps != nil && reps < 1))
+        }
+        // a new set — or the same set sent again with new values — starts over
+        .task(id: set) {
+            weight = set.weight ?? 0
+            reps = Double(set.reps ?? 0)
+        }
+    }
+
+    private func value(_ text: String, unit: String, field: Field) -> some View {
+        VStack(spacing: 0) {
+            Text(text)
+                .font(.system(.title3, design: .rounded).monospacedDigit())
+            Text(unit)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(focused == field ? accent : .clear, lineWidth: 2))
+        .focusable()
+        .focused($focused, equals: field)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(unit)
+        .accessibilityValue(text)
+    }
+}
+
 #Preview("Resting") {
     WorkoutView(workout: .init(
         workoutId: "w",
@@ -103,6 +237,9 @@ struct RestView: View {
         exercise: "Bench Press (Barbell)",
         next: "Next: set 2 · 62.5 kg x 5",
         rest: .init(window: Date.now.addingTimeInterval(-30)...Date.now.addingTimeInterval(60), label: "Rest", over: "Rest complete!"),
-        accent: .orange
+        accent: .orange,
+        set: .init(exerciseId: "e", setId: "s", weight: 62.5, reps: 5, unit: "kg", step: 2.5, previous: "Previous: 60 kg x 5"),
+        controls: .init(done: "Done", skip: "Skip", add: "+10s", subtract: "-10s", reps: "Reps", unreachable: "Bring your iPhone closer to log from here")
     ))
+    .environmentObject(PhoneSession())
 }

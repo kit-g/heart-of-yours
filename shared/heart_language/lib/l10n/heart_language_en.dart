@@ -1883,6 +1883,12 @@ class LEn extends L {
   String get watchAppOff => 'Turned off in Heart on your iPhone';
 
   @override
+  String get watchSetDone => 'Done';
+
+  @override
+  String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
+
+  @override
   String get restTimers => 'Rest timers';
 
   @override
@@ -3896,6 +3902,12 @@ class LEnCa extends LEn {
 
   @override
   String get watchAppOff => 'Turned off in Heart on your iPhone';
+
+  @override
+  String get watchSetDone => 'Done';
+
+  @override
+  String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
 
   @override
   String get restTimers => 'Rest timers';

@@ -1911,6 +1911,12 @@ class LRu extends L {
   String get watchAppOff => 'Отключено в Heart на iPhone';
 
   @override
+  String get watchSetDone => 'Готово';
+
+  @override
+  String get watchPhoneUnreachable => 'Поднесите iPhone ближе';
+
+  @override
   String get restTimers => 'Таймеры отдыха';
 
   @override

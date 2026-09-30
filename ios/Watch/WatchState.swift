@@ -23,6 +23,32 @@ enum WatchState: Equatable {
         var next: String
         var rest: Rest?
         var accent: Color
+        /// The set up next, which the watch can edit and tick (#183); nil when
+        /// every set is done.
+        var set: UpNext?
+        var controls: Controls?
+
+        struct UpNext: Equatable {
+            var exerciseId: String
+            var setId: String
+            /// In [unit], as the phone shows it; nil for a set without weight.
+            var weight: Double?
+            /// Nil for a set that counts neither — ticked as prescribed.
+            var reps: Int?
+            var unit: String?
+            /// One Digital Crown detent of weight.
+            var step: Double
+            var previous: String?
+        }
+
+        struct Controls: Equatable {
+            var done: String
+            var skip: String
+            var add: String
+            var subtract: String
+            var reps: String
+            var unreachable: String
+        }
 
         struct Rest: Equatable {
             var window: ClosedRange<Date>
@@ -62,6 +88,35 @@ enum WatchState: Equatable {
                 nil
             }
 
+            let set: Workout.UpNext? = switch (payload["exerciseId"] as? String, payload["setId"] as? String) {
+            case let (exerciseId?, setId?):
+                .init(
+                    exerciseId: exerciseId,
+                    setId: setId,
+                    weight: (payload["weight"] as? NSNumber)?.doubleValue,
+                    reps: (payload["reps"] as? NSNumber)?.intValue,
+                    unit: payload["unit"] as? String,
+                    step: (payload["step"] as? NSNumber)?.doubleValue ?? 1,
+                    previous: payload["previous"] as? String
+                )
+            default:
+                nil
+            }
+
+            let controls: Workout.Controls? = switch (
+                payload["done"] as? String,
+                payload["skip"] as? String,
+                payload["add"] as? String,
+                payload["subtract"] as? String,
+                payload["repsLabel"] as? String,
+                payload["unreachable"] as? String
+            ) {
+            case let (done?, skip?, add?, subtract?, reps?, unreachable?):
+                .init(done: done, skip: skip, add: add, subtract: subtract, reps: reps, unreachable: unreachable)
+            default:
+                nil
+            }
+
             self = .workout(.init(
                 workoutId: workoutId,
                 startedAt: startedAt,
@@ -69,7 +124,9 @@ enum WatchState: Equatable {
                 exercise: exercise,
                 next: next,
                 rest: rest,
-                accent: Color(argb: (payload["accent"] as? NSNumber)?.uint32Value ?? 0xFFFF_FFFF)
+                accent: Color(argb: (payload["accent"] as? NSNumber)?.uint32Value ?? 0xFFFF_FFFF),
+                set: set,
+                controls: controls
             ))
         default:
             return nil
