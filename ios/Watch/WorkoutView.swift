@@ -233,8 +233,9 @@ struct SetControls: View {
                 phone.send(.complete(
                     workoutId: workoutId,
                     setId: set.setId,
-                    weight: set.weight == nil ? nil : weight,
-                    reps: set.reps == nil ? nil : Int(reps)
+                    // only what this set takes: a reps-only set sends no weight
+                    weight: set.weight.map { _ in weight },
+                    reps: set.reps.map { _ in Int(reps) }
                 ))
             } label: {
                 if phone.pending {
