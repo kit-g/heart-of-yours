@@ -9,9 +9,12 @@
 /* Begin PBXBuildFile section */
 		0B25546D5014F1FDB08101FB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 49E6BD7A236918BFDFD4308F /* WidgetKit.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		1FC19F9C93BD234B0D260721 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6985315B679644CC274C045B /* Assets.xcassets */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		41FBC595987CCC732ACAC141 /* HeartWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F7BB5D5000B89E5C116949 /* HeartWatchApp.swift */; };
 		5C4D34528FE4A03F17A15945 /* OngoingWorkout.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AFE45389FAC94F87271C9E41 /* OngoingWorkout.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6033F3EDD0F33A6384ACCD98 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56E1291F767E8CBF491033F0 /* Foundation.framework */; };
 		72D04C271B451DC07C15ADEB /* OngoingWorkoutChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6626F08082B6A4307854C210 /* OngoingWorkoutChannel.swift */; };
 		730000000000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 730000000000000000000002 /* InfoPlist.strings */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
@@ -25,6 +28,7 @@
 		DA2FE7023D59B64576DB9856 /* OngoingWorkoutAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733AF7004A0E5D7C29F40C21 /* OngoingWorkoutAttributes.swift */; };
 		DAFD43D3D3BBD91C867B2544 /* OngoingWorkoutLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D104CFDB124801058D590F5E /* OngoingWorkoutLiveActivity.swift */; };
 		E1D03F3355172F8BF9A6D261 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C036B1B730C13C9F2F94BDE4 /* Foundation.framework */; };
+		F01213153BE2EEE6E87B1099 /* Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = FDF3F4CD8F30591F05A41007 /* Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F551872CB324653080A0F356 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3C40913D963F97A8F864DDB /* ActivityKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 /* End PBXBuildFile section */
 
@@ -35,6 +39,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		63A38E2A7035975773CABE04 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 91E1E6DD8E9B9826B41C7846;
+			remoteInfo = Watch;
 		};
 		D642833AF87B36B468795939 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -67,6 +78,17 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F7B556B493769B7343BFBECC /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				F01213153BE2EEE6E87B1099 /* Watch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -78,8 +100,11 @@
 		376A9E24CF6650B373DCDA51 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		444E54752D39B17000E6D520 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		45688B0330FD6385D1E8267C /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		49E6BD7A236918BFDFD4308F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		56E1291F767E8CBF491033F0 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		6626F08082B6A4307854C210 /* OngoingWorkoutChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OngoingWorkoutChannel.swift; sourceTree = "<group>"; };
+		6985315B679644CC274C045B /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		730000000000000000000003 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		730000000000000000000004 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		730000000000000000000005 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -98,9 +123,11 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AFE45389FAC94F87271C9E41 /* OngoingWorkout.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OngoingWorkout.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2F7BB5D5000B89E5C116949 /* HeartWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeartWatchApp.swift; sourceTree = "<group>"; };
 		C036B1B730C13C9F2F94BDE4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		D104CFDB124801058D590F5E /* OngoingWorkoutLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OngoingWorkoutLiveActivity.swift; sourceTree = "<group>"; };
 		D3C40913D963F97A8F864DDB /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
+		FDF3F4CD8F30591F05A41007 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +135,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3C3B70E4CCA7BD6078B2479B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6033F3EDD0F33A6384ACCD98 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -156,6 +191,14 @@
 			name = iOS;
 			sourceTree = "<group>";
 		};
+		901FF93802BD7E9D1DFACF83 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				56E1291F767E8CBF491033F0 /* Foundation.framework */,
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
 			isa = PBXGroup;
 			children = (
@@ -178,6 +221,7 @@
 				1E2CC660319B9E078E037EC9 /* Pods */,
 				AFD1F0049FDF442C8FC764C1 /* Frameworks */,
 				E2610B1BE83AE622C5E189F3 /* OngoingWorkout */,
+				FF963BB04FF1B8B3642660DC /* Watch */,
 			);
 			sourceTree = "<group>";
 		};
@@ -187,6 +231,7 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				AFE45389FAC94F87271C9E41 /* OngoingWorkout.appex */,
+				FDF3F4CD8F30591F05A41007 /* Watch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -217,6 +262,7 @@
 				49E6BD7A236918BFDFD4308F /* WidgetKit.framework */,
 				376A9E24CF6650B373DCDA51 /* SwiftUI.framework */,
 				D3C40913D963F97A8F864DDB /* ActivityKit.framework */,
+				901FF93802BD7E9D1DFACF83 /* watchOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -230,6 +276,17 @@
 			);
 			name = OngoingWorkout;
 			path = OngoingWorkout;
+			sourceTree = "<group>";
+		};
+		FF963BB04FF1B8B3642660DC /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				B2F7BB5D5000B89E5C116949 /* HeartWatchApp.swift */,
+				6985315B679644CC274C045B /* Assets.xcassets */,
+				45688B0330FD6385D1E8267C /* Info.plist */,
+			);
+			name = Watch;
+			path = Watch;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -270,6 +327,23 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		91E1E6DD8E9B9826B41C7846 /* Watch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 576A9E5218DC1F3CC9A8373E /* Build configuration list for PBXNativeTarget "Watch" */;
+			buildPhases = (
+				E56F3D3B72A517370327A5AB /* Sources */,
+				3C3B70E4CCA7BD6078B2479B /* Frameworks */,
+				758BB20C00D40A3BA855DCFC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Watch;
+			productName = Watch;
+			productReference = FDF3F4CD8F30591F05A41007 /* Watch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -281,12 +355,14 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				5E5943BCDEEC61A29EB395F4 /* Embed Foundation Extensions */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				F7B556B493769B7343BFBECC /* Embed Watch Content */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				B0B10BE3BD2AB66FD150AC2B /* PBXTargetDependency */,
+				2DB23E19751C419A8FDB96D6 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -338,6 +414,7 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				0DD0E1AF06E9B0FD867A9371 /* OngoingWorkout */,
+				91E1E6DD8E9B9826B41C7846 /* Watch */,
 			);
 		};
 /* End PBXProject section */
@@ -347,6 +424,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		758BB20C00D40A3BA855DCFC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1FC19F9C93BD234B0D260721 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -453,9 +538,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E56F3D3B72A517370327A5AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				41FBC595987CCC732ACAC141 /* HeartWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		2DB23E19751C419A8FDB96D6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Watch;
+			target = 91E1E6DD8E9B9826B41C7846 /* Watch */;
+			targetProxy = 63A38E2A7035975773CABE04 /* PBXContainerItemProxy */;
+		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
@@ -565,6 +664,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -694,6 +794,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -797,6 +898,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -901,6 +1003,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Heart;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1006,6 +1109,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.340497087616-ictmi0n3e0ut4ef1o66onisu7ecrsp3a";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Heart;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1109,6 +1213,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1169,6 +1274,70 @@
 			};
 			name = "Debug-prod";
 		};
+		58082A704EDF3BD561C7C64D /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = "Heart dev";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		7628AF51B25FC22D38B34CE2 /* Release-dev */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = "Heart dev";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = "Release-dev";
+		};
 		8075B69E4920D1B73F1252D1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
@@ -1195,6 +1364,71 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
+		};
+		812B7858570393052DC38508 /* Debug-dev */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = "Heart dev";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = "Debug-dev";
+		};
+		88ACA86D9813C84693BE236B /* Release-prod */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-prod";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = Heart;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = "Release-prod";
 		};
 		8BFF1BB2B783C91324B5E051 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1223,6 +1457,71 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
+		};
+		8E5F826C57A507BEE8FBE0B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = "Heart dev";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		9050CF2493C0EEBA538EDF05 /* Profile-dev */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = "Heart dev";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = "Profile-dev";
 		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1350,6 +1649,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1382,6 +1682,7 @@
 				ENABLE_BITCODE = NO;
 				GOOGLE_CLIENT_ID = "547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.547445170683-n2q14s16k02gmeb3b4bnhih4r9mif77v";
+				HOST_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Heart dev";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
@@ -1453,6 +1754,38 @@
 			};
 			name = "Profile-dev";
 		};
+		C03760E72A36E00EF9C50F08 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-dev";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = "Heart dev";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
 		E68D8CF3D9A128BA2C134496 /* Debug-dev */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
@@ -1478,6 +1811,39 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = "Debug-dev";
+		};
+		E7AB9F64A481A4DC4E2BC6E7 /* Debug-prod */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-prod";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = DFX2JYT8BM;
+				DISPLAY_NAME = Heart;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios";
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HOST_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = "Debug-prod";
 		};
 		F7F6F60F66E0D536CADCA1DD /* Profile */ = {
 			isa = XCBuildConfiguration;
@@ -1564,6 +1930,21 @@
 				442A2D142D4AE35E00DCEC22 /* Release-prod */,
 				331C808A294A63A400263BE5 /* Profile */,
 				44031CC72DB07694001B7F11 /* Profile-dev */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		576A9E5218DC1F3CC9A8373E /* Build configuration list for PBXNativeTarget "Watch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E5F826C57A507BEE8FBE0B4 /* Debug */,
+				812B7858570393052DC38508 /* Debug-dev */,
+				E7AB9F64A481A4DC4E2BC6E7 /* Debug-prod */,
+				58082A704EDF3BD561C7C64D /* Release */,
+				7628AF51B25FC22D38B34CE2 /* Release-dev */,
+				88ACA86D9813C84693BE236B /* Release-prod */,
+				C03760E72A36E00EF9C50F08 /* Profile */,
+				9050CF2493C0EEBA538EDF05 /* Profile-dev */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
