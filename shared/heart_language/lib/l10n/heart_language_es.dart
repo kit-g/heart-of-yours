@@ -1917,6 +1917,9 @@ class LEs extends L {
   String get watchSetDone => 'Hecho';
 
   @override
+  String get watchHeartRate => 'Frecuencia cardíaca';
+
+  @override
   String get watchPhoneUnreachable => 'Acerca tu iPhone para registrar desde aquí';
 
   @override

@@ -10,6 +10,7 @@ import SwiftUI
 struct WorkoutView: View {
     let workout: WatchState.Workout
     @EnvironmentObject private var phone: PhoneSession
+    @EnvironmentObject private var session: WorkoutSession
 
     var body: some View {
         ScrollView {
@@ -23,6 +24,10 @@ struct WorkoutView: View {
                     Text(workout.startedAt, style: .timer)
                         .font(.footnote.monospacedDigit())
                         .foregroundStyle(.secondary)
+                }
+
+                if let controls = workout.controls, session.workoutId == workout.workoutId {
+                    Vitals(heartRate: session.heartRate, energy: session.energy, controls: controls)
                 }
 
                 if !workout.exercise.isEmpty {
@@ -64,6 +69,41 @@ struct WorkoutView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+/// What the watch's workout session measures (#184), as it measures it. Only
+/// while Heart's own session runs — absent before the first reading, and for a
+/// user who declined Health access, so it never shows a dash for "unknown".
+struct Vitals: View {
+    let heartRate: Double?
+    let energy: Double?
+    let controls: WatchState.Workout.Controls
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if let heartRate {
+                HStack(spacing: 3) {
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.red)
+                    Text("\(Int(heartRate.rounded())) \(controls.bpm)")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(controls.heartRate)
+                .accessibilityValue("\(Int(heartRate.rounded())) \(controls.bpm)")
+            }
+            if let energy {
+                HStack(spacing: 3) {
+                    Image(systemName: "flame.fill")
+                        .foregroundStyle(.orange)
+                    Text("\(Int(energy.rounded())) \(controls.kcal)")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(controls.energy)
+                .accessibilityValue("\(Int(energy.rounded())) \(controls.kcal)")
+            }
+        }
+        .font(.footnote.monospacedDigit())
     }
 }
 
@@ -239,7 +279,20 @@ struct SetControls: View {
         rest: .init(window: Date.now.addingTimeInterval(-30)...Date.now.addingTimeInterval(60), label: "Rest", over: "Rest complete!"),
         accent: .orange,
         set: .init(exerciseId: "e", setId: "s", weight: 62.5, reps: 5, unit: "kg", step: 2.5, previous: "Previous: 60 kg x 5"),
-        controls: .init(done: "Done", skip: "Skip", add: "+10s", subtract: "-10s", reps: "Reps", unreachable: "Bring your iPhone closer to log from here")
+        controls: .init(
+            done: "Done",
+            skip: "Skip",
+            add: "+10s",
+            subtract: "-10s",
+            reps: "Reps",
+            unreachable: "Bring your iPhone closer to log from here",
+            heartRate: "Heart rate",
+            bpm: "bpm",
+            energy: "Active energy",
+            kcal: "kcal"
+        ),
+        activity: "strength"
     ))
     .environmentObject(PhoneSession())
+    .environmentObject(WorkoutSession())
 }

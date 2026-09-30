@@ -266,6 +266,12 @@ Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   // See [Health.recordWorkout].
   final mayAsk = Preferences.of(context).healthAsked(health.userId);
 
+  // The watch app, if it is on (#184): read here for the same reason as health.
+  final watch = switch (Preferences.of(context).isOn(.watchApp)) {
+    true => watchLink(Theme.of(context).platform),
+    _ => null,
+  };
+
   // **The session this device holds, not the one the finish resolves to.**
   //
   // `finishActiveWorkout` completes with the server's copy, because the server
@@ -283,6 +289,16 @@ Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   context.goToWorkoutDone(workouts.activeWorkout?.id);
   cancelAllNotifications();
 
+  // Told before the finish, not after it: the finish clears the active workout,
+  // the watch hears "no workout" at once, and a workout session that ends
+  // without being told it was finished is thrown away as a cancel. The answer
+  // is whether the watch measured this session — then it saves the workout, and
+  // the phone must not write a second, unmeasured one beside it.
+  final measured = switch ((watch, session)) {
+    (WatchLink watch, Workout session) => watch.finish(session.id, end: DateTime.now()),
+    _ => Future.value(false),
+  };
+
   final finishing = workouts.finishActiveWorkout();
 
   // Mirror the session into the device's health store — deliberately not
@@ -295,7 +311,7 @@ Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   unawaited(
     finishing.then(
       (_) async {
-        if (session case Workout finished) {
+        if (session case Workout finished when !await measured) {
           // The name is copy, and this is the layer that owns it.
           await health.recordWorkout(finished, title: finished.name, mayAsk: mayAsk);
         }

@@ -9,13 +9,47 @@ import SwiftUI
 @main
 struct HeartWatchApp: App {
     @StateObject private var phone = PhoneSession()
+    @StateObject private var session = WorkoutSession()
+    @Environment(\.scenePhase) private var phase
 
     var body: some Scene {
         WindowGroup {
             PhoneStateView(state: phone.state)
                 .environmentObject(phone)
-                .task { phone.activate() }
+                .environmentObject(session)
+                .task {
+                    phone.onFinish = { [session] workoutId, end in session.finish(workoutId, end: end) }
+                    phone.activate()
+                }
+                // the workout session starts only with Heart on screen during a
+                // workout — see `WorkoutSession` for why never otherwise
+                .task(id: SessionTrigger(state: phone.state, active: phase == .active)) {
+                    switch phone.state {
+                    case .workout(let workout) where phase == .active:
+                        await session.start(workout)
+                    case .workout:
+                        break
+                    case .idle, .off, .awaiting:
+                        session.workoutEnded()
+                    }
+                }
         }
+    }
+}
+
+/// What decides whether the workout session should run: which workout, and
+/// whether Heart is on screen. Not the whole state — a ticked set is no reason
+/// to look again.
+private struct SessionTrigger: Equatable {
+    let workoutId: String?
+    let active: Bool
+
+    init(state: WatchState, active: Bool) {
+        self.workoutId = switch state {
+        case .workout(let workout): workout.workoutId
+        default: nil
+        }
+        self.active = active
     }
 }
 

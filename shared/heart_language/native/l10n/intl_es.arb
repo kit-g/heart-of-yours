@@ -11,5 +11,17 @@
     "description": "iOS Health permission sheet: NSHealthUpdateUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
     "type": "text",
     "placeholders": {}
+  },
+  "iosWatchHealthShareUsageDescription": "Heart lee tu frecuencia cardíaca y tu energía activa en el Apple Watch durante un entrenamiento para mostrarlas en tu muñeca. Se quedan en tus dispositivos: Heart nunca las sube a ningún servidor.",
+  "@iosWatchHealthShareUsageDescription": {
+    "description": "Apple Watch Health permission sheet: NSHealthShareUsageDescription of the watch app. Policy text: says exactly what is read and that it never leaves the user's devices. Generated into ios/Watch on translation import.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosWatchHealthUpdateUsageDescription": "Heart guarda en la app Salud cada entrenamiento que registras con el Apple Watch, con la frecuencia cardíaca y la energía que midió tu reloj, para que cuente para tus anillos de actividad. Ningún dato sale de tus dispositivos.",
+  "@iosWatchHealthUpdateUsageDescription": {
+    "description": "Apple Watch Health permission sheet: NSHealthUpdateUsageDescription of the watch app. Policy text: says exactly what is written. Generated into ios/Watch on translation import.",
+    "type": "text",
+    "placeholders": {}
   }
 }

@@ -244,7 +244,10 @@ void main() {
       expect(set.reps, 5);
       expect(set.unit, 'lbs');
       expect(set.step, 5);
-      expect((link.sent.last as WatchWorkout).controls?.done, 'Done');
+      final sent = link.sent.last as WatchWorkout;
+      expect(sent.controls?.done, 'Done');
+      expect(sent.controls?.bpm, 'bpm', reason: 'the words for what the watch measures travel; readings never do');
+      expect(sent.activity, 'strength');
     });
 
     testWidgets('a tick from the watch goes through Workouts, with the values it showed', (tester) async {
@@ -368,9 +371,10 @@ void main() {
       rest: (start: start, end: start.add(const Duration(seconds: 90)), label: 'Rest', over: 'Rest complete!'),
       preset: .forge,
       channel: 'Workout in progress',
-    ));
+    ), activity: 'strength');
 
     final map = state.toMap();
+    expect(map['activity'], 'strength', reason: 'what the watch measures the session as (#184)');
     expect(map['state'], 'workout');
     expect(map['startedAt'], start.millisecondsSinceEpoch);
     expect(map['restEnd'], start.add(const Duration(seconds: 90)).millisecondsSinceEpoch);
@@ -401,6 +405,9 @@ class _Link implements WatchLink {
 
   @override
   Stream<WatchCommand> get commands => _commands.stream;
+
+  @override
+  Future<bool> finish(String workoutId, {required DateTime end}) async => false;
 
   @override
   Future<List<WatchCommand>> takeCommands() async {

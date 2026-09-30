@@ -10,5 +10,17 @@
     "description": "iOS Health permission sheet: NSHealthUpdateUsageDescription. Native InfoPlist.strings and the English plist fallback are generated on translation import.",
     "type": "text",
     "placeholders": {}
+  },
+  "iosWatchHealthShareUsageDescription": "Heart reads your heart rate and active energy on Apple Watch during a workout, to show them on your wrist. They stay on your devices — Heart never uploads them.",
+  "@iosWatchHealthShareUsageDescription": {
+    "description": "Apple Watch Health permission sheet: NSHealthShareUsageDescription of the watch app. Policy text: says exactly what is read and that it never leaves the user's devices. Generated into ios/Watch on translation import.",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosWatchHealthUpdateUsageDescription": "Heart saves each workout you track with Apple Watch to the Health app, with the heart rate and energy your watch measured, so your rings credit your training. Nothing leaves your devices.",
+  "@iosWatchHealthUpdateUsageDescription": {
+    "description": "Apple Watch Health permission sheet: NSHealthUpdateUsageDescription of the watch app. Policy text: says exactly what is written. Generated into ios/Watch on translation import.",
+    "type": "text",
+    "placeholders": {}
   }
 }

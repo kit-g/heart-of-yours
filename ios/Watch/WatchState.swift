@@ -27,6 +27,8 @@ enum WatchState: Equatable {
         /// every set is done.
         var set: UpNext?
         var controls: Controls?
+        /// `WorkoutActivity`'s name for the session (#184).
+        var activity: String?
 
         struct UpNext: Equatable {
             var exerciseId: String
@@ -48,6 +50,10 @@ enum WatchState: Equatable {
             var subtract: String
             var reps: String
             var unreachable: String
+            var heartRate: String
+            var bpm: String
+            var energy: String
+            var kcal: String
         }
 
         struct Rest: Equatable {
@@ -103,16 +109,23 @@ enum WatchState: Equatable {
                 nil
             }
 
+            func text(_ key: String) -> String? { payload[key] as? String }
             let controls: Workout.Controls? = switch (
-                payload["done"] as? String,
-                payload["skip"] as? String,
-                payload["add"] as? String,
-                payload["subtract"] as? String,
-                payload["repsLabel"] as? String,
-                payload["unreachable"] as? String
+                text("done"), text("skip"), text("add"), text("subtract"), text("repsLabel"), text("unreachable")
             ) {
             case let (done?, skip?, add?, subtract?, reps?, unreachable?):
-                .init(done: done, skip: skip, add: add, subtract: subtract, reps: reps, unreachable: unreachable)
+                .init(
+                    done: done,
+                    skip: skip,
+                    add: add,
+                    subtract: subtract,
+                    reps: reps,
+                    unreachable: unreachable,
+                    heartRate: text("heartRate") ?? "",
+                    bpm: text("bpm") ?? "",
+                    energy: text("energy") ?? "",
+                    kcal: text("kcal") ?? ""
+                )
             default:
                 nil
             }
@@ -126,7 +139,8 @@ enum WatchState: Equatable {
                 rest: rest,
                 accent: Color(argb: (payload["accent"] as? NSNumber)?.uint32Value ?? 0xFFFF_FFFF),
                 set: set,
-                controls: controls
+                controls: controls,
+                activity: payload["activity"] as? String
             ))
         default:
             return nil
