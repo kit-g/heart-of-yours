@@ -337,6 +337,17 @@ void main() {
       expect(workout.first.first.isCompleted, isTrue);
     });
 
+    testWidgets('Finish from the wrist is ignored while a set is still open', (tester) async {
+      await running(tester);
+      final before = link.sent.length;
+
+      link.command(WatchFinishWorkout(workout.id));
+      await tester.pump();
+
+      expect(workouts.activeWorkout, isNotNull, reason: 'what is left unticked is the phone to ask about');
+      expect(link.sent.length, before + 1, reason: 'the watch is answered with the state that stands');
+    });
+
     testWidgets('switched off, commands are ignored', (tester) async {
       await running(tester);
       preferences.setFeature(.watchApp, on: false);
@@ -356,6 +367,7 @@ void main() {
     );
     expect(WatchCommand.fromMap({'action': 'adjustRest', 'workoutId': 'w', 'seconds': -10}), isA<WatchAdjustRest>());
     expect(WatchCommand.fromMap({'action': 'skipRest', 'workoutId': 'w'}), isA<WatchSkipRest>());
+    expect(WatchCommand.fromMap({'action': 'finish', 'workoutId': 'w'}), isA<WatchFinishWorkout>());
     expect(WatchCommand.fromMap({'action': 'teleport', 'workoutId': 'w'}), isNull);
     expect(WatchCommand.fromMap({'action': 'complete'}), isNull);
   });

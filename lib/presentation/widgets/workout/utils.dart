@@ -82,7 +82,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
   /// Finishes, and tells the caller it has.
   void finishNow() {
     Navigator.of(context, rootNavigator: true).pop();
-    _finishWorkout(context, workouts);
+    finishWorkout(context, workouts);
     onFinish?.call();
   }
 
@@ -253,7 +253,12 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
   );
 }
 
-Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
+/// Finishes the active workout: saves it, mirrors it to Health, and shows its
+/// summary. The one finish path — the phone's dialog calls it once the user
+/// confirmed, and so does the watch's Finish (#183), which confirmed on the
+/// wrist. [context] needs no route of its own: navigation goes through
+/// [HeartRouter].
+Future<void> finishWorkout(BuildContext context, Workouts workouts) {
   workouts.activeWorkout?.resolveName(L.of(context).defaultWorkoutName());
 
   // Read before navigating: the screen this context belongs to is on its way
@@ -286,7 +291,7 @@ Future<void> _finishWorkout(BuildContext context, Workouts workouts) {
   // user actually picked.
   final session = workouts.activeWorkout;
 
-  context.goToWorkoutDone(workouts.activeWorkout?.id);
+  HeartRouter.of(context).goToWorkoutDone(workouts.activeWorkout?.id);
   cancelAllNotifications();
 
   // Told before the finish, not after it: the finish clears the active workout,

@@ -64,6 +64,10 @@ struct WorkoutView: View {
                         if let set = workout.set {
                             SetControls(workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent)
                                 .padding(.top, 4)
+                        } else {
+                            // every set ticked: the one thing left to do
+                            FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
+                                .padding(.top, 4)
                         }
                     } else {
                         Text(controls.unreachable)
@@ -194,31 +198,23 @@ struct SetControls: View {
 
     @State private var weight: Double = 0
     @State private var reps: Double = 0
-    @FocusState private var focused: Field?
+    /// The value open in the editor, if any.
+    @State private var editing: Field?
 
-    private enum Field { case weight, reps }
+    private enum Field: Identifiable {
+        case weight, reps
+        var id: Self { self }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if set.weight != nil || set.reps != nil {
                 HStack(spacing: 6) {
                     if set.weight != nil, let unit = set.unit {
-                        value(
-                            weight.formatted(.number.precision(.fractionLength(0...2))),
-                            unit: unit,
-                            field: .weight
-                        )
-                        .digitalCrownRotation($weight, from: 0, through: 1000, by: set.step, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true)
-                        .accessibilityAdjustableAction { direction in
-                            weight = max(0, weight + (direction == .increment ? set.step : -set.step))
-                        }
+                        pill(WorkoutView.format(weight), unit: unit) { editing = .weight }
                     }
                     if set.reps != nil {
-                        value("\(Int(reps))", unit: controls.reps, field: .reps)
-                            .digitalCrownRotation($reps, from: 0, through: 200, by: 1, sensitivity: .low, isContinuous: false, isHapticFeedbackEnabled: true)
-                            .accessibilityAdjustableAction { direction in
-                                reps = max(0, reps + (direction == .increment ? 1 : -1))
-                            }
+                        pill("\(Int(reps))", unit: controls.reps) { editing = .reps }
                     }
                 }
             }
@@ -247,6 +243,9 @@ struct SetControls: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(accent)
+            // the button, not only its label, spans the column — in a leading-
+            // aligned stack it otherwise hugs the left edge
+            .frame(maxWidth: .infinity)
             // a counted set needs a count; the phone would refuse it anyway
             .disabled(phone.pending || (set.reps != nil && reps < 1))
         }
@@ -255,25 +254,129 @@ struct SetControls: View {
             weight = set.weight ?? 0
             reps = Double(set.reps ?? 0)
         }
+        .sheet(item: $editing) { field in
+            switch field {
+            case .weight:
+                ValueEditor(value: $weight, step: set.step, unit: set.unit ?? "", accent: accent)
+            case .reps:
+                ValueEditor(value: $reps, step: 1, unit: controls.reps, accent: accent)
+            }
+        }
     }
 
-    private func value(_ text: String, unit: String, field: Field) -> some View {
-        VStack(spacing: 0) {
-            Text(text)
-                .font(.system(.title3, design: .rounded).monospacedDigit())
-            Text(unit)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+    /// A value on the set, shown as it will be logged; tapping it opens the
+    /// editor. Not edited in place: in a scrolling view the crown would scroll
+    /// the page as often as it changed the number, and nothing on a two-inch
+    /// screen can say "now turn the crown".
+    private func pill(_ text: String, unit: String, open: @escaping () -> Void) -> some View {
+        Button(action: open) {
+            VStack(spacing: 0) {
+                Text(text)
+                    .font(.system(.title3, design: .rounded).monospacedDigit())
+                Text(unit)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
-        .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(focused == field ? accent : .clear, lineWidth: 2))
-        .focusable()
-        .focused($focused, equals: field)
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.bordered)
         .accessibilityLabel(unit)
         .accessibilityValue(text)
+    }
+}
+
+/// Finish, once every set is ticked, behind the phone's own question: it
+/// cannot be undone from the wrist. The phone does the finishing — saves,
+/// writes Health, shows the summary — and this goes idle when it has.
+struct FinishControl: View {
+    let workoutId: String
+    let controls: WatchState.Workout.Controls
+    let accent: Color
+    @EnvironmentObject private var phone: PhoneSession
+    @State private var confirming = false
+
+    var body: some View {
+        Button {
+            confirming = true
+        } label: {
+            if phone.pending {
+                ProgressView()
+            } else {
+                Text(controls.finish)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(accent)
+        .frame(maxWidth: .infinity)
+        .disabled(phone.pending)
+        .confirmationDialog(controls.finishTitle, isPresented: $confirming, titleVisibility: .visible) {
+            Button(controls.finishConfirm) { phone.send(.finish(workoutId: workoutId)) }
+            Button(controls.finishCancel, role: .cancel) {}
+        }
+    }
+}
+
+/// One value, full screen: − and + a step at a time, the Digital Crown for
+/// bigger moves — focused from the start, with nothing else on screen to
+/// scroll. The system's close button puts it away; the set's own Done is what
+/// logs it.
+struct ValueEditor: View {
+    @Binding var value: Double
+    let step: Double
+    let unit: String
+    let accent: Color
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(unit)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button { nudge(-1) } label: { Image(systemName: "minus") }
+                    .accessibilityHidden(true)
+                Text(WorkoutView.format(value))
+                    .font(.system(size: 40, weight: .semibold, design: .rounded).monospacedDigit())
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+                    .focusable()
+                    .focused($focused)
+                    .digitalCrownRotation(
+                        $value,
+                        from: 0,
+                        through: 1000,
+                        by: step,
+                        sensitivity: .medium,
+                        isContinuous: false,
+                        isHapticFeedbackEnabled: true
+                    )
+                    // the buttons are hidden from VoiceOver: this is the control
+                    .accessibilityLabel(unit)
+                    .accessibilityValue(WorkoutView.format(value))
+                    .accessibilityAdjustableAction { direction in
+                        nudge(direction == .increment ? 1 : -1)
+                    }
+                Button { nudge(1) } label: { Image(systemName: "plus") }
+                    .accessibilityHidden(true)
+            }
+            .buttonStyle(.bordered)
+            .tint(accent)
+        }
+        .task { focused = true }
+    }
+
+    private func nudge(_ steps: Double) {
+        value = max(0, value + steps * step)
+    }
+}
+
+extension WorkoutView {
+    /// A weight or count as the watch shows it: whole when it is whole, up to
+    /// two decimals otherwise (62.5, 1.25).
+    static func format(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0...2)))
     }
 }
 
@@ -297,7 +400,11 @@ struct SetControls: View {
             heartRate: "Heart rate",
             bpm: "bpm",
             energy: "Active energy",
-            kcal: "kcal"
+            kcal: "kcal",
+            finish: "Finish",
+            finishTitle: "Complete Your Workout?",
+            finishConfirm: "Yes, I'm done!",
+            finishCancel: "No, one more set!"
         ),
         activity: "strength"
     ))
