@@ -209,7 +209,15 @@ class _WatchPresenterState extends State<WatchPresenter> {
       .unasked || .pending => null,
       .off => WatchMessage.off(l.watchAppOff),
       .on => switch ((ongoingWorkoutOf(context), _workouts?.hasResolvedActiveWorkout ?? false)) {
-        (var workout?, _) => WatchWorkout(workout, set: _upNext(l), controls: _controls(l)),
+        (var workout?, _) => WatchWorkout(
+          workout,
+          set: _upNext(l),
+          controls: _controls(l),
+          activity: switch (_workouts?.activeWorkout) {
+            Workout active => activityOf(active).name,
+            null => null,
+          },
+        ),
         // "no workout" only once that is known, not while it is still loading
         (null, true) => WatchMessage.idle(l.watchAppIdle),
         (null, false) => null,
@@ -288,6 +296,10 @@ class _WatchPresenterState extends State<WatchPresenter> {
       subtract: l.subtractSeconds,
       reps: l.reps,
       unreachable: l.watchPhoneUnreachable,
+      heartRate: l.watchHeartRate,
+      bpm: l.healthBpm,
+      energy: l.healthActiveEnergy,
+      kcal: l.healthKilocalories,
     );
   }
 

@@ -1,18 +1,33 @@
 import 'dart:convert';
 import 'dart:io';
 
-const _healthKeys = {
+/// The phone app's permission sheets, as translation key => Info.plist key.
+const runnerHealthKeys = {
   'iosHealthShareUsageDescription': 'NSHealthShareUsageDescription',
   'iosHealthUpdateUsageDescription': 'NSHealthUpdateUsageDescription',
 };
 
+/// The watch app's (#184): the same two plist keys, its own words — it reads
+/// and writes different things.
+const watchHealthKeys = {
+  'iosWatchHealthShareUsageDescription': 'NSHealthShareUsageDescription',
+  'iosWatchHealthUpdateUsageDescription': 'NSHealthUpdateUsageDescription',
+};
+
 /// Keep the native permission sheet and its English fallback on the same
 /// translation import as Flutter. Regional locales inherit the base language.
-void writeIosLocalizations(Map<String, Map<String, dynamic>> translations, Directory runner) {
+///
+/// [runner] is the target's folder — the one holding its Info.plist and its
+/// `.lproj` folders — and [healthKeys] the strings that target shows.
+void writeIosLocalizations(
+  Map<String, Map<String, dynamic>> translations,
+  Directory runner, {
+  Map<String, String> healthKeys = runnerHealthKeys,
+}) {
   final languages = translations.keys.where((locale) => !locale.contains('_')).toList()..sort();
   final contents = <String, String>{};
   for (final language in languages) {
-    final strings = _healthKeys.entries
+    final strings = healthKeys.entries
         .map((entry) {
           final value = translations[language]![entry.key];
           if (value is! String || value.trim().isEmpty) {
@@ -26,7 +41,7 @@ void writeIosLocalizations(Map<String, Map<String, dynamic>> translations, Direc
 
   final plistFile = File('${runner.path}/Info.plist');
   var plist = plistFile.readAsStringSync();
-  for (final entry in _healthKeys.entries) {
+  for (final entry in healthKeys.entries) {
     final english = translations['en']?[entry.key];
     if (english is! String || english.trim().isEmpty) {
       throw StateError('Missing English iOS permission translation: ${entry.key}');
