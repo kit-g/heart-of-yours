@@ -92,6 +92,16 @@ ticket doesn't say:
   Settings switch, and it keeps that without an ask. It may move into
   Settings › Features, but it needs no retrofit.
 - #98 was written as opt-in from the start.
+- The watch app (`Feature.watchApp`, #175) is the first feature whose ask is
+  not an in-app offer: **opening Heart on the watch is the yes**. Installing
+  it is not, because Automatic App Install (on by default) puts it on the
+  watch without the user choosing anything. Until that first launch the
+  phone sends the watch nothing. Its switch in Settings › Features appears
+  only when a paired watch has Heart installed. Switched off, the watch app
+  cannot be uninstalled on the user's behalf, so it shows one calm screen
+  saying the feature is off on the iPhone — the one exception to "off means
+  never built". Like every answer, it syncs: a second phone of the same
+  account starts sending to its own watch without asking again.
 
 ## Still open (#138)
 

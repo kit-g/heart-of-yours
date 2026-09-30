@@ -1875,6 +1875,18 @@ class LEs extends L {
   String get lockScreenWorkoutSubtitle => 'Tiempo, siguiente serie y descanso mientras entrenas';
 
   @override
+  String get watchApp => 'Apple Watch';
+
+  @override
+  String get watchAppSubtitle => 'Tu entrenamiento en la muñeca';
+
+  @override
+  String get watchAppIdle => 'Empieza un entrenamiento en tu iPhone';
+
+  @override
+  String get watchAppOff => 'Desactivado en Heart en tu iPhone';
+
+  @override
   String get restTimers => 'Temporizadores de descanso';
 
   @override

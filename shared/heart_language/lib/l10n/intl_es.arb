@@ -3665,5 +3665,29 @@
         "type": "String"
       }
     }
+  },
+  "watchApp": "Apple Watch",
+  "@watchApp": {
+    "description": "Title of the Settings switch for the watch app, which mirrors the workout on the user's Apple Watch. The product name; keep it as Apple names it in the locale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchAppSubtitle": "Tu entrenamiento en la muñeca",
+  "@watchAppSubtitle": {
+    "description": "Subtitle under the Apple Watch switch in Settings, saying what it does",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchAppIdle": "Empieza un entrenamiento en tu iPhone",
+  "@watchAppIdle": {
+    "description": "Shown on the Apple Watch when no workout is in progress. Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchAppOff": "Desactivado en Heart en tu iPhone",
+  "@watchAppOff": {
+    "description": "Shown on the Apple Watch when the user turned the watch app off in the phone's Settings. Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {}
   }
 }

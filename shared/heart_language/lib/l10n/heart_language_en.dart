@@ -1871,6 +1871,18 @@ class LEn extends L {
   String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
 
   @override
+  String get watchApp => 'Apple Watch';
+
+  @override
+  String get watchAppSubtitle => 'Your workout on your wrist';
+
+  @override
+  String get watchAppIdle => 'Start a workout on your iPhone';
+
+  @override
+  String get watchAppOff => 'Turned off in Heart on your iPhone';
+
+  @override
   String get restTimers => 'Rest timers';
 
   @override
@@ -3872,6 +3884,18 @@ class LEnCa extends LEn {
 
   @override
   String get lockScreenWorkoutSubtitle => 'Time, next set and rest while you train';
+
+  @override
+  String get watchApp => 'Apple Watch';
+
+  @override
+  String get watchAppSubtitle => 'Your workout on your wrist';
+
+  @override
+  String get watchAppIdle => 'Start a workout on your iPhone';
+
+  @override
+  String get watchAppOff => 'Turned off in Heart on your iPhone';
 
   @override
   String get restTimers => 'Rest timers';
