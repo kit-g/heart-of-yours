@@ -185,7 +185,7 @@ class _TimelineChartState extends State<TimelineChart> {
       builder: (context, days, _) {
         final grain = TimelineChart.grainFor(days);
         final points = _bucketed(_window(days), grain);
-        final labelled = _labelled(points.length, grain);
+        final labelled = _labelled(points, grain);
         // "Aug — Feb — Aug — Feb — Aug" is three different Augusts wearing the
         // same label. Once the window covers more than one calendar year the
         // month has to carry it.
@@ -353,14 +353,24 @@ class _TimelineChartState extends State<TimelineChart> {
   /// A handful of dates across the axis, always including the most recent —
   /// that is the one a reader looks for first. Fewer of them at the coarse
   /// grains, where every label carries a year and is half as wide again.
-  Set<int> _labelled(int length, TimelineGrain grain) {
+  ///
+  /// Chosen among *days*, not points. At the day grain nothing is bucketed, so
+  /// two sessions on one day are two points; picking every nth point put the
+  /// same date under both ("08-09 … 08-09"), which reads as a broken axis. The
+  /// latest session of each day is its candidate — `HistoryChart`'s rule, too.
+  Set<int> _labelled(List<TimelinePoint> points, TimelineGrain grain) {
     final wanted = switch (grain) {
       .day || .week => 5,
       .month || .year => 4,
     };
-    final every = (length / wanted).ceil().clamp(1, max(length, 1)).toInt();
+    final candidates = [
+      for (final (index, point) in points.indexed)
+        if (index == points.length - 1 || _key(points[index + 1].at, .day) != _key(point.at, .day)) index,
+    ];
+    final every = (candidates.length / wanted).ceil().clamp(1, max(candidates.length, 1)).toInt();
     return {
-      for (var index = length - 1; index >= 0; index -= every) index,
+      for (final (nth, index) in candidates.reversed.indexed)
+        if (nth % every == 0) index,
     };
   }
 
