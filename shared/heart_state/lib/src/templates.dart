@@ -272,16 +272,18 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   /// The device locale changed. Sample templates carry localized names picked
   /// at fetch time, so the cached batch is stale in the new language —
-  /// re-fetch and repaint. (The startup fetch deliberately does not notify;
-  /// a mid-session swap must.)
-  Future<void> onLocaleChanged() async {
-    await _initSampleTemplates();
-    notifyListeners();
-  }
+  /// re-fetch, which repaints.
+  Future<void> onLocaleChanged() => _initSampleTemplates();
 
   /// Nobody awaits this either (see [init]) — an escaping error would surface
   /// as an unhandled async exception on every launch. Samples are decoration:
   /// failing to fetch them must cost nothing but the samples.
+  ///
+  /// Notifies once they are in. It used not to, and a signed-in user never
+  /// noticed: their own templates load right after and notify for both. An
+  /// anonymous one with no templates of their own has nothing else to repaint
+  /// the page, and saw "Example templates" over an empty space until something
+  /// unrelated rebuilt it.
   Future<void> _initSampleTemplates() async {
     try {
       final local = await _service.getTemplates(null);
@@ -297,6 +299,16 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
+    // whatever arrived, local or remote, before a failure or after
+    if (!_disposed) notifyListeners();
+  }
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   Future<void> workoutToTemplate(Workout workout) async {

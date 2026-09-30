@@ -36,7 +36,7 @@ void main() {
     });
 
     group('init', () {
-      test('populates samples from local when available (no notify)', () async {
+      test('populates samples from local when available, and repaints once they land', () async {
         final sampleLocal = [tmpl(id: 's1', order: 0, name: 'Sample')];
         when(local.getTemplates(null)).thenAnswer((_) async => sampleLocal);
 
@@ -44,8 +44,10 @@ void main() {
 
         expect(templates.samples.length, sampleLocal.length);
         expect(templates.samples.first.id, sampleLocal.first.id);
-        // verified by behavior; specific argument matching for function type can be brittle
-        expect(probe.notifications, 0); // samples do not trigger notify
+        // the samples init is un-awaited; let it land. With no user there is
+        // nothing else to notify — an anonymous session's page relies on this.
+        await pumpEventQueue();
+        expect(probe.notifications, 1);
       });
 
       test('a locale change re-fetches the samples and notifies', () async {
@@ -108,7 +110,7 @@ void main() {
 
         // iterator should contain localTemplates
         expect(templates.toList(), localTemplates);
-        expect(probe.notifications, 1);
+        expect(probe.notifications, 2); // their templates, then the samples settling
       });
 
       test('with userId: falls back to remote templates, notifies and stores locally', () async {
@@ -122,11 +124,11 @@ void main() {
         await templates.init();
 
         expect(templates.toList(), remoteTemplates);
-        expect(probe.notifications, 1);
+        expect(probe.notifications, 2); // their templates, then the samples settling
         verify(local.storeTemplates(remoteTemplates, userId: 'u1')).called(1);
       });
 
-      test('with userId: nothing to load -> no notify', () async {
+      test('with userId: nothing of their own -> only the samples notify', () async {
         templates.userId = 'u1';
         when(local.getTemplates(null)).thenAnswer((_) async => []);
         when(config.getSampleTemplates()).thenAnswer((_) async => []);
@@ -135,7 +137,7 @@ void main() {
 
         await templates.init();
         expect(templates.length, 0);
-        expect(probe.notifications, 0);
+        expect(probe.notifications, 1); // only the samples settling
       });
     });
 
