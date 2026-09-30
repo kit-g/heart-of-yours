@@ -36,6 +36,7 @@ final class PhoneSession: NSObject, ObservableObject {
         case complete(workoutId: String, setId: String, weight: Double?, reps: Int?)
         case skipRest(workoutId: String)
         case adjustRest(workoutId: String, seconds: Int)
+        case finish(workoutId: String)
 
         var message: [String: Any] {
             switch self {
@@ -48,6 +49,8 @@ final class PhoneSession: NSObject, ObservableObject {
                 return ["event": "command", "action": "skipRest", "workoutId": workoutId]
             case let .adjustRest(workoutId, seconds):
                 return ["event": "command", "action": "adjustRest", "workoutId": workoutId, "seconds": seconds]
+            case let .finish(workoutId):
+                return ["event": "command", "action": "finish", "workoutId": workoutId]
             }
         }
     }

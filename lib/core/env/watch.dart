@@ -56,6 +56,13 @@ typedef WatchControls = ({
   String bpm,
   String energy,
   String kcal,
+
+  /// Finishing from the wrist, and its one confirmation — the phone's own
+  /// words for the same question.
+  String finish,
+  String finishTitle,
+  String finishConfirm,
+  String finishCancel,
 });
 
 /// A workout is running: the same summary the lock screen shows, plus the set
@@ -96,6 +103,10 @@ final class WatchWorkout extends WatchState {
         'bpm': controls.bpm,
         'energy': controls.energy,
         'kcal': controls.kcal,
+        'finish': controls.finish,
+        'finishTitle': controls.finishTitle,
+        'finishConfirm': controls.finishConfirm,
+        'finishCancel': controls.finishCancel,
       },
       'state': 'workout',
       'workoutId': workoutId,
@@ -145,6 +156,7 @@ sealed class WatchCommand {
         reps: (map['reps'] as num?)?.toInt(),
       ),
       {'action': 'skipRest', 'workoutId': String workoutId} => WatchSkipRest(workoutId),
+      {'action': 'finish', 'workoutId': String workoutId} => WatchFinishWorkout(workoutId),
       {'action': 'adjustRest', 'workoutId': String workoutId, 'seconds': num seconds} => WatchAdjustRest(
         workoutId,
         seconds: seconds.toInt(),
@@ -165,6 +177,12 @@ final class WatchComplete extends WatchCommand {
 }
 
 final class WatchSkipRest extends WatchCommand {
+  const new(super.workoutId);
+}
+
+/// Finish the workout, confirmed on the wrist. Offered only once every set is
+/// ticked — anything left unticked is the phone's question to ask.
+final class WatchFinishWorkout extends WatchCommand {
   const new(super.workoutId);
 }
 
