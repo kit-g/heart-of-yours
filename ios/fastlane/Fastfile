@@ -15,12 +15,15 @@ def appstore_api_key
 end
 
 # The bundles embedded in the app, as target name => the suffix of its bundle id
-# under the app's: the workout Live Activity's widget extension (#133) and the
-# watch app (#187). Each is signed with its own App Store profile, and each needs
-# that profile in the match store before its first deploy.
+# under the app's: the workout Live Activity's widget extension (#133), the watch
+# app (#187) and its complication (#186). Each is signed with its own App Store
+# profile, and each needs that profile in the match store before its first
+# deploy. The watch app and its complication also share an app group,
+# `group.<the app's id>`, which their App IDs must have enabled.
 EMBEDDED = {
   "OngoingWorkout" => "OngoingWorkout",
   "Watch" => "watchkitapp",
+  "WatchWidgets" => "watchkitapp.widgets",
 }
 
 def app_identifiers(app_id)
