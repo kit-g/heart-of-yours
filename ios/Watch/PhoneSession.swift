@@ -1,5 +1,6 @@
 import Combine
 import WatchConnectivity
+import WidgetKit
 
 /// The watch's end of the link to the phone: holds the last [WatchState] the
 /// phone sent (#182), and carries what the user does here back to it (#183).
@@ -90,6 +91,28 @@ final class PhoneSession: NSObject, ObservableObject {
         pending = false
         if state != self.state {
             self.state = state
+            updateComplication(state)
+        }
+    }
+
+    /// Hands the complication (#186) what it draws, and redraws it only when
+    /// that changed: the system budgets reloads, and a state that differs only
+    /// in what the complication does not show is not worth one.
+    private func updateComplication(_ state: WatchState) {
+        let snapshot: ComplicationSnapshot? = switch state {
+        case .workout(let workout):
+            .init(
+                exercise: workout.exercise,
+                next: workout.next,
+                restStart: workout.rest?.window.lowerBound,
+                restEnd: workout.rest?.window.upperBound,
+                restLabel: workout.rest?.label
+            )
+        case .idle, .off, .awaiting:
+            nil
+        }
+        if ComplicationSnapshot.write(snapshot) {
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 
