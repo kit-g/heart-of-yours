@@ -261,6 +261,9 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         context: context,
                         applicationVersion: info.fullVersion,
                         applicationName: AppConfig.of(context).appName,
+                        // without one the dialog keeps the icon's slot anyway,
+                        // and the name sat indented over an empty gap
+                        applicationIcon: const _AppMark(),
                       );
                     },
                   ),
@@ -538,6 +541,25 @@ class const _NotificationsRow() extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+/// The app's mark as the home screen shows it — a white heart on the accent
+/// disc — drawn from the brand heart rather than a launcher bitmap, so it
+/// follows the preset and both brightnesses.
+class const _AppMark() extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme(:primary, :onPrimary) = Theme.of(context).colorScheme;
+    return ExcludeSemantics(
+      child: Container(
+        width: 48,
+        height: 48,
+        padding: const .all(12),
+        decoration: BoxDecoration(color: primary, shape: .circle),
+        child: Image.asset('assets/icons/heart.png', color: onPrimary),
+      ),
     );
   }
 }
