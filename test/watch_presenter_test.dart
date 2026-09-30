@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
@@ -9,6 +10,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 
 import 'mocks.mocks.dart';
 
@@ -22,6 +24,8 @@ void main() {
   late AppTheme theme;
   late Preferences preferences;
   late Exercises exercises;
+  late Timers timers;
+  late PreviousExercises previous;
   late _Link link;
 
   final bench = Exercise.fromJson({
@@ -36,6 +40,13 @@ void main() {
     final block = WorkoutExercise(starter: ExerciseSet(bench, weight: 60, reps: 5))..add(ExerciseSet(bench));
     return Workout.fromExercises([block], name: 'Push day');
   }
+
+  setUpAll(() {
+    // a tick from the watch schedules the rest notification, as a tick on the
+    // phone does; no plugin registrant runs under `flutter test`
+    tz.initializeTimeZones();
+    FlutterLocalNotificationsPlatform.instance = AndroidFlutterLocalNotificationsPlugin();
+  });
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -53,6 +64,16 @@ void main() {
       catalogService: MockLocalCatalogService(),
       preferenceService: MockRemoteExercisePreferenceService(),
     );
+    final timersService = MockTimersService();
+    when(
+      timersService.setRestTimer(
+        exerciseName: anyNamed('exerciseName'),
+        userId: anyNamed('userId'),
+        seconds: anyNamed('seconds'),
+      ),
+    ).thenAnswer((_) async {});
+    timers = Timers(service: timersService)..userId = 'u1';
+    previous = PreviousExercises(service: MockPreviousExerciseService());
     link = _Link();
   });
 
@@ -67,6 +88,8 @@ void main() {
           ChangeNotifierProvider<AppTheme>.value(value: theme),
           ChangeNotifierProvider<Preferences>.value(value: preferences),
           ChangeNotifierProvider<Exercises>.value(value: exercises),
+          ChangeNotifierProvider<Timers>.value(value: timers),
+          ChangeNotifierProvider<PreviousExercises>.value(value: previous),
           Provider<Analytics>.value(value: Analytics(service: _NoAnalytics())),
         ],
         child: MaterialApp(
@@ -196,6 +219,144 @@ void main() {
     expect(link.sent.single, isA<WatchMessage>());
   });
 
+  group('from the wrist (#183)', () {
+    late Workout workout;
+
+    Future<void> running(WidgetTester tester) async {
+      preferences.setFeature(.watchApp, on: true);
+      workout = push();
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+      await pump(tester);
+      await workouts.init();
+      await tester.pump();
+    }
+
+    WatchSet upNext() => (link.sent.last as WatchWorkout).set!;
+
+    testWidgets('the watch is sent the set up next, in the unit it is shown in', (tester) async {
+      preferences.setWeightUnit(.imperial);
+      await running(tester);
+
+      final set = upNext();
+      expect(set.setId, workout.first.first.id);
+      expect(set.exerciseId, workout.first.id);
+      expect(set.weight, closeTo(132.3, 0.1), reason: '60 kg, as the phone would show it in pounds');
+      expect(set.reps, 5);
+      expect(set.unit, 'lbs');
+      expect(set.step, 5);
+      expect((link.sent.last as WatchWorkout).controls?.done, 'Done');
+    });
+
+    testWidgets('a tick from the watch goes through Workouts, with the values it showed', (tester) async {
+      await timers.setRestTimer('id-bench', 90);
+      await running(tester);
+      final first = workout.first.first;
+
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 62.5, reps: 6));
+      await tester.pump();
+
+      expect(first.isCompleted, isTrue);
+      expect(first.weight, 62.5);
+      expect(first.reps, 6);
+      verify(local.storeMeasurements(first)).called(1);
+      expect(alarms.activeExerciseId, workout.first.id, reason: "the exercise's rest starts, as on the phone");
+      expect(upNext().setId, workout.first.elementAt(1).id, reason: 'the watch moves on once the phone has it');
+      alarms.stopActiveExerciseTimer();
+    });
+
+    testWidgets('pounds from the watch are stored as kilograms', (tester) async {
+      preferences.setWeightUnit(.imperial);
+      await running(tester);
+      final first = workout.first.first;
+
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 135, reps: 5));
+      await tester.pump();
+
+      expect(first.weight, closeTo(61.2, 0.1));
+    });
+
+    testWidgets('a second tick for the same set changes nothing, and is answered', (tester) async {
+      await running(tester);
+      final first = workout.first.first;
+
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 60, reps: 5));
+      await tester.pump();
+      final before = link.sent.length;
+
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 99, reps: 9));
+      await tester.pump();
+
+      expect(first.weight, 60, reason: 'a ticked set is not rewritten by a late or repeated tap');
+      expect(link.sent.length, before + 1, reason: 'the watch hears back even when nothing changed');
+    });
+
+    testWidgets('a command about another workout is ignored', (tester) async {
+      await running(tester);
+
+      link.command(WatchComplete('some-other-workout', setId: workout.first.first.id, reps: 5));
+      await tester.pump();
+
+      expect(workout.first.first.isCompleted, isFalse);
+    });
+
+    testWidgets('rest is skipped and adjusted from the watch', (tester) async {
+      await timers.setRestTimer('id-bench', 90);
+      await running(tester);
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5));
+      await tester.pump();
+      final end = alarms.activeExerciseEnd!;
+
+      link.command(WatchAdjustRest(workout.id, seconds: 10));
+      await tester.pump();
+      expect(alarms.activeExerciseEnd, end.add(const Duration(seconds: 10)));
+
+      link.command(WatchSkipRest(workout.id));
+      await tester.pump();
+      expect(alarms.activeExerciseEnd, isNull);
+      expect((link.sent.last as WatchWorkout).workout.rest, isNull);
+    });
+
+    testWidgets('a tick sent while the phone app was not running lands once the workout loads', (tester) async {
+      preferences.setFeature(.watchApp, on: true);
+      workout = push();
+      final loaded = Completer<Workout?>();
+      when(local.getActiveWorkout('u1')).thenAnswer((_) => loaded.future);
+      link.queued = [WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5)];
+
+      await pump(tester);
+      final init = workouts.init();
+      await tester.pump();
+      expect(workout.first.first.isCompleted, isFalse, reason: 'nothing to apply it to yet');
+
+      loaded.complete(workout);
+      await init;
+      await tester.pump();
+      expect(workout.first.first.isCompleted, isTrue);
+    });
+
+    testWidgets('switched off, commands are ignored', (tester) async {
+      await running(tester);
+      preferences.setFeature(.watchApp, on: false);
+      await tester.pump();
+
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5));
+      await tester.pump();
+
+      expect(workout.first.first.isCompleted, isFalse);
+    });
+  });
+
+  test('commands are read from what the watch sends, and anything else is dropped', () {
+    expect(
+      WatchCommand.fromMap({'action': 'complete', 'workoutId': 'w', 'setId': 's', 'weight': 60, 'reps': 5}),
+      isA<WatchComplete>().having((c) => c.weight, 'weight', 60.0).having((c) => c.reps, 'reps', 5),
+    );
+    expect(WatchCommand.fromMap({'action': 'adjustRest', 'workoutId': 'w', 'seconds': -10}), isA<WatchAdjustRest>());
+    expect(WatchCommand.fromMap({'action': 'skipRest', 'workoutId': 'w'}), isA<WatchSkipRest>());
+    expect(WatchCommand.fromMap({'action': 'teleport', 'workoutId': 'w'}), isNull);
+    expect(WatchCommand.fromMap({'action': 'complete'}), isNull);
+  });
+
   test('a workout state carries finished copy and instants, nothing to translate', () {
     final start = DateTime.utc(2026, 9, 27, 10);
     final state = WatchWorkout((
@@ -222,14 +383,31 @@ void main() {
 class _Link implements WatchLink {
   final sent = <WatchState>[];
   final _events = StreamController<WatchEvent>.broadcast();
+  final _commands = StreamController<WatchCommand>.broadcast();
   bool openedUnseen = false;
+  List<WatchCommand> queued = [];
 
   void emit(WatchEvent event) => _events.add(event);
 
-  void dispose() => _events.close();
+  void command(WatchCommand command) => _commands.add(command);
+
+  void dispose() {
+    _events.close();
+    _commands.close();
+  }
 
   @override
   Stream<WatchEvent> get events => _events.stream;
+
+  @override
+  Stream<WatchCommand> get commands => _commands.stream;
+
+  @override
+  Future<List<WatchCommand>> takeCommands() async {
+    final taken = queued;
+    queued = [];
+    return taken;
+  }
 
   @override
   Future<bool> isInstalled() async => true;

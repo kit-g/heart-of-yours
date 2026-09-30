@@ -32,6 +32,7 @@ import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'rest.dart';
 import 'timer.dart';
 
 part 'empty_state.dart';

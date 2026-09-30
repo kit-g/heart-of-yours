@@ -18,16 +18,69 @@ sealed class WatchState {
   Map<String, Object?> toMap();
 }
 
-/// A workout is running: the same summary the lock screen shows.
+/// The set up next, as the watch edits and ticks it (#183).
+///
+/// Values are in the unit the phone shows this exercise in, and the phone
+/// converts back what the watch returns: the watch does no unit arithmetic,
+/// and never learns that weights are stored in kilograms.
+typedef WatchSet = ({
+  /// The workout exercise and set a command about it must name.
+  String exerciseId,
+  String setId,
+
+  /// Null when the set takes no weight (reps only), and [reps] null when it
+  /// takes neither — a cardio or timed set, ticked as prescribed.
+  double? weight,
+  int? reps,
+
+  /// The weight's unit, as copy ("kg"), and one Digital Crown detent of it.
+  String? unit,
+  double step,
+
+  /// The same set last time, as finished copy; null when there was none.
+  String? previous,
+});
+
+/// The watch's controls, as copy — labels and what it says when it cannot act.
+typedef WatchControls = ({
+  String done,
+  String skip,
+  String add,
+  String subtract,
+  String reps,
+  String unreachable,
+});
+
+/// A workout is running: the same summary the lock screen shows, plus the set
+/// up next and the copy for the controls that act on it.
 final class WatchWorkout extends WatchState {
   final OngoingWorkout workout;
+  final WatchSet? set;
+  final WatchControls? controls;
 
-  const new(this.workout);
+  const new(this.workout, {this.set, this.controls});
 
   @override
   Map<String, Object?> toMap() {
     final OngoingWorkout(:workoutId, :startedAt, :title, :exercise, :next, :rest, :preset) = workout;
     return {
+      if (set case WatchSet set) ...{
+        'exerciseId': set.exerciseId,
+        'setId': set.setId,
+        'weight': ?set.weight,
+        'reps': ?set.reps,
+        'unit': ?set.unit,
+        'step': set.step,
+        'previous': ?set.previous,
+      },
+      if (controls case WatchControls controls) ...{
+        'done': controls.done,
+        'skip': controls.skip,
+        'add': controls.add,
+        'subtract': controls.subtract,
+        'repsLabel': controls.reps,
+        'unreachable': controls.unreachable,
+      },
       'state': 'workout',
       'workoutId': workoutId,
       'startedAt': startedAt.millisecondsSinceEpoch,
@@ -46,10 +99,59 @@ final class WatchWorkout extends WatchState {
   }
 
   @override
-  bool operator ==(Object other) => other is WatchWorkout && other.workout == workout;
+  bool operator ==(Object other) =>
+      other is WatchWorkout && other.workout == workout && other.set == set && other.controls == controls;
 
   @override
-  int get hashCode => workout.hashCode;
+  int get hashCode => Object.hash(workout, set, controls);
+}
+
+/// Something the user did on the watch (#183): a request, never an edit. The
+/// phone applies it the way the same tap on the phone would, then sends the
+/// state that results — or ignores it, if it names a workout or a set that is
+/// no longer current, and the state it sends back says so on its own.
+sealed class WatchCommand {
+  final String workoutId;
+
+  const new(this.workoutId);
+
+  /// Null for anything unrecognised — a newer watch app, say — which is dropped.
+  static WatchCommand? fromMap(Map<Object?, Object?> map) {
+    return switch (map) {
+      {'action': 'complete', 'workoutId': String workoutId, 'setId': String setId} => WatchComplete(
+        workoutId,
+        setId: setId,
+        weight: (map['weight'] as num?)?.toDouble(),
+        reps: (map['reps'] as num?)?.toInt(),
+      ),
+      {'action': 'skipRest', 'workoutId': String workoutId} => WatchSkipRest(workoutId),
+      {'action': 'adjustRest', 'workoutId': String workoutId, 'seconds': num seconds} => WatchAdjustRest(
+        workoutId,
+        seconds: seconds.toInt(),
+      ),
+      _ => null,
+    };
+  }
+}
+
+/// Tick [setId], with the values the watch shows for it — in the unit the
+/// phone sent ([WatchSet.unit]).
+final class WatchComplete extends WatchCommand {
+  final String setId;
+  final double? weight;
+  final int? reps;
+
+  const new(super.workoutId, {required this.setId, this.weight, this.reps});
+}
+
+final class WatchSkipRest extends WatchCommand {
+  const new(super.workoutId);
+}
+
+final class WatchAdjustRest extends WatchCommand {
+  final int seconds;
+
+  const new(super.workoutId, {required this.seconds});
 }
 
 /// No workout is running, or the switch is off: one line saying so.
@@ -99,6 +201,14 @@ abstract interface class WatchLink {
   Future<bool> takeOpened();
 
   Stream<WatchEvent> get events;
+
+  /// Commands from the watch, as they arrive.
+  Stream<WatchCommand> get commands;
+
+  /// Commands that arrived while nothing here was listening — sent from the
+  /// watch while the phone app was not running — oldest first. Asking clears
+  /// them.
+  Future<List<WatchCommand>> takeCommands();
 }
 
 /// The link for [platform], or null where there is no watch app.
@@ -117,13 +227,21 @@ class _WatchConnectivity implements WatchLink {
   static const _channel = MethodChannel('heart/watch');
 
   final _events = StreamController<WatchEvent>.broadcast();
+  final _commands = StreamController<WatchCommand>.broadcast();
 
   new _() {
     _channel.setMethodCallHandler((call) async {
-      switch (WatchEvent.values.asNameMap()[call.method]) {
-        case WatchEvent event:
+      switch ((call.method, call.arguments, WatchEvent.values.asNameMap()[call.method])) {
+        // the answer tells the native side whether anyone was listening; if
+        // not, it keeps the command for [takeCommands]
+        case ('command', Map arguments, _):
+          if (!_commands.hasListener) return false;
+          if (WatchCommand.fromMap(arguments) case WatchCommand command) _commands.add(command);
+          return true;
+        case (_, _, WatchEvent event):
           _events.add(event);
-        case null:
+          return true;
+        default:
           throw MissingPluginException('heart/watch has no ${call.method}');
       }
     });
@@ -131,6 +249,22 @@ class _WatchConnectivity implements WatchLink {
 
   @override
   Stream<WatchEvent> get events => _events.stream;
+
+  @override
+  Stream<WatchCommand> get commands => _commands.stream;
+
+  @override
+  Future<List<WatchCommand>> takeCommands() async {
+    try {
+      final queued = await _channel.invokeListMethod<Map<Object?, Object?>>('takeCommands') ?? const [];
+      return queued.map(WatchCommand.fromMap).nonNulls.toList();
+    } on MissingPluginException {
+      return const [];
+    } on PlatformException catch (e, stacktrace) {
+      _logger.warning('Watch takeCommands failed', e, stacktrace);
+      return const [];
+    }
+  }
 
   @override
   Future<bool> isInstalled() => _ask('installed');
