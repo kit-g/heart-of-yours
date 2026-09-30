@@ -1,21 +1,32 @@
-import 'package:flutter/widgets.dart';
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Schedules the "rest complete" notification for a rest that ends at [when],
 /// naming the set that comes next. [exercise] is the one just worked — the
 /// fallback when nothing is left to do.
-Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exercise, DateTime when) {
+///
+/// Skipped while the watch measures this workout (#185): its workout session
+/// keeps it awake to tap the wrist itself, and iOS would forward this
+/// notification to the same wrist as a second tap. One owner per rest.
+Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exercise, DateTime when) async {
   final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :kg, :lbs) = L.of(context);
   final prefs = Preferences.of(context);
-  final next = Workouts.of(context).nextIncomplete;
+  final workouts = Workouts.of(context);
+  final next = workouts.nextIncomplete;
+  final watch = switch (prefs.isOn(.watchApp)) {
+    true => watchLink(Theme.of(context).platform),
+    _ => null,
+  };
+  final exercises = Exercises.of(context);
   // Honour the next exercise's per-exercise unit, falling back to the global
   // weight setting — the notification used to always emit the raw metric
   // value with an "lbs" label regardless of preference.
   final unit = switch (next?.$1.exercise.id) {
-    String id => Exercises.of(context).unitFor(id) ?? prefs.weightUnit,
+    String id => exercises.unitFor(id) ?? prefs.weightUnit,
     null => prefs.weightUnit,
   };
   final body = switch (next?.$2) {
@@ -26,6 +37,10 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
     _ => null,
   };
   final nextExercise = next?.$1 ?? exercise;
+  // and one scheduled before the watch took over must not fire either
+  if (workouts.activeWorkout?.id case String id when await watch?.measures(id) ?? false) {
+    return cancelExerciseNotification();
+  }
   return scheduleExerciseNotification(
     nextExercise.id,
     when,
