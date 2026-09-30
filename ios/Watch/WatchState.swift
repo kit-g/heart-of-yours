@@ -54,6 +54,49 @@ enum WatchState: Equatable {
             var bpm: String
             var energy: String
             var kcal: String
+            var finish: String
+            var finishTitle: String
+            var finishConfirm: String
+            var finishCancel: String
+
+            /// Nil unless every label the controls cannot do without is there;
+            /// the rest default to empty, for a phone that predates them.
+            init?(_ payload: [String: Any]) {
+                func text(_ key: String) -> String? { payload[key] as? String }
+                guard let done = text("done"),
+                      let skip = text("skip"),
+                      let add = text("add"),
+                      let subtract = text("subtract"),
+                      let reps = text("repsLabel"),
+                      let unreachable = text("unreachable")
+                else { return nil }
+                self.done = done
+                self.skip = skip
+                self.add = add
+                self.subtract = subtract
+                self.reps = reps
+                self.unreachable = unreachable
+                heartRate = text("heartRate") ?? ""
+                bpm = text("bpm") ?? ""
+                energy = text("energy") ?? ""
+                kcal = text("kcal") ?? ""
+                finish = text("finish") ?? ""
+                finishTitle = text("finishTitle") ?? ""
+                finishConfirm = text("finishConfirm") ?? ""
+                finishCancel = text("finishCancel") ?? ""
+            }
+
+            init(
+                done: String, skip: String, add: String, subtract: String, reps: String, unreachable: String,
+                heartRate: String, bpm: String, energy: String, kcal: String,
+                finish: String, finishTitle: String, finishConfirm: String, finishCancel: String
+            ) {
+                (self.done, self.skip, self.add, self.subtract, self.reps, self.unreachable) =
+                    (done, skip, add, subtract, reps, unreachable)
+                (self.heartRate, self.bpm, self.energy, self.kcal) = (heartRate, bpm, energy, kcal)
+                (self.finish, self.finishTitle, self.finishConfirm, self.finishCancel) =
+                    (finish, finishTitle, finishConfirm, finishCancel)
+            }
         }
 
         struct Rest: Equatable {
@@ -109,27 +152,6 @@ enum WatchState: Equatable {
                 nil
             }
 
-            func text(_ key: String) -> String? { payload[key] as? String }
-            let controls: Workout.Controls? = switch (
-                text("done"), text("skip"), text("add"), text("subtract"), text("repsLabel"), text("unreachable")
-            ) {
-            case let (done?, skip?, add?, subtract?, reps?, unreachable?):
-                .init(
-                    done: done,
-                    skip: skip,
-                    add: add,
-                    subtract: subtract,
-                    reps: reps,
-                    unreachable: unreachable,
-                    heartRate: text("heartRate") ?? "",
-                    bpm: text("bpm") ?? "",
-                    energy: text("energy") ?? "",
-                    kcal: text("kcal") ?? ""
-                )
-            default:
-                nil
-            }
-
             self = .workout(.init(
                 workoutId: workoutId,
                 startedAt: startedAt,
@@ -139,7 +161,7 @@ enum WatchState: Equatable {
                 rest: rest,
                 accent: Color(argb: (payload["accent"] as? NSNumber)?.uint32Value ?? 0xFFFF_FFFF),
                 set: set,
-                controls: controls,
+                controls: Workout.Controls(payload),
                 activity: payload["activity"] as? String
             ))
         default:

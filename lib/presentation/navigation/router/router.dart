@@ -260,6 +260,12 @@ final class HeartRouter {
     return config.goNamed(_workoutName);
   }
 
+  /// The summary of a workout just finished — from the phone's Finish, or the
+  /// watch's (#183), which arrives above any route and has no router context.
+  void goToWorkoutDone(String? workoutId) {
+    return config.goNamed(_doneName, queryParameters: {'workoutId': workoutId});
+  }
+
   /// Opens one past session — what a goal rung links back to, crediting the
   /// workout that met it.
   void goToWorkoutEditor(String workoutId) {

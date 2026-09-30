@@ -5,6 +5,7 @@ import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/widgets/workout/rest.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show finishWorkout;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
@@ -128,6 +129,15 @@ class _WatchPresenterState extends State<WatchPresenter> {
         _complete(workouts, workout, setId, weight: weight, reps: reps);
       case WatchSkipRest():
         Alarms.of(context).stopActiveExerciseTimer();
+      case WatchFinishWorkout():
+        // the watch offers Finish only with nothing left to tick; if a set was
+        // added on the phone since, that is the phone's to finish
+        if (workout.isValid && upNextIn(workout, after: workouts.latestMarkedSet)?.set == null) {
+          // the phone's own finish: it saves, writes Health, shows the summary,
+          // and the state it leaves — no workout — is what the watch hears next
+          finishWorkout(context, workouts);
+          return;
+        }
       case WatchAdjustRest(:final seconds):
         final alarms = Alarms.of(context);
         final resting = workout.where((exercise) => exercise.id == alarms.activeExerciseId).firstOrNull;
@@ -300,6 +310,10 @@ class _WatchPresenterState extends State<WatchPresenter> {
       bpm: l.healthBpm,
       energy: l.healthActiveEnergy,
       kcal: l.healthKilocalories,
+      finish: l.finish,
+      finishTitle: l.finishWorkoutWarningTitle,
+      finishConfirm: l.readyToFinish,
+      finishCancel: l.notReadyToFinish,
     );
   }
 

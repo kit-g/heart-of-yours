@@ -1,11 +1,5 @@
 part of 'router.dart';
 
-extension ContextNavigation on BuildContext {
-  void goToWorkoutDone(String? workoutId) {
-    return goNamed(_doneName, queryParameters: {'workoutId': workoutId});
-  }
-}
-
 extension on BuildContext {
   void goToSettings() {
     return goNamed(_settingsName);
