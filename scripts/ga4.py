@@ -87,6 +87,8 @@ EVENT_DIMENSIONS = {
     'format': 'Export format',
     'filed': 'Filed into a folder',
     'granted': 'Permission granted',
+    'on': 'Switched on',
+    'from_watch': 'From the watch',
 }
 
 # User properties are user-scoped dimensions; GA4 draws no other distinction.

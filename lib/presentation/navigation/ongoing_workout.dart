@@ -92,78 +92,88 @@ class _OngoingWorkoutPresenterState extends State<OngoingWorkoutPresenter> {
   OngoingWorkout? _snapshot() {
     // opt-in: off reads as "no workout", which also takes down one already up
     if (!Preferences.of(context).lockScreenWorkout) return null;
-    final workout = _workouts?.activeWorkout;
-    if (workout == null) return null;
-
-    final l = L.of(context);
-    final upNext = upNextIn(workout, after: _workouts?.latestMarkedSet);
-
-    return (
-      workoutId: workout.id,
-      startedAt: workout.start,
-      title: switch (workout.name) {
-        String name when name.isNotEmpty => name,
-        _ => l.defaultWorkoutName(),
-      },
-      exercise: upNext?.exercise.exercise.name ?? '',
-      next: switch (upNext) {
-        (set: ExerciseSet set, :int number, exercise: _) => switch (_describe(set, l)) {
-          String detail => l.ongoingWorkoutNextSetDetail(number, detail),
-          null => l.ongoingWorkoutNextSet(number),
-        },
-        (set: null, number: _, exercise: _) => l.ongoingWorkoutAllDone,
-        null => '',
-      },
-      rest: switch ((_alarms?.activeExerciseEnd, _alarms?.activeExerciseTotal)) {
-        (DateTime end, num total) => (
-          start: end.subtract(Duration(seconds: total.toInt())),
-          end: end,
-          label: l.ongoingWorkoutRest,
-          over: l.restComplete,
-        ),
-        _ => null,
-      },
-      preset: AppTheme.of(context).preset,
-      channel: l.ongoingWorkoutChannel,
-    );
-  }
-
-  /// What the next set holds, in the units its exercise is shown in; null
-  /// when nothing is filled in yet.
-  String? _describe(ExerciseSet set, L l) {
-    final formats = RecordFormats(
-      l: l,
-      prefs: Preferences.of(context),
-      unit: Exercises.of(context).unitFor(set.exercise.id),
-    );
-    final weight = switch (set.weight) {
-      double weight when weight > 0 => formats.weight(weight),
-      _ => null,
-    };
-    final reps = switch (set.reps) {
-      int reps when reps > 0 => reps,
-      _ => null,
-    };
-    final distance = switch (set.distance) {
-      double distance when distance > 0 => formats.distance(distance),
-      _ => null,
-    };
-    final duration = switch (set.duration) {
-      int seconds when seconds > 0 => formats.time(seconds),
-      _ => null,
-    };
-
-    return switch ((weight, reps, distance, duration)) {
-      (String weight, int reps, _, _) => l.weightedSetRepresentation(weight, reps),
-      (String weight, null, _, _) => weight,
-      (null, int reps, _, _) => '× $reps',
-      (null, null, String distance, String duration) => '$distance · $duration',
-      (null, null, String distance, null) => distance,
-      (null, null, null, String duration) => duration,
-      _ => null,
-    };
+    return ongoingWorkoutOf(context);
   }
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// The active workout, summarised as finished copy for the surfaces outside the
+/// app: the lock screen above, and the watch (`navigation/watch.dart`). Null
+/// when there is no active workout. Reads, never watches — each caller decides
+/// what it listens to.
+OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
+  final workouts = Workouts.of(context);
+  final workout = workouts.activeWorkout;
+  if (workout == null) return null;
+
+  final l = L.of(context);
+  final alarms = Alarms.of(context);
+  final upNext = upNextIn(workout, after: workouts.latestMarkedSet);
+
+  return (
+    workoutId: workout.id,
+    startedAt: workout.start,
+    title: switch (workout.name) {
+      String name when name.isNotEmpty => name,
+      _ => l.defaultWorkoutName(),
+    },
+    exercise: upNext?.exercise.exercise.name ?? '',
+    next: switch (upNext) {
+      (set: ExerciseSet set, :int number, exercise: _) => switch (_describe(context, set, l)) {
+        String detail => l.ongoingWorkoutNextSetDetail(number, detail),
+        null => l.ongoingWorkoutNextSet(number),
+      },
+      (set: null, number: _, exercise: _) => l.ongoingWorkoutAllDone,
+      null => '',
+    },
+    rest: switch ((alarms.activeExerciseEnd, alarms.activeExerciseTotal)) {
+      (DateTime end, num total) => (
+        start: end.subtract(Duration(seconds: total.toInt())),
+        end: end,
+        label: l.ongoingWorkoutRest,
+        over: l.restComplete,
+      ),
+      _ => null,
+    },
+    preset: AppTheme.of(context).preset,
+    channel: l.ongoingWorkoutChannel,
+  );
+}
+
+/// What the next set holds, in the units its exercise is shown in; null
+/// when nothing is filled in yet.
+String? _describe(BuildContext context, ExerciseSet set, L l) {
+  final formats = RecordFormats(
+    l: l,
+    prefs: Preferences.of(context),
+    unit: Exercises.of(context).unitFor(set.exercise.id),
+  );
+  final weight = switch (set.weight) {
+    double weight when weight > 0 => formats.weight(weight),
+    _ => null,
+  };
+  final reps = switch (set.reps) {
+    int reps when reps > 0 => reps,
+    _ => null,
+  };
+  final distance = switch (set.distance) {
+    double distance when distance > 0 => formats.distance(distance),
+    _ => null,
+  };
+  final duration = switch (set.duration) {
+    int seconds when seconds > 0 => formats.time(seconds),
+    _ => null,
+  };
+
+  return switch ((weight, reps, distance, duration)) {
+    (String weight, int reps, _, _) => l.weightedSetRepresentation(weight, reps),
+    (String weight, null, _, _) => weight,
+    (null, int reps, _, _) => '× $reps',
+    (null, null, String distance, String duration) => '$distance · $duration',
+    (null, null, String distance, null) => distance,
+    (null, null, null, String duration) => duration,
+    _ => null,
+  };
 }

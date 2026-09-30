@@ -60,7 +60,7 @@ void main() {
         extra: {
           'somethingElse': 1,
           'features': {
-            'watchApp': {'on': true, 'at': '2026-09-01T00:00:00.000Z'},
+            'voiceRestTimer': {'on': true, 'at': '2026-09-01T00:00:00.000Z'},
           },
         },
       );
@@ -69,7 +69,7 @@ void main() {
 
       expect(written.themeMode, 'dark');
       expect(written.extra['somethingElse'], 1);
-      expect((written.extra['features'] as Map)['watchApp'], {'on': true, 'at': '2026-09-01T00:00:00.000Z'});
+      expect((written.extra['features'] as Map)['voiceRestTimer'], {'on': true, 'at': '2026-09-01T00:00:00.000Z'});
       expect(featureRecordsOf(written), {feature: (on: false, at: later)});
     });
 

@@ -159,6 +159,7 @@ const _dataImported = 'data_imported';
 const _avatarUpdated = 'avatar_updated';
 const _upgradeGateShown = 'upgrade_gate_shown';
 const _notificationPermission = 'notification_permission_result';
+const _watchAppSwitched = 'watch_app_switched';
 
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
@@ -174,6 +175,8 @@ const _unmatched = 'unmatched';
 const _createdCustom = 'created_custom';
 const _filed = 'filed';
 const _granted = 'granted';
+const _on = 'on';
+const _fromWatch = 'from_watch';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -382,6 +385,13 @@ class Analytics {
 
   void notificationPermissionResult({required bool granted}) {
     _log(_notificationPermission, {_granted: _flag(granted)});
+  }
+
+  /// The watch app (#175) was turned on or off. [fromWatch] is the opt-in's
+  /// yes — Heart opened on the watch for the first time — as opposed to the
+  /// Settings switch, so the reach of the feature and its reversals read apart.
+  void watchAppSwitched({required bool on, required bool fromWatch}) {
+    _log(_watchAppSwitched, {_on: _flag(on), _fromWatch: _flag(fromWatch)});
   }
 
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);

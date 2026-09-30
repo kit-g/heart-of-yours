@@ -1904,6 +1904,18 @@ class LFr extends L {
   String get lockScreenWorkoutSubtitle => 'Durée, série suivante et repos pendant la séance';
 
   @override
+  String get watchApp => 'Apple Watch';
+
+  @override
+  String get watchAppSubtitle => 'Votre séance au poignet';
+
+  @override
+  String get watchAppIdle => 'Commencez une séance sur votre iPhone';
+
+  @override
+  String get watchAppOff => 'Désactivé dans Heart sur votre iPhone';
+
+  @override
   String get restTimers => 'Minuteurs de repos';
 
   @override
