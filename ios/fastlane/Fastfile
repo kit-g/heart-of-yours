@@ -14,13 +14,22 @@ def appstore_api_key
   )
 end
 
-# The workout Live Activity's widget extension (#133): its target name, and
-# the suffix of its bundle id under the app's.
-LIVE_ACTIVITY = "OngoingWorkout"
+# The bundles embedded in the app, as target name => the suffix of its bundle id
+# under the app's: the workout Live Activity's widget extension (#133) and the
+# watch app (#187). Each is signed with its own App Store profile, and each needs
+# that profile in the match store before its first deploy.
+EMBEDDED = {
+  "OngoingWorkout" => "OngoingWorkout",
+  "Watch" => "watchkitapp",
+}
+
+def app_identifiers(app_id)
+  [app_id] + EMBEDDED.values.map { |suffix| "#{app_id}.#{suffix}" }
+end
 
 platform :ios do
   # Create or regenerate the App Store provisioning profiles for one environment — the
-  # app and the Live Activity extension. `beta` reads the match store readonly, so this
+  # app and every bundle in EMBEDDED. `beta` reads the match store readonly, so this
   # lane is the only thing that writes to it, and it has to run before the first deploy
   # of any *new* bundle id: an id with no profile in the store fails the deploy outright,
   # which is how v1.9.0 lost both iOS builds to the extension added in #133.
@@ -49,7 +58,7 @@ platform :ios do
 
     match(
       type: "appstore",
-      app_identifier: [app_id, "#{app_id}.#{LIVE_ACTIVITY}"],
+      app_identifier: app_identifiers(app_id),
       api_key: appstore_api_key,
       readonly: false,
       force: options[:force].to_s == 'true'
@@ -71,7 +80,7 @@ platform :ios do
 
     match(
       type: "appstore",
-      app_identifier: [app_id, "#{app_id}.#{LIVE_ACTIVITY}"],
+      app_identifier: app_identifiers(app_id),
       readonly: true
     )
 
@@ -97,16 +106,18 @@ platform :ios do
       build_configurations: [configuration]
     )
 
-    # the extension is signed with its own profile, or the archive's export fails
-    update_code_signing_settings(
-      use_automatic_signing: false,
-      path: "Runner.xcodeproj",
-      team_id: "DFX2JYT8BM",
-      code_sign_identity: "Apple Distribution",
-      profile_name: "match AppStore #{app_id}.#{LIVE_ACTIVITY}",
-      targets: [LIVE_ACTIVITY],
-      build_configurations: [configuration]
-    )
+    # each embedded bundle is signed with its own profile, or the archive's export fails
+    EMBEDDED.each do |target, suffix|
+      update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "Runner.xcodeproj",
+        team_id: "DFX2JYT8BM",
+        code_sign_identity: "Apple Distribution",
+        profile_name: "match AppStore #{app_id}.#{suffix}",
+        targets: [target],
+        build_configurations: [configuration]
+      )
+    end
 
     build_app(
       workspace: "Runner.xcworkspace",

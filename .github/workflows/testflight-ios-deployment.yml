@@ -86,6 +86,14 @@ jobs:
         # leave it undated, and the card shows no date.
         run: dart scripts/whats_new.dart stamp
 
+      # Runner embeds the watch app (#187), and Xcode refuses to build a scheme
+      # with an embedded watch app unless the watchOS platform is installed —
+      # "watchOS 26.2 must be installed in order to run the scheme" — even for a
+      # device archive that never touches a simulator. Runner images usually
+      # carry it; download it only when this one doesn't.
+      - name: "Ensure the watchOS platform"
+        run: xcrun simctl list runtimes | grep -q watchOS || xcodebuild -downloadPlatform watchOS
+
       - name: "Build"
         run: flutter build ios --release --flavor ${{ inputs.flavor }} --no-codesign --dart-define-from-file=appconfig.json
 
