@@ -1889,7 +1889,7 @@ class LEn extends L {
   String get watchHeartRate => 'Heart rate';
 
   @override
-  String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
+  String get watchPhoneUnreachable => 'Syncs with your iPhone when it\'s back';
 
   @override
   String watchSetPosition(int number, int total) {
@@ -3929,7 +3929,7 @@ class LEnCa extends LEn {
   String get watchHeartRate => 'Heart rate';
 
   @override
-  String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
+  String get watchPhoneUnreachable => 'Syncs with your iPhone when it\'s back';
 
   @override
   String watchSetPosition(int number, int total) {

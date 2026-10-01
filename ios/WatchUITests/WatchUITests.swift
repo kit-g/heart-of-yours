@@ -25,18 +25,24 @@ final class WatchUITests: XCTestCase {
         app.swipeRight()
     }
 
-    /// Done ticks the set the watch shows; the phone answers with the next one,
-    /// and the button comes back (it spins while the phone has not answered).
+    /// Done ticks the set the watch shows, and the watch moves on to the next
+    /// one — with the phone in reach or not (#206).
     func testTickNextSet() {
         let done = app.buttons["Done"]
         XCTAssertTrue(done.waitForExistence(timeout: 10))
-        let before = app.staticTexts.allElementsBoundByIndex.map(\.label)
+        let before = screenText
 
         done.tap()
 
         XCTAssertTrue(done.waitForExistence(timeout: 10))
-        let after = app.staticTexts.allElementsBoundByIndex.map(\.label)
-        XCTAssertNotEqual(before, after, "the phone sent the state that follows the tick")
+        XCTAssertNotEqual(before, screenText, "the watch moved on to the set that follows")
+    }
+
+    /// Every line on screen but the clocks, which change on their own.
+    private var screenText: [String] {
+        app.staticTexts.allElementsBoundByIndex.map(\.label).filter { label in
+            !label.allSatisfy { $0.isNumber || $0 == ":" }
+        }
     }
 
     /// The Digital Crown moves the focused value, a detent at a time.

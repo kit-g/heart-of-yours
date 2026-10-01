@@ -121,10 +121,7 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
     },
     exercise: upNext?.exercise.exercise.name ?? '',
     next: switch (upNext) {
-      (set: ExerciseSet set, :int number, exercise: _) => switch (_describe(context, set, l)) {
-        String detail => l.ongoingWorkoutNextSetDetail(number, detail),
-        null => l.ongoingWorkoutNextSet(number),
-      },
+      (set: ExerciseSet set, :int number, exercise: _) => nextSetLine(context, set, number),
       (set: null, number: _, exercise: _) => l.ongoingWorkoutAllDone,
       null => '',
     },
@@ -140,6 +137,17 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
     preset: AppTheme.of(context).preset,
     channel: l.ongoingWorkoutChannel,
   );
+}
+
+/// The "Next:" line for [set], the [number]th of its exercise: "Next: set 2 ·
+/// 60 kg × 5". Also sent for every set to the watch (#206), which moves on by
+/// itself while the phone is out of reach.
+String nextSetLine(BuildContext context, ExerciseSet set, int number) {
+  final l = L.of(context);
+  return switch (_describe(context, set, l)) {
+    String detail => l.ongoingWorkoutNextSetDetail(number, detail),
+    null => l.ongoingWorkoutNextSet(number),
+  };
 }
 
 /// What the next set holds, in the units its exercise is shown in; null

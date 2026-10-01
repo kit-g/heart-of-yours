@@ -3702,9 +3702,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "watchPhoneUnreachable": "Rapprochez votre iPhone pour noter d’ici",
+  "watchPhoneUnreachable": "Se synchronise avec votre iPhone à son retour",
   "@watchPhoneUnreachable": {
-    "description": "Apple Watch line shown in place of the set controls while the phone is out of reach; logging needs it. Short: it is a watch screen",
+    "description": "Apple Watch line shown while the phone is out of reach: logging carries on, and what is logged reaches the phone once it is near again. Short: it is a watch screen",
     "type": "text",
     "placeholders": {}
   },

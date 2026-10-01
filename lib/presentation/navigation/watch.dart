@@ -82,6 +82,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
     L.of(context);
     AppTheme.watch(context);
     Preferences.watch(context);
+    // a rest timer set mid-workout is the rest the watch starts on its own
+    Timers.watch(context);
     _sync();
   }
 
@@ -125,8 +127,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
     if (workout == null || workout.id != command.workoutId) return _resend();
 
     switch (command) {
-      case WatchComplete(:final setId, :final weight, :final reps):
-        _complete(workouts, workout, setId, weight: weight, reps: reps);
+      case WatchComplete(:final setId, :final weight, :final reps, :final at):
+        _complete(workouts, workout, setId, weight: weight, reps: reps, at: at);
       case WatchEditSet(:final setId, :final weight, :final reps):
         // new values for a set gone back to; it keeps its tick
         if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set)) {
@@ -138,13 +140,15 @@ class _WatchPresenterState extends State<WatchPresenter> {
         }
       case WatchSkipRest():
         Alarms.of(context).stopActiveExerciseTimer();
-      case WatchFinishWorkout():
+      case WatchFinishWorkout(:final at):
         // the watch offers Finish only with nothing left to tick; if a set was
         // added on the phone since, that is the phone's to finish
         if (workout.isValid && upNextIn(workout, after: workouts.latestMarkedSet)?.set == null) {
           // the phone's own finish: it saves, writes Health, shows the summary,
           // and the state it leaves — no workout — is what the watch hears next
-          finishWorkout(context, workouts);
+          // — ended when the user confirmed it, which a Finish queued while
+          // the phone was out of reach (#206) says was a while ago
+          finishWorkout(context, workouts, at: at);
           return;
         }
       case WatchAdjustRest(:final seconds):
@@ -166,7 +170,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
   /// values the watch showed become the set's, converted from the unit they
   /// were shown in, and the exercise's rest starts — without the countdown
   /// dialog, which nobody is looking at.
-  void _complete(Workouts workouts, Workout workout, String setId, {double? weight, int? reps}) {
+  void _complete(Workouts workouts, Workout workout, String setId, {double? weight, int? reps, DateTime? at}) {
     // gone, or ticked already (a double tap, or the phone got there first)
     if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set) when !set.isCompleted) {
       if (weight != null || reps != null) {
@@ -174,7 +178,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
       }
       if (set.canBeCompleted) {
         workouts.markSetAsComplete(exercise, set);
-        startRest(context, exercise);
+        startRest(context, exercise, since: at);
       }
     }
   }
@@ -257,13 +261,23 @@ class _WatchPresenterState extends State<WatchPresenter> {
           step: _step(exercise),
           weighted: _measures(exercise).$1,
           counted: _measures(exercise).$2,
+          rest: Timers.of(context)[exercise.exercise.id],
           sets: [
-            for (final set in exercise)
+            for (final (index, set) in exercise.indexed)
               (
                 id: set.id,
                 weight: _shownWeight(exercise, set),
                 reps: _shownReps(exercise, set),
                 done: set.isCompleted,
+                position: l.watchSetPosition(index + 1, exercise.length),
+                previous: _lastTime(
+                  exercise,
+                  index,
+                  weighted: _measures(exercise).$1,
+                  unit: _unitLabel(exercise, l),
+                  l: l,
+                ),
+                next: nextSetLine(context, set, index + 1),
               ),
           ],
         ),
@@ -382,6 +396,10 @@ class _WatchPresenterState extends State<WatchPresenter> {
       finishCancel: l.notReadyToFinish,
       save: l.watchSave,
       notDone: l.watchSetNotDone,
+      restLabel: l.ongoingWorkoutRest,
+      restOver: l.restComplete,
+      allDone: l.ongoingWorkoutAllDone,
+      idle: l.watchAppIdle,
     );
   }
 

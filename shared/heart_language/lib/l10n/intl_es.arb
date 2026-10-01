@@ -3702,9 +3702,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "watchPhoneUnreachable": "Acerca tu iPhone para registrar desde aquí",
+  "watchPhoneUnreachable": "Se sincroniza con tu iPhone cuando vuelva",
   "@watchPhoneUnreachable": {
-    "description": "Apple Watch line shown in place of the set controls while the phone is out of reach; logging needs it. Short: it is a watch screen",
+    "description": "Apple Watch line shown while the phone is out of reach: logging carries on, and what is logged reaches the phone once it is near again. Short: it is a watch screen",
     "type": "text",
     "placeholders": {}
   },
