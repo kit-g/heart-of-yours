@@ -144,15 +144,34 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
   late AnimationController _controller;
   late List<_Particle> particles;
 
+  /// Set while the burst waits for the app to come to the front.
+  AppLifecycleListener? _waiting;
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: widget.duration),
-    )..forward();
-
+    );
     particles = List.generate(widget.particleCount, (_) => _Particle());
+
+    // A workout finished on the watch while the phone was away (#206) can land
+    // here with the app in the background: the queue wakes it, and the finish
+    // opens this screen before anyone is looking. Played then, the burst is
+    // over by the time the app is opened. It waits for the app to be in front.
+    switch (WidgetsBinding.instance.lifecycleState) {
+      case null || .resumed:
+        _controller.forward();
+      case _:
+        _waiting = AppLifecycleListener(onResume: _play);
+    }
+  }
+
+  void _play() {
+    _waiting?.dispose();
+    _waiting = null;
+    _controller.forward();
   }
 
   @override
@@ -169,6 +188,7 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    _waiting?.dispose();
     _controller.dispose();
     super.dispose();
   }
