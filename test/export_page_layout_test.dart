@@ -48,6 +48,14 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.settings_rounded));
     await tester.pumpTimes();
+    // below the fold in landscape once the settings list is capped, and a
+    // lazy list builds nothing it has not scrolled to
+    await tester.scrollUntilVisible(
+      find.byKey(AppKeys.exportData),
+      200,
+      scrollable: find.descendant(of: find.byType(SettingsPage), matching: find.byType(Scrollable)).first,
+    );
+    await tester.pumpTimes();
     await tester.tapByKey(AppKeys.exportData);
     await tester.pumpTimes();
   }
