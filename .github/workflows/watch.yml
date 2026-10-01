@@ -1,0 +1,80 @@
+name: "Watch"
+
+# The watch app's Swift (#175), compiled and unit-tested on pull requests that
+# touch it. Everything else in CI runs on Ubuntu and never compiles Swift: until
+# this, a Swift error first surfaced in the middle of a tag's TestFlight deploy,
+# after the whole Flutter build. Scoped to Swift and the project file — which
+# says what each target compiles — so a Dart-only change never waits on macOS.
+on:
+  pull_request:
+    paths:
+      - 'ios/**/*.swift'
+      - 'ios/Runner.xcodeproj/**'
+      - '.github/workflows/watch.yml'
+  workflow_dispatch: { }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "watch-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: "Watch • build and test"
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: "Read pinned Flutter version"
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - name: "Set up Flutter"
+        uses: flutter-actions/setup-flutter@adb607ae976a9e00473569facfc69813c637a060 # v4.3
+        with:
+          channel: 'stable'
+          version: ${{ steps.flutter.outputs.version }}
+          cache: true
+          cache-key: pub-${{ hashFiles('pubspec.lock') }}
+
+      # The watch targets inherit Flutter's xcconfig, which includes the
+      # gitignored Generated.xcconfig, and the project references Flutter's
+      # generated Swift package. `pub get` writes both; nothing else of
+      # Flutter's is built.
+      - name: "Dependencies"
+        run: flutter pub get
+
+      # see testflight-ios-deployment.yml: no watchOS platform, no watch scheme
+      - name: "Ensure the watchOS platform"
+        run: xcrun simctl list runtimes | grep -q watchOS || xcodebuild -downloadPlatform watchOS
+
+      # Runner images ship watch simulators, but which ones changes from image
+      # to image: take any available, and make one only if there is none.
+      - name: "Pick a watch simulator"
+        id: sim
+        run: |
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | test("watchOS")) | .value[]] | first | .udid // empty')
+          if [ -z "$udid" ]; then
+            # a device type the runtime runs — the full list goes back to Series 2
+            runtime=$(xcrun simctl list runtimes -j | jq '[.runtimes[] | select(.platform == "watchOS" and .isAvailable)] | last')
+            udid=$(xcrun simctl create ci-watch \
+              "$(echo "$runtime" | jq -r '.supportedDeviceTypes | last | .identifier')" \
+              "$(echo "$runtime" | jq -r '.identifier')")
+          fi
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
+      # Builds the watch app and its complication, then runs WatchTests hosted
+      # in it. Not WatchUITests: those drive the app against a running phone.
+      # Unsigned — a simulator needs no signature, and CI has no Apple account.
+      - name: "Build and test"
+        working-directory: ios
+        run: |
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme watch-dev \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:WatchTests \
+            CODE_SIGNING_ALLOWED=NO
