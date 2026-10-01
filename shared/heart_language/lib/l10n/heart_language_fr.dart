@@ -1947,6 +1947,10 @@ class LFr extends L {
   String get watchFinishedAway => 'Enregistré sur votre montre. Votre iPhone le recevra à son retour.';
 
   @override
+  String get watchAppAwayNote =>
+      'Téléphone au vestiaire ? La montre continue d\'enregistrer, et votre iPhone se met à jour à son retour. Cela peut prendre quelques secondes.';
+
+  @override
   String get watchCatchingUp => 'Synchronisation avec votre montre…';
 
   @override
