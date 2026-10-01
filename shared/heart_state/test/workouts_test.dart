@@ -361,6 +361,28 @@ void main() {
       verify(local.markSetAsIncomplete(first)).called(1);
     });
 
+    test('editSet changes a set from outside its row, and says so', () async {
+      await sut.startWorkout(source: .blank, name: 'Chest');
+      await sut.startExercise(bench);
+      final we = sut.activeWorkout!.first;
+      final set = we.first;
+      await sut.markSetAsComplete(we, set);
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.editSet(set, weight: 62.5, reps: 7);
+
+      expect(set.weight, 62.5);
+      expect(set.reps, 7);
+      expect(set.isCompleted, isTrue, reason: 'correcting a ticked set leaves it ticked');
+      expect(probe.notifications, 1, reason: 'the row and the watch follow what they hear');
+      // the set is this test's own, so the count is too — the mock is shared across the file
+      verify(local.storeMeasurements(set)).called(1);
+
+      await sut.editSet(set, reps: 8);
+      expect(set.weight, 62.5, reason: 'what is not given stays');
+      expect(set.reps, 8);
+    });
+
     test('storeMeasurements delegates to service', () async {
       await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);

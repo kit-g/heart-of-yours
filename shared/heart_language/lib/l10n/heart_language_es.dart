@@ -1923,6 +1923,22 @@ class LEs extends L {
   String get watchPhoneUnreachable => 'Acerca tu iPhone para registrar desde aquí';
 
   @override
+  String watchSetPosition(int number, int total) {
+    return 'Serie $number de $total';
+  }
+
+  @override
+  String watchLastTime(String result) {
+    return 'La última vez: $result';
+  }
+
+  @override
+  String get watchSave => 'Guardar';
+
+  @override
+  String get watchSetNotDone => 'No hecha';
+
+  @override
   String get restTimers => 'Temporizadores de descanso';
 
   @override
