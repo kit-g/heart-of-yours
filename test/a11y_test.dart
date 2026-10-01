@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
@@ -64,10 +65,18 @@ enum _Screen {
   upsyncDone,
   backfillRunning,
   backfillFailed,
+  workoutDone,
 }
 
 /// The exercise the rest-timers screen resolves one of its timers to.
 final _bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+
+final _squat = Exercise(name: 'Squat', category: .barbell, target: .legs);
+
+/// The session the workout-done screen celebrates.
+final _done = Workout(name: 'Records')
+  ..add(_bench)
+  ..add(_squat);
 
 /// A finished workout the server has not confirmed — what the upsync replays.
 Workout _unsynced() {
@@ -447,6 +456,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
+  // The workout-done screen (lib/presentation/routes/done/done.dart) with a
+  // record badge and the first-records summary both showing.
+  (_Screen.workoutDone, _Guideline.labeledTapTarget, null),
+  (_Screen.workoutDone, _Guideline.textContrastLight, null),
+  (_Screen.workoutDone, _Guideline.textContrastDark, null),
+  (_Screen.workoutDone, _Guideline.androidTapTarget, null),
+  (_Screen.workoutDone, _Guideline.iosTapTarget, null),
 ];
 
 void main() {
@@ -602,6 +618,24 @@ void main() {
             seconds: anyNamed('seconds'),
           ),
         ).thenAnswer((_) async {});
+      case _Screen.workoutDone:
+        // one exercise beat an earlier session, one was a first
+        when(db.getRecord(any, _bench)).thenAnswer(
+          (_) async => {
+            'heaviest': {
+              'weight': 100.0,
+              'reps': 3,
+              'workoutId': _done.id,
+              'at': '2026-09-30T10:00:00Z',
+              'previous': {'weight': 95.0, 'reps': 3, 'workoutId': 'earlier', 'at': '2026-09-01T10:00:00Z'},
+            },
+          },
+        );
+        when(db.getRecord(any, _squat)).thenAnswer(
+          (_) async => {
+            'heaviest': {'weight': 80.0, 'reps': 5, 'workoutId': _done.id, 'at': '2026-09-30T10:00:00Z'},
+          },
+        );
       default:
         break;
     }
@@ -686,6 +720,16 @@ void main() {
         await tester.tap(find.text('Add note'));
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
+      case _Screen.workoutDone:
+        final context = tester.element(find.byType(MaterialApp));
+        await Workouts.of(context).startWorkout(source: .template, template: _done);
+        await tester.pumpTimes();
+        final id = Workouts.of(context).activeWorkout!.id;
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/done?workoutId=$id');
+        await tester.pumpTimes();
+        // the rows are only honest if the badges are what they checked
+        expect(find.textContaining(RegExp(r'^was \d')), findsOneWidget);
+        expect(find.text('first record'), findsOneWidget);
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);

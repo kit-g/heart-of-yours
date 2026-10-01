@@ -450,8 +450,35 @@ class LEs extends L {
   }
 
   @override
-  String recordAchievedLine(String exercise, String records) {
-    return '$exercise · $records';
+  String recordBadgeWas(String value) {
+    return 'antes $value';
+  }
+
+  @override
+  String recordBadgeLabel(String exercise, String kind, String value, String previous) {
+    return 'Nuevo récord: $exercise, $kind $value, antes $previous';
+  }
+
+  @override
+  String firstRecordsBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'primeros récords',
+      one: 'primer récord',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String firstRecordsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count primeros récords, de ejercicios hechos por primera vez',
+      one: '$count primer récord, de un ejercicio hecho por primera vez',
+    );
+    return '$_temp0';
   }
 
   @override

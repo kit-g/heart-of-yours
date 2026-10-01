@@ -450,8 +450,39 @@ class LRu extends L {
   }
 
   @override
-  String recordAchievedLine(String exercise, String records) {
-    return '$exercise · $records';
+  String recordBadgeWas(String value) {
+    return 'было $value';
+  }
+
+  @override
+  String recordBadgeLabel(String exercise, String kind, String value, String previous) {
+    return 'Новый рекорд: $exercise, $kind $value, было $previous';
+  }
+
+  @override
+  String firstRecordsBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'первого рекорда',
+      many: 'первых рекордов',
+      few: 'первых рекорда',
+      one: 'первый рекорд',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String firstRecordsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count первого рекорда: упражнения выполнены впервые',
+      many: '$count первых рекордов: упражнения выполнены впервые',
+      few: '$count первых рекорда: упражнения выполнены впервые',
+      one: '$count первый рекорд: упражнение выполнено впервые',
+    );
+    return '$_temp0';
   }
 
   @override

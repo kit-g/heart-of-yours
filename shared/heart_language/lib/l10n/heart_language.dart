@@ -892,11 +892,29 @@ abstract class L {
   /// **'{count, plural, one{New record} other{New records}}'**
   String recordsAchievedHeading(int count);
 
-  /// Workout complete screen, one exercise's new records: the exercise name and its record values
+  /// Workout complete screen, a personal-record badge's small line under the new value: the record it beat, with its unit, e.g. 'was 95 kg'
   ///
   /// In en, this message translates to:
-  /// **'{exercise} · {records}'**
-  String recordAchievedLine(String exercise, String records);
+  /// **'was {value}'**
+  String recordBadgeWas(String value);
+
+  /// Screen reader label for one personal-record badge on the workout complete screen, e.g. 'New record: Bench Press, Max weight 100 kg, was 95 kg'
+  ///
+  /// In en, this message translates to:
+  /// **'New record: {exercise}, {kind} {value}, was {previous}'**
+  String recordBadgeLabel(String exercise, String kind, String value, String previous);
+
+  /// Workout complete screen, caption under the number on the badge that sums up records set by doing an exercise for the first time, e.g. '12' over 'first records'. The number is shown separately.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{first record} other{first records}}'**
+  String firstRecordsBadge(int count);
+
+  /// Screen reader label for the workout complete screen's badge summing up records set by doing an exercise for the first time
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 first record, from an exercise done for the first time} other{{count} first records, from exercises done for the first time}}'**
+  String firstRecordsLabel(int count);
 
   /// Workout complete screen, heading above the goal rungs this session earned
   ///

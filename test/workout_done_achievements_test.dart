@@ -162,51 +162,176 @@ void main() {
     expect(find.textContaining('reached'), findsNothing);
   });
 
-  testWidgets('states the record the session set, with its value', (tester) async {
-    await pump(
-      tester,
-      () async => const [],
-      records: () async => [
-        (
-          exercise: bench,
-          kind: RecordKind.maxWeight,
-          record: {'weight': 100.0, 'reps': 5, 'workoutId': 'w1', 'at': '2026-08-30T10:00:00Z'},
+  AchievedRecord beat(Exercise exercise, RecordKind kind, Map record, Map previous) {
+    return (exercise: exercise, kind: kind, record: {...record, 'workoutId': 'w2', 'previous': previous});
+  }
+
+  AchievedRecord first(Exercise exercise, RecordKind kind, Map record) {
+    return (exercise: exercise, kind: kind, record: {...record, 'workoutId': 'w1'});
+  }
+
+  final squat = Exercise(name: 'Squat (Barbell)', category: .barbell, target: .legs);
+
+  Future<void> pumpRecords(WidgetTester tester, List<AchievedRecord> records) {
+    return tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<Exercises>.value(value: exercises),
+          ChangeNotifierProvider<Preferences>.value(value: preferences),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
+          home: WorkoutDone(
+            workout: null,
+            onQuit: () {},
+            workoutsThisWeekCallback: () async => 0,
+            achievementsCallback: () async => const [],
+            recordsCallback: () async => records,
+          ),
         ),
-      ],
+      ),
     );
+  }
+
+  testWidgets('badges the record the session set, with what it beat', (tester) async {
+    await pumpRecords(tester, [
+      beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
+    ]);
     await tester.pumpAndSettle();
 
     expect(find.text('New record'), findsOneWidget);
-    expect(find.textContaining('Bench Press (Barbell)'), findsOneWidget);
-    expect(find.textContaining('Max weight 100 kg'), findsOneWidget);
+    expect(find.text('Bench Press (Barbell)'), findsOneWidget);
+    expect(find.text('Max weight'), findsOneWidget);
+    expect(find.text('100 kg'), findsOneWidget);
+    expect(find.text('was 95 kg'), findsOneWidget);
   });
 
-  testWidgets("strings one exercise's records into a single line", (tester) async {
-    // twelve one-record lines read as a ledger, not a celebration
-    await pump(
-      tester,
-      () async => const [],
-      records: () async => [
-        (
-          exercise: bench,
-          kind: RecordKind.maxWeight,
-          record: {'weight': 100.0, 'reps': 5, 'workoutId': 'w1', 'at': '2026-08-30T10:00:00Z'},
-        ),
-        (
-          exercise: bench,
-          kind: RecordKind.oneRepMax,
-          record: {'value': 112.5, 'weight': 100.0, 'reps': 5, 'workoutId': 'w1', 'at': '2026-08-30T10:00:00Z'},
-        ),
-      ],
+  testWidgets('a badge is one element to a screen reader', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpRecords(tester, [
+      beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel('New record: Bench Press (Barbell), Max weight 100 kg, was 95 kg'),
+      findsOneWidget,
     );
+    // its parts are not announced again one by one
+    expect(find.bySemanticsLabel('was 95 kg'), findsNothing);
+    handle.dispose();
+  });
+
+  testWidgets("groups an exercise's records under one name, a badge each", (tester) async {
+    await pumpRecords(tester, [
+      beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
+      beat(
+        bench,
+        .oneRepMax,
+        {'value': 112.5, 'weight': 100.0, 'reps': 5},
+        {'value': 106.9, 'weight': 95.0, 'reps': 5},
+      ),
+      beat(squat, .maxWeight, {'weight': 140.0, 'reps': 3}, {'weight': 130.0, 'reps': 3}),
+    ]);
     await tester.pumpAndSettle();
 
     expect(find.text('New records'), findsOneWidget);
-    final line = find.textContaining('Bench Press (Barbell)');
-    expect(line, findsOneWidget);
-    final copy = tester.widget<Text>(line).data!;
-    expect(copy, contains('Max weight'));
-    expect(copy, contains('Estimated 1RM'));
+    expect(find.text('Bench Press (Barbell)'), findsOneWidget);
+    expect(find.text('Squat (Barbell)'), findsOneWidget);
+    expect(find.text('Max weight'), findsNWidgets(2));
+    expect(find.text('Estimated 1RM'), findsOneWidget);
+    expect(find.text('was 130 kg'), findsOneWidget);
+  });
+
+  testWidgets('a first workout sums its records up in one badge, not a wall', (tester) async {
+    // every exercise on a new account's first session is a record — nothing
+    // to beat yet — and a badge each would bury the screen
+    final exercisesDone = List.generate(
+      6,
+      (i) => Exercise(name: 'Exercise $i', category: .barbell, target: .chest),
+    );
+    await pumpRecords(tester, [
+      for (final exercise in exercisesDone) ...[
+        first(exercise, .maxWeight, {'weight': 60.0, 'reps': 8}),
+        first(exercise, .oneRepMax, {'value': 74.0, 'weight': 60.0, 'reps': 8}),
+      ],
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('12'), findsOneWidget);
+    expect(find.text('first records'), findsOneWidget);
+    expect(find.text('Max weight'), findsNothing);
+    expect(find.textContaining('Exercise '), findsNothing);
+  });
+
+  testWidgets('firsts beside real records: badges for the beaten, a count for the rest', (tester) async {
+    await pumpRecords(tester, [
+      beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
+      first(squat, .maxWeight, {'weight': 80.0, 'reps': 5}),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('was 95 kg'), findsOneWidget);
+    expect(find.text('Squat (Barbell)'), findsNothing);
+    expect(find.text('first record'), findsOneWidget);
+  });
+
+  testWidgets('badges arrive one after another', (tester) async {
+    await pumpRecords(tester, [
+      beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
+      beat(squat, .maxWeight, {'weight': 140.0, 'reps': 3}, {'weight': 130.0, 'reps': 3}),
+    ]);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    double opacity(String text) {
+      return tester
+          .widget<FadeTransition>(find.ancestor(of: find.text(text), matching: find.byType(FadeTransition)).first)
+          .opacity
+          .value;
+    }
+
+    expect(opacity('was 95 kg'), greaterThan(opacity('was 130 kg')));
+
+    await tester.pumpAndSettle();
+    expect(opacity('was 95 kg'), 1);
+    expect(opacity('was 130 kg'), 1);
+  });
+
+  testWidgets('with Reduce Motion, every badge is simply there', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    await pumpRecords(tester, [
+      beat(bench, .maxWeight, {'weight': 100.0, 'reps': 5}, {'weight': 95.0, 'reps': 5}),
+      beat(squat, .maxWeight, {'weight': 140.0, 'reps': 3}, {'weight': 130.0, 'reps': 3}),
+    ]);
+    // the future resolves, and that frame is the finished one
+    await tester.pump();
+    await tester.pump();
+
+    for (final text in ['was 95 kg', 'was 130 kg']) {
+      final fades = tester.widgetList<FadeTransition>(
+        find.ancestor(of: find.text(text), matching: find.byType(FadeTransition)),
+      );
+      expect(fades.map((each) => each.opacity.value), everyElement(1.0), reason: text);
+    }
+  });
+
+  testWidgets('keeps to a readable width on a tablet window', (tester) async {
+    tester.view.physicalSize = const Size(1194, 834);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await pumpRecords(tester, [
+      for (final kind in [RecordKind.maxWeight, RecordKind.oneRepMax, RecordKind.bestVolume])
+        beat(bench, kind, {'weight': 100.0, 'value': 112.5, 'reps': 5}, {'weight': 95.0, 'value': 106.9, 'reps': 5}),
+    ]);
+    await tester.pumpAndSettle();
+
+    final wrap = tester.getSize(find.byType(Wrap));
+    expect(wrap.width, lessThanOrEqualTo(480));
   });
 
   testWidgets('says nothing when no record fell', (tester) async {

@@ -821,16 +821,52 @@
       }
     }
   },
-  "recordAchievedLine": "{exercise} · {records}",
-  "@recordAchievedLine": {
-    "description": "Workout complete screen, one exercise's new records: the exercise name and its record values",
+  "recordBadgeWas": "antes {value}",
+  "@recordBadgeWas": {
+    "description": "Workout complete screen, a personal-record badge's small line under the new value: the record it beat, with its unit, e.g. 'was 95 kg'",
+    "type": "text",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "recordBadgeLabel": "Nuevo récord: {exercise}, {kind} {value}, antes {previous}",
+  "@recordBadgeLabel": {
+    "description": "Screen reader label for one personal-record badge on the workout complete screen, e.g. 'New record: Bench Press, Max weight 100 kg, was 95 kg'",
     "type": "text",
     "placeholders": {
       "exercise": {
         "type": "String"
       },
-      "records": {
+      "kind": {
         "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "previous": {
+        "type": "String"
+      }
+    }
+  },
+  "firstRecordsBadge": "{count, plural, one{primer récord} other{primeros récords}}",
+  "@firstRecordsBadge": {
+    "description": "Workout complete screen, caption under the number on the badge that sums up records set by doing an exercise for the first time, e.g. '12' over 'first records'. The number is shown separately.",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "firstRecordsLabel": "{count, plural, one{{count} primer récord, de un ejercicio hecho por primera vez} other{{count} primeros récords, de ejercicios hechos por primera vez}}",
+  "@firstRecordsLabel": {
+    "description": "Screen reader label for the workout complete screen's badge summing up records set by doing an exercise for the first time",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

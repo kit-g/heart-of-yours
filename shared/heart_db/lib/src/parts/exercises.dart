@@ -440,10 +440,38 @@ mixin _Exercises on _LocalDatabase
 ///
 /// Always: `sessions` (distinct workouts) and `firstAt` (ISO). Ties keep the
 /// earlier set — a record credits the first time it was hit.
+///
+/// Each headline record also carries `previous`: the same record with its own
+/// session left out — what it beat, so the workout-done screen can say "was
+/// 95 kg". Absent when no other session has a value to beat, which is how a
+/// first-ever record reads. `repMaxes` entries do not carry one.
 Map? _foldRecords(Category category, List<Map<String, dynamic>> rows) {
   if (rows.isEmpty) return null;
 
   final sets = rows.map(_RecordSet.fromRow).toList();
+  final records = _fold(category, sets);
+  if (records == null) return null;
+
+  // one re-fold per session holding a record, not per record: a good
+  // session usually holds several
+  final without = <String, Map?>{};
+  for (final MapEntry(:key, :value) in records.entries.toList()) {
+    if (value case {'workoutId': final String holder}) {
+      final others = without.putIfAbsent(
+        holder,
+        () => _fold(category, sets.where((set) => set.workoutId != holder).toList()),
+      );
+      if (others?[key] case final Map previous) records[key] = {...value, 'previous': previous};
+    }
+  }
+
+  return records;
+}
+
+/// [_foldRecords] without the `previous` pass.
+Map<String, Object>? _fold(Category category, List<_RecordSet> sets) {
+  if (sets.isEmpty) return null;
+
   final records = <String, Object>{
     'sessions': sets.map((set) => set.workoutId).toSet().length,
     'firstAt': sets.first.at,
