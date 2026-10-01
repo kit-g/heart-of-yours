@@ -127,6 +127,15 @@ class _WatchPresenterState extends State<WatchPresenter> {
     switch (command) {
       case WatchComplete(:final setId, :final weight, :final reps):
         _complete(workouts, workout, setId, weight: weight, reps: reps);
+      case WatchEditSet(:final setId, :final weight, :final reps):
+        // new values for a set gone back to; it keeps its tick
+        if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set)) {
+          workouts.editSet(set, weight: _kilograms(exercise, weight), reps: reps);
+        }
+      case WatchUntickSet(:final setId):
+        if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set) when set.isCompleted) {
+          workouts.markSetAsIncomplete(exercise, set);
+        }
       case WatchSkipRest():
         Alarms.of(context).stopActiveExerciseTimer();
       case WatchFinishWorkout():
@@ -158,34 +167,107 @@ class _WatchPresenterState extends State<WatchPresenter> {
   /// were shown in, and the exercise's rest starts — without the countdown
   /// dialog, which nobody is looking at.
   void _complete(Workouts workouts, Workout workout, String setId, {double? weight, int? reps}) {
-    final found = workout
-        .expand((exercise) => exercise.map((set) => (exercise, set)))
-        .where((pair) => pair.$2.id == setId)
-        .firstOrNull;
     // gone, or ticked already (a double tap, or the phone got there first)
-    if (found case (WorkoutExercise exercise, ExerciseSet set) when !set.isCompleted) {
+    if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set) when !set.isCompleted) {
       if (weight != null || reps != null) {
-        final unit = Exercises.of(context).unitFor(exercise.exercise.id) ?? Preferences.of(context).weightUnit;
-        workouts.markEdited(set);
-        set.setMeasurements(
-          weight: switch ((weight, unit)) {
-            (double weight, .imperial) => weight.asKilograms,
-            (double weight, .metric) => weight,
-            (null, _) => set.weight,
-          },
-          reps: reps ?? set.reps,
-          duration: set.duration,
-          distance: set.distance,
-        );
-        // the set row's field listeners do this on the phone; ticking stores
-        // only the tick
-        workouts.storeMeasurements(set);
+        workouts.editSet(set, weight: _kilograms(exercise, weight), reps: reps);
       }
       if (set.canBeCompleted) {
         workouts.markSetAsComplete(exercise, set);
         startRest(context, exercise);
       }
     }
+  }
+
+  (WorkoutExercise, ExerciseSet)? _find(Workout workout, String setId) {
+    return workout
+        .expand((exercise) => exercise.map((set) => (exercise, set)))
+        .where((pair) => pair.$2.id == setId)
+        .firstOrNull;
+  }
+
+  /// The unit [exercise] is shown in: its own override, or the app's.
+  MeasurementUnit _unit(WorkoutExercise exercise) {
+    return Exercises.of(context).unitFor(exercise.exercise.id) ?? Preferences.of(context).weightUnit;
+  }
+
+  /// A weight the watch sent, in the unit it was shown in, as stored.
+  double? _kilograms(WorkoutExercise exercise, double? weight) {
+    return switch ((weight, _unit(exercise))) {
+      (double weight, .imperial) => weight.asKilograms,
+      (double weight, .metric) => weight,
+      (null, _) => null,
+    };
+  }
+
+  /// Whether [exercise]'s sets take a weight, and whether they take a count.
+  (bool weighted, bool counted) _measures(WorkoutExercise exercise) {
+    final weighted = switch (exercise.exercise.category) {
+      .barbell || .dumbbell || .machine || .assistedBodyWeight || .weightedBodyWeight => true,
+      _ => false,
+    };
+    return (weighted, weighted || exercise.exercise.category == .repsOnly);
+  }
+
+  String _unitLabel(WorkoutExercise exercise, L l) {
+    return switch (_unit(exercise)) {
+      .imperial => l.lbs,
+      .metric => l.kg,
+    };
+  }
+
+  /// One Digital Crown detent of weight: the smallest plate step in the unit.
+  double _step(WorkoutExercise exercise) {
+    return switch (_unit(exercise)) {
+      .imperial => 5,
+      .metric => 2.5,
+    };
+  }
+
+  /// [set]'s weight as the watch shows it: in [exercise]'s unit, 0 when not
+  /// filled in, null when the set takes none.
+  double? _shownWeight(WorkoutExercise exercise, ExerciseSet set) {
+    return switch ((_measures(exercise).$1, set.weight)) {
+      (true, double weight) => Preferences.of(context).weightValue(weight, unit: _unit(exercise)),
+      (true, null) => 0,
+      (false, _) => null,
+    };
+  }
+
+  int? _shownReps(WorkoutExercise exercise, ExerciseSet set) {
+    return switch (_measures(exercise).$2) {
+      true => set.reps ?? 0,
+      false => null,
+    };
+  }
+
+  /// The whole workout, for the watch's second page: every set, done or not.
+  List<WatchExercise> _exercises(L l) {
+    final workout = Workouts.of(context).activeWorkout;
+    if (workout == null) return const [];
+    return [
+      for (final exercise in workout)
+        (
+          id: exercise.id,
+          name: exercise.exercise.name,
+          unit: switch (_measures(exercise).$1) {
+            true => _unitLabel(exercise, l),
+            false => null,
+          },
+          step: _step(exercise),
+          weighted: _measures(exercise).$1,
+          counted: _measures(exercise).$2,
+          sets: [
+            for (final set in exercise)
+              (
+                id: set.id,
+                weight: _shownWeight(exercise, set),
+                reps: _shownReps(exercise, set),
+                done: set.isCompleted,
+              ),
+          ],
+        ),
+    ];
   }
 
   /// Sends the current state even if it is what was sent last: the watch asked,
@@ -222,6 +304,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
         (var workout?, _) => WatchWorkout(
           workout,
           set: _upNext(l),
+          exercises: _exercises(l),
           controls: _controls(l),
           activity: switch (_workouts?.activeWorkout) {
             Workout active => activityOf(active).name,
@@ -246,54 +329,37 @@ class _WatchPresenterState extends State<WatchPresenter> {
       set: ExerciseSet set,
       :int number,
     )) {
-      final prefs = Preferences.of(context);
-      final unit = Exercises.of(context).unitFor(exercise.exercise.id) ?? prefs.weightUnit;
-      final weighted = switch (exercise.exercise.category) {
-        .barbell || .dumbbell || .machine || .assistedBodyWeight || .weightedBodyWeight => true,
-        _ => false,
-      };
-      final counted = weighted || exercise.exercise.category == .repsOnly;
-      final unitLabel = switch (unit) {
-        .imperial => l.lbs,
-        .metric => l.kg,
-      };
-
+      final (weighted, _) = _measures(exercise);
+      final unitLabel = _unitLabel(exercise, l);
       return (
         exerciseId: exercise.id,
         setId: set.id,
-        weight: switch ((weighted, set.weight)) {
-          (true, double weight) => prefs.weightValue(weight, unit: unit),
-          (true, null) => 0,
-          (false, _) => null,
-        },
-        reps: switch (counted) {
-          true => set.reps ?? 0,
-          false => null,
-        },
+        weight: _shownWeight(exercise, set),
+        reps: _shownReps(exercise, set),
         unit: switch (weighted) {
           true => unitLabel,
           false => null,
         },
-        step: switch (unit) {
-          .imperial => 5,
-          .metric => 2.5,
-        },
-        previous: _previous(exercise, number - 1, weighted: weighted, unit: unitLabel, l: l),
+        step: _step(exercise),
+        previous: _lastTime(exercise, number - 1, weighted: weighted, unit: unitLabel, l: l),
+        position: l.watchSetPosition(number, exercise.length),
       );
     }
     return null;
   }
 
-  /// The same set in the last session, as the phone's "Previous" column shows
-  /// it; null for anything but weights and reps, or when there was none.
-  String? _previous(WorkoutExercise exercise, int index, {required bool weighted, required String unit, required L l}) {
+  /// The same set in the last session, as the phone's "Previous" column holds
+  /// it — labelled "last time" on the watch, where "previous" would read as the
+  /// set before this one. Null for anything but weights and reps, or when there
+  /// was no last time.
+  String? _lastTime(WorkoutExercise exercise, int index, {required bool weighted, required String unit, required L l}) {
     final prefs = Preferences.of(context);
-    final override = Exercises.of(context).unitFor(exercise.exercise.id);
     final value = PreviousExercises.of(context).at(exercise.exercise.id, index);
     return switch ((weighted, value)) {
-      (true, {'reps': int reps, 'weight': num weight}) =>
-        '${l.previous}: ${prefs.weight(weight, unit: override)} $unit x $reps',
-      (false, {'reps': int reps}) => '${l.previous}: $reps ${l.reps}',
+      (true, {'reps': int reps, 'weight': num weight}) => l.watchLastTime(
+        '${prefs.weight(weight, unit: _unit(exercise))} $unit × $reps',
+      ),
+      (false, {'reps': int reps}) => l.watchLastTime('$reps ${l.reps}'),
       _ => null,
     };
   }
@@ -314,6 +380,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
       finishTitle: l.finishWorkoutWarningTitle,
       finishConfirm: l.readyToFinish,
       finishCancel: l.notReadyToFinish,
+      save: l.watchSave,
+      notDone: l.watchSetNotDone,
     );
   }
 

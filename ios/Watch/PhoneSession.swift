@@ -37,6 +37,10 @@ final class PhoneSession: NSObject, ObservableObject {
         case skipRest(workoutId: String)
         case adjustRest(workoutId: String, seconds: Int)
         case finish(workoutId: String)
+        /// New values for a set already done; it stays ticked.
+        case edit(workoutId: String, setId: String, weight: Double?, reps: Int?)
+        /// A set ticked by mistake.
+        case untick(workoutId: String, setId: String)
 
         var message: [String: Any] {
             switch self {
@@ -45,6 +49,13 @@ final class PhoneSession: NSObject, ObservableObject {
                 message["weight"] = weight
                 message["reps"] = reps
                 return message
+            case let .edit(workoutId, setId, weight, reps):
+                var message: [String: Any] = ["event": "command", "action": "edit", "workoutId": workoutId, "setId": setId]
+                message["weight"] = weight
+                message["reps"] = reps
+                return message
+            case let .untick(workoutId, setId):
+                return ["event": "command", "action": "untick", "workoutId": workoutId, "setId": setId]
             case let .skipRest(workoutId):
                 return ["event": "command", "action": "skipRest", "workoutId": workoutId]
             case let .adjustRest(workoutId, seconds):

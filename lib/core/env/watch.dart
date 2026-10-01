@@ -39,7 +39,29 @@ typedef WatchSet = ({
 
   /// The same set last time, as finished copy; null when there was none.
   String? previous,
+
+  /// Where it sits in its exercise, as copy: "Set 2 of 3".
+  String position,
 });
+
+/// One exercise of the workout as the watch lists it (#183), for going back to
+/// a set already done: its sets, their values in the unit it is shown in, and
+/// what the set measures — so the editor knows which values it may offer.
+typedef WatchExercise = ({
+  String id,
+  String name,
+  String? unit,
+  double step,
+
+  /// Whether its sets take a weight, and whether they take a count.
+  bool weighted,
+  bool counted,
+  List<WatchSetRow> sets,
+});
+
+/// One set in [WatchExercise.sets]: its identity, its values and whether it is
+/// ticked. Its number is its place in the list.
+typedef WatchSetRow = ({String id, double? weight, int? reps, bool done});
 
 /// The watch's controls, as copy — labels and what it says when it cannot act.
 typedef WatchControls = ({
@@ -63,6 +85,11 @@ typedef WatchControls = ({
   String finishTitle,
   String finishConfirm,
   String finishCancel,
+
+  /// Going back to a set (#183): saving new values for a ticked one, and
+  /// taking the tick away.
+  String save,
+  String notDone,
 });
 
 /// A workout is running: the same summary the lock screen shows, plus the set
@@ -76,7 +103,10 @@ final class WatchWorkout extends WatchState {
   /// workout session measures it as, and labels it with in Health (#184).
   final String? activity;
 
-  const new(this.workout, {this.set, this.controls, this.activity});
+  /// The whole workout, for the watch's second page (#183).
+  final List<WatchExercise> exercises;
+
+  const new(this.workout, {this.set, this.controls, this.activity, this.exercises = const []});
 
   @override
   Map<String, Object?> toMap() {
@@ -91,7 +121,23 @@ final class WatchWorkout extends WatchState {
         'unit': ?set.unit,
         'step': set.step,
         'previous': ?set.previous,
+        'position': set.position,
       },
+      'exercises': [
+        for (final exercise in exercises)
+          {
+            'id': exercise.id,
+            'name': exercise.name,
+            'unit': ?exercise.unit,
+            'step': exercise.step,
+            'weighted': exercise.weighted,
+            'counted': exercise.counted,
+            'sets': [
+              for (final row in exercise.sets)
+                {'id': row.id, 'weight': ?row.weight, 'reps': ?row.reps, 'done': row.done},
+            ],
+          },
+      ],
       if (controls case WatchControls controls) ...{
         'done': controls.done,
         'skip': controls.skip,
@@ -107,6 +153,8 @@ final class WatchWorkout extends WatchState {
         'finishTitle': controls.finishTitle,
         'finishConfirm': controls.finishConfirm,
         'finishCancel': controls.finishCancel,
+        'save': controls.save,
+        'notDone': controls.notDone,
       },
       'state': 'workout',
       'workoutId': workoutId,
@@ -125,16 +173,23 @@ final class WatchWorkout extends WatchState {
     };
   }
 
+  /// By content. The exercises are lists, which records compare by identity: a
+  /// state rebuilt on every keystroke would never equal the last one, and the
+  /// presenter would send each of them.
   @override
-  bool operator ==(Object other) =>
-      other is WatchWorkout &&
-      other.workout == workout &&
-      other.set == set &&
-      other.controls == controls &&
-      other.activity == activity;
+  bool operator ==(Object other) => other is WatchWorkout && _same(toMap(), other.toMap());
 
   @override
-  int get hashCode => Object.hash(workout, set, controls, activity);
+  int get hashCode => Object.hash(workout, set, controls, activity, exercises.length);
+}
+
+/// Deep equality over what [WatchState.toMap] produces: maps, lists and scalars.
+bool _same(Object? a, Object? b) {
+  return switch ((a, b)) {
+    (Map a, Map b) => a.length == b.length && a.keys.every((key) => b.containsKey(key) && _same(a[key], b[key])),
+    (List a, List b) => a.length == b.length && Iterable<int>.generate(a.length).every((i) => _same(a[i], b[i])),
+    _ => a == b,
+  };
 }
 
 /// Something the user did on the watch (#183): a request, never an edit. The
@@ -157,6 +212,16 @@ sealed class WatchCommand {
       ),
       {'action': 'skipRest', 'workoutId': String workoutId} => WatchSkipRest(workoutId),
       {'action': 'finish', 'workoutId': String workoutId} => WatchFinishWorkout(workoutId),
+      {'action': 'edit', 'workoutId': String workoutId, 'setId': String setId} => WatchEditSet(
+        workoutId,
+        setId: setId,
+        weight: (map['weight'] as num?)?.toDouble(),
+        reps: (map['reps'] as num?)?.toInt(),
+      ),
+      {'action': 'untick', 'workoutId': String workoutId, 'setId': String setId} => WatchUntickSet(
+        workoutId,
+        setId: setId,
+      ),
       {'action': 'adjustRest', 'workoutId': String workoutId, 'seconds': num seconds} => WatchAdjustRest(
         workoutId,
         seconds: seconds.toInt(),
@@ -178,6 +243,23 @@ final class WatchComplete extends WatchCommand {
 
 final class WatchSkipRest extends WatchCommand {
   const new(super.workoutId);
+}
+
+/// New values for a set already done, gone back to from the workout page —
+/// in the unit the phone sent. It stays ticked.
+final class WatchEditSet extends WatchCommand {
+  final String setId;
+  final double? weight;
+  final int? reps;
+
+  const new(super.workoutId, {required this.setId, this.weight, this.reps});
+}
+
+/// Take the tick off a set: it was not done after all.
+final class WatchUntickSet extends WatchCommand {
+  final String setId;
+
+  const new(super.workoutId, {required this.setId});
 }
 
 /// Finish the workout, confirmed on the wrist. Offered only once every set is
