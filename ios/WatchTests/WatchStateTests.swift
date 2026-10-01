@@ -30,6 +30,7 @@ final class WatchStateTests: XCTestCase {
             save: "Save", notDone: "Not done"
         )
         (controls.restLabel, controls.restOver, controls.allDone, controls.idle) = ("Rest", "Over", "All done", "Idle")
+        controls.finishedAway = "Saved on your watch"
         return .workout(.init(
             workoutId: "w", startedAt: now, title: "Push", exercise: "Bench", next: "", rest: nil,
             accent: .orange,
@@ -132,8 +133,8 @@ final class WatchStateTests: XCTestCase {
         XCTAssertNil(shown(state.applying(.skipRest(workoutId: "w"), at: now)).rest)
     }
 
-    func testFinishLeavesTheIdleLine() {
-        XCTAssertEqual(workout().applying(.finish(workoutId: "w"), at: now), .idle("Idle"))
+    func testFinishSaysTheWorkoutIsSafeNotThatThereIsNone() {
+        XCTAssertEqual(workout().applying(.finish(workoutId: "w"), at: now), .idle("Saved on your watch"))
     }
 
     func testACommandAboutAnotherWorkoutChangesNothing() {

@@ -76,11 +76,21 @@ struct UpNextPage: View {
                         FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
                             .padding(.top, 2)
                     }
-                    if !phone.reachable || phone.waiting {
+                    // the phone away, or back and still being handed what it missed
+                    switch (phone.reachable, phone.waiting) {
+                    case (false, _):
                         Label(controls.unreachable, systemImage: "iphone.slash")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .padding(.top, 2)
+                    case (true, true):
+                        Label(controls.sending.isEmpty ? controls.unreachable : controls.sending,
+                              systemImage: "iphone.radiowaves.left.and.right")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 2)
+                    case (true, false):
+                        EmptyView()
                     }
                 }
 

@@ -1908,6 +1908,26 @@ class LEn extends L {
   String get watchSetNotDone => 'Not done';
 
   @override
+  String get watchSending => 'Sending to your iPhone…';
+
+  @override
+  String get watchFinishedAway => 'Saved on your watch. Your iPhone gets it when it\'s back.';
+
+  @override
+  String get watchCatchingUp => 'Catching up with your watch…';
+
+  @override
+  String watchSetsArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets from your watch',
+      one: '1 set from your watch',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restTimers => 'Rest timers';
 
   @override
@@ -3946,6 +3966,26 @@ class LEnCa extends LEn {
 
   @override
   String get watchSetNotDone => 'Not done';
+
+  @override
+  String get watchSending => 'Sending to your iPhone…';
+
+  @override
+  String get watchFinishedAway => 'Saved on your watch. Your iPhone gets it when it\'s back.';
+
+  @override
+  String get watchCatchingUp => 'Catching up with your watch…';
+
+  @override
+  String watchSetsArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets from your watch',
+      one: '1 set from your watch',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get restTimers => 'Rest timers';

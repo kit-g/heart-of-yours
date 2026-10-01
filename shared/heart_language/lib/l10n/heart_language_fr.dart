@@ -1914,6 +1914,26 @@ class LFr extends L {
   String get watchSetNotDone => 'Pas faite';
 
   @override
+  String get watchSending => 'Envoi vers votre iPhone…';
+
+  @override
+  String get watchFinishedAway => 'Enregistré sur votre montre. Votre iPhone le recevra à son retour.';
+
+  @override
+  String get watchCatchingUp => 'Synchronisation avec votre montre…';
+
+  @override
+  String watchSetsArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count séries depuis votre montre',
+      one: '1 série depuis votre montre',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restTimers => 'Minuteurs de repos';
 
   @override
