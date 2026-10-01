@@ -3778,5 +3778,33 @@
     "description": "Apple Watch button that unticks a set the user ticked by mistake. Short",
     "type": "text",
     "placeholders": {}
+  },
+  "watchSending": "Enviando a tu iPhone…",
+  "@watchSending": {
+    "description": "Apple Watch line once the phone is back in reach and what was logged on the watch while it was away is on its way to it. Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchFinishedAway": "Guardado en tu reloj. Tu iPhone lo recibirá cuando vuelva.",
+  "@watchFinishedAway": {
+    "description": "Apple Watch screen after the user finished the workout on the watch while the phone was out of reach: the workout is safe, and the phone saves it once it is near again",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchCatchingUp": "Sincronizando con tu reloj…",
+  "@watchCatchingUp": {
+    "description": "Phone snackbar while what the user logged on their Apple Watch, away from the phone, is still arriving",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchSetsArrived": "{count, plural, one{1 serie desde tu reloj} other{{count} series desde tu reloj}}",
+  "@watchSetsArrived": {
+    "description": "Phone snackbar once the sets the user logged on their Apple Watch, away from the phone, have arrived and are in the workout",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

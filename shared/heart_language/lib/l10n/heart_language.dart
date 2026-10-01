@@ -3412,6 +3412,30 @@ abstract class L {
   /// **'Not done'**
   String get watchSetNotDone;
 
+  /// Apple Watch line once the phone is back in reach and what was logged on the watch while it was away is on its way to it. Short: it is a watch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Sending to your iPhone…'**
+  String get watchSending;
+
+  /// Apple Watch screen after the user finished the workout on the watch while the phone was out of reach: the workout is safe, and the phone saves it once it is near again
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on your watch. Your iPhone gets it when it\'s back.'**
+  String get watchFinishedAway;
+
+  /// Phone snackbar while what the user logged on their Apple Watch, away from the phone, is still arriving
+  ///
+  /// In en, this message translates to:
+  /// **'Catching up with your watch…'**
+  String get watchCatchingUp;
+
+  /// Phone snackbar once the sets the user logged on their Apple Watch, away from the phone, have arrived and are in the workout
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 set from your watch} other{{count} sets from your watch}}'**
+  String watchSetsArrived(int count);
+
   /// Settings row and page title: every exercise that has a rest timer set, in one list
   ///
   /// In en, this message translates to:

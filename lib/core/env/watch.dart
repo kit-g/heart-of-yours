@@ -115,6 +115,11 @@ typedef WatchControls = ({
   String restOver,
   String allDone,
   String idle,
+
+  /// The phone is back, and what the watch logged without it is on its way;
+  /// and what the watch says after a workout it finished on its own.
+  String sending,
+  String finishedAway,
 });
 
 /// A workout is running: the same summary the lock screen shows, plus the set
@@ -193,6 +198,8 @@ final class WatchWorkout extends WatchState {
         'restOverAway': controls.restOver,
         'allDone': controls.allDone,
         'idle': controls.idle,
+        'sending': controls.sending,
+        'finishedAway': controls.finishedAway,
       },
       'state': 'workout',
       'workoutId': workoutId,
@@ -397,6 +404,11 @@ abstract interface class WatchLink {
   /// (#185). The phone's rest notification would reach the same wrist a
   /// second time; while this is true, the watch owns the tap.
   Future<bool> measures(String workoutId);
+
+  /// Whether the watch left something for the phone that the system has not
+  /// handed over yet — commands logged while the phone was out of reach
+  /// (#206), still on their way after a restart. Asked once, at launch.
+  Future<bool> contentPending();
 }
 
 /// The link for [platform], or null where there is no watch app.
@@ -467,6 +479,9 @@ class _WatchConnectivity implements WatchLink {
 
   @override
   Future<bool> takeOpened() => _ask('takeOpened');
+
+  @override
+  Future<bool> contentPending() => _ask('contentPending');
 
   @override
   Future<void> send(WatchState state) async {

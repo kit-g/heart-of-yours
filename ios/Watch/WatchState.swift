@@ -132,6 +132,8 @@ enum WatchState: Equatable {
             var restOver: String = ""
             var allDone: String = ""
             var idle: String = ""
+            var sending: String = ""
+            var finishedAway: String = ""
 
             /// Nil unless every label the controls cannot do without is there;
             /// the rest default to empty, for a phone that predates them.
@@ -164,6 +166,8 @@ enum WatchState: Equatable {
                 restOver = text("restOverAway") ?? ""
                 allDone = text("allDone") ?? ""
                 idle = text("idle") ?? ""
+                sending = text("sending") ?? ""
+                finishedAway = text("finishedAway") ?? ""
             }
 
             init(
@@ -306,7 +310,10 @@ extension WatchState {
                     : nil
             }
         case .finish:
-            return .idle(workout.controls?.idle ?? "")
+            // finished here, with the phone away: say the workout is safe, not
+            // that there is none — the phone's own idle line replaces it once
+            // the phone has saved it
+            return .idle(workout.controls.map { $0.finishedAway.isEmpty ? $0.idle : $0.finishedAway } ?? "")
         }
         return .workout(workout)
     }

@@ -87,7 +87,10 @@ final class WorkoutSession: NSObject, ObservableObject {
             let start = min(workout.startedAt, .now)
             session.startActivity(with: start)
             try await builder.beginCollection(at: start)
-            try? await session.startMirroringToCompanionDevice()
+            // not mirrored to the phone: the iPhone app would need the
+            // `workout-processing` background mode, which App Store validation
+            // refuses for an app that still supports iOS 15. A tick wakes the
+            // phone app on its own, and what was logged away queues (#206)
             tellPhone(["event": "measuring", "workoutId": workout.workoutId])
             measuring = true
         } catch {
