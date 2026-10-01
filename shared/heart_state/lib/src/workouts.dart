@@ -329,8 +329,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<Workout?>? _finishing;
 
-  Future<Workout?> finishActiveWorkout() {
-    return _finishing = _finishActiveWorkout();
+  /// Ends the active workout [at] — now, unless the finish was decided
+  /// earlier than it arrived (a watch that was out of the phone's reach, #206).
+  Future<Workout?> finishActiveWorkout({DateTime? at}) {
+    return _finishing = _finishActiveWorkout(at: at);
   }
 
   /// Sets the user filled in but never ticked.
@@ -384,14 +386,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// Reset with each workout, so it never carries into the next one.
   int _untickedAtPrompt = 0;
 
-  Future<Workout?> _finishActiveWorkout() async {
+  Future<Workout?> _finishActiveWorkout({DateTime? at}) async {
     // Both branches of the finish prompt, added: whatever it ticked on the
     // user's behalf, plus whatever is still unticked because they chose to
     // finish without it. Counted before `_edited` is cleared, which is what
     // empties the second half.
     final unticked = _untickedAtPrompt + _typedButUnticked.length;
     _edited.clear();
-    activeWorkout?.finish(DateTime.timestamp());
+    activeWorkout?.finish(at?.toUtc() ?? DateTime.timestamp());
 
     final active = activeWorkout;
     if (active == null) return null;

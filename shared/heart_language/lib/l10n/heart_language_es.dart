@@ -1920,7 +1920,7 @@ class LEs extends L {
   String get watchHeartRate => 'Frecuencia cardíaca';
 
   @override
-  String get watchPhoneUnreachable => 'Acerca tu iPhone para registrar desde aquí';
+  String get watchPhoneUnreachable => 'Se sincroniza con tu iPhone cuando vuelva';
 
   @override
   String watchSetPosition(int number, int total) {

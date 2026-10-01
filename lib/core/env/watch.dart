@@ -56,12 +56,29 @@ typedef WatchExercise = ({
   /// Whether its sets take a weight, and whether they take a count.
   bool weighted,
   bool counted,
+
+  /// Its rest timer in seconds, null when it has none — so a watch with the
+  /// phone out of reach (#206) can start the rest a tick starts.
+  int? rest,
   List<WatchSetRow> sets,
 });
 
 /// One set in [WatchExercise.sets]: its identity, its values and whether it is
 /// ticked. Its number is its place in the list.
-typedef WatchSetRow = ({String id, double? weight, int? reps, bool done});
+///
+/// With the copy the watch shows once it is the set up next — so a watch with
+/// the phone out of reach (#206) can move on to it without asking: where it
+/// sits ([WatchSet.position]), last time ([WatchSet.previous]), and the lock
+/// screen's "Next:" line for the complication.
+typedef WatchSetRow = ({
+  String id,
+  double? weight,
+  int? reps,
+  bool done,
+  String position,
+  String? previous,
+  String next,
+});
 
 /// The watch's controls, as copy — labels and what it says when it cannot act.
 typedef WatchControls = ({
@@ -90,6 +107,14 @@ typedef WatchControls = ({
   /// taking the tick away.
   String save,
   String notDone,
+
+  /// What the watch says for itself while the phone is out of reach (#206):
+  /// the rest it starts, the "Next:" line once every set is ticked, and the
+  /// idle line after it finishes the workout.
+  String restLabel,
+  String restOver,
+  String allDone,
+  String idle,
 });
 
 /// A workout is running: the same summary the lock screen shows, plus the set
@@ -132,9 +157,18 @@ final class WatchWorkout extends WatchState {
             'step': exercise.step,
             'weighted': exercise.weighted,
             'counted': exercise.counted,
+            'rest': ?exercise.rest,
             'sets': [
               for (final row in exercise.sets)
-                {'id': row.id, 'weight': ?row.weight, 'reps': ?row.reps, 'done': row.done},
+                {
+                  'id': row.id,
+                  'weight': ?row.weight,
+                  'reps': ?row.reps,
+                  'done': row.done,
+                  'position': row.position,
+                  'previous': ?row.previous,
+                  'next': row.next,
+                },
             ],
           },
       ],
@@ -155,6 +189,10 @@ final class WatchWorkout extends WatchState {
         'finishCancel': controls.finishCancel,
         'save': controls.save,
         'notDone': controls.notDone,
+        'restLabelAway': controls.restLabel,
+        'restOverAway': controls.restOver,
+        'allDone': controls.allDone,
+        'idle': controls.idle,
       },
       'state': 'workout',
       'workoutId': workoutId,
@@ -199,32 +237,46 @@ bool _same(Object? a, Object? b) {
 sealed class WatchCommand {
   final String workoutId;
 
-  const new(this.workoutId);
+  /// When the user did it, as the watch's clock had it. Null from a watch that
+  /// predates #206. A command sent while the phone was out of reach arrives
+  /// late — minutes, or the rest of the workout — and what it did must be
+  /// placed at this time, not at the time it arrived.
+  final DateTime? at;
+
+  const new(this.workoutId, {this.at});
 
   /// Null for anything unrecognised — a newer watch app, say — which is dropped.
   static WatchCommand? fromMap(Map<Object?, Object?> map) {
+    final at = switch (map['at']) {
+      num at => DateTime.fromMillisecondsSinceEpoch(at.toInt()),
+      _ => null,
+    };
     return switch (map) {
       {'action': 'complete', 'workoutId': String workoutId, 'setId': String setId} => WatchComplete(
         workoutId,
         setId: setId,
         weight: (map['weight'] as num?)?.toDouble(),
         reps: (map['reps'] as num?)?.toInt(),
+        at: at,
       ),
-      {'action': 'skipRest', 'workoutId': String workoutId} => WatchSkipRest(workoutId),
-      {'action': 'finish', 'workoutId': String workoutId} => WatchFinishWorkout(workoutId),
+      {'action': 'skipRest', 'workoutId': String workoutId} => WatchSkipRest(workoutId, at: at),
+      {'action': 'finish', 'workoutId': String workoutId} => WatchFinishWorkout(workoutId, at: at),
       {'action': 'edit', 'workoutId': String workoutId, 'setId': String setId} => WatchEditSet(
         workoutId,
         setId: setId,
         weight: (map['weight'] as num?)?.toDouble(),
         reps: (map['reps'] as num?)?.toInt(),
+        at: at,
       ),
       {'action': 'untick', 'workoutId': String workoutId, 'setId': String setId} => WatchUntickSet(
         workoutId,
         setId: setId,
+        at: at,
       ),
       {'action': 'adjustRest', 'workoutId': String workoutId, 'seconds': num seconds} => WatchAdjustRest(
         workoutId,
         seconds: seconds.toInt(),
+        at: at,
       ),
       _ => null,
     };
@@ -238,11 +290,11 @@ final class WatchComplete extends WatchCommand {
   final double? weight;
   final int? reps;
 
-  const new(super.workoutId, {required this.setId, this.weight, this.reps});
+  const new(super.workoutId, {required this.setId, this.weight, this.reps, super.at});
 }
 
 final class WatchSkipRest extends WatchCommand {
-  const new(super.workoutId);
+  const new(super.workoutId, {super.at});
 }
 
 /// New values for a set already done, gone back to from the workout page —
@@ -252,26 +304,26 @@ final class WatchEditSet extends WatchCommand {
   final double? weight;
   final int? reps;
 
-  const new(super.workoutId, {required this.setId, this.weight, this.reps});
+  const new(super.workoutId, {required this.setId, this.weight, this.reps, super.at});
 }
 
 /// Take the tick off a set: it was not done after all.
 final class WatchUntickSet extends WatchCommand {
   final String setId;
 
-  const new(super.workoutId, {required this.setId});
+  const new(super.workoutId, {required this.setId, super.at});
 }
 
 /// Finish the workout, confirmed on the wrist. Offered only once every set is
 /// ticked — anything left unticked is the phone's question to ask.
 final class WatchFinishWorkout extends WatchCommand {
-  const new(super.workoutId);
+  const new(super.workoutId, {super.at});
 }
 
 final class WatchAdjustRest extends WatchCommand {
   final int seconds;
 
-  const new(super.workoutId, {required this.seconds});
+  const new(super.workoutId, {required this.seconds, super.at});
 }
 
 /// No workout is running, or the switch is off: one line saying so.

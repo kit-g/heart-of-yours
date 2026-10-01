@@ -1948,7 +1948,7 @@ class LRu extends L {
   String get watchHeartRate => 'Пульс';
 
   @override
-  String get watchPhoneUnreachable => 'Поднесите iPhone ближе';
+  String get watchPhoneUnreachable => 'Синхронизируется с iPhone, когда он рядом';
 
   @override
   String watchSetPosition(int number, int total) {

@@ -3382,10 +3382,10 @@ abstract class L {
   /// **'Heart rate'**
   String get watchHeartRate;
 
-  /// Apple Watch line shown in place of the set controls while the phone is out of reach; logging needs it. Short: it is a watch screen
+  /// Apple Watch line shown while the phone is out of reach: logging carries on, and what is logged reaches the phone once it is near again. Short: it is a watch screen
   ///
   /// In en, this message translates to:
-  /// **'Bring your iPhone closer to log from here'**
+  /// **'Syncs with your iPhone when it\'s back'**
   String get watchPhoneUnreachable;
 
   /// Apple Watch line under the exercise name: which of the exercise's sets is up. Short: it is a watch screen

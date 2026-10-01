@@ -1922,7 +1922,7 @@ class LFr extends L {
   String get watchHeartRate => 'Fréquence cardiaque';
 
   @override
-  String get watchPhoneUnreachable => 'Rapprochez votre iPhone pour noter d’ici';
+  String get watchPhoneUnreachable => 'Se synchronise avec votre iPhone à son retour';
 
   @override
   String watchSetPosition(int number, int total) {
