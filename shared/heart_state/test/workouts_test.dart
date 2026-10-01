@@ -190,6 +190,16 @@ void main() {
       verify(remote.saveWorkout(activeBefore)).called(1);
     });
 
+    test('a finish decided earlier than it arrives ends the workout when it was decided', () async {
+      await sut.startWorkout(source: .blank, name: 'Legs');
+      final active = sut.activeWorkout!;
+      final decided = DateTime.now().subtract(const Duration(minutes: 20));
+
+      await sut.finishActiveWorkout(at: decided);
+
+      expect(active.end, decided.toUtc());
+    });
+
     test('a set typed into but never ticked is kept by the finish, a prescribed one is not', () async {
       // What separates the two dialogs the user can meet on Finish, and what
       // decides whether the set they just typed survives the save.

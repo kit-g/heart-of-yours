@@ -57,9 +57,18 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
 /// A rest already counting for this exercise is left alone; one owned by
 /// another exercise is replaced, the most recent set winning — the same rule
 /// as `Countdown`.
-void startRest(BuildContext context, WorkoutExercise exercise) {
-  final total = Timers.of(context)[exercise.exercise.id];
-  if (total == null) return;
+///
+/// [since] is when the set was ticked, for a tick that arrives late — sent from
+/// a watch while the phone was out of reach (#206): only what is left of the
+/// rest runs, and a rest already over by now does not start at all.
+void startRest(BuildContext context, WorkoutExercise exercise, {DateTime? since}) {
+  final timer = Timers.of(context)[exercise.exercise.id];
+  if (timer == null) return;
+  final total = switch (since) {
+    DateTime since => timer - DateTime.now().difference(since).inSeconds.clamp(0, timer),
+    null => timer,
+  };
+  if (total <= 0) return;
 
   final alarms = Alarms.of(context);
   if (alarms.remainsInActiveExercise != null && alarms.activeExerciseId == exercise.id) return;

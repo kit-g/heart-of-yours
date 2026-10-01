@@ -300,7 +300,7 @@ void main() {
       final sent = link.sent.last as WatchWorkout;
       expect(sent.set?.position, 'Set 1 of 2');
       expect(sent.exercises, hasLength(1));
-      final (:id, :name, :unit, :weighted, :counted, :sets, step: _) = sent.exercises.single;
+      final (:id, :name, :unit, :weighted, :counted, :sets, step: _, rest: _) = sent.exercises.single;
       expect(id, workout.first.id);
       expect(name, 'Bench Press (Barbell)');
       expect(unit, 'lbs');
@@ -308,6 +308,52 @@ void main() {
       expect(sets.map((set) => set.id), workout.first.map((set) => set.id));
       expect(sets.first.weight, closeTo(132.3, 0.1), reason: 'in the unit the phone shows it in, as the set up next');
       expect(sets.map((set) => set.done), [false, false]);
+    });
+
+    testWidgets('every set carries what the watch shows once it is up next, for moving on without the phone', (
+      tester,
+    ) async {
+      await timers.setRestTimer('id-bench', 90);
+      await running(tester);
+
+      final sent = link.sent.last as WatchWorkout;
+      final exercise = sent.exercises.single;
+      expect(
+        exercise.rest,
+        90,
+        reason: 'the rest a tick starts, which the watch starts itself while the phone is away',
+      );
+      final [first, second] = exercise.sets;
+      expect((first.position, second.position), ('Set 1 of 2', 'Set 2 of 2'));
+      expect(first.next, sent.workout.next, reason: 'the same line the lock screen shows for it');
+      expect(sent.controls?.restLabel, isNotEmpty);
+      expect(sent.controls?.idle, 'Start a workout on your iPhone');
+    });
+
+    testWidgets('a tick that arrives late starts only what is left of its rest', (tester) async {
+      await timers.setRestTimer('id-bench', 90);
+      await running(tester);
+      final ticked = DateTime.now().subtract(const Duration(seconds: 60));
+
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5, at: ticked));
+      await tester.pump();
+
+      expect(workout.first.first.isCompleted, isTrue);
+      final left = alarms.activeExerciseEnd!.difference(DateTime.now()).inSeconds;
+      expect(left, inInclusiveRange(28, 31), reason: 'ticked a minute ago on the watch: 30 seconds of a 90 remain');
+      alarms.stopActiveExerciseTimer();
+    });
+
+    testWidgets('a tick that arrives after its rest would have ended starts none', (tester) async {
+      await timers.setRestTimer('id-bench', 90);
+      await running(tester);
+      final ticked = DateTime.now().subtract(const Duration(minutes: 5));
+
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5, at: ticked));
+      await tester.pump();
+
+      expect(workout.first.first.isCompleted, isTrue);
+      expect(alarms.activeExerciseEnd, isNull);
     });
 
     testWidgets('a set gone back to takes new values and keeps its tick', (tester) async {
@@ -425,6 +471,12 @@ void main() {
     );
     expect(WatchCommand.fromMap({'action': 'untick', 'workoutId': 'w', 'setId': 's'}), isA<WatchUntickSet>());
     expect(WatchCommand.fromMap({'action': 'untick', 'workoutId': 'w'}), isNull);
+    final at = DateTime(2026, 9, 30, 10, 15);
+    expect(
+      WatchCommand.fromMap({'action': 'finish', 'workoutId': 'w', 'at': at.millisecondsSinceEpoch})?.at,
+      at,
+      reason: 'when it happened on the watch, which is not when it arrives from a queue',
+    );
     expect(WatchCommand.fromMap({'action': 'teleport', 'workoutId': 'w'}), isNull);
     expect(WatchCommand.fromMap({'action': 'complete'}), isNull);
   });

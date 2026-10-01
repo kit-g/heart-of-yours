@@ -258,7 +258,7 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
 /// confirmed, and so does the watch's Finish (#183), which confirmed on the
 /// wrist. [context] needs no route of its own: navigation goes through
 /// [HeartRouter].
-Future<void> finishWorkout(BuildContext context, Workouts workouts) {
+Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? at}) {
   workouts.activeWorkout?.resolveName(L.of(context).defaultWorkoutName());
 
   // Read before navigating: the screen this context belongs to is on its way
@@ -300,11 +300,11 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts) {
   // is whether the watch measured this session — then it saves the workout, and
   // the phone must not write a second, unmeasured one beside it.
   final measured = switch ((watch, session)) {
-    (WatchLink watch, Workout session) => watch.finish(session.id, end: DateTime.now()),
+    (WatchLink watch, Workout session) => watch.finish(session.id, end: at ?? DateTime.now()),
     _ => Future.value(false),
   };
 
-  final finishing = workouts.finishActiveWorkout();
+  final finishing = workouts.finishActiveWorkout(at: at);
 
   // Mirror the session into the device's health store — deliberately not
   // awaited. The user is already looking at the summary screen, and whether

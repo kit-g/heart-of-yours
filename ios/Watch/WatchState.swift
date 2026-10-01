@@ -57,14 +57,22 @@ enum WatchState: Equatable {
             var step: Double
             var weighted: Bool
             var counted: Bool
+            /// Its rest timer, in seconds; nil for none. What a tick starts
+            /// while the phone is out of reach (#206).
+            var rest: Int?
             var sets: [Row]
 
-            /// One set, done or not, in the exercise's [unit].
+            /// One set, done or not, in the exercise's [unit] — with the copy
+            /// it is shown with once it is up next, for moving on to it while
+            /// the phone is out of reach (#206).
             struct Row: Equatable, Identifiable {
                 var id: String
                 var weight: Double?
                 var reps: Int?
                 var done: Bool
+                var position: String = ""
+                var previous: String?
+                var next: String = ""
             }
 
             init?(_ payload: Any) {
@@ -78,20 +86,27 @@ enum WatchState: Equatable {
                 step = (payload["step"] as? NSNumber)?.doubleValue ?? 1
                 weighted = payload["weighted"] as? Bool ?? false
                 counted = payload["counted"] as? Bool ?? false
+                rest = (payload["rest"] as? NSNumber)?.intValue
                 sets = (payload["sets"] as? [Any] ?? []).compactMap { row in
                     guard let row = row as? [String: Any], let id = row["id"] as? String else { return nil }
                     return Row(
                         id: id,
                         weight: (row["weight"] as? NSNumber)?.doubleValue,
                         reps: (row["reps"] as? NSNumber)?.intValue,
-                        done: row["done"] as? Bool ?? false
+                        done: row["done"] as? Bool ?? false,
+                        position: row["position"] as? String ?? "",
+                        previous: row["previous"] as? String,
+                        next: row["next"] as? String ?? ""
                     )
                 }
             }
 
-            init(id: String, name: String, unit: String?, step: Double, weighted: Bool, counted: Bool, sets: [Row]) {
+            init(
+                id: String, name: String, unit: String?, step: Double, weighted: Bool, counted: Bool,
+                rest: Int? = nil, sets: [Row]
+            ) {
                 (self.id, self.name, self.unit, self.step) = (id, name, unit, step)
-                (self.weighted, self.counted, self.sets) = (weighted, counted, sets)
+                (self.weighted, self.counted, self.rest, self.sets) = (weighted, counted, rest, sets)
             }
         }
 
@@ -112,6 +127,11 @@ enum WatchState: Equatable {
             var finishCancel: String
             var save: String
             var notDone: String
+            /// What the watch says for itself while the phone is away (#206).
+            var restLabel: String = ""
+            var restOver: String = ""
+            var allDone: String = ""
+            var idle: String = ""
 
             /// Nil unless every label the controls cannot do without is there;
             /// the rest default to empty, for a phone that predates them.
@@ -140,6 +160,10 @@ enum WatchState: Equatable {
                 finishCancel = text("finishCancel") ?? ""
                 save = text("save") ?? ""
                 notDone = text("notDone") ?? ""
+                restLabel = text("restLabelAway") ?? ""
+                restOver = text("restOverAway") ?? ""
+                allDone = text("allDone") ?? ""
+                idle = text("idle") ?? ""
             }
 
             init(
@@ -238,6 +262,100 @@ extension Color {
             green: Double((argb >> 8) & 0xFF) / 255,
             blue: Double(argb & 0xFF) / 255,
             opacity: Double((argb >> 24) & 0xFF) / 255
+        )
+    }
+}
+
+/// The phone's last state with what the user did since, while the phone could
+/// not hear it (#206): the same moves the phone would make, so the watch carries
+/// on as if it had answered. The phone is still the only writer — this is only
+/// what to show until its answer comes back, and its answer replaces it.
+extension WatchState {
+    func applying(_ command: PhoneSession.Command, at: Date) -> WatchState {
+        guard case .workout(var workout) = self, workout.workoutId == command.workoutId else { return self }
+
+        switch command {
+        case let .complete(_, setId, weight, reps):
+            // ticked already: the phone ignores it, and so does this
+            guard let (e, r) = workout.locate(setId), !workout.exercises[e].sets[r].done else { return self }
+            workout.exercises[e].sets[r].weight = weight ?? workout.exercises[e].sets[r].weight
+            workout.exercises[e].sets[r].reps = reps ?? workout.exercises[e].sets[r].reps
+            workout.exercises[e].sets[r].done = true
+            workout.moveOn(after: (e, r))
+            // the rest the tick starts, as the phone would start it — gone
+            // already if the tick is older than the rest
+            if let seconds = workout.exercises[e].rest, seconds > 0, let controls = workout.controls {
+                let end = at.addingTimeInterval(TimeInterval(seconds))
+                workout.rest = end > .now ? .init(window: at...end, label: controls.restLabel, over: controls.restOver) : nil
+            }
+        case let .edit(_, setId, weight, reps):
+            guard let (e, r) = workout.locate(setId) else { return self }
+            workout.exercises[e].sets[r].weight = weight ?? workout.exercises[e].sets[r].weight
+            workout.exercises[e].sets[r].reps = reps ?? workout.exercises[e].sets[r].reps
+        case let .untick(_, setId):
+            // the phone keeps the set up next where it is, and so does this
+            guard let (e, r) = workout.locate(setId) else { return self }
+            workout.exercises[e].sets[r].done = false
+        case .skipRest:
+            workout.rest = nil
+        case let .adjustRest(_, seconds):
+            if let rest = workout.rest {
+                let end = rest.window.upperBound.addingTimeInterval(TimeInterval(seconds))
+                workout.rest = end > max(rest.window.lowerBound, .now)
+                    ? .init(window: rest.window.lowerBound...end, label: rest.label, over: rest.over)
+                    : nil
+            }
+        case .finish:
+            return .idle(workout.controls?.idle ?? "")
+        }
+        return .workout(workout)
+    }
+}
+
+private extension WatchState.Workout {
+    /// Where [setId] is: its exercise's index and its own.
+    func locate(_ setId: String) -> (Int, Int)? {
+        for (e, exercise) in exercises.enumerated() {
+            if let r = exercise.sets.firstIndex(where: { $0.id == setId }) { return (e, r) }
+        }
+        return nil
+    }
+
+    /// The set up next once [ticked] is done, by the phone's rule
+    /// (`upNextIn` in `lib/core/utils/ongoing_workout.dart`): the next open set
+    /// in the same exercise, else the first open set of a later one, else the
+    /// first open set anywhere. Nothing open: every set is ticked.
+    mutating func moveOn(after ticked: (Int, Int)) {
+        let exercises = exercises
+        func open(_ e: Int, from r: Int = 0) -> (Int, Int)? {
+            let sets = exercises[e].sets
+            guard r < sets.count else { return nil }
+            return sets[r...].firstIndex(where: { !$0.done }).map { (e, $0) }
+        }
+        let (e, r) = ticked
+        let upcoming = open(e, from: r + 1)
+            ?? (e + 1 ..< exercises.count).lazy.compactMap { open($0) }.first
+            ?? exercises.indices.lazy.compactMap { open($0) }.first
+
+        guard let (ne, nr) = upcoming else {
+            set = nil
+            exercise = exercises[e].name
+            next = controls?.allDone ?? ""
+            return
+        }
+        let target = exercises[ne]
+        let row = target.sets[nr]
+        exercise = target.name
+        next = row.next
+        set = .init(
+            exerciseId: target.id,
+            setId: row.id,
+            weight: row.weight,
+            reps: row.reps,
+            unit: target.unit,
+            step: target.step,
+            previous: row.previous,
+            position: row.position
         )
     }
 }

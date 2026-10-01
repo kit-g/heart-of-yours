@@ -66,19 +66,18 @@ struct UpNextPage: View {
                 }
 
                 if let controls = workout.controls, !dimmed {
-                    // absent, not dead: out of reach there is nothing a
-                    // control could do, so there is none — only why
-                    if phone.reachable {
-                        if let set = workout.set {
-                            SetControls(workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent)
-                                .padding(.top, 2)
-                        } else {
-                            // every set ticked: the one thing left to do
-                            FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
-                                .padding(.top, 2)
-                        }
+                    // out of reach too (#206): what is done here queues, and
+                    // reaches the phone when it is back
+                    if let set = workout.set {
+                        SetControls(workoutId: workout.workoutId, set: set, controls: controls, accent: workout.accent)
+                            .padding(.top, 2)
                     } else {
-                        Text(controls.unreachable)
+                        // every set ticked: the one thing left to do
+                        FinishControl(workoutId: workout.workoutId, controls: controls, accent: workout.accent)
+                            .padding(.top, 2)
+                    }
+                    if !phone.reachable || phone.waiting {
+                        Label(controls.unreachable, systemImage: "iphone.slash")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .padding(.top, 2)
@@ -88,7 +87,7 @@ struct UpNextPage: View {
                 if let rest = workout.rest {
                     RestView(rest: rest, accent: workout.accent)
                         .padding(.top, 6)
-                    if let controls = workout.controls, phone.reachable, !dimmed {
+                    if let controls = workout.controls, !dimmed {
                         RestControls(workoutId: workout.workoutId, controls: controls)
                     }
                 }
@@ -142,13 +141,12 @@ struct WorkoutList: View {
             ForEach(workout.exercises) { exercise in
                 Section {
                     ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, row in
-                        if let controls = workout.controls, phone.reachable {
+                        if let controls = workout.controls {
                             Button {
                                 editing = .init(exercise: exercise, row: row)
                             } label: {
                                 line(index, row, of: exercise, controls: controls)
                             }
-                            .disabled(phone.pending)
                         } else {
                             line(index, row, of: exercise, controls: workout.controls)
                         }
@@ -196,6 +194,13 @@ struct WorkoutList: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Spacer(minLength: 4)
+            // on the watch, not yet on the phone (#206)
+            if phone.unsynced.contains(row.id) {
+                Image(systemName: "iphone.slash")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(controls?.unreachable ?? "")
+            }
             if row.done {
                 Image(systemName: "checkmark")
                     .foregroundStyle(workout.accent)
@@ -291,7 +296,6 @@ struct SetEditor: View {
                 }
             }
         }
-        .disabled(phone.pending)
         .task {
             weight = row.weight ?? 0
             reps = Double(row.reps ?? 0)
@@ -405,14 +409,13 @@ struct RestControls: View {
         }
         .font(.footnote)
         .buttonStyle(.bordered)
-        .disabled(phone.pending)
     }
 }
 
 /// The next set's values and its tick. The values start as the phone sent them
 /// and the Digital Crown moves whichever one is focused; they only become the
-/// set's when Done sends them — until the phone answers, nothing here claims
-/// the set is done.
+/// set's when Done sends them. The watch moves on at once, and the phone's
+/// answer — now, or once it is back in reach (#206) — is what stands.
 struct SetControls: View {
     let workoutId: String
     let set: WatchState.Workout.UpNext
@@ -453,12 +456,8 @@ struct SetControls: View {
                     reps: set.reps.map { _ in Int(reps) }
                 ))
             } label: {
-                if phone.pending {
-                    ProgressView()
-                } else {
-                    Text(controls.done)
-                        .frame(maxWidth: .infinity)
-                }
+                Text(controls.done)
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .tint(accent)
@@ -466,7 +465,7 @@ struct SetControls: View {
             // aligned stack it otherwise hugs the left edge
             .frame(maxWidth: .infinity)
             // a counted set needs a count; the phone would refuse it anyway
-            .disabled(phone.pending || (set.reps != nil && reps < 1))
+            .disabled(set.reps != nil && reps < 1)
         }
         // a new set — or the same set sent again with new values — starts over
         .task(id: set) {
@@ -530,17 +529,12 @@ struct FinishControl: View {
         Button {
             confirming = true
         } label: {
-            if phone.pending {
-                ProgressView()
-            } else {
-                Text(controls.finish)
-                    .frame(maxWidth: .infinity)
-            }
+            Text(controls.finish)
+                .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
         .tint(accent)
         .frame(maxWidth: .infinity)
-        .disabled(phone.pending)
         .confirmationDialog(controls.finishTitle, isPresented: $confirming, titleVisibility: .visible) {
             Button(controls.finishConfirm) { phone.send(.finish(workoutId: workoutId)) }
             Button(controls.finishCancel, role: .cancel) {}
