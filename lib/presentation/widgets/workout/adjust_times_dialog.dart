@@ -3,6 +3,8 @@ import 'package:heart_language/heart_language.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'package:heart/core/utils/visual.dart';
+
 import '../buttons.dart';
 
 /// Which inline picker, if any, is currently unfolded in the dialog.
@@ -118,6 +120,9 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
     return Dialog(
       insetPadding: const .symmetric(horizontal: 16),
       shape: const RoundedRectangleBorder(borderRadius: .all(.circular(16))),
+      // capped like the app's other dialogs: uncapped, on an iPad it ran the
+      // full width of the screen, a date wheel adrift in 1100pt of panel
+      constraints: const BoxConstraints(maxWidth: dialogWidth),
       child: Padding(
         padding: const .fromLTRB(4, 4, 4, 12),
         child: Column(
