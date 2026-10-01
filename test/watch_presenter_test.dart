@@ -96,7 +96,7 @@ void main() {
           localizationsDelegates: L.localizationsDelegates,
           supportedLocales: L.supportedLocales,
           builder: (context, child) => WatchPresenter(link: link, child: child!),
-          home: const SizedBox.shrink(),
+          home: const Scaffold(body: SizedBox.shrink()),
         ),
       ),
     );
@@ -344,6 +344,52 @@ void main() {
       alarms.stopActiveExerciseTimer();
     });
 
+    testWidgets('a late batch from the watch is counted for the user once it is all in', (tester) async {
+      await running(tester);
+      final away = DateTime.now().subtract(const Duration(minutes: 3));
+      final [first, second] = workout.first.toList();
+
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 60, reps: 5, at: away));
+      link.command(WatchComplete(workout.id, setId: second.id, weight: 60, reps: 5, at: away));
+      await tester.pump();
+      expect(find.text('2 sets from your watch'), findsNothing, reason: 'not while the batch may still be arriving');
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(find.text('2 sets from your watch'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('watch content the system has not handed over yet is announced, and cleared when it lands', (
+      tester,
+    ) async {
+      link.pendingContent = true;
+      await running(tester);
+      await tester.pump();
+      expect(find.text('Catching up with your watch…'), findsOneWidget);
+
+      final away = DateTime.now().subtract(const Duration(minutes: 3));
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5, at: away));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Catching up with your watch…'), findsNothing);
+      expect(find.text('1 set from your watch'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('a tick made on the watch just now says nothing on the phone', (tester) async {
+      await running(tester);
+
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5, at: DateTime.now()));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(find.textContaining('from your watch'), findsNothing);
+      alarms.stopActiveExerciseTimer();
+    });
+
     testWidgets('a tick that arrives after its rest would have ended starts none', (tester) async {
       await timers.setRestTimer('id-bench', 90);
       await running(tester);
@@ -510,7 +556,11 @@ class _Link implements WatchLink {
   final _events = StreamController<WatchEvent>.broadcast();
   final _commands = StreamController<WatchCommand>.broadcast();
   bool openedUnseen = false;
+  bool pendingContent = false;
   List<WatchCommand> queued = [];
+
+  @override
+  Future<bool> contentPending() async => pendingContent;
 
   void emit(WatchEvent event) => _events.add(event);
 

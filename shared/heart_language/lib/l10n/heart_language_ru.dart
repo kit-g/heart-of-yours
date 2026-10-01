@@ -1967,6 +1967,28 @@ class LRu extends L {
   String get watchSetNotDone => 'Не сделан';
 
   @override
+  String get watchSending => 'Отправка на iPhone…';
+
+  @override
+  String get watchFinishedAway => 'Сохранено на часах. iPhone получит тренировку, когда будет рядом.';
+
+  @override
+  String get watchCatchingUp => 'Получаем данные с часов…';
+
+  @override
+  String watchSetsArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count подхода с часов',
+      many: '$count подходов с часов',
+      few: '$count подхода с часов',
+      one: '$count подход с часов',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restTimers => 'Таймеры отдыха';
 
   @override

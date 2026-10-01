@@ -1939,6 +1939,26 @@ class LEs extends L {
   String get watchSetNotDone => 'No hecha';
 
   @override
+  String get watchSending => 'Enviando a tu iPhone…';
+
+  @override
+  String get watchFinishedAway => 'Guardado en tu reloj. Tu iPhone lo recibirá cuando vuelva.';
+
+  @override
+  String get watchCatchingUp => 'Sincronizando con tu reloj…';
+
+  @override
+  String watchSetsArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count series desde tu reloj',
+      one: '1 serie desde tu reloj',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get restTimers => 'Temporizadores de descanso';
 
   @override

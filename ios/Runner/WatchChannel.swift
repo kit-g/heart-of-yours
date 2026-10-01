@@ -64,6 +64,10 @@ final class WatchChannel: NSObject {
                 let defaults = UserDefaults.standard
                 result(defaults.bool(forKey: self.openedKey))
                 defaults.removeObject(forKey: self.openedKey)
+            case "contentPending":
+                // watch content the system holds for this app and has not
+                // handed over yet: commands queued while the phone was away (#206)
+                self.whenActive { result(self.session?.hasContentPending ?? false) }
             case "takeCommands":
                 let defaults = UserDefaults.standard
                 result(defaults.array(forKey: self.commandsKey) ?? [])
