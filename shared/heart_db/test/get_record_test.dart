@@ -55,11 +55,23 @@ void main() {
 
       // the old query would have reported weight 100 next to reps 15 —
       // a set that never happened
-      expect(records['heaviest'], {'weight': 100.0, 'reps': 3, 'workoutId': 'w1', 'at': '2026-01-01T10:00:00Z'});
-      expect(
-        records['bestVolume'],
-        {'value': 900.0, 'weight': 90.0, 'reps': 10, 'workoutId': 'w2', 'at': '2026-02-01T10:00:00Z'},
-      );
+      expect(records['heaviest'], {
+        'weight': 100.0,
+        'reps': 3,
+        'workoutId': 'w1',
+        'at': '2026-01-01T10:00:00Z',
+        'previous': {'weight': 90.0, 'reps': 10, 'workoutId': 'w2', 'at': '2026-02-01T10:00:00Z'},
+      });
+      expect(records['bestVolume'], {
+        'value': 900.0,
+        'weight': 90.0,
+        'reps': 10,
+        'workoutId': 'w2',
+        'at': '2026-02-01T10:00:00Z',
+        // 60×15 equals it, but later: the tie stays with w2, and w3 is what
+        // w2 is measured against once it is left out
+        'previous': {'value': 900.0, 'weight': 60.0, 'reps': 15, 'workoutId': 'w3', 'at': '2026-03-01T10:00:00Z'},
+      });
 
       final oneRepMax = records['oneRepMax'] as Map;
       expect(oneRepMax['workoutId'], 'w2'); // 90×10 estimates higher than 100×3
@@ -112,7 +124,12 @@ void main() {
       ]);
 
       final records = (await local.getRecord('user-1', ex))!;
-      expect(records['mostReps'], {'reps': 14, 'workoutId': 'w2', 'at': '2026-02-01T10:00:00Z'});
+      expect(records['mostReps'], {
+        'reps': 14,
+        'workoutId': 'w2',
+        'at': '2026-02-01T10:00:00Z',
+        'previous': {'reps': 10, 'workoutId': 'w1', 'at': '2026-01-01T10:00:00Z'},
+      });
       expect(records['totalReps'], 24);
     });
 
@@ -158,8 +175,67 @@ void main() {
         'duration': 600.0,
         'workoutId': 'w2',
         'at': '2026-02-01T10:00:00Z',
+        'previous': {
+          'pace': 360.0,
+          'distance': 5.0,
+          'duration': 1800.0,
+          'workoutId': 'w1',
+          'at': '2026-01-01T10:00:00Z',
+        },
       });
       expect(records['totalDistance'], 7.0);
+    });
+  });
+
+  group('previous', () {
+    test('is the record with its own session left out', () async {
+      final ex = exercise(name: 'Bench', category: 'Barbell');
+      stub(ex.id, [
+        row(weight: 80, reps: 5, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
+        row(weight: 95, reps: 2, workoutId: 'w2', start: '2026-02-01T10:00:00Z'),
+        // this session's two sets: the second is the record, and the first
+        // must not stand in for what it beat
+        row(weight: 90, reps: 5, workoutId: 'w3', start: '2026-03-01T10:00:00Z'),
+        row(weight: 100, reps: 3, workoutId: 'w3', start: '2026-03-01T10:00:00Z'),
+      ]);
+
+      final records = (await local.getRecord('user-1', ex))!;
+      final heaviest = records['heaviest'] as Map;
+      expect(heaviest['workoutId'], 'w3');
+      expect((heaviest['previous'] as Map)['weight'], 95.0);
+      expect((heaviest['previous'] as Map).containsKey('previous'), isFalse);
+      // rep maxes are a table, not a headline, and carry none
+      expect((records['repMaxes'] as List).every((each) => !(each as Map).containsKey('previous')), isTrue);
+    });
+
+    test('is absent when only one session has the exercise', () async {
+      final ex = exercise(name: 'Bench', category: 'Barbell');
+      stub(ex.id, [
+        row(weight: 60, reps: 8, workoutId: 'w1'),
+        row(weight: 70, reps: 5, workoutId: 'w1'),
+      ]);
+
+      final records = (await local.getRecord('user-1', ex))!;
+      for (final key in ['heaviest', 'oneRepMax', 'bestVolume']) {
+        expect((records[key] as Map).containsKey('previous'), isFalse, reason: key);
+      }
+    });
+
+    test('is absent when the other sessions never measured that value', () async {
+      final ex = exercise(name: 'Run', category: 'Cardio');
+      stub(ex.id, [
+        // duration only: no distance, so no pace to beat
+        row(duration: 1200, workoutId: 'w1'),
+        row(distance: 5, duration: 1500, workoutId: 'w2'),
+      ]);
+
+      final records = (await local.getRecord('user-1', ex))!;
+      expect((records['bestPace'] as Map).containsKey('previous'), isFalse);
+      expect((records['longestDuration'] as Map)['previous'], {
+        'duration': 1200.0,
+        'workoutId': 'w1',
+        'at': '2026-01-10T10:00:00Z',
+      });
     });
   });
 

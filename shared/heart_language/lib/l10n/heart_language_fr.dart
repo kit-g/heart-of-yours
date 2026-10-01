@@ -451,8 +451,35 @@ class LFr extends L {
   }
 
   @override
-  String recordAchievedLine(String exercise, String records) {
-    return '$exercise · $records';
+  String recordBadgeWas(String value) {
+    return 'avant $value';
+  }
+
+  @override
+  String recordBadgeLabel(String exercise, String kind, String value, String previous) {
+    return 'Nouveau record : $exercise, $kind $value, avant $previous';
+  }
+
+  @override
+  String firstRecordsBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'premiers records',
+      one: 'premier record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String firstRecordsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count premiers records, d’exercices faits pour la première fois',
+      one: '$count premier record, d’un exercice fait pour la première fois',
+    );
+    return '$_temp0';
   }
 
   @override

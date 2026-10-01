@@ -7,6 +7,7 @@ import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/logo.dart';
+import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';

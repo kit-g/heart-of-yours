@@ -449,8 +449,35 @@ class LEn extends L {
   }
 
   @override
-  String recordAchievedLine(String exercise, String records) {
-    return '$exercise · $records';
+  String recordBadgeWas(String value) {
+    return 'was $value';
+  }
+
+  @override
+  String recordBadgeLabel(String exercise, String kind, String value, String previous) {
+    return 'New record: $exercise, $kind $value, was $previous';
+  }
+
+  @override
+  String firstRecordsBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'first records',
+      one: 'first record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String firstRecordsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count first records, from exercises done for the first time',
+      one: '1 first record, from an exercise done for the first time',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2452,8 +2479,35 @@ class LEnCa extends LEn {
   }
 
   @override
-  String recordAchievedLine(String exercise, String records) {
-    return '$exercise · $records';
+  String recordBadgeWas(String value) {
+    return 'was $value';
+  }
+
+  @override
+  String recordBadgeLabel(String exercise, String kind, String value, String previous) {
+    return 'New record: $exercise, $kind $value, was $previous';
+  }
+
+  @override
+  String firstRecordsBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'first records',
+      one: 'first record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String firstRecordsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count first records, from exercises done for the first time',
+      one: '1 first record, from an exercise done for the first time',
+    );
+    return '$_temp0';
   }
 
   @override
