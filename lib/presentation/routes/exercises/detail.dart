@@ -111,7 +111,14 @@ class _AddToWorkoutAction extends StatelessWidget {
   }
 }
 
-Future<void> showExerciseDetailDialog(BuildContext context, Exercise exercise) {
+Future<void> showExerciseDetailDialog(BuildContext context, Exercise given) {
+  // The library's copy, when it has one. A workout or template carries its
+  // own Exercise objects, and how complete they are depends on where they came
+  // from — a sample template names its exercises by key alone, a synced one
+  // may come without media or instructions. The About tab only shows for an
+  // exercise that has something to say (Exercise.hasInfo), so with the thin
+  // copy it went missing: a freshly started workout's exercises, sometimes.
+  final exercise = Exercises.of(context).lookup(given.id) ?? given;
   return showDialog<void>(
     context: context,
     useSafeArea: true,
