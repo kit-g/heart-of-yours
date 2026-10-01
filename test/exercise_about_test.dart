@@ -226,4 +226,50 @@ void main() {
       expect(find.descendant(of: find.byType(MarkdownBlock), matching: find.byType(Divider)), findsNothing);
     });
   });
+
+  // A workout opens the detail in a dialog with its *own* Exercise object, and
+  // a freshly started one often holds a thin copy — a sample template names its
+  // exercises by key alone. About is gated on Exercise.hasInfo, so with that
+  // copy the tab was simply not there.
+  testWidgets('the workout dialog shows About from the library, even for a thin copy', (tester) async {
+    final full = ex('Lat Pulldown (Machine)');
+    when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [full]));
+    await tester.runAsync(exercises.init);
+    expect(exercises.lookup(full.id)?.hasInfo, isTrue);
+
+    final thin = Exercise.fromJson({
+      'id': full.id,
+      'name': full.name,
+      'category': 'Machine',
+      'target': 'Back',
+      'archived': false,
+    });
+    expect(thin.hasInfo, isFalse);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<Exercises>.value(value: exercises),
+          ChangeNotifierProvider<Preferences>.value(value: preferences),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
+          theme: ThemeData(platform: TargetPlatform.android),
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showExerciseDetailDialog(context, thin),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('About'), findsOneWidget);
+    expect(find.textContaining('Pull the bar down.'), findsWidgets);
+  });
 }
