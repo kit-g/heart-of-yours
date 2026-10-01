@@ -3707,5 +3707,40 @@
     "description": "Apple Watch line shown in place of the set controls while the phone is out of reach; logging needs it. Short: it is a watch screen",
     "type": "text",
     "placeholders": {}
+  },
+  "watchSetPosition": "Подход {number} из {total}",
+  "@watchSetPosition": {
+    "description": "Apple Watch line under the exercise name: which of the exercise's sets is up. Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "watchLastTime": "В прошлый раз: {result}",
+  "@watchLastTime": {
+    "description": "Apple Watch line: what the user lifted in this same set last session, e.g. \"Last time: 60 kg × 8\". Not \"previous\", which on the watch would read as the set before this one",
+    "type": "text",
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
+  "watchSave": "Сохранить",
+  "@watchSave": {
+    "description": "Apple Watch button that keeps new values for a set already done. One short word",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchSetNotDone": "Не сделан",
+  "@watchSetNotDone": {
+    "description": "Apple Watch button that unticks a set the user ticked by mistake. Short",
+    "type": "text",
+    "placeholders": {}
   }
 }

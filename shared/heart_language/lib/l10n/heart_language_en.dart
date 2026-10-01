@@ -1892,6 +1892,22 @@ class LEn extends L {
   String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
 
   @override
+  String watchSetPosition(int number, int total) {
+    return 'Set $number of $total';
+  }
+
+  @override
+  String watchLastTime(String result) {
+    return 'Last time: $result';
+  }
+
+  @override
+  String get watchSave => 'Save';
+
+  @override
+  String get watchSetNotDone => 'Not done';
+
+  @override
   String get restTimers => 'Rest timers';
 
   @override
@@ -3914,6 +3930,22 @@ class LEnCa extends LEn {
 
   @override
   String get watchPhoneUnreachable => 'Bring your iPhone closer to log from here';
+
+  @override
+  String watchSetPosition(int number, int total) {
+    return 'Set $number of $total';
+  }
+
+  @override
+  String watchLastTime(String result) {
+    return 'Last time: $result';
+  }
+
+  @override
+  String get watchSave => 'Save';
+
+  @override
+  String get watchSetNotDone => 'Not done';
 
   @override
   String get restTimers => 'Rest timers';

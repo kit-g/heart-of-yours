@@ -293,6 +293,57 @@ void main() {
       expect(link.sent.length, before + 1, reason: 'the watch hears back even when nothing changed');
     });
 
+    testWidgets('the watch is sent the whole workout, for going back to a set', (tester) async {
+      preferences.setWeightUnit(.imperial);
+      await running(tester);
+
+      final sent = link.sent.last as WatchWorkout;
+      expect(sent.set?.position, 'Set 1 of 2');
+      expect(sent.exercises, hasLength(1));
+      final (:id, :name, :unit, :weighted, :counted, :sets, step: _) = sent.exercises.single;
+      expect(id, workout.first.id);
+      expect(name, 'Bench Press (Barbell)');
+      expect(unit, 'lbs');
+      expect((weighted, counted), (true, true));
+      expect(sets.map((set) => set.id), workout.first.map((set) => set.id));
+      expect(sets.first.weight, closeTo(132.3, 0.1), reason: 'in the unit the phone shows it in, as the set up next');
+      expect(sets.map((set) => set.done), [false, false]);
+    });
+
+    testWidgets('a set gone back to takes new values and keeps its tick', (tester) async {
+      preferences.setWeightUnit(.imperial);
+      await running(tester);
+      final first = workout.first.first;
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 135, reps: 5));
+      await tester.pump();
+      alarms.stopActiveExerciseTimer();
+
+      link.command(WatchEditSet(workout.id, setId: first.id, weight: 145, reps: 4));
+      await tester.pump();
+
+      expect(first.isCompleted, isTrue);
+      expect(first.weight, closeTo(65.8, 0.1), reason: 'pounds from the watch are stored as kilograms');
+      expect(first.reps, 4);
+      final row = (link.sent.last as WatchWorkout).exercises.single.sets.first;
+      expect(row.weight, closeTo(145, 0.1));
+      expect((row.reps, row.done), (4, true));
+    });
+
+    testWidgets('a set ticked by mistake is unticked', (tester) async {
+      await running(tester);
+      final first = workout.first.first;
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 60, reps: 5));
+      await tester.pump();
+      alarms.stopActiveExerciseTimer();
+
+      link.command(WatchUntickSet(workout.id, setId: first.id));
+      await tester.pump();
+
+      expect(first.isCompleted, isFalse);
+      verify(local.markSetAsIncomplete(first)).called(1);
+      expect((link.sent.last as WatchWorkout).exercises.single.sets.first.done, isFalse);
+    });
+
     testWidgets('a command about another workout is ignored', (tester) async {
       await running(tester);
 
@@ -368,6 +419,12 @@ void main() {
     expect(WatchCommand.fromMap({'action': 'adjustRest', 'workoutId': 'w', 'seconds': -10}), isA<WatchAdjustRest>());
     expect(WatchCommand.fromMap({'action': 'skipRest', 'workoutId': 'w'}), isA<WatchSkipRest>());
     expect(WatchCommand.fromMap({'action': 'finish', 'workoutId': 'w'}), isA<WatchFinishWorkout>());
+    expect(
+      WatchCommand.fromMap({'action': 'edit', 'workoutId': 'w', 'setId': 's', 'weight': 62.5, 'reps': 4}),
+      isA<WatchEditSet>().having((c) => c.weight, 'weight', 62.5).having((c) => c.reps, 'reps', 4),
+    );
+    expect(WatchCommand.fromMap({'action': 'untick', 'workoutId': 'w', 'setId': 's'}), isA<WatchUntickSet>());
+    expect(WatchCommand.fromMap({'action': 'untick', 'workoutId': 'w'}), isNull);
     expect(WatchCommand.fromMap({'action': 'teleport', 'workoutId': 'w'}), isNull);
     expect(WatchCommand.fromMap({'action': 'complete'}), isNull);
   });

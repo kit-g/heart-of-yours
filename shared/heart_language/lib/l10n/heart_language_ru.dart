@@ -1920,6 +1920,22 @@ class LRu extends L {
   String get watchPhoneUnreachable => 'Поднесите iPhone ближе';
 
   @override
+  String watchSetPosition(int number, int total) {
+    return 'Подход $number из $total';
+  }
+
+  @override
+  String watchLastTime(String result) {
+    return 'В прошлый раз: $result';
+  }
+
+  @override
+  String get watchSave => 'Сохранить';
+
+  @override
+  String get watchSetNotDone => 'Не сделан';
+
+  @override
   String get restTimers => 'Таймеры отдыха';
 
   @override

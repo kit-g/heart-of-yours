@@ -3370,6 +3370,30 @@ abstract class L {
   /// **'Bring your iPhone closer to log from here'**
   String get watchPhoneUnreachable;
 
+  /// Apple Watch line under the exercise name: which of the exercise's sets is up. Short: it is a watch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Set {number} of {total}'**
+  String watchSetPosition(int number, int total);
+
+  /// Apple Watch line: what the user lifted in this same set last session, e.g. "Last time: 60 kg × 8". Not "previous", which on the watch would read as the set before this one
+  ///
+  /// In en, this message translates to:
+  /// **'Last time: {result}'**
+  String watchLastTime(String result);
+
+  /// Apple Watch button that keeps new values for a set already done. One short word
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get watchSave;
+
+  /// Apple Watch button that unticks a set the user ticked by mistake. Short
+  ///
+  /// In en, this message translates to:
+  /// **'Not done'**
+  String get watchSetNotDone;
+
   /// Settings row and page title: every exercise that has a rest timer set, in one list
   ///
   /// In en, this message translates to:

@@ -20,6 +20,9 @@ final class WatchUITests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
         app.activate()
+        // every step starts on the set up next; the pager keeps whichever page
+        // the last one left it on
+        app.swipeRight()
     }
 
     /// Done ticks the set the watch shows; the phone answers with the next one,
@@ -72,5 +75,66 @@ final class WatchUITests: XCTestCase {
         skip.tap()
 
         XCTAssertTrue(skip.waitForNonExistence(timeout: 10), "the phone stopped the rest and said so")
+    }
+
+    /// A swipe from the set up next is the whole workout, one row a set.
+    func testOpenWorkoutPage() {
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+
+        app.swipeLeft()
+
+        XCTAssertTrue(firstDoneRow.waitForExistence(timeout: 5), "a set already ticked is listed, with its tick")
+    }
+
+    /// Opens a ticked set's editor from the workout page, and leaves it open —
+    /// for a look, or a screenshot.
+    func testOpenSetEditor() {
+        app.swipeLeft()
+        let row = firstDoneRow
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+
+        row.tap()
+
+        XCTAssertTrue(app.buttons["Not done"].waitForExistence(timeout: 5))
+    }
+
+    /// A set gone back to loses its tick, and the phone says so.
+    func testUntickFromWorkoutPage() {
+        app.swipeLeft()
+        let row = firstDoneRow
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        let label = row.label
+
+        row.tap()
+        app.buttons["Not done"].tap()
+
+        let unticked = app.buttons.matching(NSPredicate(format: "label == %@", String(label.dropLast(", Done".count)))).firstMatch
+        XCTAssertTrue(unticked.waitForExistence(timeout: 10), "the row came back without its tick")
+    }
+
+    /// New reps for a set gone back to: the crown, back, Save — and the row
+    /// shows what the phone stored, still ticked.
+    func testEditFromWorkoutPage() {
+        app.swipeLeft()
+        let row = firstDoneRow
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        let label = row.label
+
+        row.tap()
+        app.buttons["Reps"].tap()
+        let reps = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'Reps'")).firstMatch
+        XCTAssertTrue(reps.waitForExistence(timeout: 5))
+        reps.tap()
+        XCUIDevice.shared.rotateDigitalCrown(delta: 0.3)
+        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["Save"].tap()
+
+        let edited = app.buttons.matching(NSPredicate(format: "label ENDSWITH ', Done' AND label != %@", label)).firstMatch
+        XCTAssertTrue(edited.waitForExistence(timeout: 10), "the row shows the new reps, still ticked")
+    }
+
+    /// A row on the workout page that is ticked: its label ends in the tick's.
+    private var firstDoneRow: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label ENDSWITH ', Done'")).firstMatch
     }
 }

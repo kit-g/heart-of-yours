@@ -1898,6 +1898,22 @@ class LFr extends L {
   String get watchPhoneUnreachable => 'Rapprochez votre iPhone pour noter d’ici';
 
   @override
+  String watchSetPosition(int number, int total) {
+    return 'Série $number sur $total';
+  }
+
+  @override
+  String watchLastTime(String result) {
+    return 'La dernière fois : $result';
+  }
+
+  @override
+  String get watchSave => 'Enregistrer';
+
+  @override
+  String get watchSetNotDone => 'Pas faite';
+
+  @override
   String get restTimers => 'Minuteurs de repos';
 
   @override

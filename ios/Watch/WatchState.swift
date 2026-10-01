@@ -26,6 +26,9 @@ enum WatchState: Equatable {
         /// The set up next, which the watch can edit and tick (#183); nil when
         /// every set is done.
         var set: UpNext?
+        /// The whole workout, for going back to a set already done (#175): the
+        /// second page. Empty from a phone that predates it.
+        var exercises: [Exercise] = []
         var controls: Controls?
         /// `WorkoutActivity`'s name for the session (#184).
         var activity: String?
@@ -40,7 +43,56 @@ enum WatchState: Equatable {
             var unit: String?
             /// One Digital Crown detent of weight.
             var step: Double
+            /// The same set last session, as a finished line ("Last time: …").
             var previous: String?
+            /// "Set 2 of 3".
+            var position: String?
+        }
+
+        struct Exercise: Equatable, Identifiable {
+            var id: String
+            var name: String
+            /// Nil for an exercise that takes no weight.
+            var unit: String?
+            var step: Double
+            var weighted: Bool
+            var counted: Bool
+            var sets: [Row]
+
+            /// One set, done or not, in the exercise's [unit].
+            struct Row: Equatable, Identifiable {
+                var id: String
+                var weight: Double?
+                var reps: Int?
+                var done: Bool
+            }
+
+            init?(_ payload: Any) {
+                guard let payload = payload as? [String: Any],
+                      let id = payload["id"] as? String,
+                      let name = payload["name"] as? String
+                else { return nil }
+                self.id = id
+                self.name = name
+                unit = payload["unit"] as? String
+                step = (payload["step"] as? NSNumber)?.doubleValue ?? 1
+                weighted = payload["weighted"] as? Bool ?? false
+                counted = payload["counted"] as? Bool ?? false
+                sets = (payload["sets"] as? [Any] ?? []).compactMap { row in
+                    guard let row = row as? [String: Any], let id = row["id"] as? String else { return nil }
+                    return Row(
+                        id: id,
+                        weight: (row["weight"] as? NSNumber)?.doubleValue,
+                        reps: (row["reps"] as? NSNumber)?.intValue,
+                        done: row["done"] as? Bool ?? false
+                    )
+                }
+            }
+
+            init(id: String, name: String, unit: String?, step: Double, weighted: Bool, counted: Bool, sets: [Row]) {
+                (self.id, self.name, self.unit, self.step) = (id, name, unit, step)
+                (self.weighted, self.counted, self.sets) = (weighted, counted, sets)
+            }
         }
 
         struct Controls: Equatable {
@@ -58,6 +110,8 @@ enum WatchState: Equatable {
             var finishTitle: String
             var finishConfirm: String
             var finishCancel: String
+            var save: String
+            var notDone: String
 
             /// Nil unless every label the controls cannot do without is there;
             /// the rest default to empty, for a phone that predates them.
@@ -84,18 +138,22 @@ enum WatchState: Equatable {
                 finishTitle = text("finishTitle") ?? ""
                 finishConfirm = text("finishConfirm") ?? ""
                 finishCancel = text("finishCancel") ?? ""
+                save = text("save") ?? ""
+                notDone = text("notDone") ?? ""
             }
 
             init(
                 done: String, skip: String, add: String, subtract: String, reps: String, unreachable: String,
                 heartRate: String, bpm: String, energy: String, kcal: String,
-                finish: String, finishTitle: String, finishConfirm: String, finishCancel: String
+                finish: String, finishTitle: String, finishConfirm: String, finishCancel: String,
+                save: String, notDone: String
             ) {
                 (self.done, self.skip, self.add, self.subtract, self.reps, self.unreachable) =
                     (done, skip, add, subtract, reps, unreachable)
                 (self.heartRate, self.bpm, self.energy, self.kcal) = (heartRate, bpm, energy, kcal)
                 (self.finish, self.finishTitle, self.finishConfirm, self.finishCancel) =
                     (finish, finishTitle, finishConfirm, finishCancel)
+                (self.save, self.notDone) = (save, notDone)
             }
         }
 
@@ -146,7 +204,8 @@ enum WatchState: Equatable {
                     reps: (payload["reps"] as? NSNumber)?.intValue,
                     unit: payload["unit"] as? String,
                     step: (payload["step"] as? NSNumber)?.doubleValue ?? 1,
-                    previous: payload["previous"] as? String
+                    previous: payload["previous"] as? String,
+                    position: payload["position"] as? String
                 )
             default:
                 nil
@@ -161,6 +220,7 @@ enum WatchState: Equatable {
                 rest: rest,
                 accent: Color(argb: (payload["accent"] as? NSNumber)?.uint32Value ?? 0xFFFF_FFFF),
                 set: set,
+                exercises: (payload["exercises"] as? [Any] ?? []).compactMap(Workout.Exercise.init),
                 controls: Workout.Controls(payload),
                 activity: payload["activity"] as? String
             ))
