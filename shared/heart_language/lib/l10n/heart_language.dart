@@ -3406,6 +3406,12 @@ abstract class L {
   /// **'Saved on your watch. Your iPhone gets it when it\'s back.'**
   String get watchFinishedAway;
 
+  /// Settings, under the Apple Watch switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back
+  ///
+  /// In en, this message translates to:
+  /// **'Phone in your locker? The watch keeps logging, and your iPhone catches up when it\'s back. That can take a few seconds.'**
+  String get watchAppAwayNote;
+
   /// Phone snackbar while what the user logged on their Apple Watch, away from the phone, is still arriving
   ///
   /// In en, this message translates to:

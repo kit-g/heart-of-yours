@@ -3770,5 +3770,11 @@
         "type": "int"
       }
     }
+  },
+  "watchAppAwayNote": "Téléphone au vestiaire ? La montre continue d'enregistrer, et votre iPhone se met à jour à son retour. Cela peut prendre quelques secondes.",
+  "@watchAppAwayNote": {
+    "description": "Settings, under the Apple Watch switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back",
+    "type": "text",
+    "placeholders": {}
   }
 }

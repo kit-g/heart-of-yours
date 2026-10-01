@@ -644,13 +644,28 @@ class _WatchAppSwitchState extends State<_WatchAppSwitch> {
     return ValueListenableBuilder<bool>(
       valueListenable: _installed,
       builder: (context, installed, _) {
+        final l = L.of(context);
+        final ThemeData(:textTheme, colorScheme: ColorScheme(:onSurfaceVariant)) = Theme.of(context);
         return switch (installed) {
-          true => _FeatureSwitch(
-            .watchApp,
-            onSwitched: () {
-              final on = Preferences.of(context).isOn(.watchApp);
-              Analytics.of(context).watchAppSwitched(on: on, fromWatch: false);
-            },
+          true => Column(
+            crossAxisAlignment: .start,
+            children: [
+              _FeatureSwitch(
+                .watchApp,
+                onSwitched: () {
+                  final on = Preferences.of(context).isOn(.watchApp);
+                  Analytics.of(context).watchAppSwitched(on: on, fromWatch: false);
+                },
+              ),
+              // the one thing about the watch worth knowing ahead (#206):
+              // away from the phone it keeps going, and the phone catches up
+              // seconds after it is back, not at once
+              if (Preferences.watch(context).isOn(.watchApp))
+                Padding(
+                  padding: const .fromLTRB(72, 0, 16, 8),
+                  child: Text(l.watchAppAwayNote, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
+                ),
+            ],
           ),
           false => const SizedBox.shrink(),
         };

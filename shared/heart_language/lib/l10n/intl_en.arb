@@ -3528,6 +3528,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "watchAppAwayNote": "Phone in your locker? The watch keeps logging, and your iPhone catches up when it's back. That can take a few seconds.",
+  "@watchAppAwayNote": {
+    "description": "Settings, under the Apple Watch switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back",
+    "type": "text",
+    "placeholders": {}
+  },
   "watchCatchingUp": "Catching up with your watch…",
   "@watchCatchingUp": {
     "description": "Phone snackbar while what the user logged on their Apple Watch, away from the phone, is still arriving",

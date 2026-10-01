@@ -379,6 +379,34 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
     });
 
+    testWidgets('the watch saying it is back with a queue is announced at once', (tester) async {
+      await running(tester);
+
+      link.emit(.catchingUp);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Catching up with your watch…'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 31));
+      await tester.pumpAndSettle();
+      expect(find.text('Catching up with your watch…'), findsNothing, reason: 'and gives up if nothing comes');
+    });
+
+    testWidgets('a batch nobody announced says it is catching up while it lands', (tester) async {
+      await running(tester);
+      final away = DateTime.now().subtract(const Duration(minutes: 3));
+
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5, at: away));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Catching up with your watch…'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(find.text('1 set from your watch'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
     testWidgets('a tick made on the watch just now says nothing on the phone', (tester) async {
       await running(tester);
 

@@ -1914,6 +1914,10 @@ class LEn extends L {
   String get watchFinishedAway => 'Saved on your watch. Your iPhone gets it when it\'s back.';
 
   @override
+  String get watchAppAwayNote =>
+      'Phone in your locker? The watch keeps logging, and your iPhone catches up when it\'s back. That can take a few seconds.';
+
+  @override
   String get watchCatchingUp => 'Catching up with your watch…';
 
   @override
@@ -3972,6 +3976,10 @@ class LEnCa extends LEn {
 
   @override
   String get watchFinishedAway => 'Saved on your watch. Your iPhone gets it when it\'s back.';
+
+  @override
+  String get watchAppAwayNote =>
+      'Phone in your locker? The watch keeps logging, and your iPhone catches up when it\'s back. That can take a few seconds.';
 
   @override
   String get watchCatchingUp => 'Catching up with your watch…';

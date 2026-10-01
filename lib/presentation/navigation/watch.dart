@@ -133,6 +133,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
         _resend();
       case .changed:
         break;
+      case .catchingUp:
+        _catchUp();
     }
   }
 
@@ -212,7 +214,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
   /// The system has watch content for the phone it has not delivered yet:
   /// say so until it lands, or until it plainly is not coming.
   void _catchUp() {
-    if (!mounted || !Preferences.of(context).isOn(.watchApp)) return;
+    if (_catchingUp != null || !mounted || !Preferences.of(context).isOn(.watchApp)) return;
     _catchingUp = ScaffoldMessenger.of(context).snack(L.of(context).watchCatchingUp, duration: _patience);
     _settle ??= Timer(_patience, _caughtUp);
   }
@@ -220,6 +222,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
   /// A command landed; if it is a late one, the batch is not over yet.
   void _landed(WatchCommand command, {bool ticked = false}) {
     if (command.at case DateTime at when DateTime.now().difference(at) >= _late) {
+      // the first of a batch nobody announced: say so while the rest lands
+      _catchUp();
       if (ticked) _arrived++;
       _settle?.cancel();
       _settle = Timer(_quiet, _caughtUp);
