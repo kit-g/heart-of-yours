@@ -1,5 +1,8 @@
 part of 'settings.dart';
 
+/// Widest the settings list gets; beyond it the page centres it.
+const _maxWidth = 640.0;
+
 class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onAccountManagement;
   final VoidCallback onImportData;
@@ -102,220 +105,227 @@ class SettingsPage extends StatelessWidget with HasHaptic {
               child: LogoStripe(),
             ),
           ),
-          body: ListView(
-            children: [
-              const SizedBox(height: 8),
-              _Section(
-                title: appearance,
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _ThemeModePicker(),
-                  ),
-                  SizedBox(height: 16),
-                  // no page padding: the swatch strip scrolls to the screen
-                  // edge and carries the inset itself
-                  _PresetPicker(),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _Section(
-                title: units,
-                children: [
-                  // Preferences loads from disk without being awaited at startup,
-                  // and its unit fields are `late` — reading one before
-                  // [Preferences.isInitialized] throws (same hazard as
-                  // goals/row.dart), so both pickers hold back until it lands;
-                  // the Selector brings us straight back when it does.
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Selector<Preferences, MeasurementUnit?>(
-                      selector: (_, provider) => switch (provider.isInitialized) {
-                        true => provider.weightUnit,
-                        false => null,
-                      },
-                      builder: (_, weight, _) {
-                        return switch (weight) {
-                          null => const SizedBox.shrink(),
-                          MeasurementUnit value => FixedLengthSettingPicker<MeasurementUnit>(
-                            title: weightUnit,
-                            value: value,
-                            onValueChanged: (unit) {
-                              buzz();
-                              if (unit != null) {
-                                Preferences.of(context).setWeightUnit(unit);
-                              }
-                            },
-                            children: {
-                              .imperial: Text(imperial),
-                              .metric: Text(metric),
-                            },
-                          ),
-                        };
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Selector<Preferences, MeasurementUnit?>(
-                      selector: (_, provider) => switch (provider.isInitialized) {
-                        true => provider.distanceUnit,
-                        false => null,
-                      },
-                      builder: (_, distance, _) {
-                        return switch (distance) {
-                          null => const SizedBox.shrink(),
-                          MeasurementUnit value => FixedLengthSettingPicker<MeasurementUnit>(
-                            title: distanceUnit,
-                            value: value,
-                            onValueChanged: (unit) {
-                              buzz();
-                              if (unit != null) {
-                                Preferences.of(context).setDistanceUnit(unit);
-                              }
-                            },
-                            children: {
-                              .imperial: Text(imperial),
-                              .metric: Text(metric),
-                            },
-                          ),
-                        };
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const _FeaturesSection(),
-              const SizedBox(height: 24),
-              // owns its own header — the whole block is absent on platforms
-              // with no health store, and a header over nothing would lie
-              const HealthSettings(),
-              const SizedBox(height: 24),
-              _Section(
-                title: yourData,
-                children: [
-                  if (!isAnonymous)
-                    ListTile(
-                      leading: const Icon(Icons.upload_file_rounded),
-                      title: Text(importData),
-                      onTap: onImportData,
-                    ),
-                  ListTile(
-                    key: AppKeys.exportData,
-                    leading: const Icon(Icons.file_download_rounded),
-                    title: Text(exportData),
-                    onTap: onExportData,
-                  ),
-                  if (isAnonymous)
-                    ListTile(
-                      key: AppKeys.eraseData,
-                      leading: Icon(Icons.delete_forever_rounded, color: error),
-                      title: Text(eraseData, style: textTheme.bodyLarge?.copyWith(color: error)),
-                      onTap: () => _onEraseData(context),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              if (!isAnonymous) ...[
+          // Capped and centred: every row here is a label with its control
+          // at the far edge, and on a landscape iPad that edge was 1100pt away
+          // — a switch nobody would connect to its name. Padding rather than a
+          // narrowed box, so the page still scrolls from its whole width.
+          body: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              padding: .symmetric(horizontal: math.max(0, (constraints.maxWidth - _maxWidth) / 2)),
+              children: [
+                const SizedBox(height: 8),
                 _Section(
-                  title: account,
+                  title: appearance,
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: _ThemeModePicker(),
+                    ),
+                    SizedBox(height: 16),
+                    // no page padding: the swatch strip scrolls to the screen
+                    // edge and carries the inset itself
+                    _PresetPicker(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _Section(
+                  title: units,
                   children: [
-                    ListTile(
-                      leading: const Icon(Icons.manage_accounts_rounded),
-                      title: Text(accountControl),
-                      onTap: onAccountManagement,
+                    // Preferences loads from disk without being awaited at startup,
+                    // and its unit fields are `late` — reading one before
+                    // [Preferences.isInitialized] throws (same hazard as
+                    // goals/row.dart), so both pickers hold back until it lands;
+                    // the Selector brings us straight back when it does.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Selector<Preferences, MeasurementUnit?>(
+                        selector: (_, provider) => switch (provider.isInitialized) {
+                          true => provider.weightUnit,
+                          false => null,
+                        },
+                        builder: (_, weight, _) {
+                          return switch (weight) {
+                            null => const SizedBox.shrink(),
+                            MeasurementUnit value => FixedLengthSettingPicker<MeasurementUnit>(
+                              title: weightUnit,
+                              value: value,
+                              onValueChanged: (unit) {
+                                buzz();
+                                if (unit != null) {
+                                  Preferences.of(context).setWeightUnit(unit);
+                                }
+                              },
+                              children: {
+                                .imperial: Text(imperial),
+                                .metric: Text(metric),
+                              },
+                            ),
+                          };
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Selector<Preferences, MeasurementUnit?>(
+                        selector: (_, provider) => switch (provider.isInitialized) {
+                          true => provider.distanceUnit,
+                          false => null,
+                        },
+                        builder: (_, distance, _) {
+                          return switch (distance) {
+                            null => const SizedBox.shrink(),
+                            MeasurementUnit value => FixedLengthSettingPicker<MeasurementUnit>(
+                              title: distanceUnit,
+                              value: value,
+                              onValueChanged: (unit) {
+                                buzz();
+                                if (unit != null) {
+                                  Preferences.of(context).setDistanceUnit(unit);
+                                }
+                              },
+                              children: {
+                                .imperial: Text(imperial),
+                                .metric: Text(metric),
+                              },
+                            ),
+                          };
+                        },
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-              ],
-              _Section(
-                title: app,
-                children: [
-                  const _NotificationsRow(),
-                  // absent until there is a timer to list: an entry that can
-                  // only open onto an empty page is a dead end
-                  Selector<Timers, bool>(
-                    selector: (_, timers) => timers.isNotEmpty,
-                    builder: (_, any, _) {
-                      return switch (any) {
-                        true => ListTile(
-                          key: AppKeys.restTimers,
-                          leading: const Icon(Icons.timer_outlined),
-                          title: Text(restTimers),
-                          onTap: onRestTimers,
-                        ),
-                        false => const SizedBox.shrink(),
-                      };
-                    },
-                  ),
-                  const _LockScreenWorkoutSwitch(),
-                  ListTile(
-                    leading: const Icon(Icons.info_outline_rounded),
-                    title: Text(aboutApp),
-                    onTap: () {
-                      final info = AppInfo.of(context);
-
-                      showAboutDialog(
-                        context: context,
-                        applicationVersion: info.fullVersion,
-                        applicationName: AppConfig.of(context).appName,
-                        // without one the dialog keeps the icon's slot anyway,
-                        // and the name sat indented over an empty gap
-                        applicationIcon: const _AppMark(),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    key: AppKeys.whatsNew,
-                    leading: const Icon(Icons.update_rounded),
-                    title: Text(whatsNew),
-                    onTap: onWhatsNew,
-                  ),
-                  if (!isAnonymous)
+                const _FeaturesSection(),
+                const SizedBox(height: 24),
+                // owns its own header — the whole block is absent on platforms
+                // with no health store, and a header over nothing would lie
+                const HealthSettings(),
+                const SizedBox(height: 24),
+                _Section(
+                  title: yourData,
+                  children: [
+                    if (!isAnonymous)
+                      ListTile(
+                        leading: const Icon(Icons.upload_file_rounded),
+                        title: Text(importData),
+                        onTap: onImportData,
+                      ),
                     ListTile(
-                      leading: const Icon(Icons.feedback_rounded),
-                      title: Text('$leaveFeedback $heart'),
+                      key: AppKeys.exportData,
+                      leading: const Icon(Icons.file_download_rounded),
+                      title: Text(exportData),
+                      onTap: onExportData,
+                    ),
+                    if (isAnonymous)
+                      ListTile(
+                        key: AppKeys.eraseData,
+                        leading: Icon(Icons.delete_forever_rounded, color: error),
+                        title: Text(eraseData, style: textTheme.bodyLarge?.copyWith(color: error)),
+                        onTap: () => _onEraseData(context),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                if (!isAnonymous) ...[
+                  _Section(
+                    title: account,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.manage_accounts_rounded),
+                        title: Text(accountControl),
+                        onTap: onAccountManagement,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                _Section(
+                  title: app,
+                  children: [
+                    const _NotificationsRow(),
+                    // absent until there is a timer to list: an entry that can
+                    // only open onto an empty page is a dead end
+                    Selector<Timers, bool>(
+                      selector: (_, timers) => timers.isNotEmpty,
+                      builder: (_, any, _) {
+                        return switch (any) {
+                          true => ListTile(
+                            key: AppKeys.restTimers,
+                            leading: const Icon(Icons.timer_outlined),
+                            title: Text(restTimers),
+                            onTap: onRestTimers,
+                          ),
+                          false => const SizedBox.shrink(),
+                        };
+                      },
+                    ),
+                    const _LockScreenWorkoutSwitch(),
+                    ListTile(
+                      leading: const Icon(Icons.info_outline_rounded),
+                      title: Text(aboutApp),
                       onTap: () {
-                        showBrandedDialog(
-                          context,
-                          title: Text(leaveFeedback),
-                          titleTextStyle: textTheme.titleMedium,
-                          icon: Icon(
-                            Icons.feedback_rounded,
-                            color: onPrimaryContainer,
-                          ),
-                          content: Text(
-                            leaveFeedbackBody(AppTheme.of(context).heart()),
-                            textAlign: TextAlign.center,
-                          ),
-                          actions: [
-                            PrimaryButton.wide(
-                              backgroundColor: outlineVariant.withValues(alpha: .5),
-                              child: Center(
-                                child: Text(cancel),
-                              ),
-                              onPressed: () {
-                                Navigator.of(context, rootNavigator: true).pop();
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            PrimaryButton.wide(
-                              backgroundColor: primaryContainer,
-                              child: Center(
-                                child: Text(toFeedback),
-                              ),
-                              onPressed: () => _openFeedback(context),
-                            ),
-                          ],
+                        final info = AppInfo.of(context);
+
+                        showAboutDialog(
+                          context: context,
+                          applicationVersion: info.fullVersion,
+                          applicationName: AppConfig.of(context).appName,
+                          // without one the dialog keeps the icon's slot anyway,
+                          // and the name sat indented over an empty gap
+                          applicationIcon: const _AppMark(),
                         );
                       },
                     ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
+                    ListTile(
+                      key: AppKeys.whatsNew,
+                      leading: const Icon(Icons.update_rounded),
+                      title: Text(whatsNew),
+                      onTap: onWhatsNew,
+                    ),
+                    if (!isAnonymous)
+                      ListTile(
+                        leading: const Icon(Icons.feedback_rounded),
+                        title: Text('$leaveFeedback $heart'),
+                        onTap: () {
+                          showBrandedDialog(
+                            context,
+                            title: Text(leaveFeedback),
+                            titleTextStyle: textTheme.titleMedium,
+                            icon: Icon(
+                              Icons.feedback_rounded,
+                              color: onPrimaryContainer,
+                            ),
+                            content: Text(
+                              leaveFeedbackBody(AppTheme.of(context).heart()),
+                              textAlign: TextAlign.center,
+                            ),
+                            actions: [
+                              PrimaryButton.wide(
+                                backgroundColor: outlineVariant.withValues(alpha: .5),
+                                child: Center(
+                                  child: Text(cancel),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(context, rootNavigator: true).pop();
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              PrimaryButton.wide(
+                                backgroundColor: primaryContainer,
+                                child: Center(
+                                  child: Text(toFeedback),
+                                ),
+                                onPressed: () => _openFeedback(context),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
