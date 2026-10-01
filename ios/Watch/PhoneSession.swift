@@ -251,6 +251,15 @@ final class PhoneSession: NSObject, ObservableObject {
         if session.isReachable {
             session.sendMessage(opened, replyHandler: nil, errorHandler: nil)
         }
+        announceQueue(session)
+    }
+
+    /// Back in reach with a queue: tell the phone now. The queue itself goes
+    /// when the system gets to it, seconds later — longer after the phone has
+    /// restarted — and without this the phone sits there saying nothing (#206).
+    private func announceQueue(_ session: WCSession) {
+        guard waiting, session.isReachable else { return }
+        session.sendMessage(["event": "catchingUp"], replyHandler: nil, errorHandler: nil)
     }
 }
 
@@ -296,8 +305,11 @@ extension PhoneSession: WCSessionDelegate {
     /// is from before the last change.
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
         let reachable = session.isReachable
-        Task { @MainActor in self.reachable = reachable }
-        guard reachable else { return }
-        session.sendMessage(["event": "opened"], replyHandler: nil, errorHandler: nil)
+        Task { @MainActor in
+            self.reachable = reachable
+            guard reachable else { return }
+            session.sendMessage(["event": "opened"], replyHandler: nil, errorHandler: nil)
+            self.announceQueue(session)
+        }
     }
 }

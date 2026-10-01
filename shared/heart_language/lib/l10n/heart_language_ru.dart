@@ -1973,6 +1973,10 @@ class LRu extends L {
   String get watchFinishedAway => 'Сохранено на часах. iPhone получит тренировку, когда будет рядом.';
 
   @override
+  String get watchAppAwayNote =>
+      'Телефон в шкафчике? Часы продолжают записывать, а iPhone догонит, когда окажется рядом. Это может занять несколько секунд.';
+
+  @override
   String get watchCatchingUp => 'Получаем данные с часов…';
 
   @override

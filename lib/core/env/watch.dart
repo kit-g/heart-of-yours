@@ -362,6 +362,12 @@ enum WatchEvent {
 
   /// A watch was paired or unpaired, or Heart installed on or removed from it.
   changed,
+
+  /// The watch is back in reach holding what was logged without the phone
+  /// (#206). The system hands that over when it gets to it — seconds later,
+  /// longer after a restart — and this, sent live, is how the phone knows to
+  /// say it is coming before it does.
+  catchingUp,
 }
 
 /// The phone's end of the watch app (#175), through

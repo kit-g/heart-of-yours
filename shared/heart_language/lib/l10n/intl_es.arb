@@ -3806,5 +3806,11 @@
         "type": "int"
       }
     }
+  },
+  "watchAppAwayNote": "¿El teléfono en la taquilla? El reloj sigue registrando y tu iPhone se pone al día cuando vuelve. Puede tardar unos segundos.",
+  "@watchAppAwayNote": {
+    "description": "Settings, under the Apple Watch switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back",
+    "type": "text",
+    "placeholders": {}
   }
 }
