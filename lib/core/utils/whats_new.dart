@@ -46,14 +46,48 @@ class ReleaseNote {
   final String title;
   final String body;
 
-  const new({required this.id, required this.title, required this.body});
+  /// Where the note applies — `ios`, `android` — or null for everywhere. Set
+  /// in `en` only, like the date; a translation follows its `en` note.
+  final Set<String>? platforms;
+
+  const new({required this.id, required this.title, required this.body, this.platforms});
 
   static ReleaseNote? _parse(Object? raw) {
     return switch (raw) {
-      {'id': String id, 'title': String title, 'body': String body} => ReleaseNote(id: id, title: title, body: body),
+      {'id': String id, 'title': String title, 'body': String body} => ReleaseNote(
+        id: id,
+        title: title,
+        body: body,
+        platforms: switch (raw['platforms']) {
+          List platforms => platforms.whereType<String>().toSet(),
+          _ => null,
+        },
+      ),
       _ => null,
     };
   }
+
+  /// Whether a user on [platform] can use what this note describes.
+  bool appliesTo(TargetPlatform platform) {
+    return switch (platforms) {
+      null => true,
+      Set<String> platforms => platforms.contains(switch (platform) {
+        .iOS => 'ios',
+        .android => 'android',
+        TargetPlatform other => other.name,
+      }),
+    };
+  }
+}
+
+/// [releases] with only the notes a user on [platform] can use: an Android
+/// user never reads about the watch. A release left with none is dropped.
+List<Release> forPlatform(List<Release> releases, TargetPlatform platform) {
+  return [
+    for (final release in releases)
+      if (release.notes.where((note) => note.appliesTo(platform)).toList() case final notes when notes.isNotEmpty)
+        Release(version: release.version, date: release.date, notes: notes),
+  ];
 }
 
 /// Parses one locale file. Entries that do not parse are dropped rather than
@@ -98,10 +132,12 @@ List<Release> mergeReleases(List<Release> base, List<Release> localized) {
 /// has no file of its own and lands on `en`, like library content does. A
 /// missing locale file is ordinary; a malformed one is a bug in bundled
 /// content, reported through [onError] and answered with the `en` copy, and a
-/// malformed `en` with an empty list, never a crash.
+/// malformed `en` with an empty list, never a crash. Only the notes for
+/// [platform] are kept ([forPlatform]).
 Future<List<Release>> loadReleases(
   AssetBundle bundle,
   Locale locale, {
+  required TargetPlatform platform,
   void Function(dynamic error, {dynamic stacktrace})? onError,
 }) async {
   Future<List<Release>?> read(String name) async {
@@ -119,7 +155,12 @@ Future<List<Release>> loadReleases(
     }
   }
 
-  final base = await read('en');
+  // filtered before merging: platforms are set in en, and a translation
+  // carries none of its own
+  final base = switch (await read('en')) {
+    List<Release> base => forPlatform(base, platform),
+    null => null,
+  };
   if (base == null) return const [];
 
   final candidates = {
