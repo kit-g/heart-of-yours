@@ -18,6 +18,7 @@ const _notificationsReminderDismissed = 'notificationsReminderDismissed';
 const _installed = 'installed';
 const _lockScreenWorkout = 'lockScreenWorkout';
 const _feature = 'feature';
+const _whatsNewRead = 'whatsNewRead';
 
 class Preferences with ChangeNotifier {
   /// The key under which [onboardingSeen] is stored. Public so a test can seed
@@ -294,6 +295,22 @@ class Preferences with ChangeNotifier {
   /// about the device rather than a user, like the theme mode and the units — it
   /// is this phone's lock screen.
   bool get lockScreenWorkout => _prefs?.getBool(_lockScreenWorkout) ?? false;
+
+  /// The What's new notes this device has shown (#216), as `version/id`; null
+  /// until anything is recorded — a fresh install, which starts caught up.
+  ///
+  /// A fact about the device, not the user: it is about what this install has
+  /// put on screen, so it does not sync.
+  Set<String>? get whatsNewRead => _prefs?.getStringList(_whatsNewRead)?.toSet();
+
+  /// Adds [notes] to [whatsNewRead]. Silent when they were all read already.
+  void markWhatsNewRead(Iterable<String> notes) {
+    final read = whatsNewRead;
+    final all = {...?read, ...notes};
+    if (read != null && all.length == read.length) return;
+    _prefs?.setStringList(_whatsNewRead, all.toList()..sort());
+    notifyListeners();
+  }
 
   set lockScreenWorkout(bool value) {
     _prefs?.setBool(_lockScreenWorkout, value);
