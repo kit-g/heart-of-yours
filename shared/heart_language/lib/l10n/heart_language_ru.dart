@@ -2046,7 +2046,7 @@ class LRu extends L {
   String get noThanks => 'Нет, спасибо';
 
   @override
-  String get featureDeclinedNotice => 'Это всегда можно включить в настройках.';
+  String get featureDeclinedNotice => 'Это всегда можно включить в Настройках › Функции.';
 
   @override
   String get lastSevenDays => '7 дней';

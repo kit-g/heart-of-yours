@@ -2010,7 +2010,7 @@ class LEn extends L {
   String get noThanks => 'No thanks';
 
   @override
-  String get featureDeclinedNotice => 'You can always turn this on in Settings.';
+  String get featureDeclinedNotice => 'You can always turn this on in Settings › Features.';
 
   @override
   String get lastSevenDays => '7 days';
@@ -4114,7 +4114,7 @@ class LEnCa extends LEn {
   String get noThanks => 'No thanks';
 
   @override
-  String get featureDeclinedNotice => 'You can always turn this on in Settings.';
+  String get featureDeclinedNotice => 'You can always turn this on in Settings › Features.';
 
   @override
   String get lastSevenDays => '7 days';

@@ -2016,7 +2016,7 @@ class LEs extends L {
   String get noThanks => 'No, gracias';
 
   @override
-  String get featureDeclinedNotice => 'Puedes activarlo cuando quieras en Ajustes.';
+  String get featureDeclinedNotice => 'Puedes activarlo cuando quieras en Ajustes › Funciones.';
 
   @override
   String get lastSevenDays => '7 días';

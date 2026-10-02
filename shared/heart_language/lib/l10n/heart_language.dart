@@ -3490,7 +3490,7 @@ abstract class L {
   /// **'Undo'**
   String get undo;
 
-  /// Settings section title: the opt-in features the user can turn on and off
+  /// Settings row and page title: the opt-in features the user can turn on and off
   ///
   /// In en, this message translates to:
   /// **'Features'**
@@ -3541,7 +3541,7 @@ abstract class L {
   /// Shown once, after the user declines an optional feature
   ///
   /// In en, this message translates to:
-  /// **'You can always turn this on in Settings.'**
+  /// **'You can always turn this on in Settings › Features.'**
   String get featureDeclinedNotice;
 
   /// Period toggle on the muscle map: the last seven days
