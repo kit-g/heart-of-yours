@@ -23,14 +23,12 @@ class _MusclesWorkedState extends State<_MusclesWorked> {
     super.dispose();
   }
 
-  void _reveal() {
-    _open.value = true;
-    // it opens below the fold on a phone: bring it up once it has a size
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_map.currentContext case BuildContext context when context.mounted) {
-        Scrollable.ensureVisible(context, duration: const Duration(milliseconds: 400), curve: Curves.easeOutCubic);
-      }
-    });
+  /// It opens below the fold on a phone: once it has grown to full size,
+  /// bring it up.
+  void _bringUp() {
+    if (_map.currentContext case BuildContext context when context.mounted) {
+      Scrollable.ensureVisible(context, duration: const Duration(milliseconds: 400), curve: Curves.easeOutCubic);
+    }
   }
 
   @override
@@ -45,12 +43,13 @@ class _MusclesWorkedState extends State<_MusclesWorked> {
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
           alignment: .topCenter,
+          onEnd: _bringUp,
           child: switch (open) {
             false => Padding(
               padding: const .only(top: 8),
               child: TextButton.icon(
                 key: AppKeys.musclesWorkedButton,
-                onPressed: _reveal,
+                onPressed: () => _open.value = true,
                 icon: const Icon(Icons.accessibility_new_rounded),
                 label: Text(L.of(context).musclesWorked),
               ),
