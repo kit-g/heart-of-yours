@@ -1,7 +1,36 @@
 [
   {
-    "version": "1.9.0",
+    "version": "1.10.0",
     "date": null,
+    "items": [
+      {
+        "id": "apple-watch",
+        "title": "Heart on Apple Watch",
+        "body": "Log your sets from the wrist, with last time's numbers, the rest countdown, and your heart rate and calories. Swipe for the whole workout to fix a set. With your phone in the locker, the watch keeps logging and your iPhone catches up later. Open Heart on your watch to turn it on.",
+        "platforms": [
+          "ios"
+        ]
+      },
+      {
+        "id": "muscle-map",
+        "title": "Muscle map",
+        "body": "A body map on your profile, shaded by how many sets each muscle group got, with a list and a week-by-week view. Turn it on in **Settings → Features** and choose which parts to show."
+      },
+      {
+        "id": "record-badges",
+        "title": "New records, at a glance",
+        "body": "The workout summary shows each personal record as a badge, with the number it beat."
+      },
+      {
+        "id": "features-follow-you",
+        "title": "Your choices follow you",
+        "body": "Turn a feature on or off once, and your other signed-in devices know."
+      }
+    ]
+  },
+  {
+    "version": "1.9.0",
+    "date": "2026-09-27",
     "items": [
       {
         "id": "lock-screen-workout",

@@ -1,29 +1,39 @@
-Your workout on the lock screen
-Elapsed time, the next set and your rest countdown, on the lock screen and in
-the Dynamic Island. Off until you turn it on in Settings.
+Heart on Apple Watch
+Log your sets from the wrist: the set you're on with last time's numbers,
+the rest countdown, your heart rate and calories. Swipe for the whole
+workout to fix a set you already logged. Phone in your locker? The watch
+keeps logging, and your iPhone catches up when it's back. Open Heart on
+your watch to turn it on.
 
-Rest timers in one place
-Settings now lists every rest timer you have set, with a way to clear one —
-and an undo if you didn't mean it.
+Muscle map
+A body map on your profile, shaded by how many sets each muscle group got,
+with a list beside it and a week-by-week view below. Your profile offers it
+once; you can also turn it on in Settings › Features, and choose which
+parts to show.
 
-What's new
-Settings now has a What's new page: what each update brought, and which
-version you are on.
+New records, at a glance
+The workout summary shows each personal record as a badge, with the number
+it beat.
 
-Fixed
-Tapping a workout notification opens the workout you left running, instead of
-wherever you were last.
+Your choices follow you
+Turn a feature on or off once, and your other devices know.
+
+Also
+Settings and dialogs fit iPad better.
 
 What to test
-- Turn the lock screen workout on, start a workout, lock the phone. Time, next
-  set and rest should keep up, and tapping it should open the workout.
-- Leave it off and confirm nothing appears.
-- Settings > Rest timers: set timers on a few exercises mid-workout, clear one,
-  undo it.
-- Sign in with email and with Apple. The sign-in libraries moved in this build,
-  so this is the likeliest thing to break.
-- Cold start, then start a workout four ways: blank, from a template, from an
-  example, and by repeating a past one. All four paths changed.
-- Export your data, and import a Strong CSV. Both were touched.
-- Anything that loads over the network — exercises, history, images — should
-  look normal. The app's networking was rewrapped underneath.
+- Install Heart on your watch from the Watch app on iPhone, then open it:
+  that turns the watch app on. It should show the workout you have running.
+- First workout on the watch: allow Health when asked. Heart rate and
+  calories should appear within a minute, with no restart.
+- Tick, edit and untick sets on the watch; check they land on the phone.
+- Switch the phone off (or leave it far away), log sets and Finish on the
+  watch, then bring it back. The phone should say it's catching up, show
+  how many sets arrived, and open the summary. Health should hold one
+  workout, not two.
+- Wrist down during a rest: the countdown stays readable (Always On).
+- Muscle map: accept or decline the offer on your profile; turn it on in
+  Settings › Features and leave parts out. The profile should close up
+  around what's left.
+- Finish a workout with a heavier set than ever: the record badge appears.
+- Sign in on a second device: features you turned on are already on.
