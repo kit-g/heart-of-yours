@@ -55,6 +55,10 @@ extension on BuildContext {
     return goNamed(_restTimersName);
   }
 
+  void goToFeatures() {
+    return goNamed(_featuresName);
+  }
+
   void goToAvatar() {
     return goNamed(_avatarName);
   }

@@ -92,6 +92,16 @@ void main() {
 
   Finder byKey(Key key) => find.byKey(key, skipOffstage: false);
 
+  /// Settings › Features, a page of its own (#226).
+  Future<void> openFeatures(WidgetTester tester) async {
+    await tester.tap(find.tooltip('Settings'));
+    await tester.pumpTimes();
+    final row = find.byKey(AppKeys.features);
+    await tester.ensureVisible(row);
+    await tester.tap(row);
+    await tester.pumpTimes();
+  }
+
   void expectNothingOfTheFeature() {
     expect(byKey(AppKeys.muscleMapOffer), findsNothing);
     expect(byKey(AppKeys.featureDeclinedNotice), findsNothing);
@@ -152,7 +162,7 @@ void main() {
       await tester.pumpTimes(2);
 
       expect(byKey(AppKeys.featureDeclinedNotice), findsOneWidget);
-      expect(find.text('You can always turn this on in Settings.', skipOffstage: false), findsOneWidget);
+      expect(find.text('You can always turn this on in Settings › Features.', skipOffstage: false), findsOneWidget);
 
       await tester.tap(find.tooltip('Close'));
       await tester.pumpTimes(2);
@@ -369,8 +379,7 @@ void main() {
 
     testWidgets('they unfold under the switch while it is on, and the last one turns it off', (tester) async {
       final preferences = await pumpProfile(tester, answer: 'off');
-      await tester.tap(find.tooltip('Settings'));
-      await tester.pumpTimes();
+      await openFeatures(tester);
 
       final toggle = byKey(const ValueKey('feature-muscleMap'));
       final option = byKey(const ValueKey('feature-muscleMap-heatmap'));
@@ -406,8 +415,7 @@ void main() {
   testWidgets('Settings › Features flips it, and says it is on', (tester) async {
     final preferences = await pumpProfile(tester, answer: 'off');
 
-    await tester.tap(find.tooltip('Settings'));
-    await tester.pumpTimes();
+    await openFeatures(tester);
 
     final toggle = byKey(const ValueKey('feature-muscleMap'));
     await tester.ensureVisible(toggle);

@@ -41,6 +41,7 @@ RouteBase _profileRoute() {
             onExportData: context.goToExportData,
             onWhatsNew: context.goToWhatsNew,
             onRestTimers: context.goToRestTimers,
+            onFeatures: context.goToFeatures,
             onErased: context.goToProfile,
           );
         },
@@ -75,6 +76,11 @@ RouteBase _profileRoute() {
             path: _restTimersPath,
             builder: (_, _) => const RestTimersPage(),
             name: _restTimersName,
+          ),
+          GoRoute(
+            path: _featuresPath,
+            builder: (_, _) => const FeaturesPage(),
+            name: _featuresName,
           ),
         ],
       ),
