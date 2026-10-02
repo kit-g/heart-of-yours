@@ -2014,7 +2014,7 @@ class LFr extends L {
   String get muscleMap => 'Carte musculaire';
 
   @override
-  String get muscleMapSubtitle => 'Séries par groupe musculaire, sur votre profil';
+  String get muscleMapSubtitle => 'Séries par groupe musculaire, sur votre profil et vos séances';
 
   @override
   String get muscleMapOfferTitle => 'Voir quels muscles vous travaillez ?';
@@ -2109,6 +2109,16 @@ class LFr extends L {
   @override
   String get muscleMapFigureHelp =>
       'Chaque groupe musculaire est coloré selon le nombre de séries reçues sur la période choisie : plus c’est foncé, plus il y en a. Touchez un muscle pour voir son nombre.';
+
+  @override
+  String get muscleMapOptionWorkout => 'Chaque séance';
+
+  @override
+  String get musclesWorked => 'Muscles sollicités';
+
+  @override
+  String get workoutMuscleMapHelp =>
+      'Chaque groupe musculaire est coloré selon le nombre de séries reçues pendant cette séance : plus c’est foncé, plus il y en a. Touchez un muscle pour voir son nombre.';
 
   @override
   String get muscleMapBreakdownHelp =>

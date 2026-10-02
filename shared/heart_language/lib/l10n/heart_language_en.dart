@@ -2006,7 +2006,7 @@ class LEn extends L {
   String get muscleMap => 'Muscle map';
 
   @override
-  String get muscleMapSubtitle => 'Sets per muscle group, on your profile';
+  String get muscleMapSubtitle => 'Sets per muscle group, on your profile and your workouts';
 
   @override
   String get muscleMapOfferTitle => 'See which muscles you train?';
@@ -2100,6 +2100,16 @@ class LEn extends L {
   @override
   String get muscleMapFigureHelp =>
       'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.';
+
+  @override
+  String get muscleMapOptionWorkout => 'Each workout';
+
+  @override
+  String get musclesWorked => 'Muscles worked';
+
+  @override
+  String get workoutMuscleMapHelp =>
+      'Each muscle group is shaded by how many sets it got in this workout: the darker, the more. Tap a muscle to see its number.';
 
   @override
   String get muscleMapBreakdownHelp =>
@@ -4121,7 +4131,7 @@ class LEnCa extends LEn {
   String get muscleMap => 'Muscle map';
 
   @override
-  String get muscleMapSubtitle => 'Sets per muscle group, on your profile';
+  String get muscleMapSubtitle => 'Sets per muscle group, on your profile and your workouts';
 
   @override
   String get muscleMapOfferTitle => 'See which muscles you train?';
@@ -4215,6 +4225,16 @@ class LEnCa extends LEn {
   @override
   String get muscleMapFigureHelp =>
       'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.';
+
+  @override
+  String get muscleMapOptionWorkout => 'Each workout';
+
+  @override
+  String get musclesWorked => 'Muscles worked';
+
+  @override
+  String get workoutMuscleMapHelp =>
+      'Each muscle group is shaded by how many sets it got in this workout: the darker, the more. Tap a muscle to see its number.';
 
   @override
   String get muscleMapBreakdownHelp =>
