@@ -103,9 +103,28 @@ ticket doesn't say:
   never built". Like every answer, it syncs: a second phone of the same
   account starts sending to its own watch without asking again.
 
+## Answers follow the account
+
+A signed-in account's answers sync. Each device keeps its own copy, which is
+what the app reads, and the account's settings carry one too, under
+`extra.features`: `{"muscleMap": {"on": true, "at": "…"}}`. `FeatureSync`
+(heart_state) reconciles the two when the account arrives at sign-in and
+whenever an answer is given, and the later answer wins on both sides. So a
+second phone never asks a question the first one already heard.
+
+- **Only real answers travel.** An unanswered offer and the notice after a no
+  stay on the device that showed them.
+- **Anonymous sessions stay on the device.** Their answers go up when the
+  session becomes an account, as the newer side.
+- **Nothing is deleted on either side.** An entry for a feature this version
+  doesn't know passes through untouched.
+- **The server merges settings rather than replacing them (heart-api#89).**
+  Without that, every sign-in, including every 1.9.0 install, would reset them.
+- **Health-backed features** still keep their data device-only
+  (`docs/2026-09-05.health-data.md`). An answer is not health data, but check
+  before syncing one that would be.
+
 ## Still open (#138)
 
-- Does the answer sync across devices, or is it asked per device? Health-backed
-  features stay device-only regardless (`docs/2026-09-05.health-data.md`).
 - Do existing users see the ask for a feature that shipped in an update, or
   only when they first reach it? Rule 1 says when they first reach it.
