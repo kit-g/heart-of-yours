@@ -455,6 +455,28 @@
     "type": "text",
     "placeholders": {}
   },
+  "fillColumn": "{column}: fill every set not yet done",
+  "@fillColumn": {
+    "description": "Tooltip and screen-reader label of a value column header in the workout's set table (kg, Reps, Time…). Tapping it fills that column in every unticked set, from last time's values or else the first set's. {column} is the header itself",
+    "type": "text",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tickAllSets": "Tick every set",
+  "@tickAllSets": {
+    "description": "Tooltip and screen-reader label of the checkmark column header in the workout's set table: ticks every set of the exercise",
+    "type": "text",
+    "placeholders": {}
+  },
+  "untickAllSets": "Untick every set",
+  "@untickAllSets": {
+    "description": "Tooltip and screen-reader label of the checkmark column header once every set of the exercise is ticked: unticks them all",
+    "type": "text",
+    "placeholders": {}
+  },
   "kg": "kg",
   "@kg": {
     "description": "Generic label, kilograms",

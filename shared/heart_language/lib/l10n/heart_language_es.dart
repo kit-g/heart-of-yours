@@ -246,6 +246,17 @@ class LEs extends L {
   String get time => 'Tiempo';
 
   @override
+  String fillColumn(String column) {
+    return '$column: rellenar todas las series sin marcar';
+  }
+
+  @override
+  String get tickAllSets => 'Marcar todas las series';
+
+  @override
+  String get untickAllSets => 'Desmarcar todas las series';
+
+  @override
   String get kg => 'kg';
 
   @override

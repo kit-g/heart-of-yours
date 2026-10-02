@@ -247,6 +247,17 @@ class LFr extends L {
   String get time => 'Temps';
 
   @override
+  String fillColumn(String column) {
+    return '$column : remplir toutes les séries non cochées';
+  }
+
+  @override
+  String get tickAllSets => 'Cocher toutes les séries';
+
+  @override
+  String get untickAllSets => 'Décocher toutes les séries';
+
+  @override
   String get kg => 'kg';
 
   @override

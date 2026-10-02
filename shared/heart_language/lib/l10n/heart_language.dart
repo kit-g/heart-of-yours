@@ -550,6 +550,24 @@ abstract class L {
   /// **'Time'**
   String get time;
 
+  /// Tooltip and screen-reader label of a value column header in the workout's set table (kg, Reps, Time…). Tapping it fills that column in every unticked set, from last time's values or else the first set's. {column} is the header itself
+  ///
+  /// In en, this message translates to:
+  /// **'{column}: fill every set not yet done'**
+  String fillColumn(String column);
+
+  /// Tooltip and screen-reader label of the checkmark column header in the workout's set table: ticks every set of the exercise
+  ///
+  /// In en, this message translates to:
+  /// **'Tick every set'**
+  String get tickAllSets;
+
+  /// Tooltip and screen-reader label of the checkmark column header once every set of the exercise is ticked: unticks them all
+  ///
+  /// In en, this message translates to:
+  /// **'Untick every set'**
+  String get untickAllSets;
+
   /// Generic label, kilograms
   ///
   /// In en, this message translates to:
