@@ -40,7 +40,11 @@ enum FeatureOption {
   muscleMapBreakdown(.muscleMap, 'breakdown'),
 
   /// Sets per muscle group week by week.
-  muscleMapHeatmap(.muscleMap, 'heatmap');
+  muscleMapHeatmap(.muscleMap, 'heatmap'),
+
+  /// The body figures for a single finished workout, on its page in History
+  /// and on the done screen (#223).
+  muscleMapWorkout(.muscleMap, 'workout');
 
   final Feature feature;
   final String value;
