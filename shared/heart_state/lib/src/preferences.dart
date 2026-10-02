@@ -367,7 +367,18 @@ class Preferences with ChangeNotifier {
   }
 
   void _setFeature(Feature feature, {required bool on}) {
-    _store(feature, (on: on, at: DateTime.timestamp()));
+    _store(
+      feature,
+      FeatureRecord(
+        on: on,
+        at: DateTime.timestamp(),
+        // on, it is on in full; off, the choice is kept, unused
+        without: switch (on) {
+          true => const {},
+          false => _without(feature),
+        },
+      ),
+    );
     notifyListeners();
   }
 
@@ -378,6 +389,42 @@ class Preferences with ChangeNotifier {
     };
     _prefs?.setString('$_feature-${feature.value}', answer.name);
     _prefs?.setString('$_feature-${feature.value}-at', record.at.toUtc().toIso8601String());
+    _prefs?.setStringList('$_feature-${feature.value}-without', [
+      for (final option in record.without) option.value,
+    ]);
+  }
+
+  /// The options of [feature] the user left out (#213).
+  Set<FeatureOption> _without(Feature feature) {
+    final stored = _prefs?.getStringList('$_feature-${feature.value}-without') ?? const [];
+    return {
+      for (final option in feature.options)
+        if (stored.contains(option.value)) option,
+    };
+  }
+
+  /// Whether [option] is shown: its feature is on, and the option was not left
+  /// out. A feature turns on with every option selected.
+  bool isOptionOn(FeatureOption option) => isOn(option.feature) && !_without(option.feature).contains(option);
+
+  /// Selects or leaves out [option], live, from Settings. Leaving out the last
+  /// one still selected turns the feature off, as if its switch had been
+  /// flipped — and turning it back on selects them all again.
+  ///
+  /// A change of options is a change of answer: it travels with it, at a new
+  /// time ([FeatureRecord.without]).
+  void setOption(FeatureOption option, {required bool on}) {
+    final feature = option.feature;
+    if (!isOn(feature)) return;
+    final without = {..._without(feature)};
+    if (on) {
+      without.remove(option);
+    } else {
+      without.add(option);
+    }
+    if (feature.options.every(without.contains)) return setFeature(feature, on: false);
+    _store(feature, FeatureRecord(on: true, at: DateTime.timestamp(), without: without));
+    notifyListeners();
   }
 
   /// Every feature this device has a real answer for — on or off — and when it
@@ -389,11 +436,12 @@ class Preferences with ChangeNotifier {
     return {
       for (final feature in Feature.values)
         if (_answered(feature) case bool on)
-          feature: (
+          feature: FeatureRecord(
             on: on,
             at:
                 DateTime.tryParse(_prefs?.getString('$_feature-${feature.value}-at') ?? '') ??
                 DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+            without: _without(feature),
           ),
     };
   }
