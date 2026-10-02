@@ -28,15 +28,14 @@ void main() {
       expect(sut.fullVersion, '1.2.3+45');
     });
 
-    test('does not notify listeners', () async {
-      // Current contract: version info is read via of(context), never watched,
-      // so a successful init stays silent.
+    test('notifies once the version is known', () async {
+      // What's new's dot (#216) waits on the running version
       final sut = AppInfo();
       final probe = ListenerProbe()..attach(sut);
 
       await sut.init(() async => (appName: 'Heart', packageName: 'me.heart-of.ios.dev', version: '1.2.3', build: '45'));
 
-      expect(probe.notifications, 0);
+      expect(probe.notifications, 1);
     });
 
     test('reports a failed lookup through onError and keeps the empty package', () async {
