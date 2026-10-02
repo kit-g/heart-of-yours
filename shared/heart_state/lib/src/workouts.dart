@@ -672,19 +672,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.storeMeasurements(set);
   }
 
-  /// Sets [set]'s [weight] (kilograms) and [reps] from outside its row — the
-  /// watch (#183) — and says so: the row follows what it hears, where a row's
+  /// Sets [set]'s measurements — [weight] and [distance] metric, [duration]
+  /// in seconds — from outside its row: the watch (#183), a column header's
+  /// fill (#225). And says so: the row follows what it hears, where a row's
   /// own typing stores without a notify because the row already shows it.
   ///
-  /// Counts as the user's edit ([markEdited]). What the set does not measure
-  /// is left as it was, as [ExerciseSet.setMeasurements] leaves it.
-  Future<void> editSet(ExerciseSet set, {double? weight, int? reps}) {
+  /// Counts as the user's edit ([markEdited]). A measurement not passed, or
+  /// one the set does not take, is left as it was, as
+  /// [ExerciseSet.setMeasurements] leaves it.
+  Future<void> editSet(ExerciseSet set, {double? weight, int? reps, int? duration, double? distance}) {
     markEdited(set);
     set.setMeasurements(
       weight: weight ?? set.weight,
       reps: reps ?? set.reps,
-      duration: set.duration,
-      distance: set.distance,
+      duration: duration ?? set.duration,
+      distance: distance ?? set.distance,
     );
     notifyListeners();
     return _localService.storeMeasurements(set);
