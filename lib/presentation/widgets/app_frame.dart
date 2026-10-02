@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -304,7 +305,10 @@ class _KeyMap extends StatelessWidget {
             onInvoke: (_) {
               shell.goBranch(1);
               final name = L.of(context).defaultWorkoutName();
-              return Workouts.of(context).startWorkout(source: .blank, name: name);
+              return startWorkoutOverActive(
+                context,
+                () => Workouts.of(context).startWorkout(source: .blank, name: name),
+              );
             },
           ),
         },
