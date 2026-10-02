@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:ui';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:heart_state/heart_state.dart';
 
 /// Where the release notes live: one file per locale, `en` complete, every
 /// other locale a subset of it.
@@ -159,6 +159,76 @@ Release? currentRelease(List<Release> releases, String running) {
 
 int _compareParts(List<int> a, List<int> b) {
   return a.indexed.map((part) => part.$2.compareTo(b[part.$1])).firstWhere((order) => order != 0, orElse: () => 0);
+}
+
+/// Whether What's new holds notes this device has not shown (#216): the one
+/// quiet dot on Settings, and on its What's new row.
+///
+/// Counted against the `en` notes, which are the list of what exists — a
+/// locale only changes their words. A note counts once the running build has
+/// shipped its version. A fresh install starts caught up: the first time this
+/// has both the notes and the version, and nothing was ever recorded, it
+/// records them all as read.
+class WhatsNewBadge with ChangeNotifier {
+  final Preferences _preferences;
+  final AppInfo _info;
+  List<Release>? _releases;
+  bool _unread = false;
+
+  new({required this._preferences, required this._info, required Future<List<Release>> releases}) {
+    _preferences.addListener(_update);
+    _info.addListener(_update);
+    releases.then((releases) {
+      _releases = releases;
+      _update();
+    });
+  }
+
+  @override
+  void dispose() {
+    _preferences.removeListener(_update);
+    _info.removeListener(_update);
+    super.dispose();
+  }
+
+  bool get unread => _unread;
+
+  /// `version/id` for every note the running build has shipped; null until
+  /// both are known.
+  Set<String>? get _notes {
+    final running = _info.version;
+    if (_releases == null || _Version.parse(running) == null) return null;
+    return {
+      for (final release in _releases!)
+        if (compareVersions(release.version, running) <= 0)
+          for (final note in release.notes) '${release.version}/${note.id}',
+    };
+  }
+
+  void _update() {
+    if (!_preferences.isInitialized) return;
+    final notes = _notes;
+    if (notes == null) return;
+    switch (_preferences.whatsNewRead) {
+      case null:
+        // a fresh install: caught up, and recorded so a later update is not
+        _preferences.markWhatsNewRead(notes);
+      case Set<String> read when !read.containsAll(notes) != _unread:
+        _unread = !_unread;
+        notifyListeners();
+      case _:
+        break;
+    }
+  }
+
+  /// What's new was opened: every note it lists is read.
+  void markRead() {
+    if (_notes case Set<String> notes) _preferences.markWhatsNewRead(notes);
+  }
+
+  static WhatsNewBadge watch(BuildContext context) => Provider.of<WhatsNewBadge>(context);
+
+  static WhatsNewBadge of(BuildContext context) => Provider.of<WhatsNewBadge>(context, listen: false);
 }
 
 abstract final class _Version {

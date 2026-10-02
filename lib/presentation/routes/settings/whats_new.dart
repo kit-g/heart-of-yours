@@ -21,6 +21,16 @@ class _WhatsNewPageState extends State<WhatsNewPage> {
   late Future<List<Release>> _releases;
 
   @override
+  void initState() {
+    super.initState();
+    // opened is read (#216): the dots on Settings go. After the frame — it
+    // notifies, and this page is still being built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) WhatsNewBadge.of(context).markRead();
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // re-read on a language change, and only then — the future outlives
