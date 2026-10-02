@@ -236,15 +236,21 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               flex: 3,
                               child: _ColumnLabel(secondColumnCopy),
                             ),
-                            ..._buttonsHeader(context),
+                            ..._buttonsHeader(context, previous),
                             SizedBox(
                               width: _fixedColumnWidth,
-                              child: Center(
-                                child: Icon(
-                                  allowCompleting ? Icons.done : Icons.lock_outline_rounded,
-                                  size: 18,
+                              child: switch (allowCompleting) {
+                                true => _ColumnHeader(
+                                  key: WorkoutDetailKeys.tickAllFor(exercise.exercise.id),
+                                  tooltip: switch (exercise.every((set) => set.isCompleted)) {
+                                    true => L.of(context).untickAllSets,
+                                    false => L.of(context).tickAllSets,
+                                  },
+                                  onTap: () => _tickAll(context),
+                                  child: const Icon(Icons.done, size: 18),
                                 ),
-                              ),
+                                false => const Center(child: Icon(Icons.lock_outline_rounded, size: 18)),
+                              },
                             ),
                           ],
                         ),
@@ -324,7 +330,57 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     }
   }
 
-  List<Widget> _buttonsHeader(BuildContext context) {
+  /// Fills [column] in every set not yet ticked, from its header (#225): see
+  /// [columnFill]. The rows follow what [Workouts.editSet] says.
+  void _fill(BuildContext context, SetColumn column, PreviousExercises previous) {
+    final fill = columnFill(exercise, column, previous: (index) => previous.at(exercise.exercise.id, index));
+    if (fill.isEmpty) return;
+    buzz();
+    final workouts = Workouts.of(context);
+    for (final MapEntry(key: set, :value) in fill.entries) {
+      switch (column) {
+        case .weight:
+          workouts.editSet(set, weight: value.toDouble());
+        case .reps:
+          workouts.editSet(set, reps: value.toInt());
+        case .distance:
+          workouts.editSet(set, distance: value.toDouble());
+        case .duration:
+          workouts.editSet(set, duration: value.toInt());
+      }
+    }
+  }
+
+  /// Ticks every set that can be ticked, or, when all of them already are,
+  /// unticks them all (#225). Through the same path a single tick takes, so a
+  /// screen with its own ([onSetDone]: the History editor) keeps it; no rest
+  /// timer starts — nobody rests after logging a whole exercise at once.
+  void _tickAll(BuildContext context) {
+    final untick = exercise.every((set) => set.isCompleted);
+    final targets = exercise.where(
+      (set) => switch (untick) {
+        true => true,
+        false => !set.isCompleted && set.canBeCompleted,
+      },
+    );
+    if (targets.isEmpty) return;
+    buzz();
+    final workouts = Workouts.of(context);
+    for (final set in targets.toList()) {
+      switch ((onSetDone, untick)) {
+        case (var toggle?, _):
+          toggle(exercise, set);
+        case (null, true):
+          workouts.markSetAsIncomplete(exercise, set);
+        case (null, false):
+          // a tick is the user's say-so, as a single row's is
+          workouts.markEdited(set);
+          workouts.markSetAsComplete(exercise, set);
+      }
+    }
+  }
+
+  List<Widget> _buttonsHeader(BuildContext context, PreviousExercises previous) {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
     final override = Exercises.watch(context).unitFor(exercise.exercise.id);
@@ -343,60 +399,31 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       };
     }
 
-    switch (exercise.exercise.category) {
-      case .machine:
-      case .dumbbell:
-      case .barbell:
-        return [
-          Expanded(
-            child: _ColumnLabel(weightUnit()),
-          ),
-          Expanded(
-            child: _ColumnLabel(l.reps),
-          ),
-        ];
-      case .weightedBodyWeight:
-        return [
-          Expanded(
-            child: _ColumnLabel('+${weightUnit()}'),
-          ),
-          Expanded(
-            child: _ColumnLabel(l.reps),
-          ),
-        ];
-      case .assistedBodyWeight:
-        return [
-          Expanded(
-            child: _ColumnLabel('-${weightUnit()}'),
-          ),
-          Expanded(
-            child: _ColumnLabel(l.reps),
-          ),
-        ];
-      case .repsOnly:
-        return [
-          Expanded(
-            flex: 2,
-            child: _ColumnLabel(l.reps),
-          ),
-        ];
-      case .cardio:
-        return [
-          Expanded(
-            child: _ColumnLabel(distanceUnit()),
-          ),
-          Expanded(
-            child: _ColumnLabel(l.time),
-          ),
-        ];
-      case .duration:
-        return [
-          Expanded(
-            flex: 2,
-            child: _ColumnLabel(l.time),
-          ),
-        ];
+    String label(SetColumn column) {
+      return switch ((column, exercise.exercise.category)) {
+        (.weight, .weightedBodyWeight) => '+${weightUnit()}',
+        (.weight, .assistedBodyWeight) => '-${weightUnit()}',
+        (.weight, _) => weightUnit(),
+        (.reps, _) => l.reps,
+        (.distance, _) => distanceUnit(),
+        (.duration, _) => l.time,
+      };
     }
+
+    final columns = SetColumn.of(exercise.exercise.category);
+    return [
+      for (final column in columns)
+        Expanded(
+          // a lone column takes both slots
+          flex: 3 - columns.length,
+          child: _ColumnHeader(
+            key: WorkoutDetailKeys.fillFor(exercise.exercise.id, column.key),
+            tooltip: l.fillColumn(label(column)),
+            onTap: () => _fill(context, column, previous),
+            child: _ColumnLabel(label(column)),
+          ),
+        ),
+    ];
   }
 
   String _exerciseOptionCopy(BuildContext context, _ExerciseOption option) {
@@ -563,6 +590,33 @@ class _ColumnLabel extends StatelessWidget {
       child: FittedBox(
         fit: .scaleDown,
         child: Text(label, maxLines: 1, softWrap: false),
+      ),
+    );
+  }
+}
+
+/// A column header that acts on its column (#225): the value columns fill it,
+/// the ✓ ticks it. The whole cell answers the tap, and says what it does.
+class const _ColumnHeader({
+  super.key,
+  required final String tooltip,
+  required final VoidCallback onTap,
+  required final Widget child,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        child: InkWell(
+          borderRadius: const .all(.circular(6)),
+          onTap: onTap,
+          child: Padding(
+            padding: const .symmetric(vertical: 2),
+            child: Center(child: child),
+          ),
+        ),
       ),
     );
   }

@@ -23,6 +23,13 @@ class WorkoutDetailKeys {
   /// the two coordinates a driver test can know up front.
   static Key doneFor(String exerciseId, int index) => Key('WorkoutDetail.done.$exerciseId.$index');
 
+  /// A value column's header in an exercise's set table (#225); [column] is
+  /// `SetColumn.key`.
+  static Key fillFor(String exerciseId, String column) => Key('WorkoutDetail.fill.$exerciseId.$column');
+
+  /// The ✓ column's header in an exercise's set table (#225).
+  static Key tickAllFor(String exerciseId) => Key('WorkoutDetail.tickAll.$exerciseId');
+
   static Key weightFor(String exerciseId, int index) => Key('WorkoutDetail.weight.$exerciseId.$index');
 
   static Key repsFor(String exerciseId, int index) => Key('WorkoutDetail.reps.$exerciseId.$index');
