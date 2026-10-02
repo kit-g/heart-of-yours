@@ -105,7 +105,17 @@ void main() {
           final ids = items.map((item) => item['id']).toList();
           expect(ids.toSet(), hasLength(ids.length), reason: '${release['version']}');
           for (final item in items) {
-            expect(item.keys.toSet(), {'id', 'title', 'body'}, reason: '$item');
+            // platforms are en's, like dates; a translation follows its en note
+            expect(
+              item.keys.toSet().difference({'platforms'}),
+              {'id', 'title', 'body'},
+              reason: '$item',
+            );
+            if (item['platforms'] case final platforms?) {
+              expect(locale, 'en', reason: 'platforms are set in en only: $item');
+              expect(platforms, isA<List>().having((list) => list, 'platforms', isNotEmpty), reason: '$item');
+              expect((platforms as List).toSet().difference({'ios', 'android'}), isEmpty, reason: '$item');
+            }
             expect((item['title'] as String).trim(), isNotEmpty);
             expect(item['title'], isNot(contains('\n')));
             expect((item['body'] as String).trim(), isNotEmpty);

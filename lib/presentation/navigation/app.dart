@@ -159,7 +159,13 @@ class HeartApp extends StatelessWidget {
             preferences: Preferences.of(context),
             info: AppInfo.of(context),
             // the en notes are the list of what exists; a locale only words them
-            releases: loadReleases(rootBundle, const Locale('en'), onError: reportToSentry),
+            // and only those for this platform: no dot for a note that is not ours
+            releases: loadReleases(
+              rootBundle,
+              const Locale('en'),
+              platform: defaultTargetPlatform,
+              onError: reportToSentry,
+            ),
           ),
         ),
         ChangeNotifierProvider<Charts>(
