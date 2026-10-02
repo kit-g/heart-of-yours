@@ -3424,6 +3424,12 @@ abstract class L {
   /// **'Saved on your watch. Your iPhone gets it when it\'s back.'**
   String get watchFinishedAway;
 
+  /// Settings, under the Apple Watch switch: where watchOS's own per-app Always On setting is. Use Apple's names for that Settings path in the locale
+  ///
+  /// In en, this message translates to:
+  /// **'To keep your workout off the screen with your wrist down, turn Heart off in your watch\'s Settings › Display & Brightness › Always On.'**
+  String get watchAlwaysOnNote;
+
   /// Settings, under the Apple Watch switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back
   ///
   /// In en, this message translates to:
@@ -3621,6 +3627,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Sets per group'**
   String get muscleMapBreakdown;
+
+  /// Settings, under the muscle map switch: the option that shows the body figures shaded by sets per muscle group. Sits beside "Sets per group" and "Sets per week"
+  ///
+  /// In en, this message translates to:
+  /// **'Body map'**
+  String get muscleMapOptionFigures;
 
   /// Help tooltip on the muscle map's body figures
   ///

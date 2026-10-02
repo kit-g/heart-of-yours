@@ -3812,5 +3812,17 @@
     "description": "Settings, under the Apple Watch switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back",
     "type": "text",
     "placeholders": {}
+  },
+  "muscleMapOptionFigures": "Carte du corps",
+  "@muscleMapOptionFigures": {
+    "description": "Settings, under the muscle map switch: the option that shows the body figures shaded by sets per muscle group. Sits beside \"Sets per group\" and \"Sets per week\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchAlwaysOnNote": "Pour masquer votre séance poignet baissé, désactivez Heart dans Réglages de la montre › Luminosité et affichage › Toujours activé.",
+  "@watchAlwaysOnNote": {
+    "description": "Settings, under the Apple Watch switch: where watchOS's own per-app Always On setting is. Use Apple's names for that Settings path in the locale",
+    "type": "text",
+    "placeholders": {}
   }
 }

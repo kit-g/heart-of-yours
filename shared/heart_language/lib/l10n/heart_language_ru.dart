@@ -1973,6 +1973,10 @@ class LRu extends L {
   String get watchFinishedAway => 'Сохранено на часах. iPhone получит тренировку, когда будет рядом.';
 
   @override
+  String get watchAlwaysOnNote =>
+      'Чтобы тренировка не оставалась на экране с опущенным запястьем, выключите Heart в настройках часов: Экран и яркость › Всегда вкл.';
+
+  @override
   String get watchAppAwayNote =>
       'Телефон в шкафчике? Часы продолжают записывать, а iPhone догонит, когда окажется рядом. Это может занять несколько секунд.';
 
@@ -2112,6 +2116,9 @@ class LRu extends L {
 
   @override
   String get muscleMapBreakdown => 'Подходы по группам';
+
+  @override
+  String get muscleMapOptionFigures => 'Карта тела';
 
   @override
   String get muscleMapFigureHelp =>
