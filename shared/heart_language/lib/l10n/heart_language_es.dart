@@ -2011,7 +2011,7 @@ class LEs extends L {
   String get muscleMap => 'Mapa muscular';
 
   @override
-  String get muscleMapSubtitle => 'Series por grupo muscular, en tu perfil';
+  String get muscleMapSubtitle => 'Series por grupo muscular, en tu perfil y tus entrenamientos';
 
   @override
   String get muscleMapOfferTitle => '¿Ver qué músculos entrenas?';
@@ -2106,6 +2106,16 @@ class LEs extends L {
   @override
   String get muscleMapFigureHelp =>
       'Cada grupo muscular se sombrea según las series que recibió en el periodo elegido: cuanto más oscuro, más. Toca un músculo para ver su número.';
+
+  @override
+  String get muscleMapOptionWorkout => 'Cada entrenamiento';
+
+  @override
+  String get musclesWorked => 'Músculos trabajados';
+
+  @override
+  String get workoutMuscleMapHelp =>
+      'Cada grupo muscular se sombrea según las series que recibió en este entrenamiento: cuanto más oscuro, más. Toca un músculo para ver su número.';
 
   @override
   String get muscleMapBreakdownHelp =>
