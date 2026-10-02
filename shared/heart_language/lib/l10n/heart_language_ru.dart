@@ -247,6 +247,17 @@ class LRu extends L {
   String get time => 'Время';
 
   @override
+  String fillColumn(String column) {
+    return '$column: заполнить все неотмеченные подходы';
+  }
+
+  @override
+  String get tickAllSets => 'Отметить все подходы';
+
+  @override
+  String get untickAllSets => 'Снять отметку со всех подходов';
+
+  @override
   String get kg => 'кг';
 
   @override
