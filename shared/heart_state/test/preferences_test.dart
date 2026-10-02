@@ -408,4 +408,29 @@ void main() {
       expect(d.contains('.'), isTrue);
     });
   });
+
+  group('What\'s new read (#216)', () {
+    setUp(() => sut.init());
+
+    test('nothing recorded on a fresh install', () {
+      expect(sut.whatsNewRead, isNull);
+    });
+
+    test('marking adds, notifies once, and is silent when nothing is new', () {
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      sut.markWhatsNewRead(['1.9.0/a', '1.9.0/b']);
+      sut.markWhatsNewRead(['1.9.0/b']);
+      sut.markWhatsNewRead(['1.10.0/c']);
+
+      expect(sut.whatsNewRead, {'1.9.0/a', '1.9.0/b', '1.10.0/c'});
+      expect(notified, 2);
+    });
+
+    test('marking nothing on a fresh install still records it as caught up', () {
+      sut.markWhatsNewRead(const []);
+      expect(sut.whatsNewRead, isEmpty);
+    });
+  });
 }
