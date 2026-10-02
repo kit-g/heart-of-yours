@@ -799,6 +799,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "settingsWhatsNewUnread": "Settings, new in What's new",
+  "@settingsWhatsNewUnread": {
+    "description": "Screen-reader label and tooltip of the Settings button on the profile while What's new holds notes the user has not read; a small dot marks it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewUnread": "What's new, unread notes",
+  "@whatsNewUnread": {
+    "description": "Screen-reader label of the What's new row in Settings while it holds notes the user has not read; a small dot marks it",
+    "type": "text",
+    "placeholders": {}
+  },
   "congratulations": "Congratulations!",
   "@congratulations": {
     "description": "Workout complete screen, title",

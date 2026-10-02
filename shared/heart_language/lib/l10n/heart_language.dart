@@ -874,6 +874,18 @@ abstract class L {
   /// **'No release notes in this version of the app.'**
   String get whatsNewEmpty;
 
+  /// Screen-reader label and tooltip of the Settings button on the profile while What's new holds notes the user has not read; a small dot marks it
+  ///
+  /// In en, this message translates to:
+  /// **'Settings, new in What\'s new'**
+  String get settingsWhatsNewUnread;
+
+  /// Screen-reader label of the What's new row in Settings while it holds notes the user has not read; a small dot marks it
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new, unread notes'**
+  String get whatsNewUnread;
+
   /// Workout complete screen, title
   ///
   /// In en, this message translates to:

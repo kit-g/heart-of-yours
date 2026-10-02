@@ -433,6 +433,12 @@ class LRu extends L {
   String get whatsNewEmpty => 'В этой версии приложения нет описания изменений.';
 
   @override
+  String get settingsWhatsNewUnread => 'Настройки, есть новое в «Что нового»';
+
+  @override
+  String get whatsNewUnread => 'Что нового, есть непрочитанное';
+
+  @override
   String get congratulations => 'Поздравляем!';
 
   @override
