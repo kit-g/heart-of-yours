@@ -43,14 +43,31 @@ void main() {
     expect(notes['bench'], 'Pause');
     expect(persisted, [(entry.id, null)]);
     final repeat = state.activeWorkout!.copy();
+    await state.cancelActiveWorkout();
     await state.startWorkout(source: .template, template: repeat);
     expect(state.activeWorkout!.first.note, isNull);
     final template = Workout()..add(exercise);
+    await state.cancelActiveWorkout();
     await state.startWorkout(source: .template, template: template, applyPinnedNotes: true);
     expect(state.activeWorkout!.first.note, 'Pause');
   });
 
+  test('a workout cannot start over an active one (#228)', () async {
+    final state = Workouts(service: local, remoteService: remote)..userId = 'anon';
+    await state.startWorkout(source: .blank, name: 'Push');
+    final first = state.activeWorkout!.id;
+
+    expect(() => state.startWorkout(source: .blank, name: 'Pull'), throwsAssertionError);
+    expect(state.activeWorkout!.id, first, reason: 'the active workout is not orphaned');
+
+    await state.cancelActiveWorkout();
+    verify(local.deleteWorkout(first)).called(1);
+    await state.startWorkout(source: .blank, name: 'Pull');
+    expect(state.activeWorkout!.name, 'Pull');
+  });
+
   setUp(() {
+    when(local.deleteWorkout(any)).thenAnswer((_) async {});
     when(local.startWorkout(any, any)).thenAnswer((_) async {});
     when(local.finishWorkout(any, any)).thenAnswer((_) async {});
     when(local.startExercise(any, any)).thenAnswer((_) async {});
