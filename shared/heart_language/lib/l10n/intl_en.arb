@@ -3564,6 +3564,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "watchAlwaysOnNote": "To keep your workout off the screen with your wrist down, turn Heart off in your watch's Settings › Display & Brightness › Always On.",
+  "@watchAlwaysOnNote": {
+    "description": "Settings, under the Apple Watch switch: where watchOS's own per-app Always On setting is. Use Apple's names for that Settings path in the locale",
+    "type": "text",
+    "placeholders": {}
+  },
   "watchAppAwayNote": "Phone in your locker? The watch keeps logging, and your iPhone catches up when it's back. That can take a few seconds.",
   "@watchAppAwayNote": {
     "description": "Settings, under the Apple Watch switch while it is on: the watch works without the phone nearby, and what it logs reaches the phone a few seconds after the phone is back",
@@ -3799,6 +3805,12 @@
   "muscleMapBreakdown": "Sets per group",
   "@muscleMapBreakdown": {
     "description": "Title of the muscle map's list of sets per muscle group",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapOptionFigures": "Body map",
+  "@muscleMapOptionFigures": {
+    "description": "Settings, under the muscle map switch: the option that shows the body figures shaded by sets per muscle group. Sits beside \"Sets per group\" and \"Sets per week\"",
     "type": "text",
     "placeholders": {}
   },
