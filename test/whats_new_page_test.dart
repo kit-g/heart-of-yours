@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
@@ -94,7 +95,18 @@ void main() {
     // release that adds one fail this test, which is what it did for 1.9.0.
     final bundled = jsonDecode(File('assets/whats_new/en.json').readAsStringSync()) as List;
     final newest = bundled.first as Map<String, dynamic>;
-    final firstItem = (newest['items'] as List).first as Map<String, dynamic>;
+    // the first note this platform shows: a note for another platform is filtered out
+    final platform = switch (defaultTargetPlatform) {
+      .iOS => 'ios',
+      .android => 'android',
+      TargetPlatform other => other.name,
+    };
+    final firstItem = (newest['items'] as List).cast<Map<String, dynamic>>().firstWhere(
+      (item) => switch (item['platforms']) {
+        List platforms => platforms.contains(platform),
+        _ => true,
+      },
+    );
 
     await pumpWhatsNewAt(tester, const Size(1194, 834));
 

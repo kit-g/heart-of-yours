@@ -62,6 +62,18 @@
       "highlight": false
     },
     {
+      "id": "apple-watch",
+      "category": "train",
+      "title": "Heart on Apple Watch",
+      "pitch": "Log sets from your wrist with last time's numbers, rest and heart rate. Leave the phone in your locker: the watch keeps logging and the iPhone catches up.",
+      "since": "1.10.0",
+      "tier": "free",
+      "platforms": [
+        "ios"
+      ],
+      "highlight": true
+    },
+    {
       "id": "templates",
       "category": "train",
       "title": "Templates, as many as you like",
@@ -143,7 +155,7 @@
       "id": "records",
       "category": "progress",
       "title": "Personal records",
-      "pitch": "Your best set, most reps, best pace, a rep-max table and lifetime totals for every exercise. The workout summary celebrates a new record the moment you set it.",
+      "pitch": "Your best set, most reps, best pace, a rep-max table and lifetime totals for every exercise. The workout summary shows each new record as a badge, with the number it beat.",
       "since": "1.6.0",
       "tier": "free",
       "platforms": [
@@ -171,6 +183,19 @@
       "title": "A dashboard you arrange",
       "pitch": "Your profile charts workouts per week, plus any exercise chart you pin to it with one tap.",
       "since": "1.0.5",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "muscle-map",
+      "category": "progress",
+      "title": "Muscle map",
+      "pitch": "A body map on your profile, shaded by how many sets each muscle group got, with a list and a week-by-week view. Optional, and you choose which parts show.",
+      "since": "1.10.0",
       "tier": "free",
       "platforms": [
         "ios",
