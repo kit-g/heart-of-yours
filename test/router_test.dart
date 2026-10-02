@@ -350,6 +350,45 @@ void main() {
       expect(stack.where((match) => match.matchedLocation == '/activeWorkout'), hasLength(1));
     });
 
+    testWidgets('the Live Activity tap leaves a workout already on screen alone (#227)', (tester) async {
+      final firebase = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+        signedIn: true,
+      );
+      final router = HeartRouter();
+      await harness.pumpHeartApp(
+        tester,
+        db: db,
+        api: api,
+        cdn: cdn,
+        firebaseAuth: firebase,
+        router: router,
+        hasLocalNotifications: false,
+        settle: false,
+      );
+      await tester.pumpTimes();
+
+      final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+      await Workouts.of(
+        tester.element(find.byType(MaterialApp)),
+      ).startWorkout(
+        source: .template,
+        template: Workout(name: 'Push')..add(bench),
+      );
+      // the redirect opens the sheet for a workout not yet shown
+      router.refresh();
+      await tester.pumpTimes(4);
+      final before = router.config.routerDelegate.currentConfiguration;
+      expect(before.matches.where((match) => match.matchedLocation == '/activeWorkout'), hasLength(1));
+
+      // what a Dynamic Island tap does to a running app
+      router.config.go('/openWorkout');
+      await tester.pumpTimes(4);
+
+      // not re-decided at all: the same stack, not an equal one rebuilt
+      expect(identical(router.config.routerDelegate.currentConfiguration, before), isTrue);
+    });
+
     group('first-launch onboarding', () {
       /// A device that has never launched the app.
       setUp(() => SharedPreferences.setMockInitialValues({}));
