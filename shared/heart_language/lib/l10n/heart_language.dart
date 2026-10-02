@@ -3511,7 +3511,7 @@ abstract class L {
   /// Subtitle under the muscle map switch in Settings
   ///
   /// In en, this message translates to:
-  /// **'Sets per muscle group, on your profile'**
+  /// **'Sets per muscle group, on your profile and your workouts'**
   String get muscleMapSubtitle;
 
   /// Title of the one-time card on the profile offering to turn on the muscle map
@@ -3651,6 +3651,24 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Each muscle group is shaded by how many sets it got in the chosen period: the darker, the more. Tap a muscle to see its number.'**
   String get muscleMapFigureHelp;
+
+  /// Settings, under the muscle map switch: the option that shows the body figures for a single finished workout, in History and after finishing. Sits beside "Body map", "Sets per group" and "Sets per week"
+  ///
+  /// In en, this message translates to:
+  /// **'Each workout'**
+  String get muscleMapOptionWorkout;
+
+  /// Heading over a finished workout's body map in History, and the button that reveals that map on the screen shown after finishing a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Muscles worked'**
+  String get musclesWorked;
+
+  /// Help tooltip on a single workout's body map
+  ///
+  /// In en, this message translates to:
+  /// **'Each muscle group is shaded by how many sets it got in this workout: the darker, the more. Tap a muscle to see its number.'**
+  String get workoutMuscleMapHelp;
 
   /// Help tooltip on the muscle map's list: how sets are counted per muscle group
   ///

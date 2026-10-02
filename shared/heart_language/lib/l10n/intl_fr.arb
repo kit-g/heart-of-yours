@@ -3497,7 +3497,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "muscleMapSubtitle": "Séries par groupe musculaire, sur votre profil",
+  "muscleMapSubtitle": "Séries par groupe musculaire, sur votre profil et vos séances",
   "@muscleMapSubtitle": {
     "description": "Subtitle under the muscle map switch in Settings",
     "type": "text",
@@ -3664,6 +3664,24 @@
   "muscleMapFigureHelp": "Chaque groupe musculaire est coloré selon le nombre de séries reçues sur la période choisie : plus c’est foncé, plus il y en a. Touchez un muscle pour voir son nombre.",
   "@muscleMapFigureHelp": {
     "description": "Help tooltip on the muscle map's body figures",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapOptionWorkout": "Chaque séance",
+  "@muscleMapOptionWorkout": {
+    "description": "Settings, under the muscle map switch: the option that shows the body figures for a single finished workout, in History and after finishing. Sits beside \"Body map\", \"Sets per group\" and \"Sets per week\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "musclesWorked": "Muscles sollicités",
+  "@musclesWorked": {
+    "description": "Heading over a finished workout's body map in History, and the button that reveals that map on the screen shown after finishing a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutMuscleMapHelp": "Chaque groupe musculaire est coloré selon le nombre de séries reçues pendant cette séance : plus c’est foncé, plus il y en a. Touchez un muscle pour voir son nombre.",
+  "@workoutMuscleMapHelp": {
+    "description": "Help tooltip on a single workout's body map",
     "type": "text",
     "placeholders": {}
   },

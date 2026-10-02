@@ -2030,7 +2030,7 @@ class LRu extends L {
   String get muscleMap => 'Карта мышц';
 
   @override
-  String get muscleMapSubtitle => 'Подходы по группам мышц в вашем профиле';
+  String get muscleMapSubtitle => 'Подходы по группам мышц в профиле и тренировках';
 
   @override
   String get muscleMapOfferTitle => 'Смотреть, какие мышцы вы тренируете?';
@@ -2129,6 +2129,16 @@ class LRu extends L {
   @override
   String get muscleMapFigureHelp =>
       'Каждая группа мышц закрашена по числу подходов за выбранный период: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число.';
+
+  @override
+  String get muscleMapOptionWorkout => 'Каждая тренировка';
+
+  @override
+  String get musclesWorked => 'Задействованные мышцы';
+
+  @override
+  String get workoutMuscleMapHelp =>
+      'Каждая группа мышц закрашена по числу подходов за эту тренировку: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число.';
 
   @override
   String get muscleMapBreakdownHelp =>

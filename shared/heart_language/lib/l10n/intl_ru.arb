@@ -3497,7 +3497,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "muscleMapSubtitle": "Подходы по группам мышц в вашем профиле",
+  "muscleMapSubtitle": "Подходы по группам мышц в профиле и тренировках",
   "@muscleMapSubtitle": {
     "description": "Subtitle under the muscle map switch in Settings",
     "type": "text",
@@ -3664,6 +3664,24 @@
   "muscleMapFigureHelp": "Каждая группа мышц закрашена по числу подходов за выбранный период: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число.",
   "@muscleMapFigureHelp": {
     "description": "Help tooltip on the muscle map's body figures",
+    "type": "text",
+    "placeholders": {}
+  },
+  "muscleMapOptionWorkout": "Каждая тренировка",
+  "@muscleMapOptionWorkout": {
+    "description": "Settings, under the muscle map switch: the option that shows the body figures for a single finished workout, in History and after finishing. Sits beside \"Body map\", \"Sets per group\" and \"Sets per week\"",
+    "type": "text",
+    "placeholders": {}
+  },
+  "musclesWorked": "Задействованные мышцы",
+  "@musclesWorked": {
+    "description": "Heading over a finished workout's body map in History, and the button that reveals that map on the screen shown after finishing a workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutMuscleMapHelp": "Каждая группа мышц закрашена по числу подходов за эту тренировку: чем темнее, тем больше. Нажмите на мышцу, чтобы увидеть число.",
+  "@workoutMuscleMapHelp": {
+    "description": "Help tooltip on a single workout's body map",
     "type": "text",
     "placeholders": {}
   },
