@@ -258,4 +258,81 @@ void main() {
       expect(find.byKey(rowKeyFor(set)), findsNothing);
     });
   });
+
+  group('column headers (#225)', () {
+    Workout three(Exercise exercise) {
+      final workout = Workout(name: 'W')..add(exercise);
+      workout.first
+        ..add(ExerciseSet(exercise))
+        ..add(ExerciseSet(exercise));
+      return workout;
+    }
+
+    /// What a row's field shows: the fill reaches the model through
+    /// `Workouts.editSet`, and the row has to follow it on screen.
+    String shown(WidgetTester tester, Key key) {
+      final field = find.descendant(of: find.byKey(key), matching: find.byType(TextField), matchRoot: true);
+      return tester.widget<TextField>(field.first).controller!.text;
+    }
+
+    testWidgets('a value header fills its column from the top set, past the ticked ones', (tester) async {
+      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final workout = three(exercise);
+      final [top, second, third] = workout.first.toList();
+      await startWorkoutOn(tester, workout);
+
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.weightFor(exercise.id, 1)), '60');
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.repsFor(exercise.id, 1)), '8');
+      third.isCompleted = true;
+
+      await tester.tapByKey(WorkoutDetailKeys.fillFor(exercise.id, 'weight'));
+      await tester.pumpTimes();
+
+      expect(second.weight, 60.0);
+      expect(third.weight, isNull, reason: 'a ticked set is not touched');
+      expect(second.reps, isNull, reason: 'only the tapped column');
+      expect(top.weight, 60.0);
+      expect(shown(tester, WorkoutDetailKeys.weightFor(exercise.id, 2)), '60');
+    });
+
+    testWidgets('with nothing to fill from, a header does nothing', (tester) async {
+      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final workout = three(exercise);
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.fillFor(exercise.id, 'reps'));
+      await tester.pumpTimes();
+
+      expect(workout.first.every((set) => set.reps == null), isTrue);
+      verifyNever(db.storeMeasurements(any));
+    });
+
+    testWidgets('the ✓ header ticks every set that can be, then unticks them all', (tester) async {
+      final exercise = Exercise(name: 'Row', category: Category.barbell, target: Target.back);
+      final workout = three(exercise);
+      final [top, second, third] = workout.first.toList();
+      for (final set in [top, second]) {
+        set.setMeasurements(weight: 50, reps: 10);
+      }
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.tickAllFor(exercise.id));
+      await tester.pumpTimes();
+      expect(
+        [top.isCompleted, second.isCompleted, third.isCompleted],
+        [true, true, false],
+        reason: 'a set with no values cannot be ticked',
+      );
+
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.weightFor(exercise.id, 3)), '50');
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.repsFor(exercise.id, 3)), '10');
+      await tester.tapByKey(WorkoutDetailKeys.tickAllFor(exercise.id));
+      await tester.pumpTimes();
+      expect(third.isCompleted, isTrue);
+
+      await tester.tapByKey(WorkoutDetailKeys.tickAllFor(exercise.id));
+      await tester.pumpTimes();
+      expect(workout.first.any((set) => set.isCompleted), isFalse, reason: 'all ticked, so all come off');
+    });
+  });
 }
