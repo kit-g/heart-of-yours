@@ -44,6 +44,7 @@ extension FeatureOptionCopy on FeatureOption {
       // the headings the widgets themselves carry
       .muscleMapBreakdown => l.muscleMapBreakdown,
       .muscleMapHeatmap => l.muscleMapWeekly,
+      .muscleMapWorkout => l.muscleMapOptionWorkout,
     };
   }
 }

@@ -169,13 +169,21 @@ void main() {
       preferences.setFeature(feature, on: true);
       preferences.setOption(.muscleMapFigures, on: false);
       preferences.setOption(.muscleMapBreakdown, on: false);
+      preferences.setOption(.muscleMapHeatmap, on: false);
       expect(preferences.isOn(feature), isTrue, reason: 'one is still selected');
 
-      preferences.setOption(.muscleMapHeatmap, on: false);
+      preferences.setOption(.muscleMapWorkout, on: false);
       expect(preferences.isOn(feature), isFalse);
 
       preferences.setFeature(feature, on: true);
       expect(feature.options.every(shown), isTrue, reason: 'on is on in full, not the last choice restored');
+    });
+
+    test('an option added later is on for a feature already on (#223)', () {
+      preferences.setFeature(feature, on: true);
+      preferences.setOption(.muscleMapHeatmap, on: false);
+
+      expect(shown(.muscleMapWorkout), isTrue, reason: 'a choice made before it existed did not leave it out');
     });
 
     test('off, the choice is kept and unused', () {
