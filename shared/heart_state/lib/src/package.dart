@@ -32,6 +32,8 @@ class AppInfo with ChangeNotifier {
   Future<void> init(Future<Package> Function() initializer) async {
     try {
       _package = await initializer();
+      // anything waiting on the version (What's new's dot, #216) hears it
+      notifyListeners();
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
