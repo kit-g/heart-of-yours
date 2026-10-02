@@ -124,6 +124,28 @@ second phone never asks a question the first one already heard.
   (`docs/2026-09-05.health-data.md`). An answer is not health data, but check
   before syncing one that would be.
 
+## Options (#213)
+
+Some features have parts the user can leave out — the muscle map's figures,
+breakdown and heatmap. They are `FeatureOption`s, and they live under the
+feature's switch in Settings › Features, unfolded only while it is on.
+
+- **No second ask.** Turning a feature on is the yes, and it turns on in full:
+  every option selected. Turning it on again later selects them all again; it
+  does not restore an earlier choice.
+- **Leaving out the last one turns the feature off.** Choosing none is not a
+  state; it is the switch.
+- **Live, both ways,** like the switch. A part left out is not built, and the
+  screen closes up around the rest: every combination has its *without*.
+- **The data layer's rule holds.** Off, the choice is kept, stored and unused.
+  It travels with the answer (`FeatureRecord.without`, the `"without"` list in
+  `extra.features`), so changing options is a new answer at a new time, and
+  the later one wins.
+- **Only the switch is an analytics event.** Options send nothing.
+- **Notes** can unfold there too: a line a control would not say, such as the
+  watch app's pointer to Apple's own Always On setting, which Heart does not
+  duplicate.
+
 ## Still open (#138)
 
 - Do existing users see the ask for a feature that shipped in an update, or
