@@ -601,20 +601,32 @@ class const _FeaturesSection() extends StatelessWidget {
   }
 }
 
-/// One feature's switch: the answer, always live, both ways.
+/// One feature's switch: the answer, always live, both ways — and, while it
+/// is on, what unfolds under it (#213): the parts of the feature the user can
+/// leave out, and the notes worth knowing about it. Off, they fold away with
+/// the feature.
 class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitched}) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
     final preferences = Preferences.watch(context);
-    final ColorScheme(:tertiaryContainer, :onTertiaryContainer, :outlineVariant) = Theme.of(context).colorScheme;
+    final ThemeData(
+      :textTheme,
+      colorScheme: ColorScheme(:tertiaryContainer, :onTertiaryContainer, :outlineVariant, :onSurfaceVariant),
+    ) = Theme.of(
+      context,
+    );
+    final on = preferences.isOn(feature);
+    final options = feature.options.toList();
+    final notes = feature.notes(l);
+    final unfolds = options.isNotEmpty || notes.isNotEmpty;
 
-    return SwitchListTile.adaptive(
+    final toggle = SwitchListTile.adaptive(
       key: ValueKey('feature-${feature.value}'),
       secondary: Icon(feature.icon),
       title: Text(feature.title(l)),
       subtitle: Text(feature.subtitle(l)),
-      value: preferences.isOn(feature),
+      value: on,
       // the lock-screen switch's colors: the accent as a fill, and a
       // hairline track so "off" is still a visible control
       activeTrackColor: tertiaryContainer,
@@ -624,6 +636,51 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
         preferences.setFeature(feature, on: on);
         onSwitched?.call();
       },
+    );
+
+    if (!unfolds) return toggle;
+
+    return Column(
+      crossAxisAlignment: .stretch,
+      children: [
+        // a switch that unfolds says so: expanded while on
+        Semantics(expanded: on, child: toggle),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: .topCenter,
+          child: switch (on) {
+            false => const SizedBox(width: double.infinity),
+            true => Padding(
+              // under the title, past the switch's icon
+              padding: const .fromLTRB(48, 0, 8, 8),
+              child: Column(
+                crossAxisAlignment: .stretch,
+                children: [
+                  for (final option in options)
+                    CheckboxListTile.adaptive(
+                      key: ValueKey('feature-${feature.value}-${option.value}'),
+                      value: preferences.isOptionOn(option),
+                      // leaving out the last one turns the feature off
+                      onChanged: (checked) => preferences.setOption(option, on: checked ?? false),
+                      title: Text(option.title(l)),
+                      controlAffinity: ListTileControlAffinity.trailing,
+                      dense: true,
+                      visualDensity: .compact,
+                      contentPadding: const .symmetric(horizontal: 8),
+                      shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+                    ),
+                  for (final note in notes)
+                    Padding(
+                      padding: const .fromLTRB(8, 4, 8, 4),
+                      child: Text(note, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
+                    ),
+                ],
+              ),
+            ),
+          },
+        ),
+      ],
     );
   }
 }
@@ -676,28 +733,15 @@ class _WatchAppSwitchState extends State<_WatchAppSwitch> {
     return ValueListenableBuilder<bool>(
       valueListenable: _installed,
       builder: (context, installed, _) {
-        final l = L.of(context);
-        final ThemeData(:textTheme, colorScheme: ColorScheme(:onSurfaceVariant)) = Theme.of(context);
         return switch (installed) {
-          true => Column(
-            crossAxisAlignment: .start,
-            children: [
-              _FeatureSwitch(
-                .watchApp,
-                onSwitched: () {
-                  final on = Preferences.of(context).isOn(.watchApp);
-                  Analytics.of(context).watchAppSwitched(on: on, fromWatch: false);
-                },
-              ),
-              // the one thing about the watch worth knowing ahead (#206):
-              // away from the phone it keeps going, and the phone catches up
-              // seconds after it is back, not at once
-              if (Preferences.watch(context).isOn(.watchApp))
-                Padding(
-                  padding: const .fromLTRB(72, 0, 16, 8),
-                  child: Text(l.watchAppAwayNote, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
-                ),
-            ],
+          // its notes — the phone catching up (#206), Apple's Always On
+          // switch (#213) — unfold under it with the rest of the feature
+          true => _FeatureSwitch(
+            .watchApp,
+            onSwitched: () {
+              final on = Preferences.of(context).isOn(.watchApp);
+              Analytics.of(context).watchAppSwitched(on: on, fromWatch: false);
+            },
           ),
           false => const SizedBox.shrink(),
         };
