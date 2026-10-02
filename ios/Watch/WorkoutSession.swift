@@ -62,8 +62,13 @@ final class WorkoutSession: NSObject, ObservableObject {
             log.error("Health authorization failed: \(error.localizedDescription, privacy: .public)")
             return
         }
-        // declined: nothing is measured, and everything else carries on
-        guard store.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else { return }
+        // No `authorizationStatus` check here. Read the moment the Health sheet
+        // closes, it still answers as before the user chose, so a yes looked
+        // like a no: the first workout after allowing Health went unmeasured,
+        // and only the next launch started a session. A real no makes the
+        // session fail to begin below, which ends in `discard()` — the same
+        // "nothing is measured, everything else carries on".
+        log.info("Starting a workout session for \(workout.workoutId, privacy: .public)")
 
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = WorkoutSession.activityType(workout.activity)

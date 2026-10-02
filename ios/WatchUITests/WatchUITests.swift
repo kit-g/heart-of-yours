@@ -139,6 +139,53 @@ final class WatchUITests: XCTestCase {
         XCTAssertTrue(edited.waitForExistence(timeout: 10), "the row shows the new reps, still ticked")
     }
 
+    /// Scrolls the first page to its foot — the rest countdown, the footer —
+    /// and leaves it there, for a look or a screenshot.
+    func testScrollToFoot() {
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+
+        app.swipeUp()
+    }
+
+    /// Opens the weight of the set up next in the value editor, and leaves it
+    /// open — for a look or a screenshot.
+    func testOpenWeightEditor() {
+        let weight = app.buttons.matching(NSPredicate(format: "label IN %@", ["kg", "lbs"])).firstMatch
+        XCTAssertTrue(weight.waitForExistence(timeout: 10))
+
+        weight.tap()
+
+        let editor = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["kg", "lbs"])).firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 5))
+    }
+
+    /// Closes whatever sheet is open with the system's close button, the
+    /// top-left one — it has no label to find it by.
+    func testCloseSheet() {
+        let close = app.buttons.allElementsBoundByIndex
+            .filter { $0.isHittable }
+            .min { ($0.frame.minY, $0.frame.minX) < ($1.frame.minY, $1.frame.minX) }
+        XCTAssertNotNil(close)
+
+        close?.tap()
+    }
+
+    /// Taps the point at `TAP_X`, `TAP_Y` — fractions of the screen, passed as
+    /// `TEST_RUNNER_TAP_X` / `TEST_RUNNER_TAP_Y` to xcodebuild. Finds nothing by
+    /// label, so it drives the app in any language (store screenshots).
+    func testTapAt() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let x = try XCTUnwrap(environment["TAP_X"].flatMap(Double.init))
+        let y = try XCTUnwrap(environment["TAP_Y"].flatMap(Double.init))
+
+        app.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y)).tap()
+    }
+
+    /// To the workout page, in any language.
+    func testSwipeToWorkoutPage() {
+        app.swipeLeft()
+    }
+
     /// A row on the workout page that is ticked: its label ends in the tick's.
     private var firstDoneRow: XCUIElement {
         app.buttons.matching(NSPredicate(format: "label ENDSWITH ', Done'")).firstMatch
