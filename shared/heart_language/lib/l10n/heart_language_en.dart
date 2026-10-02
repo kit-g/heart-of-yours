@@ -246,6 +246,17 @@ class LEn extends L {
   String get time => 'Time';
 
   @override
+  String fillColumn(String column) {
+    return '$column: fill every set not yet done';
+  }
+
+  @override
+  String get tickAllSets => 'Tick every set';
+
+  @override
+  String get untickAllSets => 'Untick every set';
+
+  @override
   String get kg => 'kg';
 
   @override
@@ -2348,6 +2359,17 @@ class LEnCa extends LEn {
 
   @override
   String get time => 'Time';
+
+  @override
+  String fillColumn(String column) {
+    return '$column: fill every set not yet done';
+  }
+
+  @override
+  String get tickAllSets => 'Tick every set';
+
+  @override
+  String get untickAllSets => 'Untick every set';
 
   @override
   String get kg => 'kg';

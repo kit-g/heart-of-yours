@@ -99,6 +99,9 @@ sets,Card header,Sets,Sets,Подходы,Series,Séries
 previous,"Workout table, column header, as in ""previous exercise""",Previous,Previous,Предыдущий,Anterior,Précédent
 reps,"Workout table, column header",Reps,Reps,Раз,Reps,Reps
 time,"Workout table, column header",Time,Time,Время,Tiempo,Temps
+fillColumn,"Tooltip and screen-reader label of a value column header in the workout's set table (kg, Reps, Time…). Tapping it fills that column in every unticked set, from last time's values or else the first set's. {column} is the header itself",{column}: fill every set not yet done,{column}: fill every set not yet done,{column}: заполнить все неотмеченные подходы,{column}: rellenar todas las series sin marcar,{column} : remplir toutes les séries non cochées
+tickAllSets,Tooltip and screen-reader label of the checkmark column header in the workout's set table: ticks every set of the exercise,Tick every set,Tick every set,Отметить все подходы,Marcar todas las series,Cocher toutes les séries
+untickAllSets,Tooltip and screen-reader label of the checkmark column header once every set of the exercise is ticked: unticks them all,Untick every set,Untick every set,Снять отметку со всех подходов,Desmarcar todas las series,Décocher toutes les séries
 kg,"Generic label, kilograms",kg,kg,кг,kg,kg
 mile,"Generic label, miles",mile,mile,миля,milla,mile
 km,"Generic label, km",km,km,км,km,km
