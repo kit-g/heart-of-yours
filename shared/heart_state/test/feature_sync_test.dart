@@ -50,8 +50,8 @@ void main() {
 
   group('the settings codec', () {
     test('reads what it wrote', () {
-      final written = withFeatureRecords(const Settings(), {feature: (on: true, at: later)});
-      expect(featureRecordsOf(written), {feature: (on: true, at: later)});
+      final written = withFeatureRecords(const Settings(), {feature: FeatureRecord(on: true, at: later)});
+      expect(featureRecordsOf(written), {feature: FeatureRecord(on: true, at: later)});
     });
 
     test('keeps every other key, and features this version does not know', () {
@@ -65,12 +65,12 @@ void main() {
         },
       );
 
-      final written = withFeatureRecords(settings, {feature: (on: false, at: later)});
+      final written = withFeatureRecords(settings, {feature: FeatureRecord(on: false, at: later)});
 
       expect(written.themeMode, 'dark');
       expect(written.extra['somethingElse'], 1);
       expect((written.extra['features'] as Map)['voiceRestTimer'], {'on': true, 'at': '2026-09-01T00:00:00.000Z'});
-      expect(featureRecordsOf(written), {feature: (on: false, at: later)});
+      expect(featureRecordsOf(written), {feature: FeatureRecord(on: false, at: later)});
     });
 
     test('is lenient: a malformed or missing entry reads as no answer, never a throw', () {
@@ -96,10 +96,100 @@ void main() {
     });
 
     test('pins the wire keys: renaming one would lose every stored answer', () {
-      final written = withFeatureRecords(const Settings(), {feature: (on: true, at: later)});
+      final written = withFeatureRecords(const Settings(), {feature: FeatureRecord(on: true, at: later)});
       expect(written.toMap()['features'], {
-        'muscleMap': {'on': true, 'at': later.toIso8601String()},
+        'muscleMap': {'on': true, 'at': later.toIso8601String(), 'without': <String>[]},
       });
+    });
+
+    test('carries the options left out, and passes through options this version does not know', () {
+      final settings = Settings(
+        extra: {
+          'features': {
+            'muscleMap': {
+              'on': true,
+              'at': earlier.toIso8601String(),
+              'without': ['heatmap', 'fromTheFuture'],
+              'aNewerKey': 1,
+            },
+          },
+        },
+      );
+      expect(
+        featureRecordsOf(settings)[feature],
+        FeatureRecord(on: true, at: earlier, without: const {.muscleMapHeatmap}),
+      );
+
+      final written = withFeatureRecords(settings, {
+        feature: FeatureRecord(on: true, at: later, without: const {.muscleMapFigures}),
+      });
+      expect((written.toMap()['features'] as Map)['muscleMap'], {
+        'on': true,
+        'at': later.toIso8601String(),
+        'without': ['figures', 'fromTheFuture'],
+        'aNewerKey': 1,
+      });
+    });
+  });
+
+  group('options (#213)', () {
+    late Preferences preferences;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      preferences = Preferences();
+      await preferences.init();
+    });
+
+    bool shown(FeatureOption option) => preferences.isOptionOn(option);
+
+    test('a feature turns on with every option, and off with none', () {
+      expect(feature.options.any(shown), isFalse);
+      preferences.setFeature(feature, on: true);
+      expect(feature.options.every(shown), isTrue);
+    });
+
+    test('leaving one out hides only it, live, and is a new answer', () {
+      preferences.setFeature(feature, on: true);
+      final before = preferences.featureRecords[feature]!.at;
+      var notified = 0;
+      preferences.addListener(() => notified++);
+
+      preferences.setOption(.muscleMapHeatmap, on: false);
+
+      expect(shown(.muscleMapHeatmap), isFalse);
+      expect(shown(.muscleMapFigures) && shown(.muscleMapBreakdown), isTrue);
+      expect(notified, 1);
+      final record = preferences.featureRecords[feature]!;
+      expect(record.without, {FeatureOption.muscleMapHeatmap});
+      expect(record.at.isBefore(before), isFalse);
+    });
+
+    test('leaving out the last one turns the feature off; turning it on again selects them all', () {
+      preferences.setFeature(feature, on: true);
+      preferences.setOption(.muscleMapFigures, on: false);
+      preferences.setOption(.muscleMapBreakdown, on: false);
+      expect(preferences.isOn(feature), isTrue, reason: 'one is still selected');
+
+      preferences.setOption(.muscleMapHeatmap, on: false);
+      expect(preferences.isOn(feature), isFalse);
+
+      preferences.setFeature(feature, on: true);
+      expect(feature.options.every(shown), isTrue, reason: 'on is on in full, not the last choice restored');
+    });
+
+    test('off, the choice is kept and unused', () {
+      preferences.setFeature(feature, on: true);
+      preferences.setOption(.muscleMapHeatmap, on: false);
+      preferences.setFeature(feature, on: false);
+
+      expect(feature.options.any(shown), isFalse);
+      expect(preferences.featureRecords[feature]!.without, {FeatureOption.muscleMapHeatmap});
+    });
+
+    test('an option of a feature that is off cannot be changed', () {
+      preferences.setOption(.muscleMapHeatmap, on: false);
+      expect(preferences.featureRecords[feature], isNull);
     });
   });
 
@@ -118,7 +208,7 @@ void main() {
 
       final before = DateTime.timestamp();
       preferences.answerOffer(feature, yes: true);
-      final (:on, :at) = preferences.featureRecords[feature]!;
+      final FeatureRecord(:on, :at) = preferences.featureRecords[feature]!;
       expect(on, isTrue);
       expect(at.isBefore(before), isFalse);
     });
@@ -130,11 +220,11 @@ void main() {
       var notifications = 0;
       preferences.addListener(() => notifications++);
 
-      preferences.adoptFeatureRecords({feature: (on: true, at: later)});
+      preferences.adoptFeatureRecords({feature: FeatureRecord(on: true, at: later)});
 
       expect(preferences.isOn(feature), isTrue);
       expect(preferences.owesDeclineNotice(feature), isFalse);
-      expect(preferences.featureRecords[feature], (on: true, at: later));
+      expect(preferences.featureRecords[feature], FeatureRecord(on: true, at: later));
       expect(notifications, 1);
     });
 
@@ -177,6 +267,27 @@ void main() {
       expect(account.saved, isEmpty);
     });
 
+    test('options travel with the answer, both ways', () async {
+      await boot();
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setFeature(feature, on: true);
+      preferences.setOption(.muscleMapBreakdown, on: false);
+      await settle();
+      expect(featureRecordsOf(account.saved.last)[feature]?.without, {FeatureOption.muscleMapBreakdown});
+
+      final elsewhere = DateTime.timestamp().add(const Duration(minutes: 1));
+      account.arrive(
+        withFeatureRecords(const Settings(), {
+          feature: FeatureRecord(on: true, at: elsewhere, without: const {.muscleMapFigures}),
+        }),
+      );
+      await settle();
+      expect(preferences.isOptionOn(.muscleMapFigures), isFalse);
+      expect(preferences.isOptionOn(.muscleMapBreakdown), isTrue);
+    });
+
     test('a newer answer here is written to the account, keeping what else it holds', () async {
       await boot(
         stored: {
@@ -190,7 +301,7 @@ void main() {
 
       expect(preferences.isOn(feature), isTrue);
       final [saved] = account.saved;
-      expect(featureRecordsOf(saved), {feature: (on: true, at: later)});
+      expect(featureRecordsOf(saved), {feature: FeatureRecord(on: true, at: later)});
       expect(saved.extra['kept'], isTrue);
     });
 

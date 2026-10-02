@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:heart_models/heart_models.dart';
 
 /// A feature the user opts into (#138, `docs/opt-in.md`).
@@ -18,6 +19,33 @@ enum Feature {
   final String value;
 
   new(this.value);
+
+  /// The parts of this feature the user can leave out ([FeatureOption]); none
+  /// for most.
+  Iterable<FeatureOption> get options => FeatureOption.values.where((option) => option.feature == this);
+}
+
+/// A part of a [Feature] the user can leave out (#213), chosen under the
+/// feature's switch in Settings while it is on.
+///
+/// Never asked about: turning the feature on is the yes, and it turns on in
+/// full — every option selected. Leaving all of a feature's options out is
+/// turning the feature off. [value] is the storage key, unique within its
+/// feature, and never changes once shipped.
+enum FeatureOption {
+  /// The body figures, shaded by sets per muscle group.
+  muscleMapFigures(.muscleMap, 'figures'),
+
+  /// The list of sets per muscle group.
+  muscleMapBreakdown(.muscleMap, 'breakdown'),
+
+  /// Sets per muscle group week by week.
+  muscleMapHeatmap(.muscleMap, 'heatmap');
+
+  final Feature feature;
+  final String value;
+
+  new(this.feature, this.value);
 }
 
 /// What the user said about a [Feature].
@@ -50,10 +78,33 @@ enum FeatureAnswer {
 /// A real answer about a feature, on or off, and when it was given — the unit
 /// that travels between devices. The time is what settles two devices that
 /// disagree: the later answer wins.
-typedef FeatureRecord = ({bool on, DateTime at});
+///
+/// [without] is the options left out (#213). It travels with the answer, and
+/// changing it is a new answer, at a new time. Off, it is kept as it was —
+/// stored, unused — and turning the feature on clears it.
+final class FeatureRecord {
+  final bool on;
+  final DateTime at;
+  final Set<FeatureOption> without;
+
+  const new({required this.on, required this.at, this.without = const {}});
+
+  /// By value: the options are a set, which records would compare by identity.
+  @override
+  bool operator ==(Object other) {
+    return other is FeatureRecord && other.on == on && other.at == at && setEquals(other.without, without);
+  }
+
+  @override
+  int get hashCode => Object.hash(on, at, Object.hashAllUnordered(without));
+
+  @override
+  String toString() => 'FeatureRecord(on: $on, at: $at, without: $without)';
+}
 
 /// Where the answers live in the account's [Settings]: `extra.features`, one
-/// entry per [Feature.value] — `{"muscleMap": {"on": true, "at": "…"}}`.
+/// entry per [Feature.value] —
+/// `{"muscleMap": {"on": true, "at": "…", "without": ["heatmap"]}}`.
 const _settingsKey = 'features';
 
 /// The answers [settings] carries. Lenient: an entry this app cannot read —
@@ -65,8 +116,19 @@ Map<Feature, FeatureRecord> featureRecordsOf(Settings settings) {
   };
   return {
     for (final feature in Feature.values)
-      if (stored[feature.value] case {'on': bool on, 'at': String at})
-        if (DateTime.tryParse(at) case DateTime at) feature: (on: on, at: at),
+      if (stored[feature.value] case {'on': bool on, 'at': String at} && final entry)
+        if (DateTime.tryParse(at) case DateTime at)
+          feature: FeatureRecord(
+            on: on,
+            at: at,
+            without: switch (entry['without']) {
+              List without => {
+                for (final option in feature.options)
+                  if (without.contains(option.value)) option,
+              },
+              _ => const {},
+            },
+          ),
   };
 }
 
@@ -83,8 +145,19 @@ Settings withFeatureRecords(Settings settings, Map<Feature, FeatureRecord> recor
       ...settings.extra,
       _settingsKey: {
         ...stored,
-        for (final MapEntry(key: feature, value: (:on, :at)) in records.entries)
-          feature.value: {'on': on, 'at': at.toUtc().toIso8601String()},
+        for (final MapEntry(key: feature, value: FeatureRecord(:on, :at, :without)) in records.entries)
+          feature.value: {
+            // an entry's other keys, and options this version does not know,
+            // are a newer app's and pass through
+            if (stored[feature.value] case Map entry) ...entry,
+            'on': on,
+            'at': at.toUtc().toIso8601String(),
+            'without': [
+              ...without.map((option) => option.value),
+              if (stored[feature.value] case {'without': List theirs})
+                ...theirs.where((value) => !feature.options.any((option) => option.value == value)),
+            ],
+          },
       },
     },
   );
