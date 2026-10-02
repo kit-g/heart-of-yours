@@ -50,6 +50,7 @@ final class HeartRouter {
         debugLogDiagnostics: false,
         initialLocation: _profilePath,
         observers: observers,
+        onEnter: _onEnter,
         routes: [
           StatefulShellRoute.indexedStack(
             pageBuilder: (_, state, shell) {
@@ -100,6 +101,21 @@ final class HeartRouter {
           onError?.call('Router.onException: ${state.uri}');
         },
       );
+
+  /// The Live Activity's tap, while the workout it opens is already on screen
+  /// (#227), goes nowhere. Let through, [_decide] would switch to the workouts
+  /// tab and open the sheet again — a jank over a screen that was already
+  /// right, since the tap also brings a backgrounded app to the front exactly
+  /// as it was left.
+  static OnEnterResult _onEnter(BuildContext _, GoRouterState _, GoRouterState next, GoRouter router) {
+    final onScreen = router.routerDelegate.currentConfiguration.matches.any(
+      (match) => match.matchedLocation == _activeWorkoutPath,
+    );
+    return switch (next.uri.path == _openWorkoutPath && onScreen) {
+      true => const Block.stop(),
+      false => const Allow(),
+    };
+  }
 
   static FutureOr<String?> _redirect(BuildContext context, GoRouterState state) {
     // A first launch's opening screen is decided on a stored flag (see the
