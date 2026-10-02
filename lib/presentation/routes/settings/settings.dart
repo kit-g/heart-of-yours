@@ -46,6 +46,7 @@ part 'account.dart';
 part 'avatar.dart';
 part 'preset_picker.dart';
 part 'export_data.dart';
+part 'features.dart';
 part 'import_data.dart';
 part 'page.dart';
 part 'rest_timers.dart';

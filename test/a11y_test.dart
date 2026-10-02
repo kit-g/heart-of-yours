@@ -60,6 +60,7 @@ enum _Screen {
   exportData,
   whatsNew,
   restTimers,
+  features,
   upsyncRunning,
   upsyncFailed,
   upsyncDone,
@@ -383,6 +384,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.restTimers, _Guideline.androidTapTarget, null),
   (_Screen.restTimers, _Guideline.iosTapTarget, null),
 
+  // Features (lib/presentation/routes/settings/features.dart, #226): the
+  // opt-in switches, the muscle map on so its options unfold under it.
+  (_Screen.features, _Guideline.labeledTapTarget, null),
+  (_Screen.features, _Guideline.textContrastLight, null),
+  (_Screen.features, _Guideline.textContrastDark, null),
+  (
+    _Screen.features,
+    _Guideline.androidTapTarget,
+    'a feature\'s option rows are dense, 40pt (lib/presentation/routes/settings/features.dart:121, #213) — the same density call as Settings\' switch rows',
+  ),
+  (
+    _Screen.features,
+    _Guideline.iosTapTarget,
+    'a feature\'s option rows are dense, 40pt (lib/presentation/routes/settings/features.dart:121, #213) — the same density call as Settings\' switch rows',
+  ),
+
   // The upsync row on the profile (lib/presentation/widgets/upsync_row.dart) in
   // each of its three states: the bar, the Retry button, the dismiss. The tap
   // target rows inherit the profile's bottom-nav reason; the row's own
@@ -542,6 +559,10 @@ void main() {
     // the one screen a device sees only before its first launch is over
     if (screen == _Screen.onboarding) {
       SharedPreferences.setMockInitialValues({});
+    }
+    // a feature on, so the page shows what unfolds under a switch too
+    if (screen == _Screen.features) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
 
     // The upsync row shows on the profile of an account whose store is still
@@ -744,6 +765,11 @@ void main() {
         await tester.tapByKey(AppKeys.exercisesStack);
       case _Screen.settings || _Screen.anonymousSettings:
         await tester.tap(find.byIcon(Icons.settings_rounded));
+      case _Screen.features:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.ensureVisible(find.byKey(AppKeys.features));
+        await tester.tapByKey(AppKeys.features);
       case _Screen.accountManagement:
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
