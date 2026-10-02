@@ -1945,6 +1945,10 @@ class LEs extends L {
   String get watchFinishedAway => 'Guardado en tu reloj. Tu iPhone lo recibirá cuando vuelva.';
 
   @override
+  String get watchAlwaysOnNote =>
+      'Para que tu entrenamiento no se vea con la muñeca bajada, desactiva Heart en Ajustes del reloj › Pantalla y brillo › Siempre activa.';
+
+  @override
   String get watchAppAwayNote =>
       '¿El teléfono en la taquilla? El reloj sigue registrando y tu iPhone se pone al día cuando vuelve. Puede tardar unos segundos.';
 
@@ -2078,6 +2082,9 @@ class LEs extends L {
 
   @override
   String get muscleMapBreakdown => 'Series por grupo';
+
+  @override
+  String get muscleMapOptionFigures => 'Mapa del cuerpo';
 
   @override
   String get muscleMapFigureHelp =>

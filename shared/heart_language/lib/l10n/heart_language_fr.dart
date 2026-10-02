@@ -1947,6 +1947,10 @@ class LFr extends L {
   String get watchFinishedAway => 'Enregistré sur votre montre. Votre iPhone le recevra à son retour.';
 
   @override
+  String get watchAlwaysOnNote =>
+      'Pour masquer votre séance poignet baissé, désactivez Heart dans Réglages de la montre › Luminosité et affichage › Toujours activé.';
+
+  @override
   String get watchAppAwayNote =>
       'Téléphone au vestiaire ? La montre continue d\'enregistrer, et votre iPhone se met à jour à son retour. Cela peut prendre quelques secondes.';
 
@@ -2081,6 +2085,9 @@ class LFr extends L {
 
   @override
   String get muscleMapBreakdown => 'Séries par groupe';
+
+  @override
+  String get muscleMapOptionFigures => 'Carte du corps';
 
   @override
   String get muscleMapFigureHelp =>

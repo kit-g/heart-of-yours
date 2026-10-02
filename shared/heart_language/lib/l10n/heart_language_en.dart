@@ -1941,6 +1941,10 @@ class LEn extends L {
   String get watchFinishedAway => 'Saved on your watch. Your iPhone gets it when it\'s back.';
 
   @override
+  String get watchAlwaysOnNote =>
+      'To keep your workout off the screen with your wrist down, turn Heart off in your watch\'s Settings › Display & Brightness › Always On.';
+
+  @override
   String get watchAppAwayNote =>
       'Phone in your locker? The watch keeps logging, and your iPhone catches up when it\'s back. That can take a few seconds.';
 
@@ -2072,6 +2076,9 @@ class LEn extends L {
 
   @override
   String get muscleMapBreakdown => 'Sets per group';
+
+  @override
+  String get muscleMapOptionFigures => 'Body map';
 
   @override
   String get muscleMapFigureHelp =>
@@ -4032,6 +4039,10 @@ class LEnCa extends LEn {
   String get watchFinishedAway => 'Saved on your watch. Your iPhone gets it when it\'s back.';
 
   @override
+  String get watchAlwaysOnNote =>
+      'To keep your workout off the screen with your wrist down, turn Heart off in your watch\'s Settings › Display & Brightness › Always On.';
+
+  @override
   String get watchAppAwayNote =>
       'Phone in your locker? The watch keeps logging, and your iPhone catches up when it\'s back. That can take a few seconds.';
 
@@ -4163,6 +4174,9 @@ class LEnCa extends LEn {
 
   @override
   String get muscleMapBreakdown => 'Sets per group';
+
+  @override
+  String get muscleMapOptionFigures => 'Body map';
 
   @override
   String get muscleMapFigureHelp =>
