@@ -98,11 +98,19 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       null => null,
     });
     _syncField(_repsController, _repsFocus, _repsListener, set.reps?.toString());
+    // and a column filled from its header (#225), cardio's included
+    _syncField(_distanceController, _distanceFocus, _distanceListener, switch (set.distance) {
+      double distance => prefs.distance(distance, unit: _unitOverride),
+      null => null,
+    });
+    _syncField(_durationController, _durationFocus, _durationListener, set.duration?.toDuration());
   }
 
   void _syncField(TextEditingController field, FocusNode focus, VoidCallback listener, String? shown) {
-    if (shown == null || focus.hasFocus) return;
-    if (double.tryParse(field.text) == double.tryParse(shown)) return;
+    if (shown == null || focus.hasFocus || field.text == shown) return;
+    // the same number written differently ("60" for "60.0") is no change; a
+    // duration ("3:00") is no number, and goes by its text above
+    if (double.tryParse(field.text) case double now when now == double.tryParse(shown)) return;
     field
       ..removeListener(listener)
       ..text = shown
