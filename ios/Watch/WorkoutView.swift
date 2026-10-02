@@ -3,8 +3,9 @@ import SwiftUI
 /// The workout in progress, as the phone summarised it (#182), in two pages.
 ///
 /// The first is the set up next, read top to bottom in the order it is used:
-/// the exercise and which set, its values, last time's, the tick (#183) — then
-/// the rest, and at the foot where the workout stands. The second, a swipe
+/// the exercise and which set, its values, last time's, the tick (#183), and
+/// at the foot where the workout stands. While a rest runs, its countdown
+/// leads the page. The second, a swipe
 /// away, is the whole workout, for going back to a set already done: new
 /// values, or the tick taken off. Adding sets or exercises stays the phone's.
 ///
@@ -52,6 +53,18 @@ struct UpNextPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
+                // resting, the countdown leads: it is what a lowered wrist
+                // comes up to check, and below the set it sat off-screen on
+                // every watch size. The rest over, the page is as before
+                if let rest = workout.rest {
+                    RestView(rest: rest, accent: workout.accent)
+                    if let controls = workout.controls, !dimmed {
+                        RestControls(workoutId: workout.workoutId, controls: controls)
+                    }
+                    Divider()
+                        .padding(.vertical, 6)
+                }
+
                 if !workout.exercise.isEmpty {
                     Text(workout.exercise)
                         .font(.headline)
@@ -91,14 +104,6 @@ struct UpNextPage: View {
                             .padding(.top, 2)
                     case (true, false):
                         EmptyView()
-                    }
-                }
-
-                if let rest = workout.rest {
-                    RestView(rest: rest, accent: workout.accent)
-                        .padding(.top, 6)
-                    if let controls = workout.controls, !dimmed {
-                        RestControls(workoutId: workout.workoutId, controls: controls)
                     }
                 }
 
