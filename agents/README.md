@@ -64,11 +64,14 @@ the guard hook. Its read-only tools stay available.
 
 **Guardrails.** `.claude/settings.json` wires `hooks/guard.sh` as a
 PreToolUse hook for every session in this repo — hooks still fire under
-bypassPermissions. It denies `git commit`/`push` (never-commit rule),
-work-destroying git (`reset --hard`, `clean -f`, `rebase`, `merge`,
-`checkout .`, `stash drop`…), and recursive force-deletes outside
-`build//.dart_tool//tmp`. It's a guardrail, not a jail — real containment is
-the container plus read-only credentials.
+bypassPermissions. For agents it denies `git commit`/`push` (never-commit
+rule); an agent is a session started by `agent` or `host-agent`, which set
+`HEART_AGENT=1`, or any session in a container. Your own interactive session
+commits and pushes. For everyone it denies work-destroying git (`reset
+--hard`, `clean -f`, `rebase`, `merge`, `checkout .`, `stash drop`…) and
+recursive force-deletes outside `build//.dart_tool//tmp`. It's a guardrail,
+not a jail — real containment is the container plus read-only credentials.
+`hooks/guard_test.sh` is its regression matrix.
 
 **Verification.** CI's whole unit-test/lint matrix is `ubuntu-latest`, so
 containers run `make test` and `make lint` natively. What they *can't* do is
