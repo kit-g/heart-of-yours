@@ -2030,7 +2030,7 @@ class LFr extends L {
   String get noThanks => 'Non merci';
 
   @override
-  String get featureDeclinedNotice => 'Vous pourrez toujours l’activer dans les Réglages.';
+  String get featureDeclinedNotice => 'Vous pourrez toujours l’activer dans Paramètres › Fonctionnalités.';
 
   @override
   String get lastSevenDays => '7 jours';

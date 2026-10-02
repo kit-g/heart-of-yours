@@ -3503,7 +3503,7 @@
   },
   "features": "Funciones",
   "@features": {
-    "description": "Settings section title: the opt-in features the user can turn on and off",
+    "description": "Settings row and page title: the opt-in features the user can turn on and off",
     "type": "text",
     "placeholders": {}
   },
@@ -3549,7 +3549,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "featureDeclinedNotice": "Puedes activarlo cuando quieras en Ajustes.",
+  "featureDeclinedNotice": "Puedes activarlo cuando quieras en Ajustes › Funciones.",
   "@featureDeclinedNotice": {
     "description": "Shown once, after the user declines an optional feature",
     "type": "text",
