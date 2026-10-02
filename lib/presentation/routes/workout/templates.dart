@@ -177,10 +177,13 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                 _showStartWorkoutDialog(context, template, allowsEditing: false);
               },
               onStartWorkout: (template) async {
-                await Workouts.of(
+                final started = await startWorkoutOverActive(
                   context,
-                ).startWorkout(source: .sample, template: template.toWorkout(), applyPinnedNotes: true);
-                widget.onNewWorkout();
+                  () => Workouts.of(
+                    context,
+                  ).startWorkout(source: .sample, template: template.toWorkout(), applyPinnedNotes: true),
+                );
+                if (started) widget.onNewWorkout();
               },
               options: const [.startWorkout],
             );
@@ -211,10 +214,13 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
         _showMoveDialog(context, template);
       },
       onStartWorkout: (template) async {
-        await Workouts.of(
+        final started = await startWorkoutOverActive(
           context,
-        ).startWorkout(source: .template, template: template.toWorkout(), applyPinnedNotes: true);
-        widget.onNewWorkout();
+          () => Workouts.of(
+            context,
+          ).startWorkout(source: .template, template: template.toWorkout(), applyPinnedNotes: true),
+        );
+        if (started) widget.onNewWorkout();
       },
       onTap: (template) {
         _showStartWorkoutDialog(context, template);
@@ -596,12 +602,15 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                 // `allowsEditing` is false only for the sample grid — a
                 // sample is not the user's to edit — which makes it the one
                 // thing in scope that tells the two sources apart.
-                await Workouts.of(context).startWorkout(
-                  source: allowsEditing ? .template : .sample,
-                  template: template.toWorkout(),
-                  applyPinnedNotes: true,
+                final started = await startWorkoutOverActive(
+                  context,
+                  () => Workouts.of(context).startWorkout(
+                    source: allowsEditing ? .template : .sample,
+                    template: template.toWorkout(),
+                    applyPinnedNotes: true,
+                  ),
                 );
-                widget.onNewWorkout();
+                if (started) widget.onNewWorkout();
               },
             ),
           ],

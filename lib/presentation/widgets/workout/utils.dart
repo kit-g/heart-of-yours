@@ -253,6 +253,60 @@ Future<void> showCancelWorkoutDialog(BuildContext context, {VoidCallback? onFini
   );
 }
 
+/// Starts a workout through [start] — asking first when one is already going
+/// (#228). Every way into a new workout comes through here: the user confirms
+/// discarding the active one, and it is cancelled (deleted) before [start]
+/// runs, so the old one can never be left behind half-alive. Completes with
+/// whether [start] ran.
+Future<bool> startWorkoutOverActive(BuildContext context, Future<void> Function() start) async {
+  final workouts = Workouts.of(context);
+  if (workouts.hasActiveWorkout) {
+    final discard = await _showDiscardActiveWorkoutDialog(context);
+    if (discard != true) return false;
+    cancelAllNotifications();
+    await workouts.cancelActiveWorkout();
+  }
+  await start();
+  return true;
+}
+
+Future<bool?> _showDiscardActiveWorkoutDialog(BuildContext context) {
+  final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+  final L(:cancelCurrentWorkoutTitle, :cancelCurrentWorkoutBody, :keepCurrentAccount, :cancelAndStartNewWorkout) = L.of(
+    context,
+  );
+  return showBrandedDialog<bool>(
+    context,
+    title: Text(cancelCurrentWorkoutTitle, textAlign: .center),
+    content: Text(cancelCurrentWorkoutBody, textAlign: .center),
+    icon: Icon(Icons.error_outline_rounded, color: colorScheme.error),
+    actions: [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            child: Center(child: Text(keepCurrentAccount, textAlign: .center)),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
+          ),
+          PrimaryButton.wide(
+            key: WorkoutDetailKeys.discardAndStart,
+            backgroundColor: colorScheme.errorContainer,
+            child: Center(
+              child: Text(
+                cancelAndStartNewWorkout,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                textAlign: .center,
+              ),
+            ),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 /// Finishes the active workout: saves it, mirrors it to Health, and shows its
 /// summary. The one finish path — the phone's dialog calls it once the user
 /// confirmed, and so does the watch's Finish (#183), which confirmed on the

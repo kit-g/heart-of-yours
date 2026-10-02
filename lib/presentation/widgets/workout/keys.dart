@@ -11,6 +11,7 @@ class WorkoutDetailKeys {
   static const timer = Key('WorkoutDetail.timer');
   static const addSet = Key('WorkoutDetail.addSet');
   static const addExerciseButton = Key('WorkoutDetail.addExerciseButton');
+  static const discardAndStart = Key('WorkoutDetail.discardAndStart');
 
   /// The per-exercise overflow menu inside a workout.
   ///

@@ -246,13 +246,11 @@ class WorkoutItem extends StatelessWidget {
       case _WorkoutOption.delete:
         return _showDeleteWorkoutDialog(context, workout);
       case _WorkoutOption.repeat:
-        final workouts = Workouts.of(context);
-
-        if (workouts.activeWorkout == null) {
-          return _showStartNewWorkoutDialog(context, workout);
-        } else {
-          return _showCancelActiveWorkoutDialog(context, workout);
-        }
+        if (!Workouts.of(context).hasActiveWorkout) return _showStartNewWorkoutDialog(context, workout);
+        await startWorkoutOverActive(context, () {
+          onStartNewWorkout?.call();
+          return Workouts.of(context).startWorkout(source: .repeat, template: workout.copy());
+        });
       case _WorkoutOption.saveAsTemplate:
         return onSaveAsTemplate?.call(workout);
       case _WorkoutOption.edit:
@@ -345,73 +343,6 @@ class WorkoutItem extends StatelessWidget {
                 await workouts.deleteWorkout(workout.id);
                 onDeleteWorkout?.call(workout);
                 scaffold.showSnackBar(SnackBar(content: Text(deleted)));
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Future<void> _showCancelActiveWorkoutDialog(BuildContext context, Workout workout) {
-    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-    final L(
-      :cancelCurrentWorkoutTitle,
-      :cancelCurrentWorkoutBody,
-      :keepCurrentAccount,
-      :cancelAndStartNewWorkout,
-    ) = L.of(
-      context,
-    );
-    return showBrandedDialog(
-      context,
-      title: Text(
-        cancelCurrentWorkoutTitle,
-        textAlign: TextAlign.center,
-      ),
-      content: Text(
-        cancelCurrentWorkoutBody,
-        textAlign: TextAlign.center,
-      ),
-      icon: Icon(
-        Icons.error_outline_rounded,
-        color: colorScheme.error,
-      ),
-      actions: [
-        Column(
-          spacing: 8,
-          children: [
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              child: Center(
-                child: Text(
-                  keepCurrentAccount,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context, rootNavigator: true).pop();
-              },
-            ),
-            PrimaryButton.wide(
-              backgroundColor: colorScheme.errorContainer,
-              child: Center(
-                child: Text(
-                  cancelAndStartNewWorkout,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              onPressed: () {
-                final workouts = Workouts.of(context);
-
-                workouts.cancelActiveWorkout().then(
-                  (_) {
-                    onStartNewWorkout?.call();
-                    return workouts.startWorkout(source: .repeat, template: workout.copy());
-                  },
-                );
-                Navigator.of(context, rootNavigator: true).pop();
               },
             ),
           ],
