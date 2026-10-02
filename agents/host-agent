@@ -91,6 +91,9 @@ mcp__goland__open_file_in_editor mcp__goland__execute_sql_query \
 mcp__goland__create_database_connection mcp__goland__edit_database_connection"
 
 cd "$REPO"
+# What hooks/guard.sh keys the never-commit rule on. On the host it is the only
+# thing that tells this session from the user's own, which may commit.
+export HEART_AGENT=1
 if [[ -n "$RESUME" ]]; then
   # Same isolation, same prompt rules, the previous context compacted in.
   # The stream is appended so the post-mortem keeps both halves.
