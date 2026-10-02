@@ -276,11 +276,28 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         );
                       },
                     ),
-                    ListTile(
-                      key: AppKeys.whatsNew,
-                      leading: const Icon(Icons.update_rounded),
-                      title: Text(whatsNew),
-                      onTap: onWhatsNew,
+                    Builder(
+                      builder: (context) {
+                        // the dot (#216) while What's new holds unread notes; it
+                        // goes when the page opens
+                        final unread = WhatsNewBadge.watch(context).unread;
+                        return ListTile(
+                          key: AppKeys.whatsNew,
+                          leading: const Icon(Icons.update_rounded),
+                          title: Text(
+                            whatsNew,
+                            semanticsLabel: switch (unread) {
+                              true => L.of(context).whatsNewUnread,
+                              false => null,
+                            },
+                          ),
+                          trailing: switch (unread) {
+                            true => Badge(smallSize: 8, backgroundColor: Theme.of(context).colorScheme.tertiary),
+                            false => null,
+                          },
+                          onTap: onWhatsNew,
+                        );
+                      },
                     ),
                     if (!isAnonymous)
                       ListTile(
