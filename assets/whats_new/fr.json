@@ -1,5 +1,30 @@
 [
   {
+    "version": "1.10.0",
+    "items": [
+      {
+        "id": "apple-watch",
+        "title": "Heart sur Apple Watch",
+        "body": "Notez vos séries au poignet, avec vos chiffres de la dernière fois, le décompte du repos, votre fréquence cardiaque et vos calories. Balayez pour voir toute la séance et corriger une série. Téléphone au vestiaire ? La montre continue d'enregistrer et votre iPhone se met à jour ensuite. Ouvrez Heart sur la montre pour l'activer."
+      },
+      {
+        "id": "muscle-map",
+        "title": "Carte musculaire",
+        "body": "Une carte du corps sur votre profil, colorée selon les séries de chaque groupe musculaire, avec une liste et une vue par semaine. Activez-la dans **Paramètres → Fonctionnalités** et choisissez ce qui s'affiche."
+      },
+      {
+        "id": "record-badges",
+        "title": "Les nouveaux records, d'un coup d'œil",
+        "body": "Le résumé de la séance affiche chaque record personnel en badge, avec la marque battue."
+      },
+      {
+        "id": "features-follow-you",
+        "title": "Vos choix vous suivent",
+        "body": "Activez ou désactivez une fonctionnalité une fois, et vos autres appareils connectés le savent."
+      }
+    ]
+  },
+  {
     "version": "1.9.0",
     "items": [
       {
