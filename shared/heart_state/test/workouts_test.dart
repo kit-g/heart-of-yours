@@ -410,6 +410,21 @@ void main() {
       expect(set.reps, 8);
     });
 
+    test('editSet takes a cardio set\'s distance and duration too (#225)', () async {
+      final run = Exercise(name: 'Muffin Run', category: .cardio, target: .other);
+      await sut.startWorkout(source: .blank, name: 'Run');
+      await sut.startExercise(run);
+      final set = sut.activeWorkout!.first.first;
+
+      await sut.editSet(set, distance: 5, duration: 1500);
+      expect(set.distance, 5);
+      expect(set.duration, 1500);
+
+      await sut.editSet(set, duration: 1450);
+      expect(set.distance, 5, reason: 'what is not given stays');
+      expect(set.duration, 1450);
+    });
+
     test('storeMeasurements delegates to service', () async {
       await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);
