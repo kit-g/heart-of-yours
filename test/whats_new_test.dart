@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/whats_new.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
 class _Bundle extends CachingAssetBundle {
@@ -146,6 +147,76 @@ void main() {
     test('is nothing before the first release or for an unknown version', () {
       expect(current('1.7.9'), isNull);
       expect(current(''), isNull);
+    });
+  });
+
+  group('WhatsNewBadge (#216)', () {
+    late Preferences preferences;
+    late AppInfo info;
+
+    Future<WhatsNewBadge> badge({required String running, Map<String, Object> stored = const {}}) async {
+      SharedPreferences.setMockInitialValues(stored);
+      preferences = Preferences();
+      await preferences.init();
+      info = AppInfo();
+      await info.init(() async => (appName: 'Heart', packageName: 'me.heart-of.ios', version: running, build: '1'));
+      final badge = WhatsNewBadge(preferences: preferences, info: info, releases: Future.value(parseReleases(en)));
+      addTearDown(badge.dispose);
+      await Future<void>.delayed(Duration.zero);
+      return badge;
+    }
+
+    test('a fresh install starts caught up, and records it', () async {
+      final sut = await badge(running: '1.9.0');
+
+      expect(sut.unread, isFalse);
+      expect(preferences.whatsNewRead, {'1.8.0/notes', '1.8.0/calendar', '1.9.0/later'});
+    });
+
+    test('an update that brings notes shows the dot; opening What\'s new clears it', () async {
+      final sut = await badge(
+        running: '1.10.0',
+        stored: {
+          'whatsNewRead': ['1.8.0/notes', '1.8.0/calendar', '1.9.0/later'],
+        },
+      );
+      expect(sut.unread, isTrue);
+
+      sut.markRead();
+      expect(sut.unread, isFalse);
+      expect(preferences.whatsNewRead, contains('1.10.0/next'));
+    });
+
+    test('notes for a version not yet running do not count', () async {
+      final sut = await badge(
+        running: '1.9.0',
+        stored: {
+          'whatsNewRead': ['1.8.0/notes', '1.8.0/calendar', '1.9.0/later'],
+        },
+      );
+      expect(sut.unread, isFalse, reason: '1.10.0 is in the file but not in this build');
+    });
+
+    test('a note added to a version already read still counts', () async {
+      final sut = await badge(
+        running: '1.9.0',
+        stored: {
+          'whatsNewRead': ['1.8.0/notes', '1.9.0/later'],
+        },
+      );
+      expect(sut.unread, isTrue, reason: '1.8.0/calendar was never shown');
+    });
+
+    test('says nothing until the version is known', () async {
+      SharedPreferences.setMockInitialValues({});
+      preferences = Preferences();
+      await preferences.init();
+      final sut = WhatsNewBadge(preferences: preferences, info: AppInfo(), releases: Future.value(parseReleases(en)));
+      addTearDown(sut.dispose);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(sut.unread, isFalse);
+      expect(preferences.whatsNewRead, isNull, reason: 'not recorded as caught up on a guess');
     });
   });
 }

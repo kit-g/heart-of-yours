@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/watch.dart';
+import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
@@ -150,6 +152,14 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
             onError: reportToSentry,
+          ),
+        ),
+        ChangeNotifierProvider<WhatsNewBadge>(
+          create: (context) => WhatsNewBadge(
+            preferences: Preferences.of(context),
+            info: AppInfo.of(context),
+            // the en notes are the list of what exists; a locale only words them
+            releases: loadReleases(rootBundle, const Locale('en'), onError: reportToSentry),
           ),
         ),
         ChangeNotifierProvider<Charts>(

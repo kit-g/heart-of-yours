@@ -79,6 +79,8 @@ class TestAppHarness {
     // Tests that only need a rendered frame can pump a fixed number instead.
     bool settle = true,
     int pumps = 8,
+    // the running build's version, as package info reports it
+    String version = '0.0.0',
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -87,7 +89,7 @@ class TestAppHarness {
     PackageInfo.setMockInitialValues(
       appName: 'heart',
       packageName: 'me.heart.test',
-      version: '0.0.0',
+      version: version,
       buildNumber: '1',
       buildSignature: '',
     );

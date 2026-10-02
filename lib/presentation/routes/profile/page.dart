@@ -50,9 +50,12 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
       :noChartsYet,
       :viewAccountDetails,
       :viewProfilePhoto,
+      :settingsWhatsNewUnread,
     ) = L.of(
       context,
     );
+    // the one quiet dot (#216): What's new holds something this device has not shown
+    final unread = WhatsNewBadge.watch(context).unread;
     final ThemeData(:textTheme, :platform, :colorScheme) = Theme.of(context);
 
     final auth = Auth.watch(context);
@@ -100,9 +103,19 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
         ),
         actions: [
           IconButton(
-            tooltip: settings,
+            tooltip: switch (unread) {
+              true => settingsWhatsNewUnread,
+              false => settings,
+            },
             onPressed: widget.onSettings,
-            icon: const Icon(Icons.settings_rounded),
+            icon: switch (unread) {
+              true => Badge(
+                smallSize: 8,
+                backgroundColor: colorScheme.tertiary,
+                child: const Icon(Icons.settings_rounded),
+              ),
+              false => const Icon(Icons.settings_rounded),
+            },
           ),
           // macos renders things differently
           if (platform == .macOS) const SizedBox(width: 8),
