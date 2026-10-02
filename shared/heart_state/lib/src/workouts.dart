@@ -300,6 +300,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     // the finish.
     final uid = userId;
     if (uid == null) return Future.value();
+    // One at a time (#228). Starting over an active workout used to orphan it:
+    // still unfinished in the mirror, and back as "active" the moment the new
+    // one finished. Callers ask the user and [cancelActiveWorkout] first.
+    assert(!hasActiveWorkout, 'Cancel the active workout before starting another');
+    if (hasActiveWorkout) return Future.value();
     final workout = template ?? Workout(name: name);
     _startedFrom = source;
     _untickedAtPrompt = 0;
