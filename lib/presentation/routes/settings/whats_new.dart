@@ -38,7 +38,12 @@ class _WhatsNewPageState extends State<WhatsNewPage> {
     final locale = Localizations.localeOf(context);
     if (locale != _locale) {
       _locale = locale;
-      _releases = loadReleases(DefaultAssetBundle.of(context), locale, onError: widget.onError);
+      _releases = loadReleases(
+        DefaultAssetBundle.of(context),
+        locale,
+        platform: defaultTargetPlatform,
+        onError: widget.onError,
+      );
     }
   }
 

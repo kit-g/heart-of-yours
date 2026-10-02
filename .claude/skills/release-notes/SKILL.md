@@ -192,7 +192,8 @@ the installed app doesn't have.
   "version": "1.9.0",
   "date": null,
   "items": [
-    { "id": "plate-calculator", "title": "Plate calculator", "body": "Tap a weight to see **which plates** go on each side." }
+    { "id": "plate-calculator", "title": "Plate calculator", "body": "Tap a weight to see **which plates** go on each side." },
+    { "id": "apple-watch", "title": "Heart on Apple Watch", "body": "Log sets from the wrist.", "platforms": ["ios"] }
   ]
 }
 ```
@@ -204,8 +205,10 @@ version as "This version", so a fix-only 1.9.3 still points at 1.9.0.
 
 **Writing the items.** Shorter than the archive — one item per capability from the agreed notes,
 a plain-text `title` and a one- to three-sentence `body`. Same voice as section 4. Unlike the
-store notes, this copy is identical on both platforms, so name both when it matters ("Apple Health
-or Health Connect") and leave out anything that exists on one platform only.
+store notes, this copy is shared by both platforms, so name both when it matters ("Apple Health
+or Health Connect"). A note about something one platform only has — the Apple Watch app — carries
+`"platforms": ["ios"]` (or `["android"]`) in `en`, and that platform's users are the only ones who
+see it, or get a dot for it. Set it in `en` only, like the date; translations follow their `en` note.
 
 - `id` is a stable kebab-case slug, unique within its version. Translations are matched to their
   English original by version + id, and a locale missing an item shows the English one.

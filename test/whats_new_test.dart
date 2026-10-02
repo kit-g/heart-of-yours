@@ -56,7 +56,7 @@ void main() {
       ]),
     });
 
-    final releases = await loadReleases(bundle, const Locale('es'));
+    final releases = await loadReleases(bundle, const Locale('es'), platform: .iOS);
 
     expect(titles(releases), ['Next', 'Later', 'Notas del ejercicio', 'Calendar']);
   });
@@ -69,8 +69,8 @@ void main() {
       ]),
     });
 
-    expect(titles(await loadReleases(bundle, const Locale('es', 'MX'))), contains('Más tarde'));
-    expect(titles(await loadReleases(bundle, const Locale('en', 'CA'))), [
+    expect(titles(await loadReleases(bundle, const Locale('es', 'MX'), platform: .iOS)), contains('Más tarde'));
+    expect(titles(await loadReleases(bundle, const Locale('en', 'CA'), platform: .iOS)), [
       'Next',
       'Later',
       'Exercise notes',
@@ -79,13 +79,13 @@ void main() {
   });
 
   test('versions sort numerically, newest first, whatever order the file has', () async {
-    final releases = await loadReleases(_Bundle({'en.json': en}), const Locale('en'));
+    final releases = await loadReleases(_Bundle({'en.json': en}), const Locale('en'), platform: .iOS);
 
     expect(releases.map((release) => release.version), ['1.10.0', '1.9.0', '1.8.0']);
   });
 
   test('an undated release has no date; a dated one parses', () async {
-    final releases = await loadReleases(_Bundle({'en.json': en}), const Locale('en'));
+    final releases = await loadReleases(_Bundle({'en.json': en}), const Locale('en'), platform: .iOS);
 
     expect(releases.first.date, isNull);
     expect(releases.last.date, DateTime(2026, 9, 13));
@@ -98,6 +98,7 @@ void main() {
     final releases = await loadReleases(
       bundle,
       const Locale('fr'),
+      platform: .iOS,
       onError: (error, {stacktrace}) => errors.add(error),
     );
 
@@ -110,12 +111,64 @@ void main() {
     void onError(dynamic error, {dynamic stacktrace}) => errors.add(error as Object);
 
     expect(
-      await loadReleases(_Bundle({'en.json': '{"version": "1.0.0"}'}), const Locale('en'), onError: onError),
+      await loadReleases(
+        _Bundle({'en.json': '{"version": "1.0.0"}'}),
+        const Locale('en'),
+        platform: .iOS,
+        onError: onError,
+      ),
       isEmpty,
     );
-    expect(await loadReleases(_Bundle({'en.json': ''}), const Locale('en'), onError: onError), isEmpty);
-    expect(await loadReleases(_Bundle({}), const Locale('en'), onError: onError), isEmpty);
+    expect(await loadReleases(_Bundle({'en.json': ''}), const Locale('en'), platform: .iOS, onError: onError), isEmpty);
+    expect(await loadReleases(_Bundle({}), const Locale('en'), platform: .iOS, onError: onError), isEmpty);
     expect(errors, hasLength(2));
+  });
+
+  test('a note for one platform shows only there, translated, and an emptied release goes', () async {
+    final bundle = _Bundle({
+      'en.json': _file([
+        {
+          'version': '1.10.0',
+          'items': [
+            {
+              'id': 'watch',
+              'title': 'Apple Watch',
+              'body': 'On the wrist.',
+              'platforms': ['ios'],
+            },
+            {'id': 'both', 'title': 'Both', 'body': 'Everywhere.'},
+          ],
+        },
+        {
+          'version': '1.9.5',
+          'items': [
+            {
+              'id': 'watch-fix',
+              'title': 'Watch fix',
+              'body': 'Fixed.',
+              'platforms': ['ios'],
+            },
+          ],
+        },
+      ]),
+      'es.json': _file([
+        {
+          'version': '1.10.0',
+          'items': [
+            {'id': 'watch', 'title': 'Apple Watch (es)', 'body': 'En la muñeca.'},
+          ],
+        },
+      ]),
+    });
+
+    expect(titles(await loadReleases(bundle, const Locale('es'), platform: .iOS)), [
+      'Apple Watch (es)',
+      'Both',
+      'Watch fix',
+    ]);
+    final android = await loadReleases(bundle, const Locale('es'), platform: .android);
+    expect(titles(android), ['Both'], reason: 'the translation carries no platforms; en decides');
+    expect(android.map((release) => release.version), ['1.10.0']);
   });
 
   test('an entry that does not parse is dropped, not the file', () {
