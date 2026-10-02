@@ -3824,5 +3824,17 @@
     "description": "Settings, under the Apple Watch switch: where watchOS's own per-app Always On setting is. Use Apple's names for that Settings path in the locale",
     "type": "text",
     "placeholders": {}
+  },
+  "settingsWhatsNewUnread": "Настройки, есть новое в «Что нового»",
+  "@settingsWhatsNewUnread": {
+    "description": "Screen-reader label and tooltip of the Settings button on the profile while What's new holds notes the user has not read; a small dot marks it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewUnread": "Что нового, есть непрочитанное",
+  "@whatsNewUnread": {
+    "description": "Screen-reader label of the What's new row in Settings while it holds notes the user has not read; a small dot marks it",
+    "type": "text",
+    "placeholders": {}
   }
 }
