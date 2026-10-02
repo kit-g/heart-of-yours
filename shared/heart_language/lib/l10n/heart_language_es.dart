@@ -433,6 +433,12 @@ class LEs extends L {
   String get whatsNewEmpty => 'Esta versión de la app no incluye notas de la versión.';
 
   @override
+  String get settingsWhatsNewUnread => 'Ajustes, novedades sin leer';
+
+  @override
+  String get whatsNewUnread => 'Novedades, sin leer';
+
+  @override
   String get congratulations => '¡Felicidades!';
 
   @override

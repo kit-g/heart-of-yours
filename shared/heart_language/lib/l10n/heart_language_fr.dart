@@ -434,6 +434,12 @@ class LFr extends L {
   String get whatsNewEmpty => 'Aucune note de version dans cette version de l’app.';
 
   @override
+  String get settingsWhatsNewUnread => 'Paramètres, nouveautés à lire';
+
+  @override
+  String get whatsNewUnread => 'Nouveautés, non lues';
+
+  @override
   String get congratulations => 'Félicitations !';
 
   @override

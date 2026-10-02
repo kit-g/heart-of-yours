@@ -432,6 +432,12 @@ class LEn extends L {
   String get whatsNewEmpty => 'No release notes in this version of the app.';
 
   @override
+  String get settingsWhatsNewUnread => 'Settings, new in What\'s new';
+
+  @override
+  String get whatsNewUnread => 'What\'s new, unread notes';
+
+  @override
   String get congratulations => 'Congratulations!';
 
   @override
@@ -2528,6 +2534,12 @@ class LEnCa extends LEn {
 
   @override
   String get whatsNewEmpty => 'No release notes in this version of the app.';
+
+  @override
+  String get settingsWhatsNewUnread => 'Settings, new in What\'s new';
+
+  @override
+  String get whatsNewUnread => 'What\'s new, unread notes';
 
   @override
   String get congratulations => 'Congratulations!';
