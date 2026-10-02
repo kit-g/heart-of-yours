@@ -363,6 +363,7 @@ void main() {
 
       preferences.setOption(.muscleMapHeatmap, on: false);
       await tester.pumpTimes(2);
+      expect(preferences.isOn(Feature.muscleMap), isTrue, reason: 'the per-workout figures are still kept (#223)');
       expectNothingOfTheFeature();
     });
 
@@ -385,7 +386,7 @@ void main() {
           .expanded;
       expect(expanded(), isTrue, reason: 'a switch that unfolds says it is expanded');
 
-      for (final value in ['figures', 'breakdown']) {
+      for (final value in ['figures', 'breakdown', 'workout']) {
         await tester.tap(byKey(ValueKey('feature-muscleMap-$value')));
         await tester.pumpTimes();
       }

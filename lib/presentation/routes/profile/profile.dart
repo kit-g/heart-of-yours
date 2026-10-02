@@ -23,6 +23,7 @@ import 'package:heart/presentation/widgets/feedback_button.dart';
 import 'package:heart/presentation/widgets/health/section.dart';
 import 'package:heart/presentation/widgets/heatmap_ink.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/setting_picker.dart';
