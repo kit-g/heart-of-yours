@@ -242,6 +242,13 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
     final l = L.of(context);
     final ThemeData(:textTheme) = Theme.of(context);
     final now = DateTime.now();
+    // the parts the user kept (#213); the section rebuilds this when they change
+    final preferences = Preferences.of(context);
+    final parts = (
+      figures: preferences.isOptionOn(.muscleMapFigures),
+      breakdown: preferences.isOptionOn(.muscleMapBreakdown),
+      heatmap: preferences.isOptionOn(.muscleMapHeatmap),
+    );
 
     return Column(
       key: AppKeys.muscleMapCard,
@@ -255,20 +262,22 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
               Expanded(
                 child: Text(l.muscleMap, style: textTheme.titleLarge, maxLines: 2, overflow: .ellipsis),
               ),
-              // the house control for "pick one of a few", as in Settings
-              ValueListenableBuilder<int>(
-                valueListenable: _days,
-                builder: (_, days, _) {
-                  return SettingSwitcher<int>(
-                    value: days,
-                    onValueChanged: (value) => _days.value = value ?? days,
-                    children: {
-                      7: Text(l.lastSevenDays),
-                      30: Text(l.lastThirtyDays),
-                    },
-                  );
-                },
-              ),
+              // the house control for "pick one of a few", as in Settings —
+              // and only over what it drives: the heatmap keeps its own span
+              if (parts.figures || parts.breakdown)
+                ValueListenableBuilder<int>(
+                  valueListenable: _days,
+                  builder: (_, days, _) {
+                    return SettingSwitcher<int>(
+                      value: days,
+                      onValueChanged: (value) => _days.value = value ?? days,
+                      children: {
+                        7: Text(l.lastSevenDays),
+                        30: Text(l.lastThirtyDays),
+                      },
+                    );
+                  },
+                ),
             ],
           ),
         ),
@@ -279,7 +288,7 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
             return switch (snapshot.data) {
               List<MuscleSets> rows => ValueListenableBuilder<int>(
                 valueListenable: _days,
-                builder: (_, days, _) => _MuscleMapBody(rows: rows, days: days, now: now),
+                builder: (_, days, _) => _MuscleMapBody(rows: rows, days: days, now: now, parts: parts),
               ),
               null => const SizedBox(
                 height: _tileHeaderHeight * 2,
@@ -293,13 +302,19 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
   }
 }
 
+/// Which of the card's three parts the user kept (#213): at least one, or the
+/// feature would be off.
+typedef _Parts = ({bool figures, bool breakdown, bool heatmap});
+
 /// The figures and the list: side by side on the band's own two-tile split, so
 /// they line up with the chart and goals tiles above; stacked below that. The
-/// weekly heatmap runs underneath, across both.
+/// weekly heatmap runs underneath, across both. A part the user left out is
+/// not built, and the rest close up as if it never existed.
 class const _MuscleMapBody({
   required final List<MuscleSets> rows,
   required final int days,
   required final DateTime now,
+  required final _Parts parts,
 }) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -382,53 +397,54 @@ class const _MuscleMapBody({
       ],
     );
 
-    final heatmap = Padding(
-      padding: const .only(top: 8),
-      child: _Heatmap(rows: rows, now: now, rank: rank),
-    );
+    final heatmap = _Heatmap(rows: rows, now: now, rank: rank);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        return switch (tilesShareRow(width)) {
-          true => Column(
-            crossAxisAlignment: .stretch,
-            children: [
-              SizedBox(
-                // the tiles' own height rule, on half the band
-                height: min((width - tileGutter) / 2 * 4 / 5, _maxChartHeight),
-                child: Row(
-                  crossAxisAlignment: .stretch,
-                  spacing: tileGutter,
-                  children: [
-                    Expanded(
-                      child: _Figures(colors: colors, sets: sets),
-                    ),
-                    Expanded(
-                      child: _Panel(
-                        help: listHelp,
-                        child: SingleChildScrollView(child: list),
-                      ),
-                    ),
-                  ],
+        // figures alone take a phone's height rule at any width: a body drawn
+        // across a whole tablet band would be taller than the screen
+        final figuresAlone = SizedBox(
+          height: min(width * 4 / 5, 320),
+          child: _Figures(colors: colors, sets: sets),
+        );
+        final top = switch ((parts.figures, parts.breakdown, tilesShareRow(width))) {
+          (true, true, true) => SizedBox(
+            // the tiles' own height rule, on half the band
+            height: min((width - tileGutter) / 2 * 4 / 5, _maxChartHeight),
+            child: Row(
+              crossAxisAlignment: .stretch,
+              spacing: tileGutter,
+              children: [
+                Expanded(
+                  child: _Figures(colors: colors, sets: sets),
                 ),
-              ),
-              heatmap,
-            ],
+                Expanded(
+                  child: _Panel(
+                    help: listHelp,
+                    child: SingleChildScrollView(child: list),
+                  ),
+                ),
+              ],
+            ),
           ),
-          false => Column(
+          (true, true, false) => Column(
             crossAxisAlignment: .stretch,
             spacing: 8,
             children: [
-              SizedBox(
-                height: min(width * 4 / 5, 320),
-                child: _Figures(colors: colors, sets: sets),
-              ),
+              figuresAlone,
               _Panel(help: listHelp, child: list),
-              heatmap,
             ],
           ),
+          (true, false, _) => figuresAlone,
+          (false, true, _) => _Panel(help: listHelp, child: list),
+          (false, false, _) => null,
         };
+        return Column(
+          crossAxisAlignment: .stretch,
+          spacing: 8,
+          children: [?top, if (parts.heatmap) heatmap],
+        );
       },
     );
   }

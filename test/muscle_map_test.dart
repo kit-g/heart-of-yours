@@ -339,6 +339,69 @@ void main() {
     expect(tester.getSize(find.widgetWithIcon(IconButton, Icons.close_rounded)).height, greaterThanOrEqualTo(48));
   });
 
+  group('options (#213)', () {
+    final figures = find.byType(BodyAtlasView<MuscleInfo>, skipOffstage: false);
+    final breakdown = find.text('Sets per group', skipOffstage: false);
+    final switcher = find.text('7 days', skipOffstage: false);
+
+    testWidgets('each part can be left out, and the card closes up around the rest', (tester) async {
+      final preferences = await pumpProfile(tester, answer: 'on');
+      expect(figures, findsWidgets);
+      expect(breakdown, findsOneWidget);
+      expect(byKey(AppKeys.muscleMapHeatmap), findsOneWidget);
+
+      preferences.setOption(.muscleMapFigures, on: false);
+      await tester.pumpTimes(2);
+      expect(figures, findsNothing);
+      expect(breakdown, findsOneWidget);
+
+      preferences.setOption(.muscleMapBreakdown, on: false);
+      await tester.pumpTimes(2);
+      expect(breakdown, findsNothing);
+      expect(switcher, findsNothing, reason: 'the window switcher drives only the figures and the list');
+      expect(byKey(AppKeys.muscleMapHeatmap), findsOneWidget);
+
+      preferences.setOption(.muscleMapHeatmap, on: false);
+      await tester.pumpTimes(2);
+      expectNothingOfTheFeature();
+    });
+
+    testWidgets('they unfold under the switch while it is on, and the last one turns it off', (tester) async {
+      final preferences = await pumpProfile(tester, answer: 'off');
+      await tester.tap(find.tooltip('Settings'));
+      await tester.pumpTimes();
+
+      final toggle = byKey(const ValueKey('feature-muscleMap'));
+      final option = byKey(const ValueKey('feature-muscleMap-heatmap'));
+      await tester.ensureVisible(toggle);
+      expect(option, findsNothing, reason: 'folded away while off');
+
+      await tester.tap(toggle);
+      await tester.pumpTimes(2);
+      expect(option, findsOneWidget);
+      bool? expanded() => tester
+          .widget<Semantics>(find.ancestor(of: toggle, matching: find.byType(Semantics)).first)
+          .properties
+          .expanded;
+      expect(expanded(), isTrue, reason: 'a switch that unfolds says it is expanded');
+
+      for (final value in ['figures', 'breakdown']) {
+        await tester.tap(byKey(ValueKey('feature-muscleMap-$value')));
+        await tester.pumpTimes();
+      }
+      expect(preferences.isOn(Feature.muscleMap), isTrue, reason: 'one part is still kept');
+
+      await tester.tap(option);
+      await tester.pumpTimes(2);
+      expect(preferences.isOn(Feature.muscleMap), isFalse);
+      expect(option, findsNothing);
+
+      await tester.tap(toggle);
+      await tester.pumpTimes(2);
+      expect(Feature.muscleMap.options.every(preferences.isOptionOn), isTrue, reason: 'on is on in full');
+    });
+  });
+
   testWidgets('Settings › Features flips it, and says it is on', (tester) async {
     final preferences = await pumpProfile(tester, answer: 'off');
 

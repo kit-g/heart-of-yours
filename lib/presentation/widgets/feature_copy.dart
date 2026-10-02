@@ -25,4 +25,25 @@ extension FeatureCopy on Feature {
       .watchApp => Icons.watch_rounded,
     };
   }
+
+  /// Lines of text under the feature's switch while it is on (#213): what is
+  /// worth knowing about it, and that a control would not say.
+  List<String> notes(L l) {
+    return switch (this) {
+      .muscleMap => const [],
+      // where Apple keeps Always On: Heart has no switch of its own for it
+      .watchApp => [l.watchAppAwayNote, l.watchAlwaysOnNote],
+    };
+  }
+}
+
+extension FeatureOptionCopy on FeatureOption {
+  String title(L l) {
+    return switch (this) {
+      .muscleMapFigures => l.muscleMapOptionFigures,
+      // the headings the widgets themselves carry
+      .muscleMapBreakdown => l.muscleMapBreakdown,
+      .muscleMapHeatmap => l.muscleMapWeekly,
+    };
+  }
 }
