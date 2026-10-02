@@ -13,12 +13,17 @@ class const _MuscleMapSection({
 }) extends StatelessWidget {
   static const _feature = Feature.muscleMap;
 
+  /// The parts that live on the profile. The feature can be on with none of
+  /// them — only the per-workout figures (#223) — and then the profile is as
+  /// if it were off.
+  static const List<FeatureOption> _parts = [.muscleMapFigures, .muscleMapBreakdown, .muscleMapHeatmap];
+
   @override
   Widget build(BuildContext context) {
     final preferences = Preferences.watch(context);
 
     final Widget? child = switch (preferences) {
-      _ when preferences.isOn(_feature) => _MuscleMapCard(workouts: workouts),
+      _ when _parts.any(preferences.isOptionOn) => _MuscleMapCard(workouts: workouts),
       _ when preferences.owesDeclineNotice(_feature) => _DeclinedNotice(
         onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
       ),
@@ -342,9 +347,7 @@ class const _MuscleMapBody({
     final listed = month.keys.where((group) => (month[group] ?? 0) > 0).toList()..sort(rank);
 
     final most = sets.values.fold(0.0, max);
-    // Shaded by share of the busiest group, with a floor so one set still
-    // shows. The accent the exercise page uses for "primary", at strengths.
-    Color shade(double count) => colorScheme.tertiary.withValues(alpha: .2 + .8 * count / most);
+    Color shade(double count) => muscleShade(colorScheme, count, most);
     final colors = {
       for (final muscle in MuscleCatalog.all)
         if (sets[muscle.group] case double count when count > 0) muscle: shade(count),
@@ -390,7 +393,7 @@ class const _MuscleMapBody({
       children: [
         Padding(
           // clear of the corner's help button
-          padding: const .only(right: _Help.size - 12, bottom: 4),
+          padding: const .only(right: PanelHelp.size - 12, bottom: 4),
           child: Text(l.muscleMapBreakdown, style: textTheme.titleSmall),
         ),
         rowsOrEmpty,
@@ -406,7 +409,7 @@ class const _MuscleMapBody({
         // across a whole tablet band would be taller than the screen
         final figuresAlone = SizedBox(
           height: min(width * 4 / 5, 320),
-          child: _Figures(colors: colors, sets: sets),
+          child: MuscleFigures(help: l.muscleMapFigureHelp, colors: colors, sets: sets),
         );
         final top = switch ((parts.figures, parts.breakdown, tilesShareRow(width))) {
           (true, true, true) => SizedBox(
@@ -417,10 +420,10 @@ class const _MuscleMapBody({
               spacing: tileGutter,
               children: [
                 Expanded(
-                  child: _Figures(colors: colors, sets: sets),
+                  child: MuscleFigures(help: l.muscleMapFigureHelp, colors: colors, sets: sets),
                 ),
                 Expanded(
-                  child: _Panel(
+                  child: MusclePanel(
                     help: listHelp,
                     child: SingleChildScrollView(child: list),
                   ),
@@ -433,11 +436,11 @@ class const _MuscleMapBody({
             spacing: 8,
             children: [
               figuresAlone,
-              _Panel(help: listHelp, child: list),
+              MusclePanel(help: listHelp, child: list),
             ],
           ),
           (true, false, _) => figuresAlone,
-          (false, true, _) => _Panel(help: listHelp, child: list),
+          (false, true, _) => MusclePanel(help: listHelp, child: list),
           (false, false, _) => null,
         };
         return Column(
@@ -527,14 +530,14 @@ class _HeatmapState extends State<_Heatmap> {
           key: AppKeys.muscleMapHeatmap,
           crossAxisAlignment: .stretch,
           children: [
-            _Panel(
+            MusclePanel(
               help: l.muscleMapHeatmapHelp,
               child: Column(
                 crossAxisAlignment: .stretch,
                 children: [
                   Padding(
                     // clear of the corner's help button
-                    padding: const .only(right: _Help.size - 12, bottom: 8),
+                    padding: const .only(right: PanelHelp.size - 12, bottom: 8),
                     child: _Swap(
                       child: Text(
                         switch (range) {
@@ -637,7 +640,7 @@ class _HeatmapState extends State<_Heatmap> {
                 .quarter => l.muscleMapWeekOf(dates.format(buckets[column])),
                 .year => DateFormat.yMMM(l.localeName).format(buckets[column]),
               },
-              _setsOf(l, group, count(group, buckets[column])),
+              setsOfGroup(l, group, count(group, buckets[column])),
             ),
           _ => null,
         };
@@ -831,176 +834,6 @@ class const _HeatmapRow({
   }
 }
 
-/// Front and back, shaded. One image to assistive tech: the list carries the
-/// numbers in words.
-///
-/// Tapping a muscle names its group and that group's sets for the window on
-/// show, in a label over the figures that fades after a few seconds — a
-/// shortcut for anyone reading the body rather than the list, not the only
-/// way to the number.
-class _Figures extends StatefulWidget {
-  final Map<MuscleInfo, Color> colors;
-
-  /// The window's sets per group — what a tap reports.
-  final Map<MuscleGroup, double> sets;
-
-  const new({required this.colors, required this.sets});
-
-  @override
-  State<_Figures> createState() => _FiguresState();
-}
-
-class _FiguresState extends State<_Figures> {
-  /// The group last tapped, while its label is up.
-  final _tapped = ValueNotifier<MuscleGroup?>(null);
-  Timer? _fade;
-
-  static const _shown = Duration(seconds: 3);
-
-  @override
-  void dispose() {
-    _fade?.cancel();
-    _tapped.dispose();
-    super.dispose();
-  }
-
-  void _onTap(MuscleInfo muscle) {
-    _fade?.cancel();
-    _tapped.value = muscle.group;
-    _fade = Timer(_shown, () => _tapped.value = null);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = L.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final numbers = NumberFormat('#,##0.#', l.localeName);
-
-    return _Panel(
-      help: l.muscleMapFigureHelp,
-      child: Stack(
-        children: [
-          // one image to assistive tech; the help beside it stays its own control
-          Semantics(
-            image: true,
-            label: l.muscleMapFigure,
-            excludeSemantics: true,
-            child: Row(
-              spacing: 8,
-              children: [
-                for (final view in [AtlasAsset.musclesFront, AtlasAsset.musclesBack])
-                  Expanded(
-                    child: BodyAtlasView<MuscleInfo>(
-                      view: view,
-                      resolver: const MuscleResolver(),
-                      colorMapping: widget.colors,
-                      onTapElement: _onTap,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: IgnorePointer(
-              child: ValueListenableBuilder<MuscleGroup?>(
-                valueListenable: _tapped,
-                builder: (_, group, _) {
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: switch (group) {
-                      MuscleGroup group => Center(
-                        key: ValueKey(group),
-                        child: Container(
-                          key: AppKeys.muscleMapFigureTip,
-                          padding: const .symmetric(horizontal: 10, vertical: 6),
-                          // the tooltip's own look: this is one, pinned
-                          decoration: BoxDecoration(
-                            color: colorScheme.inverseSurface,
-                            borderRadius: const .all(.circular(6)),
-                          ),
-                          child: Text(
-                            switch (widget.sets[group] ?? 0) {
-                              double sets when sets % 1 == 0 => l.muscleMapMuscleSets(group.label(l), sets.toInt()),
-                              double sets => l.muscleMapMuscleSetsFractional(group.label(l), numbers.format(sets)),
-                            },
-                            style: textTheme.bodySmall?.copyWith(color: colorScheme.onInverseSurface),
-                          ),
-                        ),
-                      ),
-                      null => const SizedBox.shrink(),
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The quiet inset the band's tiles draw their content on.
-class const _Panel({
-  required final Widget child,
-
-  /// What the box shows, behind a "?" in its top-right corner.
-  final String? help,
-}) extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final box = Container(
-      decoration: BoxDecoration(
-        borderRadius: const .all(.circular(12)),
-        color: Theme.of(context).colorScheme.surfaceContainer,
-      ),
-      padding: const .all(12),
-      child: child,
-    );
-
-    return switch (help) {
-      String help => Stack(
-        children: [
-          box,
-          Positioned(top: 0, right: 0, child: _Help(message: help)),
-        ],
-      ),
-      null => box,
-    };
-  }
-}
-
-/// A "?" that explains the box it sits in. Tap, not long-press: a help mark
-/// nobody knows to hold down explains nothing. The whole 48pt square answers
-/// the tap, not only the 18pt glyph.
-class const _Help({
-  required final String message,
-}) extends StatelessWidget {
-  static const size = 48.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Tip(
-      message: message,
-      showDuration: const Duration(seconds: 10),
-      child: SizedBox.square(
-        dimension: size,
-        child: ColoredBox(
-          color: Colors.transparent,
-          child: Icon(
-            Icons.help_outline_rounded,
-            size: 18,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// One group: its name, its sets, and a bar in the shade the map paints it —
 /// the legend and the data in one row. The number and the bar both animate, so
 /// flipping the window reads as the same rows growing and shrinking.
@@ -1066,71 +899,9 @@ class const _GroupRow({
   }
 }
 
-extension on MuscleGroup {
-  String label(L l) {
-    return switch (this) {
-      .legs => l.targetLegs,
-      .adductors => l.muscleGroupAdductors,
-      .hamstrings => l.muscleGroupHamstrings,
-      .glutes => l.muscleGroupGlutes,
-      .arms => l.targetArms,
-      .neck => l.muscleGroupNeck,
-      .back => l.targetBack,
-      .core => l.targetCore,
-      .shoulders => l.targetShoulders,
-      .chest => l.targetChest,
-    };
-  }
-}
-
 /// Small text on a panel, in full ink. The theme's small style is muted, which
 /// on the panel fill measured 4.05–4.44:1 in dark mode across the presets —
 /// under the 4.5 twelve-point text needs.
 TextStyle? _panelSmall(TextTheme textTheme, ColorScheme colorScheme) {
   return textTheme.bodySmall?.copyWith(color: colorScheme.onSurface);
-}
-
-/// The card's tooltips, all of them opened by a tap: opaque and inset from the
-/// screen's edges. Flutter's default is a translucent grey band running edge
-/// to edge, which over the list below it left both unreadable.
-class const _Tip({
-  required final String message,
-  required final Widget child,
-  final Duration? showDuration,
-}) extends StatelessWidget {
-  static BoxDecoration decoration(ColorScheme colorScheme) {
-    return BoxDecoration(
-      color: colorScheme.inverseSurface,
-      borderRadius: const .all(.circular(8)),
-    );
-  }
-
-  static TextStyle? textStyle(TextTheme textTheme, ColorScheme colorScheme) {
-    return textTheme.bodySmall?.copyWith(color: colorScheme.onInverseSurface);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    return Tooltip(
-      message: message,
-      triggerMode: .tap,
-      showDuration: showDuration,
-      margin: const .symmetric(horizontal: 16),
-      padding: const .symmetric(horizontal: 12, vertical: 10),
-      constraints: const BoxConstraints(maxWidth: readableWidth),
-      decoration: decoration(colorScheme),
-      textStyle: textStyle(textTheme, colorScheme),
-      child: child,
-    );
-  }
-}
-
-/// "Chest: 4 sets" — a group and its count, halves and all. Whole counts take
-/// the plural forms; a half cannot, so it has its own phrasing.
-String _setsOf(L l, MuscleGroup group, double sets) {
-  return switch (sets % 1 == 0) {
-    true => l.muscleMapMuscleSets(group.label(l), sets.toInt()),
-    false => l.muscleMapMuscleSetsFractional(group.label(l), NumberFormat('#,##0.#', l.localeName).format(sets)),
-  };
 }

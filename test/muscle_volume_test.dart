@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/muscle_volume.dart';
@@ -136,6 +138,50 @@ void main() {
       expect(monthly.keys, months);
       expect(monthly[DateTime(2026, 8)]?.sets, {MuscleGroup.chest: 3});
       expect(monthly[DateTime(2026, 9)]?.sets, {MuscleGroup.chest: 4});
+    });
+  });
+
+  group('one workout (#223)', () {
+    MuscleTagging tags(String json) => MuscleTagging.fromJson(jsonDecode(json));
+
+    test('counts completed sets only, and skips an exercise with none done', () {
+      final bench = Exercise(
+        name: 'Bench Press',
+        category: .barbell,
+        target: .chest,
+        tags: tags('{"primary": {"groups": ["chest"]}, "secondary": {"groups": ["arms"]}}'),
+      );
+      final squat = Exercise(
+        name: 'Squat',
+        category: .barbell,
+        target: .legs,
+        tags: tags('{"primary": {"groups": ["legs"]}}'),
+      );
+      final workout = Workout(name: 'Monday');
+      workout.add(bench)
+        ..first.isCompleted = true
+        ..add(ExerciseSet(bench, weight: 60, reps: 5)..isCompleted = true)
+        ..add(ExerciseSet(bench, weight: 60, reps: 5));
+      workout.add(squat);
+
+      final rows = workoutMuscleSets(workout, lookup: (_) => null).toList();
+      expect(rows.map((row) => row.sets), [2]);
+      expect(muscleVolume(rows).sets, {MuscleGroup.chest: 2, MuscleGroup.arms: 1});
+    });
+
+    test("takes the library's tagging over the workout's own copy", () {
+      final untagged = Exercise(name: 'Row', category: .barbell, target: .back);
+      final tagged = Exercise(
+        name: 'Row',
+        category: .barbell,
+        target: .back,
+        tags: tags('{"primary": {"groups": ["back"]}}'),
+      );
+      final workout = Workout(name: 'Tuesday');
+      workout.add(untagged).first.isCompleted = true;
+
+      expect(muscleVolume(workoutMuscleSets(workout, lookup: (_) => null)).unmapped, 1);
+      expect(muscleVolume(workoutMuscleSets(workout, lookup: (_) => tagged)).sets, {MuscleGroup.back: 1});
     });
   });
 }

@@ -60,6 +60,8 @@ abstract final class AppKeys {
   static const muscleMapCard = ValueKey('muscleMapCard');
   static const muscleMapHeatmap = ValueKey('muscleMapHeatmap');
   static const muscleMapFigureTip = ValueKey('muscleMapFigureTip');
+  static const workoutMuscleMap = ValueKey('workoutMuscleMap');
+  static const musclesWorkedButton = ValueKey('musclesWorkedButton');
   static const muscleMapCellCaption = ValueKey('muscleMapCellCaption');
 
   /// The no-account dialog's way to the login page.

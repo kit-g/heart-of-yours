@@ -53,6 +53,9 @@ class WorkoutDetail extends StatefulWidget {
   final Widget? appBar;
   final ScrollController? controller;
   final List<Widget>? slivers;
+
+  /// After everything else, below the add-exercises button.
+  final List<Widget>? trailingSlivers;
   final void Function(WorkoutExercise) onDragExercise;
   final void Function(WorkoutExercise) onAddSet;
   final Future<void> Function(WorkoutExercise, String?)? onNoteChanged;
@@ -75,6 +78,7 @@ class WorkoutDetail extends StatefulWidget {
     this.appBar,
     this.controller,
     this.slivers,
+    this.trailingSlivers,
     required this.onDragExercise,
     required this.onAddSet,
     this.onNoteChanged,
@@ -240,6 +244,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
             },
           ),
         ),
+        ...?widget.trailingSlivers,
       ],
     );
   }

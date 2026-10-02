@@ -6,7 +6,9 @@ import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
+import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/logo.dart';
+import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -16,6 +18,7 @@ import 'package:material_ui/material_ui.dart';
 part 'confetti.dart';
 part 'counter.dart';
 part 'heart.dart';
+part 'muscles.dart';
 part 'achievements.dart';
 part 'records.dart';
 
@@ -138,6 +141,8 @@ class WorkoutDone extends StatelessWidget {
                             onPressed: onQuit,
                             child: Text(okBang),
                           ),
+                          if (workout case Workout workout) _MusclesWorked(workout: workout),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),

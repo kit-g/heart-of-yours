@@ -182,6 +182,15 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                     ),
                   ),
                 ],
+                // what the session worked, as a summary under it (#223)
+                trailingSlivers: [
+                  SliverToBoxAdapter(
+                    child: WorkoutMuscleMap(
+                      workout: workout,
+                      padding: const .fromLTRB(16, 16, 16, 32),
+                    ),
+                  ),
+                ],
                 controller: Scrolls.of(context).editWorkoutScrollController,
                 onDragExercise: _notifier.append,
                 onSwapExercise: _notifier.swap,
