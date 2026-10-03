@@ -2166,6 +2166,46 @@ class LEn extends L {
   String aboutSetType(String setType) {
     return 'About $setType';
   }
+
+  @override
+  String get rpe => 'RPE';
+
+  @override
+  String get rpeSubtitle => 'Rate how hard each set was, from the number pad';
+
+  @override
+  String get rpeHint => 'How many more reps you had left. Tap a number to rate the set.';
+
+  @override
+  String get aboutRpe => 'About RPE';
+
+  @override
+  String get rpeScale10 => '10: not one more';
+
+  @override
+  String get rpeScale9 => '9: one more';
+
+  @override
+  String get rpeScale8 => '8: two more';
+
+  @override
+  String get rpeScale7 => '7: three more';
+
+  @override
+  String get rpeScale6 => '6: four or more';
+
+  @override
+  String get closeRpe => 'Back to the keyboard';
+
+  @override
+  String rpeBadge(String value) {
+    return '@$value';
+  }
+
+  @override
+  String rpeValue(String value) {
+    return 'RPE $value';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4328,5 +4368,45 @@ class LEnCa extends LEn {
   @override
   String aboutSetType(String setType) {
     return 'About $setType';
+  }
+
+  @override
+  String get rpe => 'RPE';
+
+  @override
+  String get rpeSubtitle => 'Rate how hard each set was, from the number pad';
+
+  @override
+  String get rpeHint => 'How many more reps you had left. Tap a number to rate the set.';
+
+  @override
+  String get aboutRpe => 'About RPE';
+
+  @override
+  String get rpeScale10 => '10: not one more';
+
+  @override
+  String get rpeScale9 => '9: one more';
+
+  @override
+  String get rpeScale8 => '8: two more';
+
+  @override
+  String get rpeScale7 => '7: three more';
+
+  @override
+  String get rpeScale6 => '6: four or more';
+
+  @override
+  String get closeRpe => 'Back to the keyboard';
+
+  @override
+  String rpeBadge(String value) {
+    return '@$value';
+  }
+
+  @override
+  String rpeValue(String value) {
+    return 'RPE $value';
   }
 }

@@ -3946,5 +3946,85 @@
         "type": "String"
       }
     }
+  },
+  "rpe": "RPE",
+  "@rpe": {
+    "description": "Short name of rate of perceived exertion, how hard a set was. On the key over the number pad and in Settings › Features. Keep the abbreviation the language's lifters use",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeSubtitle": "Notez la difficulté de chaque série depuis le pavé numérique",
+  "@rpeSubtitle": {
+    "description": "Subtitle under the RPE switch in Settings › Features",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeHint": "Combien de répétitions il vous restait. Touchez un chiffre pour noter la série.",
+  "@rpeHint": {
+    "description": "One line over the RPE picker, which replaces the number pad: what the scale means and how to use it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "aboutRpe": "À propos du RPE",
+  "@aboutRpe": {
+    "description": "Tooltip on the help button in the RPE picker, which unfolds the scale",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeScale10": "10 : plus aucune",
+  "@rpeScale10": {
+    "description": "RPE scale, one line: at 10 the lifter could not have done another rep",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeScale9": "9 : encore une",
+  "@rpeScale9": {
+    "description": "RPE scale, one line: at 9 one more rep was left",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeScale8": "8 : encore deux",
+  "@rpeScale8": {
+    "description": "RPE scale, one line: at 8 two more reps were left",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeScale7": "7 : encore trois",
+  "@rpeScale7": {
+    "description": "RPE scale, one line: at 7 three more reps were left",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeScale6": "6 : quatre ou plus",
+  "@rpeScale6": {
+    "description": "RPE scale, one line: at 6 four or more reps were left",
+    "type": "text",
+    "placeholders": {}
+  },
+  "closeRpe": "Revenir au clavier",
+  "@closeRpe": {
+    "description": "Tooltip on the button that closes the RPE picker",
+    "type": "text",
+    "placeholders": {}
+  },
+  "rpeBadge": "@{value}",
+  "@rpeBadge": {
+    "description": "Tiny badge in a set's last value cell showing its RPE, e.g. '@8'. Keep the @ unless the language marks it differently",
+    "type": "text",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "rpeValue": "RPE {value}",
+  "@rpeValue": {
+    "description": "An RPE with its value, e.g. 'RPE 8.5': on the RPE key once the set is rated, and read by screen readers",
+    "type": "text",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   }
 }
