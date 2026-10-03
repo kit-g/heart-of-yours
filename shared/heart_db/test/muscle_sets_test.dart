@@ -51,12 +51,13 @@ void main() {
   var sequence = 0;
 
   /// A workout with [completed] ticked sets and [skipped] unticked ones of
-  /// [exercise].
+  /// [exercise], the first [warmups] of the ticked ones warm-ups.
   Future<void> seed({
     required String exercise,
     required DateTime start,
     int completed = 1,
     int skipped = 0,
+    int warmups = 0,
     bool finished = true,
     String user = userId,
   }) async {
@@ -82,6 +83,10 @@ void main() {
         'exercise_id': '$workout-e',
         'completed': done,
         'reps': 5,
+        'set_type': switch (index < warmups) {
+          true => 'warmup',
+          false => null,
+        },
       });
     }
   }
@@ -98,6 +103,15 @@ void main() {
     final (:muscles, start: _, sets: _) = rows.first;
     expect(muscles.primary.ids, ['pectoralis_major_l', 'pectoralis_major_r']);
     expect(muscles.secondary?.groups, ['arms']);
+  });
+
+  test('leaves out warm-ups, and counts drop and failure sets', () async {
+    await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 2, 10), completed: 4, warmups: 2);
+    await db.update('sets', {'set_type': 'drop'}, where: 'id = ?', whereArgs: ['w${sequence - 1}-s3']);
+
+    final [(:sets, muscles: _, start: _)] = await local.getMuscleSets(from, to, userId: userId);
+
+    expect(sets, 2);
   });
 
   test('an untagged custom exercise comes back with empty tagging, not dropped', () async {

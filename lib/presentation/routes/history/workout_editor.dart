@@ -112,7 +112,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                               spacing: 6,
                               children: [
                                 Icon(_workoutOptionIcon(option)),
-                                Text(_workoutOptionCopy(l, option)),
+                                Text(_workoutOptionCopy(l, option, workout)),
                               ],
                             ),
                           );
@@ -181,6 +181,10 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                       onTap: () => _openTimesDialog(context, workout),
                     ),
                   ),
+                  if (workout.note case String note)
+                    SliverToBoxAdapter(
+                      child: WorkoutNote(note: note, onChanged: _setNote),
+                    ),
                 ],
                 // what the session worked, as a summary under it (#223)
                 trailingSlivers: [
@@ -377,10 +381,14 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     };
   }
 
-  String _workoutOptionCopy(L l, _WorkoutEditOption option) {
+  String _workoutOptionCopy(L l, _WorkoutEditOption option, Workout workout) {
     return switch (option) {
       .editImage => l.addPhoto,
       .editName => l.editWorkoutName,
+      .editNote => switch (workout.note) {
+        String _ => l.editWorkoutNote,
+        null => l.addWorkoutNote,
+      },
       .editTimes => l.editWorkoutTimes,
     };
   }
@@ -389,6 +397,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return switch (option) {
       .editImage => Icons.photo_camera,
       .editName => Icons.edit_rounded,
+      .editNote => Icons.edit_note_rounded,
       .editTimes => Icons.schedule_rounded,
     };
   }
@@ -432,9 +441,13 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
     return switch (option) {
       .editImage => addPhoto,
       .editName => () => _focusNode.requestFocus(),
+      .editNote => () => editWorkoutNote(context, workout.note, _setNote),
       .editTimes => () => _openTimesDialog(context, workout),
     };
   }
+
+  /// Goes out with the rest of the edit on Save, like the name.
+  Future<void> _setNote(String? note) async => _notifier.note = note;
 
   /// Opens the "Adjust Start/End Time" dialog — from the menu item or the
   /// linkified date/duration header. The dialog works in local time; we convert
@@ -545,6 +558,11 @@ class _WorkoutNotifier with ChangeNotifier {
     notifyListeners();
   }
 
+  set note(String? value) {
+    workout.note = value;
+    notifyListeners();
+  }
+
   /// Reflects times that were just persisted via PATCH back onto the local copy.
   /// Notifies without flipping [hasChanged] — the change is already saved, so it
   /// must not arm the "discard changes?" guard or require another Save.
@@ -571,7 +589,7 @@ class _WorkoutNotifier with ChangeNotifier {
   }
 }
 
-enum _WorkoutEditOption { editImage, editName, editTimes }
+enum _WorkoutEditOption { editImage, editName, editNote, editTimes }
 
 /// Linkified date + duration under the workout title. Tapping anywhere opens the
 /// "Adjust Start/End Time" dialog. Mirrors the history list-item header, but the

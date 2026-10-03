@@ -222,9 +222,11 @@ void main() {
   group('from the wrist (#183)', () {
     late Workout workout;
 
-    Future<void> running(WidgetTester tester) async {
+    /// [prepare] shapes the workout before the phone first reads it.
+    Future<void> running(WidgetTester tester, {void Function(Workout)? prepare}) async {
       preferences.setFeature(.watchApp, on: true);
       workout = push();
+      prepare?.call(workout);
       when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
       await pump(tester);
       await workouts.init();
@@ -328,6 +330,16 @@ void main() {
       expect(first.next, sent.workout.next, reason: 'the same line the lock screen shows for it');
       expect(sent.controls?.restLabel, isNotEmpty);
       expect(sent.controls?.idle, 'Start a workout on your iPhone');
+    });
+
+    testWidgets('a warm-up reads as one on the watch, and only plain sets are numbered', (tester) async {
+      await running(tester, prepare: (workout) => workout.first.first.setType = .warmup);
+
+      final sent = link.sent.last as WatchWorkout;
+      expect(sent.set?.position, 'Warm up', reason: 'the set up next is the warm-up');
+      final [first, second] = sent.exercises.single.sets;
+      expect((first.mark, first.type, first.position), ('W', 'Warm up', 'Warm up'));
+      expect((second.mark, second.type, second.position), ('1', null, 'Set 1 of 1'));
     });
 
     testWidgets('a tick that arrives late starts only what is left of its rest', (tester) async {

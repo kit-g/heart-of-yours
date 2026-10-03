@@ -134,6 +134,16 @@ class WorkoutItem extends StatelessWidget {
                 L.of(context).fullDate(workout.start),
                 style: textTheme.bodySmall,
               ),
+              if (workout.note case String note)
+                Padding(
+                  padding: const .only(top: 6),
+                  child: Text(
+                    note,
+                    style: textTheme.bodyMedium,
+                    maxLines: 2,
+                    overflow: .ellipsis,
+                  ),
+                ),
               const SizedBox(height: 14),
               Row(
                 children: [

@@ -14,7 +14,8 @@
       {
         "id": "muscle-map",
         "title": "Muscle map",
-        "body": "A body map on your profile, shaded by how many sets each muscle group got, with a list and a week-by-week view. Turn it on in **Settings → Features** and choose which parts to show."
+        "body": "A body map on your profile, shaded by how many sets each muscle group got, with a list and a week-by-week view. You choose which parts it shows.",
+        "feature": "muscleMap"
       },
       {
         "id": "record-badges",

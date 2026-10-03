@@ -156,7 +156,13 @@ class _ExerciseNoteState extends State<_ExerciseNote> {
 class _NoteEditor extends StatefulWidget {
   final String? initial;
 
-  const new({this.initial});
+  /// An exercise's by default; a workout's note holds more (#235).
+  final int limit;
+
+  /// The text field's, for a screen reader; the exercise note's by default.
+  final String? label;
+
+  const new({this.initial, this.limit = _noteLimit, this.label});
 
   @override
   State<_NoteEditor> createState() => _NoteEditorState();
@@ -182,19 +188,19 @@ class _NoteEditorState extends State<_NoteEditor> {
         spacing: 16,
         children: [
           Semantics(
-            label: l.exerciseNote,
+            label: widget.label ?? l.exerciseNote,
             textField: true,
             child: TextFormField(
               controller: _controller,
               autofocus: true,
               minLines: 2,
               maxLines: 5,
-              maxLength: _noteLimit,
+              maxLength: widget.limit,
               maxLengthEnforcement: .enforced,
               textCapitalization: .sentences,
               // Input enforcement does not shorten an existing synced note.
-              validator: (text) => switch ((text ?? '').trim().length > _noteLimit) {
-                true => l.exerciseNoteLimit(_noteLimit),
+              validator: (text) => switch ((text ?? '').trim().length > widget.limit) {
+                true => l.exerciseNoteLimit(widget.limit),
                 false => null,
               },
             ),

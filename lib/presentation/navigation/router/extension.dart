@@ -59,6 +59,16 @@ extension on BuildContext {
     return goNamed(_featuresName);
   }
 
+  /// Opens Features at [feature] over What's new (#239): pushed, so back
+  /// returns to the note that sent the user there.
+  void pushFeature(Feature feature) {
+    pushNamed(
+      _featuresName,
+      queryParameters: {_featureQuery: feature.value},
+      extra: FeatureLinkSource.whatsNew,
+    );
+  }
+
   void goToAvatar() {
     return goNamed(_avatarName);
   }

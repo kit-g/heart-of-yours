@@ -7,6 +7,7 @@
 // - en.json is the list of what exists; every other locale is a subset of it
 // - only en carries dates, and only the release being cut may be undated
 // - no release is newer than the version in pubspec.yaml
+// - a note may name the opt-in feature it is about, in en only
 // - bodies are markdown limited to paragraphs, emphasis, lists and links;
 //   links are app routes, and a translation keeps its original's links
 // - files are formatted the way scripts/whats_new.dart writes them
@@ -15,6 +16,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/whats_new.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:markdown/markdown.dart' as md;
 
 const _allowedTags = {'p', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'br'};
@@ -105,12 +107,20 @@ void main() {
           final ids = items.map((item) => item['id']).toList();
           expect(ids.toSet(), hasLength(ids.length), reason: '${release['version']}');
           for (final item in items) {
-            // platforms are en's, like dates; a translation follows its en note
+            // platforms and feature are en's, like dates; a translation follows
+            // its en note
             expect(
-              item.keys.toSet().difference({'platforms'}),
+              item.keys.toSet().difference({'platforms', 'feature'}),
               {'id', 'title', 'body'},
               reason: '$item',
             );
+            if (item['feature'] case final feature?) {
+              expect(locale, 'en', reason: 'feature is set in en only: $item');
+              expect(Feature.values.map((feature) => feature.value), contains(feature), reason: '$item');
+              // its yes is opening Heart on the watch, and its row exists only
+              // with one paired: a button to it would be dead on most phones
+              expect(feature, isNot(Feature.watchApp.value), reason: '$item');
+            }
             if (item['platforms'] case final platforms?) {
               expect(locale, 'en', reason: 'platforms are set in en only: $item');
               expect(platforms, isA<List>().having((list) => list, 'platforms', isNotEmpty), reason: '$item');

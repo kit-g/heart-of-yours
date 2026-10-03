@@ -171,6 +171,34 @@ void main() {
     expect(android.map((release) => release.version), ['1.10.0']);
   });
 
+  test('a note names its feature in en, a translation keeps it, and an unknown one reads as none', () async {
+    final bundle = _Bundle({
+      'en.json': _file([
+        {
+          'version': '1.10.0',
+          'items': [
+            {'id': 'map', 'title': 'Muscle map', 'body': 'On the profile.', 'feature': 'muscleMap'},
+            {'id': 'future', 'title': 'Later', 'body': 'Not yet.', 'feature': 'notBuiltYet'},
+          ],
+        },
+      ]),
+      'es.json': _file([
+        {
+          'version': '1.10.0',
+          'items': [
+            {'id': 'map', 'title': 'Mapa muscular', 'body': 'En el perfil.'},
+          ],
+        },
+      ]),
+    });
+
+    final notes = (await loadReleases(bundle, const Locale('es'), platform: .iOS)).single.notes;
+    expect(notes.map((note) => (note.title, note.feature)), [
+      ('Mapa muscular', Feature.muscleMap),
+      ('Later', null),
+    ]);
+  });
+
   test('an entry that does not parse is dropped, not the file', () {
     final releases = parseReleases(
       _file([

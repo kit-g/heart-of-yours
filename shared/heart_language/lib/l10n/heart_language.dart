@@ -886,6 +886,18 @@ abstract class L {
   /// **'This version'**
   String get whatsNewThisVersion;
 
+  /// What's new page, a button under a note about an opt-in feature the user has off; it opens the Features page at that feature's switch, it does not turn it on by itself
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on in Features'**
+  String get whatsNewFeatureOff;
+
+  /// What's new page, a button under a note about an opt-in feature the user already has on; it opens the Features page at that feature's switch
+  ///
+  /// In en, this message translates to:
+  /// **'On · see in Features'**
+  String get whatsNewFeatureOn;
+
   /// What's new page, shown when there are no release notes to list
   ///
   /// In en, this message translates to:
@@ -3333,6 +3345,30 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Could not save the note. Please try again.'**
   String get exerciseNoteSaveFailed;
+
+  /// Title of the dialog that edits the free-text note on a whole workout, and its text field's label
+  ///
+  /// In en, this message translates to:
+  /// **'Workout note'**
+  String get workoutNote;
+
+  /// Workout options menu item that adds a note to the whole workout
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get addWorkoutNote;
+
+  /// Workout options menu item, and the label of the shown workout note, that edits the note on the whole workout
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get editWorkoutNote;
+
+  /// Tooltip of the button that clears the note on the whole workout
+  ///
+  /// In en, this message translates to:
+  /// **'Remove note'**
+  String get removeWorkoutNote;
 
   /// Android notification channel name for the ongoing-workout notification, shown in the system notification settings
   ///

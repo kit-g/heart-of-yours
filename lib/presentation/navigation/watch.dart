@@ -6,7 +6,7 @@ import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/widgets/workout/rest.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart' show finishWorkout;
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show SetTypeCopy, finishWorkout;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
@@ -326,7 +326,9 @@ class _WatchPresenterState extends State<WatchPresenter> {
                 weight: _shownWeight(exercise, set),
                 reps: _shownReps(exercise, set),
                 done: set.isCompleted,
-                position: l.watchSetPosition(index + 1, exercise.length),
+                mark: _mark(exercise, index, l),
+                type: _type(exercise, index, l),
+                position: _position(exercise, index, l),
                 previous: _lastTime(
                   exercise,
                   index,
@@ -413,10 +415,44 @@ class _WatchPresenterState extends State<WatchPresenter> {
         },
         step: _step(exercise),
         previous: _lastTime(exercise, number - 1, weighted: weighted, unit: unitLabel, l: l),
-        position: l.watchSetPosition(number, exercise.length),
+        position: _position(exercise, number - 1, l),
       );
     }
     return null;
+  }
+
+  /// The set at [index] in [exercise] as the phone's set column marks it
+  /// (#236): a plain set by its number among the plain ones, any other by its
+  /// letter — W, 1, 2, F.
+  String _mark(WorkoutExercise exercise, int index, L l) {
+    return switch (exercise.elementAt(index).setType) {
+      .normal => '${_plainBefore(exercise, index) + 1}',
+      SetType type => type.letter(l),
+    };
+  }
+
+  /// What kind of set it is, spelled out for VoiceOver; null for a plain one.
+  String? _type(WorkoutExercise exercise, int index, L l) {
+    return switch (exercise.elementAt(index).setType) {
+      .normal => null,
+      SetType type => type.copy(l),
+    };
+  }
+
+  /// "Set 2 of 3", counting plain sets as the phone numbers them, or the
+  /// type's name for a warm-up, drop or failure set.
+  String _position(WorkoutExercise exercise, int index, L l) {
+    return switch (exercise.elementAt(index).setType) {
+      .normal => l.watchSetPosition(
+        _plainBefore(exercise, index) + 1,
+        exercise.where((each) => each.setType == .normal).length,
+      ),
+      SetType type => type.copy(l),
+    };
+  }
+
+  int _plainBefore(WorkoutExercise exercise, int index) {
+    return exercise.take(index).where((each) => each.setType == .normal).length;
   }
 
   /// The same set in the last session, as the phone's "Previous" column holds
@@ -425,7 +461,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
   /// was no last time.
   String? _lastTime(WorkoutExercise exercise, int index, {required bool weighted, required String unit, required L l}) {
     final prefs = Preferences.of(context);
-    final value = PreviousExercises.of(context).at(exercise.exercise.id, index);
+    final value = PreviousExercises.of(context).matching(exercise, index);
     return switch ((weighted, value)) {
       (true, {'reps': int reps, 'weight': num weight}) => l.watchLastTime(
         '${prefs.weight(weight, unit: _unit(exercise))} $unit × $reps',

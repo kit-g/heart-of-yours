@@ -441,6 +441,12 @@ class LEs extends L {
   String get whatsNewThisVersion => 'Esta versión';
 
   @override
+  String get whatsNewFeatureOff => 'Activar en Funciones';
+
+  @override
+  String get whatsNewFeatureOn => 'Activado · ver en Funciones';
+
+  @override
   String get whatsNewEmpty => 'Esta versión de la app no incluye notas de la versión.';
 
   @override
@@ -1892,6 +1898,18 @@ class LEs extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'No se pudo guardar la nota. Inténtalo de nuevo.';
+
+  @override
+  String get workoutNote => 'Nota del entrenamiento';
+
+  @override
+  String get addWorkoutNote => 'Añadir nota';
+
+  @override
+  String get editWorkoutNote => 'Editar nota';
+
+  @override
+  String get removeWorkoutNote => 'Eliminar nota';
 
   @override
   String get ongoingWorkoutChannel => 'Entrenamiento en curso';
