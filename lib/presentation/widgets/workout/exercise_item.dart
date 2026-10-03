@@ -269,7 +269,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             onRemoveSet: onRemoveSet,
                             isLocked: !allowCompleting,
                             onSetDone: onSetDone,
-                            previousValue: previous.at(exercise.exercise.id, set.$1),
+                            previousValue: previous.matching(exercise, set.$1),
                           );
                         },
                       ),
@@ -338,7 +338,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   /// Fills [column] in every set not yet ticked, from its header (#225): see
   /// [columnFill]. The rows follow what [Workouts.editSet] says.
   void _fill(BuildContext context, SetColumn column, PreviousExercises previous) {
-    final fill = columnFill(exercise, column, previous: (index) => previous.at(exercise.exercise.id, index));
+    final fill = columnFill(exercise, column, previous: (index) => previous.matching(exercise, index));
     if (fill.isEmpty) return;
     buzz();
     final workouts = Workouts.of(context);

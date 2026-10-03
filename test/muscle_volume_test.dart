@@ -169,6 +169,26 @@ void main() {
       expect(muscleVolume(rows).sets, {MuscleGroup.chest: 2, MuscleGroup.arms: 1});
     });
 
+    test('leaves warm-ups out, and an exercise of warm-ups alone with them', () {
+      final squat = Exercise(
+        name: 'Squat',
+        category: .barbell,
+        target: .legs,
+        tags: tags('{"primary": {"groups": ["legs"]}}'),
+      );
+      final workout = Workout(name: 'Wednesday');
+      workout.add(squat)
+        ..first.setType = .warmup
+        ..first.isCompleted = true
+        ..add(ExerciseSet(squat, weight: 100, reps: 5)..isCompleted = true)
+        ..add(ExerciseSet(squat, weight: 80, reps: 8, setType: .drop)..isCompleted = true);
+      workout.add(Exercise(name: 'Lunge', category: .dumbbell, target: .legs))
+        ..first.setType = .warmup
+        ..first.isCompleted = true;
+
+      expect(workoutMuscleSets(workout, lookup: (_) => null).map((row) => row.sets), [2]);
+    });
+
     test("takes the library's tagging over the workout's own copy", () {
       final untagged = Exercise(name: 'Row', category: .barbell, target: .back);
       final tagged = Exercise(
