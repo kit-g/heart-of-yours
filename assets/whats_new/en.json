@@ -1,7 +1,40 @@
 [
   {
-    "version": "1.10.0",
+    "version": "1.11.0",
     "date": null,
+    "items": [
+      {
+        "id": "set-types",
+        "title": "Warm-ups, drop sets and failure sets",
+        "body": "Tap a set's number to mark it. Warm-ups stay out of your records, charts and muscle map, and **Previous** lines them up with last time's warm-ups."
+      },
+      {
+        "id": "rpe",
+        "title": "RPE",
+        "body": "Rate how hard each set felt, from 6 to 10, from the menu on its number.",
+        "feature": "rpe"
+      },
+      {
+        "id": "workout-note",
+        "title": "A note on the whole workout",
+        "body": "Add one from the workout's **⋯** menu. It shows on the workout's card in History."
+      },
+      {
+        "id": "workout-muscles",
+        "title": "Muscles worked, per workout",
+        "body": "Every finished workout shows which muscles it worked, right after you finish and in History.",
+        "feature": "muscleMap"
+      },
+      {
+        "id": "fill-columns",
+        "title": "Fill a column at once",
+        "body": "Tap **kg** or **Reps** above your sets to fill every set not yet done from the top one. Tap **✓** to tick them all."
+      }
+    ]
+  },
+  {
+    "version": "1.10.0",
+    "date": "2026-10-02",
     "items": [
       {
         "id": "apple-watch",
