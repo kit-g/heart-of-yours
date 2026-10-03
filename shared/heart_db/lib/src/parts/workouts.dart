@@ -6,6 +6,16 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     return jsonEncode(images.map((each) => each.toRow()).toList());
   }
 
+  /// [set]'s row. `toRow` predates set types and RPE and leaves them out, so
+  /// every write of a set goes through here to keep them (#151).
+  static Map<String, Object?> _setRow(ExerciseSet set) {
+    return {
+      ...set.toRow(),
+      'set_type': set.setType.value,
+      'rpe': set.rpe,
+    };
+  }
+
   /// Whether [workout] carries its own detail — at least one set somewhere.
   ///
   /// A finished workout cannot legitimately be empty: finishing requires a
@@ -36,7 +46,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     required bool synced,
     required bool replaceExercises,
   }) {
-    final Workout(id: workoutId, :start, :name, :end, :images) = workout;
+    final Workout(id: workoutId, :start, :name, :end, :images, :note) = workout;
     // every column, nulls included, so the row ends up exactly as REPLACE
     // used to leave it — only without the delete underneath
     batch.rawInsert(sql.upsertWorkout, [
@@ -47,6 +57,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       end?.toIso8601String(),
       _encodeImages(images?.values),
       synced ? 1 : 0,
+      note,
     ]);
 
     if (!replaceExercises) return;
@@ -70,8 +81,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       for (final set in exercise) {
         final setRow = {
           'exercise_id': exercise.id,
-          ...set.toRow(),
-          'completed': set.isCompleted ? 1 : 0,
+          ..._setRow(set),
         };
 
         batch.insert(_sets, setRow, conflictAlgorithm: .replace);
@@ -148,6 +158,8 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
             'exercise_id': exercise.id,
             'id': each.id,
             'completed': each.isCompleted ? 1 : 0,
+            // a template's warm-ups start as warm-ups
+            'set_type': each.setType.value,
           };
 
           batch.insert(_sets, row);
@@ -195,7 +207,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   Future<void> addSet(WorkoutExercise exercise, ExerciseSet set) {
     final row = {
       'exercise_id': exercise.id,
-      ...set.toRow(),
+      ..._setRow(set),
     };
     return _db.insert(_sets, row);
   }
@@ -216,7 +228,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
 
   @override
   Future<void> storeMeasurements(ExerciseSet set) {
-    return _db.update(_sets, set.toRow(), where: 'id = ?', whereArgs: [set.id]);
+    return _db.update(_sets, _setRow(set), where: 'id = ?', whereArgs: [set.id]);
   }
 
   Future<void> _markSet(ExerciseSet set, bool status) {
