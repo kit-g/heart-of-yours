@@ -6,10 +6,6 @@ part of 'workout_detail.dart';
 /// up to, or the rows stop short of its right edge.
 const _setTypeMenuWidth = 224.0;
 
-/// The menu's width while it carries the ratings (#234), so three of them fit
-/// a row at a whole tap target's height: 280, the next step up.
-const _setTypeMenuWideWidth = 280.0;
-
 /// The set's place in its exercise, and the way to say what kind of set it was
 /// (#151). A plain set shows its number, a warm-up, drop or failure set its
 /// letter. Tapping it opens the types, in the same popup the workout's options
@@ -134,16 +130,11 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       true => widget.onSetRpe,
       false => null,
     };
-    final width = switch (onSetRpe) {
-      null => _setTypeMenuWidth,
-      _ => _setTypeMenuWideWidth,
-    };
-
     final picked = await showMenu<_SetChoice>(
       context: context,
       position: _anchor.position(),
       items: [
-        ..._typed.map((type) => _item(type, selected: type == current, width: width)),
+        ..._typed.map((type) => _item(type, selected: type == current)),
         if (onSetRpe != null) _RpeEntry(set: widget.set, explained: _rpeExplained),
       ],
     );
@@ -176,7 +167,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
     }
   }
 
-  PopupMenuItem<_SetChoice> _item(SetType type, {required bool selected, required double width}) {
+  PopupMenuItem<_SetChoice> _item(SetType type, {required bool selected}) {
     final ThemeData(:textTheme, :brightness, :colorScheme) = Theme.of(context);
     final l = L.of(context);
 
@@ -187,7 +178,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       child: Semantics(
         selected: selected,
         child: Container(
-          width: width,
+          width: _setTypeMenuWidth,
           // the menu's own surface is the fill tone, so the type's hue, faint,
           // is what tells the current one apart
           color: switch (selected) {
