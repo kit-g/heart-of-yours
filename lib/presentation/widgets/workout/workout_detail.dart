@@ -43,6 +43,7 @@ part 'exercise_note.dart';
 part 'feedback.dart';
 part 'keys.dart';
 part 'set_item.dart';
+part 'set_type.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
 
@@ -63,6 +64,10 @@ class WorkoutDetail extends StatefulWidget {
   final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
+
+  /// Marks a set as a warm-up, drop or failure set, or a plain one again
+  /// (#151). Without it the set numbers are not buttons.
+  final void Function(ExerciseSet, SetType)? onSetType;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
@@ -84,6 +89,7 @@ class WorkoutDetail extends StatefulWidget {
     this.onNoteChanged,
     required this.onRemoveSet,
     this.onSetDone,
+    this.onSetType,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.onAddExercises,
@@ -349,6 +355,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             onAddSet: widget.onAddSet,
                             onRemoveSet: widget.onRemoveSet,
                             onSetDone: widget.onSetDone,
+                            onSetType: widget.onSetType,
                             onRemoveExercise: widget.onRemoveExercise,
                             onSwapExercise: _onDrop,
                             onDragStarted: () {
@@ -844,6 +851,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             onAddSet: workouts.addSet,
             onNoteChanged: workouts.setNote,
             onRemoveSet: workouts.removeSet,
+            onSetType: workouts.setSetType,
             onRemoveExercise: workouts.removeExercise,
             onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
             onAddExercises: (exercises) async {
