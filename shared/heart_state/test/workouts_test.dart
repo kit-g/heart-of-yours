@@ -410,6 +410,22 @@ void main() {
       expect(set.reps, 8);
     });
 
+    test('setSetType retypes a set, stores it, and says so (#151)', () async {
+      await sut.startWorkout(source: .blank, name: 'Chest');
+      await sut.startExercise(bench);
+      final set = sut.activeWorkout!.first.first;
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.setSetType(set, .warmup);
+
+      expect(set.setType, SetType.warmup);
+      expect(probe.notifications, 1);
+      verify(local.storeMeasurements(set)).called(1);
+
+      await sut.setSetType(set, .normal);
+      expect(set.setType, SetType.normal);
+    });
+
     test('editSet takes a cardio set\'s distance and duration too (#225)', () async {
       final run = Exercise(name: 'Muffin Run', category: .cardio, target: .other);
       await sut.startWorkout(source: .blank, name: 'Run');
