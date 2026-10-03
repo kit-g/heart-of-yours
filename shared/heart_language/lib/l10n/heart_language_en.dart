@@ -1890,6 +1890,18 @@ class LEn extends L {
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
 
   @override
+  String get workoutNote => 'Workout note';
+
+  @override
+  String get addWorkoutNote => 'Add note';
+
+  @override
+  String get editWorkoutNote => 'Edit note';
+
+  @override
+  String get removeWorkoutNote => 'Remove note';
+
+  @override
   String get ongoingWorkoutChannel => 'Workout in progress';
 
   @override
@@ -4051,6 +4063,18 @@ class LEnCa extends LEn {
 
   @override
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
+
+  @override
+  String get workoutNote => 'Workout note';
+
+  @override
+  String get addWorkoutNote => 'Add note';
+
+  @override
+  String get editWorkoutNote => 'Edit note';
+
+  @override
+  String get removeWorkoutNote => 'Remove note';
 
   @override
   String get ongoingWorkoutChannel => 'Workout in progress';
