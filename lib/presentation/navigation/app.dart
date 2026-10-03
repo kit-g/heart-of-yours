@@ -113,6 +113,7 @@ class HeartApp extends StatelessWidget {
           create: (context) => Workouts(
             service: db,
             persistNote: db.setWorkoutExerciseNote,
+            persistWorkoutNote: db.setWorkoutNote,
             noteFor: Exercises.of(context).noteFor,
             remoteService: api,
             remote: RemoteAccess.of(context),
