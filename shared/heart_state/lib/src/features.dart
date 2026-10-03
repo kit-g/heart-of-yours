@@ -14,7 +14,11 @@ enum Feature {
   /// The workout on Apple Watch (#175). The one feature whose ask is not an
   /// in-app offer: opening Heart on the watch for the first time is the yes
   /// (`docs/opt-in.md`, *Precedent*).
-  watchApp('watchApp');
+  watchApp('watchApp'),
+
+  /// How hard each set was, rated from a bar over the number pad (#234).
+  /// Stored and synced whatever the answer; the switch shows it.
+  rpe('rpe');
 
   final String value;
 

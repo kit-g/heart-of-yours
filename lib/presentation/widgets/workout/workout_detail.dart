@@ -32,6 +32,7 @@ import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import 'package:material_ui/material_ui.dart';
 
 import 'rest.dart';
@@ -43,6 +44,7 @@ part 'exercise_note.dart';
 part 'feedback.dart';
 part 'keys.dart';
 part 'set_item.dart';
+part 'rpe.dart';
 part 'set_type.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
@@ -69,6 +71,10 @@ class WorkoutDetail extends StatefulWidget {
   /// Marks a set as a warm-up, drop or failure set, or a plain one again
   /// (#151). Without it the set numbers are not buttons.
   final void Function(ExerciseSet, SetType)? onSetType;
+
+  /// Rates a set, or clears its rating (#234), from the set-number popup.
+  /// Without it, as in a template, sets carry no RPE and the popup no ratings.
+  final void Function(ExerciseSet, double?)? onSetRpe;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
@@ -91,6 +97,7 @@ class WorkoutDetail extends StatefulWidget {
     required this.onRemoveSet,
     this.onSetDone,
     this.onSetType,
+    this.onSetRpe,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.onAddExercises,
@@ -357,6 +364,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             onRemoveSet: widget.onRemoveSet,
                             onSetDone: widget.onSetDone,
                             onSetType: widget.onSetType,
+                            onSetRpe: widget.onSetRpe,
                             onRemoveExercise: widget.onRemoveExercise,
                             onSwapExercise: _onDrop,
                             onDragStarted: () {
@@ -853,6 +861,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             onNoteChanged: workouts.setNote,
             onRemoveSet: workouts.removeSet,
             onSetType: workouts.setSetType,
+            onSetRpe: workouts.setRpe,
             onRemoveExercise: workouts.removeExercise,
             slivers: [
               if (active.note case String note)

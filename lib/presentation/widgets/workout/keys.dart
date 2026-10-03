@@ -40,6 +40,12 @@ class WorkoutDetailKeys {
   /// A row of the open set type menu; only one menu is open at a time.
   static Key setTypeOption(SetType type) => Key('WorkoutDetail.setTypeOption.${type.value}');
 
+  /// The button that takes a set's rating away, in its open popup (#234).
+  static const clearRpe = Key('WorkoutDetail.clearRpe');
+
+  /// A rating in the open set-number popup (#234).
+  static Key rpeValue(double value) => Key('WorkoutDetail.rpeValue.$value');
+
   static Key weightFor(String exerciseId, int index) => Key('WorkoutDetail.weight.$exerciseId.$index');
 
   static Key repsFor(String exerciseId, int index) => Key('WorkoutDetail.reps.$exerciseId.$index');

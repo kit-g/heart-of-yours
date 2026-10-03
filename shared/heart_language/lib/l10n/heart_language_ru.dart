@@ -2224,4 +2224,45 @@ class LRu extends L {
   String aboutSetType(String setType) {
     return 'Подробнее: $setType';
   }
+
+  @override
+  String get rpe => 'RPE';
+
+  @override
+  String get rpeSubtitle => 'Оценивайте тяжесть каждого подхода, нажав на его номер';
+
+  @override
+  String get rpeHint =>
+      'Сколько повторений, по ощущениям, ещё оставалось в запасе. Нажмите на число, чтобы оценить подход.';
+
+  @override
+  String get aboutRpe => 'Что такое RPE';
+
+  @override
+  String get rpeScale10 => '10: ни одного больше';
+
+  @override
+  String get rpeScale9 => '9: ещё одно';
+
+  @override
+  String get rpeScale8 => '8: ещё два';
+
+  @override
+  String get rpeScale7 => '7: ещё три';
+
+  @override
+  String get rpeScale6 => '6: четыре и больше';
+
+  @override
+  String rpeBadge(String value) {
+    return '@$value';
+  }
+
+  @override
+  String rpeValue(String value) {
+    return 'RPE $value';
+  }
+
+  @override
+  String get clearRpe => 'Сбросить RPE';
 }
