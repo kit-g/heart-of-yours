@@ -3334,6 +3334,30 @@ abstract class L {
   /// **'Could not save the note. Please try again.'**
   String get exerciseNoteSaveFailed;
 
+  /// Title of the dialog that edits the free-text note on a whole workout, and its text field's label
+  ///
+  /// In en, this message translates to:
+  /// **'Workout note'**
+  String get workoutNote;
+
+  /// Workout options menu item that adds a note to the whole workout
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get addWorkoutNote;
+
+  /// Workout options menu item, and the label of the shown workout note, that edits the note on the whole workout
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get editWorkoutNote;
+
+  /// Tooltip of the button that clears the note on the whole workout
+  ///
+  /// In en, this message translates to:
+  /// **'Remove note'**
+  String get removeWorkoutNote;
+
   /// Android notification channel name for the ongoing-workout notification, shown in the system notification settings
   ///
   /// In en, this message translates to:
