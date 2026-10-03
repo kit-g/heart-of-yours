@@ -6,6 +6,8 @@
 // through the router, the same way `workout_start_test.dart` and
 // `a11y_test.dart` reach the workout tab.
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
@@ -254,6 +256,40 @@ void main() {
       await tester.pumpTimes();
 
       verify(db.startWorkout(any, userId)).called(1);
+    });
+
+    testWidgets('over an active workout, asks first, and deletes that one before starting (#228)', (tester) async {
+      // discarding clears the old workout's notifications: no plugin runs
+      // under `flutter test` (see workout_detail_utils_test.dart)
+      FlutterLocalNotificationsPlatform.instance = AndroidFlutterLocalNotificationsPlugin();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('dexterous.com/flutter/local_notifications'),
+        (call) async => null,
+      );
+      when(db.deleteWorkout(any)).thenAnswer((_) async {});
+      when(api.deleteWorkout(any)).thenAnswer((_) async => true);
+      when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+
+      await openWorkoutTab(tester);
+      final workouts = Workouts.of(tester.element(find.byType(MaterialApp)));
+      await workouts.startWorkout(source: .blank, name: 'Leg Day');
+      final legDay = workouts.activeWorkout!.id;
+      await tester.pumpTimes();
+
+      await tester.tap(find.text('Push Day'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Start workout'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cancel current workout?'), findsOneWidget);
+      await tester.tap(find.text('Yes, cancel that one and start a new workout'));
+      await tester.pumpTimes();
+
+      verifyInOrder([
+        db.deleteWorkout(legDay),
+        db.startWorkout(argThat(isA<Workout>().having((workout) => workout.name, 'name', 'Push Day')), userId),
+      ]);
+      expect(workouts.activeWorkout?.name, 'Push Day');
     });
   });
 
