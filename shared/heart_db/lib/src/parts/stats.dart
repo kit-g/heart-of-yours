@@ -113,7 +113,9 @@ mixin _Stats on _LocalDatabase implements StatsService {
 
   /// Completed sets per exercise per finished workout started in [from, to),
   /// each with the workout's start and the exercise's muscle tagging — what
-  /// the muscle map (#136) is counted from.
+  /// the muscle map (#136) is counted from. Warm-ups are left out, as they are
+  /// from records: they ready a muscle for the work, and the map counts the
+  /// work (#236).
   ///
   /// Per workout rather than summed over the period, so one read serves every
   /// window and week the map shows: the caller buckets by `start` in the
@@ -141,6 +143,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
           'JOIN sets s ON s.exercise_id = we.id '
           'LEFT JOIN exercises e ON e.id = we.exercise_id '
           'WHERE w.user_id = ? AND w.end IS NOT NULL AND w.start >= ? AND w.start < ? AND s.completed = 1 '
+          "AND s.set_type IS NOT 'warmup' "
           'GROUP BY w.id, we.exercise_id',
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
