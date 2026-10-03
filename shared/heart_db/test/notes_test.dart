@@ -30,6 +30,28 @@ void main() {
     expect(await local.getExerciseNotes('anonymous'), {ex.id: 'Slow eccentric'});
   });
 
+  test('the workout note survives a restart, a rename and the finish, and clears (#235)', () async {
+    final db = await openTestDatabase();
+    addTearDown(db.close);
+    final local = await LocalDatabase.init(other: db);
+    final ex = exercise();
+    await local.storeExercises([ex]);
+    final workout = Workout(name: 'Notes')..add(ex);
+    await local.startWorkout(workout, 'anonymous');
+    await local.setWorkoutNote(workout.id, 'Slept badly');
+    await local.updateWorkout(workoutId: workout.id, name: 'Renamed');
+    final reopened = await LocalDatabase.init(other: db);
+    final active = (await reopened.getActiveWorkout('anonymous'))!;
+    expect(active.note, 'Slept badly');
+    expect(active.name, 'Renamed');
+    active.first.first.isCompleted = true;
+    active.finish(DateTime.now());
+    await reopened.finishWorkout(active, 'anonymous');
+    expect((await reopened.getWorkoutHistory('anonymous'))!.single.note, 'Slept badly');
+    await reopened.setWorkoutNote(workout.id, null);
+    expect((await reopened.getWorkoutHistory('anonymous'))!.single.note, isNull);
+  });
+
   test('pins preserve other preferences, rekey and merge before replay, and erase with the user', () async {
     final db = await openTestDatabase();
     addTearDown(db.close);
