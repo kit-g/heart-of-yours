@@ -2,6 +2,8 @@ import 'package:heart_models/heart_models.dart' show SetType;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'features.dart';
+
 /// Where an [Analytics] writes.
 ///
 /// Implemented in the app over `firebase_analytics`; `heart_state` never sees
@@ -95,6 +97,17 @@ enum WorkoutEditField {
   new(this.id);
 }
 
+/// What opened the Features page at one feature (#239): a What's new note's
+/// button, or a link from outside the app — a post, a video, the website.
+enum FeatureLinkSource {
+  whatsNew('whats_new'),
+  link('link');
+
+  final String id;
+
+  new(this.id);
+}
+
 /// The rung of the ladder a session is on — the property every report segments
 /// by. Gains `premium` and `coach` when those ship.
 enum AccountState {
@@ -162,6 +175,7 @@ const _upgradeGateShown = 'upgrade_gate_shown';
 const _notificationPermission = 'notification_permission_result';
 const _watchAppSwitched = 'watch_app_switched';
 const _setTypeChanged = 'set_type_changed';
+const _featureLinked = 'feature_linked';
 
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
@@ -180,6 +194,7 @@ const _granted = 'granted';
 const _on = 'on';
 const _fromWatch = 'from_watch';
 const _setType = 'set_type';
+const _feature = 'feature';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -402,6 +417,13 @@ class Analytics {
   /// the one picked, so `normal` is an un-marking.
   void setTypeChanged({required SetType type}) {
     _log(_setTypeChanged, {_setType: type.value});
+  }
+
+  /// The Features page opened at one [feature] (#239), from [source] — the
+  /// question being whether a note or a tutorial gets anyone to the switch.
+  /// What they did with it there is the feature's own answer, not this event.
+  void featureLinked({required Feature feature, required FeatureLinkSource source}) {
+    _log(_featureLinked, {_feature: feature.value, _source: source.id});
   }
 
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);
