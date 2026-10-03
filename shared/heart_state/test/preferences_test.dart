@@ -347,7 +347,7 @@ void main() {
     });
 
     test('storage keys are pinned: renaming one would ask everyone again', () {
-      expect(Feature.values.map((each) => each.value), ['muscleMap', 'watchApp', 'rpe']);
+      expect(Feature.values.map((each) => each.value), ['muscleMap', 'watchApp', 'rpe', 'setStopwatch']);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });
   });

@@ -18,7 +18,10 @@ enum Feature {
 
   /// How hard each set was, rated from a bar over the number pad (#234).
   /// Stored and synced whatever the answer; the switch shows it.
-  rpe('rpe');
+  rpe('rpe'),
+
+  /// Count up in an active timed set (#171); enabled only in Settings.
+  setStopwatch('setStopwatch');
 
   final String value;
 
