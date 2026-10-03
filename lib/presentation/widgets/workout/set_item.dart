@@ -177,6 +177,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         :onTertiaryContainer,
         :surfaceContainerHighest,
         :onSurfaceVariant,
+        :primary,
         :error,
         :onError,
       ),
@@ -322,19 +323,44 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                       if (widget.onSetDone != null) {
                         widget.onSetDone?.call(exercise, set);
                       } else {
-                        _onDone(context);
+                        switch (_doneAction(_durationController.value)) {
+                          case .start:
+                            _startStopwatch();
+                          case .stop:
+                            _stopStopwatch();
+                          case .done:
+                            _onDone(context);
+                        }
                       }
                     }
                   },
                   child: Center(
                     child: Opacity(
                       opacity: widget.isLocked ? .5 : 1,
-                      child: Icon(
-                        Icons.done,
-                        size: 18,
-                        color: switch (set.isCompleted) {
-                          true => onTertiaryContainer,
-                          false => onSurfaceVariant,
+                      child: ListenableBuilder(
+                        listenable: Listenable.merge([_durationController, workouts.stopwatch]),
+                        builder: (context, _) {
+                          final action = _doneAction(_durationController.value);
+                          return Semantics(
+                            label: switch (action) {
+                              .start => L.of(context).startSetStopwatch,
+                              .stop => L.of(context).stopSetStopwatch,
+                              .done => null,
+                            },
+                            child: Icon(
+                              switch (action) {
+                                .start => Icons.play_arrow_rounded,
+                                .stop => Icons.stop_rounded,
+                                .done => Icons.done,
+                              },
+                              size: 18,
+                              color: switch ((set.isCompleted, action)) {
+                                (true, _) => onTertiaryContainer,
+                                (false, .stop) => primary,
+                                _ => onSurfaceVariant,
+                              },
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -407,17 +433,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       case .duration:
         return [
           Expanded(
-            child: _TextFieldButton(
-              isSetCompleted: set.isCompleted,
-              focusNode: _durationFocus,
-              controller: _durationController,
-              color: color,
-              keyboardType: TextInputType.number,
-              errorState: _hasDurationError,
-              formatters: [TimeFormatter()],
-              semanticLabel: L.of(context).duration,
-              badge: _rpeBadge(context),
-            ),
+            child: _durationCell(color),
           ),
         ];
       case .cardio:
@@ -453,20 +469,90 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
             ),
           ),
           Expanded(
-            child: _TextFieldButton(
-              isSetCompleted: set.isCompleted,
-              focusNode: _durationFocus,
-              controller: _durationController,
-              color: color,
-              keyboardType: TextInputType.number,
-              errorState: _hasDurationError,
-              formatters: [TimeFormatter()],
-              semanticLabel: L.of(context).duration,
-              badge: _rpeBadge(context),
-            ),
+            child: _durationCell(color),
           ),
         ];
     }
+  }
+
+  Widget _durationCell(Color color) {
+    return ListenableBuilder(
+      listenable: workouts.stopwatch,
+      builder: (context, _) => _TextFieldButton(
+        isSetCompleted: set.isCompleted,
+        focusNode: _durationFocus,
+        controller: _durationController,
+        color: color,
+        keyboardType: TextInputType.number,
+        errorState: _hasDurationError,
+        formatters: [TimeFormatter()],
+        semanticLabel: L.of(context).duration,
+        badge: _rpeBadge(context),
+        running: switch (_stopwatchOn && workouts.stopwatch.isTiming(set)) {
+          true => workouts.stopwatch.seconds,
+          false => null,
+        },
+      ),
+    );
+  }
+
+  /// The set stopwatch is on and this row is in the active workout, where it
+  /// can run (#171); never in a template or the history editor.
+  bool get _stopwatchOn {
+    // the row watches Preferences in build; this is also read from a tap
+    return Preferences.of(context).isOn(.setStopwatch) &&
+        widget.onSetDone == null &&
+        !widget.isLocked &&
+        switch (set.category) {
+          .duration || .cardio => true,
+          _ => false,
+        };
+  }
+
+  /// What the done button does on a timed set with the stopwatch on: an empty
+  /// duration, which ✓ could not tick, is a ▶ instead; a running one is ■.
+  _DoneAction _doneAction(TextEditingValue duration) {
+    final stopwatch = workouts.stopwatch;
+    return switch ((_stopwatchOn && !set.isCompleted, stopwatch.isTiming(set))) {
+      (true, true) => .stop,
+      (true, false) when !_hasTime(duration.text) && !stopwatch.isRunning => .start,
+      _ => .done,
+    };
+  }
+
+  void _startStopwatch() {
+    final workout = workouts.activeWorkout;
+    if (workout == null) return;
+    _durationFocus.unfocus();
+    // a refused tick's red is moot once the clock is running
+    _hasDurationError.value = false;
+    Alarms.of(context).stopActiveExerciseTimer();
+    workouts.stopwatch.start(workout, set);
+  }
+
+  Future<void> _stopStopwatch() async {
+    final seconds = workouts.stopwatch.stop();
+    await workouts.editSet(set, duration: seconds);
+    if (!mounted) return;
+    _hasDurationError.value = seconds <= 0;
+    _durationController
+      ..removeListener(_durationListener)
+      ..text = seconds.toDuration()
+      ..addListener(_durationListener);
+    if (set.canBeCompleted) {
+      await _onDone(context);
+    } else if (set.category == .cardio) {
+      _distanceFocus.requestFocus();
+    }
+  }
+
+  /// The duration field as seconds for a tick: an empty or zero time is an
+  /// error, as an empty reps field is, rather than a set logged at 0:00.
+  int _timedSeconds() {
+    return switch (_parseDuration()) {
+      > 0 && final seconds => seconds,
+      _ => throw const FormatException('no duration'),
+    };
   }
 
   Future<void> _onDone(BuildContext context) async {
@@ -500,7 +586,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           );
           _hasRepsError.value = false;
         case .cardio:
-          final seconds = _parseDuration();
+          final seconds = _timedSeconds();
 
           _setMeasurements(
             distance: double.parse(_distanceController.text),
@@ -510,7 +596,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           _hasDistanceError.value = false;
           _durationController.text = seconds.toDuration();
         case .duration:
-          final seconds = _parseDuration();
+          final seconds = _timedSeconds();
           _setMeasurements(duration: seconds);
           _hasDurationError.value = false;
           _durationController.text = seconds.toDuration();
@@ -679,6 +765,10 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
 
   static int _parse(String v) => int.tryParse(v) ?? 0;
 
+  /// Whether [text] holds a time above zero; "", "0:00" and a lone colon
+  /// are all nothing to tick with.
+  static bool _hasTime(String text) => text.split(':').any((part) => _parse(part) > 0);
+
   void _setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
     if (!context.mounted) return;
     final Preferences(:distanceUnit, :weightUnit) = Preferences.of(context);
@@ -734,3 +824,5 @@ extension on int {
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
 }
+
+enum _DoneAction { start, stop, done }
