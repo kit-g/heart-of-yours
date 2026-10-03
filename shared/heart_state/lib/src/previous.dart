@@ -42,6 +42,21 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Last time's counterpart of [exercise]'s set at [index], matched within
+  /// its kind (#236): the second warm-up against last session's second
+  /// warm-up, the first working set against its first working one. Drop and
+  /// failure sets are working sets. Matching by position alone would line a
+  /// warm-up up against a working set as soon as their counts differ.
+  Map<String, dynamic>? matching(WorkoutExercise exercise, int index) {
+    bool isWarmup(SetType type) => type == .warmup;
+
+    final warmup = isWarmup(exercise.elementAt(index).setType);
+    final ordinal = exercise.take(index).where((each) => isWarmup(each.setType) == warmup).length;
+    return _previous[exercise.exercise.id]
+        ?.where((row) => isWarmup(SetType.lenient(row['set_type'] as String?)) == warmup)
+        .elementAtOrNull(ordinal);
+  }
+
   Map<String, dynamic>? last(ExerciseId exerciseId) {
     return _previous[exerciseId]?.lastOrNull;
   }
