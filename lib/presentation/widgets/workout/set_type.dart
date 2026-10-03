@@ -126,10 +126,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
 
   Future<void> _open(void Function(ExerciseSet, SetType) onSetType) async {
     final ExerciseSet(setType: current, rpe: rated) = widget.set;
-    final onSetRpe = switch (Preferences.of(context).isOn(.rpe)) {
-      true => widget.onSetRpe,
-      false => null,
-    };
+    final onSetRpe = Preferences.of(context).isOn(.rpe) ? widget.onSetRpe : null;
     final picked = await showMenu<_SetChoice>(
       context: context,
       position: _anchor.position(),
@@ -146,19 +143,13 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       case _TypeChoice(:final type):
         buzz();
         // the type a set already is makes it plain again
-        final retyped = switch (type == current) {
-          true => SetType.normal,
-          false => type,
-        };
+        final retyped = type == current ? SetType.normal : type;
         Analytics.of(context).setTypeChanged(type: retyped);
         onSetType(widget.set, retyped);
       case _RpeChoice(:final rpe):
         buzz();
         // and the rating it already has clears it
-        onSetRpe?.call(widget.set, switch (rpe == rated) {
-          true => null,
-          false => rpe,
-        });
+        onSetRpe?.call(widget.set, rpe == rated ? null : rpe);
       case _RpeCleared():
         buzz();
         onSetRpe?.call(widget.set, null);
@@ -181,10 +172,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
           width: _setTypeMenuWidth,
           // the menu's own surface is the fill tone, so the type's hue, faint,
           // is what tells the current one apart
-          color: switch (selected) {
-            true => type.color(brightness).withValues(alpha: .16),
-            false => null,
-          },
+          color: selected ? type.color(brightness).withValues(alpha: .16) : null,
           padding: const .symmetric(horizontal: 12, vertical: 4),
           child: ValueListenableBuilder<SetType?>(
             valueListenable: _explained,
@@ -215,10 +203,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
                         ),
                         icon: const Icon(Icons.question_mark_rounded, size: 18),
                         onPressed: () {
-                          _explained.value = switch (explained == type) {
-                            true => null,
-                            false => type,
-                          };
+                          _explained.value = explained == type ? null : type;
                         },
                       ),
                     ],

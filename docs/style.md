@@ -28,6 +28,24 @@ final g = switch (accent) {
 
 A one-line `??` fallback is fine.
 
+**But not a `switch` on a bare `bool`.** Two arms, `true` and `false`, each a
+plain value, is a ternary written longhand: the pattern matches nothing a
+condition could not say. When it fits on one line, write the condition.
+
+```dart
+// no
+final retyped = switch (type == current) {
+  true => SetType.normal,
+  false => type,
+};
+
+// yes
+final retyped = type == current ? SetType.normal : type;
+```
+
+The `switch` earns its place on an enum, a nullable, a shape, or arms that are
+whole widgets or blocks.
+
 **Functional first, loops last.** Walk a collection with `Iterable` methods —
 `map`, `where`, `indexed`, `fold`, `expand` — or a collection-`for` over it;
 `List.generate` / `Iterable.generate` when there is only a count. A C-style
