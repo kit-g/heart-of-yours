@@ -2175,4 +2175,44 @@ class LFr extends L {
   String aboutSetType(String setType) {
     return 'À propos : $setType';
   }
+
+  @override
+  String get rpe => 'RPE';
+
+  @override
+  String get rpeSubtitle => 'Notez la difficulté de chaque série depuis le pavé numérique';
+
+  @override
+  String get rpeHint => 'Combien de répétitions il vous restait. Touchez un chiffre pour noter la série.';
+
+  @override
+  String get aboutRpe => 'À propos du RPE';
+
+  @override
+  String get rpeScale10 => '10 : plus aucune';
+
+  @override
+  String get rpeScale9 => '9 : encore une';
+
+  @override
+  String get rpeScale8 => '8 : encore deux';
+
+  @override
+  String get rpeScale7 => '7 : encore trois';
+
+  @override
+  String get rpeScale6 => '6 : quatre ou plus';
+
+  @override
+  String get closeRpe => 'Revenir au clavier';
+
+  @override
+  String rpeBadge(String value) {
+    return '@$value';
+  }
+
+  @override
+  String rpeValue(String value) {
+    return 'RPE $value';
+  }
 }
