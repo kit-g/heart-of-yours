@@ -52,6 +52,36 @@ void main() {
     expect(state.activeWorkout!.first.note, 'Pause');
   });
 
+  test('the workout note is trimmed, blank clears it, and the device keeps it (#235)', () async {
+    final persisted = <(String, String?)>[];
+    final state = Workouts(
+      service: local,
+      remoteService: remote,
+      persistWorkoutNote: (id, note) async {
+        persisted.add((id, note));
+      },
+    )..userId = 'anon';
+    await state.setWorkoutNote('No workout to hold it');
+    expect(persisted, isEmpty);
+
+    await state.startWorkout(source: .blank, name: 'Push');
+    final id = state.activeWorkout!.id;
+    final probe = ListenerProbe()..attach(state);
+    await state.setWorkoutNote('  Slept badly  ');
+    expect(state.activeWorkout!.note, 'Slept badly');
+    expect(state.activeWorkout!.toMap()['note'], 'Slept badly');
+    await state.setWorkoutNote('   ');
+    expect(state.activeWorkout!.note, isNull);
+    expect(persisted, [(id, 'Slept badly'), (id, null)]);
+    expect(probe.notifications, 2);
+
+    // a thousand code points fit, though the emoji are two UTF-16 units each
+    await state.setWorkoutNote('💪' * Workout.maxNoteLength);
+    expect(state.activeWorkout!.note, hasLength(Workout.maxNoteLength * 2));
+    expect(() => state.setWorkoutNote('a' * (Workout.maxNoteLength + 1)), throwsArgumentError);
+    await state.cancelActiveWorkout();
+  });
+
   test('a workout cannot start over an active one (#228)', () async {
     final state = Workouts(service: local, remoteService: remote)..userId = 'anon';
     await state.startWorkout(source: .blank, name: 'Push');

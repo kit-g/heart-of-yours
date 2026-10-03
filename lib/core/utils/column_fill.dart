@@ -35,8 +35,8 @@ enum SetColumn {
 }
 
 /// What tapping [column]'s header writes, set by set, into [exercise]: every
-/// set not yet ticked takes its own value from last time ([previous], by the
-/// set's index), or failing that the top set's. A set with neither is left
+/// set not yet ticked takes its own value from last time ([previous], given
+/// the set's index), or failing that the top set's. A set with neither is left
 /// out, and so is every ticked one — a done set is a record, not a draft.
 ///
 /// Values are as the model keeps them: weight and distance metric, duration

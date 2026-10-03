@@ -815,6 +815,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "whatsNewFeatureOff": "Turn on in Features",
+  "@whatsNewFeatureOff": {
+    "description": "What's new page, a button under a note about an opt-in feature the user has off; it opens the Features page at that feature's switch, it does not turn it on by itself",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewFeatureOn": "On · see in Features",
+  "@whatsNewFeatureOn": {
+    "description": "What's new page, a button under a note about an opt-in feature the user already has on; it opens the Features page at that feature's switch",
+    "type": "text",
+    "placeholders": {}
+  },
   "whatsNewEmpty": "No release notes in this version of the app.",
   "@whatsNewEmpty": {
     "description": "What's new page, shown when there are no release notes to list",
@@ -3458,6 +3470,30 @@
     "type": "text",
     "placeholders": {}
     },
+  "workoutNote": "Workout note",
+  "@workoutNote": {
+    "description": "Title of the dialog that edits the free-text note on a whole workout, and its text field's label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addWorkoutNote": "Add note",
+  "@addWorkoutNote": {
+    "description": "Workout options menu item that adds a note to the whole workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editWorkoutNote": "Edit note",
+  "@editWorkoutNote": {
+    "description": "Workout options menu item, and the label of the shown workout note, that edits the note on the whole workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeWorkoutNote": "Remove note",
+  "@removeWorkoutNote": {
+    "description": "Tooltip of the button that clears the note on the whole workout",
+    "type": "text",
+    "placeholders": {}
+  },
   "ongoingWorkoutChannel": "Workout in progress",
   "@ongoingWorkoutChannel": {
     "description": "Android notification channel name for the ongoing-workout notification, shown in the system notification settings",

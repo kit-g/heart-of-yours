@@ -440,6 +440,12 @@ class LEn extends L {
   String get whatsNewThisVersion => 'This version';
 
   @override
+  String get whatsNewFeatureOff => 'Turn on in Features';
+
+  @override
+  String get whatsNewFeatureOn => 'On · see in Features';
+
+  @override
   String get whatsNewEmpty => 'No release notes in this version of the app.';
 
   @override
@@ -1890,6 +1896,18 @@ class LEn extends L {
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
 
   @override
+  String get workoutNote => 'Workout note';
+
+  @override
+  String get addWorkoutNote => 'Add note';
+
+  @override
+  String get editWorkoutNote => 'Edit note';
+
+  @override
+  String get removeWorkoutNote => 'Remove note';
+
+  @override
   String get ongoingWorkoutChannel => 'Workout in progress';
 
   @override
@@ -2638,6 +2656,12 @@ class LEnCa extends LEn {
 
   @override
   String get whatsNewThisVersion => 'This version';
+
+  @override
+  String get whatsNewFeatureOff => 'Turn on in Features';
+
+  @override
+  String get whatsNewFeatureOn => 'On · see in Features';
 
   @override
   String get whatsNewEmpty => 'No release notes in this version of the app.';
@@ -4088,6 +4112,18 @@ class LEnCa extends LEn {
 
   @override
   String get exerciseNoteSaveFailed => 'Could not save the note. Please try again.';
+
+  @override
+  String get workoutNote => 'Workout note';
+
+  @override
+  String get addWorkoutNote => 'Add note';
+
+  @override
+  String get editWorkoutNote => 'Edit note';
+
+  @override
+  String get removeWorkoutNote => 'Remove note';
 
   @override
   String get ongoingWorkoutChannel => 'Workout in progress';

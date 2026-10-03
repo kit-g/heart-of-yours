@@ -815,6 +815,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "whatsNewFeatureOff": "Activar en Funciones",
+  "@whatsNewFeatureOff": {
+    "description": "What's new page, a button under a note about an opt-in feature the user has off; it opens the Features page at that feature's switch, it does not turn it on by itself",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewFeatureOn": "Activado · ver en Funciones",
+  "@whatsNewFeatureOn": {
+    "description": "What's new page, a button under a note about an opt-in feature the user already has on; it opens the Features page at that feature's switch",
+    "type": "text",
+    "placeholders": {}
+  },
   "whatsNewEmpty": "Esta versión de la app no incluye notas de la versión.",
   "@whatsNewEmpty": {
     "description": "What's new page, shown when there are no release notes to list",
@@ -3946,6 +3958,30 @@
         "type": "String"
       }
     }
+  },
+  "workoutNote": "Nota del entrenamiento",
+  "@workoutNote": {
+    "description": "Title of the dialog that edits the free-text note on a whole workout, and its text field's label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addWorkoutNote": "Añadir nota",
+  "@addWorkoutNote": {
+    "description": "Workout options menu item that adds a note to the whole workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editWorkoutNote": "Editar nota",
+  "@editWorkoutNote": {
+    "description": "Workout options menu item, and the label of the shown workout note, that edits the note on the whole workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeWorkoutNote": "Eliminar nota",
+  "@removeWorkoutNote": {
+    "description": "Tooltip of the button that clears the note on the whole workout",
+    "type": "text",
+    "placeholders": {}
   },
   "rpe": "RPE",
   "@rpe": {

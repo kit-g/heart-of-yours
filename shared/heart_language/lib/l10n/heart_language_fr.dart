@@ -442,6 +442,12 @@ class LFr extends L {
   String get whatsNewThisVersion => 'Cette version';
 
   @override
+  String get whatsNewFeatureOff => 'Activer dans Fonctionnalités';
+
+  @override
+  String get whatsNewFeatureOn => 'Activée · voir dans Fonctionnalités';
+
+  @override
   String get whatsNewEmpty => 'Aucune note de version dans cette version de l’app.';
 
   @override
@@ -1894,6 +1900,18 @@ class LFr extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'Impossible d’enregistrer la note. Réessayez.';
+
+  @override
+  String get workoutNote => 'Note de la séance';
+
+  @override
+  String get addWorkoutNote => 'Ajouter une note';
+
+  @override
+  String get editWorkoutNote => 'Modifier la note';
+
+  @override
+  String get removeWorkoutNote => 'Supprimer la note';
 
   @override
   String get ongoingWorkoutChannel => 'Séance en cours';

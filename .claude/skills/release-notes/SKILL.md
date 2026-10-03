@@ -210,6 +210,14 @@ or Health Connect"). A note about something one platform only has — the Apple 
 `"platforms": ["ios"]` (or `["android"]`) in `en`, and that platform's users are the only ones who
 see it, or get a dot for it. Set it in `en` only, like the date; translations follow their `en` note.
 
+A note about an opt-in feature carries `"feature": "<Feature.value>"` (`muscleMap`), also in `en`
+only (#239). The note then gets a button to that feature's row on the Features page, which says
+whether the user has it on. So the body doesn't give directions: no "turn it on in **Settings →
+Features**". The watch app is the exception. Its yes is opening Heart on the watch, and its row
+exists only with one paired, so its note says so in words and carries no `feature`. The same row
+is reachable from outside the app at `https://heart-of.me/profile/settings/features?feature=<value>`
+(dev: `dev.heart-of.me`), for posts and tutorials.
+
 - `id` is a stable kebab-case slug, unique within its version. Translations are matched to their
   English original by version + id, and a locale missing an item shows the English one.
 - `body` is markdown, limited to paragraphs, **bold**, *italic*, lists and links. No headings (the
@@ -245,7 +253,8 @@ and title from `assets/whats_new/en.json` itself, and reads it with `dart:io`, b
 `rootBundle` load inside `testWidgets` never completes under the fake clock.
 
 **Check.** Run `flutter test test/whats_new_content_test.dart`. It fails on a malformed file, a
-locale item with no English original, a translation that changed a link, disallowed markdown, a
+locale item with no English original, a translation that changed a link, a `feature` outside `en`
+or not a known feature, disallowed markdown, a
 version newer than `pubspec.yaml`, an undated entry that isn't the release being cut, or
 formatting that differs from what the stamp script writes (2-space JSON, trailing newline). The
 page shows an empty state rather than crashing on a broken file, but the test is what keeps one

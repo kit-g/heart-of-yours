@@ -69,7 +69,7 @@ RouteBase _profileRoute() {
           ),
           GoRoute(
             path: _whatsNewPath,
-            builder: (_, _) => const WhatsNewPage(onError: reportToSentry),
+            builder: (context, _) => WhatsNewPage(onError: reportToSentry, onFeature: context.pushFeature),
             name: _whatsNewName,
           ),
           GoRoute(
@@ -79,7 +79,18 @@ RouteBase _profileRoute() {
           ),
           GoRoute(
             path: _featuresPath,
-            builder: (_, _) => const FeaturesPage(),
+            builder: (_, state) {
+              return FeaturesPage(
+                focus: Feature.values
+                    .where((feature) => feature.value == state.uri.queryParameters[_featureQuery])
+                    .firstOrNull,
+                // only What's new passes one: anything else arrived as a link
+                source: switch (state.extra) {
+                  FeatureLinkSource source => source,
+                  _ => .link,
+                },
+              );
+            },
             name: _featuresName,
           ),
         ],

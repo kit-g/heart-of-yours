@@ -19,6 +19,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final RemoteWorkoutService _remoteService;
   final RemoteAccess _remote;
   final Future<void> Function(String id, String? note)? _persistNote;
+  final Future<void> Function(String workoutId, String? note)? _persistWorkoutNote;
   final String? Function(String exerciseId)? _noteFor;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
@@ -36,6 +37,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     required this._remoteService,
     this.onError,
     this._persistNote,
+    this._persistWorkoutNote,
     this._noteFor,
     this.analytics,
     RemoteAccess? remote,
@@ -621,6 +623,22 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (!(activeWorkout?.contains(exercise) ?? false)) return;
     await _persistNote?.call(exercise.id, note);
     exercise.note = note;
+    notifyListeners();
+  }
+
+  /// The note on the whole active workout (#235): trimmed, blank is none.
+  /// Stored on the device; the finish carries it to the server with the rest.
+  Future<void> setWorkoutNote(String? value) async {
+    final workout = activeWorkout;
+    if (workout == null) return;
+    final note = switch (value?.trim()) {
+      null || '' => null,
+      final text => text,
+    };
+    // the server counts code points, not UTF-16 units
+    if (note != null && note.runes.length > Workout.maxNoteLength) throw ArgumentError('Note too long');
+    await _persistWorkoutNote?.call(workout.id, note);
+    workout.note = note;
     notifyListeners();
   }
 

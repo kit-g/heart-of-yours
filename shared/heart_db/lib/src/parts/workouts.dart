@@ -183,6 +183,12 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     await _db.update(_workoutExercises, {'note': note}, where: 'id = ?', whereArgs: [id]);
   }
 
+  /// The note on the whole session (#235), apart from [updateWorkout], which
+  /// writes every column it names and would clear this one on a rename.
+  Future<void> setWorkoutNote(String workoutId, String? note) async {
+    await _db.update(_workouts, {'note': note}, where: 'id = ?', whereArgs: [workoutId]);
+  }
+
   Future<int> _nextExerciseOrder(DatabaseExecutor txn, String workoutId) async {
     final rows = await txn.rawQuery(
       'SELECT COALESCE(MAX(exercise_order), -1) + 1 AS next FROM $_workoutExercises WHERE workout_id = ?',

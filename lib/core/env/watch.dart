@@ -63,8 +63,8 @@ typedef WatchExercise = ({
   List<WatchSetRow> sets,
 });
 
-/// One set in [WatchExercise.sets]: its identity, its values and whether it is
-/// ticked. Its number is its place in the list.
+/// One set in [WatchExercise.sets]: its identity, its values, whether it is
+/// ticked, and how the set column marks it.
 ///
 /// With the copy the watch shows once it is the set up next — so a watch with
 /// the phone out of reach (#206) can move on to it without asking: where it
@@ -72,6 +72,12 @@ typedef WatchExercise = ({
 /// screen's "Next:" line for the complication.
 typedef WatchSetRow = ({
   String id,
+
+  /// What the set column shows for it, as the phone's does: its number among
+  /// the plain sets, or a warm-up, drop or failure set's letter (#236); and
+  /// that type spelled out, null for a plain set.
+  String mark,
+  String? type,
   double? weight,
   int? reps,
   bool done,
@@ -167,6 +173,8 @@ final class WatchWorkout extends WatchState {
               for (final row in exercise.sets)
                 {
                   'id': row.id,
+                  'mark': row.mark,
+                  'type': ?row.type,
                   'weight': ?row.weight,
                   'reps': ?row.reps,
                   'done': row.done,

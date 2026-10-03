@@ -441,6 +441,12 @@ class LRu extends L {
   String get whatsNewThisVersion => 'Эта версия';
 
   @override
+  String get whatsNewFeatureOff => 'Включить в «Функциях»';
+
+  @override
+  String get whatsNewFeatureOn => 'Включено · в «Функциях»';
+
+  @override
   String get whatsNewEmpty => 'В этой версии приложения нет описания изменений.';
 
   @override
@@ -1920,6 +1926,18 @@ class LRu extends L {
 
   @override
   String get exerciseNoteSaveFailed => 'Не удалось сохранить заметку. Попробуйте ещё раз.';
+
+  @override
+  String get workoutNote => 'Заметка к тренировке';
+
+  @override
+  String get addWorkoutNote => 'Добавить заметку';
+
+  @override
+  String get editWorkoutNote => 'Изменить заметку';
+
+  @override
+  String get removeWorkoutNote => 'Удалить заметку';
 
   @override
   String get ongoingWorkoutChannel => 'Идёт тренировка';
