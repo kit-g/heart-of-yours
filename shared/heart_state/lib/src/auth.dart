@@ -320,7 +320,13 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         try {
           return (await anonymous.linkWithCredential(credential), AccountArrival.linked);
         } on fb.FirebaseAuthException catch (e) {
-          if (e.code != 'credential-already-in-use') rethrow;
+          // `email-already-in-use` is the same refusal one step removed: the
+          // credential is new, but its email already belongs to an account
+          // under another provider. A sign-in with it lands on that account
+          // wherever Firebase trusts this provider for the address — Google
+          // for its own mail — and fails as an ordinary sign-in error
+          // everywhere else, which is what the link already did.
+          if (e.code case != 'credential-already-in-use' && != 'email-already-in-use') rethrow;
           // `credential` is spent. An Apple identity token may be presented to
           // Firebase exactly once — the link above consumed it deciding the
           // account already existed — so re-sending it is a replay, and
