@@ -70,6 +70,11 @@ enum WatchState: Equatable {
                 var weight: Double?
                 var reps: Int?
                 var done: Bool
+                /// What the set column shows: "1", or "W" for a warm-up
+                /// (#236). Empty from a phone that predates it.
+                var mark: String = ""
+                /// The type spelled out, for VoiceOver; nil for a plain set.
+                var type: String?
                 var position: String = ""
                 var previous: String?
                 var next: String = ""
@@ -94,6 +99,8 @@ enum WatchState: Equatable {
                         weight: (row["weight"] as? NSNumber)?.doubleValue,
                         reps: (row["reps"] as? NSNumber)?.intValue,
                         done: row["done"] as? Bool ?? false,
+                        mark: row["mark"] as? String ?? "",
+                        type: row["type"] as? String,
                         position: row["position"] as? String ?? "",
                         previous: row["previous"] as? String,
                         next: row["next"] as? String ?? ""
