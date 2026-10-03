@@ -198,6 +198,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                 onNoteChanged: _notifier.setNote,
                 onRemoveSet: _notifier.removeSet,
                 onSetType: _notifier.setSetType,
+                onSetRpe: _notifier.setRpe,
                 onRemoveExercise: _notifier.removeExercise,
                 onSetDone: _notifier.markSet,
                 workoutImages: workout.images?.values,
@@ -497,6 +498,11 @@ class _WorkoutNotifier with ChangeNotifier {
 
   void setSetType(ExerciseSet set, SetType type) {
     set.setType = type;
+    notifyListeners();
+  }
+
+  void setRpe(ExerciseSet set, double? rpe) {
+    set.rpe = rpe;
     notifyListeners();
   }
 

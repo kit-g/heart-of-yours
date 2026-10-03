@@ -49,6 +49,7 @@ enum _Screen {
   workout,
   exerciseNoteEditor,
   setTypeMenu,
+  rpePicker,
   history,
   calendar,
   exercises,
@@ -247,6 +248,25 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'ember\'s "Add exercises" button under the exercise reads 2.6:1 (lib/presentation/widgets/workout/workout_detail.dart); every other preset passes',
   ),
   (_Screen.setTypeMenu, _Guideline.textContrastDark, null),
+  // The RPE picker in the keyboard's place, its scale unfolded, the first set
+  // rated (lib/presentation/widgets/workout/rpe.dart).
+  (
+    _Screen.rpePicker,
+    _Guideline.labeledTapTarget,
+    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:907) and each set\'s ✓ (lib/presentation/widgets/workout/set_item.dart:298) are icon-only with no label; the picker itself passes',
+  ),
+  (_Screen.rpePicker, _Guideline.textContrastLight, null),
+  (_Screen.rpePicker, _Guideline.textContrastDark, null),
+  (
+    _Screen.rpePicker,
+    _Guideline.androidTapTarget,
+    'the workout behind the picker keeps its 32pt rows (lib/presentation/widgets/workout/set_item.dart) — visual-density change, out of scope; the picker\'s ratings are 48 tall',
+  ),
+  (
+    _Screen.rpePicker,
+    _Guideline.iosTapTarget,
+    'the workout behind the picker keeps its 32pt rows (lib/presentation/widgets/workout/set_item.dart) — visual-density change, out of scope; the picker\'s ratings are 48 tall',
+  ),
   (
     _Screen.setTypeMenu,
     _Guideline.androidTapTarget,
@@ -588,6 +608,9 @@ void main() {
     if (screen == _Screen.features) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
+    if (screen == _Screen.rpePicker) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
+    }
 
     // The upsync row shows on the profile of an account whose store is still
     // owed a replay; what the server answers picks the state. The run is
@@ -778,6 +801,21 @@ void main() {
         await tester.tapByKey(WorkoutDetailKeys.setTypeFor(_bench.id, 1));
         await tester.pumpTimes();
         await tester.tap(find.byTooltip('About Warm up'));
+      case _Screen.rpePicker:
+        final workout = Workout(name: 'Rated')..add(_bench);
+        workout.first.first.rpe = 8;
+        await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(source: .template, template: workout);
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        await tester.tap(find.byKey(WorkoutDetailKeys.repsFor(_bench.id, 1)));
+        await tester.pumpTimes();
+        await tester.tapByKey(WorkoutDetailKeys.rpeKey);
+        await tester.pumpTimes();
+        await tester.tap(find.byTooltip('About RPE'));
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
       case _Screen.workoutDone:

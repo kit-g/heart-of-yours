@@ -2171,7 +2171,7 @@ class LEn extends L {
   String get rpe => 'RPE';
 
   @override
-  String get rpeSubtitle => 'Rate how hard each set was, from the number pad';
+  String get rpeSubtitle => 'Rate how hard each set was, from its number';
 
   @override
   String get rpeHint => 'How many more reps you had left. Tap a number to rate the set.';
@@ -2193,9 +2193,6 @@ class LEn extends L {
 
   @override
   String get rpeScale6 => '6: four or more';
-
-  @override
-  String get closeRpe => 'Back to the keyboard';
 
   @override
   String rpeBadge(String value) {
@@ -4374,7 +4371,7 @@ class LEnCa extends LEn {
   String get rpe => 'RPE';
 
   @override
-  String get rpeSubtitle => 'Rate how hard each set was, from the number pad';
+  String get rpeSubtitle => 'Rate how hard each set was, from its number';
 
   @override
   String get rpeHint => 'How many more reps you had left. Tap a number to rate the set.';
@@ -4396,9 +4393,6 @@ class LEnCa extends LEn {
 
   @override
   String get rpeScale6 => '6: four or more';
-
-  @override
-  String get closeRpe => 'Back to the keyboard';
 
   @override
   String rpeBadge(String value) {

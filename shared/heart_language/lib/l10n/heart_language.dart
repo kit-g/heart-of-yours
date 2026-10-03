@@ -3787,7 +3787,7 @@ abstract class L {
   /// Subtitle under the RPE switch in Settings › Features
   ///
   /// In en, this message translates to:
-  /// **'Rate how hard each set was, from the number pad'**
+  /// **'Rate how hard each set was, from its number'**
   String get rpeSubtitle;
 
   /// One line over the RPE picker, which replaces the number pad: what the scale means and how to use it
@@ -3831,12 +3831,6 @@ abstract class L {
   /// In en, this message translates to:
   /// **'6: four or more'**
   String get rpeScale6;
-
-  /// Tooltip on the button that closes the RPE picker
-  ///
-  /// In en, this message translates to:
-  /// **'Back to the keyboard'**
-  String get closeRpe;
 
   /// Tiny badge in a set's last value cell showing its RPE, e.g. '@8'. Keep the @ unless the language marks it differently
   ///

@@ -3953,7 +3953,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "rpeSubtitle": "Notez la difficulté de chaque série depuis le pavé numérique",
+  "rpeSubtitle": "Notez la difficulté de chaque série depuis son numéro",
   "@rpeSubtitle": {
     "description": "Subtitle under the RPE switch in Settings › Features",
     "type": "text",
@@ -3998,12 +3998,6 @@
   "rpeScale6": "6 : quatre ou plus",
   "@rpeScale6": {
     "description": "RPE scale, one line: at 6 four or more reps were left",
-    "type": "text",
-    "placeholders": {}
-  },
-  "closeRpe": "Revenir au clavier",
-  "@closeRpe": {
-    "description": "Tooltip on the button that closes the RPE picker",
     "type": "text",
     "placeholders": {}
   },

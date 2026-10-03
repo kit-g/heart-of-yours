@@ -3983,7 +3983,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "rpeSubtitle": "Rate how hard each set was, from the number pad",
+  "rpeSubtitle": "Rate how hard each set was, from its number",
   "@rpeSubtitle": {
     "description": "Subtitle under the RPE switch in Settings \u203a Features",
     "type": "text",
@@ -4028,12 +4028,6 @@
   "rpeScale6": "6: four or more",
   "@rpeScale6": {
     "description": "RPE scale, one line: at 6 four or more reps were left",
-    "type": "text",
-    "placeholders": {}
-  },
-  "closeRpe": "Back to the keyboard",
-  "@closeRpe": {
-    "description": "Tooltip on the button that closes the RPE picker",
     "type": "text",
     "placeholders": {}
   },

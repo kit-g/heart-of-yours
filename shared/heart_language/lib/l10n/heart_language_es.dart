@@ -2177,7 +2177,7 @@ class LEs extends L {
   String get rpe => 'RPE';
 
   @override
-  String get rpeSubtitle => 'Valora lo duro que fue cada serie desde el teclado numérico';
+  String get rpeSubtitle => 'Valora lo duro que fue cada serie desde su número';
 
   @override
   String get rpeHint => 'Cuántas repeticiones más te quedaban. Toca un número para valorar la serie.';
@@ -2199,9 +2199,6 @@ class LEs extends L {
 
   @override
   String get rpeScale6 => '6: cuatro o más';
-
-  @override
-  String get closeRpe => 'Volver al teclado';
 
   @override
   String rpeBadge(String value) {

@@ -18,11 +18,16 @@ class _ExerciseSetItem extends StatefulWidget {
   final Map<String, dynamic>? previousValue;
   final void Function(ExerciseSet, SetType)? onSetType;
 
+  /// Told which set is being typed into, for the RPE bar (#234); null where
+  /// sets are not rated.
+  final _RpeEditing? rpe;
+
   const new({
     required this.set,
     required this.index,
     required this.number,
     this.onSetType,
+    this.rpe,
     required this.exercise,
     required this.onRemoveSet,
     this.onSetDone,
@@ -71,6 +76,33 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     _repsController.addListener(_repsListener);
     _distanceController.addListener(_distanceListener);
     _durationController.addListener(_durationListener);
+    for (final field in _fields) {
+      field.addListener(_focusChanged);
+    }
+  }
+
+  List<FocusNode> get _fields => [_weightFocus, _repsFocus, _durationFocus, _distanceFocus];
+
+  /// Tells the RPE bar which set is being typed into, and when none is.
+  void _focusChanged() {
+    final rpe = widget.rpe;
+    if (rpe == null) return;
+    switch (_fields.where((field) => field.hasFocus).firstOrNull) {
+      case FocusNode field:
+        rpe.focus(set, field);
+      case null:
+        rpe.blur(set);
+    }
+  }
+
+  /// The set's rating, as its last value cell shows it; null while it has
+  /// none or the feature is off.
+  String? _rpeBadge(BuildContext context) {
+    if (!Preferences.watch(context).isOn(.rpe)) return null;
+    return switch (set.rpe) {
+      double rpe => L.of(context).rpeBadge(_rpeText(context, rpe)),
+      null => null,
+    };
   }
 
   @override
@@ -127,6 +159,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   @override
   void dispose() {
     _listened?.removeListener(_syncFromSet);
+    for (final field in _fields) {
+      field.removeListener(_focusChanged);
+    }
     _weightFocus.dispose();
     _repsFocus.dispose();
     _distanceFocus.dispose();
@@ -368,6 +403,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasRepsError,
               formatters: _integerFormatters,
               semanticLabel: L.of(context).reps,
+              badge: _rpeBadge(context),
             ),
           ),
         ];
@@ -383,6 +419,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasRepsError,
               formatters: _integerFormatters,
               semanticLabel: L.of(context).reps,
+              badge: _rpeBadge(context),
             ),
           ),
         ];
@@ -398,6 +435,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasDurationError,
               formatters: [TimeFormatter()],
               semanticLabel: L.of(context).duration,
+              badge: _rpeBadge(context),
             ),
           ),
         ];
@@ -443,6 +481,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasDurationError,
               formatters: [TimeFormatter()],
               semanticLabel: L.of(context).duration,
+              badge: _rpeBadge(context),
             ),
           ),
         ];
