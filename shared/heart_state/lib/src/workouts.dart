@@ -677,6 +677,17 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.storeMeasurements(set);
   }
 
+  /// Makes [set] a warm-up, a drop or a failure set, or a plain one again.
+  ///
+  /// Not an edit in [markEdited]'s sense: a type says what the set was, not
+  /// what was lifted, so a template's prescribed set retyped still finishes
+  /// as one the user never touched.
+  Future<void> setSetType(ExerciseSet set, SetType type) {
+    set.setType = type;
+    notifyListeners();
+    return _localService.storeMeasurements(set);
+  }
+
   /// Sets [set]'s measurements — [weight] and [distance] metric, [duration]
   /// in seconds — from outside its row: the watch (#183), a column header's
   /// fill (#225). And says so: the row follows what it hears, where a row's
