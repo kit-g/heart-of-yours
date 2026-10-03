@@ -2201,7 +2201,8 @@ class LFr extends L {
   String get rpeSubtitle => 'Notez la difficulté de chaque série depuis son numéro';
 
   @override
-  String get rpeHint => 'Combien de répétitions il vous restait. Touchez un chiffre pour noter la série.';
+  String get rpeHint =>
+      'Combien de répétitions vous sentiez encore en réserve. Touchez un chiffre pour noter la série.';
 
   @override
   String get aboutRpe => 'À propos du RPE';

@@ -3829,7 +3829,7 @@ abstract class L {
   /// One line over the RPE picker, which replaces the number pad: what the scale means and how to use it
   ///
   /// In en, this message translates to:
-  /// **'How many more reps you had left. Tap a number to rate the set.'**
+  /// **'How many reps you felt were still in you. Tap a number to rate the set.'**
   String get rpeHint;
 
   /// Tooltip on the help button in the RPE picker, which unfolds the scale
