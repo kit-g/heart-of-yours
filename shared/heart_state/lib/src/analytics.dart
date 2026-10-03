@@ -1,3 +1,4 @@
+import 'package:heart_models/heart_models.dart' show SetType;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -160,6 +161,7 @@ const _avatarUpdated = 'avatar_updated';
 const _upgradeGateShown = 'upgrade_gate_shown';
 const _notificationPermission = 'notification_permission_result';
 const _watchAppSwitched = 'watch_app_switched';
+const _setTypeChanged = 'set_type_changed';
 
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
@@ -177,6 +179,7 @@ const _filed = 'filed';
 const _granted = 'granted';
 const _on = 'on';
 const _fromWatch = 'from_watch';
+const _setType = 'set_type';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -392,6 +395,13 @@ class Analytics {
   /// Settings switch, so the reach of the feature and its reversals read apart.
   void watchAppSwitched({required bool on, required bool fromWatch}) {
     _log(_watchAppSwitched, {_on: _flag(on), _fromWatch: _flag(fromWatch)});
+  }
+
+  /// A set was marked as a warm-up, drop or failure set, or made plain again
+  /// (#151) — the reach of set types, and which of them people use. [type] is
+  /// the one picked, so `normal` is an un-marking.
+  void setTypeChanged({required SetType type}) {
+    _log(_setTypeChanged, {_setType: type.value});
   }
 
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);

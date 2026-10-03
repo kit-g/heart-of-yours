@@ -161,7 +161,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   void addSet(WorkoutExercise exercise) {
-    final set = exercise.lastOrNull?.copy() ?? ExerciseSet(exercise.exercise);
+    // a plain set, whatever the last one was: a warm-up is not what comes
+    // after a warm-up (Strong and Hevy agree)
+    final set = switch (exercise.lastOrNull) {
+      ExerciseSet last => last.copy()..setType = .normal,
+      null => ExerciseSet(exercise.exercise),
+    };
     exercise.add(set);
     notifyListeners();
   }
