@@ -426,6 +426,18 @@ void main() {
       expect(set.setType, SetType.normal);
     });
 
+    test('a set added after a warm-up is a plain one (#151)', () async {
+      await sut.startWorkout(source: .blank, name: 'Chest');
+      await sut.startExercise(bench);
+      final we = sut.activeWorkout!.first;
+      await sut.setSetType(we.first, .warmup);
+
+      await sut.addSet(we);
+
+      expect(we.last.setType, SetType.normal);
+      expect(we.first.setType, SetType.warmup, reason: 'the copy is a new set, not a retyped one');
+    });
+
     test('editSet takes a cardio set\'s distance and duration too (#225)', () async {
       final run = Exercise(name: 'Muffin Run', category: .cardio, target: .other);
       await sut.startWorkout(source: .blank, name: 'Run');

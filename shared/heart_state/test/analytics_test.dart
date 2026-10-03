@@ -48,6 +48,12 @@ void main() {
       expect(parametersOf('signup_completed'), {'provider': 'apple', 'arrival': 'takeover'});
     });
 
+    test('a set type goes as its wire word (#151)', () {
+      sut.setTypeChanged(type: .warmup);
+
+      expect(parametersOf('set_type_changed'), {'set_type': 'warmup'});
+    });
+
     test('a session with no account behind it clears the property rather than leaving the last answer', () {
       sut.setAuthProvider(null);
 
