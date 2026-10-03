@@ -6,16 +6,23 @@ const _dismissThreshold = .5;
 /// Allows to store and update the measurements of the set.
 class _ExerciseSetItem extends StatefulWidget {
   final int index;
+
+  /// What the set shows: its place among the exercise's plain sets, which a
+  /// warm-up, drop or failure set before it does not take (#151).
+  final int number;
   final ExerciseSet set;
   final WorkoutExercise exercise;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final bool isLocked;
   final Map<String, dynamic>? previousValue;
+  final void Function(ExerciseSet, SetType)? onSetType;
 
   const new({
     required this.set,
     required this.index,
+    required this.number,
+    this.onSetType,
     required this.exercise,
     required this.onRemoveSet,
     this.onSetDone,
@@ -218,17 +225,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
         child: Row(
           children: [
-            PrimaryButton.shrunk(
-              margin: EdgeInsets.zero,
-              backgroundColor: fill,
-              child: SizedBox(
-                width: _setColumnWidth,
-                height: _fixedButtonHeight,
-                child: Center(
-                  child: Text('${widget.index}'),
-                ),
-              ),
-              onPressed: () {},
+            _SetTypeButton(
+              key: WorkoutDetailKeys.setTypeFor(exercise.exercise.id, widget.index),
+              set: set,
+              number: widget.number,
+              fill: fill,
+              onSetType: widget.onSetType,
             ),
             Expanded(
               flex: 3,

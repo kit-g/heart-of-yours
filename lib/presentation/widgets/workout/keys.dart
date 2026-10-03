@@ -31,6 +31,12 @@ class WorkoutDetailKeys {
   /// The ✓ column's header in an exercise's set table (#225).
   static Key tickAllFor(String exerciseId) => Key('WorkoutDetail.tickAll.$exerciseId');
 
+  /// A set's number, which opens its type menu (#151).
+  static Key setTypeFor(String exerciseId, int index) => Key('WorkoutDetail.setType.$exerciseId.$index');
+
+  /// A row of the open set type menu; only one menu is open at a time.
+  static Key setTypeOption(SetType type) => Key('WorkoutDetail.setTypeOption.${type.value}');
+
   static Key weightFor(String exerciseId, int index) => Key('WorkoutDetail.weight.$exerciseId.$index');
 
   static Key repsFor(String exerciseId, int index) => Key('WorkoutDetail.reps.$exerciseId.$index');

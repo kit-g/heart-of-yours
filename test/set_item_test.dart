@@ -2,6 +2,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
+import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -95,6 +96,14 @@ void main() {
   /// constant, but a `ValueKey` compares by value, so building the same string
   /// here finds it.
   Key rowKeyFor(ExerciseSet set) => ValueKey<String>('_ExerciseSetItem.${set.id}');
+
+  Workout three(Exercise exercise) {
+    final workout = Workout(name: 'W')..add(exercise);
+    workout.first
+      ..add(ExerciseSet(exercise))
+      ..add(ExerciseSet(exercise));
+    return workout;
+  }
 
   Finder fieldsIn(Key rowKey) => find.descendant(of: find.byKey(rowKey), matching: find.byType(TextField));
 
@@ -260,14 +269,6 @@ void main() {
   });
 
   group('column headers (#225)', () {
-    Workout three(Exercise exercise) {
-      final workout = Workout(name: 'W')..add(exercise);
-      workout.first
-        ..add(ExerciseSet(exercise))
-        ..add(ExerciseSet(exercise));
-      return workout;
-    }
-
     /// What a row's field shows: the fill reaches the model through
     /// `Workouts.editSet`, and the row has to follow it on screen.
     String shown(WidgetTester tester, Key key) {
@@ -333,6 +334,69 @@ void main() {
       await tester.tapByKey(WorkoutDetailKeys.tickAllFor(exercise.id));
       await tester.pumpTimes();
       expect(workout.first.any((set) => set.isCompleted), isFalse, reason: 'all ticked, so all come off');
+    });
+  });
+
+  group('set types (#151)', () {
+    String? numberShownBy(String exerciseId, int index) {
+      final face = find.descendant(
+        of: find.byKey(WorkoutDetailKeys.setTypeFor(exerciseId, index)),
+        matching: find.byType(Text),
+      );
+      return (face.evaluate().single.widget as Text).data;
+    }
+
+    testWidgets('the number opens the types; a warm-up wears its letter and gives up its number', (tester) async {
+      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final workout = three(exercise);
+      final [warmup, ..._] = workout.first.toList();
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.setTypeFor(exercise.id, 1));
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.setTypeOption(.warmup));
+      await tester.pumpTimes();
+
+      expect(warmup.setType, SetType.warmup);
+      verify(db.storeMeasurements(warmup)).called(1);
+      expect(numberShownBy(exercise.id, 1), 'W');
+      expect(numberShownBy(exercise.id, 2), '1', reason: 'the first working set is set one');
+      expect(numberShownBy(exercise.id, 3), '2');
+    });
+
+    testWidgets('picking the type a set already is makes it plain again', (tester) async {
+      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final workout = three(exercise);
+      final [first, ..._] = workout.first.toList();
+      first.setType = .drop;
+      await startWorkoutOn(tester, workout);
+      expect(numberShownBy(exercise.id, 1), 'D');
+
+      await tester.tapByKey(WorkoutDetailKeys.setTypeFor(exercise.id, 1));
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.setTypeOption(.drop));
+      await tester.pumpTimes();
+
+      expect(first.setType, SetType.normal);
+      expect(numberShownBy(exercise.id, 1), '1');
+    });
+
+    testWidgets('the help button explains in place, and types nothing', (tester) async {
+      final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);
+      final workout = three(exercise);
+      await startWorkoutOn(tester, workout);
+      final l = L.of(tester.element(find.byType(WorkoutDetail)));
+
+      await tester.tapByKey(WorkoutDetailKeys.setTypeFor(exercise.id, 1));
+      await tester.pumpTimes();
+      expect(find.text(l.setTypeFailureExplained), findsNothing);
+
+      await tester.tap(find.byTooltip(l.aboutSetType(l.setTypeFailure)));
+      await tester.pumpTimes();
+
+      expect(find.text(l.setTypeFailureExplained), findsOneWidget);
+      expect(find.text(l.setTypeFailure), findsOneWidget, reason: 'the menu stays open beside it');
+      expect(workout.first.first.setType, SetType.normal);
     });
   });
 }
