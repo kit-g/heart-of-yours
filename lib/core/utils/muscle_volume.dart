@@ -44,7 +44,8 @@ MuscleVolume muscleVolume(Iterable<MuscleSets> rows) {
 /// (#223).
 ///
 /// The tagging comes from the library when it knows the exercise: the copy a
-/// workout carries may have been synced without it. An exercise with no sets
+/// workout carries may have been synced without it. Warm-ups are left out, as
+/// the map's read of a period leaves them out (#236). An exercise with no sets
 /// done adds nothing, not even to `unmapped`.
 Iterable<MuscleSets> workoutMuscleSets(Workout workout, {required Exercise? Function(ExerciseId) lookup}) {
   MuscleTagging tagging(Exercise exercise) {
@@ -59,7 +60,7 @@ Iterable<MuscleSets> workoutMuscleSets(Workout workout, {required Exercise? Func
         (each) => (
           start: workout.start,
           muscles: tagging(each.exercise),
-          sets: each.where((set) => set.isCompleted).length,
+          sets: each.where((set) => set.isCompleted && set.setType != .warmup).length,
         ),
       )
       .where((row) => row.sets > 0);
