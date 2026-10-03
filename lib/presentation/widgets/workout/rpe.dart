@@ -192,10 +192,7 @@ class const _RpeValue({
         // 44 tall: Apple's floor for a tap target, and no roomier
         margin: const .symmetric(vertical: 12),
         // the accent fill is the rating the set has; the rest sit quiet
-        backgroundColor: switch (selected) {
-          true => null,
-          false => colorScheme.surfaceContainerHighest,
-        },
+        backgroundColor: selected ? null : colorScheme.surfaceContainerHighest,
         onPressed: onPressed,
         child: Center(
           child: Text(
@@ -203,10 +200,7 @@ class const _RpeValue({
             // the text style names a colour of its own, so the accent's ink
             // has to be asked for
             style: textTheme.titleSmall?.copyWith(
-              color: switch (selected) {
-                true => colorScheme.onTertiaryContainer,
-                false => null,
-              },
+              color: selected ? colorScheme.onTertiaryContainer : null,
             ),
           ),
         ),
