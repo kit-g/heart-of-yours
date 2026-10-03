@@ -139,7 +139,7 @@ eveningWorkout,Default workout name,"{when}, Evening","{when}, Evening","{when},
 nightWorkout,Default workout name,"{when}, Night","{when}, Night","{when}, ночь","{when}, de madrugada","{when}, nuit"
 afternoonWorkout,Default workout name,"{when}, Afternoon","{when}, Afternoon","{when}, день","{when}, por la tarde","{when}, après-midi"
 emptyHistoryTitle,emptyHistoryTitle,Your completed workouts will be here,Your completed workouts will be here,Здесь будут ваши завершенные тренировки,Tus entrenamientos completados aparecerán aquí,Vos séances terminées apparaîtront ici
-emptyHistoryBody,emptyHistoryBody,Go get them done!,Go get them done!,Вперед за тренировками!,¡Ve por ellos!,"Allez, on s’y met !"
+emptyHistoryBody,emptyHistoryBody,Go get them done!,Go get them done!,Вперед за тренировками!,¡Ve a por ellos!,"Allez, on s’y met !"
 historyEndReached,Footer at the bottom of the workout history list once every workout has loaded,You've reached the end,You've reached the end,Вы достигли конца,Llegaste al final,Vous avez atteint la fin
 historyLoadMoreError,Footer shown when loading the next page of workout history fails,Couldn't load more workouts,Couldn't load more workouts,Не удалось загрузить больше тренировок,No se pudieron cargar más entrenamientos,Impossible de charger plus de séances
 retry,Button to retry a failed action,Retry,Retry,Повторить,Reintentar,Réessayer
@@ -199,7 +199,7 @@ subtractSeconds,Rest timer,-10s,-10s,-10с,-10s,-10s
 restComplete,Rest notification banner,Rest complete!,Rest complete!,Отдых завершен!,¡Descanso terminado!,Repos terminé !
 workoutsPerWeek,Chart label,Workouts per week,Workouts per week,Тренировки в неделю,Entrenamientos por semana,Séances par semaine
 workoutsPerWeekTitle,Chart label,Your workouts will be presented here,Your workouts will be presented here,Ваши тренировки будут отображаться здесь,Tus entrenamientos se mostrarán aquí,Vos séances seront présentées ici
-workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Вперед за тренировками!,¡Ve por ellos!,"Allez, on s’y met !"
+workoutsPerWeekBody,Chart label,Go get them done!,Go get them done!,Вперед за тренировками!,¡Ve a por ellos!,"Allez, on s’y met !"
 goals,Title of the goals card on the profile screen,Goals,Goals,Цели,Metas,Objectifs
 addGoal,Button that starts creating a goal,Add goal,Add goal,Добавить цель,Nueva meta,Ajouter un objectif
 noGoalsYet,Empty state of the goals card,No goals yet,No goals yet,Целей пока нет,Aún no hay metas,Aucun objectif pour l’instant
