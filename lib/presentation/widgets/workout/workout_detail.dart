@@ -71,8 +71,8 @@ class WorkoutDetail extends StatefulWidget {
   /// (#151). Without it the set numbers are not buttons.
   final void Function(ExerciseSet, SetType)? onSetType;
 
-  /// Rates a set, or clears its rating (#234). Without it, as in a template,
-  /// sets carry no RPE and the bar over the number pad never appears.
+  /// Rates a set, or clears its rating (#234), from the set-number popup.
+  /// Without it, as in a template, sets carry no RPE and the popup no ratings.
   final void Function(ExerciseSet, double?)? onSetRpe;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
@@ -118,7 +118,6 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
   final _searchController = TextEditingController();
   final _beingDragged = ValueNotifier<WorkoutExercise?>(null);
   final _currentlyHoveredExercise = ValueNotifier<WorkoutExercise?>(null);
-  final _rpe = _RpeEditing();
 
   Iterable<WorkoutExercise> get exercises => widget.exercises;
 
@@ -128,7 +127,6 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
     _searchController.dispose();
     _beingDragged.dispose();
     _currentlyHoveredExercise.dispose();
-    _rpe.dispose();
 
     super.dispose();
   }
@@ -157,7 +155,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       context,
     );
 
-    final scroll = CustomScrollView(
+    return CustomScrollView(
       controller: widget.controller,
       physics: const ClampingScrollPhysics(),
       slivers: [
@@ -262,18 +260,6 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
         ...?widget.trailingSlivers,
       ],
     );
-
-    return switch (widget.onSetRpe) {
-      // the bar sits under the list, so it rides on top of the keyboard, and
-      // the picker takes the keyboard's place when it goes
-      final onSetRpe? => Column(
-        children: [
-          Expanded(child: scroll),
-          _RpeBar(editing: _rpe, onSetRpe: onSetRpe),
-        ],
-      ),
-      null => scroll,
-    };
   }
 
   /// Resolves a drop onto [target] into the two reordering primitives the model
@@ -377,10 +363,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             onRemoveSet: widget.onRemoveSet,
                             onSetDone: widget.onSetDone,
                             onSetType: widget.onSetType,
-                            rpe: switch (widget.onSetRpe) {
-                              null => null,
-                              _ => _rpe,
-                            },
+                            onSetRpe: widget.onSetRpe,
                             onRemoveExercise: widget.onRemoveExercise,
                             onSwapExercise: _onDrop,
                             onDragStarted: () {

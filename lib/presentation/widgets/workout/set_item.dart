@@ -18,16 +18,16 @@ class _ExerciseSetItem extends StatefulWidget {
   final Map<String, dynamic>? previousValue;
   final void Function(ExerciseSet, SetType)? onSetType;
 
-  /// Told which set is being typed into, for the RPE bar (#234); null where
-  /// sets are not rated.
-  final _RpeEditing? rpe;
+  /// Rates the set from its number's popup (#234); null where sets are not
+  /// rated.
+  final void Function(ExerciseSet, double?)? onSetRpe;
 
   const new({
     required this.set,
     required this.index,
     required this.number,
     this.onSetType,
-    this.rpe,
+    this.onSetRpe,
     required this.exercise,
     required this.onRemoveSet,
     this.onSetDone,
@@ -76,23 +76,6 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     _repsController.addListener(_repsListener);
     _distanceController.addListener(_distanceListener);
     _durationController.addListener(_durationListener);
-    for (final field in _fields) {
-      field.addListener(_focusChanged);
-    }
-  }
-
-  List<FocusNode> get _fields => [_weightFocus, _repsFocus, _durationFocus, _distanceFocus];
-
-  /// Tells the RPE bar which set is being typed into, and when none is.
-  void _focusChanged() {
-    final rpe = widget.rpe;
-    if (rpe == null) return;
-    switch (_fields.where((field) => field.hasFocus).firstOrNull) {
-      case FocusNode field:
-        rpe.focus(set, field);
-      case null:
-        rpe.blur(set);
-    }
   }
 
   /// The set's rating, as its last value cell shows it; null while it has
@@ -159,9 +142,6 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   @override
   void dispose() {
     _listened?.removeListener(_syncFromSet);
-    for (final field in _fields) {
-      field.removeListener(_focusChanged);
-    }
     _weightFocus.dispose();
     _repsFocus.dispose();
     _distanceFocus.dispose();
@@ -266,6 +246,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               number: widget.number,
               fill: fill,
               onSetType: widget.onSetType,
+              onSetRpe: widget.onSetRpe,
             ),
             Expanded(
               flex: 3,

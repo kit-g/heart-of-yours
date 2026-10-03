@@ -6,6 +6,10 @@ part of 'workout_detail.dart';
 /// up to, or the rows stop short of its right edge.
 const _setTypeMenuWidth = 224.0;
 
+/// The menu's width while it carries the ratings (#234), so three of them fit
+/// a row at a whole tap target's height: 280, the next step up.
+const _setTypeMenuWideWidth = 280.0;
+
 /// The set's place in its exercise, and the way to say what kind of set it was
 /// (#151). A plain set shows its number, a warm-up, drop or failure set its
 /// letter. Tapping it opens the types, in the same popup the workout's options
@@ -20,12 +24,17 @@ class _SetTypeButton extends StatefulWidget {
   final Color fill;
   final void Function(ExerciseSet, SetType)? onSetType;
 
+  /// Rates the set, or clears its rating (#234). With it, and RPE on, the
+  /// popup carries the ratings under the types.
+  final void Function(ExerciseSet, double?)? onSetRpe;
+
   const new({
     super.key,
     required this.set,
     required this.number,
     required this.fill,
     this.onSetType,
+    this.onSetRpe,
   });
 
   @override
@@ -40,9 +49,13 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
   /// with the menu, so the next opening starts as short as it can be.
   final _explained = ValueNotifier<SetType?>(null);
 
+  /// Whether the RPE scale is unfolded in the popup; folded with it too.
+  final _rpeExplained = ValueNotifier(false);
+
   @override
   void dispose() {
     _explained.dispose();
+    _rpeExplained.dispose();
     super.dispose();
   }
 
@@ -116,36 +129,62 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
   static const _typed = [SetType.warmup, SetType.drop, SetType.failure];
 
   Future<void> _open(void Function(ExerciseSet, SetType) onSetType) async {
-    final current = widget.set.setType;
-    final picked = await showMenu<SetType>(
+    final ExerciseSet(setType: current, rpe: rated) = widget.set;
+    final onSetRpe = switch (Preferences.of(context).isOn(.rpe)) {
+      true => widget.onSetRpe,
+      false => null,
+    };
+    final width = switch (onSetRpe) {
+      null => _setTypeMenuWidth,
+      _ => _setTypeMenuWideWidth,
+    };
+
+    final picked = await showMenu<_SetChoice>(
       context: context,
       position: _anchor.position(),
-      items: _typed.map((type) => _item(type, selected: type == current)).toList(),
+      items: [
+        ..._typed.map((type) => _item(type, selected: type == current, width: width)),
+        if (onSetRpe != null) _RpeEntry(set: widget.set, explained: _rpeExplained),
+      ],
     );
     _explained.value = null;
-    if (picked == null || !mounted) return;
+    _rpeExplained.value = false;
+    if (!mounted) return;
 
-    buzz();
-    final type = switch (picked == current) {
-      true => SetType.normal,
-      false => picked,
-    };
-    Analytics.of(context).setTypeChanged(type: type);
-    onSetType(widget.set, type);
+    switch (picked) {
+      case _TypeChoice(:final type):
+        buzz();
+        // the type a set already is makes it plain again
+        final retyped = switch (type == current) {
+          true => SetType.normal,
+          false => type,
+        };
+        Analytics.of(context).setTypeChanged(type: retyped);
+        onSetType(widget.set, retyped);
+      case _RpeChoice(:final rpe):
+        buzz();
+        // and the rating it already has clears it
+        onSetRpe?.call(widget.set, switch (rpe == rated) {
+          true => null,
+          false => rpe,
+        });
+      case null:
+        return;
+    }
   }
 
-  PopupMenuItem<SetType> _item(SetType type, {required bool selected}) {
-    final ThemeData(:textTheme, :brightness, :colorScheme, :scaffoldBackgroundColor) = Theme.of(context);
+  PopupMenuItem<_SetChoice> _item(SetType type, {required bool selected, required double width}) {
+    final ThemeData(:textTheme, :brightness, :colorScheme) = Theme.of(context);
     final l = L.of(context);
 
-    return PopupMenuItem<SetType>(
+    return PopupMenuItem<_SetChoice>(
       key: WorkoutDetailKeys.setTypeOption(type),
-      value: type,
+      value: _TypeChoice(type),
       padding: .zero,
       child: Semantics(
         selected: selected,
         child: Container(
-          width: _setTypeMenuWidth,
+          width: width,
           // the menu's own surface is the fill tone, so the type's hue, faint,
           // is what tells the current one apart
           color: switch (selected) {
@@ -176,7 +215,8 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
                         tooltip: l.aboutSetType(type.copy(l)),
                         visualDensity: .compact,
                         style: IconButton.styleFrom(
-                          backgroundColor: scaffoldBackgroundColor,
+                          // the fill tone: the page's own ground is the popup's in light
+                          backgroundColor: colorScheme.surfaceContainerHighest,
                           shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
                         ),
                         icon: const Icon(Icons.question_mark_rounded, size: 18),
