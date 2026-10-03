@@ -3885,6 +3885,36 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Clear RPE'**
   String get clearRpe;
+
+  /// Title of the set stopwatch's switch in Settings › Features: a stopwatch inside a timed set (plank, hang, carry)
+  ///
+  /// In en, this message translates to:
+  /// **'Set stopwatch'**
+  String get setStopwatch;
+
+  /// One line under the set stopwatch's switch in Settings › Features
+  ///
+  /// In en, this message translates to:
+  /// **'Time a set, then stop to log it.'**
+  String get setStopwatchSubtitle;
+
+  /// Read by screen readers on the play button that takes the place of a timed set's done button while its time is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Start set stopwatch'**
+  String get startSetStopwatch;
+
+  /// Read by screen readers on the stop button of a timed set whose stopwatch is running; stopping writes the time into the set
+  ///
+  /// In en, this message translates to:
+  /// **'Stop timing'**
+  String get stopSetStopwatch;
+
+  /// Lock-screen label beside the counting clock while a timed set's stopwatch runs: which of the exercise's sets is being timed, e.g. 'Set 2'
+  ///
+  /// In en, this message translates to:
+  /// **'Set {number}'**
+  String ongoingWorkoutStopwatch(int number);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

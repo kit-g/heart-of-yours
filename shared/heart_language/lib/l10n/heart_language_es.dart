@@ -2230,4 +2230,21 @@ class LEs extends L {
 
   @override
   String get clearRpe => 'Quitar RPE';
+
+  @override
+  String get setStopwatch => 'Cronómetro de serie';
+
+  @override
+  String get setStopwatchSubtitle => 'Cronometra una serie y detén el cronómetro para registrarla.';
+
+  @override
+  String get startSetStopwatch => 'Iniciar cronómetro de serie';
+
+  @override
+  String get stopSetStopwatch => 'Detener cronómetro';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Serie $number';
+  }
 }
