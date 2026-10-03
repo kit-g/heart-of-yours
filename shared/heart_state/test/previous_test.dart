@@ -119,6 +119,49 @@ void main() {
       expect(sut.at('squat', -1), isNull);
     });
 
+    group('matching', () {
+      final squat = Exercise.fromJson({'id': 'squat', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs'});
+
+      WorkoutExercise sets(List<SetType> types) {
+        final exercise = WorkoutExercise(starter: ExerciseSet(squat, setType: types.first));
+        for (final type in types.skip(1)) {
+          exercise.add(ExerciseSet(squat, setType: type));
+        }
+        return exercise;
+      }
+
+      setUp(() async {
+        sut = PreviousExercises(
+          service: _FakePreviousService(
+            response: {
+              'squat': [
+                {'weight': 40, 'reps': 10, 'set_type': 'warmup'},
+                {'weight': 100, 'reps': 5},
+                {'weight': 105, 'reps': 3, 'set_type': 'failure'},
+              ],
+            },
+          ),
+        )..userId = 'user-1';
+        await sut.init();
+      });
+
+      test('lines warm-ups up with warm-ups and working sets with working sets', () {
+        final today = sets([.warmup, .warmup, .normal, .drop]);
+
+        expect(sut.matching(today, 0), {'weight': 40, 'reps': 10, 'set_type': 'warmup'});
+        expect(sut.matching(today, 1), isNull);
+        expect(sut.matching(today, 2), {'weight': 100, 'reps': 5});
+        expect(sut.matching(today, 3), {'weight': 105, 'reps': 3, 'set_type': 'failure'});
+      });
+
+      test('a session without warm-ups still lines its sets up with last working ones', () {
+        final today = sets([.normal, .normal]);
+
+        expect(sut.matching(today, 0)?['weight'], 100);
+        expect(sut.matching(today, 1)?['weight'], 105);
+      });
+    });
+
     test('last returns the final set', () {
       expect(sut.last('squat'), {'weight': 105, 'reps': 3});
     });
