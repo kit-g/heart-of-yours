@@ -171,6 +171,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     notifyListeners();
   }
 
+  /// Retypes [set] in the template being edited; saved with the rest of it.
+  void setSetType(ExerciseSet set, SetType type) {
+    set.setType = type;
+    notifyListeners();
+  }
+
   void removeExercise(WorkoutExercise exercise) {
     editable?.remove(exercise);
     notifyListeners();

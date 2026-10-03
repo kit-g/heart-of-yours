@@ -185,6 +185,24 @@ void main() {
         expect(probe.notifications, 2);
       });
 
+      test('setSetType retypes a set and notifies (#151)', () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        await templates.add(ex('Push Up'));
+        final set = templates.editable!.first.first;
+        probe.notifications = 0;
+
+        templates.setSetType(set, .warmup);
+        expect(set.setType, SetType.warmup);
+        expect(probe.notifications, 1);
+        expect(
+          templates.editable!.first.toMap(),
+          containsPair('sets', [containsPair('set_type', 'warmup')]),
+          reason: 'what the save sends',
+        );
+      });
+
       test('removeExercise notifies', () async {
         when(
           local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
