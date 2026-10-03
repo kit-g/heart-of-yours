@@ -2168,4 +2168,42 @@ class LRu extends L {
   String muscleMapCellCaption(String period, String detail) {
     return '$period · $detail';
   }
+
+  @override
+  String get setTypeWarmup => 'Разминка';
+
+  @override
+  String get setTypeDrop => 'Дроп-сет';
+
+  @override
+  String get setTypeFailure => 'Отказ';
+
+  @override
+  String get setTypeWarmupLetter => 'Р';
+
+  @override
+  String get setTypeDropLetter => 'Д';
+
+  @override
+  String get setTypeFailureLetter => 'О';
+
+  @override
+  String get setTypeWarmupExplained =>
+      'Лёгкий подход, чтобы подготовиться к работе. Разминка не входит в рекорды, графики и объём.';
+
+  @override
+  String get setTypeDropExplained =>
+      'Сразу после подхода снизьте вес и продолжайте почти без отдыха. Считается как обычный подход.';
+
+  @override
+  String get setTypeFailureExplained =>
+      'Подход до момента, когда ещё одно чистое повторение уже не выходит. Считается как обычный подход.';
+
+  @override
+  String get setType => 'Тип подхода';
+
+  @override
+  String aboutSetType(String setType) {
+    return 'Подробнее: $setType';
+  }
 }

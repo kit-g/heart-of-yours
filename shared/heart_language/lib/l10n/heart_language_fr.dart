@@ -2137,4 +2137,42 @@ class LFr extends L {
   String muscleMapCellCaption(String period, String detail) {
     return '$period · $detail';
   }
+
+  @override
+  String get setTypeWarmup => 'Échauffement';
+
+  @override
+  String get setTypeDrop => 'Série dégressive';
+
+  @override
+  String get setTypeFailure => 'Rupture';
+
+  @override
+  String get setTypeWarmupLetter => 'É';
+
+  @override
+  String get setTypeDropLetter => 'D';
+
+  @override
+  String get setTypeFailureLetter => 'R';
+
+  @override
+  String get setTypeWarmupExplained =>
+      'Une série légère pour se préparer au travail. Les échauffements ne comptent ni dans vos records, ni dans les graphiques, ni dans le volume.';
+
+  @override
+  String get setTypeDropExplained =>
+      'Juste après une série, baissez la charge et continuez avec peu ou pas de repos. Compte comme n\'importe quelle série.';
+
+  @override
+  String get setTypeFailureExplained =>
+      'Une série menée jusqu\'à ne plus pouvoir faire une seule bonne répétition. Compte comme n\'importe quelle série.';
+
+  @override
+  String get setType => 'Type de série';
+
+  @override
+  String aboutSetType(String setType) {
+    return 'À propos : $setType';
+  }
 }

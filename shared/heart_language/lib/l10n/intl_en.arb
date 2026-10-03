@@ -3906,5 +3906,75 @@
         "type": "String"
       }
     }
+  },
+  "setTypeWarmup": "Warm up",
+  "@setTypeWarmup": {
+    "description": "Set type menu item: a lighter set done to prepare for the working sets",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeDrop": "Drop set",
+  "@setTypeDrop": {
+    "description": "Set type menu item: a set done straight after another at a lower weight",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeFailure": "Failure",
+  "@setTypeFailure": {
+    "description": "Set type menu item: a set taken until no further rep was possible",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeWarmupLetter": "W",
+  "@setTypeWarmupLetter": {
+    "description": "One-letter badge shown instead of the set number for a warm-up set. Must be a single character",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeDropLetter": "D",
+  "@setTypeDropLetter": {
+    "description": "One-letter badge shown instead of the set number for a drop set. Must be a single character",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeFailureLetter": "F",
+  "@setTypeFailureLetter": {
+    "description": "One-letter badge shown instead of the set number for a failure set. Must be a single character",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeWarmupExplained": "A lighter set to get ready for the work. Warm-ups stay out of your records, charts and volume.",
+  "@setTypeWarmupExplained": {
+    "description": "Explains what a warm-up set is, shown from the set type menu's help button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeDropExplained": "Straight after a set, lower the weight and keep going with little or no rest. Counts like any other set.",
+  "@setTypeDropExplained": {
+    "description": "Explains what a drop set is, shown from the set type menu's help button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeFailureExplained": "A set taken until you couldn't do one more good rep. Counts like any other set.",
+  "@setTypeFailureExplained": {
+    "description": "Explains what a failure set is, shown from the set type menu's help button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setType": "Set type",
+  "@setType": {
+    "description": "Tooltip on a set's number, which opens the menu to mark it as a warm-up, drop or failure set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "aboutSetType": "About {setType}",
+  "@aboutSetType": {
+    "description": "Tooltip on the help button beside a set type in the set type menu, e.g. 'About Drop set'",
+    "type": "text",
+    "placeholders": {
+      "setType": {
+        "type": "String"
+      }
+    }
   }
 }

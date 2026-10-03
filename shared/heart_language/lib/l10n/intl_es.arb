@@ -3876,5 +3876,75 @@
     "description": "Screen-reader label of the What's new row in Settings while it holds notes the user has not read; a small dot marks it",
     "type": "text",
     "placeholders": {}
+  },
+  "setTypeWarmup": "Calentamiento",
+  "@setTypeWarmup": {
+    "description": "Set type menu item: a lighter set done to prepare for the working sets",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeDrop": "Serie descendente",
+  "@setTypeDrop": {
+    "description": "Set type menu item: a set done straight after another at a lower weight",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeFailure": "Al fallo",
+  "@setTypeFailure": {
+    "description": "Set type menu item: a set taken until no further rep was possible",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeWarmupLetter": "C",
+  "@setTypeWarmupLetter": {
+    "description": "One-letter badge shown instead of the set number for a warm-up set. Must be a single character",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeDropLetter": "D",
+  "@setTypeDropLetter": {
+    "description": "One-letter badge shown instead of the set number for a drop set. Must be a single character",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeFailureLetter": "F",
+  "@setTypeFailureLetter": {
+    "description": "One-letter badge shown instead of the set number for a failure set. Must be a single character",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeWarmupExplained": "Una serie ligera para prepararte antes del trabajo. Los calentamientos no cuentan para tus récords, gráficas ni volumen.",
+  "@setTypeWarmupExplained": {
+    "description": "Explains what a warm-up set is, shown from the set type menu's help button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeDropExplained": "Justo después de una serie, baja el peso y sigue con poco o ningún descanso. Cuenta como cualquier otra serie.",
+  "@setTypeDropExplained": {
+    "description": "Explains what a drop set is, shown from the set type menu's help button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setTypeFailureExplained": "Una serie llevada hasta no poder hacer ni una repetición limpia más. Cuenta como cualquier otra serie.",
+  "@setTypeFailureExplained": {
+    "description": "Explains what a failure set is, shown from the set type menu's help button",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setType": "Tipo de serie",
+  "@setType": {
+    "description": "Tooltip on a set's number, which opens the menu to mark it as a warm-up, drop or failure set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "aboutSetType": "Acerca de: {setType}",
+  "@aboutSetType": {
+    "description": "Tooltip on the help button beside a set type in the set type menu, e.g. 'About Drop set'",
+    "type": "text",
+    "placeholders": {
+      "setType": {
+        "type": "String"
+      }
+    }
   }
 }

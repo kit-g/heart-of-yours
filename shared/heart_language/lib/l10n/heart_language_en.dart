@@ -2128,6 +2128,44 @@ class LEn extends L {
   String muscleMapCellCaption(String period, String detail) {
     return '$period · $detail';
   }
+
+  @override
+  String get setTypeWarmup => 'Warm up';
+
+  @override
+  String get setTypeDrop => 'Drop set';
+
+  @override
+  String get setTypeFailure => 'Failure';
+
+  @override
+  String get setTypeWarmupLetter => 'W';
+
+  @override
+  String get setTypeDropLetter => 'D';
+
+  @override
+  String get setTypeFailureLetter => 'F';
+
+  @override
+  String get setTypeWarmupExplained =>
+      'A lighter set to get ready for the work. Warm-ups stay out of your records, charts and volume.';
+
+  @override
+  String get setTypeDropExplained =>
+      'Straight after a set, lower the weight and keep going with little or no rest. Counts like any other set.';
+
+  @override
+  String get setTypeFailureExplained =>
+      'A set taken until you couldn\'t do one more good rep. Counts like any other set.';
+
+  @override
+  String get setType => 'Set type';
+
+  @override
+  String aboutSetType(String setType) {
+    return 'About $setType';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4252,5 +4290,43 @@ class LEnCa extends LEn {
   @override
   String muscleMapCellCaption(String period, String detail) {
     return '$period · $detail';
+  }
+
+  @override
+  String get setTypeWarmup => 'Warm up';
+
+  @override
+  String get setTypeDrop => 'Drop set';
+
+  @override
+  String get setTypeFailure => 'Failure';
+
+  @override
+  String get setTypeWarmupLetter => 'W';
+
+  @override
+  String get setTypeDropLetter => 'D';
+
+  @override
+  String get setTypeFailureLetter => 'F';
+
+  @override
+  String get setTypeWarmupExplained =>
+      'A lighter set to get ready for the work. Warm-ups stay out of your records, charts and volume.';
+
+  @override
+  String get setTypeDropExplained =>
+      'Straight after a set, lower the weight and keep going with little or no rest. Counts like any other set.';
+
+  @override
+  String get setTypeFailureExplained =>
+      'A set taken until you couldn\'t do one more good rep. Counts like any other set.';
+
+  @override
+  String get setType => 'Set type';
+
+  @override
+  String aboutSetType(String setType) {
+    return 'About $setType';
   }
 }
