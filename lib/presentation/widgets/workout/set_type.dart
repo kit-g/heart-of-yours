@@ -215,7 +215,9 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
 }
 
 /// Copy and color for a [SetType]; the model carries the wire word only.
-extension on SetType {
+/// A set type's copy, for every surface that names one: the set column and
+/// its menu, and the watch (#236).
+extension SetTypeCopy on SetType {
   String copy(L l) {
     return switch (this) {
       .normal => '',

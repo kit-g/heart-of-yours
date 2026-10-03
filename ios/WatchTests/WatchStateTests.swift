@@ -149,15 +149,21 @@ final class WatchStateTests: XCTestCase {
             "exercises": [[
                 "id": "bench", "name": "Bench", "unit": "kg", "step": 2.5, "weighted": true, "counted": true,
                 "rest": 90,
-                "sets": [["id": "b1", "weight": 60, "reps": 5, "done": false,
-                          "position": "Set 1 of 1", "previous": "Last time: 60 kg × 5", "next": "Next: set 1"]],
+                "sets": [
+                    ["id": "b0", "weight": 40, "reps": 10, "done": true, "mark": "W", "type": "Warm-up",
+                     "position": "Warm-up", "next": "Next: set 1"],
+                    ["id": "b1", "weight": 60, "reps": 5, "done": false, "mark": "1",
+                     "position": "Set 1 of 1", "previous": "Last time: 60 kg × 5", "next": "Next: set 1"],
+                ],
             ]],
         ])
 
         let exercise = shown(state!).exercises.first
         XCTAssertEqual(exercise?.rest, 90)
-        XCTAssertEqual(exercise?.sets.first?.position, "Set 1 of 1")
-        XCTAssertEqual(exercise?.sets.first?.previous, "Last time: 60 kg × 5")
-        XCTAssertEqual(exercise?.sets.first?.next, "Next: set 1")
+        XCTAssertEqual(exercise?.sets.map(\.mark), ["W", "1"])
+        XCTAssertEqual(exercise?.sets.map(\.type), ["Warm-up", nil])
+        XCTAssertEqual(exercise?.sets.last?.position, "Set 1 of 1")
+        XCTAssertEqual(exercise?.sets.last?.previous, "Last time: 60 kg × 5")
+        XCTAssertEqual(exercise?.sets.last?.next, "Next: set 1")
     }
 }

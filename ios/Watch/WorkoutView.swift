@@ -198,11 +198,14 @@ struct WorkoutList: View {
         of exercise: WatchState.Workout.Exercise,
         controls: WatchState.Workout.Controls?
     ) -> some View {
-        HStack(spacing: 8) {
-            Text("\(index + 1)")
+        // the phone's set column: W, 1, 2, F (#236)
+        let mark = row.mark.isEmpty ? "\(index + 1)" : row.mark
+        return HStack(spacing: 8) {
+            Text(mark)
                 .font(.footnote.monospacedDigit())
                 .foregroundStyle(row.id == workout.set?.setId ? workout.accent : .secondary)
                 .frame(minWidth: 14, alignment: .leading)
+                .accessibilityLabel(row.type ?? mark)
             Text(WorkoutView.values(weight: row.weight, reps: row.reps, of: exercise, reps: controls?.reps ?? ""))
                 .font(.body.monospacedDigit())
                 .foregroundStyle(row.done ? .primary : .secondary)
