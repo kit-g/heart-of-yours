@@ -3995,7 +3995,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "rpeHint": "Сколько ещё повторений оставалось в запасе. Нажмите на число, чтобы оценить подход.",
+  "rpeHint": "Сколько повторений, по ощущениям, ещё оставалось в запасе. Нажмите на число, чтобы оценить подход.",
   "@rpeHint": {
     "description": "One line over the RPE picker, which replaces the number pad: what the scale means and how to use it",
     "type": "text",

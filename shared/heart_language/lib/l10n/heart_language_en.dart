@@ -2192,7 +2192,7 @@ class LEn extends L {
   String get rpeSubtitle => 'Rate how hard each set was, from its number';
 
   @override
-  String get rpeHint => 'How many more reps you had left. Tap a number to rate the set.';
+  String get rpeHint => 'How many reps you felt were still in you. Tap a number to rate the set.';
 
   @override
   String get aboutRpe => 'About RPE';
@@ -4410,7 +4410,7 @@ class LEnCa extends LEn {
   String get rpeSubtitle => 'Rate how hard each set was, from its number';
 
   @override
-  String get rpeHint => 'How many more reps you had left. Tap a number to rate the set.';
+  String get rpeHint => 'How many reps you felt were still in you. Tap a number to rate the set.';
 
   @override
   String get aboutRpe => 'About RPE';

@@ -2198,7 +2198,7 @@ class LEs extends L {
   String get rpeSubtitle => 'Valora lo duro que fue cada serie desde su número';
 
   @override
-  String get rpeHint => 'Cuántas repeticiones más te quedaban. Toca un número para valorar la serie.';
+  String get rpeHint => 'Cuántas repeticiones sentías que te quedaban. Toca un número para valorar la serie.';
 
   @override
   String get aboutRpe => 'Acerca de RPE';
