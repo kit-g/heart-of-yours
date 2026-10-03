@@ -165,10 +165,14 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
           ),
           onPressed: () {
             buzz();
-            onSetType(widget.set, switch (selected) {
-              true => .normal,
+            final picked = switch (selected) {
+              true => SetType.normal,
               false => type,
-            });
+            };
+            // read before the retype: it rebuilds the rows and closes the
+            // menu, and the menu's own context goes with it
+            Analytics.of(this.context).setTypeChanged(type: picked);
+            onSetType(widget.set, picked);
           },
           child: Semantics(
             selected: selected,
