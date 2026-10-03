@@ -30,6 +30,40 @@ void main() {
     expect(set.duration, isNull, reason: 'only the caller writes the completed duration');
   });
 
+  test('a pause holds the count, a resume carries on from it, and a cold start keeps the pause', () async {
+    final clock = SetStopwatch(persistent: true, now: () => now);
+    final set = workout.first.first;
+    await clock.start(workout, set);
+    now = now.add(const Duration(seconds: 30));
+    await clock.pause();
+    expect(clock.isPaused, isTrue);
+    now = now.add(const Duration(minutes: 2));
+    expect(clock.elapsed, 30, reason: 'paused time is not counted');
+    clock.dispose();
+
+    final restored = SetStopwatch(persistent: true, now: () => now);
+    addTearDown(restored.dispose);
+    await restored.restore(workout);
+    expect(restored.isPaused, isTrue);
+    expect(restored.elapsed, 30);
+    await restored.resume();
+    now = now.add(const Duration(seconds: 15));
+    expect(restored.isPaused, isFalse);
+    expect(restored.elapsed, 45);
+  });
+
+  test('a cancel writes nothing and leaves no entry behind', () async {
+    final clock = SetStopwatch(persistent: true, now: () => now);
+    addTearDown(clock.dispose);
+    final set = workout.first.first;
+    await clock.start(workout, set);
+    now = now.add(const Duration(seconds: 20));
+    clock.clear();
+    expect(clock.isRunning, isFalse);
+    expect(set.duration, isNull);
+    expect((await SharedPreferences.getInstance()).get('setStopwatch.running'), isNull);
+  });
+
   test('a cold start restores the instant, and stop removes the local entry', () async {
     final first = SetStopwatch(persistent: true, now: () => now);
     await first.start(workout, workout.first.first);
