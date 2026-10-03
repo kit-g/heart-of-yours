@@ -45,16 +45,20 @@ class _LinkableAnonymous extends MockUser {
 
 /// An anonymous user whose credential already has an account: linking is
 /// refused, and a sign-in with the same credential lands on that account.
+///
+/// [code] is which refusal: the credential itself is taken, or only its email
+/// is, by an account under another provider.
 // ignore: must_be_immutable — see _LinkableAnonymous
 class _TakenCredential extends MockUser {
   final MockFirebaseAuth auth;
+  final String code;
 
-  new(this.auth) : super(isAnonymous: true, uid: 'anon-1');
+  new(this.auth, {this.code = 'credential-already-in-use'}) : super(isAnonymous: true, uid: 'anon-1');
 
   @override
   Future<fb.UserCredential> linkWithCredential(fb.AuthCredential credential) async {
     auth.mockUser = MockUser(uid: 'acct-1', email: 'acct@test');
-    throw fb.FirebaseAuthException(code: 'credential-already-in-use');
+    throw fb.FirebaseAuthException(code: code);
   }
 }
 
@@ -515,6 +519,20 @@ void main() {
       // The dimension the whole funnel turns on, and the only place the two
       // paths can still be told apart: by the time anything downstream looks,
       // both are an account with a replay owed.
+      expect(reported.arrivals, ['takeover']);
+    });
+
+    test('email taken by another provider: the session signs in to that account', () async {
+      final errors = <Object>[];
+      final sut = await build((auth) => _TakenCredential(auth, code: 'email-already-in-use'), onError: errors.add);
+
+      await sut.loginWithGoogle();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(errors, isEmpty, reason: 'it was the whole Google sign-in failing');
+      expect(sut.user?.id, 'acct-1');
+      expect(sut.isAnonymous, isFalse);
+      expect(events, ['link anon-1→acct-1 allowed=false', 'user acct-1', 'enter acct-1']);
       expect(reported.arrivals, ['takeover']);
     });
 
