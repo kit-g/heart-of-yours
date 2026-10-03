@@ -89,6 +89,7 @@ EVENT_DIMENSIONS = {
     'granted': 'Permission granted',
     'on': 'Switched on',
     'from_watch': 'From the watch',
+    'set_type': 'Set type',
 }
 
 # User properties are user-scoped dimensions; GA4 draws no other distinction.

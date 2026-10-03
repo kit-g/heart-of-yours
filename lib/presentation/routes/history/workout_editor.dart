@@ -482,7 +482,12 @@ class _WorkoutNotifier with ChangeNotifier {
   new(this.workout);
 
   void addSet(WorkoutExercise exercise) {
-    final set = exercise.lastOrNull?.copy() ?? ExerciseSet(exercise.exercise);
+    // a plain set, whatever the last one was: a warm-up is not what comes
+    // after a warm-up (Strong and Hevy agree)
+    final set = switch (exercise.lastOrNull) {
+      ExerciseSet last => last.copy()..setType = .normal,
+      null => ExerciseSet(exercise.exercise),
+    };
     _forExercise(exercise, (each) => each.add(set));
   }
 
