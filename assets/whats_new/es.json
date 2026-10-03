@@ -1,5 +1,35 @@
 [
   {
+    "version": "1.11.0",
+    "items": [
+      {
+        "id": "set-types",
+        "title": "Calentamiento, series descendentes y al fallo",
+        "body": "Toca el número de una serie para marcarla. El calentamiento no cuenta en tus récords, gráficas ni mapa muscular, y **Anterior** lo empareja con el calentamiento de la vez pasada."
+      },
+      {
+        "id": "rpe",
+        "title": "RPE",
+        "body": "Valora lo duro que fue cada serie, del 6 al 10, desde el menú de su número."
+      },
+      {
+        "id": "workout-note",
+        "title": "Una nota para todo el entrenamiento",
+        "body": "Añádela desde el menú **⋯** del entrenamiento. Aparece en su tarjeta en el Historial."
+      },
+      {
+        "id": "workout-muscles",
+        "title": "Músculos trabajados, en cada entrenamiento",
+        "body": "Cada entrenamiento terminado muestra qué músculos trabajó, nada más terminar y en el Historial."
+      },
+      {
+        "id": "fill-columns",
+        "title": "Rellena una columna de una vez",
+        "body": "Toca **kg** o **Reps** sobre tus series para rellenar las que faltan desde la primera. Toca **✓** para marcarlas todas."
+      }
+    ]
+  },
+  {
     "version": "1.10.0",
     "items": [
       {

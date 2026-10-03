@@ -1,5 +1,35 @@
 [
   {
+    "version": "1.11.0",
+    "items": [
+      {
+        "id": "set-types",
+        "title": "Échauffements, séries dégressives et à la rupture",
+        "body": "Touchez le numéro d'une série pour la marquer. L'échauffement reste hors de vos records, graphiques et carte musculaire, et **Précédent** l'aligne sur l'échauffement de la dernière fois."
+      },
+      {
+        "id": "rpe",
+        "title": "RPE",
+        "body": "Notez la difficulté ressentie de chaque série, de 6 à 10, depuis le menu de son numéro."
+      },
+      {
+        "id": "workout-note",
+        "title": "Une note pour toute la séance",
+        "body": "Ajoutez-la depuis le menu **⋯** de la séance. Elle apparaît sur sa carte dans l’Historique."
+      },
+      {
+        "id": "workout-muscles",
+        "title": "Muscles sollicités, séance par séance",
+        "body": "Chaque séance terminée montre les muscles sollicités, dès la fin et dans l’Historique."
+      },
+      {
+        "id": "fill-columns",
+        "title": "Remplir une colonne d’un coup",
+        "body": "Touchez **kg** ou **Reps** au-dessus de vos séries pour remplir celles qui restent depuis la première. Touchez **✓** pour tout cocher."
+      }
+    ]
+  },
+  {
     "version": "1.10.0",
     "items": [
       {
