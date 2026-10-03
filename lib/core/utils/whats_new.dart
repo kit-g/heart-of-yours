@@ -50,7 +50,12 @@ class ReleaseNote {
   /// in `en` only, like the date; a translation follows its `en` note.
   final Set<String>? platforms;
 
-  const new({required this.id, required this.title, required this.body, this.platforms});
+  /// The opt-in feature the note is about, if any (#239): the note carries a
+  /// button to its row on the Features page. Set in `en` only, like
+  /// [platforms]. A value this build does not know reads as none.
+  final Feature? feature;
+
+  const new({required this.id, required this.title, required this.body, this.platforms, this.feature});
 
   static ReleaseNote? _parse(Object? raw) {
     return switch (raw) {
@@ -62,6 +67,7 @@ class ReleaseNote {
           List platforms => platforms.whereType<String>().toSet(),
           _ => null,
         },
+        feature: Feature.values.where((feature) => feature.value == raw['feature']).firstOrNull,
       ),
       _ => null,
     };
@@ -120,7 +126,18 @@ List<Release> mergeReleases(List<Release> base, List<Release> localized) {
         version: release.version,
         date: release.date,
         notes: [
-          for (final note in release.notes) translations[(release.version, note.id)] ?? note,
+          for (final note in release.notes)
+            switch (translations[(release.version, note.id)]) {
+              // the words are the translation's; what the note is about is en's
+              ReleaseNote(:final title, :final body) => ReleaseNote(
+                id: note.id,
+                title: title,
+                body: body,
+                platforms: note.platforms,
+                feature: note.feature,
+              ),
+              null => note,
+            },
         ],
       ),
   ]..sort((a, b) => compareVersions(b.version, a.version));
