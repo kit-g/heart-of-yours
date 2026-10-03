@@ -441,6 +441,12 @@ class LRu extends L {
   String get whatsNewThisVersion => 'Эта версия';
 
   @override
+  String get whatsNewFeatureOff => 'Включить в «Функциях»';
+
+  @override
+  String get whatsNewFeatureOn => 'Включено · в «Функциях»';
+
+  @override
   String get whatsNewEmpty => 'В этой версии приложения нет описания изменений.';
 
   @override

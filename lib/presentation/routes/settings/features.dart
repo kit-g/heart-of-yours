@@ -6,8 +6,37 @@ part of 'settings.dart';
 /// always live, both ways. The switch is the answer — turning a feature on
 /// here does not ask again, and turning it off takes it out of the app on the
 /// spot.
-class FeaturesPage extends StatelessWidget {
-  const new({super.key});
+class FeaturesPage extends StatefulWidget {
+  /// The feature to open at (#239), from a What's new note or a link from
+  /// outside the app: its row is scrolled to and lit up for a moment. Opening
+  /// here changes nothing — the switch is still the answer.
+  final Feature? focus;
+
+  /// What sent the user to [focus]; meaningless without one.
+  final FeatureLinkSource source;
+
+  const new({super.key, this.focus, this.source = .link});
+
+  @override
+  State<FeaturesPage> createState() => _FeaturesPageState();
+}
+
+class _FeaturesPageState extends State<FeaturesPage> {
+  final _focused = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.focus case Feature feature) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Analytics.of(context).featureLinked(feature: feature, source: widget.source);
+        if (_focused.currentContext case BuildContext row) {
+          Scrollable.ensureVisible(row, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +63,9 @@ class FeaturesPage extends StatelessWidget {
                 padding: const .symmetric(vertical: 8),
                 children: [
                   for (final feature in Feature.values)
-                    switch (feature) {
-                      // only where there is a watch with Heart on it
-                      .watchApp => const _WatchAppSwitch(),
-                      _ => _FeatureSwitch(feature),
+                    switch (feature == widget.focus) {
+                      true => _Spotlight(key: _focused, child: _row(feature)),
+                      false => _row(feature),
                     },
                   Padding(
                     padding: const .fromLTRB(16, 8, 16, 16),
@@ -49,6 +77,72 @@ class FeaturesPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _row(Feature feature) {
+    return switch (feature) {
+      // only where there is a watch with Heart on it
+      .watchApp => const _WatchAppSwitch(),
+      _ => _FeatureSwitch(feature),
+    };
+  }
+}
+
+/// The row a link opened Features at (#239), lit for a moment so the eye
+/// finds it among the others, then fading back to the page's surface. With
+/// animations off it is simply lit, then not.
+class _Spotlight extends StatefulWidget {
+  final Widget child;
+
+  const new({super.key, required this.child});
+
+  @override
+  State<_Spotlight> createState() => _SpotlightState();
+}
+
+class _SpotlightState extends State<_Spotlight> {
+  final _lit = ValueNotifier(true);
+  late final Timer _dim;
+
+  @override
+  void initState() {
+    super.initState();
+    _dim = Timer(const Duration(seconds: 2), () => _lit.value = false);
+  }
+
+  @override
+  void dispose() {
+    _dim.cancel();
+    _lit.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme(:tertiaryContainer) = Theme.of(context).colorScheme;
+    final still = MediaQuery.disableAnimationsOf(context);
+    return ValueListenableBuilder<bool>(
+      valueListenable: _lit,
+      builder: (context, lit, child) {
+        return AnimatedContainer(
+          duration: switch (still) {
+            true => Duration.zero,
+            false => const Duration(milliseconds: 600),
+          },
+          curve: Curves.easeOut,
+          // edge to edge, like a selected row: an inset would pull this one
+          // row's content out of line with the rest
+          color: switch (lit) {
+            true => tertiaryContainer.withValues(alpha: .35),
+            false => tertiaryContainer.withValues(alpha: 0),
+          },
+          child: child,
+        );
+      },
+      // the row's ink lands on the nearest Material, which would otherwise be
+      // under the light rather than over it
+      child: Material(type: .transparency, child: widget.child),
     );
   }
 }
