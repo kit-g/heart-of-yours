@@ -413,7 +413,8 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.exportData, _Guideline.iosTapTarget, null),
 
   // What's new (lib/presentation/routes/settings/whats_new.dart): cards of
-  // text over the real bundled notes, with nothing to tap but the back button.
+  // text over the real bundled notes, and a 48pt button under each note that
+  // names a feature (#239).
   (_Screen.whatsNew, _Guideline.labeledTapTarget, null),
   (_Screen.whatsNew, _Guideline.textContrastLight, null),
   (_Screen.whatsNew, _Guideline.textContrastDark, null),
@@ -436,12 +437,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.features,
     _Guideline.androidTapTarget,
-    'a feature\'s option rows are dense, 40pt (lib/presentation/routes/settings/features.dart:121, #213) — the same density call as Settings\' switch rows',
+    'a feature\'s option rows are dense, 40pt (lib/presentation/routes/settings/features.dart:214, #213) — the same density call as Settings\' switch rows',
   ),
   (
     _Screen.features,
     _Guideline.iosTapTarget,
-    'a feature\'s option rows are dense, 40pt (lib/presentation/routes/settings/features.dart:121, #213) — the same density call as Settings\' switch rows',
+    'a feature\'s option rows are dense, 40pt (lib/presentation/routes/settings/features.dart:214, #213) — the same density call as Settings\' switch rows',
   ),
 
   // The upsync row on the profile (lib/presentation/widgets/upsync_row.dart) in

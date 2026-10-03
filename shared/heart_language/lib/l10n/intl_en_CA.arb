@@ -815,6 +815,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "whatsNewFeatureOff": "Turn on in Features",
+  "@whatsNewFeatureOff": {
+    "description": "What's new page, a button under a note about an opt-in feature the user has off; it opens the Features page at that feature's switch, it does not turn it on by itself",
+    "type": "text",
+    "placeholders": {}
+  },
+  "whatsNewFeatureOn": "On · see in Features",
+  "@whatsNewFeatureOn": {
+    "description": "What's new page, a button under a note about an opt-in feature the user already has on; it opens the Features page at that feature's switch",
+    "type": "text",
+    "placeholders": {}
+  },
   "whatsNewEmpty": "No release notes in this version of the app.",
   "@whatsNewEmpty": {
     "description": "What's new page, shown when there are no release notes to list",

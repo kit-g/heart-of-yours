@@ -155,6 +155,8 @@ themePresetEmber,Name of the warm theme preset with a true-orange accent; a glow
 aboutApp,Setting item title,About app,About app,О приложении,Acerca de la app,À propos de l’app
 whatsNew,"Settings row and page title: the list of release notes, one card per app version",What's new,What's new,Что нового,Novedades,Nouveautés
 whatsNewThisVersion,"What's new page, a small label on the card of the release the installed app is running",This version,This version,Эта версия,Esta versión,Cette version
+whatsNewFeatureOff,"What's new page, a button under a note about an opt-in feature the user has off; it opens the Features page at that feature's switch, it does not turn it on by itself",Turn on in Features,Turn on in Features,Включить в «Функциях»,Activar en Funciones,Activer dans Fonctionnalités
+whatsNewFeatureOn,"What's new page, a button under a note about an opt-in feature the user already has on; it opens the Features page at that feature's switch",On · see in Features,On · see in Features,Включено · в «Функциях»,Activado · ver en Funciones,Activée · voir dans Fonctionnalités
 whatsNewEmpty,"What's new page, shown when there are no release notes to list",No release notes in this version of the app.,No release notes in this version of the app.,В этой версии приложения нет описания изменений.,Esta versión de la app no incluye notas de la versión.,Aucune note de version dans cette version de l’app.
 congratulations,"Workout complete screen, title",Congratulations!,Congratulations!,Поздравляем!,¡Felicidades!,Félicitations !
 congratulationsBody,"Workout complete screen, body",Your workout is complete!,Your workout is complete!,Ваша тренировка завершена!,¡Completaste tu entrenamiento!,Votre séance est terminée !

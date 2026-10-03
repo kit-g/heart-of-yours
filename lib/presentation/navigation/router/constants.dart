@@ -36,6 +36,9 @@ const _restTimersPath = 'rest-timers';
 const _restTimersName = 'restTimers';
 const _featuresPath = 'features';
 const _featuresName = 'features';
+// the feature the Features page opens at (#239), by `Feature.value` — a
+// universal link's as much as What's new's
+const _featureQuery = 'feature';
 const _restoreAccountName = 'restoreAccount';
 const _restoreAccountPath = '/$_restoreAccountName';
 const _applePath = '/apple';

@@ -441,6 +441,12 @@ class LEs extends L {
   String get whatsNewThisVersion => 'Esta versión';
 
   @override
+  String get whatsNewFeatureOff => 'Activar en Funciones';
+
+  @override
+  String get whatsNewFeatureOn => 'Activado · ver en Funciones';
+
+  @override
   String get whatsNewEmpty => 'Esta versión de la app no incluye notas de la versión.';
 
   @override
