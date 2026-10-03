@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/telemetry.dart';
+import 'package:heart_api/heart_api.dart' show NetworkException;
 import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -84,7 +85,18 @@ Future<void> reportToSentry(dynamic exception, {dynamic stacktrace}) {
   // backgrounded app. Every caller already retries on the next launch or
   // resume, and there is nothing in our code to fix.
   if (exception is http.ClientException) return Future.value();
-  return Sentry.captureException(exception, stackTrace: stacktrace);
+  return Sentry.captureException(
+    exception,
+    stackTrace: stacktrace,
+    withScope: switch (exception) {
+      // One issue per status and endpoint. Grouped by stack, every async
+      // chain into the same call became an issue of its own — fifteen of them
+      // for what was mostly one failure. The message is the grouping key:
+      // it names the status, verb and templated path, and never the body.
+      NetworkException() => (scope) => scope.fingerprint = ['NetworkException', exception.toString()],
+      _ => null,
+    },
+  );
 }
 
 /// An error whose payload was dropped before it could reach Sentry, leaving
