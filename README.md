@@ -2,16 +2,27 @@
 
 Every beat counts.
 
+[App Store](https://apps.apple.com/app/id6777837444) ·
+[Google Play](https://play.google.com/store/apps/details?id=me.heart.android) ·
+[heart-of.me](https://heart-of.me)
+
 ## Introduction
 
-Heart of yours is a minimalist fitness tracker that collects and aggregates your workout data. It
-is also a showcase of a real-live serverless Flutter project.
+Heart of yours is a minimalist workout tracker: log the session, tick off every set, watch your
+lifts grow. No account needed to start, and health data never leaves the device. It is also a
+showcase of a real-life serverless Flutter project.
 
-<div style="display: flex; justify-content: space-around; align-items: center; gap: 10px;">
-  <img src="assets/screenshots/timer.png" alt="Workout" style="width: 30%;">
-  <img src="assets/screenshots/charts.png" alt="Exercises" style="width: 30%;">
-  <img src="assets/screenshots/congrats.png" alt="History" style="width: 30%;">
-</div>
+<p align="center">
+  <img src="docs/screenshots/hero-dashboard.webp" alt="Profile: workouts per week, goals and health" width="19%">
+  <img src="docs/screenshots/rest-timer.webp" alt="A workout in progress, with the rest timer" width="19%">
+  <img src="docs/screenshots/history.webp" alt="History" width="19%">
+  <img src="docs/screenshots/records.webp" alt="An exercise's records" width="19%">
+  <img src="docs/screenshots/templates.webp" alt="Templates" width="19%">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/tablet-dashboard.webp" alt="The profile on an iPad, with the navigation rail" width="70%">
+</p>
 
 ## Supported platforms
 
