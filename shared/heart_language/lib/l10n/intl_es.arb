@@ -719,7 +719,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "emptyHistoryBody": "¡Ve por ellos!",
+  "emptyHistoryBody": "¡Ve a por ellos!",
   "@emptyHistoryBody": {
     "description": "emptyHistoryBody",
     "type": "text",
@@ -1125,7 +1125,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "workoutsPerWeekBody": "¡Ve por ellos!",
+  "workoutsPerWeekBody": "¡Ve a por ellos!",
   "@workoutsPerWeekBody": {
     "description": "Chart label",
     "type": "text",

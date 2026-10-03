@@ -392,7 +392,7 @@ class LEs extends L {
   String get emptyHistoryTitle => 'Tus entrenamientos completados aparecerán aquí';
 
   @override
-  String get emptyHistoryBody => '¡Ve por ellos!';
+  String get emptyHistoryBody => '¡Ve a por ellos!';
 
   @override
   String get historyEndReached => 'Llegaste al final';
@@ -636,7 +636,7 @@ class LEs extends L {
   String get workoutsPerWeekTitle => 'Tus entrenamientos se mostrarán aquí';
 
   @override
-  String get workoutsPerWeekBody => '¡Ve por ellos!';
+  String get workoutsPerWeekBody => '¡Ve a por ellos!';
 
   @override
   String get goals => 'Metas';
