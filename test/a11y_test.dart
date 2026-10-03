@@ -48,6 +48,7 @@ enum _Screen {
   noAccountDialog,
   workout,
   exerciseNoteEditor,
+  workoutNote,
   setTypeMenu,
   history,
   calendar,
@@ -233,6 +234,25 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.exerciseNoteEditor,
     _Guideline.iosTapTarget,
     'dialog actions use the shared 32pt button height (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), below 44pt',
+  ),
+  // An active workout carrying its own note under the title (#235); the
+  // editor it opens is the exercise note's (exerciseNoteEditor).
+  (
+    _Screen.workoutNote,
+    _Guideline.labeledTapTarget,
+    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:914) and a control in the exercise row are icon-only with no label; the note and its × pass',
+  ),
+  (_Screen.workoutNote, _Guideline.textContrastLight, null),
+  (_Screen.workoutNote, _Guideline.textContrastDark, null),
+  (
+    _Screen.workoutNote,
+    _Guideline.androidTapTarget,
+    'the set-row buttons, the exercise header and the workout bar\'s buttons are below 48x48 — visual-density change, out of scope; the note passes',
+  ),
+  (
+    _Screen.workoutNote,
+    _Guideline.iosTapTarget,
+    'the set-row buttons, the exercise header and the workout bar\'s buttons are below 44x44 — visual-density change, out of scope; the note passes',
   ),
   // The set type menu over a workout whose first set is a warm-up, with one
   // type's explanation open (lib/presentation/widgets/workout/set_type.dart).
@@ -763,6 +783,18 @@ void main() {
         await tester.tap(find.byKey(WorkoutDetailKeys.exerciseOptionsFor(exercise.id)));
         await tester.pumpTimes();
         await tester.tap(find.text('Add note'));
+      case _Screen.workoutNote:
+        final workout = Workout(name: 'Legs')
+          ..add(_squat)
+          ..note = 'Knee is sore, kept it light';
+        await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(source: .template, template: workout);
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        expect(find.byKey(WorkoutDetailKeys.workoutNote), findsOneWidget);
       case _Screen.setTypeMenu:
         final workout = Workout(name: 'Types')..add(_bench);
         workout.first

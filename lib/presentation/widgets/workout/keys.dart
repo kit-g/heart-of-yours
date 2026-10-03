@@ -13,6 +13,9 @@ class WorkoutDetailKeys {
   static const addExerciseButton = Key('WorkoutDetail.addExerciseButton');
   static const discardAndStart = Key('WorkoutDetail.discardAndStart');
 
+  /// The workout's own note under its title (#235), which opens its editor.
+  static const workoutNote = Key('WorkoutDetail.workoutNote');
+
   /// The per-exercise overflow menu inside a workout.
   ///
   /// Every exercise in a workout renders one, so a finder needs the exercise
