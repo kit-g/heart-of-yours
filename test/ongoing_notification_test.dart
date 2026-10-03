@@ -53,7 +53,7 @@ void main() {
   OngoingWorkout workout({
     String id = 'w1',
     OngoingRest? rest,
-    ({DateTime start, String label})? stopwatch,
+    ({DateTime start, DateTime? pausedAt, String label})? stopwatch,
     String channel = 'Workout in progress',
   }) {
     return (
@@ -175,12 +175,24 @@ void main() {
     await showOngoingWorkoutNotification(
       workout(
         id: 'stopwatch-test',
-        stopwatch: (start: start, label: 'Set stopwatch'),
+        stopwatch: (start: start, pausedAt: null, label: 'Set 1'),
         rest: (start: start, end: start.add(const Duration(minutes: 3)), label: 'Rest', over: 'Done'),
       ),
     );
     expect(details()['when'], start.millisecondsSinceEpoch);
     expect(details()['chronometerCountDown'], isFalse);
-    expect(shown()['body'], 'Set stopwatch');
+    expect(shown()['body'], 'Set 1');
+  });
+
+  test('a paused stopwatch stands still: no chronometer, its time in the text', () async {
+    final start = DateTime.now().subtract(const Duration(minutes: 5));
+    await showOngoingWorkoutNotification(
+      workout(
+        id: 'paused-stopwatch-test',
+        stopwatch: (start: start, pausedAt: start.add(const Duration(seconds: 42)), label: 'Set 1 · Paused'),
+      ),
+    );
+    expect(details()['usesChronometer'], isFalse);
+    expect(shown()['body'], 'Set 1 · Paused · 0:42');
   });
 }

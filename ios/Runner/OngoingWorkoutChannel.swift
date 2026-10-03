@@ -70,6 +70,7 @@ struct OngoingWorkoutRequest {
             next: next,
             stopwatchStart: (arguments["stopwatchStart"] as? NSNumber).map(Self.date),
             stopwatchLabel: arguments["stopwatchLabel"] as? String,
+            stopwatchPausedAt: (arguments["stopwatchPausedAt"] as? NSNumber).map(Self.date),
             restStart: (arguments["restStart"] as? NSNumber).map(Self.date),
             restEnd: (arguments["restEnd"] as? NSNumber).map(Self.date),
             restLabel: arguments["restLabel"] as? String,

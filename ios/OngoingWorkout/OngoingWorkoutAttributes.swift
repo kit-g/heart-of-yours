@@ -25,6 +25,8 @@ struct OngoingWorkoutAttributes: ActivityAttributes {
         /// the rest row's place.
         var stopwatchStart: Date?
         var stopwatchLabel: String?
+        /// When it paused, while it is paused: the clock stands at this.
+        var stopwatchPausedAt: Date?
 
         /// The rest countdown's window, while one runs.
         var restStart: Date?

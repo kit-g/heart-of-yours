@@ -174,7 +174,7 @@ private struct RestRow: View {
                     Text(label).font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
-                Text(start, style: .timer)
+                StopwatchClock(start: start, pausedAt: state.stopwatchPausedAt)
                     .font(.title3.weight(.semibold).monospacedDigit())
                     .foregroundStyle(ink)
                     .multilineTextAlignment(.trailing)
@@ -212,6 +212,21 @@ private struct RestRow: View {
     }
 }
 
+/// A set stopwatch counting up from its start, or standing at the moment it
+/// paused.
+private struct StopwatchClock: View {
+    let start: Date
+    let pausedAt: Date?
+
+    var body: some View {
+        if let pausedAt {
+            Text(timerInterval: start...max(start, pausedAt), pauseTime: pausedAt, countsDown: false)
+        } else {
+            Text(start, style: .timer)
+        }
+    }
+}
+
 /// The one clock the compact island has room for: the rest countdown while
 /// resting, the workout's elapsed time otherwise.
 private struct Clock: View {
@@ -221,7 +236,8 @@ private struct Clock: View {
     var body: some View {
         switch (context.state.stopwatchStart, resting, context.state.rest) {
         case (let start?, _, _):
-            Text(start, style: .timer).multilineTextAlignment(.trailing)
+            StopwatchClock(start: start, pausedAt: context.state.stopwatchPausedAt)
+                .multilineTextAlignment(.trailing)
         case (nil, true, let rest?):
             Text(timerInterval: rest, countsDown: true)
                 .multilineTextAlignment(.trailing)
