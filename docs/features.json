@@ -36,6 +36,32 @@
       "highlight": false
     },
     {
+      "id": "set-types",
+      "category": "train",
+      "title": "Warm-ups, drop sets and failure sets",
+      "pitch": "Mark a set from its number. Warm-ups stay out of your records, charts and muscle map, and Previous lines them up with last time's.",
+      "since": "1.11.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "rpe",
+      "category": "train",
+      "title": "RPE, if you want it",
+      "pitch": "Rate how hard each set felt, 6 to 10, from the menu on its number. Off until you turn it on.",
+      "since": "1.11.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "rest-timers",
       "category": "train",
       "title": "Rest timers",
@@ -115,8 +141,8 @@
     {
       "id": "exercise-notes",
       "category": "train",
-      "title": "Exercise notes",
-      "pitch": "Add a note to any exercise while you train: a cue, a setup, a weight to try next time. Signed in, pin one and it comes back every time the exercise does.",
+      "title": "Notes on exercises and workouts",
+      "pitch": "Add a note to any exercise while you train, a cue or a weight to try next time, or one to the whole workout. Signed in, pin an exercise's note and it comes back.",
       "since": "1.8.0",
       "tier": "free",
       "platforms": [
@@ -194,7 +220,7 @@
       "id": "muscle-map",
       "category": "progress",
       "title": "Muscle map",
-      "pitch": "A body map on your profile, shaded by how many sets each muscle group got, with a list and a week-by-week view. Optional, and you choose which parts show.",
+      "pitch": "A body map on your profile and on every finished workout, shaded by how many sets each muscle group got, with a list and a week-by-week view. Optional; you choose which parts show.",
       "since": "1.10.0",
       "tier": "free",
       "platforms": [
@@ -285,7 +311,7 @@
       "id": "strong-import",
       "category": "data",
       "title": "Bring your Strong history",
-      "pitch": "Import the CSV from Strong's export and your workouts, sets and exercises come with you. Importing the same file twice never duplicates anything.",
+      "pitch": "Import the CSV from Strong's export and your workouts, sets and exercises come with you, warm-ups, RPE and notes included. Importing the same file twice never duplicates anything.",
       "since": "1.5.0",
       "tier": "free",
       "platforms": [
