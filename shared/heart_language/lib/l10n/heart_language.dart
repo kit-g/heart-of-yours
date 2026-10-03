@@ -3813,6 +3813,78 @@ abstract class L {
   /// In en, this message translates to:
   /// **'About {setType}'**
   String aboutSetType(String setType);
+
+  /// Short name of rate of perceived exertion, how hard a set was. On the key over the number pad and in Settings › Features. Keep the abbreviation the language's lifters use
+  ///
+  /// In en, this message translates to:
+  /// **'RPE'**
+  String get rpe;
+
+  /// Subtitle under the RPE switch in Settings › Features
+  ///
+  /// In en, this message translates to:
+  /// **'Rate how hard each set was, from its number'**
+  String get rpeSubtitle;
+
+  /// One line over the RPE picker, which replaces the number pad: what the scale means and how to use it
+  ///
+  /// In en, this message translates to:
+  /// **'How many reps you felt were still in you. Tap a number to rate the set.'**
+  String get rpeHint;
+
+  /// Tooltip on the help button in the RPE picker, which unfolds the scale
+  ///
+  /// In en, this message translates to:
+  /// **'About RPE'**
+  String get aboutRpe;
+
+  /// RPE scale, one line: at 10 the lifter could not have done another rep
+  ///
+  /// In en, this message translates to:
+  /// **'10: not one more'**
+  String get rpeScale10;
+
+  /// RPE scale, one line: at 9 one more rep was left
+  ///
+  /// In en, this message translates to:
+  /// **'9: one more'**
+  String get rpeScale9;
+
+  /// RPE scale, one line: at 8 two more reps were left
+  ///
+  /// In en, this message translates to:
+  /// **'8: two more'**
+  String get rpeScale8;
+
+  /// RPE scale, one line: at 7 three more reps were left
+  ///
+  /// In en, this message translates to:
+  /// **'7: three more'**
+  String get rpeScale7;
+
+  /// RPE scale, one line: at 6 four or more reps were left
+  ///
+  /// In en, this message translates to:
+  /// **'6: four or more'**
+  String get rpeScale6;
+
+  /// Tiny badge in a set's last value cell showing its RPE, e.g. '@8'. Keep the @ unless the language marks it differently
+  ///
+  /// In en, this message translates to:
+  /// **'@{value}'**
+  String rpeBadge(String value);
+
+  /// An RPE with its value, e.g. 'RPE 8.5': on the RPE key once the set is rated, and read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'RPE {value}'**
+  String rpeValue(String value);
+
+  /// Tooltip on the button beside the RPE heading in the set-number popup that removes the set's rating; shown only while it has one
+  ///
+  /// In en, this message translates to:
+  /// **'Clear RPE'**
+  String get clearRpe;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -399,4 +399,114 @@ void main() {
       expect(workout.first.first.setType, SetType.normal);
     });
   });
+
+  group('RPE (#234)', () {
+    void rpeOn() {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'weightUnit': 'metric',
+        'distanceUnit': 'metric',
+        'feature-rpe': 'on',
+      });
+    }
+
+    Future<void> openPopup(WidgetTester tester, Exercise exercise) async {
+      await tester.tapByKey(WorkoutDetailKeys.setTypeFor(exercise.id, 1));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('off, the popup is the three types alone: the app as it was before RPE', (tester) async {
+      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      await startWorkoutOn(tester, three(exercise));
+
+      await openPopup(tester, exercise);
+
+      expect(find.byKey(WorkoutDetailKeys.setTypeOption(.warmup)), findsOneWidget);
+      expect(find.byKey(WorkoutDetailKeys.rpeValue(8)), findsNothing);
+    });
+
+    testWidgets('on, a rating lands on the set, closes the popup, and its cell says so', (tester) async {
+      rpeOn();
+      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final workout = three(exercise);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+
+      await openPopup(tester, exercise);
+      await tester.tapByKey(WorkoutDetailKeys.rpeValue(8.5));
+      await tester.pumpTimes();
+
+      expect(set.rpe, 8.5);
+      expect(set.setType, SetType.normal, reason: 'a rating is not a type');
+      verify(db.storeMeasurements(set)).called(1);
+      expect(find.byKey(WorkoutDetailKeys.rpeValue(8.5)), findsNothing, reason: 'the popup closes on a rating');
+      expect(find.text('@8.5'), findsOneWidget);
+    });
+
+    testWidgets('picking the rating a set already has clears it', (tester) async {
+      rpeOn();
+      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final workout = three(exercise);
+      final set = workout.first.first..rpe = 9;
+      await startWorkoutOn(tester, workout);
+      expect(find.text('@9'), findsOneWidget);
+
+      await openPopup(tester, exercise);
+      await tester.tapByKey(WorkoutDetailKeys.rpeValue(9));
+      await tester.pumpTimes();
+
+      expect(set.rpe, isNull);
+      expect(find.text('@9'), findsNothing);
+    });
+
+    testWidgets('the × clears a rating, and is there only while there is one', (tester) async {
+      rpeOn();
+      final exercise = Exercise(name: 'Row', category: Category.barbell, target: Target.back);
+      final workout = three(exercise);
+      final [rated, plain, ..._] = workout.first.toList();
+      rated.rpe = 8;
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.setTypeFor(exercise.id, 2));
+      await tester.pumpTimes();
+      expect(find.byKey(WorkoutDetailKeys.clearRpe), findsNothing, reason: 'an unrated set has nothing to clear');
+      await tester.tapAt(Offset.zero);
+      await tester.pumpTimes();
+
+      await openPopup(tester, exercise);
+      await tester.tapByKey(WorkoutDetailKeys.clearRpe);
+      await tester.pumpTimes();
+
+      expect(rated.rpe, isNull);
+      expect(plain.rpe, isNull);
+      expect(find.text('@8'), findsNothing);
+    });
+
+    testWidgets('the help button unfolds the scale in place, and rates nothing', (tester) async {
+      rpeOn();
+      final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);
+      final workout = three(exercise);
+      await startWorkoutOn(tester, workout);
+      final l = L.of(tester.element(find.byType(WorkoutDetail)));
+
+      await openPopup(tester, exercise);
+      expect(find.text(l.rpeScale10), findsNothing);
+      await tester.tap(find.byTooltip(l.aboutRpe));
+      await tester.pumpTimes();
+
+      expect(find.text(l.rpeScale10), findsOneWidget);
+      expect(find.byKey(WorkoutDetailKeys.rpeValue(8)), findsOneWidget, reason: 'the popup stays open');
+      expect(workout.first.first.rpe, isNull);
+    });
+
+    testWidgets('off, a stored rating stays stored and unshown', (tester) async {
+      final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);
+      final workout = three(exercise);
+      final set = workout.first.first..rpe = 7;
+      await startWorkoutOn(tester, workout);
+
+      expect(find.text('@7'), findsNothing);
+      expect(set.rpe, 7);
+    });
+  });
 }

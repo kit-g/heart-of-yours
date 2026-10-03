@@ -18,11 +18,16 @@ class _ExerciseSetItem extends StatefulWidget {
   final Map<String, dynamic>? previousValue;
   final void Function(ExerciseSet, SetType)? onSetType;
 
+  /// Rates the set from its number's popup (#234); null where sets are not
+  /// rated.
+  final void Function(ExerciseSet, double?)? onSetRpe;
+
   const new({
     required this.set,
     required this.index,
     required this.number,
     this.onSetType,
+    this.onSetRpe,
     required this.exercise,
     required this.onRemoveSet,
     this.onSetDone,
@@ -71,6 +76,16 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     _repsController.addListener(_repsListener);
     _distanceController.addListener(_distanceListener);
     _durationController.addListener(_durationListener);
+  }
+
+  /// The set's rating, as its last value cell shows it; null while it has
+  /// none or the feature is off.
+  String? _rpeBadge(BuildContext context) {
+    if (!Preferences.watch(context).isOn(.rpe)) return null;
+    return switch (set.rpe) {
+      double rpe => L.of(context).rpeBadge(_rpeText(context, rpe)),
+      null => null,
+    };
   }
 
   @override
@@ -231,6 +246,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               number: widget.number,
               fill: fill,
               onSetType: widget.onSetType,
+              onSetRpe: widget.onSetRpe,
             ),
             Expanded(
               flex: 3,
@@ -368,6 +384,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasRepsError,
               formatters: _integerFormatters,
               semanticLabel: L.of(context).reps,
+              badge: _rpeBadge(context),
             ),
           ),
         ];
@@ -383,6 +400,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasRepsError,
               formatters: _integerFormatters,
               semanticLabel: L.of(context).reps,
+              badge: _rpeBadge(context),
             ),
           ),
         ];
@@ -398,6 +416,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasDurationError,
               formatters: [TimeFormatter()],
               semanticLabel: L.of(context).duration,
+              badge: _rpeBadge(context),
             ),
           ),
         ];
@@ -443,6 +462,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               errorState: _hasDurationError,
               formatters: [TimeFormatter()],
               semanticLabel: L.of(context).duration,
+              badge: _rpeBadge(context),
             ),
           ),
         ];

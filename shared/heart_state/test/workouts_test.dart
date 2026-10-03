@@ -456,6 +456,21 @@ void main() {
       expect(set.setType, SetType.normal);
     });
 
+    test('setRpe rates a set and clears it, stored each time (#234)', () async {
+      await sut.startWorkout(source: .blank, name: 'Chest');
+      await sut.startExercise(bench);
+      final set = sut.activeWorkout!.first.first;
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.setRpe(set, 8.5);
+      expect(set.rpe, 8.5);
+      expect(probe.notifications, 1);
+
+      await sut.setRpe(set, null);
+      expect(set.rpe, isNull);
+      verify(local.storeMeasurements(set)).called(2);
+    });
+
     test('a set added after a warm-up is a plain one (#151)', () async {
       await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);

@@ -711,6 +711,14 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.storeMeasurements(set);
   }
 
+  /// Rates [set] (#234): 1–10 in half steps, or null to clear it. Like a type,
+  /// a rating is not a measurement edit ([markEdited]).
+  Future<void> setRpe(ExerciseSet set, double? rpe) {
+    set.rpe = rpe;
+    notifyListeners();
+    return _localService.storeMeasurements(set);
+  }
+
   /// Sets [set]'s measurements — [weight] and [distance] metric, [duration]
   /// in seconds — from outside its row: the watch (#183), a column header's
   /// fill (#225). And says so: the row follows what it hears, where a row's

@@ -9,6 +9,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final void Function(ExerciseSet, SetType)? onSetType;
+  final void Function(ExerciseSet, double?)? onSetRpe;
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final String firstColumnCopy;
@@ -28,6 +29,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.onRemoveSet,
     this.onSetDone,
     this.onSetType,
+    this.onSetRpe,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.copy,
@@ -265,6 +267,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             number: exercise.take(set.$1).where((each) => each.setType == .normal).length + 1,
                             set: set.$2,
                             onSetType: onSetType,
+                            onSetRpe: onSetRpe,
                             exercise: exercise,
                             onRemoveSet: onRemoveSet,
                             isLocked: !allowCompleting,
