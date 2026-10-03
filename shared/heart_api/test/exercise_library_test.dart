@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:heart_api/heart_api.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:network_utils/network_utils.dart' show NetworkException;
 import 'package:test/test.dart';
 
 /// The exercise library is static content behind a manifest — see
