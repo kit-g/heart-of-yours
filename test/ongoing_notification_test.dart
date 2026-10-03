@@ -50,7 +50,12 @@ void main() {
 
   final started = DateTime.now().subtract(const Duration(minutes: 20));
 
-  OngoingWorkout workout({String id = 'w1', OngoingRest? rest, String channel = 'Workout in progress'}) {
+  OngoingWorkout workout({
+    String id = 'w1',
+    OngoingRest? rest,
+    ({DateTime start, String label})? stopwatch,
+    String channel = 'Workout in progress',
+  }) {
     return (
       workoutId: id,
       startedAt: started,
@@ -59,6 +64,7 @@ void main() {
       next: 'Next: set 2 · 60 kg x 5',
       rest: rest,
       preset: Preset.forge,
+      stopwatch: stopwatch,
       channel: channel,
     );
   }
@@ -163,5 +169,18 @@ void main() {
 
     expect(calls.single.method, 'cancel');
     expect((calls.single.arguments as Map)['id'], 2);
+  });
+  test('a set stopwatch counts up from its own instant in place of rest', () async {
+    final start = DateTime.now().subtract(const Duration(seconds: 65));
+    await showOngoingWorkoutNotification(
+      workout(
+        id: 'stopwatch-test',
+        stopwatch: (start: start, label: 'Set stopwatch'),
+        rest: (start: start, end: start.add(const Duration(minutes: 3)), label: 'Rest', over: 'Done'),
+      ),
+    );
+    expect(details()['when'], start.millisecondsSinceEpoch);
+    expect(details()['chronometerCountDown'], isFalse);
+    expect(shown()['body'], 'Set stopwatch');
   });
 }

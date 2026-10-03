@@ -460,12 +460,15 @@ Future<void> cancelExerciseNotification() {
 /// the workout does ([cancelOngoingWorkoutNotification]). Nothing here needs a
 /// foreground service — the chronometer ticks without the app.
 Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
-  final resting = switch (workout.rest) {
-    OngoingRest(:final end) => end.isAfter(DateTime.now()),
-    null => false,
-  };
-  final (clock, body) = switch ((resting, workout.rest)) {
-    (true, OngoingRest(:final end, :final label)) => (end, '$label · ${workout.next}'),
+  final resting =
+      workout.stopwatch == null &&
+      switch (workout.rest) {
+        OngoingRest(:final end) => end.isAfter(DateTime.now()),
+        null => false,
+      };
+  final (clock, body) = switch ((workout.stopwatch, resting, workout.rest)) {
+    (final stopwatch?, _, _) => (stopwatch.start, stopwatch.label),
+    (null, true, OngoingRest(:final end, :final label)) => (end, '$label · ${workout.next}'),
     _ => (workout.startedAt, workout.next),
   };
 

@@ -168,7 +168,19 @@ private struct RestRow: View {
     let ink: Color
 
     var body: some View {
-        if let rest = state.rest {
+        if let start = state.stopwatchStart {
+            HStack(spacing: 10) {
+                if let label = state.stopwatchLabel {
+                    Text(label).font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                Text(start, style: .timer)
+                    .font(.title3.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(ink)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 100, alignment: .trailing)
+            }
+        } else if let rest = state.rest {
             HStack(spacing: 10) {
                 switch isStale {
                 case true:
@@ -207,8 +219,10 @@ private struct Clock: View {
     let resting: Bool
 
     var body: some View {
-        switch (resting, context.state.rest) {
-        case (true, let rest?):
+        switch (context.state.stopwatchStart, resting, context.state.rest) {
+        case (let start?, _, _):
+            Text(start, style: .timer).multilineTextAlignment(.trailing)
+        case (nil, true, let rest?):
             Text(timerInterval: rest, countsDown: true)
                 .multilineTextAlignment(.trailing)
         default:

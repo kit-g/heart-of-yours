@@ -110,7 +110,17 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
 
   final l = L.of(context);
   final alarms = Alarms.of(context);
-  final upNext = upNextIn(workout, after: workouts.latestMarkedSet);
+  final stopwatch = workouts.stopwatch;
+  final timing = Preferences.of(context).isOn(.setStopwatch) && stopwatch.isRunning;
+  final timedExercise = timing ? workout.where((exercise) => exercise.any(stopwatch.isTiming)).firstOrNull : null;
+  final upNext = switch (timedExercise) {
+    WorkoutExercise exercise => (
+      exercise: exercise,
+      set: exercise.firstWhere(stopwatch.isTiming),
+      number: exercise.toList().indexWhere(stopwatch.isTiming) + 1,
+    ),
+    null => upNextIn(workout, after: workouts.latestMarkedSet),
+  };
 
   return (
     workoutId: workout.id,
@@ -121,12 +131,18 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
     },
     exercise: upNext?.exercise.exercise.name ?? '',
     next: switch (upNext) {
+      // the stopwatch row names the set being timed; it is not "next"
+      _ when timing => '',
       (set: ExerciseSet set, :int number, exercise: _) => nextSetLine(context, set, number),
       (set: null, number: _, exercise: _) => l.ongoingWorkoutAllDone,
       null => '',
     },
-    rest: switch ((alarms.activeExerciseEnd, alarms.activeExerciseTotal)) {
-      (DateTime end, num total) => (
+    stopwatch: switch ((timing, stopwatch.startedAt, upNext?.number)) {
+      (true, DateTime start, int number) => (start: start, label: l.ongoingWorkoutStopwatch(number)),
+      _ => null,
+    },
+    rest: switch ((timing, alarms.activeExerciseEnd, alarms.activeExerciseTotal)) {
+      (false, DateTime end, num total) => (
         start: end.subtract(Duration(seconds: total.toInt())),
         end: end,
         label: l.ongoingWorkoutRest,
