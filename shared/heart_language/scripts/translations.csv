@@ -713,3 +713,4 @@ rpeScale7,"RPE scale, one line: at 7 three more reps were left",7: three more,7:
 rpeScale6,"RPE scale, one line: at 6 four or more reps were left",6: four or more,6: four or more,6: четыре и больше,6: cuatro o más,6 : quatre ou plus
 rpeBadge,"Tiny badge in a set's last value cell showing its RPE, e.g. '@8'. Keep the @ unless the language marks it differently",@{value},@{value},@{value},@{value},@{value}
 rpeValue,"An RPE with its value, e.g. 'RPE 8.5': on the RPE key once the set is rated, and read by screen readers",RPE {value},RPE {value},RPE {value},RPE {value},RPE {value}
+clearRpe,Tooltip on the button beside the RPE heading in the set-number popup that removes the set's rating; shown only while it has one,Clear RPE,Clear RPE,Сбросить RPE,Quitar RPE,Effacer le RPE

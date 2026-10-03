@@ -459,6 +459,29 @@ void main() {
       expect(find.text('@9'), findsNothing);
     });
 
+    testWidgets('the × clears a rating, and is there only while there is one', (tester) async {
+      rpeOn();
+      final exercise = Exercise(name: 'Row', category: Category.barbell, target: Target.back);
+      final workout = three(exercise);
+      final [rated, plain, ..._] = workout.first.toList();
+      rated.rpe = 8;
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.setTypeFor(exercise.id, 2));
+      await tester.pumpTimes();
+      expect(find.byKey(WorkoutDetailKeys.clearRpe), findsNothing, reason: 'an unrated set has nothing to clear');
+      await tester.tapAt(Offset.zero);
+      await tester.pumpTimes();
+
+      await openPopup(tester, exercise);
+      await tester.tapByKey(WorkoutDetailKeys.clearRpe);
+      await tester.pumpTimes();
+
+      expect(rated.rpe, isNull);
+      expect(plain.rpe, isNull);
+      expect(find.text('@8'), findsNothing);
+    });
+
     testWidgets('the help button unfolds the scale in place, and rates nothing', (tester) async {
       rpeOn();
       final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);

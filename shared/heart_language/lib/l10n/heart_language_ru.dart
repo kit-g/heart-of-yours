@@ -2262,4 +2262,7 @@ class LRu extends L {
   String rpeValue(String value) {
     return 'RPE $value';
   }
+
+  @override
+  String get clearRpe => 'Сбросить RPE';
 }

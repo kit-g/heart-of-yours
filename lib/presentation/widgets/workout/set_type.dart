@@ -168,6 +168,9 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
           true => null,
           false => rpe,
         });
+      case _RpeCleared():
+        buzz();
+        onSetRpe?.call(widget.set, null);
       case null:
         return;
     }

@@ -22,6 +22,11 @@ final class _RpeChoice extends _SetChoice {
   const new(this.rpe);
 }
 
+/// The set's rating, taken away.
+final class _RpeCleared extends _SetChoice {
+  const new();
+}
+
 /// RPE in the set-number popup (#234): a heading with the set's rating and a
 /// help button, and the ratings under it. Only while the feature is on and the
 /// screen rates sets; otherwise the popup is the three types alone.
@@ -87,6 +92,19 @@ class _RpeEntryState extends State<_RpeEntry> {
                   style: textTheme.titleSmall,
                 ),
               ),
+              // only while there is a rating to take away
+              if (rpe != null)
+                IconButton(
+                  key: WorkoutDetailKeys.clearRpe,
+                  tooltip: l.clearRpe,
+                  visualDensity: .compact,
+                  style: IconButton.styleFrom(
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    shape: const RoundedRectangleBorder(borderRadius: .all(.circular(8))),
+                  ),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () => Navigator.of(context).pop(const _RpeCleared()),
+                ),
               IconButton(
                 tooltip: l.aboutRpe,
                 visualDensity: .compact,

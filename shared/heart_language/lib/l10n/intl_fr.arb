@@ -4056,5 +4056,11 @@
         "type": "String"
       }
     }
+  },
+  "clearRpe": "Effacer le RPE",
+  "@clearRpe": {
+    "description": "Tooltip on the button beside the RPE heading in the set-number popup that removes the set's rating; shown only while it has one",
+    "type": "text",
+    "placeholders": {}
   }
 }
