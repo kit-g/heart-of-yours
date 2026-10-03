@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 15);
+          expect(await userVersion(db), 16);
           expect(
             await tables(db),
             {
@@ -491,7 +491,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 15);
+          expect(await userVersion(db), 16);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -514,7 +514,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 15);
+          expect(await userVersion(db), 16);
           expect(await tables(db), contains('upsync'));
           expect(
             await columns(db, 'upsync'),
@@ -540,10 +540,32 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 15);
+    expect(await userVersion(db), 16);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
+    await db.close();
+  });
+
+  test('v15 upgrades fold the word "normal" into no type, and keep the rest (#151)', () async {
+    await LocalDatabase.init(version: 15);
+    var db = await raw();
+    await db.insert('exercises', {'id': 'e1', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs'});
+    await db.insert('workouts', {'id': 'w1', 'start': '2026-10-02T08:00:00Z', 'user_id': 'u1'});
+    await db.insert('workout_exercises', {'id': 'we1', 'workout_id': 'w1', 'exercise_id': 'e1'});
+    for (final (id, type) in [('s1', 'normal'), ('s2', 'warmup'), ('s3', null)]) {
+      await db.insert('sets', {'id': id, 'exercise_id': 'we1', 'set_type': ?type});
+    }
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    final rows = await db.query('sets', columns: ['id', 'set_type'], orderBy: 'id');
+    expect(rows, [
+      {'id': 's1', 'set_type': null},
+      {'id': 's2', 'set_type': 'warmup'},
+      {'id': 's3', 'set_type': null},
+    ]);
     await db.close();
   });
 
@@ -572,7 +594,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 15);
+          expect(await userVersion(db), 16);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
