@@ -46,8 +46,9 @@ part 'set_item.dart';
 part 'set_type.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
+part 'workout_note.dart';
 
-enum _WorkoutOption { editImage, editName }
+enum _WorkoutOption { editImage, editName, editNote }
 
 class WorkoutDetail extends StatefulWidget {
   final Iterable<WorkoutExercise> exercises;
@@ -853,6 +854,12 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             onRemoveSet: workouts.removeSet,
             onSetType: workouts.setSetType,
             onRemoveExercise: workouts.removeExercise,
+            slivers: [
+              if (active.note case String note)
+                SliverToBoxAdapter(
+                  child: WorkoutNote(note: note, onChanged: workouts.setWorkoutNote),
+                ),
+            ],
             onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
             onAddExercises: (exercises) async {
               final workouts = Workouts.of(context);
@@ -926,7 +933,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                             spacing: 6,
                                             children: [
                                               Icon(_workoutOptionIcon(option)),
-                                              Text(_workoutOptionCopy(l, option)),
+                                              Text(_workoutOptionCopy(l, option, active)),
                                             ],
                                           ),
                                         );
@@ -1010,10 +1017,14 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     };
   }
 
-  String _workoutOptionCopy(L l, _WorkoutOption option) {
+  String _workoutOptionCopy(L l, _WorkoutOption option, Workout workout) {
     return switch (option) {
       .editImage => l.addPhoto,
       .editName => l.editWorkoutName,
+      .editNote => switch (workout.note) {
+        String _ => l.editWorkoutNote,
+        null => l.addWorkoutNote,
+      },
     };
   }
 
@@ -1021,6 +1032,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     return switch (option) {
       .editImage => Icons.photo_camera,
       .editName => Icons.edit_rounded,
+      .editNote => Icons.edit_note_rounded,
     };
   }
 
@@ -1065,6 +1077,10 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       .editName => () {
         _workoutNameFocusNode.requestFocus();
         _workoutNameController.selectAllText();
+      },
+      .editNote => () {
+        final workouts = widget.workouts;
+        return editWorkoutNote(context, workouts.activeWorkout?.note, workouts.setWorkoutNote);
       },
     };
   }
