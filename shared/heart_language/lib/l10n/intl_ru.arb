@@ -3953,7 +3953,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "rpeSubtitle": "Оценивайте тяжесть каждого подхода прямо с цифровой клавиатуры",
+  "rpeSubtitle": "Оценивайте тяжесть каждого подхода, нажав на его номер",
   "@rpeSubtitle": {
     "description": "Subtitle under the RPE switch in Settings › Features",
     "type": "text",
@@ -3998,12 +3998,6 @@
   "rpeScale6": "6: четыре и больше",
   "@rpeScale6": {
     "description": "RPE scale, one line: at 6 four or more reps were left",
-    "type": "text",
-    "placeholders": {}
-  },
-  "closeRpe": "Вернуться к клавиатуре",
-  "@closeRpe": {
-    "description": "Tooltip on the button that closes the RPE picker",
     "type": "text",
     "placeholders": {}
   },

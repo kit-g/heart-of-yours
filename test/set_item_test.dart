@@ -399,4 +399,75 @@ void main() {
       expect(workout.first.first.setType, SetType.normal);
     });
   });
+
+  group('RPE (#234)', () {
+    void rpeOn() {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'weightUnit': 'metric',
+        'distanceUnit': 'metric',
+        'feature-rpe': 'on',
+      });
+    }
+
+    testWidgets('off, a focused field brings no bar: the app as it was before RPE', (tester) async {
+      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      await startWorkoutOn(tester, three(exercise));
+
+      await tester.tap(find.byKey(WorkoutDetailKeys.repsFor(exercise.id, 1)));
+      await tester.pumpTimes();
+
+      expect(find.byKey(WorkoutDetailKeys.rpeKey), findsNothing);
+    });
+
+    testWidgets('on, the key opens the picker, a rating lands on the set, and its cell says so', (tester) async {
+      rpeOn();
+      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final workout = three(exercise);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+
+      expect(find.byKey(WorkoutDetailKeys.rpeKey), findsNothing, reason: 'nothing until a field has focus');
+      await tester.tap(find.byKey(WorkoutDetailKeys.repsFor(exercise.id, 1)));
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.rpeKey);
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.rpeValue(8.5));
+      await tester.pumpTimes();
+
+      expect(set.rpe, 8.5);
+      verify(db.storeMeasurements(set)).called(1);
+      expect(find.text('@8.5'), findsOneWidget);
+      expect(find.text('RPE 8.5'), findsOneWidget, reason: 'back on the field, the key carries the rating');
+    });
+
+    testWidgets('picking the rating a set already has clears it', (tester) async {
+      rpeOn();
+      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final workout = three(exercise);
+      final set = workout.first.first..rpe = 9;
+      await startWorkoutOn(tester, workout);
+      expect(find.text('@9'), findsOneWidget);
+
+      await tester.tap(find.byKey(WorkoutDetailKeys.repsFor(exercise.id, 1)));
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.rpeKey);
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.rpeValue(9));
+      await tester.pumpTimes();
+
+      expect(set.rpe, isNull);
+      expect(find.text('@9'), findsNothing);
+    });
+
+    testWidgets('off, a stored rating stays stored and unshown', (tester) async {
+      final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);
+      final workout = three(exercise);
+      final set = workout.first.first..rpe = 7;
+      await startWorkoutOn(tester, workout);
+
+      expect(find.text('@7'), findsNothing);
+      expect(set.rpe, 7);
+    });
+  });
 }

@@ -2211,7 +2211,7 @@ class LRu extends L {
   String get rpe => 'RPE';
 
   @override
-  String get rpeSubtitle => 'Оценивайте тяжесть каждого подхода прямо с цифровой клавиатуры';
+  String get rpeSubtitle => 'Оценивайте тяжесть каждого подхода, нажав на его номер';
 
   @override
   String get rpeHint => 'Сколько ещё повторений оставалось в запасе. Нажмите на число, чтобы оценить подход.';
@@ -2233,9 +2233,6 @@ class LRu extends L {
 
   @override
   String get rpeScale6 => '6: четыре и больше';
-
-  @override
-  String get closeRpe => 'Вернуться к клавиатуре';
 
   @override
   String rpeBadge(String value) {

@@ -2180,7 +2180,7 @@ class LFr extends L {
   String get rpe => 'RPE';
 
   @override
-  String get rpeSubtitle => 'Notez la difficulté de chaque série depuis le pavé numérique';
+  String get rpeSubtitle => 'Notez la difficulté de chaque série depuis son numéro';
 
   @override
   String get rpeHint => 'Combien de répétitions il vous restait. Touchez un chiffre pour noter la série.';
@@ -2202,9 +2202,6 @@ class LFr extends L {
 
   @override
   String get rpeScale6 => '6 : quatre ou plus';
-
-  @override
-  String get closeRpe => 'Revenir au clavier';
 
   @override
   String rpeBadge(String value) {
