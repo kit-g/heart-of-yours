@@ -440,6 +440,12 @@ class LEn extends L {
   String get whatsNewThisVersion => 'This version';
 
   @override
+  String get whatsNewFeatureOff => 'Turn on in Features';
+
+  @override
+  String get whatsNewFeatureOn => 'On · see in Features';
+
+  @override
   String get whatsNewEmpty => 'No release notes in this version of the app.';
 
   @override
@@ -2601,6 +2607,12 @@ class LEnCa extends LEn {
 
   @override
   String get whatsNewThisVersion => 'This version';
+
+  @override
+  String get whatsNewFeatureOff => 'Turn on in Features';
+
+  @override
+  String get whatsNewFeatureOn => 'On · see in Features';
 
   @override
   String get whatsNewEmpty => 'No release notes in this version of the app.';

@@ -442,6 +442,12 @@ class LFr extends L {
   String get whatsNewThisVersion => 'Cette version';
 
   @override
+  String get whatsNewFeatureOff => 'Activer dans Fonctionnalités';
+
+  @override
+  String get whatsNewFeatureOn => 'Activée · voir dans Fonctionnalités';
+
+  @override
   String get whatsNewEmpty => 'Aucune note de version dans cette version de l’app.';
 
   @override
