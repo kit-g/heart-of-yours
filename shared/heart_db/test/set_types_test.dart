@@ -145,6 +145,30 @@ void main() {
     expect(active!.single.single.setType, SetType.warmup);
   });
 
+  test('last time carries each set\'s type, so Previous can match warm-ups to warm-ups (#236)', () async {
+    await local.storeWorkoutHistory([
+      server(
+        'w1',
+        sets: [
+          set('s1', weight: 60, type: 'warmup'),
+          set('s2', weight: 100),
+          set('s3', weight: 80, type: 'drop'),
+        ],
+      ),
+    ], user);
+
+    final previous = await local.getPreviousSets(user);
+
+    expect(
+      previous[bench]?.map((each) => (each['set_id'], each['set_type'])),
+      unorderedEquals([
+        ('s1', 'warmup'),
+        ('s2', null),
+        ('s3', 'drop'),
+      ]),
+    );
+  });
+
   group('warm-ups are no record', () {
     final exercise = benchPress;
 
