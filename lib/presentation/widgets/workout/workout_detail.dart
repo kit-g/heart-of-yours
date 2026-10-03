@@ -44,6 +44,7 @@ part 'exercise_note.dart';
 part 'feedback.dart';
 part 'keys.dart';
 part 'set_item.dart';
+part 'set_stopwatch.dart';
 part 'rpe.dart';
 part 'set_type.dart';
 part 'text_field_button.dart';

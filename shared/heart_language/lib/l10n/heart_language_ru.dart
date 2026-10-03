@@ -2276,7 +2276,19 @@ class LRu extends L {
   String get startSetStopwatch => 'Запустить секундомер подхода';
 
   @override
-  String get stopSetStopwatch => 'Остановить секундомер';
+  String get showSetStopwatch => 'Показать секундомер подхода';
+
+  @override
+  String get stopwatchPause => 'Пауза';
+
+  @override
+  String get stopwatchResume => 'Продолжить';
+
+  @override
+  String get stopwatchDone => 'Готово';
+
+  @override
+  String get stopwatchPaused => 'На паузе';
 
   @override
   String ongoingWorkoutStopwatch(int number) {

@@ -2245,7 +2245,19 @@ class LFr extends L {
   String get startSetStopwatch => 'Démarrer le chronomètre de série';
 
   @override
-  String get stopSetStopwatch => 'Arrêter le chronomètre';
+  String get showSetStopwatch => 'Afficher le chronomètre de série';
+
+  @override
+  String get stopwatchPause => 'Pause';
+
+  @override
+  String get stopwatchResume => 'Reprendre';
+
+  @override
+  String get stopwatchDone => 'Terminé';
+
+  @override
+  String get stopwatchPaused => 'En pause';
 
   @override
   String ongoingWorkoutStopwatch(int number) {

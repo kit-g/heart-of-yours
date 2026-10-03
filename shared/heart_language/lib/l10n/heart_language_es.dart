@@ -2241,7 +2241,19 @@ class LEs extends L {
   String get startSetStopwatch => 'Iniciar cronómetro de serie';
 
   @override
-  String get stopSetStopwatch => 'Detener cronómetro';
+  String get showSetStopwatch => 'Mostrar cronómetro de serie';
+
+  @override
+  String get stopwatchPause => 'Pausar';
+
+  @override
+  String get stopwatchResume => 'Reanudar';
+
+  @override
+  String get stopwatchDone => 'Hecho';
+
+  @override
+  String get stopwatchPaused => 'En pausa';
 
   @override
   String ongoingWorkoutStopwatch(int number) {

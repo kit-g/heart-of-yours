@@ -3904,11 +3904,35 @@ abstract class L {
   /// **'Start set stopwatch'**
   String get startSetStopwatch;
 
-  /// Read by screen readers on the stop button of a timed set whose stopwatch is running; stopping writes the time into the set
+  /// Read by screen readers on the button in a timed set's done column while its stopwatch runs or is paused; it opens the stopwatch
   ///
   /// In en, this message translates to:
-  /// **'Stop timing'**
-  String get stopSetStopwatch;
+  /// **'Show set stopwatch'**
+  String get showSetStopwatch;
+
+  /// Button in the set stopwatch: stops the count for now, without logging anything
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get stopwatchPause;
+
+  /// Button in the set stopwatch while it is paused: carries on counting from where it stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get stopwatchResume;
+
+  /// Button in the set stopwatch: writes the time into the set and ticks it off. One short word
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get stopwatchDone;
+
+  /// Shown in the set stopwatch and on the lock screen while the stopwatch is paused
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get stopwatchPaused;
 
   /// Lock-screen label beside the counting clock while a timed set's stopwatch runs: which of the exercise's sets is being timed, e.g. 'Set 2'
   ///

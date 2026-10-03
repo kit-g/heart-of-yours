@@ -4081,9 +4081,33 @@
     "type": "text",
     "placeholders": {}
   },
-  "stopSetStopwatch": "Arrêter le chronomètre",
-  "@stopSetStopwatch": {
-    "description": "Read by screen readers on the stop button of a timed set whose stopwatch is running; stopping writes the time into the set",
+  "showSetStopwatch": "Afficher le chronomètre de série",
+  "@showSetStopwatch": {
+    "description": "Read by screen readers on the button in a timed set's done column while its stopwatch runs or is paused; it opens the stopwatch",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchPause": "Pause",
+  "@stopwatchPause": {
+    "description": "Button in the set stopwatch: stops the count for now, without logging anything",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchResume": "Reprendre",
+  "@stopwatchResume": {
+    "description": "Button in the set stopwatch while it is paused: carries on counting from where it stopped",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchDone": "Terminé",
+  "@stopwatchDone": {
+    "description": "Button in the set stopwatch: writes the time into the set and ticks it off. One short word",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchPaused": "En pause",
+  "@stopwatchPaused": {
+    "description": "Shown in the set stopwatch and on the lock screen while the stopwatch is paused",
     "type": "text",
     "placeholders": {}
   },

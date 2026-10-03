@@ -717,5 +717,9 @@ clearRpe,Tooltip on the button beside the RPE heading in the set-number popup th
 setStopwatch,"Title of the set stopwatch's switch in Settings › Features: a stopwatch inside a timed set (plank, hang, carry)",Set stopwatch,Set stopwatch,Секундомер подхода,Cronómetro de serie,Chronomètre de série
 setStopwatchSubtitle,One line under the set stopwatch's switch in Settings › Features,"Time a set, then stop to log it.","Time a set, then stop to log it.","Засеките подход и остановите, чтобы записать.",Cronometra una serie y detén el cronómetro para registrarla.,"Chronométrez une série, puis arrêtez pour l’enregistrer."
 startSetStopwatch,Read by screen readers on the play button that takes the place of a timed set's done button while its time is empty,Start set stopwatch,Start set stopwatch,Запустить секундомер подхода,Iniciar cronómetro de serie,Démarrer le chronomètre de série
-stopSetStopwatch,Read by screen readers on the stop button of a timed set whose stopwatch is running; stopping writes the time into the set,Stop timing,Stop timing,Остановить секундомер,Detener cronómetro,Arrêter le chronomètre
+showSetStopwatch,Read by screen readers on the button in a timed set's done column while its stopwatch runs or is paused; it opens the stopwatch,Show set stopwatch,Show set stopwatch,Показать секундомер подхода,Mostrar cronómetro de serie,Afficher le chronomètre de série
+stopwatchPause,"Button in the set stopwatch: stops the count for now, without logging anything",Pause,Pause,Пауза,Pausar,Pause
+stopwatchResume,Button in the set stopwatch while it is paused: carries on counting from where it stopped,Resume,Resume,Продолжить,Reanudar,Reprendre
+stopwatchDone,Button in the set stopwatch: writes the time into the set and ticks it off. One short word,Done,Done,Готово,Hecho,Terminé
+stopwatchPaused,Shown in the set stopwatch and on the lock screen while the stopwatch is paused,Paused,Paused,На паузе,En pausa,En pause
 ongoingWorkoutStopwatch,"Lock-screen label beside the counting clock while a timed set's stopwatch runs: which of the exercise's sets is being timed, e.g. 'Set 2'",Set {number},Set {number},Подход {number},Serie {number},Série {number}

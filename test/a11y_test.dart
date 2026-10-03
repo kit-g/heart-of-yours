@@ -224,23 +224,11 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
-  (
-    _Screen.setStopwatch,
-    _Guideline.labeledTapTarget,
-    'the ▶ is labelled, but the plain ✓ it replaces and the workout options button never were (lib/presentation/widgets/workout/set_item.dart:315, workout_detail.dart:930)',
-  ),
+  (_Screen.setStopwatch, _Guideline.labeledTapTarget, null),
   (_Screen.setStopwatch, _Guideline.textContrastLight, null),
   (_Screen.setStopwatch, _Guideline.textContrastDark, null),
-  (
-    _Screen.setStopwatch,
-    _Guideline.androidTapTarget,
-    'the ▶ is the done button, which keeps the workout\'s 32pt set rows (lib/presentation/widgets/workout/utils.dart:3) — density chosen, out of scope',
-  ),
-  (
-    _Screen.setStopwatch,
-    _Guideline.iosTapTarget,
-    'the ▶ is the done button, which keeps the workout\'s 32pt set rows (lib/presentation/widgets/workout/utils.dart:3) — density chosen, out of scope',
-  ),
+  (_Screen.setStopwatch, _Guideline.androidTapTarget, null),
+  (_Screen.setStopwatch, _Guideline.iosTapTarget, null),
   (_Screen.exerciseNoteEditor, _Guideline.labeledTapTarget, null),
   (_Screen.exerciseNoteEditor, _Guideline.textContrastLight, null),
   (_Screen.exerciseNoteEditor, _Guideline.textContrastDark, null),
@@ -858,7 +846,6 @@ void main() {
       case _Screen.setStopwatch:
         final timed = Exercise(name: 'Plank', category: .duration, target: .core);
         final workout = Workout(name: 'Timed')..add(timed);
-        // rated, and with no time yet, so its done button is the ▶
         workout.first.first.rpe = 8;
         await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(source: .template, template: workout);
         await tester.tapByKey(AppKeys.workoutStack);
@@ -866,6 +853,11 @@ void main() {
         if (find.byType(WorkoutDetail).evaluate().isEmpty) {
           await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
         }
+        await tester.pumpTimes();
+        // the dialog, paused: a paused clock holds no timer open past the test
+        await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+        await tester.pumpTimes();
+        await tester.tap(find.text('Pause'));
         await tester.pumpTimes();
       case _Screen.rpePicker:
         final workout = Workout(name: 'Rated')..add(_bench);
