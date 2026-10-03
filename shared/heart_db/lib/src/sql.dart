@@ -527,7 +527,8 @@ SELECT
             'weight', s.weight,
             'reps', s.reps,
             'duration', s.duration,
-            'distance', s.distance
+            'distance', s.distance,
+            'set_type', s.set_type
         )
     ) AS sets
 FROM _recent
