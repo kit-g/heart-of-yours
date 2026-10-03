@@ -28,9 +28,9 @@ final g = switch (accent) {
 
 A one-line `??` fallback is fine.
 
-**But not a `switch` on a bare `bool`.** Two arms, `true` and `false`, each a
-plain value, is a ternary written longhand: the pattern matches nothing a
-condition could not say. When it fits on one line, write the condition.
+**A ternary when the whole choice fits in half a line.** A `switch` on a bare
+`bool` whose arms are two small values says nothing a condition could not, at
+four times the length.
 
 ```dart
 // no
@@ -43,8 +43,16 @@ final retyped = switch (type == current) {
 final retyped = type == current ? SetType.normal : type;
 ```
 
-The `switch` earns its place on an enum, a nullable, a shape, or arms that are
-whole widgets or blocks.
+The `switch` on a `bool` stays when its arms carry more than a value: a
+`loading` flag choosing between a spinner and the content is two states, each a
+widget, and reads better as two arms than as one squeezed condition.
+
+```dart
+child: switch (loading) {
+  true => const Center(child: CircularProgressIndicator()),
+  false => _HistoryList(workouts: workouts),
+},
+```
 
 **Functional first, loops last.** Walk a collection with `Iterable` methods —
 `map`, `where`, `indexed`, `fold`, `expand` — or a collection-`for` over it;
