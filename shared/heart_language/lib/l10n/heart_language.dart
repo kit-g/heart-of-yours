@@ -3711,6 +3711,72 @@ abstract class L {
   /// In en, this message translates to:
   /// **'{period} · {detail}'**
   String muscleMapCellCaption(String period, String detail);
+
+  /// Set type menu item: a lighter set done to prepare for the working sets
+  ///
+  /// In en, this message translates to:
+  /// **'Warm up'**
+  String get setTypeWarmup;
+
+  /// Set type menu item: a set done straight after another at a lower weight
+  ///
+  /// In en, this message translates to:
+  /// **'Drop set'**
+  String get setTypeDrop;
+
+  /// Set type menu item: a set taken until no further rep was possible
+  ///
+  /// In en, this message translates to:
+  /// **'Failure'**
+  String get setTypeFailure;
+
+  /// One-letter badge shown instead of the set number for a warm-up set. Must be a single character
+  ///
+  /// In en, this message translates to:
+  /// **'W'**
+  String get setTypeWarmupLetter;
+
+  /// One-letter badge shown instead of the set number for a drop set. Must be a single character
+  ///
+  /// In en, this message translates to:
+  /// **'D'**
+  String get setTypeDropLetter;
+
+  /// One-letter badge shown instead of the set number for a failure set. Must be a single character
+  ///
+  /// In en, this message translates to:
+  /// **'F'**
+  String get setTypeFailureLetter;
+
+  /// Explains what a warm-up set is, shown from the set type menu's help button
+  ///
+  /// In en, this message translates to:
+  /// **'A lighter set to get ready for the work. Warm-ups stay out of your records, charts and volume.'**
+  String get setTypeWarmupExplained;
+
+  /// Explains what a drop set is, shown from the set type menu's help button
+  ///
+  /// In en, this message translates to:
+  /// **'Straight after a set, lower the weight and keep going with little or no rest. Counts like any other set.'**
+  String get setTypeDropExplained;
+
+  /// Explains what a failure set is, shown from the set type menu's help button
+  ///
+  /// In en, this message translates to:
+  /// **'A set taken until you couldn\'t do one more good rep. Counts like any other set.'**
+  String get setTypeFailureExplained;
+
+  /// Tooltip on a set's number, which opens the menu to mark it as a warm-up, drop or failure set
+  ///
+  /// In en, this message translates to:
+  /// **'Set type'**
+  String get setType;
+
+  /// Tooltip on the help button beside a set type in the set type menu, e.g. 'About Drop set'
+  ///
+  /// In en, this message translates to:
+  /// **'About {setType}'**
+  String aboutSetType(String setType);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

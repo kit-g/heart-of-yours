@@ -2134,4 +2134,42 @@ class LEs extends L {
   String muscleMapCellCaption(String period, String detail) {
     return '$period · $detail';
   }
+
+  @override
+  String get setTypeWarmup => 'Calentamiento';
+
+  @override
+  String get setTypeDrop => 'Serie descendente';
+
+  @override
+  String get setTypeFailure => 'Al fallo';
+
+  @override
+  String get setTypeWarmupLetter => 'C';
+
+  @override
+  String get setTypeDropLetter => 'D';
+
+  @override
+  String get setTypeFailureLetter => 'F';
+
+  @override
+  String get setTypeWarmupExplained =>
+      'Una serie ligera para prepararte antes del trabajo. Los calentamientos no cuentan para tus récords, gráficas ni volumen.';
+
+  @override
+  String get setTypeDropExplained =>
+      'Justo después de una serie, baja el peso y sigue con poco o ningún descanso. Cuenta como cualquier otra serie.';
+
+  @override
+  String get setTypeFailureExplained =>
+      'Una serie llevada hasta no poder hacer ni una repetición limpia más. Cuenta como cualquier otra serie.';
+
+  @override
+  String get setType => 'Tipo de serie';
+
+  @override
+  String aboutSetType(String setType) {
+    return 'Acerca de: $setType';
+  }
 }
