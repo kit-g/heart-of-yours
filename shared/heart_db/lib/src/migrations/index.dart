@@ -103,4 +103,9 @@ const _migrations = <int, List<String>>{
     addWorkoutExerciseNote,
     addPinnedExerciseNote,
   ],
+  15: [
+    addSetType,
+    addSetRpe,
+    addWorkoutNote,
+  ],
 };

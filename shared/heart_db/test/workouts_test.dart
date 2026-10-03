@@ -516,7 +516,9 @@ void main() {
           verify(
             db.update(
               'sets',
-              testSet.toRow(),
+              // the type and RPE ride along: a row without them reads back
+              // as a plain, unrated set (#151)
+              {...testSet.toRow(), 'set_type': 'normal', 'rpe': null},
               where: 'id = ?',
               whereArgs: [testSet.id],
             ),

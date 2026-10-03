@@ -52,6 +52,7 @@ SELECT
     _workout.name,
     _workout.images,
     _workout.synced,
+    _workout.note,
     (
         SELECT json_group_array(
             json_object(
@@ -67,7 +68,9 @@ SELECT
                             'reps', _sets.reps,
                             'duration', _sets.duration,
                             'distance', _sets.distance,
-                            'completed', _sets.completed
+                            'completed', _sets.completed,
+                            'set_type', _sets.set_type,
+                            'rpe', _sets.rpe
                         )
                     )
                     FROM _sets
@@ -128,6 +131,7 @@ SELECT
     _workout.name,
     _workout.images,
     _workout.synced,
+    _workout.note,
     (
         SELECT json_group_array(
             json_object(
@@ -143,7 +147,9 @@ SELECT
                             'reps', _sets.reps,
                             'duration', _sets.duration,
                             'distance', _sets.distance,
-                            'completed', _sets.completed
+                            'completed', _sets.completed,
+                            'set_type', _sets.set_type,
+                            'rpe', _sets.rpe
                         )
                     )
                     FROM _sets
@@ -202,6 +208,7 @@ SELECT
     _workouts.name,
     _workouts.images,
     _workouts.synced,
+    _workouts.note,
     (
         SELECT json_group_array(
             json_object(
@@ -217,7 +224,9 @@ SELECT
                             'reps', _sets.reps,
                             'duration', _sets.duration,
                             'distance', _sets.distance,
-                            'completed', _sets.completed
+                            'completed', _sets.completed,
+                            'set_type', _sets.set_type,
+                            'rpe', _sets.rpe
                         )
                     )
                     FROM _sets
@@ -247,15 +256,16 @@ WHERE completed = 0
 /// foreign keys on, REPLACE is a delete + insert, and the delete cascades
 /// through `workout_exercises` into `sets` (heart-of-yours#85).
 const upsertWorkout = '''
-INSERT INTO workouts (id, start, user_id, name, "end", images, synced)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
     start   = EXCLUDED.start,
     user_id = EXCLUDED.user_id,
     name    = EXCLUDED.name,
     "end"   = EXCLUDED."end",
     images  = EXCLUDED.images,
-    synced  = EXCLUDED.synced;
+    synced  = EXCLUDED.synced,
+    note    = EXCLUDED.note;
 ''';
 
 const getTemplates = """
@@ -404,7 +414,8 @@ WHERE we.exercise_id = ?
 /// — the raw material [LocalDatabase.getRecord] folds into the records map.
 /// One query instead of per-metric aggregates so a record can carry the *set*
 /// it happened on (its own reps, its own date), never two independent maxima
-/// glued together.
+/// glued together. Warm-ups are no one's record (heart-api#83); `IS NOT`
+/// keeps the sets stored before types existed, whose column is null.
 const recordSets = '''
 SELECT
     sets.weight,
@@ -419,6 +430,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
+  AND sets.set_type IS NOT 'warmup'
 ORDER BY workouts.start;
 ''';
 
@@ -432,6 +444,7 @@ INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
@@ -448,6 +461,7 @@ INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -464,6 +478,7 @@ INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id 
 ORDER BY "when" DESC
 LIMIT ?
@@ -480,6 +495,7 @@ INNER JOIN main.workouts ON workouts.id = we.workout_id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id
 ORDER BY "when" DESC
 LIMIT ?
