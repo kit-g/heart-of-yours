@@ -21,6 +21,11 @@ struct OngoingWorkoutAttributes: ActivityAttributes {
         /// The set they are about to do; empty when there is nothing to say.
         var next: String
 
+        /// A timed set's stopwatch, counting up while it runs (#171); it takes
+        /// the rest row's place.
+        var stopwatchStart: Date?
+        var stopwatchLabel: String?
+
         /// The rest countdown's window, while one runs.
         var restStart: Date?
         var restEnd: Date?

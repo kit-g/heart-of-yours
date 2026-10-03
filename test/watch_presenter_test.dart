@@ -577,6 +577,7 @@ void main() {
       next: 'Next: set 2',
       rest: (start: start, end: start.add(const Duration(seconds: 90)), label: 'Rest', over: 'Rest complete!'),
       preset: .forge,
+      stopwatch: null,
       channel: 'Workout in progress',
     ), activity: 'strength');
 
