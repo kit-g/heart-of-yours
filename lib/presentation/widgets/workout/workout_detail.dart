@@ -32,6 +32,7 @@ import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import 'package:material_ui/material_ui.dart';
 
 import 'rest.dart';
@@ -43,6 +44,7 @@ part 'exercise_note.dart';
 part 'feedback.dart';
 part 'keys.dart';
 part 'set_item.dart';
+part 'rpe.dart';
 part 'set_type.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
@@ -68,6 +70,10 @@ class WorkoutDetail extends StatefulWidget {
   /// Marks a set as a warm-up, drop or failure set, or a plain one again
   /// (#151). Without it the set numbers are not buttons.
   final void Function(ExerciseSet, SetType)? onSetType;
+
+  /// Rates a set, or clears its rating (#234). Without it, as in a template,
+  /// sets carry no RPE and the bar over the number pad never appears.
+  final void Function(ExerciseSet, double?)? onSetRpe;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
@@ -90,6 +96,7 @@ class WorkoutDetail extends StatefulWidget {
     required this.onRemoveSet,
     this.onSetDone,
     this.onSetType,
+    this.onSetRpe,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.onAddExercises,
@@ -111,6 +118,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
   final _searchController = TextEditingController();
   final _beingDragged = ValueNotifier<WorkoutExercise?>(null);
   final _currentlyHoveredExercise = ValueNotifier<WorkoutExercise?>(null);
+  final _rpe = _RpeEditing();
 
   Iterable<WorkoutExercise> get exercises => widget.exercises;
 
@@ -120,6 +128,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
     _searchController.dispose();
     _beingDragged.dispose();
     _currentlyHoveredExercise.dispose();
+    _rpe.dispose();
 
     super.dispose();
   }
@@ -148,7 +157,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
       context,
     );
 
-    return CustomScrollView(
+    final scroll = CustomScrollView(
       controller: widget.controller,
       physics: const ClampingScrollPhysics(),
       slivers: [
@@ -253,6 +262,18 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
         ...?widget.trailingSlivers,
       ],
     );
+
+    return switch (widget.onSetRpe) {
+      // the bar sits under the list, so it rides on top of the keyboard, and
+      // the picker takes the keyboard's place when it goes
+      final onSetRpe? => Column(
+        children: [
+          Expanded(child: scroll),
+          _RpeBar(editing: _rpe, onSetRpe: onSetRpe),
+        ],
+      ),
+      null => scroll,
+    };
   }
 
   /// Resolves a drop onto [target] into the two reordering primitives the model
@@ -356,6 +377,10 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             onRemoveSet: widget.onRemoveSet,
                             onSetDone: widget.onSetDone,
                             onSetType: widget.onSetType,
+                            rpe: switch (widget.onSetRpe) {
+                              null => null,
+                              _ => _rpe,
+                            },
                             onRemoveExercise: widget.onRemoveExercise,
                             onSwapExercise: _onDrop,
                             onDragStarted: () {
@@ -852,6 +877,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             onNoteChanged: workouts.setNote,
             onRemoveSet: workouts.removeSet,
             onSetType: workouts.setSetType,
+            onSetRpe: workouts.setRpe,
             onRemoveExercise: workouts.removeExercise,
             onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
             onAddExercises: (exercises) async {
