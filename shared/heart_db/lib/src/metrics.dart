@@ -1,3 +1,7 @@
+// Every chart reads working sets only: warm-ups are left out the way the
+// records are (heart-api#83), and `IS NOT` keeps the sets stored before types
+// existed, whose column is null.
+
 const getCardioDurationHistory = '''
 SELECT
     sum(coalesce(sets.duration, 0)) AS "value",
@@ -8,6 +12,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -24,6 +29,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -40,6 +46,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 HAVING sum(sets.distance) > 0
 ORDER BY "when" DESC
@@ -65,6 +72,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
   AND sets.reps > 0
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
@@ -83,6 +91,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -100,6 +109,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -117,6 +127,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -134,6 +145,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -151,6 +163,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?
@@ -169,6 +182,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
   AND sets.reps > 0
   AND sets.weight > 0
 GROUP BY workouts.id, workouts.start
@@ -189,6 +203,7 @@ INNER JOIN workouts ON we.workout_id = workouts.id
 WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed = 1
+  AND sets.set_type IS NOT 'warmup'
 GROUP BY workouts.id, workouts.start
 ORDER BY "when" DESC
 LIMIT ?

@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 14);
+          expect(await userVersion(db), 15);
           expect(
             await tables(db),
             {
@@ -194,6 +194,10 @@ void main() {
           // v14: session notes and pinned exercise notes
           expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
           expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
+          // v15: set types, RPE and the workout note
+          expect(await columns(db, 'sets'), containsPair('set_type', 'TEXT'));
+          expect(await columns(db, 'sets'), containsPair('rpe', 'REAL'));
+          expect(await columns(db, 'workouts'), containsPair('note', 'TEXT'));
 
           expect(await indexesOn(db, 'template_exercises'), {'template_idx'});
           // `exercise_idx` is claimed three times in 0001.dart (workout_exercises,
@@ -487,7 +491,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 14);
+          expect(await userVersion(db), 15);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -510,7 +514,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 14);
+          expect(await userVersion(db), 15);
           expect(await tables(db), contains('upsync'));
           expect(
             await columns(db, 'upsync'),
@@ -536,7 +540,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 14);
+    expect(await userVersion(db), 15);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -568,7 +572,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 14);
+          expect(await userVersion(db), 15);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
