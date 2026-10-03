@@ -1,39 +1,45 @@
-Heart on Apple Watch
-Log your sets from the wrist: the set you're on with last time's numbers,
-the rest countdown, your heart rate and calories. Swipe for the whole
-workout to fix a set you already logged. Phone in your locker? The watch
-keeps logging, and your iPhone catches up when it's back. Open Heart on
-your watch to turn it on.
+Warm-ups, drop sets and failure sets
+Tap a set's number to mark it. Warm-ups stay out of your records, charts and
+muscle map, and Previous lines them up with last time's warm-ups. Your Apple
+Watch shows them too.
 
-Muscle map
-A body map on your profile, shaded by how many sets each muscle group got,
-with a list beside it and a week-by-week view below. Your profile offers it
-once; you can also turn it on in Settings › Features, and choose which
-parts to show.
+RPE, if you want it
+Rate how hard each set felt, 6 to 10, from the same menu on its number. It's
+off until you turn it on in Settings › Features. RPE from a Strong import is
+kept either way.
 
-New records, at a glance
-The workout summary shows each personal record as a badge, with the number
-it beat.
+A note on the whole workout
+Add one from the workout's ⋯ menu. It shows on the workout's card in History.
 
-Your choices follow you
-Turn a feature on or off once, and your other devices know.
+Muscles worked, per workout
+With the muscle map on, every finished workout shows which muscles it worked,
+right after you finish and in History.
+
+Fill a column at once
+Tap kg or Reps above your sets to fill every set not yet done from the top
+one. Tap ✓ to tick them all.
 
 Also
-Settings and dialogs fit iPad better.
+- Starting a workout while another is running now asks first.
+- Settings › Features has a page of its own, and What's new takes you
+  straight to a feature's switch.
 
 What to test
-- Install Heart on your watch from the Watch app on iPhone, then open it:
-  that turns the watch app on. It should show the workout you have running.
-- First workout on the watch: allow Health when asked. Heart rate and
-  calories should appear within a minute, with no restart.
-- Tick, edit and untick sets on the watch; check they land on the phone.
-- Switch the phone off (or leave it far away), log sets and Finish on the
-  watch, then bring it back. The phone should say it's catching up, show
-  how many sets arrived, and open the summary. Health should hold one
-  workout, not two.
-- Wrist down during a rest: the countdown stays readable (Always On).
-- Muscle map: accept or decline the offer on your profile; turn it on in
-  Settings › Features and leave parts out. The profile should close up
-  around what's left.
-- Finish a workout with a heavier set than ever: the record badge appears.
-- Sign in on a second device: features you turned on are already on.
+- Mark sets W / D / F from their number; tap the same type again to make it
+  plain. Only plain sets are numbered (W, 1, 2, F).
+- Finish a workout with a warm-up heavier than your best: no record, and it
+  stays out of charts and the muscle map.
+- Next session of that exercise: Previous shows last time's warm-up on the
+  warm-up row.
+- Apple Watch: marked sets show W / D / F, numbered like the phone.
+- Turn RPE on in Settings › Features. Rate a set from its number: its cell
+  gets a small @8. Clear it with × or by tapping the rating again. Turn RPE
+  off: ratings hide, and come back when you turn it on.
+- Edit a workout imported from Strong that has warm-ups or RPE, save,
+  reopen: nothing lost.
+- Add, edit and remove a workout note, in a running workout and from History.
+- Tap kg and Reps above the sets: unticked sets fill. ✓ ticks all; tap again
+  to untick.
+- With a workout running, start another: Heart asks before replacing it.
+- Tap a Live Activity while the workout is already on screen: nothing jumps.
+- What's new: the muscle map note's button opens Features at its switch.

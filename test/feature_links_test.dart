@@ -30,6 +30,7 @@ void main() {
   late _Recorded recorded;
   late HeartRouter router;
 
+  // every note about the muscle map carries one; the newest is the one on top
   const button = ValueKey('whats-new-feature-muscleMap');
   const row = ValueKey('feature-muscleMap');
 
@@ -77,7 +78,7 @@ void main() {
     await tester.pumpTimes();
     // the notes are real asset I/O, which fake time never advances
     for (final _ in Iterable.generate(50)) {
-      if (find.byKey(button).evaluate().isNotEmpty) break;
+      if (find.byKey(button).first.evaluate().isNotEmpty) break;
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
       await tester.pump();
     }
@@ -89,10 +90,10 @@ void main() {
     await pumpApp(tester);
     await openWhatsNew(tester);
 
-    expect(find.descendant(of: find.byKey(button), matching: find.text('Turn on in Features')), findsOneWidget);
+    expect(find.descendant(of: find.byKey(button).first, matching: find.text('Turn on in Features')), findsOneWidget);
 
-    await tester.ensureVisible(find.byKey(button));
-    await tester.tap(find.byKey(button));
+    await tester.ensureVisible(find.byKey(button).first);
+    await tester.tap(find.byKey(button).first);
     // past the spotlight's fade
     await tester.pumpTimes(25);
 
@@ -111,7 +112,7 @@ void main() {
     await tester.pumpTimes();
 
     expect(find.byType(FeaturesPage), findsNothing);
-    expect(find.descendant(of: find.byKey(button), matching: find.text('On · see in Features')), findsOneWidget);
+    expect(find.descendant(of: find.byKey(button).first, matching: find.text('On · see in Features')), findsOneWidget);
   });
 
   testWidgets('a link opens Features at the row, counted as a link', (tester) async {
