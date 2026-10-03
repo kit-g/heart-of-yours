@@ -59,84 +59,83 @@ class _TextFieldButton extends StatelessWidget {
                       ),
                       _ => null,
                     },
-                    child: Stack(
-                      alignment: .center,
+                    // a rated set gives its number the room the badge leaves, so
+                    // "255" and "@8" sit side by side rather than on each other
+                    child: Row(
                       children: [
-                        if (badge case String badge)
-                          Positioned(
-                            top: 1,
-                            right: 4,
-                            child: ExcludeSemantics(
-                              child: Text(
-                                badge,
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontSize: 10,
+                        Expanded(
+                          child: Center(
+                            child: Theme(
+                              data: Theme.of(context).copyWith(
+                                textSelectionTheme: TextSelectionThemeData(
+                                  selectionColor: switch (hasError) {
+                                    true => colorScheme.onError.withValues(alpha: .3),
+                                    false => null,
+                                  },
+                                  selectionHandleColor: switch (hasError) {
+                                    true => colorScheme.onError.withValues(alpha: .5),
+                                    false => null,
+                                  },
+                                ),
+                                cupertinoOverrideTheme: NoDefaultCupertinoThemeData(
+                                  primaryColor: switch (hasError) {
+                                    true => colorScheme.onError.withValues(alpha: .5),
+                                    false => null,
+                                  },
+                                ),
+                              ),
+                              child: Semantics(
+                                label: switch (badge) {
+                                  String badge => '$semanticLabel, $badge',
+                                  null => semanticLabel,
+                                },
+                                textField: true,
+                                child: TextField(
+                                  selectionControls: context.platformSpecificSelectionControls(),
+                                  textInputAction: TextInputAction.done,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  controller: controller,
+                                  inputFormatters: formatters,
+                                  decoration: const InputDecoration.collapsed(hintText: _emptyValue),
+                                  style: switch (hasError) {
+                                    true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
+                                    false => textTheme.bodyMedium,
+                                  },
+                                  textAlign: .center,
+                                  cursorHeight: 16,
+                                  textAlignVertical: switch (platform) {
+                                    // rendered weird on macos
+                                    .macOS => .top,
+                                    // rendered fine, duh
+                                    _ => TextAlignVertical.center,
+                                  },
+                                  maxLines: 1,
+                                  minLines: 1,
+                                  cursorColor: switch (hasError) {
+                                    true => colorScheme.onError,
+                                    false => colorScheme.onSurfaceVariant,
+                                  },
+                                  onSubmitted: (_) {
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                  onEditingComplete: () {},
+                                  onTap: controller.selectAllText,
+                                  onTapOutside: (_) => focusNode.unfocus(),
                                 ),
                               ),
                             ),
                           ),
-                        Center(
-                          child: Theme(
-                            data: Theme.of(context).copyWith(
-                              textSelectionTheme: TextSelectionThemeData(
-                                selectionColor: switch (hasError) {
-                                  true => colorScheme.onError.withValues(alpha: .3),
-                                  false => null,
-                                },
-                                selectionHandleColor: switch (hasError) {
-                                  true => colorScheme.onError.withValues(alpha: .5),
-                                  false => null,
-                                },
-                              ),
-                              cupertinoOverrideTheme: NoDefaultCupertinoThemeData(
-                                primaryColor: switch (hasError) {
-                                  true => colorScheme.onError.withValues(alpha: .5),
-                                  false => null,
-                                },
-                              ),
-                            ),
-                            child: Semantics(
-                              label: switch (badge) {
-                                String badge => '$semanticLabel, $badge',
-                                null => semanticLabel,
-                              },
-                              textField: true,
-                              child: TextField(
-                                selectionControls: context.platformSpecificSelectionControls(),
-                                textInputAction: TextInputAction.done,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                controller: controller,
-                                inputFormatters: formatters,
-                                decoration: const InputDecoration.collapsed(hintText: _emptyValue),
-                                style: switch (hasError) {
-                                  true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
-                                  false => textTheme.bodyMedium,
-                                },
-                                textAlign: .center,
-                                cursorHeight: 16,
-                                textAlignVertical: switch (platform) {
-                                  // rendered weird on macos
-                                  .macOS => .top,
-                                  // rendered fine, duh
-                                  _ => TextAlignVertical.center,
-                                },
-                                maxLines: 1,
-                                minLines: 1,
-                                cursorColor: switch (hasError) {
-                                  true => colorScheme.onError,
-                                  false => colorScheme.onSurfaceVariant,
-                                },
-                                onSubmitted: (_) {
-                                  FocusScope.of(context).unfocus();
-                                },
-                                onEditingComplete: () {},
-                                onTap: controller.selectAllText,
-                                onTapOutside: (_) => focusNode.unfocus(),
+                        ),
+                        if (badge case String badge)
+                          Padding(
+                            padding: const .only(right: 6),
+                            child: ExcludeSemantics(
+                              child: Text(
+                                badge,
+                                style: textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
                               ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                     onPressed: () {},

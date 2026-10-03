@@ -37,10 +37,7 @@ class WorkoutDetailKeys {
   /// A row of the open set type menu; only one menu is open at a time.
   static Key setTypeOption(SetType type) => Key('WorkoutDetail.setTypeOption.${type.value}');
 
-  /// The RPE key on the bar over the number pad (#234).
-  static const rpeKey = Key('WorkoutDetail.rpeKey');
-
-  /// A rating in the open RPE picker.
+  /// A rating in the open set-number popup (#234).
   static Key rpeValue(double value) => Key('WorkoutDetail.rpeValue.$value');
 
   static Key weightFor(String exerciseId, int index) => Key('WorkoutDetail.weight.$exerciseId.$index');
