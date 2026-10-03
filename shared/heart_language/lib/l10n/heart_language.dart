@@ -3879,6 +3879,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'RPE {value}'**
   String rpeValue(String value);
+
+  /// Tooltip on the button beside the RPE heading in the set-number popup that removes the set's rating; shown only while it has one
+  ///
+  /// In en, this message translates to:
+  /// **'Clear RPE'**
+  String get clearRpe;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

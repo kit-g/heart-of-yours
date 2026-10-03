@@ -2221,6 +2221,9 @@ class LEn extends L {
   String rpeValue(String value) {
     return 'RPE $value';
   }
+
+  @override
+  String get clearRpe => 'Clear RPE';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4439,4 +4442,7 @@ class LEnCa extends LEn {
   String rpeValue(String value) {
     return 'RPE $value';
   }
+
+  @override
+  String get clearRpe => 'Clear RPE';
 }
