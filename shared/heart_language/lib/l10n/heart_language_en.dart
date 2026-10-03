@@ -2224,6 +2224,23 @@ class LEn extends L {
 
   @override
   String get clearRpe => 'Clear RPE';
+
+  @override
+  String get setStopwatch => 'Set stopwatch';
+
+  @override
+  String get setStopwatchSubtitle => 'Time a set, then stop to log it.';
+
+  @override
+  String get startSetStopwatch => 'Start set stopwatch';
+
+  @override
+  String get stopSetStopwatch => 'Stop timing';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Set $number';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4445,4 +4462,21 @@ class LEnCa extends LEn {
 
   @override
   String get clearRpe => 'Clear RPE';
+
+  @override
+  String get setStopwatch => 'Set stopwatch';
+
+  @override
+  String get setStopwatchSubtitle => 'Time a set, then stop to log it.';
+
+  @override
+  String get startSetStopwatch => 'Start set stopwatch';
+
+  @override
+  String get stopSetStopwatch => 'Stop timing';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Set $number';
+  }
 }

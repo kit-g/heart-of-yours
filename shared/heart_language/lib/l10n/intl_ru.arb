@@ -4062,5 +4062,39 @@
     "description": "Tooltip on the button beside the RPE heading in the set-number popup that removes the set's rating; shown only while it has one",
     "type": "text",
     "placeholders": {}
+  },
+  "setStopwatch": "Секундомер подхода",
+  "@setStopwatch": {
+    "description": "Title of the set stopwatch's switch in Settings › Features: a stopwatch inside a timed set (plank, hang, carry)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setStopwatchSubtitle": "Засеките подход и остановите, чтобы записать.",
+  "@setStopwatchSubtitle": {
+    "description": "One line under the set stopwatch's switch in Settings › Features",
+    "type": "text",
+    "placeholders": {}
+  },
+  "startSetStopwatch": "Запустить секундомер подхода",
+  "@startSetStopwatch": {
+    "description": "Read by screen readers on the play button that takes the place of a timed set's done button while its time is empty",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopSetStopwatch": "Остановить секундомер",
+  "@stopSetStopwatch": {
+    "description": "Read by screen readers on the stop button of a timed set whose stopwatch is running; stopping writes the time into the set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "ongoingWorkoutStopwatch": "Подход {number}",
+  "@ongoingWorkoutStopwatch": {
+    "description": "Lock-screen label beside the counting clock while a timed set's stopwatch runs: which of the exercise's sets is being timed, e.g. 'Set 2'",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
   }
 }

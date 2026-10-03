@@ -2234,4 +2234,21 @@ class LFr extends L {
 
   @override
   String get clearRpe => 'Effacer le RPE';
+
+  @override
+  String get setStopwatch => 'Chronomètre de série';
+
+  @override
+  String get setStopwatchSubtitle => 'Chronométrez une série, puis arrêtez pour l’enregistrer.';
+
+  @override
+  String get startSetStopwatch => 'Démarrer le chronomètre de série';
+
+  @override
+  String get stopSetStopwatch => 'Arrêter le chronomètre';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Série $number';
+  }
 }

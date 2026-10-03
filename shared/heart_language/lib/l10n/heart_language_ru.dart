@@ -2265,4 +2265,21 @@ class LRu extends L {
 
   @override
   String get clearRpe => 'Сбросить RPE';
+
+  @override
+  String get setStopwatch => 'Секундомер подхода';
+
+  @override
+  String get setStopwatchSubtitle => 'Засеките подход и остановите, чтобы записать.';
+
+  @override
+  String get startSetStopwatch => 'Запустить секундомер подхода';
+
+  @override
+  String get stopSetStopwatch => 'Остановить секундомер';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Подход $number';
+  }
 }
