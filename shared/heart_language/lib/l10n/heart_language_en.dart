@@ -2235,7 +2235,19 @@ class LEn extends L {
   String get startSetStopwatch => 'Start set stopwatch';
 
   @override
-  String get stopSetStopwatch => 'Stop timing';
+  String get showSetStopwatch => 'Show set stopwatch';
+
+  @override
+  String get stopwatchPause => 'Pause';
+
+  @override
+  String get stopwatchResume => 'Resume';
+
+  @override
+  String get stopwatchDone => 'Done';
+
+  @override
+  String get stopwatchPaused => 'Paused';
 
   @override
   String ongoingWorkoutStopwatch(int number) {
@@ -4473,7 +4485,19 @@ class LEnCa extends LEn {
   String get startSetStopwatch => 'Start set stopwatch';
 
   @override
-  String get stopSetStopwatch => 'Stop timing';
+  String get showSetStopwatch => 'Show set stopwatch';
+
+  @override
+  String get stopwatchPause => 'Pause';
+
+  @override
+  String get stopwatchResume => 'Resume';
+
+  @override
+  String get stopwatchDone => 'Done';
+
+  @override
+  String get stopwatchPaused => 'Paused';
 
   @override
   String ongoingWorkoutStopwatch(int number) {

@@ -18,6 +18,17 @@ class _TextFieldButton extends StatelessWidget {
   /// them ticking, in the accent, in place of the field.
   final ValueNotifier<int>? running;
 
+  /// The stopwatch behind [running] stands still: its time reads quiet.
+  final bool paused;
+
+  /// A tap on the cell while [running]: brings the stopwatch back.
+  final VoidCallback? onRunning;
+
+  /// Starts the set stopwatch, from a ▶ leading the value; absent where the
+  /// stopwatch can't run.
+  final VoidCallback? onStopwatch;
+  final String? stopwatchLabel;
+
   const new({
     super.key,
     required this.focusNode,
@@ -29,6 +40,10 @@ class _TextFieldButton extends StatelessWidget {
     required this.semanticLabel,
     this.badge,
     this.running,
+    this.paused = false,
+    this.onRunning,
+    this.onStopwatch,
+    this.stopwatchLabel,
     this.keyboardType = const .numberWithOptions(decimal: true),
   });
 
@@ -49,6 +64,10 @@ class _TextFieldButton extends StatelessWidget {
                 return PrimaryButton.shrunk(
                   margin: EdgeInsets.zero,
                   backgroundColor: hasError ? colorScheme.error : color,
+                  onPressed: switch ((running, onRunning)) {
+                    (ValueNotifier<int> _, VoidCallback reopen) => reopen,
+                    _ => () {},
+                  },
                   // completion no longer changes the field's background, so
                   // focus draws the same quiet outline either way
                   border: switch ((hasError, focusNode.hasFocus)) {
@@ -82,67 +101,72 @@ class _TextFieldButton extends StatelessWidget {
                           },
                         ),
                       ),
-                      child: switch (running) {
-                        ValueNotifier<int> running => ValueListenableBuilder<int>(
-                          valueListenable: running,
-                          builder: (_, seconds, _) {
-                            // "1:02:03" outgrows a cardio pair's narrow cell
-                            return FittedBox(
-                              fit: .scaleDown,
-                              child: Text(
-                                seconds.toDuration(),
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.primary,
-                                  fontFeatures: const [.tabularFigures()],
+                      child: _leading(
+                        context,
+                        switch (running) {
+                          ValueNotifier<int> running => ValueListenableBuilder<int>(
+                            valueListenable: running,
+                            builder: (_, seconds, _) {
+                              // "1:02:03" outgrows a cardio pair's narrow cell
+                              return FittedBox(
+                                fit: .scaleDown,
+                                child: Text(
+                                  seconds.toDuration(),
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: switch (paused) {
+                                      true => colorScheme.onSurfaceVariant,
+                                      false => colorScheme.primary,
+                                    },
+                                    fontFeatures: const [.tabularFigures()],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                        null => Semantics(
-                          label: switch (badge) {
-                            String badge => '$semanticLabel, $badge',
-                            null => semanticLabel,
-                          },
-                          textField: true,
-                          child: TextField(
-                            selectionControls: context.platformSpecificSelectionControls(),
-                            textInputAction: TextInputAction.done,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            focusNode: focusNode,
-                            controller: controller,
-                            inputFormatters: formatters,
-                            decoration: const InputDecoration.collapsed(hintText: _emptyValue),
-                            style: switch (hasError) {
-                              true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
-                              false => textTheme.bodyMedium,
+                              );
                             },
-                            textAlign: .center,
-                            cursorHeight: 16,
-                            textAlignVertical: switch (platform) {
-                              // rendered weird on macos
-                              .macOS => .top,
-                              // rendered fine, duh
-                              _ => TextAlignVertical.center,
-                            },
-                            maxLines: 1,
-                            minLines: 1,
-                            cursorColor: switch (hasError) {
-                              true => colorScheme.onError,
-                              false => colorScheme.onSurfaceVariant,
-                            },
-                            onSubmitted: (_) {
-                              FocusScope.of(context).unfocus();
-                            },
-                            onEditingComplete: () {},
-                            onTap: controller.selectAllText,
-                            onTapOutside: (_) => focusNode.unfocus(),
                           ),
-                        ),
-                      },
+                          null => Semantics(
+                            label: switch (badge) {
+                              String badge => '$semanticLabel, $badge',
+                              null => semanticLabel,
+                            },
+                            textField: true,
+                            child: TextField(
+                              selectionControls: context.platformSpecificSelectionControls(),
+                              textInputAction: TextInputAction.done,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              focusNode: focusNode,
+                              controller: controller,
+                              inputFormatters: formatters,
+                              decoration: const InputDecoration.collapsed(hintText: _emptyValue),
+                              style: switch (hasError) {
+                                true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
+                                false => textTheme.bodyMedium,
+                              },
+                              textAlign: .center,
+                              cursorHeight: 16,
+                              textAlignVertical: switch (platform) {
+                                // rendered weird on macos
+                                .macOS => .top,
+                                // rendered fine, duh
+                                _ => TextAlignVertical.center,
+                              },
+                              maxLines: 1,
+                              minLines: 1,
+                              cursorColor: switch (hasError) {
+                                true => colorScheme.onError,
+                                false => colorScheme.onSurfaceVariant,
+                              },
+                              onSubmitted: (_) {
+                                FocusScope.of(context).unfocus();
+                              },
+                              onEditingComplete: () {},
+                              onTap: controller.selectAllText,
+                              onTapOutside: (_) => focusNode.unfocus(),
+                            ),
+                          ),
+                        },
+                      ),
                     ),
                   ),
-                  onPressed: () {},
                 );
               },
             );
@@ -201,5 +225,34 @@ class _TextFieldButton extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// [child] behind a ▶ that starts the set stopwatch, where one can start.
+  Widget _leading(BuildContext context, Widget child) {
+    return switch (onStopwatch) {
+      VoidCallback start => Row(
+        children: [
+          Semantics(
+            button: true,
+            label: stopwatchLabel,
+            excludeSemantics: true,
+            child: InkResponse(
+              onTap: start,
+              radius: 16,
+              child: Padding(
+                padding: const .only(left: 4, right: 2),
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
+      null => child,
+    };
   }
 }

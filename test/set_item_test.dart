@@ -117,58 +117,92 @@ void main() {
   Finder fieldsIn(Key rowKey) => find.descendant(of: find.byKey(rowKey), matching: find.byType(TextField));
 
   group('set stopwatch', () {
-    Finder doneIcon(ExerciseSet set, IconData icon) {
-      return find.descendant(of: find.byKey(rowKeyFor(set)), matching: find.byIcon(icon));
+    Finder inRow(ExerciseSet set, Finder finder) => find.descendant(of: find.byKey(rowKeyFor(set)), matching: finder);
+    Finder play(ExerciseSet set) => inRow(set, find.byIcon(Icons.play_arrow_rounded));
+    Finder stop(ExerciseSet set) => inRow(set, find.byIcon(Icons.stop_rounded));
+
+    Future<void> dialogButton(WidgetTester tester, String label) async {
+      await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.text(label)));
+      await tester.pumpTimes();
     }
 
-    testWidgets('an empty timed set trades ✓ for ▶; stop writes, ticks, and the row keeps its height', (
-      tester,
-    ) async {
+    testWidgets('▶ leads every undone timed set, copied time or not; off, none does', (tester) async {
       final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = three(exercise);
       final [first, second, third] = workout.first.toList();
-      first.rpe = 8;
-      third.setMeasurements(duration: 60);
+      second.setMeasurements(duration: 45);
       final context = await startWorkoutOn(tester, workout);
       final prefs = Preferences.of(context);
-      final workouts = Workouts.of(context);
-      prefs.setFeature(.rpe, on: true);
       await tester.pumpTimes();
-      final height = tester.getSize(find.byKey(rowKeyFor(first))).height;
       expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
 
       prefs.setFeature(.setStopwatch, on: true);
       await tester.pumpTimes();
-      expect(doneIcon(first, Icons.play_arrow_rounded), findsOneWidget);
-      expect(doneIcon(second, Icons.play_arrow_rounded), findsOneWidget);
-      // a duration to tick with keeps the ✓
-      expect(doneIcon(third, Icons.done), findsOneWidget);
-      expect(tester.getSize(find.byKey(rowKeyFor(first))).height, height);
-
-      await tester.tap(doneIcon(first, Icons.play_arrow_rounded));
-      await tester.pump();
-      expect(workouts.stopwatch.isTiming(first), isTrue);
-      expect(doneIcon(first, Icons.stop_rounded), findsOneWidget);
-      // one at a time: the other empty set is a plain ✓ again
-      expect(doneIcon(second, Icons.done), findsOneWidget);
-      expect(find.text('@8'), findsOneWidget);
-      expect(tester.getSize(find.byKey(rowKeyFor(first))).height, height);
-
-      await tester.pump(const Duration(seconds: 3));
-      await tester.tap(doneIcon(first, Icons.stop_rounded));
-      await tester.pumpTimes();
-      expect(first.duration, greaterThanOrEqualTo(1));
-      expect(first.isCompleted, isTrue);
-      expect(workouts.stopwatch.isRunning, isFalse);
-      expect(doneIcon(second, Icons.play_arrow_rounded), findsOneWidget);
+      expect(play(first), findsOneWidget);
+      expect(play(second), findsOneWidget, reason: 'a held time is the target, not a reason to hide ▶');
+      expect(play(third), findsOneWidget);
 
       prefs.setFeature(.setStopwatch, on: false);
       await tester.pumpTimes();
       expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
-      expect(first.rpe, 8);
     });
 
-    testWidgets('typing a duration turns ▶ back into ✓; starting skips rest', (tester) async {
+    testWidgets('cancel writes nothing, and the set is as it was', (tester) async {
+      final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
+      final workout = three(exercise);
+      final set = workout.first.first..setMeasurements(duration: 45);
+      final context = await startWorkoutOn(tester, workout);
+      Preferences.of(context).setFeature(.setStopwatch, on: true);
+      await tester.pumpTimes();
+
+      await tester.tap(play(set));
+      await tester.pumpTimes();
+      expect(find.byType(Dialog), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await dialogButton(tester, 'Cancel');
+
+      expect(find.byType(Dialog), findsNothing);
+      expect(Workouts.of(context).stopwatch.isRunning, isFalse);
+      expect(set.duration, 45);
+      expect(set.isCompleted, isFalse);
+      expect(play(set), findsOneWidget);
+    });
+
+    testWidgets('pause holds the count, resume carries on, done writes and ticks with rest', (tester) async {
+      final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
+      final workout = three(exercise);
+      final set = workout.first.first;
+      final context = await startWorkoutOn(tester, workout);
+      Preferences.of(context).setFeature(.setStopwatch, on: true);
+      when(
+        db.setRestTimer(
+          exerciseName: anyNamed('exerciseName'),
+          userId: anyNamed('userId'),
+          seconds: anyNamed('seconds'),
+        ),
+      ).thenAnswer((_) async {});
+      await (Timers.of(context)..userId = 'u1').setRestTimer(exercise.id, 90);
+      await tester.pumpTimes();
+      final stopwatch = Workouts.of(context).stopwatch;
+
+      await tester.tap(play(set));
+      await tester.pumpTimes();
+      await dialogButton(tester, 'Pause');
+      expect(stopwatch.isPaused, isTrue);
+      expect(find.text('Paused'), findsOneWidget);
+      await dialogButton(tester, 'Resume');
+      expect(stopwatch.isPaused, isFalse);
+      await dialogButton(tester, 'Done');
+
+      expect(set.duration, greaterThanOrEqualTo(1));
+      expect(set.isCompleted, isTrue);
+      expect(stopwatch.isRunning, isFalse);
+      expect(Alarms.of(context).activeExerciseTotal, 90);
+      Alarms.of(context).stopActiveExerciseTimer();
+      await tester.pumpTimes();
+    });
+
+    testWidgets('closed, it runs on in the row: ■ in the done column brings it back', (tester) async {
       final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = three(exercise);
       final [first, second, _] = workout.first.toList();
@@ -176,18 +210,51 @@ void main() {
       Preferences.of(context).setFeature(.setStopwatch, on: true);
       await tester.pumpTimes();
 
-      await tester.enterText(fieldsIn(rowKeyFor(second)).first, '45');
+      await tester.tap(play(first));
       await tester.pumpTimes();
-      expect(doneIcon(second, Icons.done), findsOneWidget);
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpTimes();
+      expect(find.byType(Dialog), findsNothing);
+      expect(Workouts.of(context).stopwatch.isTiming(first), isTrue);
+      expect(stop(first), findsOneWidget);
+      expect(play(second), findsNothing, reason: 'one set is timed at a time');
 
-      final alarms = Alarms.of(context)..startActiveExerciseTimer(90, exerciseId: workout.first.id);
+      await tester.tap(stop(first));
       await tester.pumpTimes();
-      await tester.tap(doneIcon(first, Icons.play_arrow_rounded));
-      await tester.pumpTimes();
-      expect(alarms.activeExerciseTimer, isNull);
-      Workouts.of(context).stopwatch.clear();
-      await tester.pumpTimes();
+      expect(find.byType(Dialog), findsOneWidget);
+      await dialogButton(tester, 'Cancel');
     });
+
+    for (final (category, distance) in [(Category.duration, null), (Category.cardio, null), (Category.cardio, 5.0)]) {
+      testWidgets('$category distance $distance: done after a cold start logs wall-clock seconds', (tester) async {
+        final exercise = Exercise(name: 'Timed', category: category, target: .core);
+        final workout = Workout(name: 'Timed')..add(exercise);
+        final set = workout.first.first..setMeasurements(distance: distance);
+        final started = DateTime.now().subtract(const Duration(seconds: 65));
+        final context = await startWorkoutOn(tester, workout);
+        Preferences.of(context).setFeature(.setStopwatch, on: true);
+        final storage = await SharedPreferences.getInstance();
+        await storage.setString(
+          'setStopwatch.running',
+          '{"workoutId":"${workout.id}","setId":"${set.id}","start":"${started.toIso8601String()}"}',
+        );
+        await Workouts.of(context).stopwatch.restore(workout);
+        await tester.pumpTimes();
+
+        await tester.tap(stop(set));
+        await tester.pumpTimes();
+        await dialogButton(tester, 'Done');
+        expect(set.duration, greaterThanOrEqualTo(65));
+        expect(set.isCompleted, category == .duration || distance != null);
+        if (category == .cardio && distance == null) {
+          final field = tester.widget<TextField>(fieldsIn(rowKeyFor(set)).first);
+          expect(field.focusNode!.hasFocus, isTrue);
+          verifyNever(db.markSetAsComplete(set));
+        } else {
+          verify(db.markSetAsComplete(set)).called(1);
+        }
+      });
+    }
 
     for (final size in [const Size(390, 844), const Size(1194, 834)]) {
       testWidgets('at $size a running cardio set with a long time and an RPE keeps its row', (tester) async {
@@ -214,7 +281,7 @@ void main() {
         await Workouts.of(context).stopwatch.restore(workout);
         await tester.pumpTimes();
 
-        expect(doneIcon(set, Icons.stop_rounded), findsOneWidget);
+        expect(stop(set), findsOneWidget);
         expect(find.text('@8'), findsOneWidget);
         // the Templates page behind the sheet overflows in the test font at
         // phone width; the row's own fit is the height check below
@@ -225,80 +292,18 @@ void main() {
       });
     }
 
-    testWidgets('a zero time is nothing to tick: it shows ▶, and ✓ refuses it', (tester) async {
+    testWidgets('✓ refuses a zero time', (tester) async {
       final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = three(exercise);
-      final [first, second, _] = workout.first.toList();
-      final context = await startWorkoutOn(tester, workout);
-      Preferences.of(context).setFeature(.setStopwatch, on: true);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+      await tester.enterText(fieldsIn(rowKeyFor(set)).first, '0:00');
       await tester.pumpTimes();
-
-      await tester.enterText(fieldsIn(rowKeyFor(second)).first, '0:00');
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
       await tester.pumpTimes();
-      expect(doneIcon(second, Icons.play_arrow_rounded), findsOneWidget);
-
-      // with another set timing, an empty set's button is a plain ✓
-      await tester.tap(doneIcon(first, Icons.play_arrow_rounded));
-      await tester.pumpTimes();
-      await tester.tap(doneIcon(second, Icons.done));
-      await tester.pumpTimes();
-      expect(second.isCompleted, isFalse);
-      verifyNever(db.markSetAsComplete(second));
-      Workouts.of(context).stopwatch.clear();
-      await tester.pumpTimes();
+      expect(set.isCompleted, isFalse);
+      verifyNever(db.markSetAsComplete(set));
     });
-
-    for (final (category, distance) in [(Category.duration, null), (Category.cardio, null), (Category.cardio, 5.0)]) {
-      testWidgets(
-        '$category distance $distance: stop logs wall-clock seconds and completes only with required values',
-        (tester) async {
-          final exercise = Exercise(name: 'Timed', category: category, target: .core);
-          final workout = Workout(name: 'Timed')..add(exercise);
-          final set = workout.first.first..setMeasurements(distance: distance);
-          final started = DateTime.now().subtract(const Duration(seconds: 65));
-          final context = await startWorkoutOn(tester, workout);
-          final prefs = Preferences.of(context);
-          prefs.setFeature(.setStopwatch, on: true);
-          if (category == .duration) {
-            when(
-              db.setRestTimer(
-                exerciseName: anyNamed('exerciseName'),
-                userId: anyNamed('userId'),
-                seconds: anyNamed('seconds'),
-              ),
-            ).thenAnswer((_) async {});
-            final timers = Timers.of(context)..userId = 'u1';
-            await timers.setRestTimer(exercise.id, 90);
-          }
-          final storage = await SharedPreferences.getInstance();
-          await storage.setString(
-            'setStopwatch.running',
-            '{"workoutId":"${workout.id}","setId":"${set.id}","start":"${started.toIso8601String()}"}',
-          );
-          await Workouts.of(context).stopwatch.restore(workout);
-          await tester.pumpTimes();
-          await tester.tap(doneIcon(set, Icons.stop_rounded));
-          await tester.pumpTimes();
-          expect(set.duration, greaterThanOrEqualTo(65));
-          expect(set.isCompleted, category == .duration || distance != null);
-          if (category == .cardio && distance == null) {
-            final fields = fieldsIn(rowKeyFor(set));
-            final distance = tester.widget<TextField>(fields.first);
-            expect(distance.focusNode!.hasFocus, isTrue);
-            expect(distance.controller!.text, isEmpty);
-            verifyNever(db.markSetAsComplete(set));
-          } else {
-            verify(db.markSetAsComplete(set)).called(1);
-            if (category == .duration) {
-              expect(Alarms.of(context).activeExerciseId, workout.first.id);
-              expect(Alarms.of(context).activeExerciseTotal, 90);
-              Alarms.of(context).stopActiveExerciseTimer();
-              await tester.pumpTimes();
-            }
-          }
-        },
-      );
-    }
   });
 
   group('barbell / weight+reps category', () {
