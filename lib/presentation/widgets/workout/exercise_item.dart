@@ -8,6 +8,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(WorkoutExercise) onAddSet;
   final void Function(WorkoutExercise, ExerciseSet) onRemoveSet;
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
+  final void Function(ExerciseSet, SetType)? onSetType;
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final String firstColumnCopy;
@@ -26,6 +27,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     required this.onAddSet,
     required this.onRemoveSet,
     this.onSetDone,
+    this.onSetType,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.copy,
@@ -114,6 +116,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                                           ),
                                         ),
                                       IconButton(
+                                        tooltip: L.of(context).restTimer,
                                         visualDensity: const VisualDensity(vertical: 0, horizontal: -2),
                                         icon: const Icon(Icons.timer_outlined),
                                         onPressed: () {
@@ -259,7 +262,9 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         (set) {
                           return _ExerciseSetItem(
                             index: set.$1 + 1,
+                            number: exercise.take(set.$1).where((each) => each.setType == .normal).length + 1,
                             set: set.$2,
+                            onSetType: onSetType,
                             exercise: exercise,
                             onRemoveSet: onRemoveSet,
                             isLocked: !allowCompleting,
@@ -605,16 +610,19 @@ class const _ColumnHeader({
 }) extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Semantics(
-        button: true,
-        child: InkWell(
-          borderRadius: const .all(.circular(6)),
-          onTap: onTap,
-          child: Padding(
-            padding: const .symmetric(vertical: 2),
-            child: Center(child: child),
+    // merged, so the tooltip lands on the node the tap does
+    return MergeSemantics(
+      child: Tooltip(
+        message: tooltip,
+        child: Semantics(
+          button: true,
+          child: InkWell(
+            borderRadius: const .all(.circular(6)),
+            onTap: onTap,
+            child: Padding(
+              padding: const .symmetric(vertical: 2),
+              child: Center(child: child),
+            ),
           ),
         ),
       ),

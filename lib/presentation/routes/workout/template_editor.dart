@@ -94,6 +94,7 @@ class _TemplateEditorState extends State<TemplateEditor> {
             exercises: templates.editable ?? [],
             onDragExercise: templates.append,
             onRemoveSet: templates.removeSet,
+            onSetType: templates.setSetType,
             onAddSet: templates.addSet,
             onRemoveExercise: templates.removeExercise,
             needsCancelWorkoutButton: false,
