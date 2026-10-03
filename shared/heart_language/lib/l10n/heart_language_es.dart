@@ -2172,4 +2172,44 @@ class LEs extends L {
   String aboutSetType(String setType) {
     return 'Acerca de: $setType';
   }
+
+  @override
+  String get rpe => 'RPE';
+
+  @override
+  String get rpeSubtitle => 'Valora lo duro que fue cada serie desde el teclado numérico';
+
+  @override
+  String get rpeHint => 'Cuántas repeticiones más te quedaban. Toca un número para valorar la serie.';
+
+  @override
+  String get aboutRpe => 'Acerca de RPE';
+
+  @override
+  String get rpeScale10 => '10: ni una más';
+
+  @override
+  String get rpeScale9 => '9: una más';
+
+  @override
+  String get rpeScale8 => '8: dos más';
+
+  @override
+  String get rpeScale7 => '7: tres más';
+
+  @override
+  String get rpeScale6 => '6: cuatro o más';
+
+  @override
+  String get closeRpe => 'Volver al teclado';
+
+  @override
+  String rpeBadge(String value) {
+    return '@$value';
+  }
+
+  @override
+  String rpeValue(String value) {
+    return 'RPE $value';
+  }
 }
