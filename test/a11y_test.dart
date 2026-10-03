@@ -280,12 +280,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.rpePicker,
     _Guideline.androidTapTarget,
-    'the workout behind the popup keeps its 32pt rows (lib/presentation/widgets/workout/set_item.dart), and the help buttons are compact (set_type.dart, rpe.dart) — visual-density change, out of scope; the ratings are 48 tall',
+    'the workout behind the popup keeps its 32pt rows (lib/presentation/widgets/workout/set_item.dart), the help buttons are compact (set_type.dart, rpe.dart), and the ratings are 44 tall, Apple\'s floor, under Android\'s 48 (rpe.dart) — density chosen, out of scope',
   ),
   (
     _Screen.rpePicker,
     _Guideline.iosTapTarget,
-    'the workout behind the popup keeps its 32pt rows (lib/presentation/widgets/workout/set_item.dart), and the help buttons are compact (set_type.dart, rpe.dart) — visual-density change, out of scope; the ratings are 48 tall',
+    'the workout behind the popup keeps its 32pt rows (lib/presentation/widgets/workout/set_item.dart), and the help buttons are compact (set_type.dart, rpe.dart) — visual-density change, out of scope; the ratings are 44 tall, Apple\'s floor',
   ),
   (
     _Screen.setTypeMenu,

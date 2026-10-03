@@ -129,41 +129,58 @@ class _TextFieldButton extends StatelessWidget {
 
     return Focus(
       focusNode: focusNode,
-      child: switch (badge) {
-        // the rating rides the cell's corner, outside the pill, so the number
-        // keeps the whole width however wide it runs ("255", "@8.5")
-        String badge => Stack(
-          clipBehavior: .none,
-          children: [
-            field,
-            Positioned(
-              top: -6,
-              right: 0,
-              child: ExcludeSemantics(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    border: .all(color: colorScheme.outlineVariant, width: .5),
-                    borderRadius: const .all(.circular(6)),
+      // the rating rides the cell's corner, outside the pill, so the number
+      // keeps the whole width however wide it runs ("255", "@8.5"); it
+      // arrives, changes and leaves with a small settle rather than a blink
+      child: Stack(
+        clipBehavior: .none,
+        children: [
+          field,
+          Positioned(
+            top: -6,
+            right: 0,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween(begin: .8, end: 1.0).animate(animation),
+                    alignment: .bottomRight,
+                    child: child,
                   ),
-                  child: Padding(
-                    padding: const .symmetric(horizontal: 4),
-                    child: Text(
-                      badge,
-                      style: textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 10,
-                        height: 1.3,
+                );
+              },
+              child: switch (badge) {
+                String badge => ExcludeSemantics(
+                  key: ValueKey(badge),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      border: .all(color: colorScheme.outlineVariant, width: .5),
+                      borderRadius: const .all(.circular(6)),
+                    ),
+                    child: Padding(
+                      padding: const .symmetric(horizontal: 4),
+                      child: Text(
+                        badge,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 10,
+                          height: 1.3,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                null => const SizedBox.shrink(),
+              },
             ),
-          ],
-        ),
-        null => field,
-      },
+          ),
+        ],
+      ),
     );
   }
 }

@@ -129,9 +129,9 @@ class _RpeEntryState extends State<_RpeEntry> {
           ),
           for (final row in [_rpeValues.sublist(0, 3), _rpeValues.sublist(3, 6), _rpeValues.sublist(6)])
             Padding(
-              padding: const .only(top: 6),
+              padding: const .only(top: 4),
               child: Row(
-                spacing: 6,
+                spacing: 4,
                 children: [
                   for (final value in row)
                     Expanded(
@@ -164,8 +164,8 @@ class const _RpeValue({
       selected: selected,
       child: PrimaryButton.shrunk(
         key: WorkoutDetailKeys.rpeValue(value),
-        // 48 tall, a whole tap target
-        margin: const .symmetric(vertical: 14),
+        // 44 tall: Apple's floor for a tap target, and no roomier
+        margin: const .symmetric(vertical: 12),
         // the accent fill is the rating the set has; the rest sit quiet
         backgroundColor: switch (selected) {
           true => null,
