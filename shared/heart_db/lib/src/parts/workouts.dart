@@ -11,8 +11,17 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   static Map<String, Object?> _setRow(ExerciseSet set) {
     return {
       ...set.toRow(),
-      'set_type': set.setType.value,
+      'set_type': _setType(set),
       'rpe': set.rpe,
+    };
+  }
+
+  /// A plain set has no type, as on the server and in every row from before
+  /// types existed: one shape for "normal", not two.
+  static String? _setType(ExerciseSet set) {
+    return switch (set.setType) {
+      .normal => null,
+      final type => type.value,
     };
   }
 
@@ -159,7 +168,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
             'id': each.id,
             'completed': each.isCompleted ? 1 : 0,
             // a template's warm-ups start as warm-ups
-            'set_type': each.setType.value,
+            'set_type': _setType(each),
           };
 
           batch.insert(_sets, row);

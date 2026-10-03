@@ -518,7 +518,7 @@ void main() {
               'sets',
               // the type and RPE ride along: a row without them reads back
               // as a plain, unrated set (#151)
-              {...testSet.toRow(), 'set_type': 'normal', 'rpe': null},
+              {...testSet.toRow(), 'set_type': null, 'rpe': null},
               where: 'id = ?',
               whereArgs: [testSet.id],
             ),
