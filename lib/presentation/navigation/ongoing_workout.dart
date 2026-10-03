@@ -138,7 +138,14 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
       null => '',
     },
     stopwatch: switch ((timing, stopwatch.startedAt, upNext?.number)) {
-      (true, DateTime start, int number) => (start: start, label: l.ongoingWorkoutStopwatch(number)),
+      (true, DateTime start, int number) => (
+        start: start,
+        pausedAt: stopwatch.pausedAt,
+        label: switch (stopwatch.isPaused) {
+          true => '${l.ongoingWorkoutStopwatch(number)} · ${l.stopwatchPaused}',
+          false => l.ongoingWorkoutStopwatch(number),
+        },
+      ),
       _ => null,
     },
     rest: switch ((timing, alarms.activeExerciseEnd, alarms.activeExerciseTotal)) {
