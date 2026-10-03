@@ -108,4 +108,7 @@ const _migrations = <int, List<String>>{
     addSetRpe,
     addWorkoutNote,
   ],
+  16: [
+    clearNormalSetType,
+  ],
 };

@@ -97,6 +97,24 @@ void main() {
     expect((working.setType, working.rpe), (SetType.normal, 8.5));
   });
 
+  test('a plain set is stored as no type, as the server stores it', () async {
+    await local.storeWorkoutHistory([
+      server(
+        'w1',
+        sets: [
+          set('s1', weight: 100, type: 'normal'),
+          set('s2', weight: 60, type: 'warmup'),
+        ],
+      ),
+    ], user);
+
+    final rows = await db.query('sets', columns: ['id', 'set_type'], orderBy: 'id');
+    expect(rows, [
+      {'id': 's1', 'set_type': null},
+      {'id': 's2', 'set_type': 'warmup'},
+    ]);
+  });
+
   test('an edit keeps what it does not touch, and the type it does', () async {
     await local.storeWorkoutHistory([
       server('w1', sets: [set('s1', weight: 60, type: 'warmup', rpe: 6)]),
@@ -146,6 +164,42 @@ void main() {
     test('in the records fold', () async {
       final records = (await local.getRecord(user, exercise))!;
       expect((records['heaviest'] as Map)['weight'], 100);
+    });
+
+    test('in every record kind, not only the heaviest', () async {
+      // a warm-up that would win each kind: more weight, more volume, a better
+      // estimate, and a rep max at 8 nobody else holds
+      await local.storeWorkoutHistory([
+        server(
+          'w2',
+          start: '2026-09-27T08:00:00.000Z',
+          sets: [set('s3', weight: 120, reps: 8, type: 'warmup')],
+        ),
+      ], user);
+
+      final records = (await local.getRecord(user, exercise))!;
+      for (final kind in ['heaviest', 'oneRepMax', 'bestVolume']) {
+        expect((records[kind] as Map)['workoutId'], 'w1', reason: '$kind went to the warm-up');
+      }
+      expect(
+        (records['repMaxes'] as List).cast<Map>().map((each) => each['workoutId']),
+        everyElement('w1'),
+        reason: 'no rep max at 8 from a warm-up',
+      );
+    });
+
+    test('so a session of warm-ups alone sets none, and is no session of the exercise', () async {
+      await local.storeWorkoutHistory([
+        server(
+          'w2',
+          start: '2026-09-27T08:00:00.000Z',
+          sets: [set('s3', weight: 200, reps: 10, type: 'warmup')],
+        ),
+      ], user);
+
+      final records = (await local.getRecord(user, exercise))!;
+      expect(records.values.whereType<Map>().map((each) => each['workoutId']), everyElement('w1'));
+      expect(records['sessions'], 1);
     });
 
     test('in the charts', () async {
