@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -84,7 +85,11 @@ void main() {
     await tester.tap(find.byKey(WorkoutDetailKeys.discardAndStart));
     await tester.pumpAndSettle();
 
-    verify(local.deleteWorkout(push)).called(1);
+    // the old one goes before the new one is written, never after
+    verifyInOrder([
+      local.deleteWorkout(push),
+      local.startWorkout(argThat(isA<Workout>().having((workout) => workout.name, 'name', 'Pull')), any),
+    ]);
     expect(workouts.activeWorkout?.name, 'Pull');
   });
 }
