@@ -48,6 +48,12 @@ void main() {
       expect(parametersOf('signup_completed'), {'provider': 'apple', 'arrival': 'takeover'});
     });
 
+    test('the RPE switch goes as a flag (#234)', () {
+      sut.rpeSwitched(on: true);
+
+      expect(parametersOf('rpe_switched'), {'on': 'true'});
+    });
+
     test('a set type goes as its wire word (#151)', () {
       sut.setTypeChanged(type: .warmup);
 

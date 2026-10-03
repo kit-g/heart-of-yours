@@ -162,6 +162,7 @@ const _upgradeGateShown = 'upgrade_gate_shown';
 const _notificationPermission = 'notification_permission_result';
 const _watchAppSwitched = 'watch_app_switched';
 const _setTypeChanged = 'set_type_changed';
+const _rpeSwitched = 'rpe_switched';
 
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
@@ -402,6 +403,12 @@ class Analytics {
   /// the one picked, so `normal` is an un-marking.
   void setTypeChanged({required SetType type}) {
     _log(_setTypeChanged, {_setType: type.value});
+  }
+
+  /// RPE (#234) was turned on or off in Settings › Features — the reach of
+  /// the feature, and its reversals.
+  void rpeSwitched({required bool on}) {
+    _log(_rpeSwitched, {_on: _flag(on)});
   }
 
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);

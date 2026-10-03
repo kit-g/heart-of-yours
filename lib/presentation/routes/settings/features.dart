@@ -37,6 +37,10 @@ class FeaturesPage extends StatelessWidget {
                     switch (feature) {
                       // only where there is a watch with Heart on it
                       .watchApp => const _WatchAppSwitch(),
+                      .rpe => _FeatureSwitch(
+                        .rpe,
+                        onSwitched: () => Analytics.of(context).rpeSwitched(on: Preferences.of(context).isOn(.rpe)),
+                      ),
                       _ => _FeatureSwitch(feature),
                     },
                   Padding(
