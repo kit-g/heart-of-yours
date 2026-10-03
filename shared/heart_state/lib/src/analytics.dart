@@ -176,7 +176,6 @@ const _notificationPermission = 'notification_permission_result';
 const _watchAppSwitched = 'watch_app_switched';
 const _setTypeChanged = 'set_type_changed';
 const _featureLinked = 'feature_linked';
-const _rpeSwitched = 'rpe_switched';
 
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
@@ -425,12 +424,6 @@ class Analytics {
   /// What they did with it there is the feature's own answer, not this event.
   void featureLinked({required Feature feature, required FeatureLinkSource source}) {
     _log(_featureLinked, {_feature: feature.value, _source: source.id});
-  }
-
-  /// RPE (#234) was turned on or off in Settings › Features — the reach of
-  /// the feature, and its reversals.
-  void rpeSwitched({required bool on}) {
-    _log(_rpeSwitched, {_on: _flag(on)});
   }
 
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);
