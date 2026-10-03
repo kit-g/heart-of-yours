@@ -3946,5 +3946,29 @@
         "type": "String"
       }
     }
+  },
+  "workoutNote": "Заметка к тренировке",
+  "@workoutNote": {
+    "description": "Title of the dialog that edits the free-text note on a whole workout, and its text field's label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "addWorkoutNote": "Добавить заметку",
+  "@addWorkoutNote": {
+    "description": "Workout options menu item that adds a note to the whole workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "editWorkoutNote": "Изменить заметку",
+  "@editWorkoutNote": {
+    "description": "Workout options menu item, and the label of the shown workout note, that edits the note on the whole workout",
+    "type": "text",
+    "placeholders": {}
+  },
+  "removeWorkoutNote": "Удалить заметку",
+  "@removeWorkoutNote": {
+    "description": "Tooltip of the button that clears the note on the whole workout",
+    "type": "text",
+    "placeholders": {}
   }
 }

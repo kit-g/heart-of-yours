@@ -1894,6 +1894,18 @@ class LEs extends L {
   String get exerciseNoteSaveFailed => 'No se pudo guardar la nota. Inténtalo de nuevo.';
 
   @override
+  String get workoutNote => 'Nota del entrenamiento';
+
+  @override
+  String get addWorkoutNote => 'Añadir nota';
+
+  @override
+  String get editWorkoutNote => 'Editar nota';
+
+  @override
+  String get removeWorkoutNote => 'Eliminar nota';
+
+  @override
   String get ongoingWorkoutChannel => 'Entrenamiento en curso';
 
   @override
