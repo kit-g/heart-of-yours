@@ -10,9 +10,6 @@ class WorkoutDetailKeys {
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');
   static const timer = Key('WorkoutDetail.timer');
   static const addSet = Key('WorkoutDetail.addSet');
-
-  /// "Time this set" in the set-number popup (#171).
-  static const timeSet = Key('WorkoutDetail.timeSet');
   static const addExerciseButton = Key('WorkoutDetail.addExerciseButton');
   static const discardAndStart = Key('WorkoutDetail.discardAndStart');
 

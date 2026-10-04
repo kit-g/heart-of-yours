@@ -244,21 +244,13 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
             child: Row(
               children: [
-                // another set's stopwatch starting or stopping changes the offer
-                ListenableBuilder(
-                  listenable: workouts.stopwatch,
-                  builder: (context, _) => _SetTypeButton(
-                    key: WorkoutDetailKeys.setTypeFor(exercise.exercise.id, widget.index),
-                    set: set,
-                    number: widget.number,
-                    fill: fill,
-                    onSetType: widget.onSetType,
-                    onSetRpe: widget.onSetRpe,
-                    onTimeSet: switch (_canStartStopwatch) {
-                      true => _timeSet,
-                      false => null,
-                    },
-                  ),
+                _SetTypeButton(
+                  key: WorkoutDetailKeys.setTypeFor(exercise.exercise.id, widget.index),
+                  set: set,
+                  number: widget.number,
+                  fill: fill,
+                  onSetType: widget.onSetType,
+                  onSetRpe: widget.onSetRpe,
                 ),
                 Expanded(
                   flex: 3,
@@ -334,12 +326,16 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                           if (widget.onSetDone != null) {
                             widget.onSetDone?.call(exercise, set);
                           } else {
-                            switch (_timing) {
+                            switch ((_timing, _canStartStopwatch)) {
                               // ■ brings the running stopwatch back
-                              case true:
+                              case (true, _):
                                 _openStopwatch();
-                              // ✓ ticks and unticks as ever, stopwatch or not
-                              case false:
+                              // ▶ starts it, and shows it counting
+                              case (false, true):
+                                _startStopwatch();
+                                _openStopwatch();
+                              // ✓ ticks and unticks as ever
+                              case _:
                                 _onDone(context);
                             }
                           }
@@ -351,12 +347,16 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                           child: ListenableBuilder(
                             listenable: workouts.stopwatch,
                             builder: (context, _) {
-                              return switch (_timing) {
-                                true => Semantics(
+                              return switch ((_timing, _canStartStopwatch)) {
+                                (true, _) => Semantics(
                                   label: L.of(context).showSetStopwatch,
                                   child: Icon(Icons.stop_rounded, size: 18, color: primary),
                                 ),
-                                false => Icon(
+                                (false, true) => Semantics(
+                                  label: L.of(context).timeSet,
+                                  child: Icon(Icons.play_arrow_rounded, size: 18, color: onSurfaceVariant),
+                                ),
+                                _ => Icon(
                                   Icons.done,
                                   size: 18,
                                   color: switch (set.isCompleted) {
@@ -546,10 +546,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   /// This set's stopwatch is running or paused.
   bool get _timing => _stopwatchOn && workouts.stopwatch.isTiming(set);
 
-  /// "Time this set" in the set-number popup: any timed set not done yet,
-  /// whatever it holds — a copied or typed time is the target the stopwatch
-  /// fills toward — while no other set is being timed. Its ✓ ticks it as ever,
-  /// so timing is never the only way to log one.
+  /// A ▶ for done: any timed set not done yet, whatever it holds — a copied
+  /// or typed time is the target the stopwatch fills toward — while no other
+  /// set is being timed. Another set's stopwatch leaves it a plain ✓.
   bool get _canStartStopwatch => _stopwatchOn && !set.isCompleted && !workouts.stopwatch.isRunning;
 
   void _startStopwatch() {
@@ -562,18 +561,16 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     workouts.stopwatch.start(workout, set);
   }
 
-  void _timeSet() {
-    _startStopwatch();
-    _openStopwatch();
-  }
-
   void _openStopwatch() {
     _showSetStopwatch(
       context,
       title: '${exercise.exercise.name} · ${L.of(context).ongoingWorkoutStopwatch(widget.number)}',
       setId: set.id,
       target: set.duration,
-      onDone: _stopStopwatch,
+      onStart: _startStopwatch,
+      onStop: _stopStopwatch,
+      // done before it ever ran: a tick with the time the set holds
+      onLog: () => _onDone(context),
     );
   }
 

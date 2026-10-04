@@ -118,34 +118,12 @@ void main() {
 
   group('set stopwatch', () {
     Finder inRow(ExerciseSet set, Finder finder) => find.descendant(of: find.byKey(rowKeyFor(set)), matching: finder);
+    Finder play(ExerciseSet set) => inRow(set, find.byIcon(Icons.play_arrow_rounded));
     Finder tick(ExerciseSet set) => inRow(set, find.byIcon(Icons.done));
-    final timeSet = find.byKey(WorkoutDetailKeys.timeSet);
 
-    /// The set-number popup, opened on [set].
-    Future<void> popup(WidgetTester tester, ExerciseSet set) async {
-      await tester.tap(
-        inRow(
-          set,
-          find.byWidgetPredicate(
-            (widget) => switch (widget.key) {
-              ValueKey<String>(:final value) => value.startsWith('WorkoutDetail.setType.'),
-              _ => false,
-            },
-          ),
-        ),
-      );
-      await tester.pumpTimes();
-    }
-
-    /// "Time this set" starts the stopwatch and shows it counting.
+    /// ▶ starts the stopwatch and shows it counting.
     Future<void> start(WidgetTester tester, ExerciseSet set) async {
-      await popup(tester, set);
-      await tester.tap(timeSet);
-      await tester.pumpTimes();
-    }
-
-    Future<void> closePopup(WidgetTester tester) async {
-      await tester.tapAt(const Offset(4, 4));
+      await tester.tap(play(set));
       await tester.pumpTimes();
     }
 
@@ -156,40 +134,25 @@ void main() {
       await tester.pumpTimes();
     }
 
-    testWidgets('"Time this set" is in the popup of an undone timed set, copied time or not; off, it is not', (
-      tester,
-    ) async {
+    testWidgets('▶ is the done button of every undone timed set, copied time or not; off, none is', (tester) async {
       final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = three(exercise);
-      final [first, second, _] = workout.first.toList();
+      final [first, second, third] = workout.first.toList();
       second.setMeasurements(duration: 45);
       final context = await startWorkoutOn(tester, workout);
       final prefs = Preferences.of(context);
       await tester.pumpTimes();
-      await popup(tester, first);
-      expect(timeSet, findsNothing);
-      await closePopup(tester);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
 
       prefs.setFeature(.setStopwatch, on: true);
       await tester.pumpTimes();
-      expect(tick(first), findsOneWidget, reason: 'the done button stays ✓');
-      await popup(tester, second);
-      expect(timeSet, findsOneWidget, reason: 'a held time is the target, not a reason to hide it');
-      await closePopup(tester);
-    });
+      expect(play(first), findsOneWidget);
+      expect(play(second), findsOneWidget, reason: 'a held time is the target, not a reason to hide ▶');
+      expect(play(third), findsOneWidget);
 
-    testWidgets('✓ ticks a timed set without the stopwatch', (tester) async {
-      final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
-      final workout = three(exercise);
-      final set = workout.first.first..setMeasurements(duration: 45);
-      final context = await startWorkoutOn(tester, workout);
-      Preferences.of(context).setFeature(.setStopwatch, on: true);
+      prefs.setFeature(.setStopwatch, on: false);
       await tester.pumpTimes();
-      await tester.tap(tick(set));
-      await tester.pumpTimes();
-      expect(set.isCompleted, isTrue);
-      expect(set.duration, 45);
-      expect(find.byType(Dialog), findsNothing);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
     });
 
     testWidgets('cancel writes nothing, and the set is as it was', (tester) async {
@@ -209,6 +172,7 @@ void main() {
       expect(Workouts.of(context).stopwatch.isRunning, isFalse);
       expect(set.duration, 45);
       expect(set.isCompleted, isFalse);
+      expect(play(set), findsOneWidget);
     });
 
     testWidgets('pause holds the count, resume carries on, done writes and ticks with rest', (tester) async {
@@ -244,7 +208,7 @@ void main() {
       await tester.pumpTimes();
     });
 
-    testWidgets('Time this set starts counting at once; ticked, ✓ unticks', (tester) async {
+    testWidgets('▶ starts counting at once; ticked, ✓ unticks', (tester) async {
       final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = three(exercise);
       final set = workout.first.first..setMeasurements(duration: 45);
@@ -261,6 +225,7 @@ void main() {
       await tester.tap(tick(set));
       await tester.pumpTimes();
       expect(set.isCompleted, isFalse);
+      expect(play(set), findsOneWidget);
     });
 
     testWidgets('closed, it runs on in the row: ■ in the done column brings it back', (tester) async {
@@ -277,10 +242,8 @@ void main() {
       expect(find.byType(Dialog), findsNothing);
       expect(Workouts.of(context).stopwatch.isTiming(first), isTrue);
       expect(stop(first), findsOneWidget);
+      expect(play(second), findsNothing, reason: 'one set is timed at a time');
       expect(tick(second), findsOneWidget, reason: 'the others keep a plain ✓');
-      await popup(tester, second);
-      expect(timeSet, findsNothing, reason: 'one set is timed at a time');
-      await closePopup(tester);
 
       await tester.tap(stop(first));
       await tester.pumpTimes();
