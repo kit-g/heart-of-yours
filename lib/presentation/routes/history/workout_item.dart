@@ -39,7 +39,7 @@ class WorkoutItem extends StatelessWidget {
     // set of 13 lbs × 7 showed "Best set volume 91 lbs" beside "TOTAL VOLUME
     // 90 lbs". 7 × 5.8967 kg is 41.277, truncated to 41, converted to 90.38,
     // truncated to 90; the honest answer is 91.
-    final (String heroValue, String heroLabel) = switch ((workout.total, prefs.weightUnit)) {
+    final (String heroValue, String heroLabel) = switch ((_volume(workout), prefs.weightUnit)) {
       (double total, MeasurementUnit.imperial) when total > 0 => (l.lb(total.asPounds.round()), l.totalVolume),
       (double total, MeasurementUnit.metric) when total > 0 => ('${total.round()} ${l.kg}', l.totalVolume),
       _ => switch (workout.firstOrNull) {
@@ -205,6 +205,22 @@ class WorkoutItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Weight moved: load × reps, over the lifting categories only.
+  ///
+  /// Not `Workout.total`, which adds up each exercise's own `total` — seconds
+  /// for a plank, a count for push-ups, kg × seconds for a loaded hold — and
+  /// so put a 45-second hold into the volume as 1080 kg.
+  static double _volume(Workout workout) {
+    return workout
+        .where(
+          (each) => switch (each.exercise.category) {
+            .barbell || .dumbbell || .machine || .weightedBodyWeight || .assistedBodyWeight => true,
+            _ => false,
+          },
+        )
+        .fold(0.0, (sum, each) => sum + (each.total ?? 0));
   }
 
   static String _formatSet(
