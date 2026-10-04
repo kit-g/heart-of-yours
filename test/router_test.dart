@@ -238,7 +238,12 @@ void main() {
       final bench = Exercise(name: 'Bench Press (Barbell)', category: .barbell, target: .chest);
       when(
         cdn.getExerciseLibrary(cached: anyNamed('cached')),
-      ).thenAnswer((_) async => ([bench], (version: 'run-1', locale: 'en', etag: null)));
+      ).thenAnswer(
+        (_) async => (
+          (exercises: <Exercise>[bench], glossary: SearchGlossary.empty()),
+          (version: 'run-1', locale: 'en', etag: null),
+        ),
+      );
 
       final router = HeartRouter();
       await harness.pumpHeartApp(
@@ -279,7 +284,10 @@ void main() {
 
       when(
         cdn.getExerciseLibrary(cached: anyNamed('cached')),
-      ).thenAnswer((_) async => (<Exercise>[], (version: 'run-1', locale: 'en', etag: null)));
+      ).thenAnswer(
+        (_) async =>
+            ((exercises: <Exercise>[], glossary: SearchGlossary.empty()), (version: 'run-1', locale: 'en', etag: null)),
+      );
 
       final router = HeartRouter();
       await harness.pumpHeartApp(
