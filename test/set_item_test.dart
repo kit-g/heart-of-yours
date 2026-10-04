@@ -407,7 +407,7 @@ void main() {
 
   group('barbell / weight+reps category', () {
     testWidgets('entering weight and reps then tapping done completes the set', (tester) async {
-      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
       final workout = Workout(name: 'W')..add(exercise);
       final set = workout.first.first;
 
@@ -427,7 +427,7 @@ void main() {
     });
 
     testWidgets('tapping done with reps missing leaves the set incomplete', (tester) async {
-      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final exercise = Exercise(name: 'Squat', category: .barbell, target: .legs);
       final workout = Workout(name: 'W')..add(exercise);
       final set = workout.first.first;
 
@@ -445,7 +445,7 @@ void main() {
 
   group('weighted bodyweight category', () {
     testWidgets('completes with reps only — weight is allowed to stay null', (tester) async {
-      final exercise = Exercise(name: 'Weighted Dip', category: Category.weightedBodyWeight, target: Target.arms);
+      final exercise = Exercise(name: 'Weighted Dip', category: .weightedBodyWeight, target: .arms);
       final workout = Workout(name: 'W')..add(exercise);
       final set = workout.first.first;
 
@@ -463,7 +463,7 @@ void main() {
 
   group('reps-only category', () {
     testWidgets('single unkeyed field still completes the set', (tester) async {
-      final exercise = Exercise(name: 'Pull Up', category: Category.repsOnly, target: Target.back);
+      final exercise = Exercise(name: 'Pull Up', category: .repsOnly, target: .back);
       final workout = Workout(name: 'W')..add(exercise);
       final set = workout.first.first;
 
@@ -482,7 +482,7 @@ void main() {
 
   group('duration category', () {
     testWidgets('digits typed right-to-left parse as mm:ss seconds', (tester) async {
-      final exercise = Exercise(name: 'Plank', category: Category.duration, target: Target.core);
+      final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = Workout(name: 'W')..add(exercise);
       final set = workout.first.first;
 
@@ -502,7 +502,7 @@ void main() {
 
   group('cardio category', () {
     testWidgets('entering distance and duration completes the set', (tester) async {
-      final exercise = Exercise(name: 'Running', category: Category.cardio, target: Target.cardio);
+      final exercise = Exercise(name: 'Running', category: .cardio, target: .cardio);
       final workout = Workout(name: 'W')..add(exercise);
       final set = workout.first.first;
 
@@ -525,7 +525,7 @@ void main() {
 
   group('completed set toggling', () {
     testWidgets('tapping done on a completed set marks it incomplete again', (tester) async {
-      final exercise = Exercise(name: 'Pull Up', category: Category.repsOnly, target: Target.back);
+      final exercise = Exercise(name: 'Pull Up', category: .repsOnly, target: .back);
       final workout = Workout(name: 'W')..add(exercise);
       final set = workout.first.first;
 
@@ -547,7 +547,7 @@ void main() {
 
   group('swipe to remove', () {
     testWidgets('swiping a set away removes it from its exercise', (tester) async {
-      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
       final workout = Workout(name: 'W')..add(exercise);
       final workoutExercise = workout.first;
       final set = workoutExercise.first;
@@ -575,7 +575,7 @@ void main() {
     }
 
     testWidgets('a value header fills its column from the top set, past the ticked ones', (tester) async {
-      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
       final workout = three(exercise);
       final [top, second, third] = workout.first.toList();
       await startWorkoutOn(tester, workout);
@@ -595,7 +595,7 @@ void main() {
     });
 
     testWidgets('with nothing to fill from, a header does nothing', (tester) async {
-      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final exercise = Exercise(name: 'Squat', category: .barbell, target: .legs);
       final workout = three(exercise);
       await startWorkoutOn(tester, workout);
 
@@ -607,7 +607,7 @@ void main() {
     });
 
     testWidgets('the ✓ header ticks every set that can be, then unticks them all', (tester) async {
-      final exercise = Exercise(name: 'Row', category: Category.barbell, target: Target.back);
+      final exercise = Exercise(name: 'Row', category: .barbell, target: .back);
       final workout = three(exercise);
       final [top, second, third] = workout.first.toList();
       for (final set in [top, second]) {
@@ -645,7 +645,7 @@ void main() {
     }
 
     testWidgets('the number opens the types; a warm-up wears its letter and gives up its number', (tester) async {
-      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
       final workout = three(exercise);
       final [warmup, ..._] = workout.first.toList();
       await startWorkoutOn(tester, workout);
@@ -663,7 +663,7 @@ void main() {
     });
 
     testWidgets('picking the type a set already is makes it plain again', (tester) async {
-      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final exercise = Exercise(name: 'Squat', category: .barbell, target: .legs);
       final workout = three(exercise);
       final [first, ..._] = workout.first.toList();
       first.setType = .drop;
@@ -680,7 +680,7 @@ void main() {
     });
 
     testWidgets('the help button explains in place, and types nothing', (tester) async {
-      final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);
+      final exercise = Exercise(name: 'Deadlift', category: .barbell, target: .back);
       final workout = three(exercise);
       await startWorkoutOn(tester, workout);
       final l = L.of(tester.element(find.byType(WorkoutDetail)));
@@ -714,7 +714,7 @@ void main() {
     }
 
     testWidgets('off, the popup is the three types alone: the app as it was before RPE', (tester) async {
-      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
       await startWorkoutOn(tester, three(exercise));
 
       await openPopup(tester, exercise);
@@ -725,7 +725,7 @@ void main() {
 
     testWidgets('on, a rating lands on the set, closes the popup, and its cell says so', (tester) async {
       rpeOn();
-      final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
       final workout = three(exercise);
       final set = workout.first.first;
       await startWorkoutOn(tester, workout);
@@ -743,7 +743,7 @@ void main() {
 
     testWidgets('picking the rating a set already has clears it', (tester) async {
       rpeOn();
-      final exercise = Exercise(name: 'Squat', category: Category.barbell, target: Target.legs);
+      final exercise = Exercise(name: 'Squat', category: .barbell, target: .legs);
       final workout = three(exercise);
       final set = workout.first.first..rpe = 9;
       await startWorkoutOn(tester, workout);
@@ -759,7 +759,7 @@ void main() {
 
     testWidgets('the × clears a rating, and is there only while there is one', (tester) async {
       rpeOn();
-      final exercise = Exercise(name: 'Row', category: Category.barbell, target: Target.back);
+      final exercise = Exercise(name: 'Row', category: .barbell, target: .back);
       final workout = three(exercise);
       final [rated, plain, ..._] = workout.first.toList();
       rated.rpe = 8;
@@ -782,7 +782,7 @@ void main() {
 
     testWidgets('the help button unfolds the scale in place, and rates nothing', (tester) async {
       rpeOn();
-      final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);
+      final exercise = Exercise(name: 'Deadlift', category: .barbell, target: .back);
       final workout = three(exercise);
       await startWorkoutOn(tester, workout);
       final l = L.of(tester.element(find.byType(WorkoutDetail)));
@@ -798,7 +798,7 @@ void main() {
     });
 
     testWidgets('off, a stored rating stays stored and unshown', (tester) async {
-      final exercise = Exercise(name: 'Deadlift', category: Category.barbell, target: Target.back);
+      final exercise = Exercise(name: 'Deadlift', category: .barbell, target: .back);
       final workout = three(exercise);
       final set = workout.first.first..rpe = 7;
       await startWorkoutOn(tester, workout);

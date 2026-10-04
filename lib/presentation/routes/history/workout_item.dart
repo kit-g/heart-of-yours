@@ -40,8 +40,8 @@ class WorkoutItem extends StatelessWidget {
     // 90 lbs". 7 × 5.8967 kg is 41.277, truncated to 41, converted to 90.38,
     // truncated to 90; the honest answer is 91.
     final (String heroValue, String heroLabel) = switch ((_volume(workout), prefs.weightUnit)) {
-      (double total, MeasurementUnit.imperial) when total > 0 => (l.lb(total.asPounds.round()), l.totalVolume),
-      (double total, MeasurementUnit.metric) when total > 0 => ('${total.round()} ${l.kg}', l.totalVolume),
+      (double total, .imperial) when total > 0 => (l.lb(total.asPounds.round()), l.totalVolume),
+      (double total, .metric) when total > 0 => ('${total.round()} ${l.kg}', l.totalVolume),
       _ => switch (workout.firstOrNull) {
         null => ('-', l.totalVolume),
         var exercise => (
@@ -236,7 +236,10 @@ class WorkoutItem extends StatelessWidget {
       case .machine:
       case .dumbbell:
       case .barbell:
-        final label = weightUnit == MeasurementUnit.imperial ? l.lbs : l.kg;
+        final label = switch (weightUnit) {
+          .imperial => l.lbs,
+          .metric => l.kg,
+        };
         return switch (set?.weight) {
           // if weight is 0 or unset: 15x
           null => '${set?.reps ?? 0}x',
@@ -245,7 +248,10 @@ class WorkoutItem extends StatelessWidget {
           double weight => '${Preferences.of(context).weight(weight, unit: weightUnit)} $label x ${set?.reps ?? 0}',
         };
       case .cardio:
-        final label = distanceUnit == MeasurementUnit.imperial ? l.milesPlural : l.km;
+        final label = switch (distanceUnit) {
+          .imperial => l.milesPlural,
+          .metric => l.km,
+        };
         return switch ((set?.distance, set?.duration)) {
           // e.g. 11 km / 10 min
           (double distance, int seconds) =>
@@ -263,8 +269,14 @@ class WorkoutItem extends StatelessWidget {
           _ => '',
         };
       case .weightedDistance:
-        final weight = weightUnit == MeasurementUnit.imperial ? l.lbs : l.kg;
-        final distance = distanceUnit == MeasurementUnit.imperial ? l.yardsShort : l.metresShort;
+        final weight = switch (weightUnit) {
+          .imperial => l.lbs,
+          .metric => l.kg,
+        };
+        final distance = switch (distanceUnit) {
+          .imperial => l.yardsShort,
+          .metric => l.metresShort,
+        };
         final prefs = Preferences.of(context);
         return switch ((set?.weight, set?.distance)) {
           // e.g. 40 kg / 30 m
@@ -273,7 +285,10 @@ class WorkoutItem extends StatelessWidget {
           _ => '',
         };
       case .weightedDuration:
-        final label = weightUnit == MeasurementUnit.imperial ? l.lbs : l.kg;
+        final label = switch (weightUnit) {
+          .imperial => l.lbs,
+          .metric => l.kg,
+        };
         return switch ((set?.weight, set?.duration)) {
           // e.g. 20 kg / 1:00
           (double kg, int seconds) =>
