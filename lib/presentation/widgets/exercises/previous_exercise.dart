@@ -41,14 +41,14 @@ class PreviousSet extends StatelessWidget {
     final override = Exercises.of(context).unitFor(exercise.id);
 
     switch (exercise.category) {
-      case Category.barbell:
-      case Category.dumbbell:
-      case Category.machine:
-      case Category.assistedBodyWeight:
-      case Category.weightedBodyWeight:
+      case .barbell:
+      case .dumbbell:
+      case .machine:
+      case .assistedBodyWeight:
+      case .weightedBodyWeight:
         final unit = switch (override ?? prefs.weightUnit) {
-          MeasurementUnit.imperial => lbs,
-          MeasurementUnit.metric => kg,
+          .imperial => lbs,
+          .metric => kg,
         };
         return switch (previousValue) {
           {'reps': int reps, 'weight': num weight} => Text(
@@ -58,7 +58,7 @@ class PreviousSet extends StatelessWidget {
           _ => const Text(_emptyValue),
         };
 
-      case Category.repsOnly:
+      case .repsOnly:
         return switch (previousValue) {
           {'reps': int value} => Text(
             '$value $reps ',
@@ -66,7 +66,7 @@ class PreviousSet extends StatelessWidget {
           ),
           _ => const Text(_emptyValue),
         };
-      case Category.duration:
+      case .duration:
         return switch (previousValue) {
           {'duration': num duration} => Text(
             Duration(seconds: duration.toInt()).formatted(),
@@ -74,10 +74,10 @@ class PreviousSet extends StatelessWidget {
           ),
           _ => const Text(_emptyValue),
         };
-      case Category.cardio:
+      case .cardio:
         final unit = switch (override ?? prefs.distanceUnit) {
-          MeasurementUnit.imperial => milesPlural,
-          MeasurementUnit.metric => km,
+          .imperial => milesPlural,
+          .metric => km,
         };
         return switch (previousValue) {
           {'duration': num duration, 'distance': num distance} => Text(
@@ -86,14 +86,14 @@ class PreviousSet extends StatelessWidget {
           ),
           _ => const Text(_emptyValue),
         };
-      case Category.weightedDistance:
+      case .weightedDistance:
         final weightUnit = switch (override ?? prefs.weightUnit) {
-          MeasurementUnit.imperial => lbs,
-          MeasurementUnit.metric => kg,
+          .imperial => lbs,
+          .metric => kg,
         };
         final distanceUnit = switch (override ?? prefs.distanceUnit) {
-          MeasurementUnit.imperial => yardsShort,
-          MeasurementUnit.metric => metresShort,
+          .imperial => yardsShort,
+          .metric => metresShort,
         };
         return switch (previousValue) {
           {'weight': num weight, 'distance': num distance} => Text(
@@ -102,10 +102,10 @@ class PreviousSet extends StatelessWidget {
           ),
           _ => const Text(_emptyValue),
         };
-      case Category.weightedDuration:
+      case .weightedDuration:
         final unit = switch (override ?? prefs.weightUnit) {
-          MeasurementUnit.imperial => lbs,
-          MeasurementUnit.metric => kg,
+          .imperial => lbs,
+          .metric => kg,
         };
         return switch (previousValue) {
           {'weight': num weight, 'duration': num duration} => Text(
