@@ -112,6 +112,7 @@ class HeartApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<Workouts>(
           create: (context) => Workouts(
+            stopwatch: SetStopwatch(persistent: true),
             service: db,
             persistNote: db.setWorkoutExerciseNote,
             persistWorkoutNote: db.setWorkoutNote,

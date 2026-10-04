@@ -28,6 +28,10 @@ typedef OngoingWorkout = ({
   String next,
   OngoingRest? rest,
 
+  /// A timed set's stopwatch (#171): its effective start, and when it
+  /// paused while it is paused.
+  ({DateTime start, DateTime? pausedAt, String label})? stopwatch,
+
   /// The theme the user picked. The lock screen follows the *system*
   /// brightness, not the app's, so the surfaces take both halves of the
   /// preset and choose per appearance.
@@ -98,6 +102,11 @@ class _LiveActivity implements OngoingWorkoutSurface {
           'restEnd': rest.end.millisecondsSinceEpoch,
           'restLabel': rest.label,
           'restOver': rest.over,
+        },
+        if (workout.stopwatch case final clock?) ...{
+          'stopwatchStart': clock.start.millisecondsSinceEpoch,
+          'stopwatchLabel': clock.label,
+          if (clock.pausedAt case final at?) 'stopwatchPausedAt': at.millisecondsSinceEpoch,
         },
         // ARGB ints; the native side picks per appearance
         'accent': workout.preset.light.accent.toARGB32(),

@@ -51,6 +51,7 @@ enum _Screen {
   workoutNote,
   setTypeMenu,
   rpePicker,
+  setStopwatch,
   history,
   calendar,
   exercises,
@@ -223,6 +224,11 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
+  (_Screen.setStopwatch, _Guideline.labeledTapTarget, null),
+  (_Screen.setStopwatch, _Guideline.textContrastLight, null),
+  (_Screen.setStopwatch, _Guideline.textContrastDark, null),
+  (_Screen.setStopwatch, _Guideline.androidTapTarget, null),
+  (_Screen.setStopwatch, _Guideline.iosTapTarget, null),
   (_Screen.exerciseNoteEditor, _Guideline.labeledTapTarget, null),
   (_Screen.exerciseNoteEditor, _Guideline.textContrastLight, null),
   (_Screen.exerciseNoteEditor, _Guideline.textContrastDark, null),
@@ -629,6 +635,9 @@ void main() {
     if (screen == _Screen.features) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
     }
+    if (screen == _Screen.setStopwatch) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on', 'feature-setStopwatch': 'on'});
+    }
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
     }
@@ -834,6 +843,22 @@ void main() {
         await tester.tapByKey(WorkoutDetailKeys.setTypeFor(_bench.id, 1));
         await tester.pumpTimes();
         await tester.tap(find.byTooltip('About Warm up'));
+      case _Screen.setStopwatch:
+        final timed = Exercise(name: 'Plank', category: .duration, target: .core);
+        final workout = Workout(name: 'Timed')..add(timed);
+        workout.first.first.rpe = 8;
+        await Workouts.of(tester.element(find.byType(MaterialApp))).startWorkout(source: .template, template: workout);
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        // the dialog, paused: a paused clock holds no timer open past the test
+        await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+        await tester.pumpTimes();
+        await tester.tap(find.text('Pause'));
+        await tester.pumpTimes();
       case _Screen.rpePicker:
         final workout = Workout(name: 'Rated')..add(_bench);
         workout.first.first.rpe = 8;

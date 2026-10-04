@@ -123,11 +123,15 @@ private struct LockScreenView: View {
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                Text(context.attributes.startedAt, style: .timer)
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(ink)
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 90, alignment: .trailing)
+                // one count-up at a time: a set's stopwatch is the clock that
+                // matters mid-hold, so the workout's own steps aside for it
+                if state.stopwatchStart == nil {
+                    Text(context.attributes.startedAt, style: .timer)
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(ink)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 90, alignment: .trailing)
+                }
             }
             ExerciseLines(state: state)
             RestRow(state: state, isStale: context.isStale, accent: accent, ink: ink)
@@ -168,7 +172,19 @@ private struct RestRow: View {
     let ink: Color
 
     var body: some View {
-        if let rest = state.rest {
+        if let start = state.stopwatchStart {
+            HStack(spacing: 10) {
+                if let label = state.stopwatchLabel {
+                    Text(label).font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                StopwatchClock(start: start, pausedAt: state.stopwatchPausedAt)
+                    .font(.title3.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(ink)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 100, alignment: .trailing)
+            }
+        } else if let rest = state.rest {
             HStack(spacing: 10) {
                 switch isStale {
                 case true:
@@ -200,6 +216,21 @@ private struct RestRow: View {
     }
 }
 
+/// A set stopwatch counting up from its start, or standing at the moment it
+/// paused.
+private struct StopwatchClock: View {
+    let start: Date
+    let pausedAt: Date?
+
+    var body: some View {
+        if let pausedAt {
+            Text(timerInterval: start...max(start, pausedAt), pauseTime: pausedAt, countsDown: false)
+        } else {
+            Text(start, style: .timer)
+        }
+    }
+}
+
 /// The one clock the compact island has room for: the rest countdown while
 /// resting, the workout's elapsed time otherwise.
 private struct Clock: View {
@@ -207,8 +238,11 @@ private struct Clock: View {
     let resting: Bool
 
     var body: some View {
-        switch (resting, context.state.rest) {
-        case (true, let rest?):
+        switch (context.state.stopwatchStart, resting, context.state.rest) {
+        case (let start?, _, _):
+            StopwatchClock(start: start, pausedAt: context.state.stopwatchPausedAt)
+                .multilineTextAlignment(.trailing)
+        case (nil, true, let rest?):
             Text(timerInterval: rest, countsDown: true)
                 .multilineTextAlignment(.trailing)
         default:

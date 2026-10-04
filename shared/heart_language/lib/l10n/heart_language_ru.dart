@@ -2274,4 +2274,38 @@ class LRu extends L {
 
   @override
   String get keepAwakeBadge => 'Экран не гаснет';
+
+  @override
+  String get setStopwatch => 'Секундомер подхода';
+
+  @override
+  String get setStopwatchSubtitle => 'Засеките подход и остановите, чтобы записать.';
+
+  @override
+  String stopwatchLogHeld(String time) {
+    return 'Записать $time';
+  }
+
+  @override
+  String get timeSet => 'Засечь подход';
+
+  @override
+  String get showSetStopwatch => 'Показать секундомер подхода';
+
+  @override
+  String get stopwatchPause => 'Пауза';
+
+  @override
+  String get stopwatchResume => 'Продолжить';
+
+  @override
+  String get stopwatchDone => 'Готово';
+
+  @override
+  String get stopwatchPaused => 'На паузе';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Подход $number';
+  }
 }

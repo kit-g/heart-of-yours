@@ -14,6 +14,16 @@ class _TextFieldButton extends StatelessWidget {
   /// the label.
   final String? badge;
 
+  /// The seconds of a set's stopwatch while it runs (#171). The cell shows
+  /// them ticking, in the accent, in place of the field.
+  final ValueNotifier<int>? running;
+
+  /// The stopwatch behind [running] stands still: its time reads quiet.
+  final bool paused;
+
+  /// A tap on the cell while [running]: brings the stopwatch back.
+  final VoidCallback? onRunning;
+
   const new({
     super.key,
     required this.focusNode,
@@ -24,6 +34,9 @@ class _TextFieldButton extends StatelessWidget {
     this.formatters,
     required this.semanticLabel,
     this.badge,
+    this.running,
+    this.paused = false,
+    this.onRunning,
     this.keyboardType = const .numberWithOptions(decimal: true),
   });
 
@@ -44,6 +57,10 @@ class _TextFieldButton extends StatelessWidget {
                 return PrimaryButton.shrunk(
                   margin: EdgeInsets.zero,
                   backgroundColor: hasError ? colorScheme.error : color,
+                  onPressed: switch ((running, onRunning)) {
+                    (ValueNotifier<int> _, VoidCallback reopen) => reopen,
+                    _ => () {},
+                  },
                   // completion no longer changes the field's background, so
                   // focus draws the same quiet outline either way
                   border: switch ((hasError, focusNode.hasFocus)) {
@@ -77,48 +94,69 @@ class _TextFieldButton extends StatelessWidget {
                           },
                         ),
                       ),
-                      child: Semantics(
-                        label: switch (badge) {
-                          String badge => '$semanticLabel, $badge',
-                          null => semanticLabel,
-                        },
-                        textField: true,
-                        child: TextField(
-                          selectionControls: context.platformSpecificSelectionControls(),
-                          textInputAction: TextInputAction.done,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          controller: controller,
-                          inputFormatters: formatters,
-                          decoration: const InputDecoration.collapsed(hintText: _emptyValue),
-                          style: switch (hasError) {
-                            true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
-                            false => textTheme.bodyMedium,
+                      child: switch (running) {
+                        ValueNotifier<int> running => ValueListenableBuilder<int>(
+                          valueListenable: running,
+                          builder: (_, seconds, _) {
+                            // "1:02:03" outgrows a cardio pair's narrow cell
+                            return FittedBox(
+                              fit: .scaleDown,
+                              child: Text(
+                                seconds.toDuration(),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: switch (paused) {
+                                    true => colorScheme.onSurfaceVariant,
+                                    false => colorScheme.primary,
+                                  },
+                                  fontFeatures: const [.tabularFigures()],
+                                ),
+                              ),
+                            );
                           },
-                          textAlign: .center,
-                          cursorHeight: 16,
-                          textAlignVertical: switch (platform) {
-                            // rendered weird on macos
-                            .macOS => .top,
-                            // rendered fine, duh
-                            _ => TextAlignVertical.center,
-                          },
-                          maxLines: 1,
-                          minLines: 1,
-                          cursorColor: switch (hasError) {
-                            true => colorScheme.onError,
-                            false => colorScheme.onSurfaceVariant,
-                          },
-                          onSubmitted: (_) {
-                            FocusScope.of(context).unfocus();
-                          },
-                          onEditingComplete: () {},
-                          onTap: controller.selectAllText,
-                          onTapOutside: (_) => focusNode.unfocus(),
                         ),
-                      ),
+                        null => Semantics(
+                          label: switch (badge) {
+                            String badge => '$semanticLabel, $badge',
+                            null => semanticLabel,
+                          },
+                          textField: true,
+                          child: TextField(
+                            selectionControls: context.platformSpecificSelectionControls(),
+                            textInputAction: TextInputAction.done,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            focusNode: focusNode,
+                            controller: controller,
+                            inputFormatters: formatters,
+                            decoration: const InputDecoration.collapsed(hintText: _emptyValue),
+                            style: switch (hasError) {
+                              true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
+                              false => textTheme.bodyMedium,
+                            },
+                            textAlign: .center,
+                            cursorHeight: 16,
+                            textAlignVertical: switch (platform) {
+                              // rendered weird on macos
+                              .macOS => .top,
+                              // rendered fine, duh
+                              _ => TextAlignVertical.center,
+                            },
+                            maxLines: 1,
+                            minLines: 1,
+                            cursorColor: switch (hasError) {
+                              true => colorScheme.onError,
+                              false => colorScheme.onSurfaceVariant,
+                            },
+                            onSubmitted: (_) {
+                              FocusScope.of(context).unfocus();
+                            },
+                            onEditingComplete: () {},
+                            onTap: controller.selectAllText,
+                            onTapOutside: (_) => focusNode.unfocus(),
+                          ),
+                        ),
+                      },
                     ),
                   ),
-                  onPressed: () {},
                 );
               },
             );
@@ -127,60 +165,55 @@ class _TextFieldButton extends StatelessWidget {
       ),
     );
 
-    return Focus(
-      focusNode: focusNode,
-      // the rating rides the cell's corner, outside the pill, so the number
-      // keeps the whole width however wide it runs ("255", "@8.5"); it
-      // arrives, changes and leaves with a small settle rather than a blink
-      child: Stack(
-        clipBehavior: .none,
-        children: [
-          field,
-          Positioned(
-            top: -6,
-            right: 0,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              switchInCurve: Curves.easeOutBack,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween(begin: .8, end: 1.0).animate(animation),
-                    alignment: .bottomRight,
-                    child: child,
+    // the node is the field's own, so a row can move the keyboard to it
+    return Stack(
+      clipBehavior: .none,
+      children: [
+        field,
+        Positioned(
+          top: -6,
+          right: 0,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween(begin: .8, end: 1.0).animate(animation),
+                  alignment: .bottomRight,
+                  child: child,
+                ),
+              );
+            },
+            child: switch (badge) {
+              String badge => ExcludeSemantics(
+                key: ValueKey(badge),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    border: .all(color: colorScheme.outlineVariant, width: .5),
+                    borderRadius: const .all(.circular(6)),
                   ),
-                );
-              },
-              child: switch (badge) {
-                String badge => ExcludeSemantics(
-                  key: ValueKey(badge),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      border: .all(color: colorScheme.outlineVariant, width: .5),
-                      borderRadius: const .all(.circular(6)),
-                    ),
-                    child: Padding(
-                      padding: const .symmetric(horizontal: 4),
-                      child: Text(
-                        badge,
-                        style: textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 10,
-                          height: 1.3,
-                        ),
+                  child: Padding(
+                    padding: const .symmetric(horizontal: 4),
+                    child: Text(
+                      badge,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 10,
+                        height: 1.3,
                       ),
                     ),
                   ),
                 ),
-                null => const SizedBox.shrink(),
-              },
-            ),
+              ),
+              null => const SizedBox.shrink(),
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

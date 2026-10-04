@@ -22,7 +22,11 @@ enum Feature {
 
   /// Keeps the screen awake during a workout (#170). Settings-only:
   /// an offer at workout start would interrupt the user.
-  keepAwake('keepAwake');
+  keepAwake('keepAwake'),
+
+  /// A stopwatch for timed sets (#171): ▶ on an undone timed set counts it,
+  /// and Done logs the time. Settings-only, like keep-awake.
+  setStopwatch('setStopwatch');
 
   final String value;
 

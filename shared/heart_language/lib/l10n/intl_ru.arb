@@ -4080,5 +4080,73 @@
     "description": "Read by screen readers on the Workout tab while Keep screen awake is holding the screen on during a workout",
     "type": "text",
     "placeholders": {}
+  },
+  "setStopwatch": "Секундомер подхода",
+  "@setStopwatch": {
+    "description": "Title of the set stopwatch's switch in Settings › Features: a stopwatch inside a timed set (plank, hang, carry)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "setStopwatchSubtitle": "Засеките подход и остановите, чтобы записать.",
+  "@setStopwatchSubtitle": {
+    "description": "One line under the set stopwatch's switch in Settings › Features",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchLogHeld": "Записать {time}",
+  "@stopwatchLogHeld": {
+    "description": "Button under the running set stopwatch, shown when the set already held a time: drops the count and ticks the set with that time, e.g. 'Log 0:45 instead'",
+    "type": "text",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSet": "Засечь подход",
+  "@timeSet": {
+    "description": "Read by screen readers on the ▶ in a timed set's done column: it opens the set stopwatch",
+    "type": "text",
+    "placeholders": {}
+  },
+  "showSetStopwatch": "Показать секундомер подхода",
+  "@showSetStopwatch": {
+    "description": "Read by screen readers on the button in a timed set's done column while its stopwatch runs or is paused; it opens the stopwatch",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchPause": "Пауза",
+  "@stopwatchPause": {
+    "description": "Button in the set stopwatch: stops the count for now, without logging anything",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchResume": "Продолжить",
+  "@stopwatchResume": {
+    "description": "Button in the set stopwatch while it is paused: carries on counting from where it stopped",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchDone": "Готово",
+  "@stopwatchDone": {
+    "description": "Button in the set stopwatch: writes the time into the set and ticks it off. One short word",
+    "type": "text",
+    "placeholders": {}
+  },
+  "stopwatchPaused": "На паузе",
+  "@stopwatchPaused": {
+    "description": "Shown in the set stopwatch and on the lock screen while the stopwatch is paused",
+    "type": "text",
+    "placeholders": {}
+  },
+  "ongoingWorkoutStopwatch": "Подход {number}",
+  "@ongoingWorkoutStopwatch": {
+    "description": "Lock-screen label beside the counting clock while a timed set's stopwatch runs: which of the exercise's sets is being timed, e.g. 'Set 2'",
+    "type": "text",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
   }
 }

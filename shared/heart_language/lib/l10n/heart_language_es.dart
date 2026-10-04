@@ -2239,4 +2239,38 @@ class LEs extends L {
 
   @override
   String get keepAwakeBadge => 'La pantalla sigue encendida';
+
+  @override
+  String get setStopwatch => 'Cronómetro de serie';
+
+  @override
+  String get setStopwatchSubtitle => 'Cronometra una serie y detén el cronómetro para registrarla.';
+
+  @override
+  String stopwatchLogHeld(String time) {
+    return 'Registrar $time';
+  }
+
+  @override
+  String get timeSet => 'Cronometrar serie';
+
+  @override
+  String get showSetStopwatch => 'Mostrar cronómetro de serie';
+
+  @override
+  String get stopwatchPause => 'Pausar';
+
+  @override
+  String get stopwatchResume => 'Reanudar';
+
+  @override
+  String get stopwatchDone => 'Hecho';
+
+  @override
+  String get stopwatchPaused => 'En pausa';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Serie $number';
+  }
 }

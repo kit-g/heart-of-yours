@@ -80,6 +80,36 @@ void main() {
     await tester.pump();
   }
 
+  testWidgets('stopwatch state reaches the surface once, follows its exercise, and is hidden live when off', (
+    tester,
+  ) async {
+    final workout = push()..add(Exercise(name: 'Plank', category: .duration, target: .core));
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+    await workouts.init();
+    preferences.setFeature(.setStopwatch, on: true);
+    await pump(tester);
+    await workouts.stopwatch.start(workout, workout.last.first);
+    await tester.pump();
+    expect(surface.last!.stopwatch!.start, workouts.stopwatch.startedAt);
+    expect(surface.last!.exercise, 'Plank');
+    // the clock names the set it times, so nothing reads as "next"
+    expect(surface.last!.stopwatch!.label, 'Set 1');
+    expect(surface.last!.next, isEmpty);
+    final count = surface.calls.length;
+    await tester.pump(const Duration(seconds: 2));
+    expect(surface.calls.length, count, reason: 'native clocks tick without platform updates');
+    preferences.setFeature(.setStopwatch, on: false);
+    await tester.pump();
+    expect(surface.last!.stopwatch, isNull);
+    expect(workouts.stopwatch.isRunning, isTrue, reason: 'off leaves the local state intact');
+    preferences.setFeature(.setStopwatch, on: true);
+    await tester.pump();
+    expect(surface.last!.stopwatch, isNotNull);
+    workouts.stopwatch.clear();
+    await tester.pump();
+    expect(surface.last!.stopwatch, isNull);
+  });
+
   testWidgets('nothing is torn down before the active workout is known', (tester) async {
     when(local.getActiveWorkout('u1')).thenAnswer((_) async => null);
 
