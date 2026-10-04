@@ -567,9 +567,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       title: '${exercise.exercise.name} · ${L.of(context).ongoingWorkoutStopwatch(widget.number)}',
       setId: set.id,
       target: set.duration,
-      onStart: _startStopwatch,
-      onStop: _stopStopwatch,
-      // done before it ever ran: a tick with the time the set holds
+      onDone: _stopStopwatch,
+      // the clock dropped: a plain tick with the time the set holds
       onLog: () => _onDone(context),
     );
   }

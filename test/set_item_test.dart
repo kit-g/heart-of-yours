@@ -228,6 +228,29 @@ void main() {
       expect(play(set), findsOneWidget);
     });
 
+    testWidgets('Log 0:45 instead drops the count and ticks with the time the set held; none without one', (
+      tester,
+    ) async {
+      final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
+      final workout = three(exercise);
+      final [held, empty, _] = workout.first.toList();
+      held.setMeasurements(duration: 45);
+      final context = await startWorkoutOn(tester, workout);
+      Preferences.of(context).setFeature(.setStopwatch, on: true);
+      await tester.pumpTimes();
+
+      await start(tester, held);
+      await tester.pump(const Duration(seconds: 3));
+      await dialogButton(tester, 'Log 00:45 instead');
+      expect(held.isCompleted, isTrue);
+      expect(held.duration, 45);
+      expect(Workouts.of(context).stopwatch.isRunning, isFalse);
+
+      await start(tester, empty);
+      expect(find.textContaining('instead'), findsNothing);
+      await dialogButton(tester, 'Cancel');
+    });
+
     testWidgets('closed, it runs on in the row: ■ in the done column brings it back', (tester) async {
       final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = three(exercise);
