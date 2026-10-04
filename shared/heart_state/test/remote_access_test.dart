@@ -319,9 +319,11 @@ void main() {
           unit: anyNamed('unit'),
         ),
       ).thenAnswer((_) async {});
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => ([ex('Squat')], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[ex('Squat')], glossary: SearchGlossary.empty()), stamp));
       when(catalog.getCatalogStamp()).thenAnswer((_) async => null);
-      when(catalog.storeCatalog(any, stamp: anyNamed('stamp'))).thenAnswer((_) async {});
+      when(catalog.storeCatalog(any, stamp: anyNamed('stamp'), glossary: anyNamed('glossary')))
+          .thenAnswer((_) async {});
       sut = Exercises(
         remoteService: remote,
         service: local,
@@ -338,7 +340,7 @@ void main() {
       expect(sut.map((each) => each.name), ['Bench Press', 'Squat']);
       expect(sut.isInitialized, isTrue);
       verify(library.getLibrary(cached: anyNamed('cached'))).called(1);
-      verify(catalog.storeCatalog(any, stamp: stamp)).called(1);
+      verify(catalog.storeCatalog(any, stamp: stamp, glossary: anyNamed('glossary'))).called(1);
       verifyZeroInteractions(remote);
       // the account's preferences are an authenticated read like any other
       verifyZeroInteractions(preferences);
