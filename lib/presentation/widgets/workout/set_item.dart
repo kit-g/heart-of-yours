@@ -553,7 +553,15 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   String _shownDistance(Preferences prefs, num km, {MeasurementUnit? unit}) {
     return switch (set.category) {
       .weightedDistance => prefs.shortDistance(km, unit: unit ?? _unitOverride),
-      _ => prefs.distance(km, unit: unit ?? _unitOverride),
+      .cardio ||
+      .duration ||
+      .repsOnly ||
+      .barbell ||
+      .dumbbell ||
+      .machine ||
+      .weightedBodyWeight ||
+      .assistedBodyWeight ||
+      .weightedDuration => prefs.distance(km, unit: unit ?? _unitOverride),
     };
   }
 
@@ -639,7 +647,14 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           _distanceFocus.requestFocus();
         case .weightedDuration:
           _weightFocus.requestFocus();
-        default:
+        case .duration ||
+            .repsOnly ||
+            .barbell ||
+            .dumbbell ||
+            .machine ||
+            .weightedBodyWeight ||
+            .assistedBodyWeight ||
+            .weightedDistance:
           break;
       }
     }

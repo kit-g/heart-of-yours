@@ -217,7 +217,7 @@ class WorkoutItem extends StatelessWidget {
         .where(
           (each) => switch (each.exercise.category) {
             .barbell || .dumbbell || .machine || .weightedBodyWeight || .assistedBodyWeight => true,
-            _ => false,
+            .repsOnly || .cardio || .duration || .weightedDistance || .weightedDuration => false,
           },
         )
         .fold(0.0, (sum, each) => sum + (each.total ?? 0));
