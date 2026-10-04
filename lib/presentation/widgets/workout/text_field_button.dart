@@ -230,35 +230,34 @@ class _TextFieldButton extends StatelessWidget {
   /// [child] behind a ▶ that starts the set stopwatch, where one can start.
   Widget _leading(BuildContext context, Widget child) {
     return switch (onStopwatch) {
-      // over the cell's leading edge, so the time stays centred as it is in a
-      // cell without one
-      VoidCallback start => Stack(
-        alignment: .center,
+      // a ▶ on the left and as much blank on the right: the time stays centred
+      // in the cell, and never runs into the glyph however narrow the cell is
+      VoidCallback start => Row(
         children: [
-          child,
-          Align(
-            alignment: .centerLeft,
-            child: Semantics(
-              button: true,
-              label: stopwatchLabel,
-              excludeSemantics: true,
-              child: InkResponse(
-                onTap: start,
-                radius: 16,
-                child: Padding(
-                  padding: const .only(left: 4, right: 2),
-                  child: Icon(
-                    Icons.play_arrow_rounded,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+          Semantics(
+            button: true,
+            label: stopwatchLabel,
+            excludeSemantics: true,
+            child: InkResponse(
+              onTap: start,
+              radius: 16,
+              child: SizedBox(
+                width: _stopwatchGlyphWidth,
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  size: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
           ),
+          Expanded(child: child),
+          const SizedBox(width: _stopwatchGlyphWidth),
         ],
       ),
       null => child,
     };
   }
 }
+
+const _stopwatchGlyphWidth = 16.0;
