@@ -727,3 +727,9 @@ stopwatchResume,Button in the set stopwatch while it is paused: carries on count
 stopwatchDone,Button in the set stopwatch: writes the time into the set and ticks it off. One short word,Done,Done,Готово,Hecho,Terminé
 stopwatchPaused,Shown in the set stopwatch and on the lock screen while the stopwatch is paused,Paused,Paused,На паузе,En pausa,En pause
 ongoingWorkoutStopwatch,"Lock-screen label beside the counting clock while a timed set's stopwatch runs: which of the exercise's sets is being timed, e.g. 'Set 2'",Set {number},Set {number},Подход {number},Serie {number},Série {number}
+categoryWeightedDistance,Exercise category (equipment/measurement kind) label,Weighted Distance,Weighted Distance,Дистанция с отягощением,Distancia lastrada,Distance lestée
+categoryWeightedDuration,Exercise category (equipment/measurement kind) label,Weighted Duration,Weighted Duration,Время с отягощением,Duración lastrada,Durée lestée
+metresShort,"Short unit label, metres: a carry's distance in metric",m,m,м,m,m
+yardsShort,"Short unit label, yards: a carry's distance in imperial",yd,yd,ярд,yd,yd
+patternLoadedCarry,Movement pattern label (filter sheet chip and About-tab chip),Loaded Carry,Loaded Carry,Переноска груза,Acarreo con carga,Porté de charge
+patternSledPushDrag,Movement pattern label (filter sheet chip and About-tab chip),Sled Push & Drag,Sled Push & Drag,Толкание и тяга саней,Empuje y arrastre de trineo,Poussée et tirage de traîneau

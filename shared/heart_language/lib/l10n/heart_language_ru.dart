@@ -1709,6 +1709,18 @@ class LRu extends L {
   String get categoryBarbell => 'Штанга';
 
   @override
+  String get categoryWeightedDistance => 'Дистанция с отягощением';
+
+  @override
+  String get categoryWeightedDuration => 'Время с отягощением';
+
+  @override
+  String get metresShort => 'м';
+
+  @override
+  String get yardsShort => 'ярд';
+
+  @override
   String get targetCore => 'Кор';
 
   @override
@@ -1869,6 +1881,12 @@ class LRu extends L {
 
   @override
   String get patternVerticalPull => 'Вертикальная тяга';
+
+  @override
+  String get patternLoadedCarry => 'Переноска груза';
+
+  @override
+  String get patternSledPushDrag => 'Толкание и тяга саней';
 
   @override
   String upsyncRunning(Object done, Object total) {
