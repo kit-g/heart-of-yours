@@ -855,9 +855,7 @@ void main() {
         }
         await tester.pumpTimes();
         // the dialog, paused: a paused clock holds no timer open past the test
-        await tester.tapByKey(WorkoutDetailKeys.setTypeFor(timed.id, 1));
-        await tester.pumpTimes();
-        await tester.tapByKey(WorkoutDetailKeys.timeSet);
+        await tester.tap(find.byIcon(Icons.play_arrow_rounded));
         await tester.pumpTimes();
         await tester.tap(find.text('Pause'));
         await tester.pumpTimes();

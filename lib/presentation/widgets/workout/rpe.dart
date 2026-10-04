@@ -5,8 +5,7 @@ part of 'workout_detail.dart';
 /// three, the way a number pad reads.
 const _rpeValues = [6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0];
 
-/// What the set-number popup returns: a type for the set, a rating, or the
-/// stopwatch.
+/// What the set-number popup returns: a type for the set, or a rating.
 sealed class _SetChoice {
   const new();
 }
@@ -25,11 +24,6 @@ final class _RpeChoice extends _SetChoice {
 
 /// The set's rating, taken away.
 final class _RpeCleared extends _SetChoice {
-  const new();
-}
-
-/// The set stopwatch, started on this set (#171).
-final class _TimeChoice extends _SetChoice {
   const new();
 }
 

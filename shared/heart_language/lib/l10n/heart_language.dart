@@ -3898,7 +3898,13 @@ abstract class L {
   /// **'Time a set, then stop to log it.'**
   String get setStopwatchSubtitle;
 
-  /// Item in a timed set's set-number popup, under Warm up / Drop set / Failure: starts the set stopwatch on that set
+  /// Button in the set stopwatch before it runs: starts counting the set
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get stopwatchStart;
+
+  /// Read by screen readers on the ▶ in a timed set's done column: it opens the set stopwatch
   ///
   /// In en, this message translates to:
   /// **'Time this set'**
