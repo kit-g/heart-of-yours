@@ -169,6 +169,12 @@ extension TimedCategory on Category {
   /// The categories whose sets hold a time — what a stopwatch can fill.
   bool get isTimed => switch (this) {
     .duration || .cardio || .weightedDuration => true,
-    _ => false,
+    .repsOnly ||
+    .barbell ||
+    .dumbbell ||
+    .machine ||
+    .weightedBodyWeight ||
+    .assistedBodyWeight ||
+    .weightedDistance => false,
   };
 }

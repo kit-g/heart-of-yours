@@ -273,7 +273,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
       .weightedBodyWeight ||
       .weightedDistance ||
       .weightedDuration => true,
-      _ => false,
+      .repsOnly || .cardio || .duration => false,
     };
     return (weighted, weighted || exercise.exercise.category == .repsOnly);
   }
