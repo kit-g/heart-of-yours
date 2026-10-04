@@ -26,7 +26,13 @@ enum Feature {
 
   /// A stopwatch for timed sets (#171): ▶ on an undone timed set counts it,
   /// and Done logs the time. Settings-only, like keep-awake.
-  setStopwatch('setStopwatch');
+  setStopwatch('setStopwatch'),
+
+  /// Stops the workout's clock and starts it again, and offers a workout left
+  /// running to finish at its last set (#134). Settings-only, with a What's new
+  /// link. Pauses are stored and synced whatever the answer; off, only the
+  /// controls go.
+  pauseWorkout('pauseWorkout');
 
   final String value;
 

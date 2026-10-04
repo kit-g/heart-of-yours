@@ -2301,4 +2301,38 @@ class LFr extends L {
   String ongoingWorkoutStopwatch(int number) {
     return 'Série $number';
   }
+
+  @override
+  String get workoutPauses => 'Mettre en pause';
+
+  @override
+  String get workoutPausesSubtitle =>
+      'Arrêtez le chrono en pleine séance, et terminez une séance oubliée à sa dernière série';
+
+  @override
+  String get pauseWorkout => 'Mettre la séance en pause';
+
+  @override
+  String get resumePausedWorkout => 'Reprendre la séance';
+
+  @override
+  String get workoutPaused => 'En pause';
+
+  @override
+  String finishedAtTitle(String time) {
+    return 'Terminé à $time ?';
+  }
+
+  @override
+  String get finishedAtBody =>
+      'C’était votre dernière série. La séance peut s’arrêter là, et le temps écoulé depuis ne comptera pas.';
+
+  @override
+  String get keepGoing => 'Continuer';
+
+  @override
+  String get watchPause => 'Pause';
+
+  @override
+  String get watchResume => 'Reprendre';
 }

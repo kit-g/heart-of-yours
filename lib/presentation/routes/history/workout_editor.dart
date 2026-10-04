@@ -457,6 +457,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
       context,
       start: workout.start.toLocal(),
       end: workout.end?.toLocal(),
+      pauses: workout.pauses,
       onSave: (start, end) async {
         final startChanged = start != workout.start.toLocal();
         final endChanged = end != workout.end?.toLocal();
@@ -468,7 +469,7 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
           end: endChanged ? end?.toUtc() : null,
         );
         if (patched != null && mounted) {
-          _notifier.setTimes(start: patched.start, end: patched.end);
+          _notifier.setTimes(start: patched.start, end: patched.end, pauses: patched.pauses);
         }
       },
     );
@@ -566,9 +567,14 @@ class _WorkoutNotifier with ChangeNotifier {
   /// Reflects times that were just persisted via PATCH back onto the local copy.
   /// Notifies without flipping [hasChanged] — the change is already saved, so it
   /// must not arm the "discard changes?" guard or require another Save.
-  void setTimes({DateTime? start, DateTime? end}) {
+  ///
+  /// [pauses] too: a PATCH that moves either end cuts the pauses to the new
+  /// window (#134), and a later Save sends this copy's whole list — the old,
+  /// uncut one would be refused.
+  void setTimes({DateTime? start, DateTime? end, List<WorkoutPause>? pauses}) {
     if (start != null) workout.start = start;
     if (end != null) workout.end = end;
+    if (pauses != null) workout.pauses = [...pauses];
     super.notifyListeners();
   }
 

@@ -23,9 +23,11 @@ import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
+import 'package:heart/presentation/navigation/pause.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
 import 'package:heart/presentation/widgets/image.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show requestFinishAtLastSet;
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_health/heart_health.dart';
@@ -116,6 +118,8 @@ class HeartApp extends StatelessWidget {
             service: db,
             persistNote: db.setWorkoutExerciseNote,
             persistWorkoutNote: db.setWorkoutNote,
+            persistPauses: db.setWorkoutPauses,
+            pausedAtOf: db.getPausedAt,
             noteFor: Exercises.of(context).noteFor,
             remoteService: api,
             remote: RemoteAccess.of(context),
@@ -465,7 +469,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                 true => watchLink(Theme.of(context).platform),
                 false => null,
               },
-              child: KeepAwakePresenter(child: child ?? const SizedBox.shrink()),
+              child: KeepAwakePresenter(
+                child: PausePresenter(child: child ?? const SizedBox.shrink()),
+              ),
             ),
           ),
         ),
@@ -578,7 +584,7 @@ class _WorkoutTimeoutSchedulerState extends State<_WorkoutTimeoutScheduler> {
       _workouts = workouts..addListener(_onWorkoutsChanged);
       _hadActiveWorkout = workouts.hasActiveWorkout;
       // Schedule for a workout already in progress at startup (a resume).
-      if (workouts.hasActiveWorkout) _scheduleTimeout();
+      if (workouts.hasActiveWorkout && !workouts.isPaused) _scheduleTimeout();
     }
   }
 
@@ -594,13 +600,16 @@ class _WorkoutTimeoutSchedulerState extends State<_WorkoutTimeoutScheduler> {
     if (workouts == null) return;
 
     final active = workouts.hasActiveWorkout;
-    switch (active) {
-      case true:
+    switch ((active, workouts.isPaused)) {
+      case (true, false):
         _scheduleTimeout();
         // A fresh start (not every subsequent change): if the user kept rest
         // timers but has since revoked notifications, remind them.
         if (!_hadActiveWorkout) _remindIfNotificationsOff();
-      case false:
+      // paused on purpose (#134), so not idle: nothing to remind them of
+      // until it runs again, and resuming schedules it afresh
+      case (true, true):
+      case (false, _):
         cancelWorkoutTimeoutNotification();
     }
     _hadActiveWorkout = active;
@@ -689,7 +698,7 @@ Future<void> _initApp(
             goToWorkouts();
           }
         },
-        onWorkoutTimeoutNotification: () => _openActiveWorkout(context),
+        onWorkoutTimeoutNotification: () => _openActiveWorkout(context, idle: true),
         // the ongoing workout on Android's lock screen and shade
         onOngoingWorkoutNotification: () => _openActiveWorkout(context),
         onUnknownNotification: reportToSentry,
@@ -810,7 +819,11 @@ Future<void> _initApp(
 
 /// Where a workout notification lands: the workout if it is still going, the
 /// workouts tab if it finished in the meantime.
-Future<void> _openActiveWorkout(BuildContext context) async {
+///
+/// From the [idle] reminder, with pausing on (#134), the workout offers to
+/// finish at its last set — the user stopped then, not when they noticed. With
+/// nothing ticked there is no such time, and nothing to offer.
+Future<void> _openActiveWorkout(BuildContext context, {bool idle = false}) async {
   final HeartRouter(:goToActiveWorkout, :goToWorkouts) = HeartRouter.of(context);
   final workouts = Workouts.of(context);
   await _activeWorkoutResolved(workouts);
@@ -818,6 +831,8 @@ Future<void> _openActiveWorkout(BuildContext context) async {
     case null:
       goToWorkouts();
     case _:
+      // the sheet raises the offer once it is up
+      if (idle) requestFinishAtLastSet();
       await goToActiveWorkout();
   }
 }

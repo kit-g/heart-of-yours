@@ -53,6 +53,14 @@ struct UpNextPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
+                // paused (#134), that leads, with the way back: nothing else
+                // on the page moves until the clock does
+                if workout.pausedAt != nil, let controls = workout.controls {
+                    PausedView(workoutId: workout.workoutId, controls: controls, accent: workout.accent, dimmed: dimmed)
+                    Divider()
+                        .padding(.vertical, 6)
+                }
+
                 // resting, the countdown leads: it is what a lowered wrist
                 // comes up to check, and below the set it sat off-screen on
                 // every watch size. The rest over, the page is as before
@@ -121,18 +129,77 @@ struct UpNextPage: View {
     /// session measures.
     private var footer: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .center) {
                 Text(workout.title)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                Text(workout.startedAt, style: .timer)
-                    .monospacedDigit()
+                // pausing is the phone's opt-in (#134): off, no control
+                if workout.pausable, workout.pausedAt == nil, let controls = workout.controls, !dimmed {
+                    Button {
+                        phone.send(.pause(workoutId: workout.workoutId))
+                    } label: {
+                        Image(systemName: "pause.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.circle)
+                    .controlSize(.mini)
+                    .accessibilityLabel(controls.pause)
+                }
+                ElapsedClock(workout: workout)
             }
             .font(.footnote)
             .foregroundStyle(.secondary)
 
             if let controls = workout.controls, session.workoutId == workout.workoutId {
                 Vitals(heartRate: session.heartRate, energy: session.energy, controls: controls)
+            }
+        }
+    }
+}
+
+/// How long the workout has run, ticking by itself — or standing where it was
+/// paused (#134).
+struct ElapsedClock: View {
+    let workout: WatchState.Workout
+
+    var body: some View {
+        if let pausedAt = workout.pausedAt, workout.clock <= pausedAt {
+            Text(timerInterval: workout.clock...Date.distantFuture, pauseTime: pausedAt, countsDown: false)
+                .monospacedDigit()
+                .accessibilityLabel(workout.controls?.paused ?? "")
+                .accessibilityValue(
+                    Text(timerInterval: workout.clock...Date.distantFuture, pauseTime: pausedAt, countsDown: false)
+                )
+        } else {
+            Text(workout.clock, style: .timer)
+                .monospacedDigit()
+        }
+    }
+}
+
+/// The workout is paused (#134): saying so, and the way back.
+struct PausedView: View {
+    let workoutId: String
+    let controls: WatchState.Workout.Controls
+    let accent: Color
+    let dimmed: Bool
+    @EnvironmentObject private var phone: PhoneSession
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(controls.paused, systemImage: "pause.fill")
+                .font(.headline)
+                .foregroundStyle(accent)
+            if !dimmed {
+                Button {
+                    phone.send(.resume(workoutId: workoutId))
+                } label: {
+                    Label(controls.resume, systemImage: "play.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+                .frame(maxWidth: .infinity)
             }
         }
     }

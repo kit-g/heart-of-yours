@@ -12,6 +12,7 @@ extension FeatureCopy on Feature {
       .rpe => l.rpe,
       .keepAwake => l.keepAwake,
       .setStopwatch => l.setStopwatch,
+      .pauseWorkout => l.workoutPauses,
     };
   }
 
@@ -22,6 +23,7 @@ extension FeatureCopy on Feature {
       .rpe => l.rpeSubtitle,
       .keepAwake => l.keepAwakeSubtitle,
       .setStopwatch => l.setStopwatchSubtitle,
+      .pauseWorkout => l.workoutPausesSubtitle,
     };
   }
 
@@ -32,6 +34,7 @@ extension FeatureCopy on Feature {
       .rpe => Icons.speed_rounded,
       .keepAwake => Icons.light_mode_rounded,
       .setStopwatch => Icons.timer_outlined,
+      .pauseWorkout => Icons.pause_circle_outline_rounded,
     };
   }
 
@@ -39,7 +42,7 @@ extension FeatureCopy on Feature {
   /// worth knowing about it, and that a control would not say.
   List<String> notes(L l) {
     return switch (this) {
-      .muscleMap || .rpe || .keepAwake || .setStopwatch => const [],
+      .muscleMap || .rpe || .keepAwake || .setStopwatch || .pauseWorkout => const [],
       // where Apple keeps Always On: Heart has no switch of its own for it
       .watchApp => [l.watchAppAwayNote, l.watchAlwaysOnNote],
     };

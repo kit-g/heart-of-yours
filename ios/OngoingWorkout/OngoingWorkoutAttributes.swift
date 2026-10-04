@@ -43,6 +43,16 @@ struct OngoingWorkoutAttributes: ActivityAttributes {
         var accentInk: UInt32
         var accentInkDark: UInt32
 
+        /// Where the elapsed clock counts from: the start, moved on by every
+        /// pause the workout has closed (#134). Here rather than an attribute,
+        /// which cannot change once the activity is up. Nil in a state sent by
+        /// a build from before pauses: the clock is then the attribute's.
+        var clockStart: Date?
+        /// While the workout is paused, when it was; the clock stands still.
+        var pausedAt: Date?
+        /// "Paused", what VoiceOver reads on a stopped clock.
+        var pausedLabel: String?
+
         var rest: ClosedRange<Date>? {
             guard let restStart, let restEnd, restStart < restEnd else { return nil }
             return restStart...restEnd
@@ -52,5 +62,7 @@ struct OngoingWorkoutAttributes: ActivityAttributes {
     /// Identity: an activity belongs to exactly one workout, which is how a
     /// relaunched app re-attaches to it instead of starting a second one.
     var workoutId: String
+    /// When the workout began. Immutable once the activity is requested, so
+    /// it is the clock only for a state that carries none (`clockStart`).
     var startedAt: Date
 }

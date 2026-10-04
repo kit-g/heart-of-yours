@@ -1,5 +1,6 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart' show WorkoutPause;
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -14,16 +15,20 @@ enum _Unfolded { none, start, end }
 /// caller passes local [start]/[end] and receives local values back through
 /// [onSave], which fires once (batching both fields) when the user taps Save.
 /// Returns after the dialog closes.
+///
+/// The duration it shows leaves out [pauses] (#134), cut to the times as
+/// edited, the way the server cuts them on save.
 Future<void> showAdjustTimesDialog(
   BuildContext context, {
   required DateTime start,
   required DateTime? end,
   required Future<void> Function(DateTime start, DateTime? end) onSave,
+  Iterable<WorkoutPause> pauses = const [],
 }) {
   return showAdaptiveDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (_) => _AdjustTimesDialog(start: start, end: end, onSave: onSave),
+    builder: (_) => _AdjustTimesDialog(start: start, end: end, onSave: onSave, pauses: pauses),
   );
 }
 
@@ -31,8 +36,9 @@ class _AdjustTimesDialog extends StatefulWidget {
   final DateTime start;
   final DateTime? end;
   final Future<void> Function(DateTime start, DateTime? end) onSave;
+  final Iterable<WorkoutPause> pauses;
 
-  const new({required this.start, required this.end, required this.onSave});
+  const new({required this.start, required this.end, required this.onSave, required this.pauses});
 
   @override
   State<_AdjustTimesDialog> createState() => _AdjustTimesDialogState();
@@ -56,6 +62,16 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
   }
 
   String _formatValue(DateTime dt) => _valueFormat.format(dt);
+
+  /// [start]..[end] less the part of every pause that falls inside it.
+  Duration _trained(DateTime start, DateTime end) {
+    final paused = widget.pauses.fold(Duration.zero, (sum, pause) {
+      final from = pause.start.isAfter(start) ? pause.start : start;
+      final to = pause.end.isBefore(end) ? pause.end : end;
+      return to.isAfter(from) ? sum + to.difference(from) : sum;
+    });
+    return end.difference(start) - paused;
+  }
 
   /// Duration as a running clock (`m:ss`, or `h:mm:ss` past an hour).
   String _formatDuration(Duration d) {
@@ -174,7 +190,7 @@ class _AdjustTimesDialogState extends State<_AdjustTimesDialog> {
                     mainAxisAlignment: .spaceBetween,
                     children: [
                       Text(duration, style: textTheme.titleMedium),
-                      Text(_formatDuration(end.difference(_start.value)), style: textTheme.titleMedium),
+                      Text(_formatDuration(_trained(_start.value, end)), style: textTheme.titleMedium),
                     ],
                   ),
                 );
