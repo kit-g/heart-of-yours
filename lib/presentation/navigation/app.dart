@@ -136,6 +136,7 @@ class HeartApp extends StatelessWidget {
             filingService: RemoteTemplateFiling(api),
             remote: RemoteAccess.of(context),
             analytics: analytics,
+            maxTemplates: appConfig.maxTemplates,
             onError: reportToSentry,
           ),
         ),
