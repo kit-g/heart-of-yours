@@ -10,6 +10,7 @@ extension FeatureCopy on Feature {
       .muscleMap => l.muscleMap,
       .watchApp => l.watchApp,
       .rpe => l.rpe,
+      .keepAwake => l.keepAwake,
     };
   }
 
@@ -18,6 +19,7 @@ extension FeatureCopy on Feature {
       .muscleMap => l.muscleMapSubtitle,
       .watchApp => l.watchAppSubtitle,
       .rpe => l.rpeSubtitle,
+      .keepAwake => l.keepAwakeSubtitle,
     };
   }
 
@@ -26,6 +28,7 @@ extension FeatureCopy on Feature {
       .muscleMap => Icons.accessibility_new_rounded,
       .watchApp => Icons.watch_rounded,
       .rpe => Icons.speed_rounded,
+      .keepAwake => Icons.light_mode_rounded,
     };
   }
 
@@ -33,7 +36,7 @@ extension FeatureCopy on Feature {
   /// worth knowing about it, and that a control would not say.
   List<String> notes(L l) {
     return switch (this) {
-      .muscleMap || .rpe => const [],
+      .muscleMap || .rpe || .keepAwake => const [],
       // where Apple keeps Always On: Heart has no switch of its own for it
       .watchApp => [l.watchAppAwayNote, l.watchAlwaysOnNote],
     };

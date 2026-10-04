@@ -18,7 +18,11 @@ enum Feature {
 
   /// How hard each set was, rated from a bar over the number pad (#234).
   /// Stored and synced whatever the answer; the switch shows it.
-  rpe('rpe');
+  rpe('rpe'),
+
+  /// Keeps the screen awake during a workout (#170). Settings-only:
+  /// an offer at workout start would interrupt the user.
+  keepAwake('keepAwake');
 
   final String value;
 
