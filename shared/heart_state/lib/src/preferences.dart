@@ -507,6 +507,32 @@ class Preferences with ChangeNotifier {
     };
   }
 
+  /// A short distance — a carry, a sled push — for display. Stored in
+  /// kilometres like every distance, shown in metres or yards: a 40 m walk is
+  /// `0.04 km`, which no one would type or read.
+  ///
+  /// Pass [unit] to honour a per-exercise override; when null the global
+  /// [distanceUnit] is used.
+  String shortDistance(num km, {MeasurementUnit? unit}) {
+    return shortDistanceValue(km, unit: unit).rounded();
+  }
+
+  double shortDistanceValue(num km, {MeasurementUnit? unit}) {
+    return switch (unit ?? distanceUnit) {
+      .imperial => km * 1000 / _metresPerYard,
+      .metric => km * 1000.0,
+    };
+  }
+
+  /// The inverse of [shortDistanceValue]: metres or yards as typed, in the
+  /// kilometres the model stores.
+  double shortDistanceStored(num shown, {MeasurementUnit? unit}) {
+    return switch (unit ?? distanceUnit) {
+      .imperial => shown * _metresPerYard / 1000,
+      .metric => shown / 1000,
+    };
+  }
+
   /// Formats [value] (stored canonically in metric) for display.
   ///
   /// Pass [unit] to honour a per-exercise override; when null the global
@@ -523,6 +549,8 @@ class Preferences with ChangeNotifier {
     };
   }
 }
+
+const _metresPerYard = 0.9144;
 
 const _imperialCountries = {
   'US', // USA
