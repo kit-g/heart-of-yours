@@ -4184,5 +4184,69 @@
     "description": "Movement pattern label (filter sheet chip and About-tab chip)",
     "type": "text",
     "placeholders": {}
+  },
+  "workoutPauses": "Pause workouts",
+  "@workoutPauses": {
+    "description": "Title of the opt-in feature in Settings › Features that lets the user pause the workout clock",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutPausesSubtitle": "Stop the clock mid-workout, and end a forgotten one at its last set",
+  "@workoutPausesSubtitle": {
+    "description": "Subtitle under the pause-workouts switch in Settings › Features, saying what it does",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pauseWorkout": "Pause workout",
+  "@pauseWorkout": {
+    "description": "Item in the active workout's options menu that stops the workout clock",
+    "type": "text",
+    "placeholders": {}
+  },
+  "resumePausedWorkout": "Resume workout",
+  "@resumePausedWorkout": {
+    "description": "Item in the active workout's options menu, and the label of the play button beside the stopped clock, that starts a paused workout's clock again",
+    "type": "text",
+    "placeholders": {}
+  },
+  "workoutPaused": "Paused",
+  "@workoutPaused": {
+    "description": "Says the workout clock is stopped: read by screen readers on the stopped clock, and shown on the lock screen and the watch. One word",
+    "type": "text",
+    "placeholders": {}
+  },
+  "finishedAtTitle": "Finished at {time}?",
+  "@finishedAtTitle": {
+    "description": "Title of the dialog shown when the user opens the app from the idle-workout notification: offers to end the workout at the time of its last completed set. The time is formatted, like 6:42 PM",
+    "type": "text",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "finishedAtBody": "That was your last set. The workout can end there, and the time since won't count.",
+  "@finishedAtBody": {
+    "description": "Body of the dialog that offers to end a forgotten workout at the time of its last completed set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "keepGoing": "Keep going",
+  "@keepGoing": {
+    "description": "Button in the dialog that offers to end a forgotten workout at its last set: declines, and the workout carries on",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchPause": "Pause",
+  "@watchPause": {
+    "description": "Apple Watch button that stops the workout clock. Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "watchResume": "Resume",
+  "@watchResume": {
+    "description": "Apple Watch button that starts a paused workout's clock again. Short: it is a watch screen",
+    "type": "text",
+    "placeholders": {}
   }
 }
