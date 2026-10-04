@@ -1852,6 +1852,18 @@ abstract class L {
   /// **'All'**
   String get chartRangeAll;
 
+  /// Exercise picker section header: the exercises the user did most recently, shown before they type
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get pickerRecent;
+
+  /// Exercise picker section header: the whole library, below the Recent section
+  ///
+  /// In en, this message translates to:
+  /// **'All exercises'**
+  String get pickerAllExercises;
+
   /// Fallback metric name in the history chart accessibility summary, when the chart has no visible title
   ///
   /// In en, this message translates to:

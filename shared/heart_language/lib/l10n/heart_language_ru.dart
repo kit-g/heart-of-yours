@@ -997,6 +997,12 @@ class LRu extends L {
   String get chartRangeAll => 'Всё';
 
   @override
+  String get pickerRecent => 'Недавние';
+
+  @override
+  String get pickerAllExercises => 'Все упражнения';
+
+  @override
   String get chartGenericLabel => 'График';
 
   @override
