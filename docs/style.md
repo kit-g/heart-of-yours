@@ -72,6 +72,29 @@ The one place an index loop earns its keep is index *arithmetic* — bucketing a
 series into `n` slices — and even then it lives in a small helper, not in a
 `children:` list.
 
+**Name every value of our own enums.** A `_ =>` or `default:` arm over
+`Category`, `Target`, `SetType` and the like gives up the analyzer's
+exhaustiveness check. That check is what lists every place a new value has to
+be handled: `Category.weightedDistance` arrived with nine compile errors, plus
+every wildcard that had already decided for it without anyone looking. List
+every value, even in a long `||` arm. A wildcard is fine over a *shape*, such as a map
+pattern, a record of measurements, or a nullable value. It is not fine over an
+enum we extend.
+
+```dart
+// no
+final lifted = switch (exercise.category) {
+  .barbell || .dumbbell || .machine => true,
+  _ => false,
+};
+
+// yes
+final lifted = switch (exercise.category) {
+  .barbell || .dumbbell || .machine => true,
+  .repsOnly || .cardio || .duration || .weightedDistance || .weightedDuration => false,
+};
+```
+
 ## Naming and notation
 
 - **Dot-shorthand for constructors**, not only enums, wherever the type is
