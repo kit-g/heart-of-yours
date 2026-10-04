@@ -2232,6 +2232,15 @@ class LEs extends L {
   String get clearRpe => 'Quitar RPE';
 
   @override
+  String get keepAwake => 'Mantener la pantalla encendida';
+
+  @override
+  String get keepAwakeSubtitle => 'La pantalla sigue encendida durante tu entrenamiento';
+
+  @override
+  String get keepAwakeBadge => 'La pantalla sigue encendida';
+
+  @override
   String get setStopwatch => 'Cronómetro de serie';
 
   @override

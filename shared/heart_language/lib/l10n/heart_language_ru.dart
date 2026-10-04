@@ -2267,6 +2267,15 @@ class LRu extends L {
   String get clearRpe => 'Сбросить RPE';
 
   @override
+  String get keepAwake => 'Не выключать экран';
+
+  @override
+  String get keepAwakeSubtitle => 'Экран не гаснет во время тренировки';
+
+  @override
+  String get keepAwakeBadge => 'Экран не гаснет';
+
+  @override
   String get setStopwatch => 'Секундомер подхода';
 
   @override

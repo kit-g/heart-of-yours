@@ -97,8 +97,10 @@ class WorkoutDone extends StatelessWidget {
                               return LayoutBuilder(
                                 builder: (_, constraints) {
                                   const size = 50.0;
-                                  // how many hearts will fit into the screen
-                                  final maxPulses = ((constraints.maxWidth - 10) / size).floor();
+                                  // how many hearts will fit into the screen; none
+                                  // when a backgrounding frame lays it out at
+                                  // zero width, never a negative list
+                                  final maxPulses = max(((constraints.maxWidth - 10) / size).floor(), 0);
                                   // we'll render how many workouts there have been this week
                                   // or whatever the screen allows, whichever is smaller
                                   return _Counter(

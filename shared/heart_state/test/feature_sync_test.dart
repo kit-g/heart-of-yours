@@ -50,8 +50,13 @@ void main() {
 
   group('the settings codec', () {
     test('reads what it wrote', () {
-      final written = withFeatureRecords(const Settings(), {feature: FeatureRecord(on: true, at: later)});
-      expect(featureRecordsOf(written), {feature: FeatureRecord(on: true, at: later)});
+      for (final feature in Feature.values) {
+        for (final on in [false, true]) {
+          final records = {feature: FeatureRecord(on: on, at: later)};
+          final written = withFeatureRecords(const Settings(), records);
+          expect(featureRecordsOf(written), records);
+        }
+      }
     });
 
     test('keeps every other key, and features this version does not know', () {
