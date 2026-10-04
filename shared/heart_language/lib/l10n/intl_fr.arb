@@ -4184,5 +4184,17 @@
     "description": "Movement pattern label (filter sheet chip and About-tab chip)",
     "type": "text",
     "placeholders": {}
+  },
+  "pickerRecent": "Récents",
+  "@pickerRecent": {
+    "description": "Exercise picker section header: the exercises the user did most recently, shown before they type",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pickerAllExercises": "Tous les exercices",
+  "@pickerAllExercises": {
+    "description": "Exercise picker section header: the whole library, below the Recent section",
+    "type": "text",
+    "placeholders": {}
   }
 }
