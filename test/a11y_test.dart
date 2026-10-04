@@ -857,8 +857,6 @@ void main() {
         // the dialog, paused: a paused clock holds no timer open past the test
         await tester.tap(find.byIcon(Icons.play_arrow_rounded));
         await tester.pumpTimes();
-        await tester.tap(find.text('Start'));
-        await tester.pumpTimes();
         await tester.tap(find.text('Pause'));
         await tester.pumpTimes();
       case _Screen.rpePicker:
