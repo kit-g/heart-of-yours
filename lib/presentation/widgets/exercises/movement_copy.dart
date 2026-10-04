@@ -45,6 +45,8 @@ extension CategoryCopy on Category {
       .machine => l10n.categoryMachine,
       .dumbbell => l10n.categoryDumbbell,
       .barbell => l10n.categoryBarbell,
+      .weightedDistance => l10n.categoryWeightedDistance,
+      .weightedDuration => l10n.categoryWeightedDuration,
     };
   }
 }
@@ -86,7 +88,7 @@ extension StabilityCopy on Stability {
   }
 }
 
-/// The 38 patterns the library uses today get real copy; anything newer falls
+/// The 40 patterns the library uses today get real copy; anything newer falls
 /// back to the humanized identifier (`hip_thrust` reads as `Hip Thrust`).
 /// Content owns the vocabulary and can add a pattern without an app release,
 /// so an unknown key must label itself rather than ship blank — the fallback
@@ -118,6 +120,7 @@ String _patternLabel(String pattern, L l10n) {
     'knee_extension' => l10n.patternKneeExtension,
     'knee_flexion' => l10n.patternKneeFlexion,
     'lateral_raise' => l10n.patternLateralRaise,
+    'loaded_carry' => l10n.patternLoadedCarry,
     'lunge_split' => l10n.patternLungeSplit,
     'mobility' => l10n.patternMobility,
     'olympic_lift' => l10n.patternOlympicLift,
@@ -125,6 +128,7 @@ String _patternLabel(String pattern, L l10n) {
     'pullover' => l10n.patternPullover,
     'rear_delt' => l10n.patternRearDelt,
     'shrug' => l10n.patternShrug,
+    'sled_push_drag' => l10n.patternSledPushDrag,
     'spinal_extension' => l10n.patternSpinalExtension,
     'squat_bilateral' => l10n.patternSquatBilateral,
     'trunk_flexion' => l10n.patternTrunkFlexion,

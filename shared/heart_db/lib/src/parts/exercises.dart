@@ -629,6 +629,72 @@ Map<String, Object>? _fold(Category category, List<_RecordSet> sets) {
           'at': set.at,
         };
       }
+
+    // A carry or a loaded hold has two records a lifter brags about: the
+    // heaviest load, and the farthest or longest they went with any load.
+    // Weight × distance is what `best` ranks by in the model, but "40 kg·km"
+    // is not a number anyone recognises, so it stays off the records.
+    case .weightedDistance:
+      _RecordSet? heaviest;
+      _RecordSet? farthest;
+      var totalDistance = 0.0;
+
+      for (final set in sets) {
+        final _RecordSet(:weight, :distance) = set;
+        if (weight != null && weight > (heaviest?.weight ?? -1)) heaviest = set;
+        if (distance == null) continue;
+        totalDistance += distance;
+        if (distance > (farthest?.distance ?? -1)) farthest = set;
+      }
+
+      if (heaviest case final set?) {
+        records['heaviest'] = {
+          'weight': set.weight,
+          'distance': ?set.distance,
+          'workoutId': set.workoutId,
+          'at': set.at,
+        };
+      }
+      if (farthest case final set?) {
+        records['longestDistance'] = {
+          'distance': set.distance,
+          'weight': ?set.weight,
+          'workoutId': set.workoutId,
+          'at': set.at,
+        };
+        records['totalDistance'] = totalDistance;
+      }
+
+    case .weightedDuration:
+      _RecordSet? heaviest;
+      _RecordSet? longest;
+      var totalDuration = 0.0;
+
+      for (final set in sets) {
+        final _RecordSet(:weight, :duration) = set;
+        if (weight != null && weight > (heaviest?.weight ?? -1)) heaviest = set;
+        if (duration == null) continue;
+        totalDuration += duration;
+        if (duration > (longest?.duration ?? -1)) longest = set;
+      }
+
+      if (heaviest case final set?) {
+        records['heaviest'] = {
+          'weight': set.weight,
+          'duration': ?set.duration,
+          'workoutId': set.workoutId,
+          'at': set.at,
+        };
+      }
+      if (longest case final set?) {
+        records['longestDuration'] = {
+          'duration': set.duration,
+          'weight': ?set.weight,
+          'workoutId': set.workoutId,
+          'at': set.at,
+        };
+        records['totalDuration'] = totalDuration;
+      }
   }
 
   // sessions and firstAt alone mean every measured value was null — the

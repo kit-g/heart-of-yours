@@ -15,6 +15,7 @@
       "start": "2026-03-01T10:00:00.000Z",
       "end": "2026-03-01T11:00:00.000Z",
       "note": null,
+      "pauses": [],
       "exercises": [
         {
           "order": 0,
@@ -70,6 +71,7 @@
       "start": "2026-03-03T07:30:00.000Z",
       "end": "2026-03-03T08:00:00.000Z",
       "note": null,
+      "pauses": [],
       "exercises": [
         {
           "order": 0,

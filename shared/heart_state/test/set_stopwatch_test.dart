@@ -118,4 +118,12 @@ void main() {
     await clock.start(workout, workout.last.first);
     expect(clock.isRunning, isFalse);
   });
+
+  test('a loaded hold is timed like a plain one', () async {
+    final clock = SetStopwatch(now: () => now);
+    addTearDown(clock.dispose);
+    workout.add(Exercise(name: 'Plank (Weighted)', category: .weightedDuration, target: .core));
+    await clock.start(workout, workout.last.first);
+    expect(clock.isRunning, isTrue);
+  });
 }
