@@ -5,6 +5,7 @@ abstract final class AppKeys {
 
   static const profileStack = Key('AppFrame.profileStack');
   static const workoutStack = Key('AppFrame.workoutStack');
+  static const keepAwakeBadge = Key('AppFrame.keepAwakeBadge');
   static const historyStack = Key('AppFrame.historyStack');
   static const exercisesStack = Key('AppFrame.exercisesStack');
   static const exercisePicker = Key('AppFrame.exercisePicker');
