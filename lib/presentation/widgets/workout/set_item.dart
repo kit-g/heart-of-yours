@@ -238,6 +238,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       onUpdate: _onSwipe,
       key: ValueKey<String>('_ExerciseSetItem.${set.id}'),
       child: Stack(
+        clipBehavior: .none,
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
@@ -365,11 +366,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               ],
             ),
           ),
-          // in the row's own padding, so a running set keeps its height
+          // 4pt under the row's controls: 2 of the row's own bottom padding
+          // and 2 of the next row's top, so a running set keeps its height
           Positioned(
             left: 8,
             right: 8,
-            bottom: 0,
+            bottom: -2,
             child: ListenableBuilder(
               listenable: workouts.stopwatch,
               builder: (context, _) {
@@ -382,8 +384,6 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                         seconds: seconds,
                         target: set.duration,
                         paused: stopwatch.isPaused,
-                        // the row's bottom padding, whole
-                        thickness: 4,
                       );
                     },
                   ),
