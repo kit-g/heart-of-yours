@@ -516,9 +516,9 @@ void main() {
           verify(
             db.update(
               'sets',
-              // the type and RPE ride along: a row without them reads back
-              // as a plain, unrated set (#151)
-              {...testSet.toRow(), 'set_type': null, 'rpe': null},
+              // the type, RPE and tick time ride along: a row without them
+              // reads back as a plain, unrated set (#151), ticked at no time (#134)
+              {...testSet.toRow(), 'set_type': null, 'rpe': null, 'completed_at': null},
               where: 'id = ?',
               whereArgs: [testSet.id],
             ),
@@ -548,9 +548,10 @@ void main() {
     'markSetAsComplete',
     () {
       test(
-        'updates set with completed = 1',
+        'updates set with completed = 1, and when',
         () async {
-          final testSet = set(isCompleted: false); // initial state doesn't matter here
+          final ticked = DateTime.utc(2026, 10, 3, 18, 42);
+          final testSet = set(isCompleted: false)..completedAt = ticked; // initial state doesn't matter here
 
           when(
             db.update(
@@ -566,7 +567,7 @@ void main() {
           verify(
             db.update(
               'sets',
-              {'completed': 1},
+              {'completed': 1, 'completed_at': ticked.toIso8601String()},
               where: 'id = ?',
               whereArgs: [testSet.id],
             ),
@@ -614,7 +615,7 @@ void main() {
           verify(
             db.update(
               'sets',
-              {'completed': 0},
+              {'completed': 0, 'completed_at': null},
               where: 'id = ?',
               whereArgs: [testSet.id],
             ),
