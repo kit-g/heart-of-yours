@@ -22,6 +22,7 @@ import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
+import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
 import 'package:heart/presentation/widgets/image.dart';
@@ -137,6 +138,7 @@ class HeartApp extends StatelessWidget {
             filingService: RemoteTemplateFiling(api),
             remote: RemoteAccess.of(context),
             analytics: analytics,
+            maxTemplates: appConfig.maxTemplates,
             onError: reportToSentry,
           ),
         ),
@@ -463,7 +465,7 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                 true => watchLink(Theme.of(context).platform),
                 false => null,
               },
-              child: child ?? const SizedBox.shrink(),
+              child: KeepAwakePresenter(child: child ?? const SizedBox.shrink()),
             ),
           ),
         ),

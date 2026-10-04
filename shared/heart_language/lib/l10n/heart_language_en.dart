@@ -2226,6 +2226,15 @@ class LEn extends L {
   String get clearRpe => 'Clear RPE';
 
   @override
+  String get keepAwake => 'Keep screen awake';
+
+  @override
+  String get keepAwakeSubtitle => 'The screen stays on through your workout';
+
+  @override
+  String get keepAwakeBadge => 'Screen stays awake';
+
+  @override
   String get setStopwatch => 'Set stopwatch';
 
   @override
@@ -4479,6 +4488,15 @@ class LEnCa extends LEn {
 
   @override
   String get clearRpe => 'Clear RPE';
+
+  @override
+  String get keepAwake => 'Keep screen awake';
+
+  @override
+  String get keepAwakeSubtitle => 'The screen stays on through your workout';
+
+  @override
+  String get keepAwakeBadge => 'Screen stays awake';
 
   @override
   String get setStopwatch => 'Set stopwatch';
