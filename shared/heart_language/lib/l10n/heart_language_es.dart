@@ -1681,6 +1681,18 @@ class LEs extends L {
   String get categoryBarbell => 'Barra';
 
   @override
+  String get categoryWeightedDistance => 'Distancia lastrada';
+
+  @override
+  String get categoryWeightedDuration => 'Duración lastrada';
+
+  @override
+  String get metresShort => 'm';
+
+  @override
+  String get yardsShort => 'yd';
+
+  @override
   String get targetCore => 'Core';
 
   @override
@@ -1841,6 +1853,12 @@ class LEs extends L {
 
   @override
   String get patternVerticalPull => 'Jalón vertical';
+
+  @override
+  String get patternLoadedCarry => 'Acarreo con carga';
+
+  @override
+  String get patternSledPushDrag => 'Empuje y arrastre de trineo';
 
   @override
   String upsyncRunning(Object done, Object total) {

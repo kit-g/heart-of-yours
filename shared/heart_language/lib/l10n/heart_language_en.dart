@@ -1677,6 +1677,18 @@ class LEn extends L {
   String get categoryBarbell => 'Barbell';
 
   @override
+  String get categoryWeightedDistance => 'Weighted Distance';
+
+  @override
+  String get categoryWeightedDuration => 'Weighted Duration';
+
+  @override
+  String get metresShort => 'm';
+
+  @override
+  String get yardsShort => 'yd';
+
+  @override
   String get targetCore => 'Core';
 
   @override
@@ -1837,6 +1849,12 @@ class LEn extends L {
 
   @override
   String get patternVerticalPull => 'Vertical Pull';
+
+  @override
+  String get patternLoadedCarry => 'Loaded Carry';
+
+  @override
+  String get patternSledPushDrag => 'Sled Push & Drag';
 
   @override
   String upsyncRunning(Object done, Object total) {
@@ -3941,6 +3959,18 @@ class LEnCa extends LEn {
   String get categoryBarbell => 'Barbell';
 
   @override
+  String get categoryWeightedDistance => 'Weighted Distance';
+
+  @override
+  String get categoryWeightedDuration => 'Weighted Duration';
+
+  @override
+  String get metresShort => 'm';
+
+  @override
+  String get yardsShort => 'yd';
+
+  @override
   String get targetCore => 'Core';
 
   @override
@@ -4101,6 +4131,12 @@ class LEnCa extends LEn {
 
   @override
   String get patternVerticalPull => 'Vertical Pull';
+
+  @override
+  String get patternLoadedCarry => 'Loaded Carry';
+
+  @override
+  String get patternSledPushDrag => 'Sled Push & Drag';
 
   @override
   String upsyncRunning(Object done, Object total) {

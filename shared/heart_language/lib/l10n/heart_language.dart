@@ -2944,6 +2944,30 @@ abstract class L {
   /// **'Barbell'**
   String get categoryBarbell;
 
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Weighted Distance'**
+  String get categoryWeightedDistance;
+
+  /// Exercise category (equipment/measurement kind) label
+  ///
+  /// In en, this message translates to:
+  /// **'Weighted Duration'**
+  String get categoryWeightedDuration;
+
+  /// Short unit label, metres: a carry's distance in metric
+  ///
+  /// In en, this message translates to:
+  /// **'m'**
+  String get metresShort;
+
+  /// Short unit label, yards: a carry's distance in imperial
+  ///
+  /// In en, this message translates to:
+  /// **'yd'**
+  String get yardsShort;
+
   /// Exercise target (body part) label
   ///
   /// In en, this message translates to:
@@ -3267,6 +3291,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Vertical Pull'**
   String get patternVerticalPull;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded Carry'**
+  String get patternLoadedCarry;
+
+  /// Movement pattern label (filter sheet chip and About-tab chip)
+  ///
+  /// In en, this message translates to:
+  /// **'Sled Push & Drag'**
+  String get patternSledPushDrag;
 
   /// Profile row while an anonymous session's data is being uploaded to the account it just became: rows done so far out of the rows found
   ///

@@ -4148,5 +4148,41 @@
         "type": "int"
       }
     }
+  },
+  "categoryWeightedDistance": "Distancia lastrada",
+  "@categoryWeightedDistance": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryWeightedDuration": "Duración lastrada",
+  "@categoryWeightedDuration": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "metresShort": "m",
+  "@metresShort": {
+    "description": "Short unit label, metres: a carry's distance in metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "yardsShort": "yd",
+  "@yardsShort": {
+    "description": "Short unit label, yards: a carry's distance in imperial",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternLoadedCarry": "Acarreo con carga",
+  "@patternLoadedCarry": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternSledPushDrag": "Empuje y arrastre de trineo",
+  "@patternSledPushDrag": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
   }
 }
