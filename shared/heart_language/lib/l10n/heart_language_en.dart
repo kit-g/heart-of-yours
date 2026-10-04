@@ -2224,6 +2224,15 @@ class LEn extends L {
 
   @override
   String get clearRpe => 'Clear RPE';
+
+  @override
+  String get keepAwake => 'Keep screen awake';
+
+  @override
+  String get keepAwakeSubtitle => 'The screen stays on through your workout';
+
+  @override
+  String get keepAwakeBadge => 'Screen stays awake';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4445,4 +4454,13 @@ class LEnCa extends LEn {
 
   @override
   String get clearRpe => 'Clear RPE';
+
+  @override
+  String get keepAwake => 'Keep screen awake';
+
+  @override
+  String get keepAwakeSubtitle => 'The screen stays on through your workout';
+
+  @override
+  String get keepAwakeBadge => 'Screen stays awake';
 }

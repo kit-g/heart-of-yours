@@ -4062,5 +4062,23 @@
     "description": "Tooltip on the button beside the RPE heading in the set-number popup that removes the set's rating; shown only while it has one",
     "type": "text",
     "placeholders": {}
+  },
+  "keepAwake": "Mantener la pantalla encendida",
+  "@keepAwake": {
+    "description": "Title of the opt-in screen wake lock feature in Settings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "keepAwakeSubtitle": "La pantalla sigue encendida durante tu entrenamiento",
+  "@keepAwakeSubtitle": {
+    "description": "Subtitle under the keep-screen-awake switch in Settings › Features, saying what it does",
+    "type": "text",
+    "placeholders": {}
+  },
+  "keepAwakeBadge": "La pantalla sigue encendida",
+  "@keepAwakeBadge": {
+    "description": "Read by screen readers on the Workout tab while Keep screen awake is holding the screen on during a workout",
+    "type": "text",
+    "placeholders": {}
   }
 }
