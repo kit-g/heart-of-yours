@@ -280,6 +280,65 @@ void main() {
       expect(first.weight, closeTo(61.2, 0.1));
     });
 
+    testWidgets('pause and resume from the wrist go through Workouts, placed when they happened (#134)', (
+      tester,
+    ) async {
+      preferences.setFeature(.pauseWorkout, on: true);
+      await timers.setRestTimer('id-bench', 90);
+      await running(tester, prepare: (workout) => workout.start = workout.start.subtract(const Duration(minutes: 10)));
+      expect((link.sent.last as WatchWorkout).pausable, isTrue);
+      final first = workout.first.first;
+      // ticked a minute ago: a pause placed earlier than the last tick would
+      // be moved up to it
+      final ticked = DateTime.now().subtract(const Duration(minutes: 1));
+      link.command(WatchComplete(workout.id, setId: first.id, weight: 60, reps: 5, at: ticked));
+      await tester.pump();
+      expect(alarms.activeExerciseId, isNotNull);
+
+      final paused = DateTime.now().subtract(const Duration(seconds: 30));
+      link.command(WatchPauseWorkout(workout.id, at: paused));
+      await tester.pump();
+
+      expect(workouts.pausedAt, paused.toUtc(), reason: 'when the wrist said, not when the phone heard');
+      expect(alarms.activeExerciseId, isNull, reason: 'a pause skips the rest, as on the phone');
+      expect((link.sent.last as WatchWorkout).workout.pausedAt, paused.toUtc());
+
+      final resumed = DateTime.now();
+      link.command(WatchResumeWorkout(workout.id, at: resumed));
+      await tester.pump();
+
+      expect(workouts.isPaused, isFalse);
+      final sent = link.sent.last as WatchWorkout;
+      expect(sent.workout.pausedAt, isNull);
+      expect(sent.pauses.single, (start: paused.toUtc(), end: resumed.toUtc()));
+      expect(sent.workout.clockStart, workout.start.add(resumed.difference(paused)));
+    });
+
+    testWidgets('off, the watch is offered no pause, and one it sends anyway does nothing (#134)', (tester) async {
+      await running(tester);
+      expect((link.sent.last as WatchWorkout).pausable, isFalse);
+
+      link.command(WatchPauseWorkout(workout.id));
+      await tester.pump();
+
+      expect(workouts.isPaused, isFalse);
+    });
+
+    testWidgets('a tick from the wrist while paused resumes the workout at the tick (#134)', (tester) async {
+      preferences.setFeature(.pauseWorkout, on: true);
+      await running(tester, prepare: (workout) => workout.start = workout.start.subtract(const Duration(minutes: 10)));
+      final paused = DateTime.now().subtract(const Duration(minutes: 2));
+      await workouts.pause(at: paused);
+      final ticked = DateTime.now().subtract(const Duration(minutes: 1));
+
+      link.command(WatchComplete(workout.id, setId: workout.first.first.id, weight: 60, reps: 5, at: ticked));
+      await tester.pump();
+
+      expect(workouts.isPaused, isFalse);
+      expect(workouts.activeWorkout!.pauses.single.end, ticked.toUtc());
+      alarms.stopActiveExerciseTimer();
+    });
+
     testWidgets('a second tick for the same set changes nothing, and is answered', (tester) async {
       await running(tester);
       final first = workout.first.first;
@@ -569,22 +628,36 @@ void main() {
 
   test('a workout state carries finished copy and instants, nothing to translate', () {
     final start = DateTime.utc(2026, 9, 27, 10);
-    final state = WatchWorkout((
-      workoutId: 'w1',
-      startedAt: start,
-      title: 'Push day',
-      exercise: 'Bench Press (Barbell)',
-      next: 'Next: set 2',
-      rest: (start: start, end: start.add(const Duration(seconds: 90)), label: 'Rest', over: 'Rest complete!'),
-      preset: .forge,
-      stopwatch: null,
-      channel: 'Workout in progress',
-    ), activity: 'strength');
+    final state = WatchWorkout(
+      (
+        workoutId: 'w1',
+        startedAt: start,
+        clockStart: start.add(const Duration(minutes: 3)),
+        pausedAt: start.add(const Duration(minutes: 20)),
+        pausedLabel: 'Paused',
+        title: 'Push day',
+        exercise: 'Bench Press (Barbell)',
+        next: 'Next: set 2',
+        rest: (start: start, end: start.add(const Duration(seconds: 90)), label: 'Rest', over: 'Rest complete!'),
+        preset: .forge,
+        stopwatch: null,
+        channel: 'Workout in progress',
+      ),
+      activity: 'strength',
+      pausable: true,
+      pauses: [(start: start, end: start.add(const Duration(minutes: 3)))],
+    );
 
     final map = state.toMap();
     expect(map['activity'], 'strength', reason: 'what the watch measures the session as (#184)');
     expect(map['state'], 'workout');
-    expect(map['startedAt'], start.millisecondsSinceEpoch);
+    expect(map['startedAt'], start.millisecondsSinceEpoch, reason: 'the session begins at the true start');
+    expect(map['clockStart'], start.add(const Duration(minutes: 3)).millisecondsSinceEpoch);
+    expect(map['pausedAt'], start.add(const Duration(minutes: 20)).millisecondsSinceEpoch);
+    expect(map['pausable'], isTrue);
+    expect(map['pauses'], [
+      {'start': start.millisecondsSinceEpoch, 'end': start.add(const Duration(minutes: 3)).millisecondsSinceEpoch},
+    ]);
     expect(map['restEnd'], start.add(const Duration(seconds: 90)).millisecondsSinceEpoch);
     expect(map['restOver'], 'Rest complete!');
     expect(map.containsKey('channel'), isFalse, reason: "Android's channel name means nothing on a watch");

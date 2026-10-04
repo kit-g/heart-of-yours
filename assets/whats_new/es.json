@@ -13,6 +13,11 @@
         "body": "Valora lo duro que fue cada serie, del 6 al 10, desde el menú de su número."
       },
       {
+        "id": "pause-workout",
+        "title": "Pausar un entrenamiento",
+        "body": "Detén el reloj desde el menú **⋯** del entrenamiento. Marcar una serie lo pone en marcha otra vez. ¿Dejaste un entrenamiento abierto? Ábrelo desde el recordatorio y te ofrecerá terminarlo en tu última serie."
+      },
+      {
         "id": "workout-note",
         "title": "Una nota para todo el entrenamiento",
         "body": "Añádela desde el menú **⋯** del entrenamiento. Aparece en su tarjeta en el Historial."

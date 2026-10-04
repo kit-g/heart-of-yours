@@ -381,6 +381,80 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? a
   return finishing;
 }
 
+/// Set by the idle reminder's tap (#134); the active workout's sheet raises
+/// the offer once it is up, and clears it.
+final _finishAtLastSetRequested = ValueNotifier(false);
+
+/// Asks the active workout's sheet to offer [offerFinishAtLastSet] when it is
+/// next on screen — at once, if it already is.
+void requestFinishAtLastSet() => _finishAtLastSetRequested.value = true;
+
+/// A workout left running, opened from the idle reminder (#134): offered to
+/// end at its last set, with pausing on and a set ticked. Off, or with nothing
+/// ticked to place the end at, the reminder opens the workout and no more.
+Future<void> offerFinishAtLastSet(BuildContext context, Workouts workouts) async {
+  if (!Preferences.of(context).isOn(.pauseWorkout)) return;
+  if (workouts.lastTickedAt case DateTime at) {
+    await _showFinishAtLastSetDialog(context, workouts, at);
+  }
+}
+
+/// Offers to end the active workout at its last set, [at], rather than now. Finishing goes the one finish
+/// way, back in time, which cuts any pause taken since; anything not ticked by
+/// then is not kept, as with any finish. "Keep going" leaves it as it was.
+Future<void> _showFinishAtLastSetDialog(BuildContext context, Workouts workouts, DateTime at) {
+  final l = L.of(context);
+  return showBrandedDialog(
+    context,
+    title: Text(l.finishedAtTitle(DateFormat.jm(l.localeName).format(at.toLocal()))),
+    titleTextStyle: Theme.of(context).textTheme.titleMedium,
+    // the colours read inside the dialog, so a theme switched under it follows
+    icon: Builder(
+      builder: (context) {
+        return Icon(Icons.history_toggle_off_rounded, color: Theme.of(context).colorScheme.onPrimaryContainer);
+      },
+    ),
+    content: Text(l.finishedAtBody, textAlign: .center),
+    actions: [
+      Builder(
+        builder: (dialog) {
+          return Column(
+            spacing: 8,
+            children: [
+              PrimaryButton.wide(
+                key: WorkoutDetailKeys.keepGoing,
+                backgroundColor: Theme.of(dialog).colorScheme.surfaceContainerHighest,
+                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                child: Center(child: Text(l.keepGoing)),
+              ),
+              PrimaryButton.wide(
+                key: WorkoutDetailKeys.finishAtLastSet,
+                onPressed: () {
+                  Navigator.of(context, rootNavigator: true).pop();
+                  finishWorkout(context, workouts, at: at);
+                },
+                child: Center(child: Text(l.finish)),
+              ),
+            ],
+          );
+        },
+      ),
+    ],
+  );
+}
+
+/// Pauses the active workout [at] (#134) — the phone's menu and the watch both
+/// come through here. A rest running then is skipped: its clock has stopped
+/// with the workout's, and its notification would call the user back to a
+/// workout they stepped away from.
+Future<void> pauseActiveWorkout(BuildContext context, {DateTime? at}) async {
+  final workouts = Workouts.of(context);
+  // a pause that will be refused leaves the rest running
+  if (!workouts.canPause) return;
+  Alarms.of(context).stopActiveExerciseTimer();
+  return workouts.pause(at: at);
+}
+
 Future<void> showDeleteImageDialog(
   BuildContext context,
   Workout workout,

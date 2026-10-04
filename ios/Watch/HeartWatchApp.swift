@@ -37,6 +37,10 @@ struct HeartWatchApp: App {
                 .task(id: RestTrigger(end: phone.state.restEnd, measuring: session.measuring)) {
                     session.rest(endingAt: phone.state.restEnd)
                 }
+                // the session pauses with the workout (#134)
+                .task(id: PauseTrigger(paused: phone.state.paused, measuring: session.measuring)) {
+                    session.follow(paused: phone.state.paused)
+                }
         }
     }
 }
@@ -63,11 +67,24 @@ private struct RestTrigger: Equatable {
     let measuring: Bool
 }
 
+/// Whether the workout is paused, and whether there is a session to pause.
+private struct PauseTrigger: Equatable {
+    let paused: Bool
+    let measuring: Bool
+}
+
 private extension WatchState {
     var restEnd: Date? {
         switch self {
         case .workout(let workout): workout.rest?.window.upperBound
         default: nil
+        }
+    }
+
+    var paused: Bool {
+        switch self {
+        case .workout(let workout): workout.pausedAt != nil
+        default: false
         }
     }
 }

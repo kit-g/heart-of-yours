@@ -126,7 +126,17 @@ typedef WatchControls = ({
   /// and what the watch says after a workout it finished on its own.
   String sending,
   String finishedAway,
+
+  /// Stopping and starting the workout's clock (#134), and the word for a
+  /// stopped one.
+  String pause,
+  String resume,
+  String paused,
 });
+
+/// A pause the workout has closed (#134), for the watch's workout session to
+/// record when it joins a workout already under way.
+typedef WatchPause = ({DateTime start, DateTime end});
 
 /// A workout is running: the same summary the lock screen shows, plus the set
 /// up next and the copy for the controls that act on it.
@@ -142,13 +152,39 @@ final class WatchWorkout extends WatchState {
   /// The whole workout, for the watch's second page (#183).
   final List<WatchExercise> exercises;
 
-  const new(this.workout, {this.set, this.controls, this.activity, this.exercises = const []});
+  /// Whether the watch offers to pause (#134): the feature's answer, so off it
+  /// shows no control, as the phone does not.
+  final bool pausable;
+
+  /// The pauses the workout has closed (#134).
+  final List<WatchPause> pauses;
+
+  const new(
+    this.workout, {
+    this.set,
+    this.controls,
+    this.activity,
+    this.exercises = const [],
+    this.pausable = false,
+    this.pauses = const [],
+  });
 
   @override
   Map<String, Object?> toMap() {
-    final OngoingWorkout(:workoutId, :startedAt, :title, :exercise, :next, :rest, :preset) = workout;
+    final OngoingWorkout(:workoutId, :startedAt, :clockStart, :pausedAt, :title, :exercise, :next, :rest, :preset) =
+        workout;
     return {
       'activity': ?activity,
+      // the clock: where it counts from, and where it stands while paused.
+      // `startedAt` stays the true start, which the watch's workout session
+      // begins at
+      'clockStart': clockStart.millisecondsSinceEpoch,
+      'pausedAt': ?pausedAt?.millisecondsSinceEpoch,
+      'pausable': pausable,
+      'pauses': [
+        for (final pause in pauses)
+          {'start': pause.start.millisecondsSinceEpoch, 'end': pause.end.millisecondsSinceEpoch},
+      ],
       if (set case WatchSet set) ...{
         'exerciseId': set.exerciseId,
         'setId': set.setId,
@@ -208,6 +244,9 @@ final class WatchWorkout extends WatchState {
         'idle': controls.idle,
         'sending': controls.sending,
         'finishedAway': controls.finishedAway,
+        'pause': controls.pause,
+        'resume': controls.resume,
+        'paused': controls.paused,
       },
       'state': 'workout',
       'workoutId': workoutId,
@@ -233,7 +272,7 @@ final class WatchWorkout extends WatchState {
   bool operator ==(Object other) => other is WatchWorkout && _same(toMap(), other.toMap());
 
   @override
-  int get hashCode => Object.hash(workout, set, controls, activity, exercises.length);
+  int get hashCode => Object.hash(workout, set, controls, activity, exercises.length, pausable, pauses.length);
 }
 
 /// Deep equality over what [WatchState.toMap] produces: maps, lists and scalars.
@@ -293,6 +332,8 @@ sealed class WatchCommand {
         seconds: seconds.toInt(),
         at: at,
       ),
+      {'action': 'pause', 'workoutId': String workoutId} => WatchPauseWorkout(workoutId, at: at),
+      {'action': 'resume', 'workoutId': String workoutId} => WatchResumeWorkout(workoutId, at: at),
       _ => null,
     };
   }
@@ -339,6 +380,16 @@ final class WatchAdjustRest extends WatchCommand {
   final int seconds;
 
   const new(super.workoutId, {required this.seconds, super.at});
+}
+
+/// Stop the workout's clock (#134), as the phone's menu does.
+final class WatchPauseWorkout extends WatchCommand {
+  const new(super.workoutId, {super.at});
+}
+
+/// Start a paused workout's clock again.
+final class WatchResumeWorkout extends WatchCommand {
+  const new(super.workoutId, {super.at});
 }
 
 /// No workout is running, or the switch is off: one line saying so.

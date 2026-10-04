@@ -22,7 +22,21 @@ typedef OngoingRest = ({DateTime start, DateTime end, String label, String over}
 /// what lets the caller skip redundant platform calls.
 typedef OngoingWorkout = ({
   String workoutId,
+
+  /// When the workout began, as a wall-clock time. Not where its clock counts
+  /// from once it has been paused: that is [clockStart].
   DateTime startedAt,
+
+  /// Where the elapsed clock counts from: [startedAt] moved on by every pause
+  /// the workout has closed (#134).
+  DateTime clockStart,
+
+  /// While the workout is paused, when it was: the clock stands at
+  /// `pausedAt − clockStart` until it runs again.
+  DateTime? pausedAt,
+
+  /// "Paused", for a stopped clock.
+  String pausedLabel,
   String title,
   String exercise,
   String next,
@@ -94,6 +108,9 @@ class _LiveActivity implements OngoingWorkoutSurface {
       {
         'workoutId': workout.workoutId,
         'startedAt': workout.startedAt.millisecondsSinceEpoch,
+        'clockStart': workout.clockStart.millisecondsSinceEpoch,
+        'pausedAt': ?workout.pausedAt?.millisecondsSinceEpoch,
+        'pausedLabel': workout.pausedLabel,
         'title': workout.title,
         'exercise': workout.exercise,
         'next': workout.next,

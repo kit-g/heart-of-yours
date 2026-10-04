@@ -15,6 +15,12 @@
         "feature": "rpe"
       },
       {
+        "id": "pause-workout",
+        "title": "Pause a workout",
+        "body": "Stop the clock from the workout's **⋯** menu. Ticking a set starts it again. Left a workout running? Open it from the reminder and it offers to end at your last set.",
+        "feature": "pauseWorkout"
+      },
+      {
         "id": "workout-note",
         "title": "A note on the whole workout",
         "body": "Add one from the workout's **⋯** menu. It shows on the workout's card in History."
