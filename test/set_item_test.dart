@@ -121,11 +121,9 @@ void main() {
     Finder play(ExerciseSet set) => inRow(set, find.byIcon(Icons.play_arrow_rounded));
     Finder tick(ExerciseSet set) => inRow(set, find.byIcon(Icons.done));
 
-    /// ▶ opens the stopwatch idle; Start runs it.
+    /// ▶ starts the stopwatch and shows it counting.
     Future<void> start(WidgetTester tester, ExerciseSet set) async {
       await tester.tap(play(set));
-      await tester.pumpTimes();
-      await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.text('Start')));
       await tester.pumpTimes();
     }
 
@@ -210,7 +208,7 @@ void main() {
       await tester.pumpTimes();
     });
 
-    testWidgets('done before it ever ran ticks with the time the set holds; ticked, ✓ unticks', (tester) async {
+    testWidgets('▶ starts counting at once; ticked, ✓ unticks', (tester) async {
       final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
       final workout = three(exercise);
       final set = workout.first.first..setMeasurements(duration: 45);
@@ -218,30 +216,16 @@ void main() {
       Preferences.of(context).setFeature(.setStopwatch, on: true);
       await tester.pumpTimes();
 
-      await tester.tap(play(set));
-      await tester.pumpTimes();
-      expect(find.descendant(of: find.byType(Dialog), matching: find.text('Start')), findsOneWidget);
+      await start(tester, set);
+      expect(Workouts.of(context).stopwatch.isTiming(set), isTrue);
+      expect(find.descendant(of: find.byType(Dialog), matching: find.text('Pause')), findsOneWidget);
       await dialogButton(tester, 'Done');
       expect(set.isCompleted, isTrue);
-      expect(set.duration, 45);
-      expect(Workouts.of(context).stopwatch.isRunning, isFalse);
 
       await tester.tap(tick(set));
       await tester.pumpTimes();
       expect(set.isCompleted, isFalse);
       expect(play(set), findsOneWidget);
-    });
-
-    testWidgets('idle with no time, there is nothing to log: no Done', (tester) async {
-      final exercise = Exercise(name: 'Plank', category: .duration, target: .core);
-      final workout = three(exercise);
-      final context = await startWorkoutOn(tester, workout);
-      Preferences.of(context).setFeature(.setStopwatch, on: true);
-      await tester.pumpTimes();
-      await tester.tap(play(workout.first.first));
-      await tester.pumpTimes();
-      expect(find.descendant(of: find.byType(Dialog), matching: find.text('Done')), findsNothing);
-      await dialogButton(tester, 'Cancel');
     });
 
     testWidgets('closed, it runs on in the row: ■ in the done column brings it back', (tester) async {

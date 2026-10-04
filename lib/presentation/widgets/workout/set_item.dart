@@ -326,11 +326,16 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                           if (widget.onSetDone != null) {
                             widget.onSetDone?.call(exercise, set);
                           } else {
-                            switch (_opensStopwatch) {
-                              // ▶ and ■ both open the stopwatch; ✓ ticks and unticks as ever
-                              case true:
+                            switch ((_timing, _canStartStopwatch)) {
+                              // ■ brings the running stopwatch back
+                              case (true, _):
                                 _openStopwatch();
-                              case false:
+                              // ▶ starts it, and shows it counting
+                              case (false, true):
+                                _startStopwatch();
+                                _openStopwatch();
+                              // ✓ ticks and unticks as ever
+                              case _:
                                 _onDone(context);
                             }
                           }
@@ -545,9 +550,6 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   /// or typed time is the target the stopwatch fills toward — while no other
   /// set is being timed. Another set's stopwatch leaves it a plain ✓.
   bool get _canStartStopwatch => _stopwatchOn && !set.isCompleted && !workouts.stopwatch.isRunning;
-
-  /// The done button opens the stopwatch rather than ticking: ▶ or ■.
-  bool get _opensStopwatch => _timing || _canStartStopwatch;
 
   void _startStopwatch() {
     final workout = workouts.activeWorkout;
