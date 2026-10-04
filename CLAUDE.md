@@ -69,6 +69,19 @@ strings, Play declaration, `site/privacy.html` in heart-api) are in
 `docs/2026-09-05.health-data.md`. Read it before touching `Health.tracked`, the
 workout write-back, or anything that stores a health value.
 
+## Tickets across the boundary
+Each repo owns its own code. A ticket filed in `heart-api` is a **request**: it lists what the app
+needs to exist (data, fields, endpoints, behaviour, limits), to be met on a best-effort basis. It
+never says how — no file lists, schemas, migrations, method signatures, task checklists or
+backend design. Hard constraints go in only when there is an objective reason (a breaking change,
+the device-only health rule, a published contract), and the reason goes with them.
+
+Reading a ticket that came from the `heart-api` side, take its specifics as the filer's best
+guess, not a spec. Assess it as what this repo has to build to satisfy the need, briefly; don't
+review the ticket.
+
+Label every ticket an agent files `agent-filed`, in either repo.
+
 ## Style
 `docs/style.md` is what the linter cannot say: switch expressions over
 ternaries, `Iterable` methods over index loops, dot-shorthand constructors, no
