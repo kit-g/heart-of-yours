@@ -1683,6 +1683,18 @@ class LFr extends L {
   String get categoryBarbell => 'Barre';
 
   @override
+  String get categoryWeightedDistance => 'Distance lestée';
+
+  @override
+  String get categoryWeightedDuration => 'Durée lestée';
+
+  @override
+  String get metresShort => 'm';
+
+  @override
+  String get yardsShort => 'yd';
+
+  @override
   String get targetCore => 'Core';
 
   @override
@@ -1843,6 +1855,12 @@ class LFr extends L {
 
   @override
   String get patternVerticalPull => 'Tirage vertical';
+
+  @override
+  String get patternLoadedCarry => 'Porté de charge';
+
+  @override
+  String get patternSledPushDrag => 'Poussée et tirage de traîneau';
 
   @override
   String upsyncRunning(Object done, Object total) {

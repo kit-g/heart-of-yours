@@ -4148,5 +4148,41 @@
         "type": "int"
       }
     }
+  },
+  "categoryWeightedDistance": "Distance lestée",
+  "@categoryWeightedDistance": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "categoryWeightedDuration": "Durée lestée",
+  "@categoryWeightedDuration": {
+    "description": "Exercise category (equipment/measurement kind) label",
+    "type": "text",
+    "placeholders": {}
+  },
+  "metresShort": "m",
+  "@metresShort": {
+    "description": "Short unit label, metres: a carry's distance in metric",
+    "type": "text",
+    "placeholders": {}
+  },
+  "yardsShort": "yd",
+  "@yardsShort": {
+    "description": "Short unit label, yards: a carry's distance in imperial",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternLoadedCarry": "Porté de charge",
+  "@patternLoadedCarry": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "patternSledPushDrag": "Poussée et tirage de traîneau",
+  "@patternSledPushDrag": {
+    "description": "Movement pattern label (filter sheet chip and About-tab chip)",
+    "type": "text",
+    "placeholders": {}
   }
 }
