@@ -41,6 +41,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
 
     final preferences = Preferences.watch(context);
+    final previous = PreviousExercises.watch(context);
 
     return CustomScrollView(
       key: AppKeys.exercisePicker,
@@ -274,26 +275,52 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
             valueListenable: searchController,
             builder: (_, value, _) {
               final mine = exercises.showingMine;
-              final found = exercises.search(value.text, filters: true, isMine: mine).toList();
-              return SliverList.separated(
-                itemCount: found.length,
-                itemBuilder: (_, index) {
-                  final exercise = found[index];
-                  return ExerciseItem(
-                    exercise: exercise,
-                    preferences: preferences,
-                    onExerciseSelected: onExerciseSelected,
-                    selected: exercises.hasSelected(exercise),
-                    highlighted: exercise.id == highlightedName,
-                  );
-                },
-                separatorBuilder: (_, _) {
-                  return const Divider(
-                    height: 0,
-                    indent: 16,
-                    endIndent: 16,
-                  );
-                },
+              // Typing ranks what it finds by how well it matched, then by
+              // what was done last (#135). Before any typing, the last few
+              // done sit above the whole library, which keeps its own order.
+              final searching = value.text.trim().isNotEmpty;
+              final recent = searching
+                  ? const <Exercise>[]
+                  : exercises.recent(previous.lastDone, filters: true, isMine: mine);
+              final found = exercises.search(
+                value.text,
+                filters: true,
+                isMine: mine,
+                lastDone: searching ? previous.lastDone : null,
+              );
+
+              SliverList list(List<Exercise> exercises) {
+                return SliverList.separated(
+                  itemCount: exercises.length,
+                  itemBuilder: (_, index) {
+                    final exercise = exercises[index];
+                    return ExerciseItem(
+                      exercise: exercise,
+                      preferences: preferences,
+                      onExerciseSelected: onExerciseSelected,
+                      selected: this.exercises.hasSelected(exercise),
+                      highlighted: exercise.id == highlightedName,
+                    );
+                  },
+                  separatorBuilder: (_, _) {
+                    return const Divider(
+                      height: 0,
+                      indent: 16,
+                      endIndent: 16,
+                    );
+                  },
+                );
+              }
+
+              return SliverMainAxisGroup(
+                slivers: [
+                  if (recent.isNotEmpty) ...[
+                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerRecent)),
+                    list(recent),
+                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
+                  ],
+                  list(found),
+                ],
               );
             },
           ),
@@ -398,6 +425,28 @@ class _MovementFilterButton extends StatelessWidget {
           onPressed: () => showMovementFilterSheet(context, exercises),
         );
       },
+    );
+  }
+}
+
+/// A section's name over its part of the list, in the History month headers'
+/// face.
+class _SectionHeader extends StatelessWidget {
+  final String label;
+
+  const new(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      header: true,
+      child: Padding(
+        padding: const .fromLTRB(16, 16, 16, 8),
+        child: Text(
+          label.toUpperCase(),
+          style: Theme.of(context).sectionHeader,
+        ),
+      ),
     );
   }
 }

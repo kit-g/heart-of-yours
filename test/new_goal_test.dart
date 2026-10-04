@@ -87,6 +87,10 @@ void main() {
           ChangeNotifierProvider<Preferences>.value(value: preferences),
           // the exercise picker's search field scrolls its results with this
           Provider<Scrolls>.value(value: Scrolls()),
+          // and ranks them by what was done last; nothing has been, here
+          ChangeNotifierProvider<PreviousExercises>(
+            create: (_) => PreviousExercises(service: MockPreviousExerciseService()),
+          ),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,
