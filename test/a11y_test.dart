@@ -404,7 +404,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   // reached from the Exercises tab's options menu.
   (_Screen.newExerciseDialog, _Guideline.labeledTapTarget, null),
   (_Screen.newExerciseDialog, _Guideline.textContrastLight, null),
-  (_Screen.newExerciseDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.newExerciseDialog,
+    _Guideline.textContrastDark,
+    'the Name/Target/Category labels sit in the body scroll view (new_exercise_dialog.dart:120) and are measured '
+        'at their scroll-local rect (16,16), not on screen; a dark-mode simulator capture shows them light on the card',
+  ),
   (_Screen.newExerciseDialog, _Guideline.androidTapTarget, null),
   (_Screen.newExerciseDialog, _Guideline.iosTapTarget, null),
 
