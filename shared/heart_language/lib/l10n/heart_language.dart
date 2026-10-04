@@ -3885,6 +3885,24 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Clear RPE'**
   String get clearRpe;
+
+  /// Title of the opt-in screen wake lock feature in Settings
+  ///
+  /// In en, this message translates to:
+  /// **'Keep screen awake'**
+  String get keepAwake;
+
+  /// Subtitle under the keep-screen-awake switch in Settings › Features, saying what it does
+  ///
+  /// In en, this message translates to:
+  /// **'The screen stays on through your workout'**
+  String get keepAwakeSubtitle;
+
+  /// Read by screen readers on the Workout tab while Keep screen awake is holding the screen on during a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Screen stays awake'**
+  String get keepAwakeBadge;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -2234,4 +2234,13 @@ class LFr extends L {
 
   @override
   String get clearRpe => 'Effacer le RPE';
+
+  @override
+  String get keepAwake => 'Garder l’écran allumé';
+
+  @override
+  String get keepAwakeSubtitle => 'L’écran reste allumé pendant votre séance';
+
+  @override
+  String get keepAwakeBadge => 'L’écran reste allumé';
 }

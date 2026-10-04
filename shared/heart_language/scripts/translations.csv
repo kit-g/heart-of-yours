@@ -714,3 +714,6 @@ rpeScale6,"RPE scale, one line: at 6 four or more reps were left",6: four or mor
 rpeBadge,"Tiny badge in a set's last value cell showing its RPE, e.g. '@8'. Keep the @ unless the language marks it differently",@{value},@{value},@{value},@{value},@{value}
 rpeValue,"An RPE with its value, e.g. 'RPE 8.5': on the RPE key once the set is rated, and read by screen readers",RPE {value},RPE {value},RPE {value},RPE {value},RPE {value}
 clearRpe,Tooltip on the button beside the RPE heading in the set-number popup that removes the set's rating; shown only while it has one,Clear RPE,Clear RPE,Сбросить RPE,Quitar RPE,Effacer le RPE
+keepAwake,Title of the opt-in screen wake lock feature in Settings,Keep screen awake,Keep screen awake,Не выключать экран,Mantener la pantalla encendida,Garder l’écran allumé
+keepAwakeSubtitle,"Subtitle under the keep-screen-awake switch in Settings › Features, saying what it does",The screen stays on through your workout,The screen stays on through your workout,Экран не гаснет во время тренировки,La pantalla sigue encendida durante tu entrenamiento,L’écran reste allumé pendant votre séance
+keepAwakeBadge,Read by screen readers on the Workout tab while Keep screen awake is holding the screen on during a workout,Screen stays awake,Screen stays awake,Экран не гаснет,La pantalla sigue encendida,L’écran reste allumé
