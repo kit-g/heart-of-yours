@@ -75,4 +75,46 @@ void main() {
 
     expect(await local.getCatalogStamp(), isNull);
   });
+
+  group('search vocabulary (#135)', () {
+    const glossary = {
+      'db': {
+        'words': ['dumbbell'],
+      },
+      'lats': {
+        'muscles': ['latissimus_dorsi'],
+      },
+    };
+
+    test('aliases round-trip, and an empty list clears the old ones', () async {
+      await storeCatalog([
+        exercise(name: 'Overhead Press', aliases: ['ohp', 'military press']),
+      ], stamp);
+      var (_, stored) = await local.getExercises();
+      expect(stored.single.aliases, ['ohp', 'military press']);
+
+      await storeCatalog([exercise(name: 'Overhead Press', aliases: [])], stamp);
+      (_, stored) = await local.getExercises();
+      expect(stored.single.aliases, isEmpty);
+    });
+
+    test('the glossary is stored with its catalog and outlives writes that carry none', () async {
+      expect(await local.getSearchGlossary(), isNull);
+
+      await local.storeExercises(
+        [exercise(name: 'Push Up')],
+        locale: stamp.locale,
+        version: stamp.version,
+        etag: stamp.etag,
+        glossary: glossary,
+      );
+      expect(await local.getSearchGlossary(), glossary);
+
+      // a stamp-only write (the locale file was byte-identical) and one
+      // user-created exercise both leave it alone
+      await storeCatalog(const [], (version: 'run-2', locale: 'es_ES', etag: null));
+      await local.storeExercises([exercise(name: 'My Curl')], userId: 'u1');
+      expect(await local.getSearchGlossary(), glossary);
+    });
+  });
 }

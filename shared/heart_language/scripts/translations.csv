@@ -743,3 +743,5 @@ finishedAtBody,Body of the dialog that offers to end a forgotten workout at the 
 keepGoing,"Button in the dialog that offers to end a forgotten workout at its last set: declines, and the workout carries on",Keep going,Keep going,Продолжить,Seguir,Continuer
 watchPause,Apple Watch button that stops the workout clock. Short: it is a watch screen,Pause,Pause,Пауза,Pausar,Pause
 watchResume,Apple Watch button that starts a paused workout's clock again. Short: it is a watch screen,Resume,Resume,Дальше,Reanudar,Reprendre
+pickerRecent,"Exercise picker section header: the exercises the user did most recently, shown before they type",Recent,Recent,Недавние,Recientes,Récents
+pickerAllExercises,"Exercise picker section header: the whole library, below the Recent section",All exercises,All exercises,Все упражнения,Todos los ejercicios,Tous les exercices

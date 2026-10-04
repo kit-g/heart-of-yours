@@ -13,6 +13,10 @@ import 'remote.dart';
 /// conditional re-fetch when only the version moved.
 typedef CatalogStamp = ({String version, String locale, String? etag});
 
+/// One locale file of the library: its exercises, and the words lifters search
+/// them by — abbreviations and muscle names — in that locale (#135).
+typedef CatalogLibrary = ({Iterable<Exercise> exercises, SearchGlossary glossary});
+
 /// The exercise library as the CDN publishes it: static, unauthenticated,
 /// one file per locale behind a manifest. Both modes read it — an anonymous
 /// session never talks to heart-api, and a signed-in one no longer reads the
@@ -24,7 +28,7 @@ typedef CatalogStamp = ({String version, String locale, String? etag});
 abstract interface class ExerciseLibraryService {
   /// The library, or `null` when the copy [cached] describes is still
   /// current — and either way the stamp the cache should carry from now on.
-  Future<(Iterable<Exercise>?, CatalogStamp)> getLibrary({CatalogStamp? cached});
+  Future<(CatalogLibrary?, CatalogStamp)> getLibrary({CatalogStamp? cached});
 }
 
 /// The per-exercise preferences the account holds — a unit override, a rest
@@ -50,7 +54,11 @@ abstract interface class LocalCatalogService {
 
   /// Upserts the library rows and records [stamp]. An empty [exercises] only
   /// moves the stamp — a publish that left this locale's file byte-identical.
-  Future<void> storeCatalog(Iterable<Exercise> exercises, {required CatalogStamp stamp});
+  /// [glossary] is stored beside the stamp; without one, the stored one stays.
+  Future<void> storeCatalog(Iterable<Exercise> exercises, {required CatalogStamp stamp, SearchGlossary? glossary});
+
+  /// The glossary stored with the catalog; null before one has been.
+  Future<SearchGlossary?> getSearchGlossary();
 }
 
 /// Local pinned defaults and the account write. The pending flag invalidates an old
@@ -79,6 +87,9 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final Future<void> Function(ExerciseId exercise, int seconds)? onRestTimer;
   final _filters = <ExerciseFilter>{};
   final _exercises = <ExerciseId, Exercise>{};
+
+  /// The served locale's search vocabulary, which [search] matches through.
+  SearchGlossary _glossary = .empty();
 
   /// Per-exercise unit overrides for the current user, keyed by exercise id.
   /// In-memory source of truth for [unitFor]; backed per-user by
@@ -127,6 +138,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     isInitialized = false;
     _catalogLocale = null;
     _exercises.clear();
+    _glossary = .empty();
     _selectedExercises.clear();
     _units.clear();
     _notes.clear();
@@ -211,6 +223,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
       if (local.isNotEmpty) {
         _exercises.addAll(local.byId);
+        _glossary = await _catalogService.getSearchGlossary() ?? .empty();
         isInitialized = true;
         notifyListeners();
       }
@@ -260,13 +273,14 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
 
     final (library, stamp) = await _libraryService.getLibrary(cached: cached);
     switch (library) {
-      case Iterable<Exercise> exercises:
+      case (:final exercises, :final glossary):
         final sorted = exercises.toList()..sort();
         _exercises.addAll(sorted.byId);
+        _glossary = glossary;
         // awaited: everything chained behind this init writes rows referencing
         // `exercises.id`, and letting the catalog write stay in flight leaves
         // them racing a parent row that is not committed yet.
-        await _catalogService.storeCatalog(sorted, stamp: stamp);
+        await _catalogService.storeCatalog(sorted, stamp: stamp, glossary: glossary);
       case null when stamp != cached:
         // nothing to download, but the CDN moved on (a publish that left this
         // locale's file byte-identical, say) — record it so the next launch
@@ -351,19 +365,73 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
   }
 
-  Iterable<Exercise> search(String query, {bool filters = false, bool isMine = false}) {
-    bool fitsSearch(Exercise exercise) {
+  /// The exercises [query] finds, best first (#135).
+  ///
+  /// Ranked by how the query matched — the name's start, every word, only
+  /// through an alias or the glossary (`ohp`, `db`, `lats`), only with a typo —
+  /// and within each of those by [lastDone], the exercise done most recently
+  /// first. Recency never lifts a weaker match over a stronger one: a lifter
+  /// typing a new exercise's exact name gets it first. Ties keep the library's
+  /// own order. An empty query matches everything at the top tier, so it ranks
+  /// by recency alone.
+  List<Exercise> search(
+    String query, {
+    bool filters = false,
+    bool isMine = false,
+    DateTime? Function(ExerciseId)? lastDone,
+  }) {
+    bool fits(Exercise exercise) {
       if (exercise.isArchived) return false;
-      final matchesQuery = exercise.contains(query);
       // `fits` handles category and target and passes anything it does not
       // recognise, so the movement dimensions are applied here rather than
       // silently matching everything.
       final matchesFilters = !filters || (exercise.fits(_filters) && exercise.matchesMovement(_filters));
       final matchesOwnership = !isMine || exercise.isMine;
-      return matchesQuery && matchesFilters && matchesOwnership;
+      return matchesFilters && matchesOwnership;
     }
 
-    return _exercises.values.where(fitsSearch);
+    final found = [
+      for (final (order, exercise) in _exercises.values.indexed)
+        if (fits(exercise))
+          if (exercise.match(query, glossary: _glossary) case final SearchMatch match)
+            (exercise: exercise, match: match, done: lastDone?.call(exercise.id), order: order),
+    ];
+
+    found.sort(
+      (a, b) => [
+        a.match.compareTo(b.match),
+        _newestFirst(a.done, b.done),
+        a.order.compareTo(b.order),
+      ].firstWhere((each) => each != 0, orElse: () => 0),
+    );
+    return [for (final each in found) each.exercise];
+  }
+
+  /// Done more recently sorts first, and never done sorts last.
+  static int _newestFirst(DateTime? a, DateTime? b) {
+    return switch ((a, b)) {
+      (DateTime a, DateTime b) => b.compareTo(a),
+      (DateTime _, null) => -1,
+      (null, DateTime _) => 1,
+      (null, null) => 0,
+    };
+  }
+
+  /// The exercises done most recently, newest first: what a lifter most
+  /// often comes to the picker for, shown before they type (#135). Under the
+  /// same filters as [search], and at most [limit] of them.
+  List<Exercise> recent(
+    DateTime? Function(ExerciseId) lastDone, {
+    bool filters = false,
+    bool isMine = false,
+    int limit = 5,
+  }) {
+    return search(
+      '',
+      filters: filters,
+      isMine: isMine,
+      lastDone: lastDone,
+    ).takeWhile((each) => lastDone(each.id) != null).take(limit).toList();
   }
 
   Exercise? lookup(ExerciseId id) {

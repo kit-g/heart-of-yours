@@ -60,4 +60,13 @@ class PreviousExercises with ChangeNotifier implements SignOutStateSentry {
   Map<String, dynamic>? last(ExerciseId exerciseId) {
     return _previous[exerciseId]?.lastOrNull;
   }
+
+  /// When [exerciseId] was last done: the start of the newest session with a
+  /// completed set of it. Null for one never done. Search ranks by it (#135).
+  DateTime? lastDone(ExerciseId exerciseId) {
+    return switch (_previous[exerciseId]?.firstOrNull?['workout_start']) {
+      String start => DateTime.tryParse(start),
+      _ => null,
+    };
+  }
 }

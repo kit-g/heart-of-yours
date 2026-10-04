@@ -256,3 +256,14 @@ Future<T?> showBottomMenu<T>(BuildContext context, List<BottomMenuAction> action
       );
   }
 }
+
+extension SectionHeaderStyle on ThemeData {
+  /// The face of a list's section names: History's months, the exercise
+  /// picker's Recent and All exercises. Set in capitals by the caller.
+  TextStyle? get sectionHeader {
+    return textTheme.labelLarge?.copyWith(
+      color: colorScheme.primary,
+      fontWeight: .bold,
+    );
+  }
+}

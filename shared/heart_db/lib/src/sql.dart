@@ -535,7 +535,9 @@ SELECT
             'reps', s.reps,
             'duration', s.duration,
             'distance', s.distance,
-            'set_type', s.set_type
+            'set_type', s.set_type,
+            -- when last time was: the picker ranks search results by it (#135)
+            'workout_start', _recent.last_workout_date
         )
     ) AS sets
 FROM _recent

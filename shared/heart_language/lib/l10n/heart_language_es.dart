@@ -993,6 +993,12 @@ class LEs extends L {
   String get chartRangeAll => 'Todo';
 
   @override
+  String get pickerRecent => 'Recientes';
+
+  @override
+  String get pickerAllExercises => 'Todos los ejercicios';
+
+  @override
   String get chartGenericLabel => 'Gráfico';
 
   @override

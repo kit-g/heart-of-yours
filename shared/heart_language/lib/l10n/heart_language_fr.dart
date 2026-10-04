@@ -994,6 +994,12 @@ class LFr extends L {
   String get chartRangeAll => 'Tout';
 
   @override
+  String get pickerRecent => 'Récents';
+
+  @override
+  String get pickerAllExercises => 'Tous les exercices';
+
+  @override
   String get chartGenericLabel => 'Graphique';
 
   @override

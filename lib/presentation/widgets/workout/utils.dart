@@ -360,6 +360,11 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? a
 
   final finishing = workouts.finishActiveWorkout(at: at);
 
+  // "last time" and the picker's recency both read the finished session out
+  // of the mirror; until this they kept the launch's view all session long
+  final previous = PreviousExercises.of(context);
+  unawaited(finishing.then((_) => previous.init()));
+
   // Mirror the session into the device's health store — deliberately not
   // awaited. The user is already looking at the summary screen, and whether
   // HealthKit accepted a courtesy copy is not something a finished workout

@@ -17,6 +17,7 @@ Exercise exercise({
   String category = 'Weighted Body Weight',
   Map<String, dynamic>? movement,
   bool? validated,
+  List<String>? aliases,
 }) {
   return Exercise.fromJson({
     // deterministic per name, so fixtures stay self-consistent across calls
@@ -25,6 +26,7 @@ Exercise exercise({
     'category': category,
     'target': target,
     'validated': ?validated,
+    'aliases': ?aliases,
     'asset': 'https://dev.media.heart-of.me/exercises/$name/asset.gif',
     'assetWidth': 1080,
     'assetHeight': 1080,

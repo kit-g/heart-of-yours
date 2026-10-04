@@ -116,4 +116,9 @@ const _migrations = <int, List<String>>{
     addWorkoutPausedAt,
     addSetCompletedAt,
   ],
+  18: [
+    addExerciseAliases,
+    addCatalogGlossary,
+    invalidateCatalogStamp,
+  ],
 };

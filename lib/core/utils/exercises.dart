@@ -17,7 +17,7 @@ class CdnExerciseLibrary implements ExerciseLibraryService {
   const new(this._cdn);
 
   @override
-  Future<(Iterable<Exercise>?, CatalogStamp)> getLibrary({CatalogStamp? cached}) {
+  Future<(CatalogLibrary?, CatalogStamp)> getLibrary({CatalogStamp? cached}) {
     return _cdn.getExerciseLibrary(cached: cached);
   }
 }
@@ -68,7 +68,21 @@ class LocalCatalog implements LocalCatalogService {
   Future<CatalogStamp?> getCatalogStamp() => _db.getCatalogStamp();
 
   @override
-  Future<void> storeCatalog(Iterable<Exercise> exercises, {required CatalogStamp stamp}) {
-    return _db.storeExercises(exercises, locale: stamp.locale, version: stamp.version, etag: stamp.etag);
+  Future<void> storeCatalog(Iterable<Exercise> exercises, {required CatalogStamp stamp, SearchGlossary? glossary}) {
+    return _db.storeExercises(
+      exercises,
+      locale: stamp.locale,
+      version: stamp.version,
+      etag: stamp.etag,
+      glossary: glossary?.toMap(),
+    );
+  }
+
+  @override
+  Future<SearchGlossary?> getSearchGlossary() async {
+    return switch (await _db.getSearchGlossary()) {
+      Map<String, dynamic> json => SearchGlossary.fromJson(json),
+      null => null,
+    };
   }
 }

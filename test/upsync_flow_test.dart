@@ -68,7 +68,8 @@ void main() {
     // what the re-pull after a finished replay reaches for: the library, so
     // the catalog counts as loaded and the history pull follows
     when(cdn.getExerciseLibrary(cached: anyNamed('cached'))).thenAnswer(
-      (_) async => (<Exercise>[bench], (version: '1', locale: 'en', etag: null)),
+      (_) async =>
+          ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), (version: '1', locale: 'en', etag: null)),
     );
   });
 

@@ -245,4 +245,25 @@ void main() {
       expect(builds, 2);
     });
   });
+
+  test('lastDone is the start of the newest session that has the exercise, and null for none (#135)', () async {
+    final sut = PreviousExercises(
+      service: _FakePreviousService(
+        response: {
+          'squat': [
+            {'weight': 100, 'reps': 5, 'workout_start': '2026-10-03T08:00:00.000Z'},
+          ],
+          // a row from before the column carried its start
+          'plank': [
+            {'duration': 60},
+          ],
+        },
+      ),
+    )..userId = 'user-1';
+    await sut.init();
+
+    expect(sut.lastDone('squat'), DateTime.utc(2026, 10, 3, 8));
+    expect(sut.lastDone('plank'), isNull);
+    expect(sut.lastDone('deadlift'), isNull);
+  });
 }
