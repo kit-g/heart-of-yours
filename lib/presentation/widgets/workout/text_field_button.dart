@@ -230,26 +230,32 @@ class _TextFieldButton extends StatelessWidget {
   /// [child] behind a ▶ that starts the set stopwatch, where one can start.
   Widget _leading(BuildContext context, Widget child) {
     return switch (onStopwatch) {
-      VoidCallback start => Row(
+      // over the cell's leading edge, so the time stays centred as it is in a
+      // cell without one
+      VoidCallback start => Stack(
+        alignment: .center,
         children: [
-          Semantics(
-            button: true,
-            label: stopwatchLabel,
-            excludeSemantics: true,
-            child: InkResponse(
-              onTap: start,
-              radius: 16,
-              child: Padding(
-                padding: const .only(left: 4, right: 2),
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+          child,
+          Align(
+            alignment: .centerLeft,
+            child: Semantics(
+              button: true,
+              label: stopwatchLabel,
+              excludeSemantics: true,
+              child: InkResponse(
+                onTap: start,
+                radius: 16,
+                child: Padding(
+                  padding: const .only(left: 4, right: 2),
+                  child: Icon(
+                    Icons.play_arrow_rounded,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
           ),
-          Expanded(child: child),
         ],
       ),
       null => child,

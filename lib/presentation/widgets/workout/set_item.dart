@@ -369,7 +369,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           Positioned(
             left: 8,
             right: 8,
-            bottom: 1,
+            bottom: 0,
             child: ListenableBuilder(
               listenable: workouts.stopwatch,
               builder: (context, _) {
@@ -378,7 +378,13 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                   true => ValueListenableBuilder<int>(
                     valueListenable: stopwatch.seconds,
                     builder: (_, seconds, _) {
-                      return _StopwatchLine(seconds: seconds, target: set.duration, paused: stopwatch.isPaused);
+                      return _StopwatchLine(
+                        seconds: seconds,
+                        target: set.duration,
+                        paused: stopwatch.isPaused,
+                        // the row's bottom padding, whole
+                        thickness: 4,
+                      );
                     },
                   ),
                   false => const SizedBox.shrink(),
