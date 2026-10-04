@@ -476,7 +476,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     final l = L.of(context);
     final prefs = Preferences.of(context);
     final exercises = Exercises.of(context);
-    final isCardio = exercise.exercise.category == Category.cardio;
+    final isCardio = exercise.exercise.category == .cardio;
     // fall back to the global setting for this dimension when there's no
     // explicit per-exercise override, so the menu always check-marks something.
     final current = exercises.unitFor(exercise.exercise.id) ?? (isCardio ? prefs.distanceUnit : prefs.weightUnit);
