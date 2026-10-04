@@ -64,7 +64,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, null, null, null],
+          [expectedTable, null, null, null, null],
         ),
       ).called(1);
 
@@ -122,7 +122,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, null, null, null],
+          [expectedTable, null, null, null, null],
         ),
       ).called(1);
 
@@ -140,7 +140,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, null, null, null],
+          [expectedTable, null, null, null, null],
         ),
       ).called(1);
 
@@ -178,7 +178,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, 'ru', null, null],
+          [expectedTable, 'ru', null, null, null],
         ),
       ).called(1);
     },
@@ -192,7 +192,7 @@ void main() {
       verify(
         txn.rawInsert(
           argThat(contains('INSERT INTO $expectedSyncTable')),
-          [expectedTable, 'es_ES', 'run-1', 'W/"abc"'],
+          [expectedTable, 'es_ES', 'run-1', 'W/"abc"', null],
         ),
       ).called(1);
     },

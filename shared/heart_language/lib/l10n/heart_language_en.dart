@@ -991,6 +991,12 @@ class LEn extends L {
   String get chartRangeAll => 'All';
 
   @override
+  String get pickerRecent => 'Recent';
+
+  @override
+  String get pickerAllExercises => 'All exercises';
+
+  @override
   String get chartGenericLabel => 'Chart';
 
   @override
@@ -3303,6 +3309,12 @@ class LEnCa extends LEn {
 
   @override
   String get chartRangeAll => 'All';
+
+  @override
+  String get pickerRecent => 'Recent';
+
+  @override
+  String get pickerAllExercises => 'All exercises';
 
   @override
   String get chartGenericLabel => 'Chart';

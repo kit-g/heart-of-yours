@@ -66,6 +66,15 @@ void main() {
           utf8.encode(
             jsonEncode({
               'exercises': [bench(locale)],
+              if (locale == 'es')
+                'glossary': {
+                  'db': {
+                    'words': ['dumbbell'],
+                  },
+                  'dorsales': {
+                    'muscles': ['latissimus_dorsi'],
+                  },
+                },
             }),
           ),
           200,
@@ -91,9 +100,9 @@ void main() {
 
     final (library, stamp) = await cdn.getExerciseLibrary();
 
-    expect(library?.single.name, 'Жим лёжа (es_ES)');
-    expect(library?.single.isMine, isFalse);
-    expect(library?.single.key, 'bench-press-barbell');
+    expect(library?.exercises.single.name, 'Жим лёжа (es_ES)');
+    expect(library?.exercises.single.isMine, isFalse);
+    expect(library?.exercises.single.key, 'bench-press-barbell');
     expect(stamp, (version: version, locale: 'es_ES', etag: 'W/"abc"'));
     expect(paths(), [manifestPath, '/static/exercises/es_ES.json']);
     expect(requests.last.headers.containsKey('If-None-Match'), isFalse);
@@ -140,7 +149,7 @@ void main() {
 
     final (library, stamp) = await cdn.getExerciseLibrary(cached: cached);
 
-    expect(library?.single.name, 'Жим лёжа (ru)');
+    expect(library?.exercises.single.name, 'Жим лёжа (ru)');
     expect(stamp.locale, 'ru');
     expect(requests.last.headers.containsKey('If-None-Match'), isFalse);
   });
@@ -152,6 +161,16 @@ void main() {
 
     expect(library, isNotNull);
     expect(stamp.etag, isNull);
+  });
+
+  test('a locale file brings its search glossary, and a file without one reads as empty', () async {
+    var (library, _) = await cdnServing(tag: 'es').getExerciseLibrary();
+    expect(library?.glossary['dorsales']?.muscles, ['latissimus_dorsi']);
+    expect(library?.glossary['db']?.words, ['dumbbell']);
+
+    // what prod serves until heart-api's next tag
+    (library, _) = await cdnServing(tag: 'ru').getExerciseLibrary();
+    expect(library?.glossary.isEmpty, isTrue);
   });
 
   group('locale resolution', () {

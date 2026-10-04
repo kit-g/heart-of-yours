@@ -4248,5 +4248,17 @@
     "description": "Apple Watch button that starts a paused workout's clock again. Short: it is a watch screen",
     "type": "text",
     "placeholders": {}
+  },
+  "pickerRecent": "Recent",
+  "@pickerRecent": {
+    "description": "Exercise picker section header: the exercises the user did most recently, shown before they type",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pickerAllExercises": "All exercises",
+  "@pickerAllExercises": {
+    "description": "Exercise picker section header: the whole library, below the Recent section",
+    "type": "text",
+    "placeholders": {}
   }
 }

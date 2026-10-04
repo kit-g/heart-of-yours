@@ -36,7 +36,9 @@ const _imageSize = 120.0;
 class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<HistoryPage> {
   @override
   Widget build(BuildContext context) {
-    final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :header) = Theme.of(context);
+    final ThemeData(scaffoldBackgroundColor: backgroundColor, :textTheme, :colorScheme, :sectionHeader) = Theme.of(
+      context,
+    );
 
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
@@ -77,7 +79,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Text(
                     myProgression.toUpperCase(),
-                    style: header,
+                    style: sectionHeader,
                   ),
                 ),
                 SizedBox(
@@ -214,7 +216,7 @@ class _MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :colorScheme, :header) = Theme.of(context);
+    final ThemeData(:textTheme, :colorScheme, :sectionHeader) = Theme.of(context);
 
     final date = DateTime.parse('$monthKey-01');
     final label = DateFormat.yMMMM(L.of(context).localeName).format(date);
@@ -223,7 +225,7 @@ class _MonthHeader extends StatelessWidget {
       padding: const .symmetric(horizontal: 16, vertical: 8),
       child: Text(
         label.toUpperCase(),
-        style: header,
+        style: sectionHeader,
       ),
     );
   }
@@ -339,15 +341,6 @@ class _HistoryTail extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Center(child: child),
-    );
-  }
-}
-
-extension on ThemeData {
-  TextStyle? get header {
-    return textTheme.labelLarge?.copyWith(
-      color: colorScheme.primary,
-      fontWeight: .bold,
     );
   }
 }

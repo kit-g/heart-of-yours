@@ -119,11 +119,14 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
   /// keeps that from costing this one a megabyte. Compression is left to the
   /// transport, which asks for what it can decode.
   ///
-  /// Returns the parsed library, or `null` when [cached] is still the current
-  /// copy — and in both cases the stamp the cache should carry from now on.
+  /// Returns the parsed library — its exercises and the locale's search
+  /// glossary, empty when the file predates one — or `null` when [cached] is
+  /// still the current copy; and in both cases the stamp the cache should
+  /// carry from now on.
   /// The stamp is what heart_state calls `CatalogStamp`, structurally: the
   /// manifest `version`, the locale file, and that file's ETag.
-  Future<(Iterable<Exercise>?, ({String version, String locale, String? etag}))> getExerciseLibrary({
+  Future<(({Iterable<Exercise> exercises, SearchGlossary glossary})?, ({String version, String locale, String? etag}))>
+  getExerciseLibrary({
     ({String version, String locale, String? etag})? cached,
   }) async {
     final (manifest, _) = await get('$_library/index.json');
@@ -150,8 +153,14 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
       // JSON is UTF-8 by definition, and the object carries no charset for
       // `response.body` to pick it from — it would decode Cyrillic as Latin-1
       200 => switch (jsonDecode(utf8.decode(response.bodyBytes))) {
-        {'exercises': List l} => (
-          l.map((e) => Exercise.fromJson(e)).toList(),
+        {'exercises': List l} && final body => (
+          (
+            exercises: l.map((e) => Exercise.fromJson(e)).toList(),
+            glossary: switch (body['glossary']) {
+              Map glossary => SearchGlossary.fromJson(glossary),
+              _ => SearchGlossary.empty(),
+            },
+          ),
           (version: version, locale: locale, etag: response.headers['etag']),
         ),
         final body => throw FormatException('not an exercise library', body),

@@ -1,5 +1,12 @@
 part of '../../heart_db.dart';
 
+String? _encoded(Map<String, dynamic>? json) {
+  return switch (json) {
+    Map<String, dynamic> json => jsonEncode(json),
+    null => null,
+  };
+}
+
 mixin _Exercises on _LocalDatabase
     implements ExerciseService, ExerciseHistoryService, ExercisesMetricsService, PreviousExerciseService {
   @override
@@ -35,6 +42,8 @@ mixin _Exercises on _LocalDatabase
               case null:
                 each['health'] = {};
             }
+
+            if (each['aliases'] case String s) each['aliases'] = jsonDecode(s);
 
             return Exercise.fromJson(each);
           },
@@ -75,9 +84,21 @@ mixin _Exercises on _LocalDatabase
     };
   }
 
+  /// The search glossary stored with the catalog it came in, in its
+  /// published form; null until a library carrying one has been stored.
+  Future<Map<String, dynamic>?> getSearchGlossary() async {
+    final rows = await _db.query(_syncs, columns: ['glossary'], where: 'table_name = ?', whereArgs: [_exercises]);
+    return switch (rows) {
+      [{'glossary': String json}] => jsonDecode(json) as Map<String, dynamic>,
+      _ => null,
+    };
+  }
+
   /// [locale], [version] and [etag] together are the catalog stamp — see
   /// [getCatalogStamp]; the interface has no notion of them, so a caller that
   /// stores one user-created exercise passes none and the stamp stays put.
+  /// [glossary] travels with a catalog write; a write without one keeps the
+  /// glossary already stored.
   @override
   Future<void> storeExercises(
     Iterable<Exercise> exercises, {
@@ -85,6 +106,7 @@ mixin _Exercises on _LocalDatabase
     String? locale,
     String? version,
     String? etag,
+    Map<String, dynamic>? glossary,
   }) async {
     return _db.transaction(
       (txn) async {
@@ -121,6 +143,8 @@ mixin _Exercises on _LocalDatabase
           // same trap for the slug: absent on a custom, and a row promoted
           // into someone's customs must shed it rather than keep a stale one
           row['key'] = each.key;
+          // a list is no column value, and an empty one must clear the old
+          row['aliases'] = each.aliases.isNotEmpty ? jsonEncode([...each.aliases]) : null;
           // the unit preference is per-user (exercise_details), not a column on
           // the shared catalog row — see setExerciseUnit / getExerciseUnits.
           row.remove('unit_system');
@@ -156,14 +180,15 @@ mixin _Exercises on _LocalDatabase
         // described, and the next conditional fetch would 304 against them.
         txn.rawInsert(
           '''
-          INSERT INTO $_syncs (table_name, locale, version, etag) VALUES (?, ?, ?, ?)
+          INSERT INTO $_syncs (table_name, locale, version, etag, glossary) VALUES (?, ?, ?, ?, ?)
           ON CONFLICT(table_name) DO UPDATE SET
             synced_at = (datetime('now') || '+00:00'),
             locale = coalesce(EXCLUDED.locale, locale),
             version = coalesce(EXCLUDED.version, version),
-            etag = CASE WHEN EXCLUDED.version IS NULL THEN etag ELSE EXCLUDED.etag END
+            etag = CASE WHEN EXCLUDED.version IS NULL THEN etag ELSE EXCLUDED.etag END,
+            glossary = coalesce(EXCLUDED.glossary, glossary)
           ''',
-          [_exercises, locale, version, etag],
+          [_exercises, locale, version, etag, _encoded(glossary)],
         );
 
         await batch.commit(noResult: true);

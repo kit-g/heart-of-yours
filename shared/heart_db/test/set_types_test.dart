@@ -169,6 +169,19 @@ void main() {
     );
   });
 
+  test('last time is the newest session, and says when it was (#135)', () async {
+    await local.storeWorkoutHistory([
+      server('w1', start: '2026-09-20T08:00:00.000Z', sets: [set('old', weight: 90)]),
+      server('w2', start: '2026-09-26T08:00:00.000Z', sets: [set('new', weight: 100)]),
+      server('w0', start: '2026-09-10T08:00:00.000Z', sets: [set('older', weight: 80)]),
+    ], user);
+
+    final previous = await local.getPreviousSets(user);
+
+    expect(previous[bench]?.map((each) => each['set_id']), ['new']);
+    expect(previous[bench]?.single['workout_start'], '2026-09-26T08:00:00.000Z');
+  });
+
   group('warm-ups are no record', () {
     final exercise = benchPress;
 

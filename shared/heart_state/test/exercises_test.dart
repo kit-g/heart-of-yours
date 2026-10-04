@@ -60,9 +60,11 @@ void main() {
     when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
 
     // an empty library under a fresh stamp, unless a test says otherwise
-    when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[], stamp));
+    when(library.getLibrary(cached: anyNamed('cached')))
+        .thenAnswer((_) async => ((exercises: <Exercise>[], glossary: SearchGlossary.empty()), stamp));
     when(catalog.getCatalogStamp()).thenAnswer((_) async => null);
-    when(catalog.storeCatalog(any, stamp: anyNamed('stamp'))).thenAnswer((_) async {});
+    when(catalog.getSearchGlossary()).thenAnswer((_) async => null);
+    when(catalog.storeCatalog(any, stamp: anyNamed('stamp'), glossary: anyNamed('glossary'))).thenAnswer((_) async {});
 
     // history/records delegates (we stub empty results)
     when(
@@ -152,7 +154,8 @@ void main() {
       when(
         local.getExercises(userId: anyNamed('userId')),
       ).thenAnswer((_) async => (DateTime(2024, 1, 1), <Exercise>[e1]));
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[e2], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[e2], glossary: SearchGlossary.empty()), stamp));
 
       final probe = ListenerProbe()..attach(sut);
       await sut.init();
@@ -165,7 +168,7 @@ void main() {
       verify(local.getExercises(userId: anyNamed('userId'))).called(1);
       verify(catalog.getCatalogStamp()).called(1);
       verify(library.getLibrary(cached: null)).called(1);
-      verify(catalog.storeCatalog([e2], stamp: stamp)).called(1);
+      verify(catalog.storeCatalog([e2], stamp: stamp, glossary: anyNamed('glossary'))).called(1);
       verify(remote.getOwnExercises()).called(1);
       // the API's library list is no longer read — the CDN is the catalog
       verifyNever(remote.getExercises());
@@ -174,7 +177,8 @@ void main() {
     test('when local is empty, the library still loads, sets initialized and notifies once', () async {
       final e1 = ex('Squat');
       when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[e1], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[e1], glossary: SearchGlossary.empty()), stamp));
 
       final probe = ListenerProbe()..attach(sut);
       await sut.init();
@@ -186,13 +190,14 @@ void main() {
       // a stamp over an empty catalog is not consulted, let alone trusted
       verifyNever(catalog.getCatalogStamp());
       verify(library.getLibrary(cached: null)).called(1);
-      verify(catalog.storeCatalog([e1], stamp: stamp)).called(1);
+      verify(catalog.storeCatalog([e1], stamp: stamp, glossary: anyNamed('glossary'))).called(1);
     });
 
     test('the catalog from the CDN and the customs from the API merge into one map by id', () async {
       final bench = ex('Bench Press');
       final curl = Exercise(name: 'My Curl', category: .dumbbell, target: .arms).copyWith(isMine: true);
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
       when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl]);
 
       await sut.init();
@@ -202,7 +207,7 @@ void main() {
       expect(sut.hasOwn, isTrue);
       expect(sut.map((each) => each.id).toSet(), {bench.id, curl.id});
       // each half lands in the cache through its own door
-      verify(catalog.storeCatalog([bench], stamp: stamp)).called(1);
+      verify(catalog.storeCatalog([bench], stamp: stamp, glossary: anyNamed('glossary'))).called(1);
       verify(local.storeExercises([curl], userId: 'u1')).called(1);
     });
 
@@ -229,7 +234,8 @@ void main() {
     // device.
     test('a preference on a library exercise is mirrored locally', () async {
       final bench = ex('Bench Press');
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
       when(preferences.getExercisePreferences()).thenAnswer(
         (_) async => [ExercisePreference(exerciseId: bench.id, unitSystem: .imperial)],
       );
@@ -242,7 +248,8 @@ void main() {
 
     test('note-only preferences restore and cancelled pins clear the cache', () async {
       final bench = ex('Bench Press');
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
       when(preferences.getExercisePreferences()).thenAnswer(
         (_) async => [ExercisePreference(exerciseId: bench.id, note: 'Pause')],
       );
@@ -262,7 +269,8 @@ void main() {
       expect(sut.noteFor(bench.id), 'Pause');
       expect(notes.values[bench.id], 'Pause');
 
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
       await sut.init();
       expect(sut.noteFor(bench.id), isNull);
       expect(notes.values, isEmpty);
@@ -270,7 +278,8 @@ void main() {
 
     test('a rest timer goes to Timers rather than a store of its own', () async {
       final bench = ex('Bench Press');
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
       when(preferences.getExercisePreferences()).thenAnswer(
         (_) async => [ExercisePreference(exerciseId: bench.id, restTimer: 90)],
       );
@@ -285,7 +294,8 @@ void main() {
     // anonymous session set offline is the upsync's problem, not this read's
     test('the server overrides what the local mirror holds', () async {
       final bench = ex('Bench Press');
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[bench], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[bench], glossary: SearchGlossary.empty()), stamp));
       when(local.getExerciseUnits('u1')).thenAnswer((_) async => {bench.id: MeasurementUnit.metric});
       when(preferences.getExercisePreferences()).thenAnswer(
         (_) async => [ExercisePreference(exerciseId: bench.id, unitSystem: .imperial)],
@@ -320,7 +330,8 @@ void main() {
     test('a failed preference read is reported, and the catalog still stands', () async {
       Object? err;
       sut = build(onError: (e, {stacktrace}) => err = e)..userId = 'u1';
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[ex('Squat')], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[ex('Squat')], glossary: SearchGlossary.empty()), stamp));
       when(preferences.getExercisePreferences()).thenThrow(Exception('preferences down'));
 
       expect(await sut.init(), isTrue);
@@ -374,12 +385,12 @@ void main() {
 
       await sut.init(locale: 'en');
 
-      verifyNever(catalog.storeCatalog(any, stamp: anyNamed('stamp')));
+      verifyNever(catalog.storeCatalog(any, stamp: anyNamed('stamp'), glossary: anyNamed('glossary')));
 
       when(library.getLibrary(cached: stamp)).thenAnswer((_) async => (null, moved));
       await sut.onLocaleChanged('en-CA');
 
-      verify(catalog.storeCatalog(<Exercise>[], stamp: moved)).called(1);
+      verify(catalog.storeCatalog(<Exercise>[], stamp: moved, glossary: anyNamed('glossary'))).called(1);
     });
 
     test('a cache holding only customs does not vouch for a library', () async {
@@ -411,7 +422,8 @@ void main() {
     test('re-fetches the library and overwrites display copy under the same identity', () async {
       final en = ex('Bench Press');
       when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[en], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[en], glossary: SearchGlossary.empty()), stamp));
       await sut.init(locale: 'en');
       expect(sut.lookup(en.id)?.name, 'Bench Press');
       clearInteractions(remote);
@@ -423,13 +435,14 @@ void main() {
         'target': 'Chest',
       });
       const inRussian = (version: 'run-1', locale: 'ru', etag: null);
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[ru], inRussian));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[ru], glossary: SearchGlossary.empty()), inRussian));
 
       await sut.onLocaleChanged('ru');
 
       expect(sut.lookup(en.id)?.name, 'Жим лёжа');
       expect(sut.where((each) => each.id == en.id), hasLength(1));
-      verify(catalog.storeCatalog([ru], stamp: inRussian)).called(1);
+      verify(catalog.storeCatalog([ru], stamp: inRussian, glossary: anyNamed('glossary'))).called(1);
       // customs are not localized, so the API has no part in this
       verifyNever(remote.getOwnExercises());
     });
@@ -437,20 +450,24 @@ void main() {
     test('the same tag again is a no-op', () async {
       final en = ex('Bench Press');
       when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
-      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer((_) async => (<Exercise>[en], stamp));
+      when(library.getLibrary(cached: anyNamed('cached')))
+          .thenAnswer((_) async => ((exercises: <Exercise>[en], glossary: SearchGlossary.empty()), stamp));
       await sut.init(locale: 'en');
 
       // were a fetch to happen, this copy would show up
       when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer(
         (_) async => (
-          <Exercise>[
-            Exercise.fromJson({
-              'id': en.id,
-              'name': 'Жим лёжа',
-              'category': 'Weighted Body Weight',
-              'target': 'Chest',
-            }),
-          ],
+          (
+            exercises: <Exercise>[
+              Exercise.fromJson({
+                'id': en.id,
+                'name': 'Жим лёжа',
+                'category': 'Weighted Body Weight',
+                'target': 'Chest',
+              }),
+            ],
+            glossary: SearchGlossary.empty(),
+          ),
           stamp,
         ),
       );
@@ -510,6 +527,103 @@ void main() {
       // without filters flag, both would match by name query (if query matches)
       final all = sut.search('press', filters: false).toList();
       expect(all, [a]);
+    });
+  });
+
+  group('search() ranking (#135)', () {
+    Exercise lift(String name, {String? key, List<String>? aliases, String category = 'Barbell'}) {
+      return Exercise.fromJson({
+        'id': 'id-${name.toLowerCase().replaceAll(RegExp(r'[^a-z]+'), '-')}',
+        'key': ?key,
+        'name': name,
+        'category': category,
+        'target': 'Chest',
+        'aliases': ?aliases,
+      });
+    }
+
+    final barbell = lift('Bench Press (Barbell)', key: 'bench-press-barbell');
+    final dumbbell = lift('Bench Press (Dumbbell)', key: 'bench-press-dumbbell', category: 'Dumbbell');
+    final incline = lift('Incline Bench Press (Dumbbell)', key: 'incline-bench-press-dumbbell', category: 'Dumbbell');
+    final overhead = lift('Overhead Press (Barbell)', key: 'overhead-press-barbell', aliases: ['ohp']);
+
+    Future<void> serve(List<Exercise> exercises, {Map<String, dynamic> glossary = const {}}) async {
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer(
+        (_) async => ((exercises: exercises, glossary: SearchGlossary.fromJson(glossary)), stamp),
+      );
+      await sut.init();
+    }
+
+    test('a recent exercise leads its own tier and never jumps a better match', () async {
+      await serve([barbell, dumbbell, incline]);
+      final done = {incline.id: DateTime(2026, 10, 3), dumbbell.id: DateTime(2026, 9, 1)};
+
+      // both Bench Press names start with the query and lead; the dumbbell
+      // was done, so it leads the two. The incline matches only by word and
+      // stays behind them however recent it is.
+      expect(sut.search('bench', lastDone: done.get), [dumbbell, barbell, incline]);
+      // without recency, the library's own order
+      expect(sut.search('bench'), [barbell, dumbbell, incline]);
+    });
+
+    test('an empty query ranks by recency alone, never-done in library order after', () async {
+      await serve([barbell, dumbbell, incline]);
+      final done = {incline.id: DateTime(2026, 10, 3)};
+
+      expect(sut.search('', lastDone: done.get), [incline, barbell, dumbbell]);
+    });
+
+    test('aliases and the glossary come with the library, typos match last', () async {
+      await serve(
+        [barbell, incline, overhead],
+        glossary: {
+          'db': {
+            'words': ['dumbbell'],
+          },
+        },
+      );
+
+      expect(sut.search('ohp'), [overhead]);
+      expect(sut.search('db incline'), [incline]);
+      expect(sut.search('benhc'), [barbell, incline]);
+      verify(
+        catalog.storeCatalog(
+          any,
+          stamp: stamp,
+          glossary: argThat(isNotNull, named: 'glossary'),
+        ),
+      ).called(1);
+    });
+
+    test('offline, the glossary stored with the catalog still applies', () async {
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[incline]));
+      when(catalog.getSearchGlossary()).thenAnswer(
+        (_) async => SearchGlossary.fromJson({
+          'db': {
+            'words': ['dumbbell'],
+          },
+        }),
+      );
+      when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(const SocketLikeFailure());
+
+      await sut.init();
+
+      expect(sut.search('db'), [incline]);
+    });
+
+    test('recent() is the newest few, done ones only, under the same filters', () async {
+      await serve([barbell, dumbbell, incline, overhead]);
+      final done = {
+        barbell.id: DateTime(2026, 9, 1),
+        dumbbell.id: DateTime(2026, 9, 20),
+        overhead.id: DateTime(2026, 10, 1),
+      };
+
+      expect(sut.recent(done.get), [overhead, dumbbell, barbell]);
+      expect(sut.recent(done.get, limit: 2), [overhead, dumbbell]);
+
+      sut.addFilter(Category.dumbbell);
+      expect(sut.recent(done.get, filters: true), [dumbbell]);
     });
   });
 
@@ -977,4 +1091,12 @@ void main() {
       expect(sut.patterns, ['horizontal_press']);
     });
   });
+}
+
+class SocketLikeFailure implements Exception {
+  const new();
+}
+
+extension on Map<String, DateTime> {
+  DateTime? get(String id) => this[id];
 }
