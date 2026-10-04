@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
@@ -72,7 +73,7 @@ class AppFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final L(:profile, :workout, :history, :exercises) = L.of(context);
+    final L(:profile, :workout, :history, :exercises, :keepAwakeBadge) = L.of(context);
 
     final destinations = [
       (
@@ -86,8 +87,8 @@ class AppFrame extends StatelessWidget {
         workout,
         () => Selector<Workouts, bool>(
           selector: (_, provider) => provider.hasActiveWorkout,
-          builder: (_, hasActiveWorkout, _) {
-            return AnimatedSwitcher(
+          builder: (context, hasActiveWorkout, _) {
+            final icon = AnimatedSwitcher(
               key: AppKeys.workoutStack,
               duration: const Duration(milliseconds: 300),
               transitionBuilder: (child, animation) {
@@ -98,6 +99,21 @@ class AppFrame extends StatelessWidget {
                 key: ValueKey(hasActiveWorkout),
               ),
             );
+            // the screen is being held on: said here because the bar is the
+            // one thing on screen wherever the workout is left running
+            return switch (KeepAwake.of(context)) {
+              true => Semantics(
+                label: keepAwakeBadge,
+                child: Badge(
+                  key: AppKeys.keepAwakeBadge,
+                  backgroundColor: Theme.of(context).colorScheme.tertiary,
+                  label: Icon(Icons.light_mode_rounded, size: 12, color: Theme.of(context).colorScheme.onTertiary),
+                  padding: .zero,
+                  child: icon,
+                ),
+              ),
+              false => icon,
+            };
           },
         ),
       ),
