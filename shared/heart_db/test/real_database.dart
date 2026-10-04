@@ -99,6 +99,10 @@ const _schema = [
   addWorkoutNote,
   // v16
   clearNormalSetType,
+  // v17
+  addWorkoutPauses,
+  addWorkoutPausedAt,
+  addSetCompletedAt,
   // v18
   addExerciseAliases,
   addCatalogGlossary,

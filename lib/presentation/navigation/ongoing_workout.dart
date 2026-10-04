@@ -125,6 +125,9 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
   return (
     workoutId: workout.id,
     startedAt: workout.start,
+    clockStart: workouts.clockStart ?? workout.start,
+    pausedAt: workouts.pausedAt,
+    pausedLabel: l.workoutPaused,
     title: switch (workout.name) {
       String name when name.isNotEmpty => name,
       _ => l.defaultWorkoutName(),

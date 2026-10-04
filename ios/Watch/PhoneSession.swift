@@ -67,6 +67,9 @@ final class PhoneSession: NSObject, ObservableObject {
         case edit(workoutId: String, setId: String, weight: Double?, reps: Int?)
         /// A set ticked by mistake.
         case untick(workoutId: String, setId: String)
+        /// Stop the workout's clock, and start it again (#134).
+        case pause(workoutId: String)
+        case resume(workoutId: String)
 
         var message: [String: Any] {
             switch self {
@@ -88,13 +91,18 @@ final class PhoneSession: NSObject, ObservableObject {
                 return ["event": "command", "action": "adjustRest", "workoutId": workoutId, "seconds": seconds]
             case let .finish(workoutId):
                 return ["event": "command", "action": "finish", "workoutId": workoutId]
+            case let .pause(workoutId):
+                return ["event": "command", "action": "pause", "workoutId": workoutId]
+            case let .resume(workoutId):
+                return ["event": "command", "action": "resume", "workoutId": workoutId]
             }
         }
 
         var workoutId: String {
             switch self {
             case let .complete(workoutId, _, _, _), let .edit(workoutId, _, _, _), let .untick(workoutId, _),
-                 let .skipRest(workoutId), let .adjustRest(workoutId, _), let .finish(workoutId):
+                 let .skipRest(workoutId), let .adjustRest(workoutId, _), let .finish(workoutId),
+                 let .pause(workoutId), let .resume(workoutId):
                 workoutId
             }
         }
@@ -102,7 +110,7 @@ final class PhoneSession: NSObject, ObservableObject {
         var setId: String? {
             switch self {
             case let .complete(_, setId, _, _), let .edit(_, setId, _, _), let .untick(_, setId): setId
-            case .skipRest, .adjustRest, .finish: nil
+            case .skipRest, .adjustRest, .finish, .pause, .resume: nil
             }
         }
 
@@ -117,6 +125,8 @@ final class PhoneSession: NSObject, ObservableObject {
             case let ("untick", setId?): self = .untick(workoutId: workoutId, setId: setId)
             case ("skipRest", _): self = .skipRest(workoutId: workoutId)
             case ("finish", _): self = .finish(workoutId: workoutId)
+            case ("pause", _): self = .pause(workoutId: workoutId)
+            case ("resume", _): self = .resume(workoutId: workoutId)
             case ("adjustRest", _):
                 guard let seconds = (message["seconds"] as? NSNumber)?.intValue else { return nil }
                 self = .adjustRest(workoutId: workoutId, seconds: seconds)

@@ -4011,6 +4011,66 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Set {number}'**
   String ongoingWorkoutStopwatch(int number);
+
+  /// Title of the opt-in feature in Settings › Features that lets the user pause the workout clock
+  ///
+  /// In en, this message translates to:
+  /// **'Pause workouts'**
+  String get workoutPauses;
+
+  /// Subtitle under the pause-workouts switch in Settings › Features, saying what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the clock mid-workout, and end a forgotten one at its last set'**
+  String get workoutPausesSubtitle;
+
+  /// Item in the active workout's options menu that stops the workout clock
+  ///
+  /// In en, this message translates to:
+  /// **'Pause workout'**
+  String get pauseWorkout;
+
+  /// Item in the active workout's options menu, and the label of the play button beside the stopped clock, that starts a paused workout's clock again
+  ///
+  /// In en, this message translates to:
+  /// **'Resume workout'**
+  String get resumePausedWorkout;
+
+  /// Says the workout clock is stopped: read by screen readers on the stopped clock, and shown on the lock screen and the watch. One word
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get workoutPaused;
+
+  /// Title of the dialog shown when the user opens the app from the idle-workout notification: offers to end the workout at the time of its last completed set. The time is formatted, like 6:42 PM
+  ///
+  /// In en, this message translates to:
+  /// **'Finished at {time}?'**
+  String finishedAtTitle(String time);
+
+  /// Body of the dialog that offers to end a forgotten workout at the time of its last completed set
+  ///
+  /// In en, this message translates to:
+  /// **'That was your last set. The workout can end there, and the time since won\'t count.'**
+  String get finishedAtBody;
+
+  /// Button in the dialog that offers to end a forgotten workout at its last set: declines, and the workout carries on
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going'**
+  String get keepGoing;
+
+  /// Apple Watch button that stops the workout clock. Short: it is a watch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get watchPause;
+
+  /// Apple Watch button that starts a paused workout's clock again. Short: it is a watch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get watchResume;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

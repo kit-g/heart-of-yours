@@ -13,6 +13,11 @@
         "body": "Notez la difficulté ressentie de chaque série, de 6 à 10, depuis le menu de son numéro."
       },
       {
+        "id": "pause-workout",
+        "title": "Mettre une séance en pause",
+        "body": "Arrêtez le chrono depuis le menu **⋯** de la séance. Cocher une série le relance. Une séance oubliée ? Ouvrez-la depuis le rappel et elle vous propose de s’arrêter à votre dernière série."
+      },
+      {
         "id": "workout-note",
         "title": "Une note pour toute la séance",
         "body": "Ajoutez-la depuis le menu **⋯** de la séance. Elle apparaît sur sa carte dans l’Historique."

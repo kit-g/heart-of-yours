@@ -32,7 +32,7 @@ import 'package:heart/presentation/widgets/vector.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
-import 'package:intl/intl.dart' show NumberFormat;
+import 'package:intl/intl.dart' show DateFormat, NumberFormat;
 import 'package:material_ui/material_ui.dart';
 
 import 'rest.dart';
@@ -51,7 +51,7 @@ part 'text_field_button.dart';
 part 'utils.dart';
 part 'workout_note.dart';
 
-enum _WorkoutOption { editImage, editName, editNote }
+enum _WorkoutOption { editImage, editName, editNote, pause }
 
 class WorkoutDetail extends StatefulWidget {
   final Iterable<WorkoutExercise> exercises;
@@ -794,12 +794,24 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
   void initState() {
     super.initState();
     _sheetController.addListener(_onSheetChanged);
+    _finishAtLastSetRequested.addListener(_offerFinishAtLastSet);
+    // asked for before the sheet was up: a notification tap on a cold start
+    WidgetsBinding.instance.addPostFrameCallback((_) => _offerFinishAtLastSet());
+  }
+
+  /// The sheet raises the idle offer itself, once it is on screen, so the
+  /// dialog can never open under it.
+  void _offerFinishAtLastSet() {
+    if (!mounted || !_finishAtLastSetRequested.value) return;
+    _finishAtLastSetRequested.value = false;
+    offerFinishAtLastSet(context, widget.workouts);
   }
 
   @override
   void dispose() {
     _sheetController.removeListener(_onSheetChanged);
     _sheetController.dispose();
+    _finishAtLastSetRequested.removeListener(_offerFinishAtLastSet);
 
     _workoutNameController.dispose();
     _workoutNameFocusNode.dispose();
@@ -953,11 +965,24 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                 },
                               ),
                             ),
+                            // paused (#134): the way back sits beside the
+                            // stopped clock, where the eye goes to check it
+                            if (workouts.isPaused)
+                              Tooltip(
+                                message: l.resumePausedWorkout,
+                                child: PrimaryButton.shrunk(
+                                  key: WorkoutDetailKeys.resume,
+                                  onPressed: workouts.resume,
+                                  child: const Icon(Icons.play_arrow_rounded),
+                                ),
+                              ),
                             WorkoutTimer(
                               key: WorkoutDetailKeys.timer,
-                              start: start,
+                              start: workouts.clockStart ?? start,
+                              pausedAt: workouts.pausedAt,
                               style: textTheme.titleSmall?.copyWith(
-                                color: colorScheme.tertiary,
+                                // stopped, it steps back from the accent
+                                color: workouts.isPaused ? colorScheme.onSurfaceVariant : colorScheme.tertiary,
                                 // the preset's display face carries the
                                 // numbers worth a shout
                                 fontFamily: textTheme.headlineMedium?.fontFamily,
@@ -965,7 +990,6 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                 // jostling the row as they change
                                 fontFeatures: const [FontFeature.tabularFigures()],
                               ),
-                              initValue: workouts.activeWorkout?.elapsed(),
                             ),
                           ],
                         ),
@@ -1020,11 +1044,18 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
 
   /// Photos live in the server's bucket, so there is nowhere to put one
   /// without an account — the option is absent rather than dead.
+  /// Pausing is opt-in (#134): off, the option was never built.
   Iterable<_WorkoutOption> _options(BuildContext context) {
-    return switch (Auth.of(context).isAnonymous) {
-      true => _WorkoutOption.values.where((option) => option != .editImage),
-      false => _WorkoutOption.values,
-    };
+    final anonymous = Auth.of(context).isAnonymous;
+    final pauses = Preferences.of(context).isOn(.pauseWorkout);
+    return _WorkoutOption.values.where(
+      (option) => switch (option) {
+        .editImage => !anonymous,
+        // absent at the pause limit rather than dead (Resume always shows)
+        .pause => pauses && (widget.workouts.isPaused || widget.workouts.canPause),
+        .editName || .editNote => true,
+      },
+    );
   }
 
   String _workoutOptionCopy(L l, _WorkoutOption option, Workout workout) {
@@ -1035,6 +1066,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
         String _ => l.editWorkoutNote,
         null => l.addWorkoutNote,
       },
+      .pause => widget.workouts.isPaused ? l.resumePausedWorkout : l.pauseWorkout,
     };
   }
 
@@ -1043,6 +1075,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       .editImage => Icons.photo_camera,
       .editName => Icons.edit_rounded,
       .editNote => Icons.edit_note_rounded,
+      .pause => widget.workouts.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
     };
   }
 
@@ -1091,6 +1124,10 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       .editNote => () {
         final workouts = widget.workouts;
         return editWorkoutNote(context, workouts.activeWorkout?.note, workouts.setWorkoutNote);
+      },
+      .pause => switch (widget.workouts.isPaused) {
+        true => widget.workouts.resume,
+        false => () => pauseActiveWorkout(context),
       },
     };
   }

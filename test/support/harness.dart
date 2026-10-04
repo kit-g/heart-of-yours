@@ -33,6 +33,8 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
   when(
     db.getWorkoutGallery(userId: anyNamed('userId')),
   ).thenAnswer((_) async => ProgressGalleryResponse(images: <WorkoutImage>[]));
+  // an active workout comes back running, and its pauses are stored (#134)
+  stubPauses(db);
 
   // the history backfill: a device that has already paged everything down, so
   // no test that merely launches the app has to say anything about it
@@ -44,6 +46,13 @@ void stubStartup(MockLocalDatabase db, MockApi api) {
   when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
   when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
   when(api.getWorkoutGallery(cursor: anyNamed('cursor'))).thenAnswer((_) async => ProgressGalleryResponse.fromJson({}));
+}
+
+/// Where the active workout's pauses are stored (#134): nothing open on disk,
+/// and every write taken.
+void stubPauses(MockLocalDatabase db) {
+  when(db.getPausedAt(any)).thenAnswer((_) async => null);
+  when(db.setWorkoutPauses(any, any, any)).thenAnswer((_) async {});
 }
 
 /// The preferences of a device past its first launch. An anonymous session

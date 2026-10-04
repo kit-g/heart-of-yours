@@ -53,6 +53,7 @@ SELECT
     _workout.images,
     _workout.synced,
     _workout.note,
+    _workout.pauses,
     (
         SELECT json_group_array(
             json_object(
@@ -70,7 +71,8 @@ SELECT
                             'distance', _sets.distance,
                             'completed', _sets.completed,
                             'set_type', _sets.set_type,
-                            'rpe', _sets.rpe
+                            'rpe', _sets.rpe,
+                            'completed_at', _sets.completed_at
                         )
                     )
                     FROM _sets
@@ -132,6 +134,7 @@ SELECT
     _workout.images,
     _workout.synced,
     _workout.note,
+    _workout.pauses,
     (
         SELECT json_group_array(
             json_object(
@@ -149,7 +152,8 @@ SELECT
                             'distance', _sets.distance,
                             'completed', _sets.completed,
                             'set_type', _sets.set_type,
-                            'rpe', _sets.rpe
+                            'rpe', _sets.rpe,
+                            'completed_at', _sets.completed_at
                         )
                     )
                     FROM _sets
@@ -209,6 +213,7 @@ SELECT
     _workouts.images,
     _workouts.synced,
     _workouts.note,
+    _workouts.pauses,
     (
         SELECT json_group_array(
             json_object(
@@ -226,7 +231,8 @@ SELECT
                             'distance', _sets.distance,
                             'completed', _sets.completed,
                             'set_type', _sets.set_type,
-                            'rpe', _sets.rpe
+                            'rpe', _sets.rpe,
+                            'completed_at', _sets.completed_at
                         )
                     )
                     FROM _sets
@@ -256,8 +262,8 @@ WHERE completed = 0
 /// foreign keys on, REPLACE is a delete + insert, and the delete cascades
 /// through `workout_exercises` into `sets` (heart-of-yours#85).
 const upsertWorkout = '''
-INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
     start   = EXCLUDED.start,
     user_id = EXCLUDED.user_id,
@@ -265,7 +271,8 @@ ON CONFLICT(id) DO UPDATE SET
     "end"   = EXCLUDED."end",
     images  = EXCLUDED.images,
     synced  = EXCLUDED.synced,
-    note    = EXCLUDED.note;
+    note    = EXCLUDED.note,
+    pauses  = EXCLUDED.pauses;
 ''';
 
 const getTemplates = """

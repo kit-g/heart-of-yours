@@ -32,6 +32,19 @@ enum WatchState: Equatable {
         var controls: Controls?
         /// `WorkoutActivity`'s name for the session (#184).
         var activity: String?
+        /// Where the elapsed clock counts from: [startedAt] moved on by every
+        /// closed pause (#134). Nil from a phone that predates pauses.
+        var clockStart: Date?
+        /// While paused, when; the clock stands still.
+        var pausedAt: Date?
+        /// Whether pausing is on, on the phone: off, there is no control here.
+        var pausable = false
+        /// The pauses the workout has closed, for a workout session that joins
+        /// the workout after them.
+        var pauses: [ClosedRange<Date>] = []
+
+        /// What the elapsed clock counts from.
+        var clock: Date { clockStart ?? startedAt }
 
         struct UpNext: Equatable {
             var exerciseId: String
@@ -141,6 +154,11 @@ enum WatchState: Equatable {
             var idle: String = ""
             var sending: String = ""
             var finishedAway: String = ""
+            /// Stopping and starting the clock (#134), and the word for a
+            /// stopped one.
+            var pause: String = ""
+            var resume: String = ""
+            var paused: String = ""
 
             /// Nil unless every label the controls cannot do without is there;
             /// the rest default to empty, for a phone that predates them.
@@ -175,6 +193,9 @@ enum WatchState: Equatable {
                 idle = text("idle") ?? ""
                 sending = text("sending") ?? ""
                 finishedAway = text("finishedAway") ?? ""
+                pause = text("pause") ?? ""
+                resume = text("resume") ?? ""
+                paused = text("paused") ?? ""
             }
 
             init(
@@ -257,7 +278,18 @@ enum WatchState: Equatable {
                 set: set,
                 exercises: (payload["exercises"] as? [Any] ?? []).compactMap(Workout.Exercise.init),
                 controls: Workout.Controls(payload),
-                activity: payload["activity"] as? String
+                activity: payload["activity"] as? String,
+                clockStart: date("clockStart"),
+                pausedAt: date("pausedAt"),
+                pausable: payload["pausable"] as? Bool ?? false,
+                pauses: (payload["pauses"] as? [Any] ?? []).compactMap { pause in
+                    guard let pause = pause as? [String: Any],
+                          let start = (pause["start"] as? NSNumber)?.doubleValue,
+                          let end = (pause["end"] as? NSNumber)?.doubleValue,
+                          start < end
+                    else { return nil }
+                    return Date(timeIntervalSince1970: start / 1000)...Date(timeIntervalSince1970: end / 1000)
+                }
             ))
         default:
             return nil
@@ -292,6 +324,8 @@ extension WatchState {
             workout.exercises[e].sets[r].weight = weight ?? workout.exercises[e].sets[r].weight
             workout.exercises[e].sets[r].reps = reps ?? workout.exercises[e].sets[r].reps
             workout.exercises[e].sets[r].done = true
+            // a tick is getting back to work: paused, the clock runs again
+            workout.resume(at: at)
             workout.moveOn(after: (e, r))
             // the rest the tick starts, as the phone would start it — gone
             // already if the tick is older than the rest
@@ -309,6 +343,14 @@ extension WatchState {
             workout.exercises[e].sets[r].done = false
         case .skipRest:
             workout.rest = nil
+        case .pause:
+            // pausing skips the rest, as on the phone
+            if workout.pausedAt == nil {
+                workout.pausedAt = at
+                workout.rest = nil
+            }
+        case .resume:
+            workout.resume(at: at)
         case let .adjustRest(_, seconds):
             if let rest = workout.rest {
                 let end = rest.window.upperBound.addingTimeInterval(TimeInterval(seconds))
@@ -327,6 +369,15 @@ extension WatchState {
 }
 
 private extension WatchState.Workout {
+    /// Ends the pause, if there is one and [at] comes after it, by the phone's
+    /// rule (`Workouts.resume`): the clock moves on by the time it stood still.
+    mutating func resume(at: Date) {
+        guard let pausedAt, at > pausedAt else { return }
+        clockStart = clock.addingTimeInterval(at.timeIntervalSince(pausedAt))
+        pauses.append(pausedAt...at)
+        self.pausedAt = nil
+    }
+
     /// Where [setId] is: its exercise's index and its own.
     func locate(_ setId: String) -> (Int, Int)? {
         for (e, exercise) in exercises.enumerated() {

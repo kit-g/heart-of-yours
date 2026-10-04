@@ -2291,6 +2291,38 @@ class LEn extends L {
   String ongoingWorkoutStopwatch(int number) {
     return 'Set $number';
   }
+
+  @override
+  String get workoutPauses => 'Pause workouts';
+
+  @override
+  String get workoutPausesSubtitle => 'Stop the clock mid-workout, and end a forgotten one at its last set';
+
+  @override
+  String get pauseWorkout => 'Pause workout';
+
+  @override
+  String get resumePausedWorkout => 'Resume workout';
+
+  @override
+  String get workoutPaused => 'Paused';
+
+  @override
+  String finishedAtTitle(String time) {
+    return 'Finished at $time?';
+  }
+
+  @override
+  String get finishedAtBody => 'That was your last set. The workout can end there, and the time since won\'t count.';
+
+  @override
+  String get keepGoing => 'Keep going';
+
+  @override
+  String get watchPause => 'Pause';
+
+  @override
+  String get watchResume => 'Resume';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4579,4 +4611,36 @@ class LEnCa extends LEn {
   String ongoingWorkoutStopwatch(int number) {
     return 'Set $number';
   }
+
+  @override
+  String get workoutPauses => 'Pause workouts';
+
+  @override
+  String get workoutPausesSubtitle => 'Stop the clock mid-workout, and end a forgotten one at its last set';
+
+  @override
+  String get pauseWorkout => 'Pause workout';
+
+  @override
+  String get resumePausedWorkout => 'Resume workout';
+
+  @override
+  String get workoutPaused => 'Paused';
+
+  @override
+  String finishedAtTitle(String time) {
+    return 'Finished at $time?';
+  }
+
+  @override
+  String get finishedAtBody => 'That was your last set. The workout can end there, and the time since won\'t count.';
+
+  @override
+  String get keepGoing => 'Keep going';
+
+  @override
+  String get watchPause => 'Pause';
+
+  @override
+  String get watchResume => 'Resume';
 }

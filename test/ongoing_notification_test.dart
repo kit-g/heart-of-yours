@@ -55,10 +55,15 @@ void main() {
     OngoingRest? rest,
     ({DateTime start, DateTime? pausedAt, String label})? stopwatch,
     String channel = 'Workout in progress',
+    DateTime? clockStart,
+    DateTime? pausedAt,
   }) {
     return (
       workoutId: id,
       startedAt: started,
+      clockStart: clockStart ?? started,
+      pausedAt: pausedAt,
+      pausedLabel: 'Paused',
       title: 'Push day',
       exercise: 'Bench Press (Barbell)',
       next: 'Next: set 2 · 60 kg x 5',
@@ -120,6 +125,25 @@ void main() {
 
     expect(details()['chronometerCountDown'], isFalse);
     expect(details()['when'], started.millisecondsSinceEpoch);
+  });
+
+  test('after a pause the chronometer counts from the clock start, not the start (#134)', () async {
+    final clockStart = started.add(const Duration(minutes: 5));
+    await showOngoingWorkoutNotification(workout(clockStart: clockStart));
+
+    expect(details()['usesChronometer'], isTrue);
+    expect(details()['when'], clockStart.millisecondsSinceEpoch);
+  });
+
+  test('paused, there is no chronometer, and the time it stopped at is written out (#134)', () async {
+    final clockStart = started.add(const Duration(minutes: 5));
+    await showOngoingWorkoutNotification(
+      workout(clockStart: clockStart, pausedAt: clockStart.add(const Duration(minutes: 12, seconds: 5))),
+    );
+
+    expect(details()['usesChronometer'], isFalse);
+    expect(details()['showWhen'], isFalse);
+    expect(shown()['body'], 'Paused · 12:05 · Next: set 2 · 60 kg x 5');
   });
 
   test('the channel is created once, and again only to rename it', () async {

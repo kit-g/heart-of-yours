@@ -54,3 +54,14 @@ UpNext? upNextIn(Workout workout, {(WorkoutExercise, ExerciseSet)? after}) {
   final last = anchor?.$1 ?? exercises.last;
   return forward ?? exercises.map(open).nonNulls.firstOrNull ?? (exercise: last, set: null, number: last.length);
 }
+
+/// A workout's elapsed time as its clocks show it: `12:05`, `01:12:30`.
+String formatClock(Duration duration) {
+  String pad(int n) => n.toString().padLeft(2, '0');
+  final minutes = pad(duration.inMinutes.remainder(60));
+  final seconds = pad(duration.inSeconds.remainder(60));
+  return switch (duration.inHours) {
+    > 0 => '${pad(duration.inHours)}:$minutes:$seconds',
+    _ => '$minutes:$seconds',
+  };
+}

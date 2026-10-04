@@ -93,6 +93,7 @@ extension on Map {
         return switch (key) {
           'exercises' => MapEntry(key, _ordered(jsonDecode(value))),
           'image' when value != null => MapEntry(key, jsonDecode(value)),
+          'pauses' when value is String => MapEntry(key, jsonDecode(value)),
           'end' => MapEntry(key, value ?? ''),
           _ => MapEntry(key, value),
         };

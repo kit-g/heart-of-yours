@@ -198,6 +198,10 @@ void main() {
           expect(await columns(db, 'sets'), containsPair('set_type', 'TEXT'));
           expect(await columns(db, 'sets'), containsPair('rpe', 'REAL'));
           expect(await columns(db, 'workouts'), containsPair('note', 'TEXT'));
+          // v17: pauses, the open one, and when a set was ticked
+          expect(await columns(db, 'workouts'), containsPair('pauses', 'TEXT'));
+          expect(await columns(db, 'workouts'), containsPair('paused_at', 'TEXT'));
+          expect(await columns(db, 'sets'), containsPair('completed_at', 'TEXT'));
 
           expect(await indexesOn(db, 'template_exercises'), {'template_idx'});
           // `exercise_idx` is claimed three times in 0001.dart (workout_exercises,

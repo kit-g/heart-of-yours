@@ -2297,4 +2297,38 @@ class LEs extends L {
   String ongoingWorkoutStopwatch(int number) {
     return 'Serie $number';
   }
+
+  @override
+  String get workoutPauses => 'Pausar entrenamientos';
+
+  @override
+  String get workoutPausesSubtitle =>
+      'Detén el reloj a mitad del entrenamiento, y termina uno olvidado en su última serie';
+
+  @override
+  String get pauseWorkout => 'Pausar entrenamiento';
+
+  @override
+  String get resumePausedWorkout => 'Reanudar entrenamiento';
+
+  @override
+  String get workoutPaused => 'En pausa';
+
+  @override
+  String finishedAtTitle(String time) {
+    return '¿Terminaste a las $time?';
+  }
+
+  @override
+  String get finishedAtBody =>
+      'Esa fue tu última serie. El entrenamiento puede terminar ahí, y el tiempo desde entonces no contará.';
+
+  @override
+  String get keepGoing => 'Seguir';
+
+  @override
+  String get watchPause => 'Pausar';
+
+  @override
+  String get watchResume => 'Reanudar';
 }
