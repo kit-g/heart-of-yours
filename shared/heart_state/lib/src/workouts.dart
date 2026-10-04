@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'analytics.dart';
 import 'backfill.dart';
 import 'remote.dart';
+import 'set_stopwatch.dart';
 
 typedef WorkoutId = String;
 
@@ -32,7 +33,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   /// when they did three. Only an edit through the set row lands here.
   final _edited = <String>{};
 
+  final SetStopwatch stopwatch;
+
   new({
+    SetStopwatch? stopwatch,
     required WorkoutService service,
     required this._remoteService,
     this.onError,
@@ -42,7 +46,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this.analytics,
     RemoteAccess? remote,
   }) : _localService = service,
-       _remote = remote ?? RemoteAccess();
+       _remote = remote ?? RemoteAccess(),
+       stopwatch = stopwatch ?? SetStopwatch() {
+    this.stopwatch.addListener(notifyListeners);
+  }
 
   /// The habit loop is reported from here: started, finished, abandoned. Only
   /// this class knows how a workout began by the time it ends. Absent in
@@ -57,6 +64,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   @override
   void onSignOut() {
+    stopwatch.clear();
     _workouts.clear();
     _edited.clear();
     _activeWorkoutId = null;
@@ -74,6 +82,13 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     // a pass still running is the old user's; it checks for that at every
     // step, and the next sign-in must not wait on it
     _healing = null;
+  }
+
+  @override
+  void dispose() {
+    stopwatch.removeListener(notifyListeners);
+    stopwatch.dispose();
+    super.dispose();
   }
 
   static Workouts of(BuildContext context) {
@@ -201,6 +216,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       _hasResolvedActiveWorkout = true;
       // the setter notifies, so listeners see both at once
       _activeWorkout = active;
+      await stopwatch.restore(active);
     }
   }
 
@@ -416,6 +432,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     // set up and abandoned is [unticked]'s job, counted above.
     _reportFinished(active, unticked: unticked);
 
+    stopwatch.clear();
     _activeWorkout = null;
     return saved;
   }
@@ -575,6 +592,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void> cancelActiveWorkout() async {
+    stopwatch.clear();
     // Both read off the workout that is about to be removed, so they are taken
     // while there is still something to read.
     analytics?.workoutCancelled(
@@ -668,6 +686,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? removeSet(WorkoutExercise exercise, ExerciseSet set) {
+    if (stopwatch.isTiming(set)) stopwatch.clear();
     _forExercise(
       exercise,
       (each) => each.remove(set),
@@ -677,6 +696,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? removeExercise(WorkoutExercise exercise) {
+    if (exercise.any(stopwatch.isTiming)) stopwatch.clear();
     activeWorkout?.remove(exercise);
     notifyListeners();
 
@@ -684,6 +704,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
+    if (stopwatch.isTiming(set)) stopwatch.clear();
     set.isCompleted = true;
     _latestMarkedSet = (exercise, set);
     notifyListeners();

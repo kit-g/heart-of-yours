@@ -2233,6 +2233,40 @@ class LEn extends L {
 
   @override
   String get keepAwakeBadge => 'Screen stays awake';
+
+  @override
+  String get setStopwatch => 'Set stopwatch';
+
+  @override
+  String get setStopwatchSubtitle => 'Time a set, then stop to log it.';
+
+  @override
+  String stopwatchLogHeld(String time) {
+    return 'Log $time instead';
+  }
+
+  @override
+  String get timeSet => 'Time this set';
+
+  @override
+  String get showSetStopwatch => 'Show set stopwatch';
+
+  @override
+  String get stopwatchPause => 'Pause';
+
+  @override
+  String get stopwatchResume => 'Resume';
+
+  @override
+  String get stopwatchDone => 'Done';
+
+  @override
+  String get stopwatchPaused => 'Paused';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Set $number';
+  }
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4463,4 +4497,38 @@ class LEnCa extends LEn {
 
   @override
   String get keepAwakeBadge => 'Screen stays awake';
+
+  @override
+  String get setStopwatch => 'Set stopwatch';
+
+  @override
+  String get setStopwatchSubtitle => 'Time a set, then stop to log it.';
+
+  @override
+  String stopwatchLogHeld(String time) {
+    return 'Log $time instead';
+  }
+
+  @override
+  String get timeSet => 'Time this set';
+
+  @override
+  String get showSetStopwatch => 'Show set stopwatch';
+
+  @override
+  String get stopwatchPause => 'Pause';
+
+  @override
+  String get stopwatchResume => 'Resume';
+
+  @override
+  String get stopwatchDone => 'Done';
+
+  @override
+  String get stopwatchPaused => 'Paused';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Set $number';
+  }
 }

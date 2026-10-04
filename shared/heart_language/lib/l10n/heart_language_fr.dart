@@ -2243,4 +2243,38 @@ class LFr extends L {
 
   @override
   String get keepAwakeBadge => 'L’écran reste allumé';
+
+  @override
+  String get setStopwatch => 'Chronomètre de série';
+
+  @override
+  String get setStopwatchSubtitle => 'Chronométrez une série, puis arrêtez pour l’enregistrer.';
+
+  @override
+  String stopwatchLogHeld(String time) {
+    return 'Enregistrer $time';
+  }
+
+  @override
+  String get timeSet => 'Chronométrer la série';
+
+  @override
+  String get showSetStopwatch => 'Afficher le chronomètre de série';
+
+  @override
+  String get stopwatchPause => 'Pause';
+
+  @override
+  String get stopwatchResume => 'Reprendre';
+
+  @override
+  String get stopwatchDone => 'Terminé';
+
+  @override
+  String get stopwatchPaused => 'En pause';
+
+  @override
+  String ongoingWorkoutStopwatch(int number) {
+    return 'Série $number';
+  }
 }

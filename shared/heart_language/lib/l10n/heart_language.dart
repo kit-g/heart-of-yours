@@ -3903,6 +3903,66 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Screen stays awake'**
   String get keepAwakeBadge;
+
+  /// Title of the set stopwatch's switch in Settings › Features: a stopwatch inside a timed set (plank, hang, carry)
+  ///
+  /// In en, this message translates to:
+  /// **'Set stopwatch'**
+  String get setStopwatch;
+
+  /// One line under the set stopwatch's switch in Settings › Features
+  ///
+  /// In en, this message translates to:
+  /// **'Time a set, then stop to log it.'**
+  String get setStopwatchSubtitle;
+
+  /// Button under the running set stopwatch, shown when the set already held a time: drops the count and ticks the set with that time, e.g. 'Log 0:45 instead'
+  ///
+  /// In en, this message translates to:
+  /// **'Log {time} instead'**
+  String stopwatchLogHeld(String time);
+
+  /// Read by screen readers on the ▶ in a timed set's done column: it opens the set stopwatch
+  ///
+  /// In en, this message translates to:
+  /// **'Time this set'**
+  String get timeSet;
+
+  /// Read by screen readers on the button in a timed set's done column while its stopwatch runs or is paused; it opens the stopwatch
+  ///
+  /// In en, this message translates to:
+  /// **'Show set stopwatch'**
+  String get showSetStopwatch;
+
+  /// Button in the set stopwatch: stops the count for now, without logging anything
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get stopwatchPause;
+
+  /// Button in the set stopwatch while it is paused: carries on counting from where it stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get stopwatchResume;
+
+  /// Button in the set stopwatch: writes the time into the set and ticks it off. One short word
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get stopwatchDone;
+
+  /// Shown in the set stopwatch and on the lock screen while the stopwatch is paused
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get stopwatchPaused;
+
+  /// Lock-screen label beside the counting clock while a timed set's stopwatch runs: which of the exercise's sets is being timed, e.g. 'Set 2'
+  ///
+  /// In en, this message translates to:
+  /// **'Set {number}'**
+  String ongoingWorkoutStopwatch(int number);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

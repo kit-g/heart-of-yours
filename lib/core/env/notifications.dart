@@ -460,12 +460,23 @@ Future<void> cancelExerciseNotification() {
 /// the workout does ([cancelOngoingWorkoutNotification]). Nothing here needs a
 /// foreground service — the chronometer ticks without the app.
 Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
-  final resting = switch (workout.rest) {
-    OngoingRest(:final end) => end.isAfter(DateTime.now()),
-    null => false,
-  };
-  final (clock, body) = switch ((resting, workout.rest)) {
-    (true, OngoingRest(:final end, :final label)) => (end, '$label · ${workout.next}'),
+  final resting =
+      workout.stopwatch == null &&
+      switch (workout.rest) {
+        OngoingRest(:final end) => end.isAfter(DateTime.now()),
+        null => false,
+      };
+  // a chronometer cannot stand still, so a paused stopwatch is its time in words
+  final paused = workout.stopwatch?.pausedAt;
+  final (clock, body) = switch ((workout.stopwatch, resting, workout.rest)) {
+    (final stopwatch?, _, _) => (
+      stopwatch.start,
+      switch (stopwatch.pausedAt) {
+        DateTime at => '${stopwatch.label} · ${_clockText(at.difference(stopwatch.start))}',
+        null => stopwatch.label,
+      },
+    ),
+    (null, true, OngoingRest(:final end, :final label)) => (end, '$label · ${workout.next}'),
     _ => (workout.startedAt, workout.next),
   };
 
@@ -482,9 +493,9 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
       silent: true,
       playSound: false,
       enableVibration: false,
-      showWhen: true,
+      showWhen: paused == null,
       when: clock.millisecondsSinceEpoch,
-      usesChronometer: true,
+      usesChronometer: paused == null,
       chronometerCountDown: resting,
       subText: workout.title,
       visibility: .public,
@@ -570,4 +581,15 @@ Future<void> cancelOngoingWorkoutNotification() {
 
 Future<void> cancelAllNotifications() {
   return _plugin.cancelAll();
+}
+
+/// [elapsed] as a stopped clock reads, "0:42" or "1:02:03".
+String _clockText(Duration elapsed) {
+  final seconds = elapsed.inSeconds % 60;
+  final minutes = elapsed.inMinutes % 60;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return switch (elapsed.inHours) {
+    0 => '$minutes:${two(seconds)}',
+    final hours => '$hours:${two(minutes)}:${two(seconds)}',
+  };
 }
