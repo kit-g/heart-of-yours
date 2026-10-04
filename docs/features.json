@@ -243,6 +243,19 @@
       "highlight": false
     },
     {
+      "id": "progress-photos",
+      "category": "progress",
+      "title": "Progress photos",
+      "pitch": "Attach photos to any workout, from the camera or your library, and see them all in one strip at the top of History. Photos need an account: they are stored with it, not on the phone.",
+      "since": "1.0.5",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "health-read",
       "category": "health",
       "title": "Health data beside your training",
