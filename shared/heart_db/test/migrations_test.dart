@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 16);
+          expect(await userVersion(db), 18);
           expect(
             await tables(db),
             {
@@ -364,6 +364,23 @@ void main() {
       );
 
       test(
+        'v18 drops the catalog stamp so the next launch fetches the aliases, and keeps the rows',
+        () async {
+          await LocalDatabase.init(version: 16);
+          var db = await raw();
+          await db.insert('exercises', {'id': 'ex-1', 'name': 'Push Up', 'category': 'Reps Only', 'target': 'Chest'});
+          await db.insert('syncs', {'table_name': 'exercises', 'locale': 'en', 'version': 'run-1', 'etag': 'W/"a"'});
+          await db.close();
+
+          final local = await LocalDatabase.init(version: 18);
+
+          expect(await local.getCatalogStamp(), isNull);
+          final (_, stored) = await local.getExercises();
+          expect(stored.single.name, 'Push Up');
+        },
+      );
+
+      test(
         'upgrading one version at a time reaches the same final state',
         () async {
           await LocalDatabase.init(version: 1);
@@ -491,7 +508,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 16);
+          expect(await userVersion(db), 18);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -511,10 +528,11 @@ void main() {
           await db.insert('syncs', {'table_name': 'exercises', 'locale': 'ru', 'version': '3', 'etag': '"e"'});
           await db.close();
 
-          await LocalDatabase.init();
+          // to v13 only: v18 drops the stamp on purpose
+          await LocalDatabase.init(version: 13);
           db = await raw();
 
-          expect(await userVersion(db), 16);
+          expect(await userVersion(db), 13);
           expect(await tables(db), contains('upsync'));
           expect(
             await columns(db, 'upsync'),
@@ -540,7 +558,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 16);
+    expect(await userVersion(db), 18);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -594,7 +612,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 16);
+          expect(await userVersion(db), 18);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');

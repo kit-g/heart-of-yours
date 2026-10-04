@@ -111,4 +111,9 @@ const _migrations = <int, List<String>>{
   16: [
     clearNormalSetType,
   ],
+  18: [
+    addExerciseAliases,
+    addCatalogGlossary,
+    invalidateCatalogStamp,
+  ],
 };
