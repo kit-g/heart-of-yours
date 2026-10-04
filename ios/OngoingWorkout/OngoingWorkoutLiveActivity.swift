@@ -123,11 +123,15 @@ private struct LockScreenView: View {
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                Text(context.attributes.startedAt, style: .timer)
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(ink)
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 90, alignment: .trailing)
+                // one count-up at a time: a set's stopwatch is the clock that
+                // matters mid-hold, so the workout's own steps aside for it
+                if state.stopwatchStart == nil {
+                    Text(context.attributes.startedAt, style: .timer)
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(ink)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 90, alignment: .trailing)
+                }
             }
             ExerciseLines(state: state)
             RestRow(state: state, isStale: context.isStale, accent: accent, ink: ink)
