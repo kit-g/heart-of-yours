@@ -289,11 +289,23 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                               switch (m) {
                                 case {'duration': num duration, 'distance': num distance}:
                                   _durationController.text = duration.toInt().toDuration();
-                                  _distanceController.text = prefs.distance(distance, unit: _unitOverride);
+                                  _distanceController.text = _shownDistance(prefs, distance);
                               }
                             case .duration:
                               switch (m) {
                                 case {'duration': num duration}:
+                                  _durationController.text = duration.toInt().toDuration();
+                              }
+                            case .weightedDistance:
+                              switch (m) {
+                                case {'weight': num weight, 'distance': num distance}:
+                                  _weightController.text = prefs.weight(weight, unit: _unitOverride);
+                                  _distanceController.text = _shownDistance(prefs, distance);
+                              }
+                            case .weightedDuration:
+                              switch (m) {
+                                case {'weight': num weight, 'duration': num duration}:
+                                  _weightController.text = prefs.weight(weight, unit: _unitOverride);
                                   _durationController.text = duration.toInt().toDuration();
                               }
                           }
@@ -420,16 +432,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       case .machine:
         return [
           Expanded(
-            child: _TextFieldButton(
-              key: WorkoutDetailKeys.weightFor(exercise.exercise.id, widget.index),
-              focusNode: _weightFocus,
-              isSetCompleted: set.isCompleted,
-              controller: _weightController,
-              color: color,
-              errorState: _hasWeightError,
-              formatters: _floatingPointFormatters,
-              semanticLabel: L.of(context).weightUnit,
-            ),
+            child: _weightCell(color),
           ),
           Expanded(
             child: _TextFieldButton(
@@ -471,34 +474,26 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       case .cardio:
         return [
           Expanded(
-            child: Selector<Preferences, MeasurementUnit>(
-              selector: (_, provider) => provider.distanceUnit,
-              builder: (context, unit, _) {
-                final raw = set.distance;
-                if (raw != null) {
-                  final rounded = Preferences.of(context).distance(raw, unit: _unitOverride ?? unit);
-
-                  // cannot update during build
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) {
-                      if (_distanceController.text != rounded) {
-                        _distanceController.text = rounded;
-                      }
-                    },
-                  );
-                }
-                return _TextFieldButton(
-                  isSetCompleted: set.isCompleted,
-                  focusNode: _distanceFocus,
-                  controller: _distanceController,
-                  color: color,
-                  keyboardType: TextInputType.number,
-                  errorState: _hasDistanceError,
-                  formatters: _floatingPointFormatters,
-                  semanticLabel: L.of(context).distanceUnit,
-                );
-              },
-            ),
+            child: _distanceCell(color),
+          ),
+          Expanded(
+            child: _durationCell(color),
+          ),
+        ];
+      case .weightedDistance:
+        return [
+          Expanded(
+            child: _weightCell(color),
+          ),
+          Expanded(
+            // the last field of the row carries the RPE, as reps and time do
+            child: _distanceCell(color, badge: _rpeBadge(context)),
+          ),
+        ];
+      case .weightedDuration:
+        return [
+          Expanded(
+            child: _weightCell(color),
           ),
           Expanded(
             child: _durationCell(color),
@@ -507,10 +502,66 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     }
   }
 
+  Widget _weightCell(Color color) {
+    return _TextFieldButton(
+      key: WorkoutDetailKeys.weightFor(exercise.exercise.id, widget.index),
+      focusNode: _weightFocus,
+      isSetCompleted: set.isCompleted,
+      controller: _weightController,
+      color: color,
+      errorState: _hasWeightError,
+      formatters: _floatingPointFormatters,
+      semanticLabel: L.of(context).weightUnit,
+    );
+  }
+
+  Widget _distanceCell(Color color, {String? badge}) {
+    return Selector<Preferences, MeasurementUnit>(
+      selector: (_, provider) => provider.distanceUnit,
+      builder: (context, unit, _) {
+        final raw = set.distance;
+        if (raw != null) {
+          final rounded = _shownDistance(Preferences.of(context), raw, unit: _unitOverride ?? unit);
+
+          // cannot update during build
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) {
+              if (_distanceController.text != rounded) {
+                _distanceController.text = rounded;
+              }
+            },
+          );
+        }
+        return _TextFieldButton(
+          key: WorkoutDetailKeys.distanceFor(exercise.exercise.id, widget.index),
+          isSetCompleted: set.isCompleted,
+          focusNode: _distanceFocus,
+          controller: _distanceController,
+          color: color,
+          keyboardType: TextInputType.number,
+          errorState: _hasDistanceError,
+          formatters: _floatingPointFormatters,
+          semanticLabel: L.of(context).distanceUnit,
+          badge: badge,
+        );
+      },
+    );
+  }
+
+  /// [km] as the distance field shows it: a run in kilometres or miles, a
+  /// carry in metres or yards (see [Preferences.shortDistance]).
+  String _shownDistance(Preferences prefs, num km, {MeasurementUnit? unit}) {
+    return switch (set.category) {
+      .weightedDistance => prefs.shortDistance(km, unit: unit ?? _unitOverride),
+      _ => prefs.distance(km, unit: unit ?? _unitOverride),
+    };
+  }
+
   Widget _durationCell(Color color) {
     return ListenableBuilder(
       listenable: workouts.stopwatch,
       builder: (context, _) => _TextFieldButton(
+        key: WorkoutDetailKeys.durationFor(exercise.exercise.id, widget.index),
         isSetCompleted: set.isCompleted,
         focusNode: _durationFocus,
         controller: _durationController,
@@ -537,10 +588,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     return Preferences.of(context).isOn(.setStopwatch) &&
         widget.onSetDone == null &&
         !widget.isLocked &&
-        switch (set.category) {
-          .duration || .cardio => true,
-          _ => false,
-        };
+        set.category.isTimed;
   }
 
   /// This set's stopwatch is running or paused.
@@ -585,8 +633,15 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       ..addListener(_durationListener);
     if (set.canBeCompleted) {
       await _onDone(context);
-    } else if (set.category == .cardio) {
-      _distanceFocus.requestFocus();
+    } else {
+      switch (set.category) {
+        case .cardio:
+          _distanceFocus.requestFocus();
+        case .weightedDuration:
+          _weightFocus.requestFocus();
+        default:
+          break;
+      }
     }
   }
 
@@ -642,6 +697,22 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         case .duration:
           final seconds = _timedSeconds();
           _setMeasurements(duration: seconds);
+          _hasDurationError.value = false;
+          _durationController.text = seconds.toDuration();
+        case .weightedDistance:
+          _setMeasurements(
+            weight: double.parse(_weightController.text),
+            distance: double.parse(_distanceController.text),
+          );
+          _hasWeightError.value = false;
+          _hasDistanceError.value = false;
+        case .weightedDuration:
+          final seconds = _timedSeconds();
+          _setMeasurements(
+            weight: double.parse(_weightController.text),
+            duration: seconds,
+          );
+          _hasWeightError.value = false;
           _hasDurationError.value = false;
           _durationController.text = seconds.toDuration();
       }
@@ -714,7 +785,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     }
 
     if (distance != null) {
-      _distanceController.text = prefs.distance(distance, unit: _unitOverride);
+      _distanceController.text = _shownDistance(prefs, distance);
     }
 
     if (duration != null) {
@@ -811,7 +882,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
 
   void _setMeasurements({double? weight, int? reps, int? duration, double? distance}) {
     if (!context.mounted) return;
-    final Preferences(:distanceUnit, :weightUnit) = Preferences.of(context);
+    final prefs = Preferences.of(context);
+    final Preferences(:distanceUnit, :weightUnit) = prefs;
     final override = _unitOverride;
 
     // the user typed this, as opposed to a template having prescribed it —
@@ -826,9 +898,12 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         .metric => weight,
       },
       reps: reps,
-      distance: switch (override ?? distanceUnit) {
-        .imperial => distance?.asKilometers,
-        .metric => distance,
+      distance: switch ((distance, set.category, override ?? distanceUnit)) {
+        (null, _, _) => null,
+        // a carry is typed in metres or yards
+        (double d, .weightedDistance, final unit) => prefs.shortDistanceStored(d, unit: unit),
+        (double d, _, .imperial) => d.asKilometers,
+        (double d, _, .metric) => d,
       },
     );
   }

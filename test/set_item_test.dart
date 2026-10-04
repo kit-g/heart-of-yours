@@ -355,6 +355,56 @@ void main() {
     });
   });
 
+  group('loaded carries and holds', () {
+    testWidgets('a carry is typed in metres and kept in kilometres, with its load', (tester) async {
+      final exercise = Exercise(name: "Farmer's Walk", category: .weightedDistance, target: .fullBody);
+      final workout = Workout(name: 'W')..add(exercise);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.weightFor(exercise.id, 1)), '40');
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.distanceFor(exercise.id, 1)), '30');
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
+      await tester.pumpTimes();
+
+      expect(set.isCompleted, isTrue);
+      expect(set.weight, 40.0);
+      expect(set.distance, closeTo(0.03, 1e-12));
+      verify(db.markSetAsComplete(set)).called(1);
+    });
+
+    testWidgets('a carry without its distance is not done', (tester) async {
+      final exercise = Exercise(name: 'Sled Push', category: .weightedDistance, target: .legs);
+      final workout = Workout(name: 'W')..add(exercise);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.weightFor(exercise.id, 1)), '100');
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
+      await tester.pumpTimes();
+
+      expect(set.isCompleted, isFalse);
+      verifyNever(db.markSetAsComplete(set));
+    });
+
+    testWidgets('a loaded hold keeps its load and its time', (tester) async {
+      final exercise = Exercise(name: 'Plank (Weighted)', category: .weightedDuration, target: .core);
+      final workout = Workout(name: 'W')..add(exercise);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.weightFor(exercise.id, 1)), '20');
+      await tester.enterText(fieldsIn(rowKeyFor(set)).last, '1:00');
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
+      await tester.pumpTimes();
+
+      expect(set.isCompleted, isTrue);
+      expect(set.weight, 20.0);
+      expect(set.duration, 60);
+    });
+  });
+
   group('barbell / weight+reps category', () {
     testWidgets('entering weight and reps then tapping done completes the set', (tester) async {
       final exercise = Exercise(name: 'Bench Press', category: Category.barbell, target: Target.chest);

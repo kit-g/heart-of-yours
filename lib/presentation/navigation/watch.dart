@@ -264,7 +264,15 @@ class _WatchPresenterState extends State<WatchPresenter> {
   /// Whether [exercise]'s sets take a weight, and whether they take a count.
   (bool weighted, bool counted) _measures(WorkoutExercise exercise) {
     final weighted = switch (exercise.exercise.category) {
-      .barbell || .dumbbell || .machine || .assistedBodyWeight || .weightedBodyWeight => true,
+      // a carry's or a hold's load goes on the crown; its distance or time is
+      // the phone's, as a run's is
+      .barbell ||
+      .dumbbell ||
+      .machine ||
+      .assistedBodyWeight ||
+      .weightedBodyWeight ||
+      .weightedDistance ||
+      .weightedDuration => true,
       _ => false,
     };
     return (weighted, weighted || exercise.exercise.category == .repsOnly);

@@ -49,4 +49,8 @@ class WorkoutDetailKeys {
   static Key weightFor(String exerciseId, int index) => Key('WorkoutDetail.weight.$exerciseId.$index');
 
   static Key repsFor(String exerciseId, int index) => Key('WorkoutDetail.reps.$exerciseId.$index');
+
+  static Key distanceFor(String exerciseId, int index) => Key('WorkoutDetail.distance.$exerciseId.$index');
+
+  static Key durationFor(String exerciseId, int index) => Key('WorkoutDetail.duration.$exerciseId.$index');
 }

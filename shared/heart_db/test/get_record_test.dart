@@ -185,6 +185,46 @@ void main() {
       });
       expect(records['totalDistance'], 7.0);
     });
+
+    test('carry: the heaviest load and the farthest walk are each their own set', () async {
+      final ex = exercise(name: "Farmer's Walk", category: 'Weighted Distance');
+      stub(ex.id, [
+        // heavy and short
+        row(weight: 60, distance: 0.02, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
+        // light and long
+        row(weight: 30, distance: 0.08, workoutId: 'w2', start: '2026-02-01T10:00:00Z'),
+      ]);
+
+      final records = (await local.getRecord('user-1', ex))!;
+      expect(records['heaviest'], {
+        'weight': 60.0,
+        'distance': 0.02,
+        'workoutId': 'w1',
+        'at': '2026-01-01T10:00:00Z',
+        'previous': {'weight': 30.0, 'distance': 0.08, 'workoutId': 'w2', 'at': '2026-02-01T10:00:00Z'},
+      });
+      expect((records['longestDistance'] as Map)['distance'], 0.08);
+      expect((records['longestDistance'] as Map)['weight'], 30.0);
+      expect(records['totalDistance'], closeTo(0.1, 1e-9));
+      // weight × distance stays off the records, and so do reps
+      expect(records.containsKey('bestVolume'), isFalse);
+      expect(records.containsKey('mostReps'), isFalse);
+    });
+
+    test('loaded hold: the heaviest load and the longest hold', () async {
+      final ex = exercise(name: 'Plank (Weighted)', category: 'Weighted Duration');
+      stub(ex.id, [
+        row(weight: 20, duration: 60, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
+        row(weight: 10, duration: 120, workoutId: 'w2', start: '2026-02-01T10:00:00Z'),
+      ]);
+
+      final records = (await local.getRecord('user-1', ex))!;
+      expect((records['heaviest'] as Map)['weight'], 20.0);
+      expect((records['heaviest'] as Map)['duration'], 60.0);
+      expect((records['longestDuration'] as Map)['duration'], 120.0);
+      expect((records['longestDuration'] as Map)['weight'], 10.0);
+      expect(records['totalDuration'], 180.0);
+    });
   });
 
   group('previous', () {

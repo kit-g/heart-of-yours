@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:heart_models/heart_models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,10 +61,7 @@ class SetStopwatch extends ChangeNotifier {
                 (workout
                         ?.expand((exercise) => exercise)
                         .any(
-                          (set) =>
-                              set.id == setId &&
-                              !set.isCompleted &&
-                              (set.category == .duration || set.category == .cardio),
+                          (set) => set.id == setId && !set.isCompleted && set.category.isTimed,
                         ) ??
                     false);
             if (start != null && valid) {
@@ -83,7 +80,7 @@ class SetStopwatch extends ChangeNotifier {
 
   Future<void> start(Workout workout, ExerciseSet set) async {
     if (isRunning || set.isCompleted || !workout.expand((exercise) => exercise).contains(set)) return;
-    if (set.category != .duration && set.category != .cardio) return;
+    if (!set.category.isTimed) return;
     _running = (workoutId: workout.id, setId: set.id, start: _now().toUtc(), pausedAt: null);
     _tick();
     notifyListeners();
@@ -166,4 +163,12 @@ class SetStopwatch extends ChangeNotifier {
     seconds.dispose();
     super.dispose();
   }
+}
+
+extension TimedCategory on Category {
+  /// The categories whose sets hold a time — what a stopwatch can fill.
+  bool get isTimed => switch (this) {
+    .duration || .cardio || .weightedDuration => true,
+    _ => false,
+  };
 }

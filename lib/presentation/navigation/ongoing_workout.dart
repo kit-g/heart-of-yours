@@ -180,6 +180,7 @@ String? _describe(BuildContext context, ExerciseSet set, L l) {
     l: l,
     prefs: Preferences.of(context),
     unit: Exercises.of(context).unitFor(set.exercise.id),
+    category: set.exercise.category,
   );
   final weight = switch (set.weight) {
     double weight when weight > 0 => formats.weight(weight),

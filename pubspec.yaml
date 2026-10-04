@@ -45,7 +45,7 @@ dependencies:
       url: "https://github.com/kit-g/heart-api.git"
       path: "shared/heart_models"
       ref: "main"
-    version: 2.5.0
+    version: 2.8.0
   heart_state:
   # used directly by main.dart, which owns the app's one http.Client;
   # pinned to match shared/heart_api

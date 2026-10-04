@@ -100,7 +100,7 @@ class _Content extends StatelessWidget {
     final l = L.of(context);
     final prefs = Preferences.watch(context);
     final unit = Exercises.watch(context).unitFor(exercise.id);
-    final formats = RecordFormats(l: l, prefs: prefs, unit: unit);
+    final formats = RecordFormats(l: l, prefs: prefs, unit: unit, category: exercise.category);
 
     final tiles = _tiles(l, formats);
     final lifetime = _lifetime(l, formats);
@@ -196,13 +196,24 @@ class _Content extends StatelessWidget {
       };
     }
 
+    // the load a carry or a hold went the distance with; a run has none
+    String loaded(Map record) {
+      return switch (record['weight']) {
+        num weight => formats.weight(weight),
+        _ => '',
+      };
+    }
+
     return [
       ?tile(
         'heaviest',
         l.maxWeight,
         (r) => formats.weight(r['weight'] as num),
-        detail: (r) => switch (r['reps']) {
-          num reps => '× ${reps.toInt()}',
+        detail: (r) => switch (r) {
+          {'reps': num reps} => '× ${reps.toInt()}',
+          // a carry's or a hold's load went with a distance or a time
+          {'distance': num distance} => formats.distance(distance),
+          {'duration': num duration} => formats.time(duration),
           _ => '',
         },
       ),
@@ -226,8 +237,8 @@ class _Content extends StatelessWidget {
           _ => '',
         },
       ),
-      ?tile('longestDistance', l.maxDistance, (r) => formats.distance(r['distance'] as num)),
-      ?tile('longestDuration', l.maxDuration, (r) => formats.time(r['duration'] as num)),
+      ?tile('longestDistance', l.maxDistance, (r) => formats.distance(r['distance'] as num), detail: loaded),
+      ?tile('longestDuration', l.maxDuration, (r) => formats.time(r['duration'] as num), detail: loaded),
       ?tile('bestPace', l.bestPace, (r) => formats.pace(r['pace'] as num)),
     ];
   }
