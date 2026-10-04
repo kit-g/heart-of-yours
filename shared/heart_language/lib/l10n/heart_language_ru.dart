@@ -2326,4 +2326,38 @@ class LRu extends L {
   String ongoingWorkoutStopwatch(int number) {
     return 'Подход $number';
   }
+
+  @override
+  String get workoutPauses => 'Пауза в тренировке';
+
+  @override
+  String get workoutPausesSubtitle =>
+      'Останавливайте часы посреди тренировки, а забытую завершайте на последнем подходе';
+
+  @override
+  String get pauseWorkout => 'Поставить на паузу';
+
+  @override
+  String get resumePausedWorkout => 'Продолжить тренировку';
+
+  @override
+  String get workoutPaused => 'Пауза';
+
+  @override
+  String finishedAtTitle(String time) {
+    return 'Закончили в $time?';
+  }
+
+  @override
+  String get finishedAtBody =>
+      'Это был ваш последний подход. Тренировку можно завершить на нём, а время после него не засчитается.';
+
+  @override
+  String get keepGoing => 'Продолжить';
+
+  @override
+  String get watchPause => 'Пауза';
+
+  @override
+  String get watchResume => 'Дальше';
 }
