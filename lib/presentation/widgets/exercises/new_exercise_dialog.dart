@@ -23,97 +23,101 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
     context: context,
     builder: (context) {
       return Center(
-        // Wrap is what makes the card shrink-wrap vertically; the width still
-        // needs bounding or the card takes the whole screen.
-        child: Wrap(
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: dialogWidth),
-              child: Card(
-                child: Column(
-                  crossAxisAlignment: .start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: .spaceBetween,
-                      children: [
-                        IconButton(
-                          tooltip: L.of(context).close,
-                          onPressed: () {
-                            Navigator.of(context, rootNavigator: true).pop();
-                          },
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                        Text(
-                          createNewExercise,
-                          style: textTheme.titleMedium,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: ValueListenableBuilder<bool>(
-                            valueListenable: loading,
-                            builder: (_, l, _) {
-                              return ValueListenableBuilder<Target?>(
-                                valueListenable: target,
-                                builder: (_, t, _) {
-                                  return ValueListenableBuilder<Category?>(
-                                    valueListenable: category,
-                                    builder: (_, c, _) {
-                                      return ValueListenableBuilder<TextEditingValue>(
-                                        valueListenable: nameController,
-                                        builder: (_, n, _) {
-                                          final enough = switch (editable) {
-                                            Exercise e => t != null && c != null && e.category != c,
-                                            null => t != null && c != null && n.text.isNotEmpty,
-                                          };
-                                          return PrimaryButton.shrunk(
-                                            onPressed: switch ((enough, l)) {
-                                              (_, true) => null,
-                                              (false, false) => null,
-                                              (true, false) => () async {
-                                                if (c != null && t != null) {
-                                                  final messenger = ScaffoldMessenger.of(context);
-                                                  final root = Navigator.of(context, rootNavigator: true);
-                                                  try {
-                                                    loading.value = true;
-                                                    if (editable == null) {
-                                                      final n = nameController.text.trim();
-                                                      final exercise = Exercise(
-                                                        name: n,
-                                                        category: c,
-                                                        target: t,
-                                                        isMine: true,
-                                                      );
-                                                      await Exercises.of(context).makeExercise(exercise);
-                                                    } else {
-                                                      final edited = editable.copyWith(category: c);
-                                                      await Exercises.of(context).editExercise(edited);
-                                                    }
-                                                    loading.value = false;
-                                                  } on ArgumentError catch (e) {
-                                                    messenger.snack('${e.message}');
-                                                  } catch (e) {
-                                                    messenger.snack('$e');
-                                                  } finally {
-                                                    root.pop();
-                                                    loading.value = false;
+        // clear of the keyboard, so the body below scrolls rather than hides
+        child: Padding(
+          padding: MediaQuery.viewInsetsOf(context) + const EdgeInsets.symmetric(vertical: 24),
+          child: ConstrainedBox(
+            // the width needs bounding or the card takes the whole screen
+            constraints: const BoxConstraints(maxWidth: dialogWidth),
+            child: Card(
+              // shrink-wraps while it fits; past that the header with Save
+              // stays put and the ten targets and ten categories scroll
+              child: Column(
+                mainAxisSize: .min,
+                crossAxisAlignment: .start,
+                children: [
+                  Row(
+                    mainAxisAlignment: .spaceBetween,
+                    children: [
+                      IconButton(
+                        tooltip: L.of(context).close,
+                        onPressed: () {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                      Text(
+                        createNewExercise,
+                        style: textTheme.titleMedium,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: loading,
+                          builder: (_, l, _) {
+                            return ValueListenableBuilder<Target?>(
+                              valueListenable: target,
+                              builder: (_, t, _) {
+                                return ValueListenableBuilder<Category?>(
+                                  valueListenable: category,
+                                  builder: (_, c, _) {
+                                    return ValueListenableBuilder<TextEditingValue>(
+                                      valueListenable: nameController,
+                                      builder: (_, n, _) {
+                                        final enough = switch (editable) {
+                                          Exercise e => t != null && c != null && e.category != c,
+                                          null => t != null && c != null && n.text.isNotEmpty,
+                                        };
+                                        return PrimaryButton.shrunk(
+                                          onPressed: switch ((enough, l)) {
+                                            (_, true) => null,
+                                            (false, false) => null,
+                                            (true, false) => () async {
+                                              if (c != null && t != null) {
+                                                final messenger = ScaffoldMessenger.of(context);
+                                                final root = Navigator.of(context, rootNavigator: true);
+                                                try {
+                                                  loading.value = true;
+                                                  if (editable == null) {
+                                                    final n = nameController.text.trim();
+                                                    final exercise = Exercise(
+                                                      name: n,
+                                                      category: c,
+                                                      target: t,
+                                                      isMine: true,
+                                                    );
+                                                    await Exercises.of(context).makeExercise(exercise);
+                                                  } else {
+                                                    final edited = editable.copyWith(category: c);
+                                                    await Exercises.of(context).editExercise(edited);
                                                   }
+                                                  loading.value = false;
+                                                } on ArgumentError catch (e) {
+                                                  messenger.snack('${e.message}');
+                                                } catch (e) {
+                                                  messenger.snack('$e');
+                                                } finally {
+                                                  root.pop();
+                                                  loading.value = false;
                                                 }
-                                              },
+                                              }
                                             },
-                                            child: Text(save),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          ),
+                                          },
+                                          child: Text(save),
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                    Padding(
+                      ),
+                    ],
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         spacing: 12,
@@ -205,11 +209,11 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       );
     },

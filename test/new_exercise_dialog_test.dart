@@ -66,6 +66,9 @@ void main() {
     await tester.pumpTimes();
     expect((save() as PrimaryButton).onPressed, isNull, reason: 'still missing a category');
 
+    // ten category chips wrap past the test surface's fold
+    await tester.ensureVisible(find.text('Barbell'));
+    await tester.pumpTimes();
     await tester.tap(find.text('Barbell'));
     await tester.pumpTimes();
     expect((save() as PrimaryButton).onPressed, isNotNull);
@@ -76,6 +79,9 @@ void main() {
 
     await tester.enterTextAndWait(nameField(), 'Squat Variant');
     await tester.tap(find.text('Legs'));
+    await tester.pumpTimes();
+    // ten category chips wrap past the test surface's fold
+    await tester.ensureVisible(find.text('Barbell'));
     await tester.pumpTimes();
     await tester.tap(find.text('Barbell'));
     await tester.pumpTimes();
