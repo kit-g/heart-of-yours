@@ -4075,9 +4075,15 @@
     "type": "text",
     "placeholders": {}
   },
-  "startSetStopwatch": "Iniciar cronómetro de serie",
-  "@startSetStopwatch": {
-    "description": "Read by screen readers on the play button that takes the place of a timed set's done button while its time is empty",
+  "stopwatchStart": "Iniciar",
+  "@stopwatchStart": {
+    "description": "Button in the set stopwatch before it runs: starts counting the set",
+    "type": "text",
+    "placeholders": {}
+  },
+  "timeSet": "Cronometrar serie",
+  "@timeSet": {
+    "description": "Read by screen readers on the ▶ in a timed set's done column: it opens the set stopwatch",
     "type": "text",
     "placeholders": {}
   },

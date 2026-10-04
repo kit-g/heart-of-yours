@@ -3898,11 +3898,17 @@ abstract class L {
   /// **'Time a set, then stop to log it.'**
   String get setStopwatchSubtitle;
 
-  /// Read by screen readers on the play button that takes the place of a timed set's done button while its time is empty
+  /// Button in the set stopwatch before it runs: starts counting the set
   ///
   /// In en, this message translates to:
-  /// **'Start set stopwatch'**
-  String get startSetStopwatch;
+  /// **'Start'**
+  String get stopwatchStart;
+
+  /// Read by screen readers on the ▶ in a timed set's done column: it opens the set stopwatch
+  ///
+  /// In en, this message translates to:
+  /// **'Time this set'**
+  String get timeSet;
 
   /// Read by screen readers on the button in a timed set's done column while its stopwatch runs or is paused; it opens the stopwatch
   ///

@@ -2242,7 +2242,10 @@ class LFr extends L {
   String get setStopwatchSubtitle => 'Chronométrez une série, puis arrêtez pour l’enregistrer.';
 
   @override
-  String get startSetStopwatch => 'Démarrer le chronomètre de série';
+  String get stopwatchStart => 'Démarrer';
+
+  @override
+  String get timeSet => 'Chronométrer la série';
 
   @override
   String get showSetStopwatch => 'Afficher le chronomètre de série';

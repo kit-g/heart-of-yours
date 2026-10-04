@@ -2232,7 +2232,10 @@ class LEn extends L {
   String get setStopwatchSubtitle => 'Time a set, then stop to log it.';
 
   @override
-  String get startSetStopwatch => 'Start set stopwatch';
+  String get stopwatchStart => 'Start';
+
+  @override
+  String get timeSet => 'Time this set';
 
   @override
   String get showSetStopwatch => 'Show set stopwatch';
@@ -4482,7 +4485,10 @@ class LEnCa extends LEn {
   String get setStopwatchSubtitle => 'Time a set, then stop to log it.';
 
   @override
-  String get startSetStopwatch => 'Start set stopwatch';
+  String get stopwatchStart => 'Start';
+
+  @override
+  String get timeSet => 'Time this set';
 
   @override
   String get showSetStopwatch => 'Show set stopwatch';
