@@ -3898,11 +3898,11 @@ abstract class L {
   /// **'Time a set, then stop to log it.'**
   String get setStopwatchSubtitle;
 
-  /// Button in the set stopwatch before it runs: starts counting the set
+  /// Button under the running set stopwatch, shown when the set already held a time: drops the count and ticks the set with that time, e.g. 'Log 0:45 instead'
   ///
   /// In en, this message translates to:
-  /// **'Start'**
-  String get stopwatchStart;
+  /// **'Log {time} instead'**
+  String stopwatchLogHeld(String time);
 
   /// Read by screen readers on the ▶ in a timed set's done column: it opens the set stopwatch
   ///

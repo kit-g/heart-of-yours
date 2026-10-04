@@ -4075,11 +4075,15 @@
     "type": "text",
     "placeholders": {}
   },
-  "stopwatchStart": "Старт",
-  "@stopwatchStart": {
-    "description": "Button in the set stopwatch before it runs: starts counting the set",
+  "stopwatchLogHeld": "Записать {time}",
+  "@stopwatchLogHeld": {
+    "description": "Button under the running set stopwatch, shown when the set already held a time: drops the count and ticks the set with that time, e.g. 'Log 0:45 instead'",
     "type": "text",
-    "placeholders": {}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "timeSet": "Засечь подход",
   "@timeSet": {
