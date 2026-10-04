@@ -4075,15 +4075,9 @@
     "type": "text",
     "placeholders": {}
   },
-  "stopwatchStart": "Start",
-  "@stopwatchStart": {
-    "description": "Button in the set stopwatch before it runs: starts counting the set",
-    "type": "text",
-    "placeholders": {}
-  },
   "timeSet": "Time this set",
   "@timeSet": {
-    "description": "Read by screen readers on the ▶ in a timed set's done column: it opens the set stopwatch",
+    "description": "Item in a timed set's set-number popup, under Warm up / Drop set / Failure: starts the set stopwatch on that set",
     "type": "text",
     "placeholders": {}
   },
