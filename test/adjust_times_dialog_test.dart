@@ -10,6 +10,7 @@ import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/workout/adjust_times_dialog.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_models/heart_models.dart' show WorkoutPause;
 import 'package:material_ui/material_ui.dart';
 
 void main() {
@@ -22,6 +23,7 @@ void main() {
     required DateTime? end,
     required Future<void> Function(DateTime start, DateTime? end) onSave,
     TargetPlatform platform = TargetPlatform.android,
+    List<WorkoutPause> pauses = const [],
   }) {
     return tester.pumpWidget(
       MaterialApp(
@@ -33,7 +35,13 @@ void main() {
             return Scaffold(
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => showAdjustTimesDialog(context, start: start, end: end, onSave: onSave),
+                  onPressed: () => showAdjustTimesDialog(
+                    context,
+                    start: start,
+                    end: end,
+                    onSave: onSave,
+                    pauses: pauses,
+                  ),
                   child: const Text('open'),
                 ),
               ),
@@ -54,6 +62,24 @@ void main() {
     expect(find.text('End time'), findsOneWidget);
     expect(find.text('Duration'), findsOneWidget);
     expect(find.text('1:30:00'), findsOneWidget);
+  });
+
+  testWidgets('the duration leaves out the pauses that fall inside the times (#134)', (tester) async {
+    await pump(
+      tester,
+      start: start,
+      end: end,
+      onSave: (_, _) async {},
+      pauses: [
+        WorkoutPause(start: start.add(const Duration(minutes: 10)), end: start.add(const Duration(minutes: 20))),
+        // runs past the end: only the part inside counts
+        WorkoutPause(start: end.subtract(const Duration(minutes: 5)), end: end.add(const Duration(minutes: 30))),
+      ],
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1:15:00'), findsOneWidget);
   });
 
   testWidgets('hides the end row and duration when the workout is still open', (tester) async {

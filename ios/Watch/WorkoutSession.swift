@@ -92,6 +92,20 @@ final class WorkoutSession: NSObject, ObservableObject {
             let start = min(workout.startedAt, .now)
             session.startActivity(with: start)
             try await builder.beginCollection(at: start)
+            // pauses taken before the wrist joined in (#134): Health leaves
+            // them out of the workout's duration, as Heart does
+            let earlier = workout.pauses.filter { $0.lowerBound >= start }.flatMap { pause in
+                [
+                    HKWorkoutEvent(type: .pause, dateInterval: DateInterval(start: pause.lowerBound, duration: 0), metadata: nil),
+                    HKWorkoutEvent(type: .resume, dateInterval: DateInterval(start: pause.upperBound, duration: 0), metadata: nil),
+                ]
+            }
+            if !earlier.isEmpty {
+                try await builder.addWorkoutEvents(earlier)
+            }
+            if workout.pausedAt != nil {
+                session.pause()
+            }
             // not mirrored to the phone: the iPhone app would need the
             // `workout-processing` background mode, which App Store validation
             // refuses for an app that still supports iOS 15. A tick wakes the
@@ -164,6 +178,17 @@ final class WorkoutSession: NSObject, ObservableObject {
     }
 
     private var restAlarm: Task<Void, Never>?
+
+    /// The workout paused, or ran again (#134): the session follows, and
+    /// HealthKit records the pause and leaves it out of the workout it saves.
+    func follow(paused: Bool) {
+        guard let session else { return }
+        switch (paused, session.state) {
+        case (true, .running): session.pause()
+        case (false, .paused): session.resume()
+        default: break
+        }
+    }
 
     /// Ends the session without saving anything: cancelled, or never started.
     func discard() {

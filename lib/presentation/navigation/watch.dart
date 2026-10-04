@@ -6,7 +6,8 @@ import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/widgets/workout/rest.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart' show SetTypeCopy, finishWorkout;
+import 'package:heart/presentation/widgets/workout/workout_detail.dart'
+    show SetTypeCopy, finishWorkout, pauseActiveWorkout;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
@@ -165,6 +166,14 @@ class _WatchPresenterState extends State<WatchPresenter> {
         }
       case WatchSkipRest():
         Alarms.of(context).stopActiveExerciseTimer();
+      // placed when it happened on the wrist, which a queue may have held for
+      // a while; the watch offers neither while pausing is off (#134)
+      case WatchPauseWorkout(:final at) when Preferences.of(context).isOn(.pauseWorkout):
+        pauseActiveWorkout(context, at: at);
+      case WatchResumeWorkout(:final at):
+        workouts.resume(at: at);
+      case WatchPauseWorkout():
+        break;
       case WatchFinishWorkout(:final at):
         // the watch offers Finish only with nothing left to tick; if a set was
         // added on the phone since, that is the phone's to finish
@@ -203,7 +212,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
         workouts.editSet(set, weight: _kilograms(exercise, weight), reps: reps);
       }
       if (set.canBeCompleted) {
-        workouts.markSetAsComplete(exercise, set);
+        workouts.markSetAsComplete(exercise, set, at: at);
         startRest(context, exercise, since: at);
         return true;
       }
@@ -391,6 +400,15 @@ class _WatchPresenterState extends State<WatchPresenter> {
             Workout active => activityOf(active).name,
             null => null,
           },
+          // off, or at the pause limit, the watch shows no Pause; Resume while
+          // paused, whatever the limit
+          pausable:
+              Preferences.of(context).isOn(.pauseWorkout) &&
+              ((_workouts?.isPaused ?? false) || (_workouts?.canPause ?? false)),
+          pauses: [
+            for (final pause in _workouts?.activeWorkout?.pauses ?? const <WorkoutPause>[])
+              (start: pause.start, end: pause.end),
+          ],
         ),
         // "no workout" only once that is known, not while it is still loading
         (null, true) => WatchMessage.idle(l.watchAppIdle),
@@ -503,6 +521,9 @@ class _WatchPresenterState extends State<WatchPresenter> {
       idle: l.watchAppIdle,
       sending: l.watchSending,
       finishedAway: l.watchFinishedAway,
+      pause: l.watchPause,
+      resume: l.watchResume,
+      paused: l.workoutPaused,
     );
   }
 

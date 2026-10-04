@@ -124,9 +124,10 @@ private struct LockScreenView: View {
                     .lineLimit(1)
                 Spacer(minLength: 8)
                 // one count-up at a time: a set's stopwatch is the clock that
-                // matters mid-hold, so the workout's own steps aside for it
-                if state.stopwatchStart == nil {
-                    Text(context.attributes.startedAt, style: .timer)
+                // matters mid-hold, so the workout's own steps aside for it —
+                // unless the workout is paused (#134), which is the news
+                if state.stopwatchStart == nil || state.pausedAt != nil {
+                    ElapsedClock(context: context, marksPause: true)
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(ink)
                         .multilineTextAlignment(.trailing)
@@ -231,23 +232,61 @@ private struct StopwatchClock: View {
     }
 }
 
-/// The one clock the compact island has room for: the rest countdown while
-/// resting, the workout's elapsed time otherwise.
+/// The one clock the compact island has room for: the workout's, stopped,
+/// while it is paused (#134); a set's stopwatch while one is timed; the rest
+/// countdown while resting; the workout's elapsed time otherwise.
 private struct Clock: View {
     let context: ActivityViewContext<OngoingWorkoutAttributes>
     let resting: Bool
 
     var body: some View {
-        switch (context.state.stopwatchStart, resting, context.state.rest) {
-        case (let start?, _, _):
+        switch (context.state.pausedAt, context.state.stopwatchStart, resting, context.state.rest) {
+        case (_?, _, _, _):
+            ElapsedClock(context: context, marksPause: false)
+                .multilineTextAlignment(.trailing)
+        case (nil, let start?, _, _):
             StopwatchClock(start: start, pausedAt: context.state.stopwatchPausedAt)
                 .multilineTextAlignment(.trailing)
-        case (nil, true, let rest?):
+        case (nil, nil, true, let rest?):
             Text(timerInterval: rest, countsDown: true)
                 .multilineTextAlignment(.trailing)
         default:
-            Text(context.attributes.startedAt, style: .timer)
+            ElapsedClock(context: context, marksPause: false)
                 .multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+/// How long the workout has run, ticking by itself — or standing still where
+/// it was paused (#134), which `Text(timerInterval:pauseTime:)` draws without
+/// the app having to wake. A state from a build before pauses carries no clock
+/// start of its own, and counts from the attribute as it always did.
+private struct ElapsedClock: View {
+    let context: ActivityViewContext<OngoingWorkoutAttributes>
+    /// Whether a pause glyph leads a stopped clock; the compact island has no
+    /// room for one.
+    let marksPause: Bool
+
+    var body: some View {
+        let state = context.state
+        let start = state.clockStart ?? context.attributes.startedAt
+        if let pausedAt = state.pausedAt, start <= pausedAt {
+            let stopped = Text(timerInterval: start...Date.distantFuture, pauseTime: pausedAt, countsDown: false)
+            HStack(spacing: 3) {
+                if marksPause {
+                    Image(systemName: "pause.fill")
+                        .imageScale(.small)
+                }
+                stopped
+            }
+            // "Paused", then the time it stands at
+            // with no room for the glyph, a stopped clock steps back instead
+            .opacity(marksPause ? 1 : 0.6)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(state.pausedLabel ?? "")
+            .accessibilityValue(stopped)
+        } else {
+            Text(start, style: .timer)
         }
     }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -459,6 +460,9 @@ Future<void> cancelExerciseNotification() {
 /// every time a set is ticked would be worse than none. It otherwise goes when
 /// the workout does ([cancelOngoingWorkoutNotification]). Nothing here needs a
 /// foreground service — the chronometer ticks without the app.
+///
+/// Paused (#134), there is no clock to count: a chronometer cannot be stopped,
+/// so it goes, and the time it stopped at is written into the text instead.
 Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
   final resting =
       workout.stopwatch == null &&
@@ -466,18 +470,23 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
         OngoingRest(:final end) => end.isAfter(DateTime.now()),
         null => false,
       };
-  // a chronometer cannot stand still, so a paused stopwatch is its time in words
-  final paused = workout.stopwatch?.pausedAt;
-  final (clock, body) = switch ((workout.stopwatch, resting, workout.rest)) {
-    (final stopwatch?, _, _) => (
-      stopwatch.start,
-      switch (stopwatch.pausedAt) {
-        DateTime at => '${stopwatch.label} · ${_clockText(at.difference(stopwatch.start))}',
-        null => stopwatch.label,
-      },
+  // a chronometer cannot stand still, so a stopped clock — the workout's
+  // (#134) or a set's stopwatch (#171) — is its time in words
+  final (clock, body) = switch ((workout.pausedAt, workout.stopwatch, resting, workout.rest)) {
+    (DateTime at, _, _, _) => (
+      null,
+      [
+        workout.pausedLabel,
+        formatClock(at.difference(workout.clockStart)),
+        if (workout.next.isNotEmpty) workout.next,
+      ].join(' · '),
     ),
-    (null, true, OngoingRest(:final end, :final label)) => (end, '$label · ${workout.next}'),
-    _ => (workout.startedAt, workout.next),
+    (null, final stopwatch?, _, _) => switch (stopwatch.pausedAt) {
+      DateTime at => (null, '${stopwatch.label} · ${_clockText(at.difference(stopwatch.start))}'),
+      null => (stopwatch.start, stopwatch.label),
+    },
+    (null, null, true, OngoingRest(:final end, :final label)) => (end, '$label · ${workout.next}'),
+    _ => (workout.clockStart, workout.next),
   };
 
   final details = NotificationDetails(
@@ -493,9 +502,9 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
       silent: true,
       playSound: false,
       enableVibration: false,
-      showWhen: paused == null,
-      when: clock.millisecondsSinceEpoch,
-      usesChronometer: paused == null,
+      showWhen: clock != null,
+      when: clock?.millisecondsSinceEpoch,
+      usesChronometer: clock != null,
       chronometerCountDown: resting,
       subText: workout.title,
       visibility: .public,
