@@ -13,6 +13,7 @@ part of 'workout_detail.dart';
 Future<void> _showSetStopwatch(
   BuildContext context, {
   required String title,
+  required String subtitle,
   required String setId,
   required int? target,
   required VoidCallback onDone,
@@ -25,14 +26,25 @@ Future<void> _showSetStopwatch(
       return Dialog(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
-        child: _SetStopwatch(title: title, setId: setId, target: target, onDone: onDone, onLog: onLog),
+        child: _SetStopwatch(
+          title: title,
+          subtitle: subtitle,
+          setId: setId,
+          target: target,
+          onDone: onDone,
+          onLog: onLog,
+        ),
       );
     },
   );
 }
 
 class _SetStopwatch extends StatelessWidget {
+  /// The exercise, on a line of its own.
   final String title;
+
+  /// Which of its sets: "Set 2".
+  final String subtitle;
   final String setId;
   final int? target;
   final VoidCallback onDone;
@@ -42,6 +54,7 @@ class _SetStopwatch extends StatelessWidget {
 
   const new({
     required this.title,
+    required this.subtitle,
     required this.setId,
     required this.target,
     required this.onDone,
@@ -71,21 +84,37 @@ class _SetStopwatch extends StatelessWidget {
               Stack(
                 alignment: .center,
                 children: [
+                  // out toward the corner, away from the title and the count
                   Align(
                     alignment: .centerLeft,
-                    child: IconButton(
-                      tooltip: l.close,
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded, size: 18),
+                    child: Transform.translate(
+                      offset: const Offset(-8, 0),
+                      child: IconButton(
+                        tooltip: l.close,
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                      ),
                     ),
                   ),
+                  // the button's whole 48pt on either side, so its ink never
+                  // reaches the name
                   Padding(
-                    padding: const .symmetric(horizontal: 40),
-                    child: Text(
-                      title,
-                      style: textTheme.titleLarge,
-                      maxLines: 1,
-                      overflow: .ellipsis,
+                    padding: const .symmetric(horizontal: 48),
+                    child: Column(
+                      mainAxisSize: .min,
+                      children: [
+                        Text(
+                          title,
+                          style: textTheme.titleLarge,
+                          textAlign: .center,
+                          maxLines: 1,
+                          overflow: .ellipsis,
+                        ),
+                        Text(
+                          subtitle,
+                          style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
                     ),
                   ),
                 ],

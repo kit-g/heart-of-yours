@@ -564,7 +564,8 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   void _openStopwatch() {
     _showSetStopwatch(
       context,
-      title: '${exercise.exercise.name} · ${L.of(context).ongoingWorkoutStopwatch(widget.number)}',
+      title: exercise.exercise.name,
+      subtitle: L.of(context).ongoingWorkoutStopwatch(widget.number),
       setId: set.id,
       target: set.duration,
       onDone: _stopStopwatch,
