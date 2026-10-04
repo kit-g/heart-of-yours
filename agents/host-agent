@@ -12,8 +12,9 @@
 # outside both the allowlist and the guard hook (which matches Bash only).
 # GoLand's read-only tools (search, read, problems, git status) stay available.
 #
-# Give it its own simulator so it never fights you for yours:
-#   xcrun simctl create agent-iphone "iPhone 17"
+# Its simulators are agent-iphone and agent-ipad, shared by every host agent
+# run and never yours. The launcher creates them when they are missing; the
+# agent is told never to create another. `make reclaim` deletes strays.
 #
 #   --base BRANCH  branch the worktree from BRANCH instead of main — another
 #                  agent's branch (worktree-a2) to stack this work on it
@@ -53,6 +54,16 @@ fi
 . "$HERE/worktree.sh"
 ensure_worktree "$REPO" "$NAME" "$BASE" "$BASE_SET"
 
+# the two simulators every host agent shares; strays are what `make reclaim`
+# finds, so nothing here makes a third
+ensure_sim() {
+  xcrun simctl list devices 2>/dev/null | grep -q "^ *$1 (" \
+    || xcrun simctl create "$1" "$2" >/dev/null \
+    || echo "could not create simulator $1 ($2)" >&2
+}
+ensure_sim agent-iphone "iPhone 17"
+ensure_sim agent-ipad "iPad Pro 11-inch (M5)"
+
 if [[ -n "$ISSUE" ]]; then
   TASK="$(gh -R "$(git -C "$REPO" remote get-url origin)" issue view "$ISSUE" \
     --json number,title,body \
@@ -75,8 +86,10 @@ the moment you answer without a tool call, and any background job dies with
 it — there is no notification to wait for. Run builds, simulator launches and
 test suites in the foreground (Bash timeout up to 600000 ms), or poll them
 with a foreground until-loop; never end a turn to 'wait'. UI changes must be
-screenshot-verified on the 'agent-iphone' simulator (and an iPad if the
-surface has a two-pane layout) — never the user's own simulators. If this
+screenshot-verified on the 'agent-iphone' simulator (and 'agent-ipad' if the
+surface has a two-pane layout), addressed by UDID — never the user's own
+simulators, and never a new one: do not run 'xcrun simctl create'. Shut down
+what you booted when you finish. If this
 task came from a GitHub issue, post your closing summary as a comment on it
 ('gh issue comment') — that one outward action is pre-authorized; nothing
 else outward is. Never commit or push. End with a short summary: what

@@ -17,7 +17,7 @@ CODEGEN_PACKAGES := heart_api heart_db heart_state heart_charts heart_health
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
-.PHONY: bootstrap deps hooks codegen codegen-app lint format format-check test test-app profiles \
+.PHONY: bootstrap deps hooks codegen codegen-app lint format format-check test test-app profiles reclaim \
         $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
 bootstrap: hooks deps codegen codegen-app
@@ -160,3 +160,8 @@ profiles:
 	MATCH_PASSWORD=$$(aws s3 cp "s3://$$bucket/secrets/appstore/fastlane_passphrase.txt" - --profile "$$aws_profile") \
 	APPSTORE_USERNAME=$$(jq -r .username fastlane/appstore_key.json) \
 	fastlane profiles env:$(ENV) force:$(if $(FORCE),true,false)
+
+# Disk leftovers: merged worktrees, stray agent simulators, stale DerivedData.
+# Lists by default; APPLY=1 removes. See scripts/reclaim.sh.
+reclaim:
+	APPLY=$(APPLY) scripts/reclaim.sh

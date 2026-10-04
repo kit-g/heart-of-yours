@@ -16,8 +16,8 @@ mkdir -p ~/.config/heart-agents
 cp agents/env.example ~/.config/heart-agents/default.env   # then fill it in
 claude setup-token    # → CLAUDE_CODE_OAUTH_TOKEN for the env file
 
-# once: a simulator of the host agent's own, so it never touches yours
-xcrun simctl create agent-iphone "iPhone 17"
+# host agents share agent-iphone and agent-ipad; agents/host-agent creates
+# them when missing, and nothing else should
 
 # then, one terminal tab each:
 agents/agent a1 --issue 142                       # containerized, headless
@@ -102,6 +102,22 @@ container's SDK.
 
 The issue text for `--issue` is fetched on the **host** with your own `gh`
 auth before the container starts, so agent PATs stay minimal.
+
+## Disk
+
+Simulators, worktrees and Xcode builds are not temporary: each stays on disk
+until something deletes it, and a used simulator holds 5–6 GB. On
+2026-10-04 this machine ran out of space with 82 simulators (136 GB),
+merged worktrees and 36 GB of DerivedData behind it. The rules:
+
+- **Simulators:** host agents use `agent-iphone` and `agent-ipad`, by
+  UDID, and never create others. Shut down what you boot.
+- **Worktrees:** a worktree goes once its PR merges.
+- **`make reclaim`** lists what can go: merged clean worktrees (this repo
+  and heart-api), stray agent simulators, simulators with no runtime, and
+  DerivedData untouched for a week. `make reclaim APPLY=1` removes it. Run
+  it after a merge, or whenever the disk is tight. It never touches your own
+  simulators, iOS runtimes, Android emulators, Docker or package caches.
 
 ## The list of things one forgets
 
