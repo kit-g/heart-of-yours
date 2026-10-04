@@ -6,13 +6,22 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     return jsonEncode(images.map((each) => each.toRow()).toList());
   }
 
-  /// [set]'s row. `toRow` predates set types and RPE and leaves them out, so
-  /// every write of a set goes through here to keep them (#151).
+  /// A workout's closed pauses as stored: JSON, null for none, as on every row
+  /// from before pauses existed (#134).
+  static String? _encodePauses(List<WorkoutPause> pauses) {
+    if (pauses.isEmpty) return null;
+    return jsonEncode(pauses.map((pause) => pause.toMap()).toList());
+  }
+
+  /// [set]'s row. `toRow` predates set types, RPE and the tick's time, and
+  /// leaves them out, so every write of a set goes through here to keep them
+  /// (#151, #134).
   static Map<String, Object?> _setRow(ExerciseSet set) {
     return {
       ...set.toRow(),
       'set_type': _setType(set),
       'rpe': set.rpe,
+      'completed_at': set.completedAt?.toIso8601String(),
     };
   }
 
@@ -55,7 +64,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     required bool synced,
     required bool replaceExercises,
   }) {
-    final Workout(id: workoutId, :start, :name, :end, :images, :note) = workout;
+    final Workout(id: workoutId, :start, :name, :end, :images, :note, :pauses) = workout;
     // every column, nulls included, so the row ends up exactly as REPLACE
     // used to leave it — only without the delete underneath
     batch.rawInsert(sql.upsertWorkout, [
@@ -67,6 +76,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       _encodeImages(images?.values),
       synced ? 1 : 0,
       note,
+      _encodePauses(pauses),
     ]);
 
     if (!replaceExercises) return;
@@ -136,6 +146,9 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
         // workout is the truth here: an exercise `removeEmptySets` dropped
         // must go from the mirror too.
         _storeWorkout(batch, workout, userId, synced: false, replaceExercises: true);
+        // finished, it is paused no longer: the pause it was in is closed
+        // among its pauses
+        batch.update(_workouts, {'paused_at': null}, where: 'id = ?', whereArgs: [workout.id]);
 
         await batch.commit(noResult: true);
 
@@ -187,6 +200,28 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   /// writes every column it names and would clear this one on a rename.
   Future<void> setWorkoutNote(String workoutId, String? note) async {
     await _db.update(_workouts, {'note': note}, where: 'id = ?', whereArgs: [workoutId]);
+  }
+
+  /// The active workout's pauses (#134): the closed ones, and the one open now,
+  /// or null while it runs. Apart from [_storeWorkout], which leaves the open
+  /// one alone: it is this device's, and no copy from the server knows it.
+  Future<void> setWorkoutPauses(String workoutId, List<WorkoutPause> pauses, DateTime? pausedAt) async {
+    await _db.update(
+      _workouts,
+      {'pauses': _encodePauses(pauses), 'paused_at': pausedAt?.toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [workoutId],
+    );
+  }
+
+  /// When [workoutId] was paused, if it still is: what a cold start comes back
+  /// to.
+  Future<DateTime?> getPausedAt(String workoutId) async {
+    final rows = await _db.query(_workouts, columns: ['paused_at'], where: 'id = ?', whereArgs: [workoutId]);
+    return switch (rows) {
+      [{'paused_at': String at}] => DateTime.tryParse(at),
+      _ => null,
+    };
   }
 
   Future<int> _nextExerciseOrder(DatabaseExecutor txn, String workoutId) async {
@@ -247,7 +282,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   }
 
   Future<void> _markSet(ExerciseSet set, bool status) {
-    final row = {'completed': status ? 1 : 0};
+    final row = {'completed': status ? 1 : 0, 'completed_at': set.completedAt?.toIso8601String()};
     return _db.update(_sets, row, where: 'id = ?', whereArgs: [set.id]);
   }
 
