@@ -99,6 +99,10 @@ const _schema = [
   addWorkoutNote,
   // v16
   clearNormalSetType,
+  // v17
+  addWorkoutPauses,
+  addWorkoutPausedAt,
+  addSetCompletedAt,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -108,7 +112,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 16,
+      version: 17,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
