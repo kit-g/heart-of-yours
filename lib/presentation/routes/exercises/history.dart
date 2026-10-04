@@ -161,7 +161,7 @@ class _Card extends StatelessWidget {
                         TextSpan(text: '${index + 1}.', style: textTheme.titleSmall),
                         const TextSpan(text: '  '),
                         TextSpan(
-                          text: _formatSet(set, prefs: prefs, unit: unit),
+                          text: _formatSet(set, l: L.of(context), prefs: prefs, unit: unit),
                           style: textTheme.bodyMedium,
                         ),
                       ],
@@ -176,7 +176,7 @@ class _Card extends StatelessWidget {
     );
   }
 
-  String _formatSet(ExerciseSet set, {required Preferences prefs, MeasurementUnit? unit}) {
+  String _formatSet(ExerciseSet set, {required L l, required Preferences prefs, MeasurementUnit? unit}) {
     switch (set.category) {
       case .weightedBodyWeight:
         return switch (set) {
@@ -218,6 +218,23 @@ class _Card extends StatelessWidget {
                 '${Duration(seconds: duration).formatted()}'
                 ' | '
                 '${prefs.distance(distance, unit: unit)}',
+          _ => '',
+        };
+      case .weightedDistance:
+        final suffix = switch (unit ?? prefs.distanceUnit) {
+          .imperial => l.yardsShort,
+          .metric => l.metresShort,
+        };
+        return switch (set) {
+          // the unit is spelled out: "40 x 30" would read as reps
+          ExerciseSet(:double weight, :double distance) =>
+            '${prefs.weight(weight, unit: unit)} | ${prefs.shortDistance(distance, unit: unit)} $suffix',
+          _ => '',
+        };
+      case .weightedDuration:
+        return switch (set) {
+          ExerciseSet(:double weight, :int duration) =>
+            '${prefs.weight(weight, unit: unit)} | ${Duration(seconds: duration).formatted()}',
           _ => '',
         };
     }

@@ -66,7 +66,11 @@ class RecordFormats {
   final Preferences prefs;
   final MeasurementUnit? unit;
 
-  const new({required this.l, required this.prefs, required this.unit});
+  /// The exercise's category, which picks the distance scale: a carry's in
+  /// metres or yards, a run's in kilometres or miles.
+  final Category? category;
+
+  const new({required this.l, required this.prefs, required this.unit, this.category});
 
   /// The record's value, formatted by its [kind].
   String value(RecordKind kind, Map record) {
@@ -89,11 +93,12 @@ class RecordFormats {
   }
 
   String distance(num value) {
-    final suffix = switch (unit ?? prefs.distanceUnit) {
-      .imperial => l.milesPlural,
-      .metric => l.km,
+    return switch ((category, unit ?? prefs.distanceUnit)) {
+      (.weightedDistance, .imperial) => '${prefs.shortDistance(value, unit: unit)} ${l.yardsShort}',
+      (.weightedDistance, .metric) => '${prefs.shortDistance(value, unit: unit)} ${l.metresShort}',
+      (_, .imperial) => '${prefs.distance(value.toDouble(), unit: unit)} ${l.milesPlural}',
+      (_, .metric) => '${prefs.distance(value.toDouble(), unit: unit)} ${l.km}',
     };
-    return '${prefs.distance(value.toDouble(), unit: unit)} $suffix';
   }
 
   String time(num seconds) => _clock(Duration(seconds: seconds.round()));

@@ -29,13 +29,15 @@ class PreviousSet extends StatelessWidget {
       (.repsOnly, {'reps': int _}) => true,
       (.duration, {'duration': num _}) => true,
       (.cardio, {'duration': num _, 'distance': num _}) => true,
+      (.weightedDistance, {'weight': num _, 'distance': num _}) => true,
+      (.weightedDuration, {'weight': num _, 'duration': num _}) => true,
       _ => false,
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    final L(:lbs, :kg, :reps, :milesPlural, :km) = L.of(context);
+    final L(:lbs, :kg, :reps, :milesPlural, :km, :metresShort, :yardsShort) = L.of(context);
     final override = Exercises.of(context).unitFor(exercise.id);
 
     switch (exercise.category) {
@@ -80,6 +82,34 @@ class PreviousSet extends StatelessWidget {
         return switch (previousValue) {
           {'duration': num duration, 'distance': num distance} => Text(
             '${prefs.distance(distance, unit: override)} $unit | ${Duration(seconds: duration.toInt()).formatted()}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          _ => const Text(_emptyValue),
+        };
+      case Category.weightedDistance:
+        final weightUnit = switch (override ?? prefs.weightUnit) {
+          MeasurementUnit.imperial => lbs,
+          MeasurementUnit.metric => kg,
+        };
+        final distanceUnit = switch (override ?? prefs.distanceUnit) {
+          MeasurementUnit.imperial => yardsShort,
+          MeasurementUnit.metric => metresShort,
+        };
+        return switch (previousValue) {
+          {'weight': num weight, 'distance': num distance} => Text(
+            '${prefs.weight(weight, unit: override)} $weightUnit | ${prefs.shortDistance(distance, unit: override)} $distanceUnit',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          _ => const Text(_emptyValue),
+        };
+      case Category.weightedDuration:
+        final unit = switch (override ?? prefs.weightUnit) {
+          MeasurementUnit.imperial => lbs,
+          MeasurementUnit.metric => kg,
+        };
+        return switch (previousValue) {
+          {'weight': num weight, 'duration': num duration} => Text(
+            '${prefs.weight(weight, unit: override)} $unit | ${Duration(seconds: duration.toInt()).formatted()}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           _ => const Text(_emptyValue),

@@ -204,7 +204,12 @@ class _RecordBadgesState extends State<_RecordBadges> with SingleTickerProviderS
     Preferences prefs,
     Exercises exercises,
   ) {
-    final formats = RecordFormats(l: l, prefs: prefs, unit: exercises.unitFor(exercise.id));
+    final formats = RecordFormats(
+      l: l,
+      prefs: prefs,
+      unit: exercises.unitFor(exercise.id),
+      category: exercise.category,
+    );
     final kind = recordKindLabel(context, record.kind);
     final value = formats.value(record.kind, record.record);
     final previous = formats.value(record.kind, record.record['previous'] as Map);

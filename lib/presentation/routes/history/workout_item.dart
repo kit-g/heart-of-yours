@@ -246,6 +246,24 @@ class WorkoutItem extends StatelessWidget {
           int seconds => Duration(seconds: seconds).formatted(context),
           _ => '',
         };
+      case .weightedDistance:
+        final weight = weightUnit == MeasurementUnit.imperial ? l.lbs : l.kg;
+        final distance = distanceUnit == MeasurementUnit.imperial ? l.yardsShort : l.metresShort;
+        final prefs = Preferences.of(context);
+        return switch ((set?.weight, set?.distance)) {
+          // e.g. 40 kg / 30 m
+          (double kg, double km) =>
+            '${prefs.weight(kg, unit: weightUnit)} $weight / ${prefs.shortDistance(km, unit: distanceUnit)} $distance',
+          _ => '',
+        };
+      case .weightedDuration:
+        final label = weightUnit == MeasurementUnit.imperial ? l.lbs : l.kg;
+        return switch ((set?.weight, set?.duration)) {
+          // e.g. 20 kg / 1:00
+          (double kg, int seconds) =>
+            '${Preferences.of(context).weight(kg, unit: weightUnit)} $label / ${seconds.formatted(context)}',
+          _ => '',
+        };
       case null:
         return '';
     }

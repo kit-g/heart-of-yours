@@ -21,6 +21,8 @@ enum SetColumn {
       .repsOnly => const [.reps],
       .cardio => const [.distance, .duration],
       .duration => const [.duration],
+      .weightedDistance => const [.weight, .distance],
+      .weightedDuration => const [.weight, .duration],
     };
   }
 

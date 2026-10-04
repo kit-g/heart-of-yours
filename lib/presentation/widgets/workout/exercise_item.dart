@@ -401,9 +401,12 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     }
 
     String distanceUnit() {
-      return switch (override ?? prefs.distanceUnit) {
-        .metric => l.km,
-        .imperial => l.mile,
+      return switch ((exercise.exercise.category, override ?? prefs.distanceUnit)) {
+        // a carry is measured in metres or yards, not in fractions of a km
+        (.weightedDistance, .metric) => l.metresShort,
+        (.weightedDistance, .imperial) => l.yardsShort,
+        (_, .metric) => l.km,
+        (_, .imperial) => l.mile,
       };
     }
 
