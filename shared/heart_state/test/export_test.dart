@@ -457,6 +457,41 @@ void main() {
       expect(lines[5], 'w2,2026-03-03T07:30:00.000Z,2026-03-03T08:00:00.000Z,ex-plank,Plank,1,,,,60,,');
     });
 
+    test('a carry holds a weight and a distance, and its row names both units', () {
+      final carry = Workout.fromJson({
+        'id': 'w9',
+        'start': '2026-03-05T10:00:00.000Z',
+        'end': '2026-03-05T10:30:00.000Z',
+        'exercises': [
+          {
+            'id': 'we-9',
+            'order': 0,
+            'exercise': _exercise('ex-walk', "Farmer's Walk", category: 'Weighted Distance', target: 'Full Body'),
+            'sets': [
+              {'id': 's9', 'weight': 40, 'distance': 0.05, 'completed': 1},
+            ],
+          },
+        ],
+      });
+      final snapshot = ExportSnapshot(
+        workouts: [carry],
+        templates: const [],
+        folders: const [],
+        exercises: const [],
+        weightUnit: .metric,
+        distanceUnit: .metric,
+        exerciseUnits: const {},
+        goals: const [],
+      );
+
+      final lines = const LineSplitter().convert(snapshot.toCsv());
+
+      expect(
+        lines[1],
+        'w9,2026-03-05T10:00:00.000Z,2026-03-05T10:30:00.000Z,ex-walk,Farmer\'s Walk,1,40,kg/km,,,0.05,',
+      );
+    });
+
     test('is LF-terminated, every line', () async {
       final snapshot = await read();
 

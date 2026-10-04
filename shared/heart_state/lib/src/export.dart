@@ -121,10 +121,11 @@ class ExportSnapshot {
     final id = exercise.exercise.id;
     final weightUnit = exerciseUnits[id] ?? this.weightUnit;
     final distanceUnit = exerciseUnits[id] ?? this.distanceUnit;
-    // a set measures weight or distance, never both — one column names
-    // whichever unit the row carries
+    // one column names whichever unit the row carries; a carry is the one
+    // set that holds both, and names both, weight's first
     final unit = switch ((weight, distance)) {
-      (double _, _) => _weightUnit(weightUnit),
+      (double _, double _) => '${_weightUnit(weightUnit)}/${_distanceUnit(distanceUnit)}',
+      (double _, null) => _weightUnit(weightUnit),
       (null, double _) => _distanceUnit(distanceUnit),
       (null, null) => '',
     };
