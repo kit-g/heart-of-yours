@@ -2273,9 +2273,6 @@ class LRu extends L {
   String get setStopwatchSubtitle => 'Засеките подход и остановите, чтобы записать.';
 
   @override
-  String get stopwatchStart => 'Старт';
-
-  @override
   String get timeSet => 'Засечь подход';
 
   @override

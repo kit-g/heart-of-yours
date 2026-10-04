@@ -24,6 +24,11 @@ class _SetTypeButton extends StatefulWidget {
   /// popup carries the ratings under the types.
   final void Function(ExerciseSet, double?)? onSetRpe;
 
+  /// Starts the set stopwatch on this set (#171); with it, the popup offers
+  /// "Time this set" under the types. Absent where the stopwatch is off or
+  /// can't start: a set done, another being timed, a template, history.
+  final VoidCallback? onTimeSet;
+
   const new({
     super.key,
     required this.set,
@@ -31,6 +36,7 @@ class _SetTypeButton extends StatefulWidget {
     required this.fill,
     this.onSetType,
     this.onSetRpe,
+    this.onTimeSet,
   });
 
   @override
@@ -132,6 +138,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       position: _anchor.position(),
       items: [
         ..._typed.map((type) => _item(type, selected: type == current)),
+        if (widget.onTimeSet != null) _timeItem(),
         if (onSetRpe != null) _RpeEntry(set: widget.set, explained: _rpeExplained),
       ],
     );
@@ -153,9 +160,39 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       case _RpeCleared():
         buzz();
         onSetRpe?.call(widget.set, null);
+      case _TimeChoice():
+        buzz();
+        widget.onTimeSet?.call();
       case null:
         return;
     }
+  }
+
+  /// "Time this set", under the types behind a hairline, as RPE sits.
+  PopupMenuItem<_SetChoice> _timeItem() {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return PopupMenuItem<_SetChoice>(
+      key: WorkoutDetailKeys.timeSet,
+      value: const _TimeChoice(),
+      padding: .zero,
+      child: Container(
+        width: _setTypeMenuWidth,
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: colorScheme.outlineVariant, width: .5)),
+        ),
+        padding: const .symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          spacing: 12,
+          children: [
+            SizedBox(
+              width: 20,
+              child: Icon(Icons.timer_outlined, size: 18, color: colorScheme.onSurfaceVariant),
+            ),
+            Expanded(child: Text(L.of(context).timeSet, style: textTheme.titleSmall)),
+          ],
+        ),
+      ),
+    );
   }
 
   PopupMenuItem<_SetChoice> _item(SetType type, {required bool selected}) {
