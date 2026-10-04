@@ -149,6 +149,21 @@ void main() {
     });
   });
 
+  group('short distance', () {
+    test('shows a carry in metres or yards and stores it back in kilometres', () async {
+      await sut.init();
+      expect(sut.shortDistance(0.04, unit: .metric), '40');
+      expect(sut.shortDistance(0.04, unit: .imperial), '43.7');
+      expect(sut.shortDistanceStored(40, unit: .metric), closeTo(0.04, 1e-12));
+      expect(sut.shortDistanceStored(50, unit: .imperial), closeTo(0.04572, 1e-12));
+      // the round trip lands where it started
+      expect(
+        sut.shortDistanceStored(sut.shortDistanceValue(0.05, unit: .imperial), unit: .imperial),
+        closeTo(0.05, 1e-12),
+      );
+    });
+  });
+
   group('collapsed template folders', () {
     test('folders start expanded', () async {
       await sut.init();
