@@ -21,6 +21,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final RemoteAccess _remote;
   final Future<void> Function(String id, String? note)? _persistNote;
   final Future<void> Function(String workoutId, String? note)? _persistWorkoutNote;
+
+  /// Stores the active workout's pauses, closed and open (#134), and reads the
+  /// open one back. Apart from [WorkoutService], which has no word for a pause
+  /// that has not ended.
+  final Future<void> Function(String workoutId, List<WorkoutPause> pauses, DateTime? pausedAt)? _persistPauses;
+  final Future<DateTime?> Function(String workoutId)? _pausedAtOf;
   final String? Function(String exerciseId)? _noteFor;
   final _progress = SplayTreeSet<WorkoutImage>(_compareImages);
 
@@ -42,6 +48,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this.onError,
     this._persistNote,
     this._persistWorkoutNote,
+    this._persistPauses,
+    this._pausedAtOf,
     this._noteFor,
     this.analytics,
     RemoteAccess? remote,
@@ -68,6 +76,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     _workouts.clear();
     _edited.clear();
     _activeWorkoutId = null;
+    _pausedAt = null;
     userId = null;
     historyInitialized = false;
     _historyCursor = null;
@@ -144,6 +153,65 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   bool get hasUnNotifiedActiveWorkout => hasActiveWorkout && !_notifiedOfActiveWorkout;
 
+  /// When the active workout was paused, while it is (#134). The open pause is
+  /// this device's own: it never goes on the wire, and joins [Workout.pauses]
+  /// only once it is closed.
+  DateTime? _pausedAt;
+
+  DateTime? get pausedAt => _pausedAt;
+
+  bool get isPaused => _pausedAt != null;
+
+  /// Whether [pause] would stop the clock: a workout is running, and it is
+  /// under [Workout.maxPauses], past which the server refuses the workout.
+  /// A control that pauses shows only while this holds.
+  bool get canPause {
+    return switch (activeWorkout) {
+      Workout workout => !isPaused && workout.pauses.length < Workout.maxPauses,
+      null => false,
+    };
+  }
+
+  /// Where the active workout's clock counts from: its start, moved on by each
+  /// pause it has closed. What a clock that ticks by itself — the lock screen,
+  /// the watch — is handed, with [pausedAt] to stop it at. Exact, so two
+  /// readings of the same state compare equal.
+  DateTime? get clockStart {
+    return switch (activeWorkout) {
+      Workout workout => workout.start.add(_closedPauses(workout)),
+      null => null,
+    };
+  }
+
+  /// How long the active workout has run, less every pause — heart_models
+  /// leaves out the closed ones, and the open one is subtracted here, the one
+  /// place that knows it. A clock drawn by the app or the platform reads
+  /// [clockStart] and [pausedAt] instead, so it can tick by itself.
+  Duration? get elapsed {
+    return switch ((activeWorkout, _pausedAt)) {
+      (Workout workout, DateTime at) => at.difference(workout.start) - _closedPauses(workout),
+      (Workout workout, null) => workout.elapsed(),
+      _ => null,
+    };
+  }
+
+  /// When the active workout's last set was ticked; null with none ticked, or
+  /// none ticked since ticks were timed. A workout left running is offered to
+  /// finish here, not when it was noticed (#134).
+  DateTime? get lastTickedAt {
+    final ticks = activeWorkout
+        ?.expand((exercise) => exercise)
+        .where((set) => set.isCompleted)
+        .map(
+          (set) => set.completedAt,
+        );
+    return ticks?.nonNulls.fold<DateTime?>(null, (latest, at) => latest != null && latest.isAfter(at) ? latest : at);
+  }
+
+  static Duration _closedPauses(Workout workout) {
+    return workout.pauses.fold(Duration.zero, (sum, pause) => sum + pause.duration);
+  }
+
   Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
 
   Map<String, List<Workout>> get byMonth {
@@ -213,6 +281,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> init() async {
     if (userId case String userId) {
       final active = await _getActiveWorkout(userId);
+      _pausedAt = switch (active) {
+        Workout workout => await _restorePause(workout.id),
+        null => null,
+      };
       _hasResolvedActiveWorkout = true;
       // the setter notifies, so listeners see both at once
       _activeWorkout = active;
@@ -334,6 +406,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
     workout.end = null;
     _edited.clear();
+    _pausedAt = null;
     _workouts[workout.id] = workout;
     _activeWorkoutId = workout.id;
 
@@ -416,10 +489,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     // empties the second half.
     final unticked = _untickedAtPrompt + _typedButUnticked.length;
     _edited.clear();
-    activeWorkout?.finish(at?.toUtc() ?? DateTime.timestamp());
 
     final active = activeWorkout;
     if (active == null) return null;
+
+    final end = at?.toUtc() ?? DateTime.timestamp();
+    // finished while paused: the pause ends with the workout — or, begun after
+    // a finish placed back in time, was never part of it
+    _closePause(active, end);
+    _pausedAt = null;
+    active
+      ..finish(end)
+      // a finish placed back in time — the idle offer's, a late watch's — ends
+      // the workout before pauses taken since; the server refuses any pause
+      // outside the workout, so they are cut to it
+      ..pauses = _clipPauses(active.pauses, active.start, end);
 
     final saved = await saveWorkout(active);
 
@@ -438,16 +522,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   void _reportFinished(Workout workout, {required int unticked}) {
-    final start = workout.start;
-    final end = workout.end;
     analytics?.workoutFinished(
       source: _startedFrom,
       exerciseCount: workout.length,
       setCount: workout.expand((exercise) => exercise).length,
-      durationMin: switch ((start, end)) {
-        (DateTime from, DateTime to) => to.difference(from).inMinutes,
-        _ => 0,
-      },
+      // the time trained: paused time is not in it (#134)
+      durationMin: workout.duration?.inMinutes ?? 0,
       untickedSets: unticked,
     );
   }
@@ -574,6 +654,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (workout == null) return null;
       if (start != null) workout.start = start;
       if (end != null) workout.end = end;
+      // what the server does to a PATCH that moves either end
+      if (workout.end case DateTime end) {
+        workout.pauses = _clipPauses(workout.pauses, workout.start, end);
+      }
       await _storeLocally(workout);
       return workout;
     }
@@ -600,6 +684,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       exerciseCount: activeWorkout?.length ?? 0,
     );
     _edited.clear();
+    _pausedAt = null;
     if (_activeWorkoutId case String id) {
       _workouts.remove(id);
       try {
@@ -703,18 +788,101 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.removeExercise(exercise);
   }
 
-  Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set) {
+  /// Ticks [set] [at] — now, unless it was ticked earlier than it arrived (a
+  /// watch out of the phone's reach). Ticking a set is getting back to work, so
+  /// a paused workout resumes then (#134).
+  Future<void>? markSetAsComplete(WorkoutExercise exercise, ExerciseSet set, {DateTime? at}) {
+    final ticked = at?.toUtc() ?? DateTime.timestamp();
+    final resumed = switch (activeWorkout) {
+      Workout workout when workout.any((each) => each.contains(set)) => _closePause(workout, ticked),
+      _ => false,
+    };
     if (stopwatch.isTiming(set)) stopwatch.clear();
-    set.isCompleted = true;
+    set
+      ..isCompleted = true
+      ..completedAt = ticked;
     _latestMarkedSet = (exercise, set);
     notifyListeners();
-    return _localService.markSetAsComplete(set);
+    final stored = _localService.markSetAsComplete(set);
+    if (!resumed) return stored;
+    return Future.wait([stored, _storePauses()]);
   }
 
   Future<void>? markSetAsIncomplete(WorkoutExercise exercise, ExerciseSet set) {
-    set.isCompleted = false;
+    set
+      ..isCompleted = false
+      ..completedAt = null;
     notifyListeners();
     return _localService.markSetAsIncomplete(set);
+  }
+
+  /// Stops the active workout's clock [at] — now, unless the pause was decided
+  /// earlier than it arrived (a watch out of the phone's reach). Nothing to
+  /// stop while paused already, and nothing past [Workout.maxPauses], which
+  /// the server would refuse along with the whole workout.
+  Future<void> pause({DateTime? at}) async {
+    final workout = activeWorkout;
+    if (workout == null || !canPause) return;
+
+    // never inside the last pause, nor before the workout began: pauses that
+    // overlap are refused too. Nor before the last tick: a pause decided on a
+    // watch out of reach arrives late, and a set ticked since was work
+    final from = [
+      at?.toUtc() ?? DateTime.timestamp(),
+      workout.start,
+      ...workout.pauses.map((pause) => pause.end),
+      ?lastTickedAt,
+    ].reduce((a, b) => a.isAfter(b) ? a : b);
+
+    _pausedAt = from;
+    notifyListeners();
+    // a set being timed stops with the workout; resuming leaves it to the
+    // user, who may not be back at that set
+    await Future.wait([_storePauses(), stopwatch.pause()]);
+  }
+
+  /// Starts the active workout's clock again [at], keeping the pause among the
+  /// workout's own — they are what its duration leaves out.
+  Future<void> resume({DateTime? at}) async {
+    final workout = activeWorkout;
+    if (workout == null || !isPaused) return;
+    // a pause that never lasted (begun at a skewed watch's later clock) is
+    // not kept, but the clock runs again all the same
+    if (!_closePause(workout, at?.toUtc() ?? DateTime.timestamp())) _pausedAt = null;
+    notifyListeners();
+    await _storePauses();
+  }
+
+  /// Ends the open pause at [at], if there is one and [at] comes after it, and
+  /// says whether it did. A pause that never lasted is not kept: the server
+  /// refuses one that ends where it starts.
+  bool _closePause(Workout workout, DateTime at) {
+    final from = _pausedAt;
+    if (from == null || !at.isAfter(from)) return false;
+    workout.pauses.add(WorkoutPause(start: from, end: at));
+    _pausedAt = null;
+    return true;
+  }
+
+  /// Errors go to [onError]: a pause is taken on a tap or a watch command, and
+  /// nobody up the call awaits it.
+  Future<void> _storePauses() async {
+    if (activeWorkout case Workout workout) {
+      try {
+        await _persistPauses?.call(workout.id, workout.pauses, _pausedAt);
+      } catch (error, s) {
+        onError?.call(error, stacktrace: s);
+      }
+    }
+  }
+
+  Future<DateTime?> _restorePause(String workoutId) async {
+    try {
+      return await _pausedAtOf?.call(workoutId);
+    } catch (error, s) {
+      onError?.call(error, stacktrace: s);
+      return null;
+    }
   }
 
   Future<void> storeMeasurements(ExerciseSet set) {
@@ -1075,7 +1243,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           ..start = incoming.start
           ..end = incoming.end
           ..name = incoming.name
-          ..calories = incoming.calories;
+          ..calories = incoming.calories
+          ..pauses = incoming.pauses;
         continue;
       }
       _workouts[incoming.id] = incoming;
@@ -1146,6 +1315,20 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       detachImageFromWorkout(workout, image);
     }
   }
+}
+
+/// [pauses] cut to the window [start]..[end] the way the server cuts them
+/// (heart-api#95): a pause that crosses either end is shortened to it, and one
+/// left with no length is dropped.
+List<WorkoutPause> _clipPauses(Iterable<WorkoutPause> pauses, DateTime start, DateTime end) {
+  return [
+    for (final pause in pauses)
+      if (pause.start.isBefore(end) && pause.end.isAfter(start))
+        WorkoutPause(
+          start: pause.start.isBefore(start) ? start : pause.start,
+          end: pause.end.isAfter(end) ? end : pause.end,
+        ),
+  ];
 }
 
 /// Compares two [WorkoutImage] instances for sorting.
