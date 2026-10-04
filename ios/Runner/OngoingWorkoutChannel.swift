@@ -78,7 +78,10 @@ struct OngoingWorkoutRequest {
             accent: color("accent"),
             accentDark: color("accentDark"),
             accentInk: color("accentInk"),
-            accentInkDark: color("accentInkDark")
+            accentInkDark: color("accentInkDark"),
+            clockStart: (arguments["clockStart"] as? NSNumber).map(Self.date),
+            pausedAt: (arguments["pausedAt"] as? NSNumber).map(Self.date),
+            pausedLabel: arguments["pausedLabel"] as? String
         )
     }
 

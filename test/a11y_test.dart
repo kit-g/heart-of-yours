@@ -49,6 +49,8 @@ enum _Screen {
   workout,
   exerciseNoteEditor,
   workoutNote,
+  pausedWorkout,
+  finishAtLastSet,
   setTypeMenu,
   rpePicker,
   setStopwatch,
@@ -260,6 +262,40 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.workoutNote,
     _Guideline.iosTapTarget,
     'the set-row buttons, the exercise header and the workout bar\'s buttons are below 44x44 — visual-density change, out of scope; the note passes',
+  ),
+  // A paused workout (#134): Resume beside the stopped clock
+  // (lib/presentation/widgets/workout/workout_detail.dart).
+  (
+    _Screen.pausedWorkout,
+    _Guideline.labeledTapTarget,
+    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:922) and a control in the exercise row are icon-only with no label; Resume passes',
+  ),
+  (_Screen.pausedWorkout, _Guideline.textContrastLight, null),
+  (_Screen.pausedWorkout, _Guideline.textContrastDark, null),
+  (
+    _Screen.pausedWorkout,
+    _Guideline.androidTapTarget,
+    'the set-row buttons, the exercise header and the workout bar\'s buttons, Resume among them, are below 48x48 — the bar\'s density, out of scope',
+  ),
+  (
+    _Screen.pausedWorkout,
+    _Guideline.iosTapTarget,
+    'the set-row buttons, the exercise header and the workout bar\'s buttons, Resume among them, are below 44x44 — the bar\'s density, out of scope',
+  ),
+  // The idle reminder's offer to finish at the last set, over the workout
+  // (lib/presentation/widgets/workout/utils.dart, showFinishAtLastSetDialog).
+  (_Screen.finishAtLastSet, _Guideline.labeledTapTarget, null),
+  (_Screen.finishAtLastSet, _Guideline.textContrastLight, null),
+  (_Screen.finishAtLastSet, _Guideline.textContrastDark, null),
+  (
+    _Screen.finishAtLastSet,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.finishAtLastSet,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
   // The set type menu over a workout whose first set is a warm-up, with one
   // type's explanation open (lib/presentation/widgets/workout/set_type.dart).
@@ -606,6 +642,7 @@ void main() {
     when(db.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
 
     when(db.getActiveWorkout(any)).thenAnswer((_) async => null);
+    stubPauses(db);
 
     when(
       db.getWorkoutGallery(userId: anyNamed('userId')),
@@ -645,6 +682,9 @@ void main() {
     }
     if (screen == _Screen.rpePicker) {
       SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-rpe': 'on'});
+    }
+    if (screen == _Screen.pausedWorkout || screen == _Screen.finishAtLastSet) {
+      SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-pauseWorkout': 'on'});
     }
 
     // The upsync row shows on the profile of an account whose store is still
@@ -833,6 +873,28 @@ void main() {
         }
         await tester.pumpTimes();
         expect(find.byKey(WorkoutDetailKeys.workoutNote), findsOneWidget);
+      case _Screen.pausedWorkout || _Screen.finishAtLastSet:
+        final workout = Workout(name: 'Paused')..add(_squat);
+        final context = tester.element(find.byType(MaterialApp));
+        final workouts = Workouts.of(context);
+        await workouts.startWorkout(source: .template, template: workout);
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        if (screen == _Screen.pausedWorkout) {
+          await workouts.pause();
+          await tester.pumpTimes();
+          expect(find.byKey(WorkoutDetailKeys.resume), findsOneWidget);
+        } else {
+          final exercise = workouts.activeWorkout!.first;
+          await workouts.markSetAsComplete(exercise, exercise.first, at: DateTime.utc(2026, 10, 3, 18, 42));
+          unawaited(offerFinishAtLastSet(tester.element(find.byType(WorkoutDetail)), workouts));
+          await tester.pumpTimes();
+          expect(find.byKey(WorkoutDetailKeys.finishAtLastSet), findsOneWidget);
+        }
       case _Screen.setTypeMenu:
         final workout = Workout(name: 'Types')..add(_bench);
         workout.first

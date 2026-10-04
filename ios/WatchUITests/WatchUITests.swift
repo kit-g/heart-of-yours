@@ -83,6 +83,30 @@ final class WatchUITests: XCTestCase {
         XCTAssertTrue(skip.waitForNonExistence(timeout: 10), "the phone stopped the rest and said so")
     }
 
+    /// Pause, beside the clock at the foot of the page, stops the phone's clock
+    /// (#134); the page then leads with Resume. Only while pausing is on.
+    func testPauseWorkout() {
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+        let pause = app.buttons["Pause"]
+        for _ in 0..<5 where !pause.isHittable {
+            app.swipeUp()
+        }
+
+        pause.tap()
+
+        XCTAssertTrue(app.buttons["Resume"].waitForExistence(timeout: 10), "the phone paused and said so")
+    }
+
+    /// Resume starts the clock again where it stood.
+    func testResumeWorkout() {
+        let resume = app.buttons["Resume"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10))
+
+        resume.tap()
+
+        XCTAssertTrue(resume.waitForNonExistence(timeout: 10), "the phone resumed and said so")
+    }
+
     /// A swipe from the set up next is the whole workout, one row a set.
     func testOpenWorkoutPage() {
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))

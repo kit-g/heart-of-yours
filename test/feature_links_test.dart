@@ -93,6 +93,9 @@ void main() {
     expect(find.descendant(of: find.byKey(button).first, matching: find.text('Turn on in Features')), findsOneWidget);
 
     await tester.ensureVisible(find.byKey(button).first);
+    // laid out where the jump put it: below the window's fold when newer
+    // notes sit above it
+    await tester.pump();
     await tester.tap(find.byKey(button).first);
     // past the spotlight's fade
     await tester.pumpTimes(25);

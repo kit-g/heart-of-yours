@@ -9,6 +9,9 @@ class WorkoutDetailKeys {
   static const startNewWorkout = Key('WorkoutDetail.startNewWorkout');
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');
   static const timer = Key('WorkoutDetail.timer');
+  static const resume = Key('WorkoutDetail.resume');
+  static const keepGoing = Key('WorkoutDetail.keepGoing');
+  static const finishAtLastSet = Key('WorkoutDetail.finishAtLastSet');
   static const addSet = Key('WorkoutDetail.addSet');
   static const addExerciseButton = Key('WorkoutDetail.addExerciseButton');
   static const discardAndStart = Key('WorkoutDetail.discardAndStart');
