@@ -9,7 +9,7 @@ part of '../../heart_db.dart';
 mixin _TemplateFolders on _LocalDatabase {
   Future<Iterable<TemplateFolder>> getTemplateFolders(String userId) async {
     final rows = await _db.rawQuery(sql.getTemplateFolders, [userId]);
-    return rows.map(TemplateFolder.fromRow);
+    return _readable(rows, TemplateFolder.fromRow, what: 'template folder');
   }
 
   Future<void> storeTemplateFolders(Iterable<TemplateFolder> folders, {required String userId}) {

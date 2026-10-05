@@ -5,7 +5,7 @@ mixin _Charts on _LocalDatabase implements ChartPreferenceService {
   Future<Iterable<ChartPreference>> getPreferences(String userId) {
     return _db.query(_charts, where: 'user_id = ?', whereArgs: [userId], orderBy: 'sort_order').then(
       (rows) {
-        return rows.map(ChartPreference.fromRow);
+        return _readable(rows, ChartPreference.fromRow, what: 'chart');
       },
     );
   }

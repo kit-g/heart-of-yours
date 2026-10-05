@@ -19,7 +19,8 @@ mixin _Exercises on _LocalDatabase
           whereArgs: [userId],
         );
 
-        final exercises = rows.map(
+        final exercises = _readable(
+          rows,
           (row) {
             final each = row.toCamel();
             switch (each['muscles']) {
@@ -47,6 +48,7 @@ mixin _Exercises on _LocalDatabase
 
             return Exercise.fromJson(each);
           },
+          what: 'exercise',
         );
 
         final syncRows = await txn.query(
@@ -276,13 +278,15 @@ mixin _Exercises on _LocalDatabase
     );
 
     return Map.fromEntries(
-      rows.map(
+      _readable(
+        rows,
         (row) {
           return MapEntry(
             row['exercise_id'] as String,
             MeasurementUnit.fromString(row['unit_system'] as String),
           );
         },
+        what: 'unit preference',
       ),
     );
   }
@@ -306,9 +310,7 @@ mixin _Exercises on _LocalDatabase
             return acc;
           },
         );
-        return grouped.values.map(
-          (group) => ExerciseAct.fromRows(exercise, group),
-        );
+        return _readable(grouped.values, (group) => ExerciseAct.fromRows(exercise, group), what: 'exercise history');
       },
     );
   }
@@ -473,7 +475,7 @@ mixin _Exercises on _LocalDatabase
 Map? _foldRecords(Category category, List<Map<String, dynamic>> rows) {
   if (rows.isEmpty) return null;
 
-  final sets = rows.map(_RecordSet.fromRow).toList();
+  final sets = _readable(rows, _RecordSet.fromRow, what: 'record set');
   final records = _fold(category, sets);
   if (records == null) return null;
 
