@@ -153,20 +153,55 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
       // JSON is UTF-8 by definition, and the object carries no charset for
       // `response.body` to pick it from — it would decode Cyrillic as Latin-1
       200 => switch (jsonDecode(utf8.decode(response.bodyBytes))) {
-        {'exercises': List l} && final body => (
-          (
-            exercises: l.map((e) => Exercise.fromJson(e)).toList(),
-            glossary: switch (body['glossary']) {
-              Map glossary => SearchGlossary.fromJson(glossary),
-              _ => SearchGlossary.empty(),
-            },
-          ),
-          (version: version, locale: locale, etag: response.headers['etag']),
+        {'exercises': List l} && final body => _readLibrary(
+          l,
+          body['glossary'],
+          stamp: (version: version, locale: locale, etag: response.headers['etag']),
         ),
         final body => throw FormatException('not an exercise library', body),
       },
       final code => throw NetworkException(statusCode: code),
     };
+  }
+
+  /// The library file, read one exercise at a time.
+  ///
+  /// The catalog grows ahead of the apps reading it: a category, a muscle or a
+  /// field value this build has never heard of arrives while it is still in
+  /// the stores. Such an entry is dropped rather than failing the file — before
+  /// this, one unknown category cost a fresh install its whole catalog, and a
+  /// warm one every update after it.
+  ///
+  /// A file read in part does not vouch for itself: the stamp goes out with no
+  /// version and no ETag, so the next launch downloads it again rather than
+  /// calling a partial copy current — and the app update that can read the rest
+  /// picks it up. An outdated build pays a download per launch for that.
+  (({Iterable<Exercise> exercises, SearchGlossary glossary}), ({String version, String locale, String? etag}))
+  _readLibrary(List entries, Object? glossary, {required ({String version, String locale, String? etag}) stamp}) {
+    final exercises = entries.map(_tryExercise).nonNulls.toList();
+    final complete = exercises.length == entries.length;
+    return (
+      (
+        exercises: exercises,
+        glossary: switch (glossary) {
+          Map glossary => SearchGlossary.fromJson(glossary),
+          _ => SearchGlossary.empty(),
+        },
+      ),
+      switch (complete) {
+        true => stamp,
+        false => (version: '', locale: stamp.locale, etag: null),
+      },
+    );
+  }
+
+  Exercise? _tryExercise(Object? raw) {
+    if (raw is! Map) return null;
+    try {
+      return Exercise.fromJson(raw);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// The API's own resolution rule, applied on-device over the manifest's
