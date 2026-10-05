@@ -186,6 +186,16 @@ Future<int> Function(GoalCadence?) workoutCounter(Stats stats, {DateTime? asOf})
   };
 }
 
+/// What [goal]'s numbers are read in: its exercise's scale, the one that
+/// exercise's charts are plotted on. A whole-workout goal has no exercise, and
+/// reads in the user's defaults.
+ChartScale goalScale(Goal goal, Exercises exercises) {
+  return switch (goal.exerciseId) {
+    String id => (unit: exercises.unitFor(id), category: exercises.lookup(id)?.category),
+    null => (unit: null, category: null),
+  };
+}
+
 /// Goals address an exercise by its server id, which since schema v11 is also
 /// what the catalog is keyed by.
 Exercise? goalExercise(Goal goal, Exercises exercises) {

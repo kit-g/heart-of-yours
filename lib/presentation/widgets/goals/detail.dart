@@ -46,6 +46,7 @@ class _GoalDetailState extends State<GoalDetail> {
       orElse: () => widget.goal,
     );
     final exercise = goalExercise(goal, exercises);
+    final scale = goalScale(goal, exercises);
 
     final key = (goal.id, exercise?.name, widget.workouts.workoutCount);
     if (key != _key) {
@@ -63,7 +64,7 @@ class _GoalDetailState extends State<GoalDetail> {
     return Column(
       crossAxisAlignment: .stretch,
       children: [
-        _header(context, l, goal, exercise, textTheme, colorScheme),
+        _header(context, l, goal, exercise, scale, textTheme, colorScheme),
         Expanded(
           child: ListView(
             controller: widget.scrollController,
@@ -74,10 +75,10 @@ class _GoalDetailState extends State<GoalDetail> {
               if (!goal.metric.isWholeWorkout && exercise != null)
                 Padding(
                   padding: const .symmetric(horizontal: 16),
-                  child: _chart(context, goal, exercise, settings, colorScheme),
+                  child: _chart(context, goal, exercise, scale, settings, colorScheme),
                 ),
               const SizedBox(height: 8),
-              GoalLadder(goal: goal, settings: settings),
+              GoalLadder(goal: goal, settings: settings, scale: scale),
             ],
           ),
         ),
@@ -90,6 +91,7 @@ class _GoalDetailState extends State<GoalDetail> {
     L l,
     Goal goal,
     Exercise? exercise,
+    ChartScale scale,
     TextTheme textTheme,
     ColorScheme colorScheme,
   ) {
@@ -108,7 +110,13 @@ class _GoalDetailState extends State<GoalDetail> {
                   future: _reading,
                   builder: (_, snapshot) {
                     return Text(
-                      goalStatus(context, goal, settings: Preferences.watch(context), current: snapshot.data),
+                      goalStatus(
+                        context,
+                        goal,
+                        settings: Preferences.watch(context),
+                        scale: scale,
+                        current: snapshot.data,
+                      ),
                       style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                     );
                   },
@@ -136,19 +144,28 @@ class _GoalDetailState extends State<GoalDetail> {
     BuildContext context,
     Goal goal,
     Exercise exercise,
+    ChartScale scale,
     Preferences settings,
     ColorScheme colorScheme,
   ) {
     final metric = goal.metric.chart;
     if (metric == null) return const SizedBox.shrink();
 
-    final convert = metric.converter(settings);
+    final (:unit, :category) = scale;
+    final convert = metric.converter(settings, unit: unit, category: category);
 
     return SizedBox(
       height: 300,
       child: ExerciseChart(
         // the whole ladder: there is room for it here, unlike on a dashboard card
-        thresholds: goalThresholds(context, goal, metric: metric, settings: settings),
+        thresholds: goalThresholds(
+          context,
+          goal,
+          metric: metric,
+          settings: settings,
+          unit: unit,
+          category: category,
+        ),
         callback: () => Exercises.of(context).getChartExerciseMetics(metric, exercise.id),
         refreshKey: (exercise.id, metric, goal.stages.length),
         converter: convert,

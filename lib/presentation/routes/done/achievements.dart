@@ -97,7 +97,7 @@ class _AchievementsState extends State<_Achievements> {
             Text(
               l.goalAchievedTarget(
                 goalTitle(context, goal, goalExercise(goal, exercises)),
-                _target(context, goal, stage, settings),
+                _target(context, goal, stage, settings, goalScale(goal, exercises)),
               ),
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -110,8 +110,8 @@ class _AchievementsState extends State<_Achievements> {
   /// The rung's target in the user's own units, the way the goals card states
   /// it. Falls back to the bare number before [Preferences] has loaded, since
   /// its unit fields are `late`.
-  String _target(BuildContext context, Goal goal, GoalStage stage, Preferences settings) {
+  String _target(BuildContext context, Goal goal, GoalStage stage, Preferences settings, ChartScale scale) {
     if (!settings.isInitialized) return stage.target.toString();
-    return goalTargetLabel(context, goal, stage.target, settings: settings);
+    return goalTargetLabel(context, goal, stage.target, settings: settings, scale: scale);
   }
 }

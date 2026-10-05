@@ -32,21 +32,23 @@ Iterable<Goal> goalsOnChart(
 /// Empty until [Preferences] has loaded: its unit fields are `late`, and this
 /// reads them eagerly to label the lines.
 ///
-/// [unit] must match whatever the chart's own converter was given — the
-/// per-exercise chart page overrides it per exercise — or the lines land in
-/// different units from the series they are measuring.
+/// [unit] and [category] must match whatever the chart's own converter was
+/// given — the exercise's unit override, and the category that puts a carry in
+/// metres — or the lines land in different units from the series they are
+/// measuring.
 List<ChartThreshold> goalThresholds(
   BuildContext context,
   Goal goal, {
   required ChartPreferenceType metric,
   required Preferences settings,
   MeasurementUnit? unit,
+  Category? category,
   bool nextOnly = false,
 }) {
   if (!settings.isInitialized) return const [];
 
-  final convert = metric.converter(settings, unit: unit);
-  final label = metric.unitLabel(context, settings, unit: unit);
+  final convert = metric.converter(settings, unit: unit, category: category);
+  final label = metric.unitLabel(context, settings, unit: unit, category: category);
 
   final stages = switch (nextOnly) {
     // null once the ladder is finished, which is the point: a goal with nothing

@@ -97,7 +97,13 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
   /// Owned by the form, not by the caller. A controller disposed as soon as the
   /// dialog's future completes is still attached to a field that has not been
   /// unmounted yet — the route is only starting its exit animation.
-  late final _input = GoalTargetInput(widget.metric.chart);
+  late final _input = GoalTargetInput(
+    widget.metric.chart,
+    scale: switch (widget.exercise) {
+      Exercise(:final id, :final category) => (unit: Exercises.of(context).unitFor(id), category: category),
+      null => (unit: null, category: null),
+    },
+  );
 
   GoalCadence? _cadence = GoalCadence.week;
 
@@ -128,7 +134,8 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final settings = Preferences.watch(context);
-    final unit = widget.metric.chart?.unitLabel(context, settings);
+    final (:unit, :category) = _input.scale;
+    final suffix = widget.metric.chart?.unitLabel(context, settings, unit: unit, category: category);
 
     return Column(
       mainAxisSize: .min,
@@ -146,7 +153,7 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
           // no `border`: the app's InputDecorationTheme already fills the
           // field and removes the side, which is what every other input in
           // the app looks like — see `SearchField`
-          decoration: InputDecoration(suffixText: unit),
+          decoration: InputDecoration(suffixText: suffix),
         ),
         SegmentedButton<GoalCadence?>(
           showSelectedIcon: false,
