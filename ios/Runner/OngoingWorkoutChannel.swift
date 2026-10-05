@@ -99,15 +99,24 @@ enum OngoingWorkoutActivities {
     /// process relaunched mid-workout must not undo their swipe.
     private static let requestedKey = "ongoingWorkout.requestedFor"
 
+    /// The install that made that request (#252). Installing the app — an App
+    /// Store update, a reinstall, a dev rebuild — ends its activities, and
+    /// that end is not the user's swipe.
+    private static let requestedByKey = "ongoingWorkout.requestedBy"
+
+    /// This install: the bundle's path, which every install moves.
+    private static var install: String { Bundle.main.bundleURL.path }
+
     /// Starts the workout's activity, or updates it if one is already up —
     /// including one left behind by a process that was killed mid-workout,
     /// which is found again by the workout's id. Activities for any other
     /// workout are strays and go.
     ///
     /// An activity already requested for this workout that is no longer live
-    /// was dismissed — swiped off the lock screen, or ended by the system — and
-    /// stays gone until the next workout: one that came back on every ticked
-    /// set would be worse than none.
+    /// was swiped off the lock screen, or ended by the system, and stays gone
+    /// until the next workout: one that came back on every ticked set would be
+    /// worse than none. The exception is an install since the request: that
+    /// ended it, not the user, so it is requested again.
     static func show(_ request: OngoingWorkoutRequest) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
@@ -126,7 +135,11 @@ enum OngoingWorkoutActivities {
         }
 
         let defaults = UserDefaults.standard
-        guard defaults.string(forKey: requestedKey) != request.workoutId else { return }
+        // a request with no install recorded predates #252, and keeps its swipe
+        let dismissed =
+            defaults.string(forKey: requestedKey) == request.workoutId
+                && (defaults.string(forKey: requestedByKey) ?? install) == install
+        guard !dismissed else { return }
 
         do {
             _ = try WorkoutActivity.request(
@@ -135,6 +148,7 @@ enum OngoingWorkoutActivities {
                 pushType: nil
             )
             defaults.set(request.workoutId, forKey: requestedKey)
+            defaults.set(install, forKey: requestedByKey)
         } catch {
             log.error("Live Activity request failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -142,6 +156,7 @@ enum OngoingWorkoutActivities {
 
     static func end() async {
         UserDefaults.standard.removeObject(forKey: requestedKey)
+        UserDefaults.standard.removeObject(forKey: requestedByKey)
         for activity in WorkoutActivity.activities {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
