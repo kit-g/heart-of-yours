@@ -316,6 +316,20 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     // ledger would report a sign-in that replayed nothing as the numbers of
     // whichever run last did — the "3 uploaded, 23 already there" that came
     // back on every login.
+    try {
+      await _replay(uid, elapsed);
+    } catch (error, stacktrace) {
+      // a local read or bookkeeping write that failed: the run is over, and
+      // says so, instead of standing at "running" with the remote leg closed
+      if (userId != uid) return;
+      onError?.call(error, stacktrace: stacktrace);
+      _status = .failed;
+      _reportReplay(elapsed, ok: false);
+      notifyListeners();
+    }
+  }
+
+  Future<void> _replay(String uid, Stopwatch elapsed) async {
     final ledger = await _local.ledger(uid);
 
     // Passes rather than one plan: a row written while the run was under way
@@ -342,9 +356,12 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
           } catch (error, stacktrace) {
             if (userId != uid) return;
             onError?.call(error, stacktrace: stacktrace);
-            // the server considered this one and said no, and will again: the
-            // rest of the run is not blocked on it
-            if (_isRefusal(error)) {
+            // the server considered this one and said no, and will again — or
+            // took it, and answered in a shape this build cannot read, which
+            // it will also do again: either way the rest of the run is not
+            // blocked on it. What the server took comes back with the next
+            // pull, for a build that can read it.
+            if (_isRefusal(error) || _isUnreadable(error)) {
               await _local.record(uid, step.resource, step.id, .skipped);
               ledger.putIfAbsent(step.resource, () => {})[step.id] = .skipped;
               _report = _counting(_report, .skipped);
@@ -377,6 +394,12 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     _reportReplay(elapsed, ok: true);
     notifyListeners();
     onComplete?.call();
+  }
+
+  /// A reply this build cannot read: a value it has never heard of, or a shape
+  /// it does not expect. Asking again gets the same reply.
+  static bool _isUnreadable(Object error) {
+    return error is ArgumentError || error is TypeError || error is FormatException;
   }
 
   /// One line per run that actually had something to replay, at whichever of

@@ -374,7 +374,30 @@ void main() {
       expect(sut.isInitialized, isFalse);
       expect(sut, isEmpty);
       expect(err, isNotNull);
-      verifyNever(remote.getOwnExercises());
+    });
+
+    test("a CDN failure does not cost the user's own exercises their sync", () async {
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
+      when(library.getLibrary(cached: anyNamed('cached'))).thenThrow(Exception('cdn down'));
+      when(remote.getOwnExercises()).thenAnswer((_) async => [ex('My Carry').copyWith(isMine: true)]);
+
+      // their own exercises alone are not a catalog the rest of start-up can
+      // write against, so init still answers false
+      expect(await sut.init(), isFalse);
+
+      verify(remote.getOwnExercises()).called(1);
+      expect(sut.map((each) => each.name), contains('My Carry'));
+    });
+
+    test('a local read that fails does not keep the CDN from refreshing the catalog', () async {
+      when(local.getExercises(userId: anyNamed('userId'))).thenThrow(StateError('unreadable'));
+      when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer(
+        (_) async => ((exercises: [ex('Squat')], glossary: SearchGlossary.empty()), stamp),
+      );
+
+      expect(await sut.init(), isTrue);
+
+      expect(sut.map((each) => each.name), contains('Squat'));
     });
 
     test('a current library is not re-stored; a moved stamp is', () async {

@@ -985,24 +985,31 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Future<void> initHistory() async {
     if (userId case String id) {
-      final local = await _localService.getWorkoutHistory(id);
-      _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
+      // each step reports its own failure and the next still runs: History
+      // initializes whatever happened, and the chain behind it (previous sets,
+      // stats, backfill) is never held back by one step it does not need
+      await _step(() async {
+        final local = await _localService.getWorkoutHistory(id);
+        _workouts.addAll(Map.fromEntries(local?.map(_entry) ?? []));
+      });
       // with no server to page from, the mirror is the whole history
       if (!_remote.allowed) _hasMoreHistory = false;
       notifyListeners();
 
-      final workouts = await _getRemoteHistory(id);
-      if (workouts != null) {
-        await _localService.storeWorkoutHistory(workouts, id);
-        _absorb(workouts);
-        await _dropDeletedElsewhere(workouts);
-        _advanceHistory(workouts);
-      }
+      await _step(() async {
+        final workouts = await _getRemoteHistory(id);
+        if (workouts != null) {
+          await _localService.storeWorkoutHistory(workouts, id);
+          _absorb(workouts);
+          await _dropDeletedElsewhere(workouts);
+          _advanceHistory(workouts);
+        }
+      });
 
       // heal workouts stranded locally by an earlier failed network save
-      await syncPendingWorkouts();
+      await _step(syncPendingWorkouts);
 
-      await _localService.getWorkoutGallery(userId: id).then<void>(_progress.addAll);
+      await _step(() => _localService.getWorkoutGallery(userId: id).then<void>(_progress.addAll));
 
       historyInitialized = true;
       notifyListeners();
@@ -1018,6 +1025,16 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   Future<void>? _healing;
+
+  /// Runs one step of [initHistory], reporting what it throws instead of
+  /// letting it cost the steps after it.
+  Future<void> _step(Future<void> Function() body) async {
+    try {
+      await body();
+    } catch (error, s) {
+      onError?.call(error, stacktrace: s);
+    }
+  }
 
   /// Workouts the repair pass has already asked the server about this
   /// session. One the server has nothing more for — or no longer has — stays
@@ -1083,7 +1100,9 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   /// The server's copy of one of the user's own workouts, or null when the
   /// server answered with anything but the workout — a 404 body, whatever its
-  /// shape, is still an answer about this one. Not reaching it at all throws.
+  /// shape, is still an answer about this one, and so is a workout this build
+  /// cannot read: asking again would get the same one. Not reaching it at all
+  /// throws.
   Future<Workout?> _detailOf(String id, String workoutId) async {
     try {
       return await _remoteService.getTargetWorkout(
@@ -1092,6 +1111,12 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         workoutId: workoutId,
       );
     } on Map {
+      return null;
+    } on ArgumentError {
+      return null;
+    } on TypeError {
+      return null;
+    } on FormatException {
       return null;
     }
   }
@@ -1217,7 +1242,10 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       Page<Workout>(:final hasMore) => hasMore,
       _ => false,
     };
-    _hasMoreHistory = more;
+    // the cursor is the page's last workout, so a page that held nothing this
+    // build could read has none to give: it ends the history rather than
+    // starting it over from the top, page after page
+    _hasMoreHistory = more && page.isNotEmpty;
     _historyCursor = more && page.isNotEmpty ? page.last.id : null;
   }
 

@@ -48,13 +48,19 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
     };
   }
 
+  /// A failure is reported and leaves [initialized] false, so the next [init]
+  /// tries again; nobody awaits it to the point of handling what it throws.
   Future<void> _load(String id) async {
-    final preferences = await _service.getPreferences(id);
-    _preferences
-      ..clear()
-      ..addAll(preferences);
-    initialized = true;
-    notifyListeners();
+    try {
+      final preferences = await _service.getPreferences(id);
+      _preferences
+        ..clear()
+        ..addAll(preferences);
+      initialized = true;
+      notifyListeners();
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+    }
   }
 
   Future<void> addPreference(ChartPreference preference) async {
