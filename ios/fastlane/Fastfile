@@ -26,6 +26,9 @@ EMBEDDED = {
   "WatchWidgets" => "watchkitapp.widgets",
 }
 
+# Non-ASCII characters TestFlight has accepted in What to Test (see the check in `beta`)
+NOTES_ACCEPTED = %w[— • › → ⋯ ×].freeze
+
 def app_identifiers(app_id)
   [app_id] + EMBEDDED.values.map { |suffix| "#{app_id}.#{suffix}" }
 end
@@ -76,6 +79,21 @@ platform :ios do
     app_id = env == 'prod' ? "me.heart-of.ios" : "me.heart-of.ios.dev"
     scheme = env == 'prod' ? "prod" : "dev"
     configuration = env == 'prod' ? "Release-prod" : "Release-dev"
+
+    # "What to Test", written by the `release-notes` skill. A missing file is not fatal —
+    # the build still ships, just without notes.
+    notes_path = File.join(__dir__, "..", "..", "release_notes", "testflight.txt")
+    changelog = File.exist?(notes_path) ? File.read(notes_path, encoding: "UTF-8") : nil
+    UI.important("No release_notes/testflight.txt — uploading without What to Test") if changelog.nil?
+
+    # Apple rejects some characters in whatsNew, and only says so after the build has been
+    # uploaded and processed: v1.11.0 lost both iOS deploys to a ✓. Checked here, before
+    # anything compiles. The allowed set is ASCII plus what Apple has already accepted;
+    # add a character only once a deploy has proven it.
+    if changelog
+      rejected = changelog.chars.uniq.reject { |c| c.ascii_only? || NOTES_ACCEPTED.include?(c) }
+      UI.user_error!("release_notes/testflight.txt has characters Apple may reject: #{rejected.join(' ')}") unless rejected.empty?
+    end
 
     setup_ci
 
@@ -128,12 +146,6 @@ platform :ios do
       configuration: configuration,
       export_method: "app-store"
     )
-
-    # "What to Test", written by the `release-notes` skill. A missing file is not fatal —
-    # the build still ships, just without notes.
-    notes_path = File.join(__dir__, "..", "..", "release_notes", "testflight.txt")
-    changelog = File.exist?(notes_path) ? File.read(notes_path) : nil
-    UI.important("No release_notes/testflight.txt — uploading without What to Test") if changelog.nil?
 
     # skip_waiting_for_build_processing is false so the lane waits out Apple's processing,
     # which is what lets the changelog be set at all. Waiting is free on a public repo.
