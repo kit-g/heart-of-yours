@@ -211,31 +211,47 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// The library comes from the CDN in both modes — the one network call an
   /// anonymous session makes. Only the user's own exercises need the account,
   /// and they follow once the library is in.
+  ///
+  /// Each step fails on its own and the next still runs: a local read that
+  /// fails must not keep the CDN from replacing what it could not read, and a
+  /// library that fails to download must not keep the user's own exercises
+  /// from syncing. Populated means the library is in, or its sync went
+  /// through — the user's own exercises alone are not a catalog the chained
+  /// init can write against.
   Future<bool> init({String? locale}) async {
     _catalogLocale = locale;
-    try {
-      final (localSync, local) = await _service.getExercises(userId: userId);
-
-      if (userId case String id) {
-        _units.addAll(await _service.getExerciseUnits(id));
-        _notes.addAll(await _noteService?.read(id) ?? {});
-      }
-
+    await _step(() async {
+      final (_, local) = await _service.getExercises(userId: userId);
       if (local.isNotEmpty) {
         _exercises.addAll(local.byId);
         _glossary = await _catalogService.getSearchGlossary() ?? .empty();
-        isInitialized = true;
         notifyListeners();
       }
+    });
+    if (userId case String id) {
+      await _step(() async {
+        _units.addAll(await _service.getExerciseUnits(id));
+        _notes.addAll(await _noteService?.read(id) ?? {});
+      });
+    }
+    final synced = await _step(_syncLibrary);
+    if (_remote.allowed) await _step(_syncOwn);
 
-      await _syncLibrary();
-      if (_remote.allowed) await _syncOwn();
-      isInitialized = true;
-      notifyListeners();
+    isInitialized = synced || _exercises.values.any((each) => !each.isMine);
+    notifyListeners();
+    return isInitialized;
+  }
+
+  /// Runs one step of [init], reporting what it throws instead of letting it
+  /// cost the steps after it. Answers whether it went through.
+  Future<bool> _step(Future<void> Function() body) async {
+    try {
+      await body();
+      return true;
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
+      return false;
     }
-    return isInitialized;
   }
 
   /// The device locale changed mid-session. The library is published per
