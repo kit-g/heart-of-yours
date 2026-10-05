@@ -28,7 +28,10 @@ class _RungForm extends StatefulWidget {
 }
 
 class _RungFormState extends State<_RungForm> {
-  late final _input = GoalTargetInput(widget.goal.metric.chart);
+  late final _input = GoalTargetInput(
+    widget.goal.metric.chart,
+    scale: goalScale(widget.goal, Exercises.of(context)),
+  );
 
   DateTime? _dueOn;
 
@@ -56,7 +59,7 @@ class _RungFormState extends State<_RungForm> {
   Widget build(BuildContext context) {
     final l = L.of(context);
     final settings = Preferences.watch(context);
-    final unit = widget.goal.metric.chart?.unitLabel(context, settings);
+    final unit = widget.goal.unitLabel(context, settings, _input.scale);
 
     return Column(
       mainAxisSize: .min,
