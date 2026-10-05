@@ -23,10 +23,14 @@ String goalTitle(BuildContext context, Goal goal, Exercise? exercise) {
 /// call site guessed differently was wrong. The row converted first, the detail
 /// sheet did not, and an imperial user read "100 / 225 lbs" with 100 still in
 /// kilograms. One function owns the units now.
+///
+/// [scale] is the goal's exercise's (see [goalScale]), read by the caller where
+/// it already holds [Exercises].
 String goalStatus(
   BuildContext context,
   Goal goal, {
   required Preferences settings,
+  required ChartScale scale,
   required num? current,
 }) {
   final l = L.of(context);
@@ -36,7 +40,7 @@ String goalStatus(
   // num, not double: a workout count arrives as an int and would otherwise
   // fall through to the empty branch, quietly dropping the progress
   final progress = switch (current) {
-    final num value => '${goal.convert(settings, value).trimmed()} / ',
+    final num value => '${goal.convert(settings, scale, value).trimmed()} / ',
     _ => '',
   };
 
@@ -49,7 +53,7 @@ String goalStatus(
     },
   };
 
-  return '$progress${goalTargetLabel(context, goal, stage.target, settings: settings)}$cadence';
+  return '$progress${goalTargetLabel(context, goal, stage.target, settings: settings, scale: scale)}$cadence';
 }
 
 /// A target as the user reads it: converted to their units, trimmed of a
@@ -58,16 +62,30 @@ String goalStatus(
 /// The target half of [goalStatus], on its own — the workout summary states a
 /// rung it just earned and wants exactly this without the progress or the
 /// cadence wrapped around it.
-String goalTargetLabel(BuildContext context, Goal goal, num target, {required Preferences settings}) {
-  final unit = goal.metric.chart?.unitLabel(context, settings) ?? '';
+String goalTargetLabel(
+  BuildContext context,
+  Goal goal,
+  num target, {
+  required Preferences settings,
+  required ChartScale scale,
+}) {
+  final unit = goal.unitLabel(context, settings, scale) ?? '';
   final suffix = unit.isEmpty ? '' : ' $unit';
-  return '${goal.convert(settings, target).trimmed()}$suffix';
+  return '${goal.convert(settings, scale, target).trimmed()}$suffix';
 }
 
 extension GoalUnits on Goal {
   /// A stored value in the units the user reads. Weights and distances depend
-  /// on their settings; counts and durations are the same either way.
-  double convert(Preferences settings, num value) {
-    return metric.chart?.converter(settings)(value) ?? value.toDouble();
+  /// on their settings and on [scale], the goal's exercise's (see
+  /// [goalScale]); counts and durations are the same either way.
+  double convert(Preferences settings, ChartScale scale, num value) {
+    final (:unit, :category) = scale;
+    return metric.chart?.converter(settings, unit: unit, category: category)(value) ?? value.toDouble();
+  }
+
+  /// The unit [convert] reads in, where the dimension has one.
+  String? unitLabel(BuildContext context, Preferences settings, ChartScale scale) {
+    final (:unit, :category) = scale;
+    return metric.chart?.unitLabel(context, settings, unit: unit, category: category);
   }
 }

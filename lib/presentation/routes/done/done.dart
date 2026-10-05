@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/presentation/routes/history/history.dart';
+import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/logo.dart';

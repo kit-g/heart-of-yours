@@ -11,10 +11,14 @@ class GoalLadder extends StatelessWidget {
   final Goal goal;
   final Preferences settings;
 
+  /// The goal's exercise's scale its targets read in (see [goalScale]).
+  final ChartScale scale;
+
   const new({
     super.key,
     required this.goal,
     required this.settings,
+    required this.scale,
   });
 
   @override
@@ -35,6 +39,7 @@ class GoalLadder extends StatelessWidget {
             goal: goal,
             stage: stage,
             settings: settings,
+            scale: scale,
             // a recurring goal has one standing target; there is no ladder to
             // take a rung out of
             onRemove: switch (goal.cadence == null && goal.stages.length > 1) {
@@ -88,6 +93,7 @@ class _Rung extends StatelessWidget {
   final Goal goal;
   final GoalStage stage;
   final Preferences settings;
+  final ChartScale scale;
   final VoidCallback? onRemove;
 
   const new({
@@ -95,6 +101,7 @@ class _Rung extends StatelessWidget {
     required this.goal,
     required this.stage,
     required this.settings,
+    required this.scale,
     this.onRemove,
   });
 
@@ -103,8 +110,8 @@ class _Rung extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme, :dividerColor) = Theme.of(context);
     final l = L.of(context);
 
-    final unit = goal.metric.chart?.unitLabel(context, settings);
-    final target = goal.convert(settings, stage.target).trimmed();
+    final unit = goal.unitLabel(context, settings, scale);
+    final target = goal.convert(settings, scale, stage.target).trimmed();
     final isCurrent = stage.id == goal.currentStage?.id;
 
     final row = Padding(

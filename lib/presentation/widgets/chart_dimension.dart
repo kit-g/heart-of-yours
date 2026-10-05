@@ -27,6 +27,11 @@ enum _ChartFamily {
   }
 }
 
+/// What one exercise's numbers are read in: its own unit override (null for the
+/// user's default) and its category, which puts a carry's distance in metres or
+/// yards where a run's is in km or miles.
+typedef ChartScale = ({MeasurementUnit? unit, Category? category});
+
 /// Per-dimension presentation for [ChartPreferenceType] charts: the display
 /// label, the y-value converter (unit-aware), the left-axis formatter and the
 /// training-quality color.
@@ -52,10 +57,16 @@ extension ChartDimension on ChartPreferenceType {
   }
 
   /// Maps the raw stored metric to the value shown on the axis, honoring the
-  /// user's unit settings. [unit] overrides the default for a specific exercise.
-  double Function(num) converter(Preferences settings, {MeasurementUnit? unit}) {
+  /// user's unit settings. [unit] overrides the default for a specific exercise,
+  /// and [category] is that exercise's: a carry's distance reads in metres or
+  /// yards (see [Preferences.shortDistance]).
+  double Function(num) converter(Preferences settings, {MeasurementUnit? unit, Category? category}) {
     double weight(num v) => settings.weightValue(v, unit: unit);
-    double distance(num v) => settings.distanceValue(v, unit: unit);
+    double distance(num v) {
+      if (_isShort(category)) return settings.shortDistanceValue(v, unit: unit);
+      return settings.distanceValue(v, unit: unit);
+    }
+
     double asIs(num v) => v.toDouble();
     return switch (this) {
       .topSetWeight => weight,
@@ -75,8 +86,9 @@ extension ChartDimension on ChartPreferenceType {
   /// The inverse of [converter]: takes a number the user typed in their own
   /// units and returns it in the metric the app stores, the same direction
   /// `set_item.dart` converts on input. Goal targets go through here so a
-  /// target typed as `225 lb` is stored as kilograms like everything else.
-  double storedValue(Preferences settings, double value, {MeasurementUnit? unit}) {
+  /// target typed as `225 lb` is stored as kilograms like everything else, and
+  /// one typed as `30 m` on a carry as kilometres.
+  double storedValue(Preferences settings, double value, {MeasurementUnit? unit, Category? category}) {
     double weight() {
       return switch (unit ?? settings.weightUnit) {
         .imperial => value.asKilograms,
@@ -85,6 +97,7 @@ extension ChartDimension on ChartPreferenceType {
     }
 
     double distance() {
+      if (_isShort(category)) return settings.shortDistanceStored(value, unit: unit);
       return switch (unit ?? settings.distanceUnit) {
         .imperial => value.asKilometers,
         .metric => value,
@@ -132,6 +145,26 @@ extension ChartDimension on ChartPreferenceType {
     return double.tryParse(trimmed.replaceAll(',', '.'));
   }
 
+  /// Whether this dimension reads in metres or yards for an exercise of
+  /// [category]: a carry or a sled push goes a few dozen metres, which on a run's
+  /// kilometre scale is 0.03.
+  bool _isShort(Category? category) {
+    if (this != .cardioDistance) return false;
+    return switch (category) {
+      .weightedDistance => true,
+      .weightedBodyWeight ||
+      .assistedBodyWeight ||
+      .repsOnly ||
+      .cardio ||
+      .duration ||
+      .weightedDuration ||
+      .machine ||
+      .dumbbell ||
+      .barbell ||
+      null => false,
+    };
+  }
+
   /// Whether this dimension's values are durations (formatted mm:ss / h:mm:ss).
   bool get _isTime => this == .cardioDuration || this == .totalTimeUnderTension;
 
@@ -168,8 +201,14 @@ extension ChartDimension on ChartPreferenceType {
   /// The y-axis unit shown in the title, for the dimensions whose raw number is
   /// ambiguous (weight and distance depend on the user's unit setting). Reps and
   /// times are self-evident, so they carry no suffix.
-  String? unitLabel(BuildContext context, Preferences settings, {MeasurementUnit? unit}) {
+  String? unitLabel(BuildContext context, Preferences settings, {MeasurementUnit? unit, Category? category}) {
     final l = L.of(context);
+    if (_isShort(category)) {
+      return switch (unit ?? settings.distanceUnit) {
+        .imperial => l.yardsShort,
+        .metric => l.metresShort,
+      };
+    }
     return switch (this) {
       .topSetWeight ||
       .estimatedOneRepMax ||
@@ -189,8 +228,8 @@ extension ChartDimension on ChartPreferenceType {
 
   /// Chart title with its unit appended where one applies, e.g.
   /// "Top set weight · kg" / "Distance · mi".
-  String title(BuildContext context, Preferences settings, {MeasurementUnit? unit}) {
-    return switch (unitLabel(context, settings, unit: unit)) {
+  String title(BuildContext context, Preferences settings, {MeasurementUnit? unit, Category? category}) {
+    return switch (unitLabel(context, settings, unit: unit, category: category)) {
       String u => '${label(context)} · $u',
       null => label(context),
     };

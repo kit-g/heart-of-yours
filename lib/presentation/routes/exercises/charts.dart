@@ -25,14 +25,22 @@ class _Charts extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (_, index) {
         final type = types[index];
-        final title = type.title(context, prefs, unit: unit);
+        final title = type.title(context, prefs, unit: unit, category: exercise.category);
         return ExerciseChart(
           // the rung being worked toward, for every goal on this exercise and
-          // metric. Converted with this exercise's own unit, the one the series
+          // metric. Converted on this exercise's own scale, the one the series
           // beside it is plotted in — the user default would land elsewhere.
           thresholds: [
             for (final goal in goalsOnChart(goals, exerciseId: exercise.id, metric: type))
-              ...goalThresholds(context, goal, metric: type, settings: prefs, unit: unit, nextOnly: true),
+              ...goalThresholds(
+                context,
+                goal,
+                metric: type,
+                settings: prefs,
+                unit: unit,
+                category: exercise.category,
+                nextOnly: true,
+              ),
           ],
           // only the first chart carries the full "no data yet" hint; the rest
           // stay quiet so an empty exercise doesn't repeat it N times
@@ -51,7 +59,7 @@ class _Charts extends StatelessWidget {
               _DashboardToggle(exercise: exercise, type: type),
             ],
           ),
-          converter: type.converter(prefs, unit: unit),
+          converter: type.converter(prefs, unit: unit, category: exercise.category),
           getLeftLabel: type.leftLabel(style),
           getTooltip: type.tooltip,
           yStepCandidates: type.yStepCandidates,

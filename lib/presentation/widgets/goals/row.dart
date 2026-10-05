@@ -40,6 +40,7 @@ class _GoalRowState extends State<GoalRow> {
 
     final goal = widget.goal;
     final exercise = goalExercise(widget.goal, exercises);
+    final scale = goalScale(goal, exercises);
 
     // re-read only when the thing being measured changes, not on every notify
     final key = (goal.id, exercise?.name, goal.cadence, widget.workouts.workoutCount);
@@ -56,7 +57,7 @@ class _GoalRowState extends State<GoalRow> {
     // waits on `charts.initialized` first.
     final converted = settings.isInitialized;
     final targets = switch (converted) {
-      true => goal.stages.map((stage) => _convert(settings, stage.target)).toList(),
+      true => goal.stages.map((stage) => goal.convert(settings, scale, stage.target)).toList(),
       false => const <double>[],
     };
     final subdued = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
@@ -88,10 +89,16 @@ class _GoalRowState extends State<GoalRow> {
                     // converted reading; the status line converts its own now
                     final reading = snapshot.data;
                     final current = switch (reading) {
-                      final num value => _convert(settings, value),
+                      final num value => goal.convert(settings, scale, value),
                       _ => null,
                     };
-                    final statusText = goalStatus(context, widget.goal, settings: settings, current: reading);
+                    final statusText = goalStatus(
+                      context,
+                      widget.goal,
+                      settings: settings,
+                      scale: scale,
+                      current: reading,
+                    );
                     final achievedCount = goal.stages.where((stage) => stage.isAchieved).length;
 
                     return Column(
@@ -130,9 +137,5 @@ class _GoalRowState extends State<GoalRow> {
       exercises: exercises,
       workoutCount: workoutCounter(Stats.of(context)),
     );
-  }
-
-  double _convert(Preferences settings, num value) {
-    return widget.goal.metric.chart?.converter(settings)(value) ?? value.toDouble();
   }
 }

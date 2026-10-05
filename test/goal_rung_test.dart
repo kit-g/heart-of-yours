@@ -66,7 +66,7 @@ void main() {
           supportedLocales: L.supportedLocales,
           home: Scaffold(
             body: SingleChildScrollView(
-              child: GoalLadder(goal: goal, settings: preferences),
+              child: GoalLadder(goal: goal, settings: preferences, scale: (unit: null, category: null)),
             ),
           ),
         ),
