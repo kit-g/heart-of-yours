@@ -28,7 +28,7 @@ mixin _Goals on _LocalDatabase implements GoalService {
           whereArgs: [targetUserId, archived ? 1 : 0],
           orderBy: 'created_at',
         )
-        .then((rows) => rows.map(Goal.fromRow));
+        .then((rows) => _readable(rows, Goal.fromRow, what: 'goal'));
   }
 
   @override
@@ -124,7 +124,7 @@ mixin _Goals on _LocalDatabase implements GoalService {
   Future<Iterable<Goal>> unsyncedGoals(String userId) {
     return _db
         .query(_goals, where: 'user_id = ? AND synced = 0', whereArgs: [userId], orderBy: 'created_at')
-        .then((rows) => rows.map(Goal.fromRow));
+        .then((rows) => _readable(rows, Goal.fromRow, what: 'goal'));
   }
 
   /// Rewrites a local row under the id the server assigned it, and marks it
@@ -148,7 +148,7 @@ mixin _Goals on _LocalDatabase implements GoalService {
           whereArgs: [goalId, userId],
           limit: 1,
         )
-        .then((rows) => rows.isEmpty ? null : Goal.fromRow(rows.first));
+        .then((rows) => rows.isEmpty ? null : _readOne(() => Goal.fromRow(rows.first), what: 'goal'));
   }
 
   /// Gives the goal and every stage an id if it hasn't got one.

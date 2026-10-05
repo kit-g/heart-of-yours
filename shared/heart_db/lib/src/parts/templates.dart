@@ -51,7 +51,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
     final query = userId == null ? sql.getSampleTemplates : sql.getTemplates;
     final args = userId == null ? null : [userId];
     final rows = (await _db.rawQuery(query, args)).map((row) => row.toCamel());
-    return rows.map((row) => Template.fromJson(row.toTemplate()));
+    return _readable(rows, (row) => Template.fromJson(row.toTemplate()), what: 'template');
   }
 
   /// A new template gets a platform id here rather than the server's mint,
