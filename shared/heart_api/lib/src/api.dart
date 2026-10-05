@@ -386,7 +386,7 @@ class Api
     );
     return switch (json) {
       {'workouts': List l} => Page<Workout>(
-        items: l.map((e) => Workout.fromJson(e)).toList(),
+        items: _readable(l, Workout.fromJson),
         hasMore: json['cursor'] != null,
       ),
       _ => null,
@@ -397,7 +397,7 @@ class Api
   Future<Iterable<Exercise>> getExercises() async {
     final (json, code) = await get(Router.exercises);
     return switch (json) {
-      {'exercises': List l} => l.map((e) => Exercise.fromJson(e)),
+      {'exercises': List l} => _readable(l, Exercise.fromJson),
       _ => [],
     };
   }
@@ -406,7 +406,7 @@ class Api
   Future<Iterable<Exercise>> getOwnExercises() async {
     final (json, code) = await get(Router.exercises, query: {'owned': 'true'});
     return switch (json) {
-      {'exercises': List l} => l.map((e) => Exercise.fromJson(e)),
+      {'exercises': List l} => _readable(l, Exercise.fromJson),
       _ => [],
     };
   }
@@ -470,7 +470,7 @@ class Api
   Future<Iterable<ExercisePreference>> getExercisePreferences() async {
     final (json, _) = await get(Router.exercisePreferences);
     return switch (json) {
-      {'preferences': List l} => l.map((each) => ExercisePreference.fromJson(each as Map)).toList(),
+      {'preferences': List l} => _readable(l, ExercisePreference.fromJson),
       _ => const <ExercisePreference>[],
     };
   }
@@ -516,7 +516,9 @@ class Api
       },
     );
     return switch (json) {
-      {'goals': List l} => l.map((each) => Goal.fromJson(each as Map)),
+      // whole or not at all: the caller replaces its synced slice with this,
+      // so a goal skipped here would delete its local copy (see [_readable])
+      {'goals': List l} => l.map((each) => Goal.fromJson(each as Map)).toList(),
       _ => const <Goal>[],
     };
   }
@@ -588,7 +590,7 @@ class Api
   Future<Iterable<Template>?> getTemplates() async {
     final (json, _) = await get(Router.templates);
     return switch (json) {
-      {'templates': List l} => l.map((e) => Template.fromJson(e)),
+      {'templates': List l} => _readable(l, Template.fromJson),
       _ => null,
     };
   }
@@ -636,7 +638,9 @@ class Api
   Future<Iterable<TemplateFolder>> getFolders({required String userId}) async {
     final (json, code) = await get(Router.templateFolders);
     return switch ((code, json)) {
-      (200, {'folders': List l}) => l.map((e) => TemplateFolder.fromJson(e as Map)),
+      // whole or not at all: the caller replaces its folders with these, so a
+      // folder skipped here would delete its local copy (see [_readable])
+      (200, {'folders': List l}) => l.map((e) => TemplateFolder.fromJson(e as Map)).toList(),
       _ => throw json,
     };
   }
@@ -690,7 +694,7 @@ class Api
   }) async {
     final (json, code) = await post(Router.folderShare(targetUserId, folderId));
     return switch ((code, json)) {
-      (200, {'shares': List l}) => l.map((e) => _shareFromJson(e as Map)),
+      (200, {'shares': List l}) => _readable(l, _shareFromJson),
       _ => throw json,
     };
   }
@@ -921,5 +925,32 @@ extension on Goal {
       'archived': archived,
       'stages': stages.map((stage) => stage.toMap()).toList(),
     };
+  }
+}
+
+/// The items of a list response this build can read, in order.
+///
+/// The server moves ahead of the apps in the stores: a value this build has
+/// never heard of (a category, a set type, a goal metric) makes one item
+/// unreadable, and that must cost the item, not the response. The rest is
+/// still worth having; what was skipped stays on the server, and the update
+/// that can read it picks it up.
+///
+/// Only for lists the app merges into its local copy. One that replaces a
+/// local slice is read whole or not at all, because a skipped item there
+/// would delete its local copy.
+List<T> _readable<T>(List raw, T Function(Map json) parse) {
+  return [
+    for (final each in raw)
+      if (each is Map)
+        if (_tryRead(() => parse(each)) case final T item) item,
+  ];
+}
+
+T? _tryRead<T>(T Function() parse) {
+  try {
+    return parse();
+  } catch (_) {
+    return null;
   }
 }
