@@ -18,9 +18,12 @@ class GoalTargetInput {
   /// brings no rules of its own.
   final ChartPreferenceType? metric;
 
+  /// The exercise's scale the field reads and writes in (see [ChartScale]).
+  final ChartScale scale;
+
   final TextEditingController controller = TextEditingController();
 
-  new(this.metric);
+  new(this.metric, {this.scale = (unit: null, category: null)});
 
   void dispose() => controller.dispose();
 
@@ -53,7 +56,8 @@ class GoalTargetInput {
   void prefill(Preferences settings, num stored) {
     if (!settings.isInitialized) return;
 
-    final shown = metric?.converter(settings)(stored) ?? stored.toDouble();
+    final (:unit, :category) = scale;
+    final shown = metric?.converter(settings, unit: unit, category: category)(stored) ?? stored.toDouble();
     controller.value = formatters.fold(
       TextEditingValue(text: shown.trimmed()),
       (value, formatter) => formatter.formatEditUpdate(TextEditingValue.empty, value),
@@ -63,6 +67,7 @@ class GoalTargetInput {
   /// The inverse of [prefill]: what to persist for a value typed in the user's
   /// units, the same direction `set_item.dart` converts on input.
   num toStored(Preferences settings, double value) {
-    return metric?.storedValue(settings, value) ?? value;
+    final (:unit, :category) = scale;
+    return metric?.storedValue(settings, value, unit: unit, category: category) ?? value;
   }
 }

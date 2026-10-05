@@ -141,7 +141,6 @@ class _Chart extends StatelessWidget {
     // the getter keeps its stale name until the next heart_models major: the
     // value is the exercise id, which is what the metrics queries key on
     final exerciseId = preference.exerciseName!;
-    final converter = _converter(preference.type, settings);
 
     // The catalog is remote-authoritative and can lag a launch behind on first
     // run, so never block the card on the lookup: fall back to a placeholder
@@ -150,6 +149,12 @@ class _Chart extends StatelessWidget {
     // the real exercise.
     final resolved = exercises.lookup(exerciseId);
     final exercise = resolved ?? Exercise(name: exerciseId, category: .barbell, target: .other);
+    // the scale the exercise's own chart page plots on: its unit override, and
+    // its category, which puts a carry in metres. Unresolved, the user's
+    // defaults, until the catalog lands and the watch rebuilds this
+    final unit = exercises.unitFor(exerciseId);
+    final category = resolved?.category;
+    final converter = preference.type.converter(settings, unit: unit, category: category);
 
     return ExerciseChart(
       // the rung being worked toward, per goal on this exercise and metric.
@@ -161,7 +166,15 @@ class _Chart extends StatelessWidget {
           exerciseId: exerciseId,
           metric: preference.type,
         ))
-          ...goalThresholds(context, goal, metric: preference.type, settings: settings, nextOnly: true),
+          ...goalThresholds(
+            context,
+            goal,
+            metric: preference.type,
+            settings: settings,
+            unit: unit,
+            category: category,
+            nextOnly: true,
+          ),
       ],
       emptyState: _EmptyState(
         exercise: exercise,
@@ -186,7 +199,7 @@ class _Chart extends StatelessWidget {
             child: Text(
               // before the catalog resolves there is no name worth showing —
               // an id is not copy
-              '${resolved?.name ?? '…'} - ${preference.type.title(context, settings)}',
+              '${resolved?.name ?? '…'} - ${preference.type.title(context, settings, unit: unit, category: category)}',
               maxLines: 1,
               overflow: .ellipsis,
             ),

@@ -36,7 +36,13 @@ void main() {
         supportedLocales: L.supportedLocales,
         home: Builder(
           builder: (context) {
-            status = goalStatus(context, bench(), settings: settings, current: current);
+            status = goalStatus(
+              context,
+              bench(),
+              settings: settings,
+              scale: (unit: null, category: null),
+              current: current,
+            );
             return const SizedBox.shrink();
           },
         ),
