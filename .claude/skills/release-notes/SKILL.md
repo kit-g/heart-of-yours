@@ -111,6 +111,10 @@ Voice: second person, present tense, plain. "Charts now go back through your who
   starts, permission prompts, resume-from-background and anything the range touched belong
   here. Testers skim; give them a to-do, not a press release.
 - The Play file has no room for that — capabilities and fixes only.
+- **`testflight.txt` is ASCII plus a short allowlist.** Apple rejected v1.11.0's notes for a
+  `✓`, after both iOS builds had uploaded, and that failed both deploys. The beta lane now
+  refuses any character outside `NOTES_ACCEPTED` in `ios/fastlane/Fastfile` before it builds.
+  Name a control in words ("the done button"), not by its glyph.
 
 ### The Play file exists once per store locale
 
