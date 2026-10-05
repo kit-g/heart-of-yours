@@ -113,10 +113,10 @@ enum OngoingWorkoutActivities {
     /// workout are strays and go.
     ///
     /// An activity already requested for this workout that is no longer live
-    /// was swiped off the lock screen, and stays gone until the next workout:
-    /// one that came back on every ticked set would be worse than none. Unless
-    /// the app has been installed since the request — then the install ended
-    /// it, and it is requested again.
+    /// was swiped off the lock screen, or ended by the system, and stays gone
+    /// until the next workout: one that came back on every ticked set would be
+    /// worse than none. The exception is an install since the request: that
+    /// ended it, not the user, so it is requested again.
     static func show(_ request: OngoingWorkoutRequest) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
