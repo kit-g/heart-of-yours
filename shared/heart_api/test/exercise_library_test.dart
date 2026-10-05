@@ -34,13 +34,15 @@ void main() {
   late List<http.Request> requests;
 
   /// A CDN publishing [locales] under [version]: every locale file holds one
-  /// [bench] and carries [etag], and a matching `If-None-Match` gets the 304.
-  /// Objects come back as bare `application/json`, the way S3 serves them.
+  /// [bench], then [extra], and carries [etag]; a matching `If-None-Match`
+  /// gets the 304. Objects come back as bare `application/json`, the way S3
+  /// serves them.
   Cdn cdnServing({
     String version = version,
     List<String> locales = allLocales,
     String? etag = 'W/"abc"',
     String? tag,
+    List<Map<String, dynamic>> extra = const [],
   }) {
     requests = [];
     final cdn = Cdn(gateway: 'cdn.test');
@@ -65,7 +67,7 @@ void main() {
         return http.Response.bytes(
           utf8.encode(
             jsonEncode({
-              'exercises': [bench(locale)],
+              'exercises': [bench(locale), ...extra],
               if (locale == 'es')
                 'glossary': {
                   'db': {
@@ -171,6 +173,43 @@ void main() {
     // what prod serves until heart-api's next tag
     (library, _) = await cdnServing(tag: 'ru').getExerciseLibrary();
     expect(library?.glossary.isEmpty, isTrue);
+  });
+
+  group('an entry this build cannot read', () {
+    // a category from a catalog newer than the app: exactly what 1.10 and
+    // 1.11 met with Weighted Distance, and threw on, costing the whole file
+    final carry = {
+      ...bench('en'),
+      'id': '019e8b5d-c52d-729e-be9c-a5403b04fd1c',
+      'key': 'farmers-walk',
+      'name': "Farmer's Walk",
+      'category': 'Some Category From The Future',
+    };
+
+    test('is dropped, and the rest of the file is read', () async {
+      final (library, _) = await cdnServing(tag: 'en', extra: [carry]).getExerciseLibrary();
+
+      expect(library?.exercises.map((each) => each.name), ['Жим лёжа (en)']);
+    });
+
+    test('leaves the file unvouched for, so the next launch downloads it again', () async {
+      final (_, stamp) = await cdnServing(tag: 'en', extra: [carry]).getExerciseLibrary();
+
+      expect(stamp.version, isNot(version));
+      expect(stamp.etag, isNull);
+
+      final cdn = cdnServing(tag: 'en', extra: [carry]);
+      final (again, _) = await cdn.getExerciseLibrary(cached: stamp);
+
+      expect(again, isNotNull, reason: 'a partial copy is never current');
+      expect(requests.last.headers.containsKey('If-None-Match'), isFalse);
+    });
+
+    test('a file read whole is stamped as before', () async {
+      final (_, stamp) = await cdnServing(tag: 'en').getExerciseLibrary();
+
+      expect(stamp, (version: version, locale: 'en', etag: 'W/"abc"'));
+    });
   });
 
   group('locale resolution', () {
