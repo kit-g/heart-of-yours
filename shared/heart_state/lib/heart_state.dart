@@ -15,7 +15,6 @@ export 'src/feature_sync.dart';
 export 'src/features.dart';
 export 'src/goals.dart';
 export 'src/health.dart';
-export 'src/movement_filters.dart';
 export 'src/package.dart';
 export 'src/password.dart';
 export 'src/preferences.dart';

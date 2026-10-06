@@ -2,7 +2,6 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
-import 'movement_filters.dart';
 import 'analytics.dart';
 import 'remote.dart';
 
@@ -401,7 +400,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       // `fits` handles category and target and passes anything it does not
       // recognise, so the movement dimensions are applied here rather than
       // silently matching everything.
-      final matchesFilters = !filters || (exercise.fits(_filters) && exercise.matchesMovement(_filters));
+      final matchesFilters = !filters || exercise.fits(_filters);
       final matchesOwnership = !isMine || exercise.isMine;
       return matchesFilters && matchesOwnership;
     }
@@ -684,36 +683,6 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     }
 
     return null;
-  }
-}
-
-extension on Iterable<Exercise> {
-  /// Keyed by the uuid id — the identity that survives localization; `name`
-  /// is display copy.
-  Map<ExerciseId, Exercise> get byId {
-    return {for (final each in this) each.id: each};
-  }
-}
-
-extension on Movement {
-  /// How far [other] sits from this movement across the load attributes, as a
-  /// plain sum — smaller is a closer substitute.
-  ///
-  /// `axialLoad`, `impact` and `skill` are ordinal, so they contribute the gap
-  /// between them; `stability` and `unilateral` are unordered, so they
-  /// contribute a flat mismatch. The dimensions are weighted equally, which is
-  /// a starting point rather than a claim: nothing downstream depends on the
-  /// absolute numbers, only on the order they produce.
-  int distanceTo(Movement other) {
-    int gap(int a, int b) => (a - b).abs();
-    // ignore: avoid_positional_boolean_parameters — a two-line local helper
-    int mismatch(bool same) => same ? 0 : 1;
-
-    return gap(axialLoad.index, other.axialLoad.index) +
-        gap(impact.index, other.impact.index) +
-        gap(skill.index, other.skill.index) +
-        mismatch(stability == other.stability) +
-        mismatch(unilateral == other.unilateral);
   }
 }
 

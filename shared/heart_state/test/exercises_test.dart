@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/exercises.dart';
-import 'package:heart_state/src/movement_filters.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
