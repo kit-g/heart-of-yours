@@ -29,6 +29,7 @@ import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'modal_route.dart';
@@ -38,13 +39,14 @@ part 'constants.dart';
 part 'extension.dart';
 part 'routes.dart';
 
+final _logger = Logger('Router');
+
 final class HeartRouter {
   final List<NavigatorObserver>? observers;
-  final void Function(dynamic error)? onError;
 
   final GoRouter config;
 
-  new({this.observers, this.onError})
+  new({this.observers})
     : config = GoRouter(
         navigatorKey: _rootNavigatorKey,
         debugLogDiagnostics: false,
@@ -98,7 +100,9 @@ final class HeartRouter {
           // heart-of.me, so a tap on the privacy policy lands here; that is
           // not a broken route.
           if (state.uri.path.endsWith('.html')) return;
-          onError?.call('Router.onException: ${state.uri}');
+          // a link to somewhere the app has no screen for: worth knowing about,
+          // not an error to triage. The path only — a query can carry anything.
+          _logger.warning('No route for ${state.uri.path}');
         },
       );
 

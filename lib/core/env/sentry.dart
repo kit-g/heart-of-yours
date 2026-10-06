@@ -20,6 +20,14 @@ FutureOr<void> initSentry(FutureOr<void> Function() appRunner, AppConfig config)
         // just ours — on iOS it reported Firebase Analytics' own config fetch
         // failing. Ours are captured on the Dart side, by SentryHttpClient.
         ..captureNativeFailedRequests = false
+        // Nor on the Dart side: a failed request reaches [reportToSentry]
+        // through the caller that made it, grouped by status and endpoint and
+        // with a dropped connection filtered out. The client's own capture
+        // reported the same failures a second time, ungrouped, and an offline
+        // device's DNS failure along with them.
+        ..captureFailedRequests = false
+        // `logging` records from the allowlisted loggers (see logging.dart)
+        ..enableLogs = true
         ..dsn = config.sentryDsn
         // Nothing to stitch a client span to: heart-api runs no Sentry, so the
         // `sentry-trace` and `baggage` headers `SentryHttpClient` would add to
