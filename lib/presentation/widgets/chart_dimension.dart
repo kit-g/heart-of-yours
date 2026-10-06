@@ -124,7 +124,7 @@ extension ChartDimension on ChartPreferenceType {
   /// Durations are typed right-to-left as `mm:ss`; counts are whole; everything
   /// else takes a decimal. Paired with [parseTyped], which is its inverse.
   List<TextInputFormatter> get formatters {
-    if (_isTime) return [TimeFormatter()];
+    if (isDuration) return [TimeFormatter()];
     return switch (this) {
       .maxConsecutiveReps ||
       .totalReps => [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
@@ -141,49 +141,36 @@ extension ChartDimension on ChartPreferenceType {
   double? parseTyped(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
-    if (_isTime) return parseDuration(trimmed)?.toDouble();
+    if (isDuration) return parseDuration(trimmed)?.toDouble();
     return double.tryParse(trimmed.replaceAll(',', '.'));
   }
 
   /// Whether this dimension reads in metres or yards for an exercise of
-  /// [category]: a carry or a sled push goes a few dozen metres, which on a run's
-  /// kilometre scale is 0.03.
+  /// [category] — its distance, on the scale the category reads distance on.
   bool _isShort(Category? category) {
     if (this != .cardioDistance) return false;
-    return switch (category) {
-      .weightedDistance => true,
-      .weightedBodyWeight ||
-      .assistedBodyWeight ||
-      .repsOnly ||
-      .cardio ||
-      .duration ||
-      .weightedDuration ||
-      .machine ||
-      .dumbbell ||
-      .barbell ||
-      null => false,
+    return switch (category?.distanceScale) {
+      .short => true,
+      .long || null => false,
     };
   }
-
-  /// Whether this dimension's values are durations (formatted mm:ss / h:mm:ss).
-  bool get _isTime => this == .cardioDuration || this == .totalTimeUnderTension;
 
   Widget Function(double y) leftLabel(TextStyle? style) {
     // The chart already snaps ticks to nice values (see HistoryChart), so we
     // label each one exactly — no rounding, no skipping, no duplicates.
-    return (double y) => Text(_isTime ? _formatDuration(y.round()) : _trimNumber(y), style: style);
+    return (double y) => Text(isDuration ? _formatDuration(y.round()) : _trimNumber(y), style: style);
   }
 
   /// Tooltip formatter for durations; `null` falls back to the chart's default
   /// numeric tooltip.
   String Function(double y)? get tooltip {
-    return _isTime ? (y) => _formatDuration(y.round()) : null;
+    return isDuration ? (y) => _formatDuration(y.round()) : null;
   }
 
   /// Preferred axis tick steps for [HistoryChart]: time dimensions snap to
   /// conventional 15s/30s/1m/5m/… marks; the rest use generic nice numbers.
   List<double>? get yStepCandidates {
-    return _isTime ? const [15.0, 30.0, 60.0, 120.0, 300.0, 600.0, 900.0, 1800.0, 3600.0] : null;
+    return isDuration ? const [15.0, 30.0, 60.0, 120.0, 300.0, 600.0, 900.0, 1800.0, 3600.0] : null;
   }
 
   _ChartFamily get _family {
@@ -232,45 +219,6 @@ extension ChartDimension on ChartPreferenceType {
     return switch (unitLabel(context, settings, unit: unit, category: category)) {
       String u => '${label(context)} · $u',
       null => label(context),
-    };
-  }
-
-  /// How the sessions inside one period fold into the single number a recurring
-  /// goal is measured by.
-  ///
-  /// "Per week" does not mean the same arithmetic for every dimension: 2000 kg
-  /// of volume a week is a total you accumulate, while a 100 kg top set a week
-  /// is the week's best lift — summing every session's top set would say you
-  /// had pressed 300 kg.
-  PeriodAggregate get periodAggregate {
-    return switch (this) {
-      // quantities that accumulate across the period
-      .totalVolume || .totalReps || .totalTimeUnderTension || .cardioDistance || .cardioDuration => .sum,
-      // peaks: the best single session in the period, not a running total.
-      // Assistance is the odd one — less of it is the improvement — but the
-      // model marks only pace as `lowerIsBetter`, so it follows the other
-      // weights rather than inventing a second direction here.
-      .topSetWeight || .estimatedOneRepMax || .maxConsecutiveReps || .assistanceWeight => .best,
-      // already a per-session average, so the period averages those
-      .averageWorkingWeight || .averagePace => .mean,
-    };
-  }
-}
-
-/// How several sessions in one period become one number. See
-/// [ChartDimension.periodAggregate] for which dimension folds which way.
-enum PeriodAggregate {
-  sum,
-  best,
-  mean;
-
-  /// [values] must not be empty — an empty period has no aggregate, and what
-  /// to show instead is the caller's decision.
-  num of(Iterable<num> values) {
-    return switch (this) {
-      sum => values.reduce((a, b) => a + b),
-      best => values.reduce((a, b) => a > b ? a : b),
-      mean => values.reduce((a, b) => a + b) / values.length,
     };
   }
 }
