@@ -172,7 +172,9 @@ class LocalDatabase extends _LocalDatabase
             await txn.execute(sql);
           }
         } catch (error, stacktrace) {
-          _logger.severe('Error migrating local db from version $oldVersion to $newVersion: $error, $stacktrace');
+          // the error as the record's, not in the message: its text is the
+          // failing SQL, and a message is what leaves the device
+          _logger.severe('Error migrating local db from version $oldVersion to $newVersion', error, stacktrace);
           rethrow;
         }
       },
