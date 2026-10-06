@@ -99,12 +99,12 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
     // Nobody awaits this — it is started from app init and left to run — so an
     // escaping error becomes an unhandled async one and is reported as a fatal
-    // crash. Route it through [onError] like every other initializer instead:
-    // the samples above are already in place and the app stays usable.
-    try {
-      final id = userId!;
+    // crash. Each step routes it through [onError] instead, and the next still
+    // runs: local templates that fail to read must not keep the folders, or
+    // the server's copies, from loading.
+    final id = userId!;
+    await _step(() async {
       final local = await _service.getTemplates(id);
-
       if (local.isNotEmpty) {
         _templates.addAll(local);
         notifyListeners();
@@ -112,16 +112,20 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
       // The user's own, never the samples: every account has those, so
       // counting them would put everyone in the same bucket.
       analytics?.setTemplatesBucket(_templates.length);
+    });
 
+    await _step(() async {
       final localFolders = await _folderService.getFolders(id);
       if (localFolders.isNotEmpty) {
         _folders.addAll(localFolders);
         notifyListeners();
       }
+    });
 
-      // the mirror is the whole story until there is a server to reconcile with
-      if (!_remote.allowed) return;
+    // the mirror is the whole story until there is a server to reconcile with
+    if (!_remote.allowed) return;
 
+    await _step(() async {
       final remote = await _remoteService.getTemplates() ?? [];
       if (remote.isNotEmpty) {
         _templates
@@ -130,7 +134,13 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
         notifyListeners();
         await _service.storeTemplates(remote, userId: userId);
       }
+    });
 
+    // After the templates above: this replace also unfiles whatever points at
+    // a folder the server no longer has, so it must see the final template
+    // rows, not race ahead of them. The server's list is read whole or not at
+    // all, so a failure leaves the local folders as they are.
+    await _step(() async {
       final remoteFolders = (await _remoteFolderService.getFolders(userId: id)).toList();
       if (remoteFolders.isNotEmpty || _folders.isNotEmpty) {
         _folders
@@ -138,10 +148,15 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
           ..addAll(remoteFolders);
         notifyListeners();
       }
-      // After the templates above: this replace also unfiles whatever points at
-      // a folder the server no longer has, so it must see the final template
-      // rows, not race ahead of them.
       await _folderService.storeFolders(remoteFolders, id);
+    });
+  }
+
+  /// Runs one step of [init], reporting what it throws instead of letting it
+  /// cost the steps after it.
+  Future<void> _step(Future<void> Function() body) async {
+    try {
+      await body();
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }

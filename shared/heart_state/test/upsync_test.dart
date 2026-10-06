@@ -72,6 +72,9 @@ class _Server extends Fake implements UpsyncService {
   /// Refusals, by id sent.
   final refused = <String, Map<String, dynamic>>{};
 
+  /// Ids the server takes, and answers in a shape this build cannot read.
+  final unreadable = <String>{};
+
   /// From this many calls on, the network is gone.
   int? deadAfter;
 
@@ -79,6 +82,7 @@ class _Server extends Fake implements UpsyncService {
     if (deadAfter case int n when calls.length >= n) throw const SocketException('offline');
     calls.add((resource, id));
     if (refused[id] case Map<String, dynamic> refusal) throw refusal;
+    if (unreadable.contains(id)) throw ArgumentError('Invalid value for GoalMetric: aMetricFromTheFuture');
   }
 
   @override
@@ -601,6 +605,21 @@ void main() {
       expect(sut.report, (uploaded: 6, existing: 0, skipped: 1));
       expect(errors, hasLength(1));
       verifyNever(goals.reconcileGoalId(any, any, any));
+    });
+
+    test('a reply this build cannot read is skipped, and the run goes on', () async {
+      // the server took the row and answered in a shape from the future:
+      // asking again gets the same answer, so it must not hold the run, or
+      // the remote leg behind it, forever
+      seedStore();
+      server.unreadable.add('g1');
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+
+      expect(sut.status, UpsyncStatus.done);
+      expect(sut.report, (uploaded: 6, existing: 0, skipped: 1));
+      expect(access.allowed, isTrue, reason: 'the remote leg opens');
     });
 
     test('an id that belongs to someone else is skipped and never retried', () async {

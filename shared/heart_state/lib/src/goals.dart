@@ -514,13 +514,22 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   Future<void> _pushPending() async {
     if (!_remote.allowed) return;
     if (userId case String id) {
+      final Iterable<Goal> pending;
       try {
-        for (final goal in await _service.unsyncedGoals(id)) {
-          if (_inFlight.contains(goal.id)) continue;
-          await _push(goal, () => _remoteService.createGoal(goal, id), onRejected: _discard);
-        }
+        pending = await _service.unsyncedGoals(id);
       } catch (error, stacktrace) {
         onError?.call(error, stacktrace: stacktrace);
+        return;
+      }
+      // one at a time: a goal that fails to go out stays pending for the next
+      // pass, and costs none of the goals behind it
+      for (final goal in pending) {
+        if (_inFlight.contains(goal.id)) continue;
+        try {
+          await _push(goal, () => _remoteService.createGoal(goal, id), onRejected: _discard);
+        } catch (error, stacktrace) {
+          onError?.call(error, stacktrace: stacktrace);
+        }
       }
     }
   }

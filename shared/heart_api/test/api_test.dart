@@ -239,6 +239,27 @@ void main() {
       expect(result.first.name, equals('Squat'));
     });
 
+    test('an exercise this build cannot read costs that exercise, not the list', () async {
+      // a category from a server newer than the app in the user's hands
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.exercises,
+        statusCode: 200,
+        body: {
+          'exercises': [
+            {'id': '1', 'name': 'Squat', 'category': 'Reps Only', 'target': 'Legs'},
+            {'id': '2', 'name': 'Yoke Carry', 'category': 'A Category From The Future', 'target': 'Legs'},
+            {'id': '3', 'name': 'Push-up', 'category': 'Reps Only', 'target': 'Chest'},
+          ],
+        },
+      );
+
+      final result = await api.getExercises();
+
+      expect(result.map((each) => each.name), ['Squat', 'Push-up']);
+    });
+
     test('editExercise addresses the exercise by id, not by its display name', () async {
       // The route is `('/exercises/:exerciseId', .put)` and the query behind it
       // is `WHERE id = @exerciseId::uuid`. This call used to send
@@ -1212,6 +1233,25 @@ void main() {
       final goals = await api.getTargetUserGoals(requesterId: userId, targetUserId: userId);
 
       expect(goals.map((each) => each.id), ['goal-1']);
+    });
+
+    test('a goal this build cannot read fails the whole list', () async {
+      // the caller replaces its synced goals with this list: a goal skipped
+      // here would be deleted locally, so the list is whole or not at all
+      _response(
+        client: client,
+        method: 'GET',
+        path: '${Router.accounts}/$userId/goals',
+        statusCode: 200,
+        body: {
+          'goals': [
+            goalBody(),
+            {...goalBody(), 'id': 'goal-2', 'metric': 'aMetricFromTheFuture'},
+          ],
+        },
+      );
+
+      expect(api.getTargetUserGoals(requesterId: userId, targetUserId: userId), throwsA(anything));
     });
 
     test('asks for the achieved slice with a query parameter, not a path', () async {
