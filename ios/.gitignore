@@ -31,6 +31,7 @@ Runner/GeneratedPluginRegistrant.*
 *.p8
 fastlane/appstore_key.json
 fastlane/passphrase.txt
+fastlane/sentry_token.txt
 
 # Exceptions to above rules.
 !default.mode1v3

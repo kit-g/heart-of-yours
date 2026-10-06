@@ -29,6 +29,27 @@ EMBEDDED = {
 # Non-ASCII characters TestFlight has accepted in What to Test (see the check in `beta`)
 NOTES_ACCEPTED = %w[— • › → ⋯ ×].freeze
 
+# The build's dSYMs, to Sentry: without them a crash in native code — the Live
+# Activity, the watch app, a plugin — arrives as bare addresses. The token is the
+# workflow's to fetch (secrets/sentry/auth_token.txt in the environment's secrets
+# bucket); without it, or on any failure here, the deploy goes on unsymbolicated
+# rather than failing over symbols.
+def upload_symbols_to_sentry_cli(env, dsyms)
+  token_path = File.join(__dir__, "sentry_token.txt")
+  unless File.exist?(token_path)
+    UI.important("No Sentry token: dSYMs not uploaded")
+    return
+  end
+  project = env == 'prod' ? "heart-of-yours" : "heart-of-yours-dev"
+  begin
+    sh("command -v sentry-cli >/dev/null || brew install getsentry/tools/sentry-cli")
+    # the token is read inside the shell, so fastlane's echo of the command never shows it
+    sh("SENTRY_AUTH_TOKEN=\"$(cat '#{token_path}')\" sentry-cli debug-files upload --org kit-gerasimov --project #{project} '#{dsyms}'")
+  rescue => e
+    UI.important("Sentry dSYM upload failed, deploying without it: #{e.message}")
+  end
+end
+
 def app_identifiers(app_id)
   [app_id] + EMBEDDED.values.map { |suffix| "#{app_id}.#{suffix}" }
 end
@@ -146,6 +167,8 @@ platform :ios do
       configuration: configuration,
       export_method: "app-store"
     )
+
+    upload_symbols_to_sentry_cli(env, lane_context[SharedValues::DSYM_OUTPUT_PATH])
 
     # skip_waiting_for_build_processing is false so the lane waits out Apple's processing,
     # which is what lets the changelog be set at all. Waiting is free on a public repo.
