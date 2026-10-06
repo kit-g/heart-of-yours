@@ -1,6 +1,5 @@
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
-import 'package:heart_state/heart_state.dart';
 
 /// Display copy for the exercise filters, which carry identifiers rather than
 /// words.
