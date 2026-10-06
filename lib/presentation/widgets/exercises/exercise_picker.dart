@@ -12,6 +12,13 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   /// half of a two-pane layout. Null everywhere the picker stands alone.
   final String? highlightedName;
 
+  /// Whether the last few exercises done sit above the list before any typing.
+  /// For picking an exercise — into a workout, a goal, a chart — where the one
+  /// you want is usually one you just did. Not for the Exercises tab: that is
+  /// the library, and it keeps its own order. Typing ranks by what was done
+  /// last either way.
+  final bool showsRecent;
+
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
 
@@ -24,6 +31,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     this.backgroundColor,
     this.onExerciseSelected,
     this.highlightedName,
+    this.showsRecent = true,
   });
 
   @override
@@ -276,12 +284,13 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
             builder: (_, value, _) {
               final mine = exercises.showingMine;
               // Typing ranks what it finds by how well it matched, then by
-              // what was done last (#135). Before any typing, the last few
-              // done sit above the whole library, which keeps its own order.
+              // what was done last (#135). Before any typing, a picker shows
+              // the last few done above the whole library, which keeps its
+              // own order ([showsRecent]); the library tab shows just that.
               final searching = value.text.trim().isNotEmpty;
-              final recent = searching
-                  ? const <Exercise>[]
-                  : exercises.recent(previous.lastDone, filters: true, isMine: mine);
+              final recent = showsRecent && !searching
+                  ? exercises.recent(previous.lastDone, filters: true, isMine: mine)
+                  : const <Exercise>[];
               final found = exercises.search(
                 value.text,
                 filters: true,

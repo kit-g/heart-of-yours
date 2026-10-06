@@ -39,6 +39,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
     final L(exercises: exCopy, :exerciseOptions) = L.of(context);
     final layout = LayoutProvider.of(context);
     final listview = ExercisePicker(
+      // the library, not a picker: no recently done above it
+      showsRecent: false,
       appBar: SliverAppBar(
         scrolledUnderElevation: 0,
         backgroundColor: backgroundColor,
