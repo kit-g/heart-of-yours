@@ -1,7 +1,41 @@
 [
   {
-    "version": "1.11.0",
+    "version": "1.12.0",
     "date": null,
+    "items": [
+      {
+        "id": "pause-workout",
+        "title": "Pause a workout",
+        "body": "Stop the clock from the workout's **⋯** menu. Ticking a set starts it again. Left a workout running? Open it from the reminder and it offers to end at your last set.",
+        "feature": "pauseWorkout"
+      },
+      {
+        "id": "set-stopwatch",
+        "title": "Time a set",
+        "body": "Timed sets get a stopwatch: tap play in the time cell and it runs, on the lock screen too. Stop it to log the time.",
+        "feature": "setStopwatch"
+      },
+      {
+        "id": "keep-awake",
+        "title": "Keep the screen awake",
+        "body": "The screen stays on through your workout, with a sun on the **Workout** tab while it does.",
+        "feature": "keepAwake"
+      },
+      {
+        "id": "exercise-search",
+        "title": "Find exercises faster",
+        "body": "Search knows other names and abbreviations (OHP, RDL, DB), muscle words, and forgives typos. The picker opens on what you did last."
+      },
+      {
+        "id": "carries",
+        "title": "Carries, sleds and loaded holds",
+        "body": "Two new kinds of exercise: a weight carried a distance, in metres or yards, and a weight held for a time. Records, charts and History follow."
+      }
+    ]
+  },
+  {
+    "version": "1.11.0",
+    "date": "2026-10-03",
     "items": [
       {
         "id": "set-types",
@@ -13,12 +47,6 @@
         "title": "RPE",
         "body": "Rate how hard each set felt, from 6 to 10, from the menu on its number.",
         "feature": "rpe"
-      },
-      {
-        "id": "pause-workout",
-        "title": "Pause a workout",
-        "body": "Stop the clock from the workout's **⋯** menu. Ticking a set starts it again. Left a workout running? Open it from the reminder and it offers to end at your last set.",
-        "feature": "pauseWorkout"
       },
       {
         "id": "workout-note",
