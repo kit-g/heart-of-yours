@@ -300,7 +300,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   Future<Workout?> getActiveWorkout(String? userId) async {
     final rows = await _db.rawQuery(sql.activeWorkout, [userId]);
     return switch (rows) {
-      [Map row] => Workout.fromJson(row.toWorkout()),
+      [Map row] => _readOne(() => Workout.fromJson(row.toWorkout()), what: 'active workout'),
       _ => null,
     };
   }
@@ -310,7 +310,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     return _db.rawQuery(sql.getWorkout, [workoutId, userId]).then<Workout?>(
       (rows) {
         return switch (rows) {
-          [Map row] => Workout.fromJson(row.toWorkout()),
+          [Map row] => _readOne(() => Workout.fromJson(row.toWorkout()), what: 'workout'),
           _ => null,
         };
       },
@@ -372,7 +372,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   @override
   Future<Iterable<Workout>?> getWorkoutHistory(String userId) async {
     final rows = await _db.rawQuery(sql.history, [userId]);
-    return rows.map((each) => Workout.fromJson(each.toWorkout()));
+    return _readable(rows, (each) => Workout.fromJson(each.toWorkout()), what: 'workout');
   }
 
   @override
@@ -387,16 +387,17 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       whereArgs: [?userId],
     );
     return ProgressGalleryResponse(
-      images: rows.expand(
-        (row) {
-          return switch (row['images']) {
-            String j => (jsonDecode(j) as List).map<WorkoutImage>(
-              (each) => WorkoutImage.fromJson(each),
-            ),
-            _ => const Iterable<WorkoutImage>.empty(),
-          };
-        },
-      ).toList(),
+      images: rows
+          .map(
+            (row) {
+              return switch (row['images']) {
+                String j => _readOne(() => jsonDecode(j) as List, what: 'workout images') ?? const [],
+                _ => const [],
+              };
+            },
+          )
+          .expand((images) => _readable(images, (each) => WorkoutImage.fromJson(each), what: 'workout image'))
+          .toList(),
     );
   }
 }
