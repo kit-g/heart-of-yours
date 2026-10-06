@@ -1,5 +1,35 @@
 [
   {
+    "version": "1.12.0",
+    "items": [
+      {
+        "id": "pause-workout",
+        "title": "Mettre une séance en pause",
+        "body": "Arrêtez le chrono depuis le menu **⋯** de la séance. Cocher une série le relance. Une séance oubliée ? Ouvrez-la depuis le rappel et elle vous propose de s’arrêter à votre dernière série."
+      },
+      {
+        "id": "set-stopwatch",
+        "title": "Chronométrez une série",
+        "body": "Les séries en temps ont un chrono : touchez lecture dans la case du temps et il démarre, jusque sur l’écran verrouillé. Arrêtez-le pour noter le temps."
+      },
+      {
+        "id": "keep-awake",
+        "title": "Écran toujours allumé",
+        "body": "L’écran reste allumé pendant la séance, avec un soleil sur l’onglet **Séance** tant que c’est le cas."
+      },
+      {
+        "id": "exercise-search",
+        "title": "Trouvez vos exercices plus vite",
+        "body": "La recherche connaît les autres noms et abréviations (OHP, RDL, DB), les noms de muscles, et pardonne les fautes de frappe. Le sélecteur s’ouvre sur vos derniers exercices."
+      },
+      {
+        "id": "carries",
+        "title": "Portés, traîneaux et maintiens lestés",
+        "body": "Deux nouveaux types d’exercice : une charge portée sur une distance, en mètres ou en yards, et une charge tenue un certain temps. Records, graphiques et historique suivent."
+      }
+    ]
+  },
+  {
     "version": "1.11.0",
     "items": [
       {
@@ -11,11 +41,6 @@
         "id": "rpe",
         "title": "RPE",
         "body": "Notez la difficulté ressentie de chaque série, de 6 à 10, depuis le menu de son numéro."
-      },
-      {
-        "id": "pause-workout",
-        "title": "Mettre une séance en pause",
-        "body": "Arrêtez le chrono depuis le menu **⋯** de la séance. Cocher une série le relance. Une séance oubliée ? Ouvrez-la depuis le rappel et elle vous propose de s’arrêter à votre dernière série."
       },
       {
         "id": "workout-note",
