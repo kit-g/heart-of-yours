@@ -901,25 +901,3 @@ abstract final class Router {
     return '$workouts/$workoutId';
   }
 }
-
-extension on Goal {
-  /// The definition, the ladder, and which side of the card it lives on.
-  ///
-  /// `id` and `createdAt` stay the server's to mint. `archived` does not: the
-  /// app decides when a finished goal is put away, and the server counts only
-  /// non-archived goals against the cap — so leaving it out meant archiving
-  /// never persisted, and the next pull handed the goal straight back to the
-  /// live list.
-  ///
-  /// Stage ids *are* sent when we have them — the server preserves the ones it
-  /// is given, which is what keeps an offline-minted ladder addressable.
-  Map<String, dynamic> toBody() {
-    return {
-      'metric': metric.value,
-      'exerciseId': ?exerciseId,
-      'cadence': ?cadence?.value,
-      'archived': archived,
-      'stages': stages.map((stage) => stage.toMap()).toList(),
-    };
-  }
-}
