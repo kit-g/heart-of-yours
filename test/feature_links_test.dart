@@ -76,12 +76,26 @@ void main() {
   Future<void> openWhatsNew(WidgetTester tester) async {
     router.config.go('/profile/settings/whats-new');
     await tester.pumpTimes();
-    // the notes are real asset I/O, which fake time never advances
+    // the notes are real asset I/O, which fake time never advances. Any note's
+    // feature button says they are in; the muscle map's own may sit below the
+    // fold of a lazily built list once newer notes stack above it
+    final anyFeature = find.byWidgetPredicate(
+      (widget) => switch (widget.key) {
+        ValueKey<String>(:final value) => value.startsWith('whats-new-feature-'),
+        _ => false,
+      },
+    );
     for (final _ in Iterable.generate(50)) {
-      if (find.byKey(button).first.evaluate().isNotEmpty) break;
+      if (anyFeature.evaluate().isNotEmpty) break;
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
       await tester.pump();
     }
+    await tester.scrollUntilVisible(
+      find.byKey(button),
+      300,
+      scrollable: find.descendant(of: find.byType(WhatsNewPage), matching: find.byType(Scrollable)).first,
+    );
+    await tester.pump();
   }
 
   Preferences preferences(WidgetTester tester) => Preferences.of(tester.element(find.byType(MaterialApp)));

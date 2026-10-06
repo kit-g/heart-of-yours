@@ -62,6 +62,58 @@
       "highlight": false
     },
     {
+      "id": "pause-workout",
+      "category": "train",
+      "title": "Pause a workout",
+      "pitch": "Stop the clock mid-workout and the pause stays out of its duration. Left one running? Heart offers to end it at your last set. Off until you turn it on.",
+      "since": "1.12.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "set-stopwatch",
+      "category": "train",
+      "title": "A stopwatch for timed sets",
+      "pitch": "Tap play on a timed set and the stopwatch runs, on the lock screen too. Stop it to log the time. Off until you turn it on.",
+      "since": "1.12.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "keep-awake",
+      "category": "train",
+      "title": "Keep the screen awake",
+      "pitch": "The screen stays on through your workout and sleeps as usual once you finish. Off until you turn it on.",
+      "since": "1.12.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "carries",
+      "category": "train",
+      "title": "Carries, sleds and loaded holds",
+      "pitch": "Log a weight carried a distance, in metres or yards, or held for a time. Records, charts and History count the load and the distance or time.",
+      "since": "1.12.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "rest-timers",
       "category": "train",
       "title": "Rest timers",
@@ -116,7 +168,7 @@
       "id": "exercise-library",
       "category": "train",
       "title": "Exercise library",
-      "pitch": "Search the library by muscle group, movement pattern, stability and skill level, and see which muscles each exercise works. Add as many exercises of your own as you need.",
+      "pitch": "Search by name, other names, abbreviations like OHP or RDL, muscle words, or with a typo, or filter by muscle, movement pattern, stability and skill. Add your own exercises too.",
       "since": "1.0.5",
       "tier": "free",
       "platforms": [
