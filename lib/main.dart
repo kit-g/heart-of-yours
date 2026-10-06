@@ -188,7 +188,6 @@ Future<void> _runner({
           SentryNavigatorObserver(),
           FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
         ],
-        onError: reportToSentry,
       );
 
       api

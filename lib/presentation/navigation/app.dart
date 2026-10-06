@@ -33,7 +33,6 @@ import 'package:heart_db/heart_db.dart';
 import 'package:heart_health/heart_health.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_state/heart_state.dart';
-import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -124,12 +123,7 @@ class HeartApp extends StatelessWidget {
             remoteService: api,
             remote: RemoteAccess.of(context),
             analytics: analytics,
-            onError: (error, {stacktrace}) {
-              Logger('Workouts')
-                ..shout('${error.runtimeType}: $error')
-                ..shout(stacktrace);
-              reportToSentry(error, stacktrace: stacktrace);
-            },
+            onError: reportToSentry,
           ),
         ),
         ChangeNotifierProvider<Templates>(
