@@ -1,5 +1,35 @@
 [
   {
+    "version": "1.12.0",
+    "items": [
+      {
+        "id": "pause-workout",
+        "title": "Pausar un entrenamiento",
+        "body": "Detén el reloj desde el menú **⋯** del entrenamiento. Marcar una serie lo pone en marcha otra vez. ¿Dejaste un entrenamiento abierto? Ábrelo desde el recordatorio y te ofrecerá terminarlo en tu última serie."
+      },
+      {
+        "id": "set-stopwatch",
+        "title": "Cronometra una serie",
+        "body": "Las series por tiempo tienen cronómetro: toca reproducir en la celda del tiempo y empieza a correr, también en la pantalla de bloqueo. Detenlo para registrar el tiempo."
+      },
+      {
+        "id": "keep-awake",
+        "title": "Pantalla siempre encendida",
+        "body": "La pantalla no se apaga durante el entrenamiento, con un sol en la pestaña **Entreno** mientras tanto."
+      },
+      {
+        "id": "exercise-search",
+        "title": "Encuentra ejercicios más rápido",
+        "body": "La búsqueda conoce otros nombres y abreviaturas (OHP, RDL, DB), palabras de músculos, y perdona las erratas. El selector se abre con lo último que hiciste."
+      },
+      {
+        "id": "carries",
+        "title": "Paseos con carga, trineos y sostenidos",
+        "body": "Dos tipos nuevos de ejercicio: un peso llevado una distancia, en metros o yardas, y un peso sostenido un tiempo. Récords, gráficas e historial los tienen en cuenta."
+      }
+    ]
+  },
+  {
     "version": "1.11.0",
     "items": [
       {
@@ -11,11 +41,6 @@
         "id": "rpe",
         "title": "RPE",
         "body": "Valora lo duro que fue cada serie, del 6 al 10, desde el menú de su número."
-      },
-      {
-        "id": "pause-workout",
-        "title": "Pausar un entrenamiento",
-        "body": "Detén el reloj desde el menú **⋯** del entrenamiento. Marcar una serie lo pone en marcha otra vez. ¿Dejaste un entrenamiento abierto? Ábrelo desde el recordatorio y te ofrecerá terminarlo en tu última serie."
       },
       {
         "id": "workout-note",

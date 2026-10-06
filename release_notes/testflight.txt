@@ -1,45 +1,47 @@
-Warm-ups, drop sets and failure sets
-Tap a set's number to mark it. Warm-ups stay out of your records, charts and
-muscle map, and Previous lines them up with last time's warm-ups. Your Apple
-Watch shows them too.
+Pause a workout
+Stop the clock from the workout's ⋯ menu; ticking a set starts it again.
+Left a workout running? Open it from the reminder and Heart offers to end
+it at your last set. Pausing works from your Apple Watch too.
 
-RPE, if you want it
-Rate how hard each set felt, 6 to 10, from the same menu on its number. It's
-off until you turn it on in Settings › Features. RPE from a Strong import is
-kept either way.
+Time a set
+Timed sets get a stopwatch: tap play in the time cell and it runs, on the
+lock screen too. Stop it to log the time.
 
-A note on the whole workout
-Add one from the workout's ⋯ menu. It shows on the workout's card in History.
+Keep the screen awake
+The screen stays on through your workout, with a sun on the Workout tab
+while it does.
 
-Muscles worked, per workout
-With the muscle map on, every finished workout shows which muscles it worked,
-right after you finish and in History.
+Find exercises faster
+Search knows other names and abbreviations (OHP, RDL, DB), muscle words,
+and forgives typos. The picker opens on what you did last.
 
-Fill a column at once
-Tap kg or Reps above your sets to fill every set not yet done from the top
-one. Tap ✓ to tick them all.
+Carries, sleds and loaded holds
+Two new kinds of exercise: a weight carried a distance, in metres or yards,
+and a weight held for a time. Records, charts, History and your Apple Watch
+all follow.
 
-Also
-- Starting a workout while another is running now asks first.
-- Settings › Features has a page of its own, and What's new takes you
-  straight to a feature's switch.
+Pause, the set stopwatch and keep-awake are off until you turn them on in
+Settings › Features.
 
 What to test
-- Mark sets W / D / F from their number; tap the same type again to make it
-  plain. Only plain sets are numbered (W, 1, 2, F).
-- Finish a workout with a warm-up heavier than your best: no record, and it
-  stays out of charts and the muscle map.
-- Next session of that exercise: Previous shows last time's warm-up on the
-  warm-up row.
-- Apple Watch: marked sets show W / D / F, numbered like the phone.
-- Turn RPE on in Settings › Features. Rate a set from its number: its cell
-  gets a small @8. Clear it with × or by tapping the rating again. Turn RPE
-  off: ratings hide, and come back when you turn it on.
-- Edit a workout imported from Strong that has warm-ups or RPE, save,
-  reopen: nothing lost.
-- Add, edit and remove a workout note, in a running workout and from History.
-- Tap kg and Reps above the sets: unticked sets fill. ✓ ticks all; tap again
-  to untick.
-- With a workout running, start another: Heart asks before replacing it.
-- Tap a Live Activity while the workout is already on screen: nothing jumps.
-- What's new: the muscle map note's button opens Features at its switch.
+- Pause from ⋯: the clock stops; tick a set and it runs again. The
+  finished workout's duration leaves out the paused time.
+- Leave a workout running, open it from the reminder: it offers "Finished
+  at <time>?" and ends at your last set.
+- Apple Watch: pause and resume from the watch; the phone follows.
+- Set stopwatch: start it from the play button on a timed set, lock the
+  phone (the Live Activity shows one clock), pause, resume, Done logs the
+  time.
+- Keep awake on: the screen never dims mid-workout and the sun shows on
+  the Workout tab; it dims normally after finishing.
+- Search "ohp", "rdl", "lats", "benchpress", and a typo; the picker opens
+  on Recent.
+- Log a Farmer's Walk in yards, then metres: the set row, History,
+  records, its Charts tab and a goal on its distance all read m or yd,
+  never km.
+- With the lock-screen workout on, update or reinstall the app mid-workout:
+  it comes back on the lock screen on the next launch.
+- A workout with planks or push-ups: total volume on its card counts only
+  weight lifted.
+- Signed out, link a Google account whose email already has a Heart
+  account: you land in that account.
