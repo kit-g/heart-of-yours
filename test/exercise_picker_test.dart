@@ -74,7 +74,7 @@ void main() {
 
   tearDown(() => search.dispose());
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool showsRecent = true}) async {
     final focus = FocusNode();
     addTearDown(focus.dispose);
     await tester.pumpWidget(
@@ -89,7 +89,12 @@ void main() {
           localizationsDelegates: localizationsDelegates,
           supportedLocales: L.supportedLocales,
           home: Scaffold(
-            body: ExercisePicker(exercises: exercises, searchController: search, focusNode: focus),
+            body: ExercisePicker(
+              exercises: exercises,
+              searchController: search,
+              focusNode: focus,
+              showsRecent: showsRecent,
+            ),
           ),
         ),
       ),
@@ -141,6 +146,23 @@ void main() {
     await tester.pump();
 
     // every one matches by word alone, so recency decides
+    expect(names(tester).first, incline.name);
+  });
+
+  testWidgets('the library tab keeps its own order, with nothing recent above it', (tester) async {
+    tester.view.physicalSize = const Size(390, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(tester, showsRecent: false);
+
+    expect(find.text('RECENT'), findsNothing);
+    expect(find.text('ALL EXERCISES'), findsNothing);
+    expect(names(tester), [barbell.name, dumbbell.name, incline.name, squat.name]);
+
+    // typing still ranks by what was done last
+    search.text = 'press';
+    await tester.pump();
+
     expect(names(tester).first, incline.name);
   });
 
