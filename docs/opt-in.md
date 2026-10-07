@@ -102,6 +102,11 @@ ticket doesn't say:
   saying the feature is off on the iPhone — the one exception to "off means
   never built". Like every answer, it syncs: a second phone of the same
   account starts sending to its own watch without asking again.
+- Shortcuts (`Feature.shortcuts`, #284) follow the watch: the actions live in
+  Siri, the Shortcuts app and the launcher, outside the app, and cannot be
+  hidden per user — so **the first command that arrives is the yes**. Off, a
+  command link is treated like any link the app has no screen for, and the
+  app's own UI shows nothing of the feature but its switch.
 
 ## Answers follow the account
 
