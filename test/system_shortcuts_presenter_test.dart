@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/shortcuts.dart';
 import 'package:heart/core/utils/templates.dart';
 import 'package:heart/presentation/navigation/system_shortcuts.dart';
+import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -12,16 +13,25 @@ import 'mocks.mocks.dart';
 /// The platform's layer, remembering every list it was told.
 class _Recorder implements SystemShortcuts {
   final told = <List<ShortcutTemplate>>[];
+  final rests = <ShortcutRest?>[];
 
   @override
   Future<void> setTemplates(Iterable<ShortcutTemplate> templates) async {
     told.add(templates.toList());
+  }
+
+  @override
+  Future<void> setRest(ShortcutRest? rest) async {
+    rests.add(rest);
   }
 }
 
 void main() {
   late Preferences preferences;
   late Templates templates;
+  late Workouts workouts;
+  late Timers timers;
+  late Exercises exercises;
   late MockLocalDatabase db;
   late MockApi api;
   late MockCdn cdn;
@@ -47,6 +57,23 @@ void main() {
       remoteFolderService: api,
       filingService: RemoteTemplateFiling(api),
     );
+    workouts = Workouts(service: MockWorkoutService(), remoteService: MockRemoteWorkoutService())..userId = 'u1';
+    final timersService = MockTimersService();
+    when(
+      timersService.setRestTimer(
+        exerciseName: anyNamed('exerciseName'),
+        userId: anyNamed('userId'),
+        seconds: anyNamed('seconds'),
+      ),
+    ).thenAnswer((_) async {});
+    timers = Timers(service: timersService)..userId = 'u1';
+    exercises = Exercises(
+      remoteService: MockRemoteExerciseService(),
+      service: MockExerciseService(),
+      libraryService: MockExerciseLibraryService(),
+      catalogService: MockLocalCatalogService(),
+      preferenceService: MockRemoteExercisePreferenceService(),
+    );
     recorder = _Recorder();
   });
 
@@ -61,8 +88,13 @@ void main() {
         providers: [
           ChangeNotifierProvider<Preferences>.value(value: preferences),
           ChangeNotifierProvider<Templates>.value(value: templates),
+          ChangeNotifierProvider<Workouts>.value(value: workouts),
+          ChangeNotifierProvider<Timers>.value(value: timers),
+          ChangeNotifierProvider<Exercises>.value(value: exercises),
         ],
         child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
           builder: (context, child) => SystemShortcutsPresenter(shortcuts: recorder, child: child!),
           home: const Text('Any route'),
         ),
@@ -126,5 +158,66 @@ void main() {
     await tester.pump();
 
     expect(recorder.told.last, [const ShortcutTemplate(id: 's2', name: 'Pull')]);
+  });
+
+  group('the rest a voice command acts on (#98)', () {
+    final bench = Exercise.fromJson({
+      'id': 'id-bench',
+      'name': 'Bench Press (Barbell)',
+      'category': 'Barbell',
+      'target': 'Chest',
+      'archived': false,
+    });
+
+    testWidgets('with no workout there is no rest to speak of', (tester) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      await pump(tester);
+      expect(recorder.rests, [null]);
+    });
+
+    testWidgets('names the exercise the user is on, its rest setting, and the notification\'s words', (
+      tester,
+    ) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      final block = WorkoutExercise(starter: ExerciseSet(bench, weight: 60, reps: 5))
+        ..add(ExerciseSet(bench, weight: 62.5, reps: 5));
+      final workout = Workout.fromExercises([block], name: 'Push day');
+      await pump(tester);
+
+      await timers.setRestTimer(bench.id, 90);
+      await workouts.startWorkout(source: .template, template: workout);
+      await tester.pump();
+
+      final rest = recorder.rests.last;
+      expect(rest?.workoutId, workout.id);
+      expect(rest?.exerciseId, block.id);
+      expect(rest?.seconds, 90);
+      expect(rest?.title, 'Rest complete!');
+      expect(rest?.body, '60 kg x 5', reason: 'the set up next: the first, nothing is ticked');
+      expect(rest?.subtitle, contains('Bench Press'));
+
+      // the same rest is not told twice
+      final told = recorder.rests.length;
+      workouts.notifyListeners();
+      await tester.pump();
+      expect(recorder.rests.length, told);
+    });
+
+    testWidgets('switched off, the assistant is told there is no rest', (tester) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      await pump(tester);
+      final block = WorkoutExercise(starter: ExerciseSet(bench, weight: 60, reps: 5));
+      await workouts.startWorkout(
+        source: .template,
+        template: Workout.fromExercises([block], name: 'Push day'),
+      );
+      await tester.pump();
+      expect(recorder.rests.last, isNotNull);
+
+      preferences.setFeature(.shortcuts, on: false);
+      await tester.pump();
+
+      expect(recorder.rests.last, isNull);
+    });
   });
 }

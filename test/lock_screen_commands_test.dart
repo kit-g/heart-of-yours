@@ -308,6 +308,69 @@ void main() {
     expect(surface.calls.length, greaterThan(shows));
   });
 
+  group('start rest by voice (#98)', () {
+    testWidgets('starts the exercise\'s own rest when no length is said', (tester) async {
+      final workout = push();
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+      await workouts.init();
+      await timers.setRestTimer(bench.id, 90);
+      await pump(tester);
+
+      surface.command(WatchStartRest(workout.id));
+      await tester.pump();
+
+      expect(alarms.activeExerciseId, workout.first.id);
+      expect(alarms.remainsInActiveExercise?.value, 90);
+      expect(surface.last?.rest?.end, alarms.activeExerciseEnd);
+      alarms.stopActiveExerciseTimer();
+    });
+
+    testWidgets('a length said wins over the setting, and replaces a rest already counting', (tester) async {
+      final workout = push();
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+      await workouts.init();
+      await timers.setRestTimer(bench.id, 90);
+      alarms.startActiveExerciseTimer(30, exerciseId: workout.first.id);
+      await pump(tester);
+
+      surface.command(WatchStartRest(workout.id, seconds: 120));
+      await tester.pump();
+
+      expect(alarms.remainsInActiveExercise?.value, 120);
+      alarms.stopActiveExerciseTimer();
+    });
+
+    testWidgets('an exercise with no rest timer, and nothing said, starts nothing', (tester) async {
+      final workout = push();
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+      await workouts.init();
+      await pump(tester);
+
+      surface.command(WatchStartRest(workout.id));
+      await tester.pump();
+
+      expect(alarms.remainsInActiveExercise, isNull);
+    });
+
+    testWidgets('asked for a while ago, only what is left of the rest runs', (tester) async {
+      final workout = push();
+      when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+      await workouts.init();
+      await pump(tester);
+
+      surface.command(
+        WatchStartRest(workout.id, seconds: 90, at: DateTime.now().subtract(const Duration(seconds: 60))),
+      );
+      await tester.pump();
+      expect(alarms.remainsInActiveExercise?.value, inInclusiveRange(29, 30));
+      alarms.stopActiveExerciseTimer();
+
+      surface.command(WatchStartRest(workout.id, seconds: 90, at: DateTime.now().subtract(const Duration(minutes: 5))));
+      await tester.pump();
+      expect(alarms.remainsInActiveExercise, isNull, reason: 'over before it arrived');
+    });
+  });
+
   test('the lock screen sends the labels of its buttons with the rest', () {
     // copy, from presentation: the native side only lays it out
     expect(
