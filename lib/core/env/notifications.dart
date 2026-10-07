@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
@@ -36,6 +39,15 @@ const _ongoingChannelId = 'Ongoing Workout';
 void _notificationTapBackground(NotificationResponse notificationResponse) {
   _logger.info('onDidReceiveBackgroundNotificationResponse $notificationResponse');
 }
+
+/// Commands from the ongoing notification's rest buttons (#141), as they
+/// arrive while the app runs. Filled in with the buttons themselves.
+Stream<WatchCommand> get ongoingNotificationCommands => _ongoingCommands.stream;
+final _ongoingCommands = StreamController<WatchCommand>.broadcast();
+
+/// Buttons pressed while the app was not running — oldest first. Asking
+/// clears them.
+Future<List<WatchCommand>> takeOngoingNotificationCommands() async => const [];
 
 Future<void> initNotifications({
   required TargetPlatform platform,

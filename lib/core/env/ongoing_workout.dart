@@ -1,13 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/notifications.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:logging/logging.dart';
 
 final _logger = Logger('OngoingWorkout');
 
-/// A rest countdown as the lock screen draws it: the window it spans, and the
-/// copy for while it runs and once it has run out.
-typedef OngoingRest = ({DateTime start, DateTime end, String label, String over});
+/// A rest countdown as the lock screen draws it: the window it spans, the
+/// copy for while it runs and once it has run out, and the labels of its
+/// buttons (#141): ten seconds off, ten on, skip.
+typedef OngoingRest = ({
+  DateTime start,
+  DateTime end,
+  String label,
+  String over,
+  String minus,
+  String plus,
+  String skip,
+});
 
 /// The active workout, summarised for surfaces outside the app (#133): the
 /// iOS Live Activity (lock screen, Dynamic Island) and Android's ongoing
@@ -57,6 +69,10 @@ typedef OngoingWorkout = ({
 
 /// Where [OngoingWorkout] is shown. [show] starts or updates it, [end]
 /// withdraws it; both are safe to repeat.
+///
+/// It also speaks back (#141): the rest buttons on it send the same commands
+/// the watch does, as requests the app applies — the surface has shown the
+/// result already, and the next [show] confirms or corrects it.
 abstract interface class OngoingWorkoutSurface {
   /// Whether this device can show it at all — what decides if the setting is
   /// offered. False on an iPad or below iOS 16.2, which have no Live
@@ -66,13 +82,20 @@ abstract interface class OngoingWorkoutSurface {
   Future<void> show(OngoingWorkout workout);
 
   Future<void> end();
+
+  /// Commands from the surface's buttons, as they arrive.
+  Stream<WatchCommand> get commands;
+
+  /// Commands pressed while nothing here was listening — the app was not
+  /// running, or not yet — oldest first. Asking clears them.
+  Future<List<WatchCommand>> takeCommands();
 }
 
 /// The surface for [platform], or null where there is none.
 OngoingWorkoutSurface? ongoingWorkoutSurface(TargetPlatform platform) {
   return switch (platform) {
-    .iOS => const _LiveActivity(),
-    .android => const _OngoingNotification(),
+    .iOS => _LiveActivity.instance,
+    .android => _OngoingNotification.instance,
     _ => null,
   };
 }
@@ -85,9 +108,42 @@ OngoingWorkoutSurface? ongoingWorkoutSurface(TargetPlatform platform) {
 /// is fire-and-report: a lock screen that cannot be drawn is never a reason to
 /// fail a workout.
 class _LiveActivity implements OngoingWorkoutSurface {
+  static final instance = _LiveActivity._();
+
   static const _channel = MethodChannel('heart/ongoing_workout');
 
-  const new();
+  final _commands = StreamController<WatchCommand>.broadcast();
+
+  new _() {
+    _channel.setMethodCallHandler((call) async {
+      switch ((call.method, call.arguments)) {
+        // the answer tells the native side whether anyone was listening; if
+        // not, it keeps the command for [takeCommands]
+        case ('command', Map arguments):
+          if (!_commands.hasListener) return false;
+          if (WatchCommand.fromMap(arguments) case WatchCommand command) _commands.add(command);
+          return true;
+        default:
+          throw MissingPluginException('heart/ongoing_workout has no ${call.method}');
+      }
+    });
+  }
+
+  @override
+  Stream<WatchCommand> get commands => _commands.stream;
+
+  @override
+  Future<List<WatchCommand>> takeCommands() async {
+    try {
+      final queued = await _channel.invokeListMethod<Map<Object?, Object?>>('takeCommands') ?? const [];
+      return queued.map(WatchCommand.fromMap).nonNulls.toList();
+    } on MissingPluginException {
+      return const [];
+    } on PlatformException catch (e, stacktrace) {
+      _logger.warning('Live Activity takeCommands failed', e, stacktrace);
+      return const [];
+    }
+  }
 
   @override
   Future<bool> isSupported() async {
@@ -119,6 +175,9 @@ class _LiveActivity implements OngoingWorkoutSurface {
           'restEnd': rest.end.millisecondsSinceEpoch,
           'restLabel': rest.label,
           'restOver': rest.over,
+          'restMinus': rest.minus,
+          'restPlus': rest.plus,
+          'restSkip': rest.skip,
         },
         if (workout.stopwatch case final clock?) ...{
           'stopwatchStart': clock.start.millisecondsSinceEpoch,
@@ -149,10 +208,18 @@ class _LiveActivity implements OngoingWorkoutSurface {
 }
 
 class _OngoingNotification implements OngoingWorkoutSurface {
-  const new();
+  static final instance = _OngoingNotification._();
+
+  new _();
 
   @override
   Future<bool> isSupported() async => true;
+
+  @override
+  Stream<WatchCommand> get commands => ongoingNotificationCommands;
+
+  @override
+  Future<List<WatchCommand>> takeCommands() => takeOngoingNotificationCommands();
 
   @override
   Future<void> show(OngoingWorkout workout) => showOngoingWorkoutNotification(workout);
