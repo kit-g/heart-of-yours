@@ -10,6 +10,8 @@ import flutter_local_notifications
   ) -> Bool {
     // before anything else: the watch app may be what woke this process
     WatchChannel.shared.activate()
+    // Siri's copy of the template names (#285)
+    ShortcutsChannel.refresh()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -28,6 +30,9 @@ import flutter_local_notifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WatchChannel") {
       WatchChannel.shared.register(with: registrar.messenger())
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ShortcutsChannel") {
+      ShortcutsChannel.register(with: registrar.messenger())
     }
   }
 }
