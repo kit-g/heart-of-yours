@@ -133,6 +133,31 @@ struct HeartShortcuts: AppShortcutsProvider {
             shortTitle: "Finish workout",
             systemImageName: "checkmark.circle"
         )
+        AppShortcut(
+            intent: StartRestIntent(),
+            phrases: [
+                "Start rest in \(.applicationName)",
+                "Rest for \(\.$length) in \(.applicationName)",
+            ],
+            shortTitle: "Start rest",
+            systemImageName: "timer"
+        )
+        AppShortcut(
+            intent: AddRestIntent(),
+            phrases: [
+                "Add \(\.$length) to my rest in \(.applicationName)",
+            ],
+            shortTitle: "Extend rest",
+            systemImageName: "plus.circle"
+        )
+        AppShortcut(
+            intent: EndRestIntent(),
+            phrases: [
+                "Skip rest in \(.applicationName)",
+            ],
+            shortTitle: "Skip rest",
+            systemImageName: "forward.end"
+        )
     }
 }
 
@@ -141,6 +166,7 @@ struct HeartShortcuts: AppShortcutsProvider {
 /// template phrases changed, so Siri learns the names.
 enum ShortcutsChannel {
     private static let templatesKey = "shortcuts.templates"
+    static let restKey = "shortcuts.rest"
 
     static func register(with messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "heart/shortcuts", binaryMessenger: messenger)
@@ -152,6 +178,15 @@ enum ShortcutsChannel {
                 }
                 store(list)
                 refresh()
+                result(nil)
+            case "setRest":
+                // the rest a voice command acts on (#98), or nothing to act on
+                switch call.arguments {
+                case let rest as [String: Any]:
+                    UserDefaults.standard.set(rest, forKey: restKey)
+                default:
+                    UserDefaults.standard.removeObject(forKey: restKey)
+                }
                 result(nil)
             default:
                 result(FlutterMethodNotImplemented)
