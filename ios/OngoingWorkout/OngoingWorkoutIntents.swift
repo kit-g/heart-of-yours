@@ -54,6 +54,21 @@ enum OngoingWorkoutIntents {
     /// until the app says what is next. Then the command goes to Dart, which
     /// ticks the set for real — or drops a tick for a set already done.
     static func complete(workoutId: String, setId: String) async {
+        await complete(
+            workoutId: workoutId,
+            setId: setId,
+            command: [
+                "action": "complete",
+                "workoutId": workoutId,
+                "setId": setId,
+                "at": Int(Date().timeIntervalSince1970 * 1000),
+            ]
+        )
+    }
+
+    /// The same, handing Dart [command] — a tick with the values said to it
+    /// (#287) — once the activity has moved on.
+    static func complete(workoutId: String, setId: String, command: [String: Any]) async {
         for activity in Activity<OngoingWorkoutAttributes>.activities
         where activity.attributes.workoutId == workoutId {
             let now = Date()
@@ -61,13 +76,7 @@ enum OngoingWorkoutIntents {
             await activity.update(ActivityContent(state: state, staleDate: state.restEnd))
             if let notification { await schedule(notification) }
         }
-
-        handoff?([
-            "action": "complete",
-            "workoutId": workoutId,
-            "setId": setId,
-            "at": Int(Date().timeIntervalSince1970 * 1000),
-        ])
+        handoff?(command)
     }
 
     /// The "rest complete" notification a tick schedules, as Dart would.
