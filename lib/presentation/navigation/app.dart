@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/rest_store.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
 import 'package:heart/core/env/watch.dart';
@@ -202,6 +203,11 @@ class HeartApp extends StatelessWidget {
           create: (_) => Alarms(
             cancelRestTimerNotifications: switch (hasLocalNotifications ?? false) {
               true => cancelExerciseNotification,
+              false => null,
+            },
+            // a rest outlives the process (#141); tests keep it in memory
+            store: switch (hasLocalNotifications ?? false) {
+              true => const PreferencesRestStore(),
               false => null,
             },
           ),
@@ -670,6 +676,7 @@ Future<void> _initApp(
 }) async {
   return Zone.root.run(() async {
     final workouts = Workouts.of(context);
+    final alarms = Alarms.of(context);
     if (hasLocalNotifications ?? false) {
       initNotifications(
         platform: Theme.of(context).platform,
@@ -803,6 +810,9 @@ Future<void> _initApp(
           workouts.init().then<void>(
             (_) {
               router.refresh();
+              // the rest a killed process left counting, if the workout it
+              // belongs to is the one just restored (#141)
+              alarms.restore(workouts.activeWorkout);
               return _initTrainingData(
                 workouts: workouts,
                 previous: previous,
