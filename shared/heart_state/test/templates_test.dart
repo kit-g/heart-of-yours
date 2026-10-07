@@ -141,6 +141,62 @@ void main() {
       });
     });
 
+    group('loaded (#284)', () {
+      test('reports the device read, and finds own templates and samples by id', () async {
+        templates.userId = 'u1';
+        when(local.getTemplates('u1')).thenAnswer((_) async => [tmpl(id: 'own', name: 'Push')]);
+        when(local.getTemplates(null)).thenAnswer((_) async => [tmpl(id: 'sample', name: 'Sample')]);
+        when(config.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+        when(remote.getTemplates()).thenAnswer((_) async => null);
+
+        expect(templates.hasLoaded, isFalse);
+        await templates.init();
+        await pumpEventQueue();
+
+        expect(templates.hasLoaded, isTrue);
+        expect(templates.lookup('own')?.name, 'Push');
+        expect(templates.lookup('sample')?.name, 'Sample');
+        expect(templates.lookup('nope'), isNull);
+      });
+
+      test('a failed read still counts as read: nothing more is coming from this device', () async {
+        templates.userId = 'u1';
+        when(local.getTemplates('u1')).thenThrow(StateError('database is locked'));
+        when(local.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+        when(config.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+        when(remote.getTemplates()).thenAnswer((_) async => null);
+
+        await templates.init();
+        await pumpEventQueue();
+
+        expect(templates.hasLoaded, isTrue);
+      });
+
+      test('with no user there is nothing of its own to wait for', () async {
+        when(local.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+        when(config.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+
+        await templates.init();
+        await pumpEventQueue();
+
+        expect(templates.hasLoaded, isTrue);
+      });
+
+      test('signing out forgets the user\'s templates were read; the samples stay', () async {
+        templates.userId = 'u1';
+        when(local.getTemplates(any)).thenAnswer((_) async => <Template>[]);
+        when(config.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+        when(remote.getTemplates()).thenAnswer((_) async => null);
+        await templates.init();
+        await pumpEventQueue();
+        expect(templates.hasLoaded, isTrue);
+
+        templates.onSignOut();
+
+        expect(templates.hasLoaded, isFalse);
+      });
+    });
+
     group('editing and CRUD', () {
       test('add starts a new template with correct order and adds exercise, notifies', () async {
         templates.userId = 'u1';
