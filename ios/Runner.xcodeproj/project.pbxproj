@@ -34,6 +34,8 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		A572FE5611AD14DA7EBFFAE2 /* OngoingWorkoutAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733AF7004A0E5D7C29F40C21 /* OngoingWorkoutAttributes.swift */; };
+		5D0000000000000000000002 /* OngoingWorkoutIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D0000000000000000000001 /* OngoingWorkoutIntents.swift */; };
+		5D0000000000000000000003 /* OngoingWorkoutIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D0000000000000000000001 /* OngoingWorkoutIntents.swift */; };
 		B61F8DBC4B2355876ADFCF41 /* PhoneSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A0491C57699186BFA19493 /* PhoneSession.swift */; };
 		B6A4DB06A155551F3A02FBA8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F9EDB7416C00AE0CB904F8DA /* PrivacyInfo.xcprivacy */; };
 		B74ADED1ADF65E7B22533F18 /* WatchChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AF6233C108365F4B3E34C6B /* WatchChannel.swift */; };
@@ -175,6 +177,7 @@
 		730000000000000000000005 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		730000000000000000000006 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		733AF7004A0E5D7C29F40C21 /* OngoingWorkoutAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OngoingWorkoutAttributes.swift; sourceTree = "<group>"; };
+		5D0000000000000000000001 /* OngoingWorkoutIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OngoingWorkoutIntents.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
@@ -404,6 +407,7 @@
 			isa = PBXGroup;
 			children = (
 				733AF7004A0E5D7C29F40C21 /* OngoingWorkoutAttributes.swift */,
+				5D0000000000000000000001 /* OngoingWorkoutIntents.swift */,
 				D104CFDB124801058D590F5E /* OngoingWorkoutLiveActivity.swift */,
 				2A0C5B8E54CEBCC76AF5841F /* Info.plist */,
 			);
@@ -773,6 +777,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A572FE5611AD14DA7EBFFAE2 /* OngoingWorkoutAttributes.swift in Sources */,
+				5D0000000000000000000002 /* OngoingWorkoutIntents.swift in Sources */,
 				DAFD43D3D3BBD91C867B2544 /* OngoingWorkoutLiveActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -784,6 +789,7 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				DA2FE7023D59B64576DB9856 /* OngoingWorkoutAttributes.swift in Sources */,
+				5D0000000000000000000003 /* OngoingWorkoutIntents.swift in Sources */,
 				72D04C271B451DC07C15ADEB /* OngoingWorkoutChannel.swift in Sources */,
 				B74ADED1ADF65E7B22533F18 /* WatchChannel.swift in Sources */,
 				5C0000000000000000000002 /* Shortcuts.swift in Sources */,

@@ -35,6 +35,11 @@ struct OngoingWorkoutAttributes: ActivityAttributes {
         /// Shown once the countdown has run out and the app has not been back
         /// to say so — the activity goes stale at [restEnd].
         var restOver: String?
+        /// The rest buttons' labels (#141): ten seconds off, ten on, skip.
+        /// Nil from a build before them, which draws no buttons.
+        var restMinus: String?
+        var restPlus: String?
+        var restSkip: String?
 
         /// The user's theme, per appearance, as ARGB. The lock screen follows
         /// the system appearance rather than the app's.
