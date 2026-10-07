@@ -1,0 +1,182 @@
+import AppIntents
+import Flutter
+import Foundation
+import UIKit
+import os
+
+/// Siri, the Shortcuts app and Spotlight driving Heart (#285): the intents
+/// open the app on a `heart://app/…` link (#284) and the app does the rest, so
+/// nothing here reads or writes the workout. The one thing an intent needs
+/// with the app not running — the templates it can name — Dart publishes over
+/// the `heart/shortcuts` channel and `ShortcutsChannel` keeps in UserDefaults.
+///
+/// Copy: intent and parameter titles are in `Localizable.xcstrings`, the Siri
+/// phrases in `<lang>.lproj/AppShortcuts.strings` (the App Shortcuts build
+/// step takes no catalog below an iOS 17 target); both are generated on
+/// translation import (`shared/heart_language`), and the phrases in
+/// `HeartShortcuts` have to match the tables' English keys word for word,
+/// which a test checks.
+
+private let log = Logger(subsystem: "me.heart-of", category: "Shortcuts")
+
+/// The links an intent opens the app on. The verbs are Dart's (`ShortcutLink`).
+private enum ShortcutURL {
+    static func start(template: String? = nil) -> URL {
+        var components = URLComponents()
+        components.scheme = "heart"
+        components.host = "app"
+        components.path = "/start"
+        if let template {
+            components.queryItems = [URLQueryItem(name: "template", value: template)]
+        }
+        return components.url!
+    }
+
+    static let finish = URL(string: "heart://app/finish")!
+}
+
+/// A template, as Dart last published it: the user's own and the samples.
+@available(iOS 16, *)
+struct TemplateEntity: AppEntity {
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Template")
+    static let defaultQuery = TemplateQuery()
+
+    let id: String
+    let name: String
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)")
+    }
+}
+
+@available(iOS 16, *)
+struct TemplateQuery: EntityQuery, EntityStringQuery {
+    func entities(for identifiers: [String]) async throws -> [TemplateEntity] {
+        ShortcutsChannel.templates.filter { identifiers.contains($0.id) }
+    }
+
+    func suggestedEntities() async throws -> [TemplateEntity] {
+        ShortcutsChannel.templates
+    }
+
+    /// "Start push day": matched against the names, case and diacritics aside.
+    func entities(matching string: String) async throws -> [TemplateEntity] {
+        ShortcutsChannel.templates.filter {
+            $0.name.range(of: string, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        }
+    }
+}
+
+/// Opens the app on [url]. The app is already in the foreground when this
+/// runs (`openAppWhenRun`), so it may open its own scheme and the link lands
+/// in Flutter like any other. (`OpenURLIntent`, the system's own way, needs
+/// iOS 18.)
+@available(iOS 16, *)
+@MainActor
+private func open(_ url: URL) -> some IntentResult {
+    UIApplication.shared.open(url)
+    return .result()
+}
+
+@available(iOS 16, *)
+struct StartWorkoutIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start Workout"
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Template")
+    var template: TemplateEntity?
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Start \(\.$template)")
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        open(ShortcutURL.start(template: template?.id))
+    }
+}
+
+@available(iOS 16, *)
+struct FinishWorkoutIntent: AppIntent {
+    static let title: LocalizedStringResource = "Finish Workout"
+    static let openAppWhenRun = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        open(ShortcutURL.finish)
+    }
+}
+
+/// The phrases Siri answers to, and the tiles in the Shortcuts app and
+/// Spotlight. iOS 17: the tile's title and symbol arrived with it, and the
+/// intents above are still actions in the Shortcuts app on iOS 16.
+///
+/// String literals only, matching `AppShortcuts.strings`: the build reads
+/// them out of the source.
+@available(iOS 17, *)
+struct HeartShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: StartWorkoutIntent(),
+            phrases: [
+                "Start a workout in \(.applicationName)",
+                "Start \(\.$template) in \(.applicationName)",
+            ],
+            shortTitle: "Start a workout",
+            systemImageName: "figure.strengthtraining.traditional"
+        )
+        AppShortcut(
+            intent: FinishWorkoutIntent(),
+            phrases: [
+                "Finish my workout in \(.applicationName)",
+            ],
+            shortTitle: "Finish workout",
+            systemImageName: "checkmark.circle"
+        )
+    }
+}
+
+/// The app's half of the `heart/shortcuts` channel: Dart publishes the
+/// templates, this keeps them for the intents and tells the system the
+/// template phrases changed, so Siri learns the names.
+enum ShortcutsChannel {
+    private static let templatesKey = "shortcuts.templates"
+
+    static func register(with messenger: FlutterBinaryMessenger) {
+        let channel = FlutterMethodChannel(name: "heart/shortcuts", binaryMessenger: messenger)
+        channel.setMethodCallHandler { call, result in
+            switch call.method {
+            case "setTemplates":
+                guard let list = call.arguments as? [[String: Any]] else {
+                    return result(FlutterError(code: "bad_arguments", message: "setTemplates needs a list", details: nil))
+                }
+                let templates = list.compactMap { entry -> [String: String]? in
+                    guard let id = entry["id"] as? String, let name = entry["name"] as? String else { return nil }
+                    return ["id": id, "name": name]
+                }
+                UserDefaults.standard.set(templates, forKey: templatesKey)
+                refresh()
+                result(nil)
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+    }
+
+    /// Called at launch too: the system's copy of the parameters is only as
+    /// fresh as the last time it was told.
+    static func refresh() {
+        if #available(iOS 17, *) {
+            HeartShortcuts.updateAppShortcutParameters()
+        }
+    }
+
+    @available(iOS 16, *)
+    static var templates: [TemplateEntity] {
+        let stored = UserDefaults.standard.array(forKey: templatesKey) as? [[String: String]] ?? []
+        return stored.compactMap { entry in
+            guard let id = entry["id"], let name = entry["name"] else { return nil }
+            return TemplateEntity(id: id, name: name)
+        }
+    }
+}
