@@ -215,5 +215,53 @@
     "description": "What Siri says to \"start rest\" for an exercise with no rest timer and no length said. Generated into Localizable.xcstrings",
     "type": "text",
     "placeholders": {}
+  },
+  "iosShortcutPhraseLogSet": "Log a set in ${applicationName}",
+  "@iosShortcutPhraseLogSet": {
+    "description": "Siri phrase for logging the set up next; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogSetTitle": "Log a set",
+  "@iosShortcutLogSetTitle": {
+    "description": "Title of the Log a set tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogSetIntent": "Log Set",
+  "@iosShortcutLogSetIntent": {
+    "description": "Name of the Log Set action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutWeightParam": "Weight",
+  "@iosShortcutWeightParam": {
+    "description": "Title of the Weight parameter of the Log Set action. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRepsParam": "Reps",
+  "@iosShortcutRepsParam": {
+    "description": "Title of the Reps parameter of the Log Set action. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogged": "Logged %@",
+  "@iosShortcutLogged": {
+    "description": "What Siri says when a set was logged by voice; %@ is what was logged (100 kg × 5, Bench Press) and must stay. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNothingLeft": "Nothing left to log",
+  "@iosShortcutNothingLeft": {
+    "description": "What Siri says to \"log a set\" with every set of the workout done. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutSayValues": "Say the weight and reps",
+  "@iosShortcutSayValues": {
+    "description": "What Siri says to \"log a set\" for a set with nothing filled in and nothing said. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
   }
 }

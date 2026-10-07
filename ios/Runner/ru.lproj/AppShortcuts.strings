@@ -6,3 +6,4 @@
 "Rest for ${length} in ${applicationName}" = "Отдохнуть ${length} в ${applicationName}";
 "Add ${length} to my rest in ${applicationName}" = "Добавить ${length} к отдыху в ${applicationName}";
 "Skip rest in ${applicationName}" = "Пропустить отдых в ${applicationName}";
+"Log a set in ${applicationName}" = "Записать подход в ${applicationName}";

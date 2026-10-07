@@ -6,3 +6,4 @@
 "Rest for ${length} in ${applicationName}" = "Descansar ${length} en ${applicationName}";
 "Add ${length} to my rest in ${applicationName}" = "Añadir ${length} a mi descanso en ${applicationName}";
 "Skip rest in ${applicationName}" = "Saltar descanso en ${applicationName}";
+"Log a set in ${applicationName}" = "Registrar una serie en ${applicationName}";

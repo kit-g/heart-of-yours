@@ -6,3 +6,4 @@
 "Rest for ${length} in ${applicationName}" = "Rest for ${length} in ${applicationName}";
 "Add ${length} to my rest in ${applicationName}" = "Add ${length} to my rest in ${applicationName}";
 "Skip rest in ${applicationName}" = "Skip rest in ${applicationName}";
+"Log a set in ${applicationName}" = "Log a set in ${applicationName}";
