@@ -168,6 +168,9 @@ void main() {
     // the Finish button's own question — which, for a workout nothing has been
     // done in yet, is whether to cancel it (`showFinishWorkoutDialog`)
     expect(find.text(copy(tester).cancelWorkoutTitle), findsOneWidget);
+    // and over the sheet, not under it: a dialog shown before the sheet's
+    // page landed used to be covered by it
+    expect(find.text(copy(tester).cancelWorkoutTitle).hitTestable(), findsOneWidget);
     // asked, not done: the workout is still running until the user says so
     expect(Workouts.of(context).activeWorkout?.name, 'Legs');
   });
