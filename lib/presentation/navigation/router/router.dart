@@ -8,9 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
+import 'package:heart/core/env/shortcuts.dart';
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/shortcuts.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/routes/history/history.dart';
@@ -243,6 +245,26 @@ final class HeartRouter {
 
     if (auth.user?.scheduledForDeletionAt != null) {
       return _restoreAccountPath;
+    }
+
+    // A command from outside the app (#284): land on the workouts tab and do
+    // what it asks over it. After the onboarding and the gates above, so a
+    // fresh install meets them first and the link is carried through `from`,
+    // and before the active-workout block below, which would otherwise take
+    // the tab for itself and lose the link. Switched off, the link is one the
+    // app has no screen for, and goes where those go.
+    if (ShortcutLink.parse(state.uri) case ShortcutLink link) {
+      if (Preferences.of(context).featureAnswer(.shortcuts) == .off) return null;
+      unawaited(
+        runShortcutLink(
+          link,
+          workouts: Workouts.of(context),
+          templates: Templates.of(context),
+          preferences: Preferences.of(context),
+          navigator: _rootNavigatorKey,
+        ),
+      );
+      return _workoutPath;
     }
 
     // deep link carried through the login flow
