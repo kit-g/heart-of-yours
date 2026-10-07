@@ -498,13 +498,16 @@ void main() {
       expect(set.duration, 1450);
     });
 
-    test('storeMeasurements delegates to service', () async {
+    test('storeMeasurements delegates to service, and notifies (#282)', () async {
       await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);
       final set = sut.activeWorkout!.first.first;
+      var notified = 0;
+      sut.addListener(() => notified++);
 
       await sut.storeMeasurements(set);
       verify(local.storeMeasurements(set)).called(1);
+      expect(notified, 1, reason: 'a row typing into its set is heard by the watch and the lock screen');
     });
 
     test('swap and append reorder exercises and notify', () async {
