@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,7 +89,9 @@ void main() {
 
     expect(shown()['title'], 'Bench Press (Barbell)');
     expect(shown()['body'], 'Next: set 2 · 60 kg x 5');
-    expect(shown()['payload'], 'w1');
+    // the payload is what the rest buttons' background isolate (#141) has
+    // to repost from: the whole display, not the id alone
+    expect(jsonDecode(shown()['payload'] as String), containsPair('workoutId', 'w1'));
     expect(details()['channelId'], 'Ongoing Workout');
     expect(details()['ongoing'], isFalse, reason: 'the user can swipe it away (#133)');
     expect(details()['autoCancel'], isFalse);
@@ -110,6 +114,21 @@ void main() {
     expect(details()['chronometerCountDown'], isTrue);
     expect(details()['when'], end.millisecondsSinceEpoch);
     expect(shown()['body'], 'Rest · Next: set 2 · 60 kg x 5');
+
+    // the rest's buttons (#141), as actions that never open the app
+    final actions = (details()['actions'] as List).cast<Map>();
+    expect(actions.map((action) => action['id']), ['rest-minus', 'rest-plus', 'rest-skip']);
+    expect(actions.map((action) => action['title']), ['-10s', '+10s', 'Skip']);
+    expect(actions.map((action) => action['showsUserInterface']), everyElement(isFalse));
+    // and the payload carries the rest, for the background isolate to repost from
+    final payload = jsonDecode(shown()['payload'] as String) as Map;
+    expect(payload['restEnd'], end.millisecondsSinceEpoch);
+    expect(payload['restSkip'], 'Skip');
+  });
+
+  test('with no rest running there are no buttons: absent, not dead', () async {
+    await showOngoingWorkoutNotification(workout());
+    expect(details()['actions'], isNull);
   });
 
   test('a rest already over is shown as the elapsed clock', () async {
