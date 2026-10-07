@@ -23,5 +23,53 @@
     "description": "Apple Watch Health permission sheet: NSHealthUpdateUsageDescription of the watch app. Policy text: says exactly what is written. Generated into ios/Watch on translation import.",
     "type": "text",
     "placeholders": {}
+  },
+  "iosShortcutPhraseStart": "Démarrer une séance dans ${applicationName}",
+  "@iosShortcutPhraseStart": {
+    "description": "Siri phrase for the Start Workout App Shortcut; ${applicationName} is Siri's placeholder for the app name and must stay. Generated into ios/Runner/AppShortcuts.xcstrings on translation import, and must match the literal in ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseStartTemplate": "Démarrer ${template} dans ${applicationName}",
+  "@iosShortcutPhraseStartTemplate": {
+    "description": "Siri phrase for starting a named template; ${template} is the template's name, ${applicationName} the app name, both must stay. Generated into AppShortcuts.xcstrings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseFinish": "Terminer ma séance dans ${applicationName}",
+  "@iosShortcutPhraseFinish": {
+    "description": "Siri phrase for the Finish Workout App Shortcut; ${applicationName} must stay. Generated into AppShortcuts.xcstrings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutStartTitle": "Démarrer une séance",
+  "@iosShortcutStartTitle": {
+    "description": "Title of the Start Workout tile in the iOS Shortcuts app and Spotlight. Short. Generated into ios/Runner/Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutFinishTitle": "Terminer la séance",
+  "@iosShortcutFinishTitle": {
+    "description": "Title of the Finish Workout tile in the iOS Shortcuts app and Spotlight. Short. Generated into ios/Runner/Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutStartIntent": "Démarrer une séance",
+  "@iosShortcutStartIntent": {
+    "description": "Name of the Start Workout action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutFinishIntent": "Terminer la séance",
+  "@iosShortcutFinishIntent": {
+    "description": "Name of the Finish Workout action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutTemplate": "Modèle",
+  "@iosShortcutTemplate": {
+    "description": "The template parameter of the Start Workout action in the iOS Shortcuts app, and the type name of a template there. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
   }
 }

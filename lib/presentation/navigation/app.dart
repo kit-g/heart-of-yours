@@ -8,6 +8,7 @@ import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/sentry.dart';
+import 'package:heart/core/env/shortcuts.dart';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/core/theme/state.dart';
@@ -24,6 +25,7 @@ import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/pause.dart';
+import 'package:heart/presentation/navigation/system_shortcuts.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
 import 'package:heart/presentation/widgets/image.dart';
@@ -464,7 +466,14 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                 false => null,
               },
               child: KeepAwakePresenter(
-                child: PausePresenter(child: child ?? const SizedBox.shrink()),
+                child: SystemShortcutsPresenter(
+                  // the same gate again: the assistant layer is native
+                  shortcuts: switch (widget.hasLocalNotifications) {
+                    true => systemShortcuts(Theme.of(context).platform),
+                    false => null,
+                  },
+                  child: PausePresenter(child: child ?? const SizedBox.shrink()),
+                ),
               ),
             ),
           ),

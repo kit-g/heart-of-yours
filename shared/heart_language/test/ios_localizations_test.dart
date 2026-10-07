@@ -13,7 +13,7 @@ Directory _root() {
 }
 
 Map<String, String> _strings(File file) => {
-  for (final match in RegExp(r'^"(\w+)" = (".*");$', multiLine: true).allMatches(file.readAsStringSync()))
+  for (final match in RegExp(r'^"(.+?)" = (".*");$', multiLine: true).allMatches(file.readAsStringSync()))
     match[1]!: jsonDecode(match[2]!) as String,
 };
 
@@ -94,5 +94,65 @@ void main() {
     );
     expect(() => writeIosLocalizations(translations, runner), throwsStateError);
     expect(runner.listSync().length, 1);
+  });
+
+  group('App Shortcuts string catalogs (#285)', () {
+    test('the shipped titles catalog and phrase tables are what the translation source generates', () {
+      writeIosStringCatalogs(translations, runner);
+      final ios = '${root.path}/../../ios/Runner';
+      expect(
+        File('$ios/Localizable.xcstrings').readAsStringSync(),
+        File('${runner.path}/Localizable.xcstrings').readAsStringSync(),
+        reason: 'Localizable.xcstrings is stale',
+      );
+      final languages = translations.keys.where((locale) => !locale.contains('_')).toSet();
+      for (final language in languages) {
+        final generated = File('${runner.path}/$language.lproj/AppShortcuts.strings');
+        final shipped = File('$ios/$language.lproj/AppShortcuts.strings');
+        expect(shipped.readAsStringSync(), generated.readAsStringSync(), reason: '$language phrases are stale');
+        expect(_strings(shipped), {
+          for (final key in runnerShortcutPhraseKeys) translations['en']![key]: translations[language]![key],
+        });
+      }
+      expect(Directory('${runner.path}/en_CA.lproj').existsSync(), isFalse);
+    });
+
+    test('every base language localizes every title, and English is the key', () {
+      final catalog = jsonDecode(stringCatalog(translations, runnerShortcutTitleKeys)) as Map<String, dynamic>;
+      final strings = catalog['strings'] as Map<String, dynamic>;
+      final languages = translations.keys.where((locale) => !locale.contains('_') && locale != 'en').toSet();
+      for (final key in runnerShortcutTitleKeys) {
+        final english = translations['en']![key] as String;
+        final localizations = (strings[english] as Map<String, dynamic>)['localizations'] as Map<String, dynamic>;
+        expect(localizations.keys.toSet(), languages, reason: key);
+        for (final language in languages) {
+          expect(localizations[language], {
+            'stringUnit': {'state': 'translated', 'value': translations[language]![key]},
+          });
+        }
+      }
+    });
+
+    test('the Swift source says the phrases word for word', () {
+      // the build reads the phrases out of the source as literals, and the
+      // catalog is keyed by them: a word changed on one side only loses the
+      // localization silently
+      final swift = File('${root.path}/../../ios/Runner/Shortcuts.swift').readAsStringSync();
+      for (final key in [...runnerShortcutPhraseKeys, ...runnerShortcutTitleKeys]) {
+        final english = (translations['en']![key] as String)
+            .replaceAll(r'${applicationName}', r'\(.applicationName)')
+            .replaceAll(r'${template}', r'\(\.$template)');
+        expect(swift, contains('"$english"'), reason: key);
+      }
+    });
+
+    test('Siri phrases name the app', () {
+      for (final key in runnerShortcutPhraseKeys) {
+        for (final locale in translations.keys) {
+          final value = translations[locale]![key];
+          if (value is String) expect(value, contains(r'${applicationName}'), reason: '$locale/$key');
+        }
+      }
+    });
   });
 }
