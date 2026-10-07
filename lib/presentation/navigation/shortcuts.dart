@@ -97,16 +97,16 @@ Future<void> _apply(
           null => workouts.startWorkout(source: .blank, name: L.of(context).defaultWorkoutName()),
         },
       );
-      // started, or kept: either way there is a workout to show. The push
-      // completes when the sheet is closed, which is not this link's business
+      // started, or kept: either way there is a workout to show
       if (!workouts.hasActiveWorkout) return;
       workouts.notifyOfActiveWorkout();
-      unawaited(router.goToActiveWorkout());
+      await router.showActiveWorkout();
     case FinishWorkoutLink():
       if (workouts.activeWorkout == null) return;
       workouts.notifyOfActiveWorkout();
-      unawaited(router.goToActiveWorkout());
-      // on the root navigator, so over the sheet going up underneath it
+      // the sheet first, and the question over it
+      await router.showActiveWorkout();
+      if (!context.mounted) return;
       await showFinishWorkoutDialog(context, workouts);
   }
 }

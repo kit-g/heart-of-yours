@@ -298,6 +298,27 @@ final class HeartRouter {
     return _pushActiveWorkoutOnce(config);
   }
 
+  /// Opens the active workout's sheet and completes once it is on screen — not
+  /// once it is closed, which is what [goToActiveWorkout]'s push completes on.
+  /// For something that goes over the sheet, such as the Finish question a
+  /// link asks (#284): a dialog shown before the sheet's page has landed is
+  /// attached to the page under it, and the sheet then covers it.
+  Future<void> showActiveWorkout() async {
+    if (!_isActiveWorkoutOpen) unawaited(_pushActiveWorkoutOnce(config));
+    // the push is parsed off this turn and built a frame later; bounded, so
+    // a sheet that never comes (the workout finished meanwhile) cannot hang
+    for (var frames = 0; frames < 30 && !_isActiveWorkoutOpen; frames++) {
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
+  bool get _isActiveWorkoutOpen {
+    return config.routerDelegate.currentConfiguration.matches.any(
+      (match) => match.matchedLocation == _activeWorkoutPath,
+    );
+  }
+
   void goToWorkouts() {
     return config.goNamed(_workoutName);
   }
