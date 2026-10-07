@@ -45,6 +45,9 @@ const _restPlusAction = 'rest-plus';
 const _restSkipAction = 'rest-skip';
 const _restStep = 10;
 
+/// The Done button (#246): ticks the set up next.
+const _doneAction = 'set-done';
+
 /// Where the main isolate listens for the buttons (`IsolateNameServer`), and
 /// where a button pressed with no main isolate alive waits for the next
 /// launch (shared preferences, a list of JSON commands).
@@ -73,29 +76,23 @@ Future<void> _notificationTapBackground(NotificationResponse response) {
 /// is nothing to do.
 Future<void> onOngoingNotificationAction(NotificationResponse response) async {
   if (response.id != _ongoingWorkout) return;
-  final int? seconds;
-  switch (response.actionId) {
-    case _restMinusAction:
-      seconds = -_restStep;
-    case _restPlusAction:
-      seconds = _restStep;
-    case _restSkipAction:
-      seconds = null;
-    default:
-      return;
-  }
   final shown = _OngoingDisplay.fromJson(response.payload);
-  if (shown == null || shown.rest == null) return;
+  if (shown == null) return;
+  final now = DateTime.now();
 
-  final command = {
-    'action': switch (seconds) {
-      int() => 'adjustRest',
-      null => 'skipRest',
-    },
-    'workoutId': shown.workoutId,
-    'at': DateTime.now().millisecondsSinceEpoch,
-    if (seconds case int seconds) 'seconds': seconds,
+  // what the button did to the shade, and what it asks of the app
+  final (_OngoingDisplay, Map<String, Object>)? plan = switch ((response.actionId, shown.rest, shown.done)) {
+    (_restMinusAction, OngoingRest(), _) => (shown.adjusted(-_restStep), _restCommand(shown, -_restStep)),
+    (_restPlusAction, OngoingRest(), _) => (shown.adjusted(_restStep), _restCommand(shown, _restStep)),
+    (_restSkipAction, OngoingRest(), _) => (shown.adjusted(null), _restCommand(shown, null)),
+    (_doneAction, _, OngoingDone done) => (
+      shown.completed(at: now),
+      {'action': 'complete', 'workoutId': shown.workoutId, 'setId': done.setId, 'at': now.millisecondsSinceEpoch},
+    ),
+    _ => null,
   };
+  if (plan == null) return;
+  final (reposted, command) = plan;
 
   // this isolate's own plugin, initialised without callbacks: it posts and
   // schedules, nothing more
@@ -105,9 +102,27 @@ Future<void> onOngoingNotificationAction(NotificationResponse response) async {
       settings: const InitializationSettings(android: AndroidInitializationSettings(_androidIcon)),
     ),
   );
-  final adjusted = shown.adjusted(seconds);
-  await _guarded(() => _moveRestNotification(adjusted.rest?.end));
-  await _guarded(() => _showOngoing(adjusted));
+  switch ((response.actionId, shown.done, reposted.rest)) {
+    // a tick starts the exercise's rest, with the notification the app would
+    // have scheduled for its end
+    case (_doneAction, OngoingDone done, OngoingRest rest):
+      await _guarded(
+        () => _plugin.zonedSchedule(
+          id: _currentExercise,
+          title: done.restTitle,
+          body: done.restBody,
+          scheduledDate: TZDateTime.from(rest.end, local),
+          notificationDetails: _details(title: done.restTitle, body: done.restBody, subtitle: done.restSubtitle),
+          androidScheduleMode: .exactAllowWhileIdle,
+          payload: done.exerciseId,
+        ),
+      );
+    case (_doneAction, _, _):
+      break;
+    case (_, _, final rest):
+      await _guarded(() => _moveRestNotification(rest?.end));
+  }
+  await _guarded(() => _showOngoing(reposted));
 
   switch (IsolateNameServer.lookupPortByName(_commandPort)) {
     case SendPort port:
@@ -117,6 +132,18 @@ Future<void> onOngoingNotificationAction(NotificationResponse response) async {
       final kept = prefs.getStringList(_pendingCommands) ?? const [];
       await prefs.setStringList(_pendingCommands, [...kept, jsonEncode(command)]);
   }
+}
+
+Map<String, Object> _restCommand(_OngoingDisplay shown, int? seconds) {
+  return {
+    'action': switch (seconds) {
+      int() => 'adjustRest',
+      null => 'skipRest',
+    },
+    'workoutId': shown.workoutId,
+    'at': DateTime.now().millisecondsSinceEpoch,
+    if (seconds case int seconds) 'seconds': seconds,
+  };
 }
 
 /// Moves the pending "rest complete" notification to [end], or withdraws it
@@ -629,6 +656,7 @@ final class _OngoingDisplay {
   final DateTime? pausedAt;
   final String pausedLabel;
   final OngoingRest? rest;
+  final OngoingDone? done;
   final ({DateTime start, DateTime? pausedAt, String label})? stopwatch;
   final Color color;
   final String channel;
@@ -642,6 +670,7 @@ final class _OngoingDisplay {
     required this.pausedAt,
     required this.pausedLabel,
     required this.rest,
+    required this.done,
     required this.stopwatch,
     required this.color,
     required this.channel,
@@ -657,6 +686,7 @@ final class _OngoingDisplay {
       pausedAt: workout.pausedAt,
       pausedLabel: workout.pausedLabel,
       rest: workout.rest,
+      done: workout.done,
       stopwatch: workout.stopwatch,
       color: workout.preset.light.accentInk,
       channel: workout.channel,
@@ -685,6 +715,46 @@ final class _OngoingDisplay {
         ),
         _ => null,
       },
+      done: done,
+      stopwatch: stopwatch,
+      color: color,
+      channel: channel,
+    );
+  }
+
+  /// The same display once the set up next is ticked (#246): the lines that
+  /// follow, the rest its exercise's timer starts [at] now, and no Done until
+  /// the app says what is next.
+  _OngoingDisplay completed({required DateTime at}) {
+    return _OngoingDisplay(
+      workoutId: workoutId,
+      title: title,
+      exercise: done?.afterExercise ?? exercise,
+      next: done?.afterNext ?? next,
+      clockStart: clockStart,
+      pausedAt: pausedAt,
+      pausedLabel: pausedLabel,
+      rest: switch (done) {
+        OngoingDone(
+          restSeconds: int seconds,
+          :final restLabel,
+          :final restOver,
+          :final restMinus,
+          :final restPlus,
+          :final restSkip,
+        ) =>
+          (
+            start: at,
+            end: at.add(Duration(seconds: seconds)),
+            label: restLabel,
+            over: restOver,
+            minus: restMinus,
+            plus: restPlus,
+            skip: restSkip,
+          ),
+        _ => null,
+      },
+      done: null,
       stopwatch: stopwatch,
       color: color,
       channel: channel,
@@ -713,6 +783,22 @@ final class _OngoingDisplay {
         'stopwatchStart': clock.start.millisecondsSinceEpoch,
         'stopwatchLabel': clock.label,
         'stopwatchPausedAt': ?clock.pausedAt?.millisecondsSinceEpoch,
+      },
+      if (done case OngoingDone done) ...{
+        'doneSetId': done.setId,
+        'doneExerciseId': done.exerciseId,
+        'doneLabel': done.label,
+        'afterExercise': done.afterExercise,
+        'afterNext': done.afterNext,
+        'afterRest': ?done.restSeconds,
+        'afterRestLabel': done.restLabel,
+        'afterRestOver': done.restOver,
+        'afterRestMinus': done.restMinus,
+        'afterRestPlus': done.restPlus,
+        'afterRestSkip': done.restSkip,
+        'afterRestTitle': done.restTitle,
+        'afterRestBody': ?done.restBody,
+        'afterRestSubtitle': done.restSubtitle,
       },
       'color': color.toARGB32(),
       'channel': channel,
@@ -775,6 +861,39 @@ final class _OngoingDisplay {
               },
               label: label,
             ),
+            _ => null,
+          },
+          done: switch (map) {
+            {
+              'doneSetId': String setId,
+              'doneExerciseId': String exerciseId,
+              'doneLabel': String label,
+              'afterExercise': String afterExercise,
+              'afterNext': String afterNext,
+              'afterRestLabel': String restLabel,
+              'afterRestOver': String restOver,
+              'afterRestMinus': String restMinus,
+              'afterRestPlus': String restPlus,
+              'afterRestSkip': String restSkip,
+              'afterRestTitle': String restTitle,
+              'afterRestSubtitle': String restSubtitle,
+            } =>
+              (
+                setId: setId,
+                exerciseId: exerciseId,
+                label: label,
+                afterExercise: afterExercise,
+                afterNext: afterNext,
+                restSeconds: map['afterRest'] as int?,
+                restLabel: restLabel,
+                restOver: restOver,
+                restMinus: restMinus,
+                restPlus: restPlus,
+                restSkip: restSkip,
+                restTitle: restTitle,
+                restBody: map['afterRestBody'] as String?,
+                restSubtitle: restSubtitle,
+              ),
             _ => null,
           },
           color: Color(color),
@@ -853,12 +972,15 @@ Future<void> _showOngoing(_OngoingDisplay workout) {
       subText: workout.title,
       visibility: .public,
       category: .progress,
-      actions: switch ((resting, workout.rest)) {
-        (true, OngoingRest rest) => [
+      // three is what Android allows: the rest's buttons while resting, Done
+      // (#246) when there is a set to tick and no rest on the clock
+      actions: switch ((resting, workout.rest, workout.done)) {
+        (true, OngoingRest rest, _) => [
           AndroidNotificationAction(_restMinusAction, rest.minus, showsUserInterface: false),
           AndroidNotificationAction(_restPlusAction, rest.plus, showsUserInterface: false),
           AndroidNotificationAction(_restSkipAction, rest.skip, showsUserInterface: false),
         ],
+        (false, _, OngoingDone done) => [AndroidNotificationAction(_doneAction, done.label, showsUserInterface: false)],
         _ => null,
       },
     ),
