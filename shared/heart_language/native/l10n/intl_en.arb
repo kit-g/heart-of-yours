@@ -70,5 +70,11 @@
     "description": "The template parameter of the Start Workout action in the iOS Shortcuts app, and the type name of a template there. Generated into Localizable.xcstrings",
     "type": "text",
     "placeholders": {}
+  },
+  "androidShortcutStart": "Start a workout",
+  "@androidShortcutStart": {
+    "description": "Label of the \"Start a workout\" shortcut shown on long-pressing the Android launcher icon. Short: launchers truncate. Generated into android res/values*/strings_shortcuts.xml on translation import",
+    "type": "text",
+    "placeholders": {}
   }
 }

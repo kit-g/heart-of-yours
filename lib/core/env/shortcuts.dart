@@ -85,8 +85,8 @@ abstract interface class SystemShortcuts {
 /// Null where there is no assistant layer to speak to.
 SystemShortcuts? systemShortcuts(TargetPlatform platform) {
   return switch (platform) {
-    .iOS => _MethodChannelShortcuts.instance,
-    _ => null,
+    .iOS || .android => _MethodChannelShortcuts.instance,
+    .fuchsia || .linux || .macOS || .windows => null,
   };
 }
 

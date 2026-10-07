@@ -72,6 +72,9 @@ class MainActivity : FlutterFragmentActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        // the launcher's per-template shortcuts (#286)
+        ShortcutsChannel.register(this, flutterEngine.dartExecutor.binaryMessenger)
     }
 
     // Google's documented signal: the system setting is "true" whenever the app

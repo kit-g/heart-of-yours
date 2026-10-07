@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:csv/csv.dart';
 
+import 'android_localizations.dart';
 import 'ios_localizations.dart';
 
 void main(List<String> arguments) {
@@ -209,6 +210,7 @@ void runImport(ArgResults args) {
   writeIosLocalizations(translations, Directory('../../ios/Runner'));
   writeIosLocalizations(translations, Directory('../../ios/Watch'), healthKeys: watchHealthKeys);
   writeIosStringCatalogs(translations, Directory('../../ios/Runner'));
+  writeAndroidLocalizations(translations, Directory('../../android/app/src/main/res'));
   print('--- Import Complete (including iOS permission descriptions) ---');
 
   // Run flutter gen-l10n
