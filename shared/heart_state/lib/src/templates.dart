@@ -72,10 +72,27 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   String? userId;
 
+  bool _ownLoaded = false;
+  bool _samplesLoaded = false;
+
+  /// Whether the device's templates have been read: the user's own from the
+  /// mirror and the samples. What a caller that arrived before [init] finished
+  /// — a link naming a template (#284) — waits for; the server's copies may
+  /// still be on their way.
+  bool get hasLoaded => _ownLoaded && _samplesLoaded;
+
+  /// A template by its id, the user's own or a sample, or null for one this
+  /// device does not have.
+  Template? lookup(String id) {
+    return _templates.where((template) => template.id == id).firstOrNull ??
+        _samples.where((template) => template.id == id).firstOrNull;
+  }
+
   @override
   void onSignOut() {
     editable = null;
     userId = null;
+    _ownLoaded = false;
     _templates.clear();
     _folders.clear();
   }
@@ -95,7 +112,10 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   Future<void> init() async {
     _initSampleTemplates();
-    if (userId == null) return;
+    if (userId == null) {
+      _ownLoaded = true;
+      return;
+    }
 
     // Nobody awaits this — it is started from app init and left to run — so an
     // escaping error becomes an unhandled async one and is reported as a fatal
@@ -113,6 +133,9 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
       // counting them would put everyone in the same bucket.
       analytics?.setTemplatesBucket(_templates.length);
     });
+    // read, whether or not anything was there — or the read failed, which
+    // [_step] has reported; nothing is still to come from this device
+    _ownLoaded = true;
 
     await _step(() async {
       final localFolders = await _folderService.getFolders(id);
@@ -325,6 +348,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
+    _samplesLoaded = true;
     // whatever arrived, local or remote, before a failure or after
     if (!_disposed) notifyListeners();
   }
