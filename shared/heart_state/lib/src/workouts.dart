@@ -885,7 +885,13 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Stores what [set] already holds — a row's own typing, which wrote the
+  /// value into the set before calling. And says so (#282): the row is not
+  /// the only one showing the set — the watch and the lock screen show the set
+  /// up next, and hear of a change only this way. The row itself follows
+  /// `_syncFromSet`, which leaves a field being typed into alone.
   Future<void> storeMeasurements(ExerciseSet set) {
+    notifyListeners();
     return _localService.storeMeasurements(set);
   }
 
@@ -910,8 +916,8 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   /// Sets [set]'s measurements — [weight] and [distance] metric, [duration]
   /// in seconds — from outside its row: the watch (#183), a column header's
-  /// fill (#225). And says so: the row follows what it hears, where a row's
-  /// own typing stores without a notify because the row already shows it.
+  /// fill (#225). And says so: the row follows what it hears. A row's own
+  /// typing writes the set itself and goes through [storeMeasurements].
   ///
   /// Counts as the user's edit ([markEdited]). A measurement not passed, or
   /// one the set does not take, is left as it was, as
