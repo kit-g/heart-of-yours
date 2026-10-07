@@ -1,10 +1,12 @@
-name: "Watch"
+name: "Swift"
 
-# The watch app's Swift (#175), compiled and unit-tested on pull requests that
-# touch it. Everything else in CI runs on Ubuntu and never compiles Swift: until
-# this, a Swift error first surfaced in the middle of a tag's TestFlight deploy,
-# after the whole Flutter build. Scoped to Swift and the project file — which
-# says what each target compiles — so a Dart-only change never waits on macOS.
+# The app's Swift, compiled and unit-tested on pull requests that touch it:
+# the watch app (#175) and the phone's native layer — the Live Activity and
+# its intents (#141), the App Intents (#285), the channels. Everything else
+# in CI runs on Ubuntu and never compiles Swift: until this, a Swift error
+# first surfaced in the middle of a tag's TestFlight deploy, after the whole
+# Flutter build. Scoped to Swift and the project file — which says what each
+# target compiles — so a Dart-only change never waits on macOS.
 on:
   pull_request:
     paths:
@@ -77,4 +79,48 @@ jobs:
             -scheme watch-dev \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -only-testing:WatchTests \
+            CODE_SIGNING_ALLOWED=NO
+
+  runner:
+    name: "iOS • unit tests"
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: "Read pinned Flutter version"
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - name: "Set up Flutter"
+        uses: flutter-actions/setup-flutter@adb607ae976a9e00473569facfc69813c637a060 # v4.3
+        with:
+          channel: 'stable'
+          version: ${{ steps.flutter.outputs.version }}
+          cache: true
+          cache-key: pub-${{ hashFiles('pubspec.lock') }}
+
+      # RunnerTests is hosted in the app, so the app is built — Dart and all,
+      # through Flutter's own build phase. `pub get` writes what that phase
+      # needs; the Firebase options it imports are stubbed as `make lint` does.
+      - name: "Dependencies"
+        run: |
+          flutter pub get
+          make lib/firebase_options.dart lib/firebase_options_prod.dart
+
+      - name: "Pick an iPhone simulator"
+        id: sim
+        run: |
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | test("iPhone"))] | first | .udid // empty')
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
+      # Unsigned — a simulator needs no signature, and CI has no Apple account.
+      - name: "Build and test"
+        working-directory: ios
+        run: |
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme dev \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:RunnerTests \
             CODE_SIGNING_ALLOWED=NO
