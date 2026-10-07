@@ -7,8 +7,10 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/routes/onboarding/onboarding.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/workout/workout.dart';
+import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -182,6 +184,36 @@ void main() {
 
     expect(sheetOpen(router), isFalse);
     expect(find.byType(WorkoutPage), findsOneWidget);
+  });
+
+  testWidgets('a template link opening a fresh install is honoured after Skip', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    coldStartOn(tester, 'heart://app/start?template=t1');
+    final router = HeartRouter();
+    await harness.pumpHeartApp(
+      tester,
+      db: db,
+      api: api,
+      cdn: cdn,
+      firebaseAuth: MockFirebaseAuth(
+        mockUser: MockUser(uid: userId, email: '$userId@test', isAnonymous: true),
+        signedIn: true,
+      ),
+      router: router,
+      hasLocalNotifications: false,
+      settle: false,
+    );
+    await tester.pumpTimes();
+    expect(find.byType(OnboardingPage), findsOneWidget);
+    final context = tester.element(find.byType(MaterialApp));
+    await Templates.of(context).init();
+
+    await tester.tapByKey(AppKeys.onboardingSkip);
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pumpTimes();
+
+    expect(Workouts.of(context).activeWorkout?.name, 'Push');
+    expect(sheetOpen(router), isTrue);
   });
 
   testWidgets('switched off, a link is one the app has no screen for', (tester) async {

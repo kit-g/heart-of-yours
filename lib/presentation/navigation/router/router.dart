@@ -251,9 +251,33 @@ final class HeartRouter {
     // what it asks over it. After the onboarding and the gates above, so a
     // fresh install meets them first and the link is carried through `from`,
     // and before the active-workout block below, which would otherwise take
-    // the tab for itself and lose the link. Switched off, the link is one the
-    // app has no screen for, and goes where those go.
-    if (ShortcutLink.parse(state.uri) case ShortcutLink link) {
+    // the tab for itself and lose the link.
+    if (_shortcut(context, state.uri) case String path) return path;
+
+    // deep link carried through the login flow
+    if (state.uri.queryParameters case {'from': String from}) {
+      final carried = Uri.tryParse(Uri.decodeComponent(from));
+      // A command has no screen to redirect to, and go_router does not decide
+      // a redirect's destination again when nothing matches it: the link
+      // would die as "no route". So a carried command is applied from here.
+      if (carried case Uri uri) {
+        if (_shortcut(context, uri) case String path) return path;
+      }
+      return switch (carried) {
+        Uri(hasQuery: true, :final path, :final query) => '$path?$query',
+        Uri(:final path) => path,
+        null => null,
+      };
+    }
+
+    return null;
+  }
+
+  /// Where a [ShortcutLink] in [uri] sends the app, having set it going — or
+  /// null: not a command, or the feature switched off, in which case the link
+  /// is one the app has no screen for and goes where those go.
+  static String? _shortcut(BuildContext context, Uri uri) {
+    if (ShortcutLink.parse(uri) case ShortcutLink link) {
       if (Preferences.of(context).featureAnswer(.shortcuts) == .off) return null;
       unawaited(
         runShortcutLink(
@@ -266,16 +290,6 @@ final class HeartRouter {
       );
       return _workoutPath;
     }
-
-    // deep link carried through the login flow
-    if (state.uri.queryParameters case {'from': String from}) {
-      return switch (Uri.tryParse(Uri.decodeComponent(from))) {
-        Uri(hasQuery: true, :final path, :final query) => '$path?$query',
-        Uri(:final path) => path,
-        null => null,
-      };
-    }
-
     return null;
   }
 
