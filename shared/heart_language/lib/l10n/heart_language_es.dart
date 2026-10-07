@@ -2331,4 +2331,11 @@ class LEs extends L {
 
   @override
   String get watchResume => 'Reanudar';
+
+  @override
+  String get shortcuts => 'Atajos';
+
+  @override
+  String get shortcutsSubtitle =>
+      'Empieza o termina un entrenamiento desde Siri, la app Atajos o tu pantalla de inicio';
 }

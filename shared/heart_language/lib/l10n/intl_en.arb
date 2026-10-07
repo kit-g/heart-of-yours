@@ -4290,5 +4290,17 @@
     "description": "Apple Watch button that starts a paused workout's clock again. Short: it is a watch screen",
     "type": "text",
     "placeholders": {}
+  },
+  "shortcuts": "Shortcuts",
+  "@shortcuts": {
+    "description": "Title of the opt-in shortcuts feature in Settings › Features: Siri, the Shortcuts app and home-screen shortcuts can start and finish workouts. Apple's app is called Shortcuts; use its local name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "shortcutsSubtitle": "Start or finish a workout from Siri, the Shortcuts app or your home screen",
+  "@shortcutsSubtitle": {
+    "description": "Subtitle under the shortcuts switch in Settings › Features, saying what it does",
+    "type": "text",
+    "placeholders": {}
   }
 }

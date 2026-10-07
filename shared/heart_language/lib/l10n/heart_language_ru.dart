@@ -2366,4 +2366,11 @@ class LRu extends L {
 
   @override
   String get watchResume => 'Дальше';
+
+  @override
+  String get shortcuts => 'Быстрые команды';
+
+  @override
+  String get shortcutsSubtitle =>
+      'Начинайте или завершайте тренировку через Siri, «Быстрые команды» или с главного экрана';
 }

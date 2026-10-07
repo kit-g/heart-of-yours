@@ -4071,6 +4071,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Resume'**
   String get watchResume;
+
+  /// Title of the opt-in shortcuts feature in Settings › Features: Siri, the Shortcuts app and home-screen shortcuts can start and finish workouts. Apple's app is called Shortcuts; use its local name
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcuts'**
+  String get shortcuts;
+
+  /// Subtitle under the shortcuts switch in Settings › Features, saying what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Start or finish a workout from Siri, the Shortcuts app or your home screen'**
+  String get shortcutsSubtitle;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
