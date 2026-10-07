@@ -158,6 +158,14 @@ struct HeartShortcuts: AppShortcutsProvider {
             shortTitle: "Skip rest",
             systemImageName: "forward.end"
         )
+        AppShortcut(
+            intent: LogSetIntent(),
+            phrases: [
+                "Log a set in \(.applicationName)",
+            ],
+            shortTitle: "Log a set",
+            systemImageName: "checkmark.circle.fill"
+        )
     }
 }
 
@@ -167,6 +175,7 @@ struct HeartShortcuts: AppShortcutsProvider {
 enum ShortcutsChannel {
     private static let templatesKey = "shortcuts.templates"
     static let restKey = "shortcuts.rest"
+    static let setKey = "shortcuts.nextSet"
 
     static func register(with messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "heart/shortcuts", binaryMessenger: messenger)
@@ -186,6 +195,15 @@ enum ShortcutsChannel {
                     UserDefaults.standard.set(rest, forKey: restKey)
                 default:
                     UserDefaults.standard.removeObject(forKey: restKey)
+                }
+                result(nil)
+            case "setNextSet":
+                // the set a voice command logs (#287), or nothing left
+                switch call.arguments {
+                case let set as [String: Any]:
+                    UserDefaults.standard.set(set, forKey: setKey)
+                default:
+                    UserDefaults.standard.removeObject(forKey: setKey)
                 }
                 result(nil)
             default:
