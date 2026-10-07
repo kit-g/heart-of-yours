@@ -153,6 +153,23 @@ bool _complete(
       .firstOrNull;
 }
 
+/// Whether [exercise]'s sets take a weight, and whether they take a count —
+/// what a second actor may fill in. A carry's or a hold's load is a weight;
+/// its distance or time is the phone's, as a run's is.
+(bool weighted, bool counted) measuresOf(WorkoutExercise exercise) {
+  final weighted = switch (exercise.exercise.category) {
+    .barbell ||
+    .dumbbell ||
+    .machine ||
+    .assistedBodyWeight ||
+    .weightedBodyWeight ||
+    .weightedDistance ||
+    .weightedDuration => true,
+    .repsOnly || .cardio || .duration => false,
+  };
+  return (weighted, weighted || exercise.exercise.category == .repsOnly);
+}
+
 /// The unit [exercise] is shown in: its own override, or the app's.
 MeasurementUnit unitOf(BuildContext context, WorkoutExercise exercise) {
   return Exercises.of(context).unitFor(exercise.exercise.id) ?? Preferences.of(context).weightUnit;

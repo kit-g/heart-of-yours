@@ -24,6 +24,13 @@ class _Recorder implements SystemShortcuts {
   Future<void> setRest(ShortcutRest? rest) async {
     rests.add(rest);
   }
+
+  final sets = <ShortcutSet?>[];
+
+  @override
+  Future<void> setNextSet(ShortcutSet? set) async {
+    sets.add(set);
+  }
 }
 
 void main() {
@@ -218,6 +225,60 @@ void main() {
       await tester.pump();
 
       expect(recorder.rests.last, isNull);
+    });
+  });
+
+  group('the set a voice command logs (#287)', () {
+    final bench = Exercise.fromJson({
+      'id': 'id-bench',
+      'name': 'Bench Press (Barbell)',
+      'category': 'Barbell',
+      'target': 'Chest',
+      'archived': false,
+    });
+
+    testWidgets('names the set up next with what it holds, in the unit it is shown in', (tester) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      await preferences.setWeightUnit(MeasurementUnit.imperial);
+      final block = WorkoutExercise(starter: ExerciseSet(bench, weight: 100, reps: 5))..add(ExerciseSet(bench));
+      final workout = Workout.fromExercises([block], name: 'Push day');
+      await pump(tester);
+      expect(recorder.sets, [null]);
+
+      await workouts.startWorkout(source: .template, template: workout);
+      await tester.pump();
+
+      final set = recorder.sets.last;
+      expect(set?.setId, block.first.id);
+      expect(set?.exerciseName, 'Bench Press (Barbell)');
+      expect(set?.weighted, isTrue);
+      expect(set?.counted, isTrue);
+      expect(set?.unit, 'lbs');
+      expect(set?.weight, closeTo(220.5, 0.1), reason: '100 kg, said in pounds');
+      expect(set?.reps, 5);
+      expect(set?.completable, isTrue);
+
+      // ticked: the next one, which holds nothing yet and cannot be ticked as it stands
+      workouts.markSetAsComplete(block, block.first);
+      await tester.pump();
+      expect(recorder.sets.last?.setId, block.toList()[1].id);
+      expect(recorder.sets.last?.weight, isNull);
+      expect(recorder.sets.last?.completable, isFalse);
+    });
+
+    testWidgets('with every set done there is nothing to log', (tester) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      final block = WorkoutExercise(starter: ExerciseSet(bench, weight: 60, reps: 5));
+      final workout = Workout.fromExercises([block], name: 'Push day');
+      await pump(tester);
+      await workouts.startWorkout(source: .template, template: workout);
+      await tester.pump();
+      expect(recorder.sets.last, isNotNull);
+
+      workouts.markSetAsComplete(block, block.first);
+      await tester.pump();
+
+      expect(recorder.sets.last, isNull);
     });
   });
 }
