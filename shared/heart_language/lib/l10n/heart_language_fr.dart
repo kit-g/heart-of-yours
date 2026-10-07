@@ -2335,4 +2335,11 @@ class LFr extends L {
 
   @override
   String get watchResume => 'Reprendre';
+
+  @override
+  String get shortcuts => 'Raccourcis';
+
+  @override
+  String get shortcutsSubtitle =>
+      'Démarrez ou terminez une séance depuis Siri, l’app Raccourcis ou votre écran d’accueil';
 }

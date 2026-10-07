@@ -4260,5 +4260,17 @@
     "description": "Exercise picker section header: the whole library, below the Recent section",
     "type": "text",
     "placeholders": {}
+  },
+  "shortcuts": "Raccourcis",
+  "@shortcuts": {
+    "description": "Title of the opt-in shortcuts feature in Settings › Features: Siri, the Shortcuts app and home-screen shortcuts can start and finish workouts. Apple's app is called Shortcuts; use its local name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "shortcutsSubtitle": "Démarrez ou terminez une séance depuis Siri, l’app Raccourcis ou votre écran d’accueil",
+  "@shortcutsSubtitle": {
+    "description": "Subtitle under the shortcuts switch in Settings › Features, saying what it does",
+    "type": "text",
+    "placeholders": {}
   }
 }

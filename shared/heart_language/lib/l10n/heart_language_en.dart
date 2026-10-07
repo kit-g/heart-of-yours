@@ -2323,6 +2323,12 @@ class LEn extends L {
 
   @override
   String get watchResume => 'Resume';
+
+  @override
+  String get shortcuts => 'Shortcuts';
+
+  @override
+  String get shortcutsSubtitle => 'Start or finish a workout from Siri, the Shortcuts app or your home screen';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4643,4 +4649,10 @@ class LEnCa extends LEn {
 
   @override
   String get watchResume => 'Resume';
+
+  @override
+  String get shortcuts => 'Shortcuts';
+
+  @override
+  String get shortcutsSubtitle => 'Start or finish a workout from Siri, the Shortcuts app or your home screen';
 }
