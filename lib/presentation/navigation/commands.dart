@@ -84,6 +84,26 @@ CommandOutcome applyWorkoutCommand(BuildContext context, WatchCommand command) {
         return .finished;
       }
       return .stale;
+    case WatchStartRest(:final seconds, :final at):
+      // the exercise the user is on: the one the next set belongs to, or the
+      // last one once every set is done
+      final exercise = upNextIn(workout, after: workouts.latestMarkedSet)?.exercise ?? workout.lastOrNull;
+      if (exercise == null) return .stale;
+      final length = seconds ?? Timers.of(context)[exercise.exercise.id];
+      if (length == null) return .stale;
+      // placed when it was asked for, which a queue may have held a while;
+      // one that would already be over does not start at all
+      final total = switch (at) {
+        DateTime at => length - DateTime.now().difference(at).inSeconds.clamp(0, length),
+        null => length,
+      };
+      if (total <= 0) return .stale;
+      Alarms.of(context).startActiveExerciseTimer(
+        total,
+        exerciseId: exercise.id,
+        scheduleNotification: (when) => scheduleRestNotification(context, exercise, when),
+      );
+      return .applied;
     case WatchAdjustRest(:final seconds):
       final alarms = Alarms.of(context);
       if (alarms.remainsInActiveExercise == null) return .stale;

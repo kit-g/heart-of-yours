@@ -72,14 +72,32 @@ final class ShortcutTemplate {
   int get hashCode => Object.hash(id, name);
 }
 
+/// The rest the assistant can start, extend or skip by voice (#98): which
+/// workout and exercise it belongs to, how long the exercise rests when no
+/// length is said (null for one with no rest timer), and the words of the
+/// "rest complete" notification the assistant schedules itself when the app
+/// is not running to.
+typedef ShortcutRest = ({
+  String workoutId,
+  String exerciseId,
+  int? seconds,
+  String title,
+  String? body,
+  String subtitle,
+});
+
 /// The system's assistant layer: Siri, the Shortcuts app and Spotlight on iOS,
 /// the launcher on Android. Dart tells it what it needs to know and nothing
 /// more; the intents and shortcuts themselves live natively and open the app
-/// on a [ShortcutLink].
+/// on a [ShortcutLink], or hand the app a command.
 abstract interface class SystemShortcuts {
   /// Replaces the templates the assistant can name. Empty: none, which is what
   /// the feature switched off publishes.
   Future<void> setTemplates(Iterable<ShortcutTemplate> templates);
+
+  /// The rest a voice command acts on (#98); null with no workout running,
+  /// or the feature off.
+  Future<void> setRest(ShortcutRest? rest);
 }
 
 /// Null where there is no assistant layer to speak to.
@@ -100,13 +118,32 @@ class _MethodChannelShortcuts implements SystemShortcuts {
   new _();
 
   @override
-  Future<void> setTemplates(Iterable<ShortcutTemplate> templates) async {
+  Future<void> setTemplates(Iterable<ShortcutTemplate> templates) {
+    return _tell('setTemplates', templates.map((template) => template.toMap()).toList());
+  }
+
+  @override
+  Future<void> setRest(ShortcutRest? rest) {
+    return _tell('setRest', switch (rest) {
+      ShortcutRest rest => {
+        'workoutId': rest.workoutId,
+        'exerciseId': rest.exerciseId,
+        'seconds': ?rest.seconds,
+        'title': rest.title,
+        'body': ?rest.body,
+        'subtitle': rest.subtitle,
+      },
+      null => null,
+    });
+  }
+
+  Future<void> _tell(String method, Object? arguments) async {
     try {
-      await _channel.invokeMethod<void>('setTemplates', templates.map((template) => template.toMap()).toList());
+      await _channel.invokeMethod<void>(method, arguments);
     } on MissingPluginException {
       // a build without the native side: nothing to tell
     } on PlatformException catch (e, stacktrace) {
-      _logger.warning('Shortcuts setTemplates failed', e, stacktrace);
+      _logger.warning('Shortcuts $method failed', e, stacktrace);
     }
   }
 }
