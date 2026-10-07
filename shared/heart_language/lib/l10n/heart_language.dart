@@ -4083,6 +4083,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Start or finish a workout from Siri, the Shortcuts app or your home screen'**
   String get shortcutsSubtitle;
+
+  /// Button on the lock-screen workout (iOS Live Activity, Android notification) that ticks the set up next. Short: it sits beside the set's line
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get lockScreenDone;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
