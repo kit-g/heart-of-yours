@@ -51,6 +51,15 @@ const _restStep = 10;
 const _commandPort = 'heart.lockScreenCommands';
 const _pendingCommands = 'lockScreen.pendingCommands';
 
+/// The plugin's background entry: Android runs it on an isolate of its own,
+/// with no app around it. Everything it does is [onOngoingNotificationAction],
+/// which is what the tests call.
+@pragma('vm:entry-point')
+Future<void> _notificationTapBackground(NotificationResponse response) {
+  _logger.info('onDidReceiveBackgroundNotificationResponse $response');
+  return onOngoingNotificationAction(response);
+}
+
 /// A button on the ongoing notification, pressed (#141). Android runs this on
 /// a background isolate of its own — the app may be in the background, or
 /// not running at all — so, like the Live Activity's intents, it answers the
@@ -59,9 +68,10 @@ const _pendingCommands = 'lockScreen.pendingCommands';
 /// button left it. Then the command reaches the app: the main isolate if one
 /// is alive, else the queue the next launch drains. Dart there applies it the
 /// way the watch's are applied and reposts the truth.
-@pragma('vm:entry-point')
-Future<void> _notificationTapBackground(NotificationResponse response) async {
-  _logger.info('onDidReceiveBackgroundNotificationResponse $response');
+///
+/// Anything that is not one of the rest buttons on the ongoing notification
+/// is nothing to do.
+Future<void> onOngoingNotificationAction(NotificationResponse response) async {
   if (response.id != _ongoingWorkout) return;
   final int? seconds;
   switch (response.actionId) {
