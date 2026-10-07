@@ -75,6 +75,10 @@ const runnerShortcutPhraseKeys = [
   'iosShortcutPhraseStart',
   'iosShortcutPhraseStartTemplate',
   'iosShortcutPhraseFinish',
+  'iosShortcutPhraseStartRest',
+  'iosShortcutPhraseRestFor',
+  'iosShortcutPhraseAddRest',
+  'iosShortcutPhraseSkipRest',
 ];
 
 const runnerShortcutTitleKeys = [
@@ -83,6 +87,25 @@ const runnerShortcutTitleKeys = [
   'iosShortcutStartIntent',
   'iosShortcutFinishIntent',
   'iosShortcutTemplate',
+  'iosShortcutStartRestTitle',
+  'iosShortcutExtendRestTitle',
+  'iosShortcutSkipRestTitle',
+  'iosShortcutStartRestIntent',
+  'iosShortcutExtendRestIntent',
+  'iosShortcutSkipRestIntent',
+  'iosShortcutRestLength',
+  'iosShortcutLengthParam',
+  'iosShortcutThirtySeconds',
+  'iosShortcutOneMinute',
+  'iosShortcutNinetySeconds',
+  'iosShortcutTwoMinutes',
+  'iosShortcutThreeMinutes',
+  'iosShortcutResting',
+  'iosShortcutRestExtended',
+  'iosShortcutRestSkipped',
+  'iosShortcutNoWorkout',
+  'iosShortcutNoRest',
+  'iosShortcutNoTimer',
 ];
 
 /// Writes the Siri phrases and the titles beside the Runner's Info.plist. The

@@ -2,3 +2,7 @@
 "Start a workout in ${applicationName}" = "Start a workout in ${applicationName}";
 "Start ${template} in ${applicationName}" = "Start ${template} in ${applicationName}";
 "Finish my workout in ${applicationName}" = "Finish my workout in ${applicationName}";
+"Start rest in ${applicationName}" = "Start rest in ${applicationName}";
+"Rest for ${length} in ${applicationName}" = "Rest for ${length} in ${applicationName}";
+"Add ${length} to my rest in ${applicationName}" = "Add ${length} to my rest in ${applicationName}";
+"Skip rest in ${applicationName}" = "Skip rest in ${applicationName}";
