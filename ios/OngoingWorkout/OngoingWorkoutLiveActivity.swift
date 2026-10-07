@@ -11,7 +11,7 @@ struct OngoingWorkoutBundle: WidgetBundle {
 
 /// The workout on the lock screen and in the Dynamic Island (#133).
 ///
-/// Display only in v1: tapping opens the workout, there are no buttons (#141).
+/// Tapping opens the workout; the rest row has its buttons on iOS 17 (#141).
 /// Every clock here ticks on its own — `Text(timerInterval:)`, `Text(_:style:
 /// .timer)`, `ProgressView(timerInterval:)` — so the app updates the activity
 /// only when the workout changes.
@@ -60,7 +60,7 @@ struct OngoingWorkoutLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 8) {
                         ExerciseLines(state: state)
-                        RestRow(state: state, isStale: context.isStale, accent: accent, ink: ink)
+                        RestRow(state: state, workoutId: context.attributes.workoutId, isStale: context.isStale, accent: accent, ink: ink)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     // the expanded island's corners are deep: flush content
@@ -135,7 +135,7 @@ private struct LockScreenView: View {
                 }
             }
             ExerciseLines(state: state)
-            RestRow(state: state, isStale: context.isStale, accent: accent, ink: ink)
+            RestRow(state: state, workoutId: context.attributes.workoutId, isStale: context.isStale, accent: accent, ink: ink)
         }
         .padding(16)
     }
@@ -168,6 +168,7 @@ private struct ExerciseLines: View {
 /// has not been back (the activity went stale at its end), the "over" copy.
 private struct RestRow: View {
     let state: OngoingWorkoutAttributes.ContentState
+    let workoutId: String
     let isStale: Bool
     let accent: Color
     let ink: Color
@@ -213,6 +214,41 @@ private struct RestRow: View {
                         .frame(width: 64, alignment: .trailing)
                 }
             }
+            if !isStale, #available(iOS 17, *) {
+                RestButtons(state: state, workoutId: workoutId, accent: accent, ink: ink)
+            }
+        }
+    }
+}
+
+/// The rest's buttons (#141), while one runs: ten seconds off, ten on, skip.
+/// Each is an intent that answers the lock screen itself and hands the
+/// command to the app. Absent, not dead, when the state carries no labels —
+/// a build before the buttons. iOS 17: `Button(intent:)` arrived with it.
+@available(iOS 17, *)
+private struct RestButtons: View {
+    let state: OngoingWorkoutAttributes.ContentState
+    let workoutId: String
+    let accent: Color
+    let ink: Color
+
+    var body: some View {
+        if let minus = state.restMinus, let plus = state.restPlus, let skip = state.restSkip {
+            HStack(spacing: 8) {
+                Button(intent: AdjustRestIntent(workoutId: workoutId, seconds: -10)) {
+                    Text(minus).frame(maxWidth: .infinity)
+                }
+                Button(intent: AdjustRestIntent(workoutId: workoutId, seconds: 10)) {
+                    Text(plus).frame(maxWidth: .infinity)
+                }
+                Button(intent: SkipRestIntent(workoutId: workoutId)) {
+                    Text(skip).frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.bordered)
+            .font(.subheadline.weight(.semibold))
+            .tint(accent)
+            .foregroundStyle(ink)
         }
     }
 }
