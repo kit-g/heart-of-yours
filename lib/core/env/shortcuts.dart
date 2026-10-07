@@ -86,6 +86,22 @@ typedef ShortcutRest = ({
   String subtitle,
 });
 
+/// The set up next, for a set logged by voice (#287): which set, what it
+/// takes — a weight, a count, both or neither, by its exercise's category —
+/// in the unit it is shown in, with whatever it already holds, and whether
+/// it can be ticked as it stands.
+typedef ShortcutSet = ({
+  String workoutId,
+  String setId,
+  String exerciseName,
+  bool weighted,
+  bool counted,
+  String unit,
+  double? weight,
+  int? reps,
+  bool completable,
+});
+
 /// The system's assistant layer: Siri, the Shortcuts app and Spotlight on iOS,
 /// the launcher on Android. Dart tells it what it needs to know and nothing
 /// more; the intents and shortcuts themselves live natively and open the app
@@ -98,6 +114,10 @@ abstract interface class SystemShortcuts {
   /// The rest a voice command acts on (#98); null with no workout running,
   /// or the feature off.
   Future<void> setRest(ShortcutRest? rest);
+
+  /// The set a voice command logs (#287); null with nothing left to log, no
+  /// workout running, or the feature off.
+  Future<void> setNextSet(ShortcutSet? set);
 }
 
 /// Null where there is no assistant layer to speak to.
@@ -132,6 +152,24 @@ class _MethodChannelShortcuts implements SystemShortcuts {
         'title': rest.title,
         'body': ?rest.body,
         'subtitle': rest.subtitle,
+      },
+      null => null,
+    });
+  }
+
+  @override
+  Future<void> setNextSet(ShortcutSet? set) {
+    return _tell('setNextSet', switch (set) {
+      ShortcutSet set => {
+        'workoutId': set.workoutId,
+        'setId': set.setId,
+        'exerciseName': set.exerciseName,
+        'weighted': set.weighted,
+        'counted': set.counted,
+        'unit': set.unit,
+        'weight': ?set.weight,
+        'reps': ?set.reps,
+        'completable': set.completable,
       },
       null => null,
     });

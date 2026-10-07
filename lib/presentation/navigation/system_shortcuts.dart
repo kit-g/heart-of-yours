@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:heart/core/env/shortcuts.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
+import 'package:heart/presentation/navigation/commands.dart';
 import 'package:heart/presentation/widgets/workout/rest.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -42,6 +43,8 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
   List<ShortcutTemplate>? _published;
   ShortcutRest? _publishedRest;
   bool _restPublished = false;
+  ShortcutSet? _publishedSet;
+  bool _setPublished = false;
 
   @override
   void didChangeDependencies() {
@@ -102,10 +105,55 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
       true => null,
       false => _rest(),
     };
-    if (_restPublished && rest == _publishedRest) return;
-    _restPublished = true;
-    _publishedRest = rest;
-    shortcuts.setRest(rest);
+    if (!_restPublished || rest != _publishedRest) {
+      _restPublished = true;
+      _publishedRest = rest;
+      shortcuts.setRest(rest);
+    }
+
+    final set = switch (off) {
+      true => null,
+      false => _nextSet(),
+    };
+    if (_setPublished && set == _publishedSet) return;
+    _setPublished = true;
+    _publishedSet = set;
+    shortcuts.setNextSet(set);
+  }
+
+  /// The set a voice command logs (#287): the one up next, with what it takes
+  /// and what it already holds, in the unit its exercise is shown in.
+  ShortcutSet? _nextSet() {
+    final workouts = _workouts;
+    final workout = workouts?.activeWorkout;
+    if (workouts == null || workout == null) return null;
+    if (upNextIn(workout, after: workouts.latestMarkedSet) case (
+      :WorkoutExercise exercise,
+      set: ExerciseSet set,
+      number: _,
+    )) {
+      final (weighted, counted) = measuresOf(exercise);
+      final unit = unitOf(context, exercise);
+      final l = L.of(context);
+      return (
+        workoutId: workout.id,
+        setId: set.id,
+        exerciseName: exercise.exercise.name,
+        weighted: weighted,
+        counted: counted,
+        unit: switch (unit) {
+          .imperial => l.lbs,
+          .metric => l.kg,
+        },
+        weight: switch ((weighted, set.weight)) {
+          (true, double weight) => Preferences.of(context).weightValue(weight, unit: unit),
+          _ => null,
+        },
+        reps: counted ? set.reps : null,
+        completable: set.canBeCompleted,
+      );
+    }
+    return null;
   }
 
   /// The rest a voice command acts on (#98): the exercise the user is on —

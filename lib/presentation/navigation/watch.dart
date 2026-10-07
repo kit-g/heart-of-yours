@@ -201,21 +201,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
   MeasurementUnit _unit(WorkoutExercise exercise) => unitOf(context, exercise);
 
   /// Whether [exercise]'s sets take a weight, and whether they take a count.
-  (bool weighted, bool counted) _measures(WorkoutExercise exercise) {
-    final weighted = switch (exercise.exercise.category) {
-      // a carry's or a hold's load goes on the crown; its distance or time is
-      // the phone's, as a run's is
-      .barbell ||
-      .dumbbell ||
-      .machine ||
-      .assistedBodyWeight ||
-      .weightedBodyWeight ||
-      .weightedDistance ||
-      .weightedDuration => true,
-      .repsOnly || .cardio || .duration => false,
-    };
-    return (weighted, weighted || exercise.exercise.category == .repsOnly);
-  }
+  (bool weighted, bool counted) _measures(WorkoutExercise exercise) => measuresOf(exercise);
 
   String _unitLabel(WorkoutExercise exercise, L l) {
     return switch (_unit(exercise)) {
