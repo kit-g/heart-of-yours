@@ -47,6 +47,10 @@ const _activeWorkoutPath = '/activeWorkout'; // a notifications redirect in app.
 // deep link that is an intent rather than a screen: see the `openWorkout`
 // case in `_decide`. Never navigated to internally.
 const _openWorkoutPath = '/openWorkout';
+// The other intents (#284): `heart://app/start[?template=<id>]` and
+// `heart://app/finish`, what Siri, the Shortcuts app and launcher shortcuts
+// open the app on. Parsed by `ShortcutLink`, applied by `runShortcutLink`;
+// never navigated to internally either.
 const _upgradeAppName = 'upgradeApp';
 const _upgradeAppPath = '/$_upgradeAppName';
 const _galleryName = 'gallery';
