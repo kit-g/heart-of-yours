@@ -369,6 +369,7 @@ void main() {
         'keepAwake',
         'setStopwatch',
         'pauseWorkout',
+        'shortcuts',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

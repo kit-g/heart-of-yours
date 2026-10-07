@@ -32,7 +32,14 @@ enum Feature {
   /// running to finish at its last set (#134). Settings-only, with a What's new
   /// link. Pauses are stored and synced whatever the answer; off, only the
   /// controls go.
-  pauseWorkout('pauseWorkout');
+  pauseWorkout('pauseWorkout'),
+
+  /// The app driven from outside it (#261, #284): Siri, the Shortcuts app and
+  /// launcher shortcuts start and finish workouts over `heart://app/…` links.
+  /// Like the watch, the ask is not an in-app offer: the first command that
+  /// arrives is the yes (`docs/opt-in.md`, *Precedent*). Off, such a link is
+  /// one the app has no screen for.
+  shortcuts('shortcuts');
 
   final String value;
 
