@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
@@ -297,4 +298,10 @@ class _Surface implements OngoingWorkoutSurface {
 
   @override
   Future<void> end() async => calls.add('end');
+
+  @override
+  Stream<WatchCommand> get commands => const Stream.empty();
+
+  @override
+  Future<List<WatchCommand>> takeCommands() async => const [];
 }

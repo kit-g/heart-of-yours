@@ -102,7 +102,9 @@ void main() {
     final now = DateTime.now();
     final end = now.add(const Duration(seconds: 60));
     await showOngoingWorkoutNotification(
-      workout(rest: (start: now, end: end, label: 'Rest', over: 'Rest complete!')),
+      workout(
+        rest: (start: now, end: end, label: 'Rest', over: 'Rest complete!', minus: '-10s', plus: '+10s', skip: 'Skip'),
+      ),
     );
 
     expect(details()['chronometerCountDown'], isTrue);
@@ -119,6 +121,9 @@ void main() {
           end: now.subtract(const Duration(seconds: 1)),
           label: 'Rest',
           over: 'Rest complete!',
+          minus: '-10s',
+          plus: '+10s',
+          skip: 'Skip',
         ),
       ),
     );
@@ -200,7 +205,15 @@ void main() {
       workout(
         id: 'stopwatch-test',
         stopwatch: (start: start, pausedAt: null, label: 'Set 1'),
-        rest: (start: start, end: start.add(const Duration(minutes: 3)), label: 'Rest', over: 'Done'),
+        rest: (
+          start: start,
+          end: start.add(const Duration(minutes: 3)),
+          label: 'Rest',
+          over: 'Done',
+          minus: '-10s',
+          plus: '+10s',
+          skip: 'Skip',
+        ),
       ),
     );
     expect(details()['when'], start.millisecondsSinceEpoch);
