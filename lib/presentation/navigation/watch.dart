@@ -4,10 +4,9 @@ import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
+import 'package:heart/presentation/navigation/commands.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
-import 'package:heart/presentation/widgets/workout/rest.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart'
-    show SetTypeCopy, finishWorkout, pauseActiveWorkout;
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show SetTypeCopy;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
@@ -146,78 +145,17 @@ class _WatchPresenterState extends State<WatchPresenter> {
       return;
     }
 
-    final workouts = Workouts.of(context);
-    final workout = workouts.activeWorkout;
-    // a command about a workout that is over, or another one, changes nothing
-    if (workout == null || workout.id != command.workoutId) return _resend();
-
-    switch (command) {
-      case WatchComplete(:final setId, :final weight, :final reps, :final at):
-        final ticked = _complete(workouts, workout, setId, weight: weight, reps: reps, at: at);
-        _landed(command, ticked: ticked);
-      case WatchEditSet(:final setId, :final weight, :final reps):
-        // new values for a set gone back to; it keeps its tick
-        if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set)) {
-          workouts.editSet(set, weight: _kilograms(exercise, weight), reps: reps);
-        }
-      case WatchUntickSet(:final setId):
-        if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set) when set.isCompleted) {
-          workouts.markSetAsIncomplete(exercise, set);
-        }
-      case WatchSkipRest():
-        Alarms.of(context).stopActiveExerciseTimer();
-      // placed when it happened on the wrist, which a queue may have held for
-      // a while; the watch offers neither while pausing is off (#134)
-      case WatchPauseWorkout(:final at) when Preferences.of(context).isOn(.pauseWorkout):
-        pauseActiveWorkout(context, at: at);
-      case WatchResumeWorkout(:final at):
-        workouts.resume(at: at);
-      case WatchPauseWorkout():
-        break;
-      case WatchFinishWorkout(:final at):
-        // the watch offers Finish only with nothing left to tick; if a set was
-        // added on the phone since, that is the phone's to finish
-        if (workout.isValid && upNextIn(workout, after: workouts.latestMarkedSet)?.set == null) {
-          // the phone's own finish: it saves, writes Health, shows the summary,
-          // and the state it leaves — no workout — is what the watch hears next
-          // — ended when the user confirmed it, which a Finish queued while
-          // the phone was out of reach (#206) says was a while ago
-          _landed(command);
-          finishWorkout(context, workouts, at: at);
-          return;
-        }
-      case WatchAdjustRest(:final seconds):
-        final alarms = Alarms.of(context);
-        final resting = workout.where((exercise) => exercise.id == alarms.activeExerciseId).firstOrNull;
-        alarms.adjustActiveExerciseTime(
-          seconds,
-          rescheduleNotification: switch (resting) {
-            WorkoutExercise exercise => (when) => scheduleRestNotification(context, exercise, when),
-            null => null,
-          },
-        );
+    final outcome = applyWorkoutCommand(context, command);
+    // a tick, landed or not, may be the first of a late batch (#206)
+    if (command is WatchComplete) _landed(command, ticked: outcome == .ticked);
+    switch (outcome) {
+      // the finish's own flow answers: the summary, and "no workout" next
+      case .finished:
+        _landed(command);
+      // whatever happened, the watch is waiting to hear it — even "nothing"
+      case .applied || .ticked || .stale:
+        _resend();
     }
-    // whatever happened, the watch is waiting to hear it — even "nothing"
-    _resend();
-  }
-
-  /// Ticks [setId] the way the set row's tick does (`set_item.dart`): the
-  /// values the watch showed become the set's, converted from the unit they
-  /// were shown in, and the exercise's rest starts — without the countdown
-  /// dialog, which nobody is looking at.
-  bool _complete(Workouts workouts, Workout workout, String setId, {double? weight, int? reps, DateTime? at}) {
-    // gone, or ticked already (a double tap, or the phone got there first)
-    if (_find(workout, setId) case (WorkoutExercise exercise, ExerciseSet set) when !set.isCompleted) {
-      if (weight != null || reps != null) {
-        workouts.editSet(set, weight: _kilograms(exercise, weight), reps: reps);
-      }
-      if (set.canBeCompleted) {
-        workouts.markSetAsComplete(exercise, set, at: at);
-        startRest(context, exercise, since: at);
-        return true;
-      }
-    }
-    return false;
   }
 
   /// The system has watch content for the phone it has not delivered yet:
@@ -249,26 +187,8 @@ class _WatchPresenterState extends State<WatchPresenter> {
     _arrived = 0;
   }
 
-  (WorkoutExercise, ExerciseSet)? _find(Workout workout, String setId) {
-    return workout
-        .expand((exercise) => exercise.map((set) => (exercise, set)))
-        .where((pair) => pair.$2.id == setId)
-        .firstOrNull;
-  }
-
   /// The unit [exercise] is shown in: its own override, or the app's.
-  MeasurementUnit _unit(WorkoutExercise exercise) {
-    return Exercises.of(context).unitFor(exercise.exercise.id) ?? Preferences.of(context).weightUnit;
-  }
-
-  /// A weight the watch sent, in the unit it was shown in, as stored.
-  double? _kilograms(WorkoutExercise exercise, double? weight) {
-    return switch ((weight, _unit(exercise))) {
-      (double weight, .imperial) => weight.asKilograms,
-      (double weight, .metric) => weight,
-      (null, _) => null,
-    };
-  }
+  MeasurementUnit _unit(WorkoutExercise exercise) => unitOf(context, exercise);
 
   /// Whether [exercise]'s sets take a weight, and whether they take a count.
   (bool weighted, bool counted) _measures(WorkoutExercise exercise) {
