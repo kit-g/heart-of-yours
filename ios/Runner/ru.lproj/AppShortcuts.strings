@@ -2,3 +2,7 @@
 "Start a workout in ${applicationName}" = "Начать тренировку в ${applicationName}";
 "Start ${template} in ${applicationName}" = "Начать ${template} в ${applicationName}";
 "Finish my workout in ${applicationName}" = "Завершить тренировку в ${applicationName}";
+"Start rest in ${applicationName}" = "Начать отдых в ${applicationName}";
+"Rest for ${length} in ${applicationName}" = "Отдохнуть ${length} в ${applicationName}";
+"Add ${length} to my rest in ${applicationName}" = "Добавить ${length} к отдыху в ${applicationName}";
+"Skip rest in ${applicationName}" = "Пропустить отдых в ${applicationName}";
