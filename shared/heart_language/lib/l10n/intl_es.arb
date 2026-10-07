@@ -4260,5 +4260,17 @@
     "description": "Exercise picker section header: the whole library, below the Recent section",
     "type": "text",
     "placeholders": {}
+  },
+  "shortcuts": "Atajos",
+  "@shortcuts": {
+    "description": "Title of the opt-in shortcuts feature in Settings › Features: Siri, the Shortcuts app and home-screen shortcuts can start and finish workouts. Apple's app is called Shortcuts; use its local name",
+    "type": "text",
+    "placeholders": {}
+  },
+  "shortcutsSubtitle": "Empieza o termina un entrenamiento desde Siri, la app Atajos o tu pantalla de inicio",
+  "@shortcutsSubtitle": {
+    "description": "Subtitle under the shortcuts switch in Settings › Features, saying what it does",
+    "type": "text",
+    "placeholders": {}
   }
 }
