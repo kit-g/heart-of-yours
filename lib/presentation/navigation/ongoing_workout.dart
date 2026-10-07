@@ -1,11 +1,18 @@
+import 'dart:async';
+
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
+import 'package:heart/presentation/navigation/commands.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
+import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
+
+final _logger = Logger('LockScreen');
 
 /// Keeps the active workout on the lock screen (#133): the iOS Live Activity
 /// and Dynamic Island, Android's ongoing notification. Only when the user has
@@ -17,6 +24,11 @@ import 'package:material_ui/material_ui.dart';
 /// never on a tick: both platforms count the clocks themselves. Workouts
 /// notifies on every keystroke in a set row, so the summary is compared
 /// before anything crosses the platform channel.
+///
+/// And it listens (#141): the rest buttons on the lock screen send the same
+/// commands the watch does, applied by the same applier. The surface has
+/// already shown what the button did; the snapshot sent after the command
+/// confirms it, or corrects a command that turned out stale.
 class OngoingWorkoutPresenter extends StatefulWidget {
   final Widget child;
 
@@ -33,6 +45,11 @@ class OngoingWorkoutPresenter extends StatefulWidget {
 class _OngoingWorkoutPresenterState extends State<OngoingWorkoutPresenter> {
   Workouts? _workouts;
   Alarms? _alarms;
+  StreamSubscription<WatchCommand>? _commands;
+
+  /// Commands that arrived before the active workout was loaded — a cold
+  /// start from a lock-screen button — applied once it is.
+  final _waiting = <WatchCommand>[];
 
   /// What the surface is showing, as far as this process knows.
   OngoingWorkout? _shown;
@@ -41,6 +58,18 @@ class _OngoingWorkoutPresenterState extends State<OngoingWorkoutPresenter> {
   /// false: a previous process may have left a workout on the lock screen,
   /// and the first time there is definitely no active workout it goes.
   bool _ended = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.surface case OngoingWorkoutSurface surface) {
+      _commands = surface.commands.listen(_onCommand);
+      surface.takeCommands().then((commands) {
+        _logger.info('${commands.length} command(s) waited for the app');
+        commands.forEach(_onCommand);
+      });
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -64,14 +93,57 @@ class _OngoingWorkoutPresenterState extends State<OngoingWorkoutPresenter> {
 
   @override
   void dispose() {
+    _commands?.cancel();
     _workouts?.removeListener(_sync);
     _alarms?.removeListener(_sync);
     super.dispose();
   }
 
+  /// Whether a command can be applied yet: the preferences have been read,
+  /// the active workout is known, and the rest a killed process left running
+  /// has been picked up. A cold start's Skip judged before any of these would
+  /// be wrong — a stray, with the switch not yet read; stale, with no rest
+  /// yet — moments before the truth arrived.
+  bool get _ready {
+    return Preferences.of(context).isInitialized &&
+        (_workouts?.hasResolvedActiveWorkout ?? false) &&
+        (_alarms?.hasRestored ?? true);
+  }
+
+  /// A button on the lock screen (#141), applied once the app is [_ready] and
+  /// only while the lock screen is on: a button on a surface the user
+  /// switched off since is a stray.
+  void _onCommand(WatchCommand command) {
+    if (!mounted) return;
+    if (!_ready) {
+      _waiting.add(command);
+      return;
+    }
+    if (!Preferences.of(context).lockScreenWorkout) {
+      _logger.info('lock screen off: ${command.runtimeType} dropped');
+      return;
+    }
+    final outcome = applyWorkoutCommand(context, command);
+    _logger.info('${command.runtimeType}: ${outcome.name}');
+    // the surface showed the button's effect before asking; whatever came of
+    // it, the state as the app has it is sent — including a stale one's
+    // "nothing changed", which puts the surface right
+    _shown = null;
+    _sync();
+  }
+
   void _sync() {
     final surface = widget.surface;
     if (surface == null || !mounted) return;
+
+    if (_waiting.isNotEmpty && _ready) {
+      final waiting = [..._waiting];
+      _waiting.clear();
+      // off the build this may have been called from (a dependency changed):
+      // applying a command repaints the app
+      scheduleMicrotask(() => waiting.forEach(_onCommand));
+      return;
+    }
 
     switch (_snapshot()) {
       case OngoingWorkout workout when workout != _shown:
@@ -157,6 +229,9 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
         end: end,
         label: l.ongoingWorkoutRest,
         over: l.restComplete,
+        minus: l.subtractSeconds,
+        plus: l.addSeconds,
+        skip: l.skip,
       ),
       _ => null,
     },

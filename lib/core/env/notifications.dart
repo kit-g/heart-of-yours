@@ -1,8 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:isolate';
+import 'dart:ui';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
+import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
@@ -32,9 +38,142 @@ const _defaultChannelName = 'Rest Timers';
 /// time a set is ticked. The name is copy and comes with each update.
 const _ongoingChannelId = 'Ongoing Workout';
 
+/// The ongoing notification's rest buttons (#141): the action ids Android
+/// hands back, and what each means to the rest.
+const _restMinusAction = 'rest-minus';
+const _restPlusAction = 'rest-plus';
+const _restSkipAction = 'rest-skip';
+const _restStep = 10;
+
+/// Where the main isolate listens for the buttons (`IsolateNameServer`), and
+/// where a button pressed with no main isolate alive waits for the next
+/// launch (shared preferences, a list of JSON commands).
+const _commandPort = 'heart.lockScreenCommands';
+const _pendingCommands = 'lockScreen.pendingCommands';
+
+/// A button on the ongoing notification, pressed (#141). Android runs this on
+/// a background isolate of its own — the app may be in the background, or
+/// not running at all — so, like the Live Activity's intents, it answers the
+/// shade itself first: the "rest complete" notification is moved or
+/// withdrawn, and the ongoing notification reposted with the rest as the
+/// button left it. Then the command reaches the app: the main isolate if one
+/// is alive, else the queue the next launch drains. Dart there applies it the
+/// way the watch's are applied and reposts the truth.
 @pragma('vm:entry-point')
-void _notificationTapBackground(NotificationResponse notificationResponse) {
-  _logger.info('onDidReceiveBackgroundNotificationResponse $notificationResponse');
+Future<void> _notificationTapBackground(NotificationResponse response) async {
+  _logger.info('onDidReceiveBackgroundNotificationResponse $response');
+  if (response.id != _ongoingWorkout) return;
+  final int? seconds;
+  switch (response.actionId) {
+    case _restMinusAction:
+      seconds = -_restStep;
+    case _restPlusAction:
+      seconds = _restStep;
+    case _restSkipAction:
+      seconds = null;
+    default:
+      return;
+  }
+  final shown = _OngoingDisplay.fromJson(response.payload);
+  if (shown == null || shown.rest == null) return;
+
+  final command = {
+    'action': switch (seconds) {
+      int() => 'adjustRest',
+      null => 'skipRest',
+    },
+    'workoutId': shown.workoutId,
+    'at': DateTime.now().millisecondsSinceEpoch,
+    if (seconds case int seconds) 'seconds': seconds,
+  };
+
+  // this isolate's own plugin, initialised without callbacks: it posts and
+  // schedules, nothing more
+  tz.initializeTimeZones();
+  await _guarded(
+    () => _plugin.initialize(
+      settings: const InitializationSettings(android: AndroidInitializationSettings(_androidIcon)),
+    ),
+  );
+  final adjusted = shown.adjusted(seconds);
+  await _guarded(() => _moveRestNotification(adjusted.rest?.end));
+  await _guarded(() => _showOngoing(adjusted));
+
+  switch (IsolateNameServer.lookupPortByName(_commandPort)) {
+    case SendPort port:
+      port.send(command);
+    case null:
+      final prefs = await SharedPreferences.getInstance();
+      final kept = prefs.getStringList(_pendingCommands) ?? const [];
+      await prefs.setStringList(_pendingCommands, [...kept, jsonEncode(command)]);
+  }
+}
+
+/// Moves the pending "rest complete" notification to [end], or withdraws it
+/// for null. Its title and body are read back from the pending request; the
+/// subtitle Android does not report is the one thing lost.
+Future<void> _moveRestNotification(DateTime? end) async {
+  switch (end) {
+    case null:
+      return _plugin.cancel(id: _currentExercise);
+    case DateTime end:
+      final pending = await _plugin.pendingNotificationRequests();
+      final request = pending.where((request) => request.id == _currentExercise).firstOrNull;
+      if (request == null) return;
+      await _plugin.cancel(id: _currentExercise);
+      final when = switch (end.isAfter(DateTime.now())) {
+        true => end,
+        false => DateTime.now().add(const Duration(seconds: 1)),
+      };
+      return _plugin.zonedSchedule(
+        id: _currentExercise,
+        title: request.title,
+        body: request.body,
+        scheduledDate: TZDateTime.from(when, local),
+        notificationDetails: _details(title: request.title ?? '', body: request.body),
+        androidScheduleMode: .exactAllowWhileIdle,
+        payload: request.payload,
+      );
+  }
+}
+
+/// Commands from the ongoing notification's rest buttons (#141), as they
+/// arrive while the app runs.
+Stream<WatchCommand> get ongoingNotificationCommands => _ongoingCommands.stream;
+final _ongoingCommands = StreamController<WatchCommand>.broadcast();
+ReceivePort? _commands;
+
+/// Opens the main isolate's door for the buttons; the background isolate
+/// finds it by name.
+void _listenForCommands() {
+  if (_commands != null) return;
+  final port = ReceivePort();
+  IsolateNameServer.removePortNameMapping(_commandPort);
+  IsolateNameServer.registerPortWithName(port.sendPort, _commandPort);
+  _commands = port
+    ..listen((message) {
+      if (message case Map map) {
+        if (WatchCommand.fromMap(map) case WatchCommand command) _ongoingCommands.add(command);
+      }
+    });
+}
+
+/// Buttons pressed while the app was not running — oldest first. Asking
+/// clears them.
+Future<List<WatchCommand>> takeOngoingNotificationCommands() async {
+  final prefs = await SharedPreferences.getInstance();
+  final kept = prefs.getStringList(_pendingCommands) ?? const [];
+  if (kept.isEmpty) return const [];
+  await prefs.remove(_pendingCommands);
+  return kept
+      .map(
+        (line) => switch (jsonDecode(line)) {
+          Map map => WatchCommand.fromMap(map),
+          _ => null,
+        },
+      )
+      .nonNulls
+      .toList();
 }
 
 Future<void> initNotifications({
@@ -64,6 +203,7 @@ Future<void> initNotifications({
   }
 
   await _createNotificationChannel(platform);
+  if (platform == .android) _listenForCommands();
   // Permission is no longer requested here — we ask lazily, the first time the
   // user sets a rest timer (see [ensureNotificationPermission]). The Darwin
   // request flags are off for the same reason, so init never prompts.
@@ -464,6 +604,200 @@ Future<void> cancelExerciseNotification() {
 /// Paused (#134), there is no clock to count: a chronometer cannot be stopped,
 /// so it goes, and the time it stopped at is written into the text instead.
 Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
+  return _showOngoing(_OngoingDisplay.of(workout));
+}
+
+/// What the ongoing notification shows, as both the app and the buttons'
+/// background isolate (#141) post it: the latter has only the notification's
+/// own payload to go on, so this is what the payload carries.
+final class _OngoingDisplay {
+  final String workoutId;
+  final String title;
+  final String exercise;
+  final String next;
+  final DateTime clockStart;
+  final DateTime? pausedAt;
+  final String pausedLabel;
+  final OngoingRest? rest;
+  final ({DateTime start, DateTime? pausedAt, String label})? stopwatch;
+  final Color color;
+  final String channel;
+
+  const new({
+    required this.workoutId,
+    required this.title,
+    required this.exercise,
+    required this.next,
+    required this.clockStart,
+    required this.pausedAt,
+    required this.pausedLabel,
+    required this.rest,
+    required this.stopwatch,
+    required this.color,
+    required this.channel,
+  });
+
+  factory of(OngoingWorkout workout) {
+    return _OngoingDisplay(
+      workoutId: workout.workoutId,
+      title: workout.title,
+      exercise: workout.exercise,
+      next: workout.next,
+      clockStart: workout.clockStart,
+      pausedAt: workout.pausedAt,
+      pausedLabel: workout.pausedLabel,
+      rest: workout.rest,
+      stopwatch: workout.stopwatch,
+      color: workout.preset.light.accentInk,
+      channel: workout.channel,
+    );
+  }
+
+  /// The same display with the rest moved by [seconds], or over for null.
+  _OngoingDisplay adjusted(int? seconds) {
+    return _OngoingDisplay(
+      workoutId: workoutId,
+      title: title,
+      exercise: exercise,
+      next: next,
+      clockStart: clockStart,
+      pausedAt: pausedAt,
+      pausedLabel: pausedLabel,
+      rest: switch ((rest, seconds)) {
+        (OngoingRest rest, int seconds) => (
+          start: rest.start,
+          end: rest.end.add(Duration(seconds: seconds)),
+          label: rest.label,
+          over: rest.over,
+          minus: rest.minus,
+          plus: rest.plus,
+          skip: rest.skip,
+        ),
+        _ => null,
+      },
+      stopwatch: stopwatch,
+      color: color,
+      channel: channel,
+    );
+  }
+
+  String toJson() {
+    return jsonEncode({
+      'workoutId': workoutId,
+      'title': title,
+      'exercise': exercise,
+      'next': next,
+      'clockStart': clockStart.millisecondsSinceEpoch,
+      'pausedAt': ?pausedAt?.millisecondsSinceEpoch,
+      'pausedLabel': pausedLabel,
+      if (rest case OngoingRest rest) ...{
+        'restStart': rest.start.millisecondsSinceEpoch,
+        'restEnd': rest.end.millisecondsSinceEpoch,
+        'restLabel': rest.label,
+        'restOver': rest.over,
+        'restMinus': rest.minus,
+        'restPlus': rest.plus,
+        'restSkip': rest.skip,
+      },
+      if (stopwatch case final clock?) ...{
+        'stopwatchStart': clock.start.millisecondsSinceEpoch,
+        'stopwatchLabel': clock.label,
+        'stopwatchPausedAt': ?clock.pausedAt?.millisecondsSinceEpoch,
+      },
+      'color': color.toARGB32(),
+      'channel': channel,
+    });
+  }
+
+  /// Null for a payload that is not one of these — a build before the
+  /// buttons posted the workout's id alone.
+  static _OngoingDisplay? fromJson(String? payload) {
+    if (payload == null) return null;
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(payload);
+    } on FormatException {
+      return null;
+    }
+    DateTime at(Object? millis) => DateTime.fromMillisecondsSinceEpoch(millis as int);
+    return switch (decoded) {
+      {
+            'workoutId': String workoutId,
+            'title': String title,
+            'exercise': String exercise,
+            'next': String next,
+            'clockStart': int clockStart,
+            'pausedLabel': String pausedLabel,
+            'color': int color,
+            'channel': String channel,
+          } &&
+          final Map map =>
+        _OngoingDisplay(
+          workoutId: workoutId,
+          title: title,
+          exercise: exercise,
+          next: next,
+          clockStart: at(clockStart),
+          pausedAt: switch (map['pausedAt']) {
+            int millis => at(millis),
+            _ => null,
+          },
+          pausedLabel: pausedLabel,
+          rest: switch (map) {
+            {
+              'restStart': int start,
+              'restEnd': int end,
+              'restLabel': String label,
+              'restOver': String over,
+              'restMinus': String minus,
+              'restPlus': String plus,
+              'restSkip': String skip,
+            } =>
+              (start: at(start), end: at(end), label: label, over: over, minus: minus, plus: plus, skip: skip),
+            _ => null,
+          },
+          stopwatch: switch (map) {
+            {'stopwatchStart': int start, 'stopwatchLabel': String label} => (
+              start: at(start),
+              pausedAt: switch (map['stopwatchPausedAt']) {
+                int millis => at(millis),
+                _ => null,
+              },
+              label: label,
+            ),
+            _ => null,
+          },
+          color: Color(color),
+          channel: channel,
+        ),
+      _ => null,
+    };
+  }
+}
+
+/// Posts [workout] as Android's ongoing notification (#133), or updates the
+/// one already up — same id, so there is only ever one.
+///
+/// The clock is the notification's own chronometer: counting up from the
+/// workout's start, or — while resting — down to the rest's end. Android draws
+/// one chronometer per notification, which is why rest *replaces* the elapsed
+/// time here instead of sitting beside it as on the Live Activity. When the
+/// rest runs out the app puts the elapsed clock back; if the process was
+/// frozen by then, the countdown shows a negative until the next update, and
+/// the "rest complete" notification has already said the same thing louder.
+///
+/// While resting, the rest's buttons (#141) are the notification's actions:
+/// they land on [_notificationTapBackground] without opening the app.
+///
+/// Not pinned: the user can swipe it away, and a swipe holds for the rest of
+/// that workout — see [_ongoingDismissedFor]. A notification that comes back
+/// every time a set is ticked would be worse than none. It otherwise goes when
+/// the workout does ([cancelOngoingWorkoutNotification]). Nothing here needs a
+/// foreground service — the chronometer ticks without the app.
+///
+/// Paused (#134), there is no clock to count: a chronometer cannot be stopped,
+/// so it goes, and the time it stopped at is written into the text instead.
+Future<void> _showOngoing(_OngoingDisplay workout) {
   final resting =
       workout.stopwatch == null &&
       switch (workout.rest) {
@@ -494,7 +828,7 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
       _ongoingChannelId,
       workout.channel,
       icon: _androidIcon,
-      color: workout.preset.light.accentInk,
+      color: workout.color,
       importance: .low,
       priority: .low,
       autoCancel: false,
@@ -509,6 +843,14 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
       subText: workout.title,
       visibility: .public,
       category: .progress,
+      actions: switch ((resting, workout.rest)) {
+        (true, OngoingRest rest) => [
+          AndroidNotificationAction(_restMinusAction, rest.minus, showsUserInterface: false),
+          AndroidNotificationAction(_restPlusAction, rest.plus, showsUserInterface: false),
+          AndroidNotificationAction(_restSkipAction, rest.skip, showsUserInterface: false),
+        ],
+        _ => null,
+      },
     ),
   );
 
@@ -526,7 +868,7 @@ Future<void> showOngoingWorkoutNotification(OngoingWorkout workout) {
         title: workout.exercise,
         body: body,
         notificationDetails: details,
-        payload: workout.workoutId,
+        payload: workout.toJson(),
       );
       _ongoingShownFor = workout.workoutId;
     },

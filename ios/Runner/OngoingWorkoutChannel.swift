@@ -10,12 +10,29 @@ import os
 /// iOS below 16.2 — is answered with success and nothing drawn: a lock screen
 /// that cannot be shown is never the workout's problem.
 enum OngoingWorkoutChannel {
+    /// Commands from the lock screen's buttons (#141) that no Dart was
+    /// listening for — the intent ran with the engine down, or not listening.
+    /// Dart takes them once the active workout is loaded; each names the
+    /// workout it is about, so one gone stale by then is dropped there.
+    private static let commandsKey = "ongoingWorkout.pendingCommands"
+
+    nonisolated(unsafe) private static var channel: FlutterMethodChannel?
+
     static func register(with messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "heart/ongoing_workout", binaryMessenger: messenger)
+        self.channel = channel
+        if #available(iOS 17, *) {
+            OngoingWorkoutIntents.handoff = forward
+        }
         channel.setMethodCallHandler { call, result in
             guard #available(iOS 16.2, *) else { return result(nil) }
 
             switch call.method {
+            case "takeCommands":
+                let defaults = UserDefaults.standard
+                let kept = defaults.array(forKey: commandsKey) ?? []
+                defaults.removeObject(forKey: commandsKey)
+                result(kept)
             case "supported":
                 // Live Activities are an iPhone feature; an iPad has the API
                 // and never shows one, so the setting would be a dead switch
@@ -39,6 +56,22 @@ enum OngoingWorkoutChannel {
                 result(FlutterMethodNotImplemented)
             }
         }
+    }
+
+    /// Hands a command to Dart, or keeps it if nothing there is listening.
+    private static func forward(_ command: [String: Any]) {
+        DispatchQueue.main.async {
+            guard let channel else { return keep(command) }
+            channel.invokeMethod("command", arguments: command) { answer in
+                if (answer as? Bool) != true { keep(command) }
+            }
+        }
+    }
+
+    private static func keep(_ command: [String: Any]) {
+        let defaults = UserDefaults.standard
+        let kept = defaults.array(forKey: commandsKey) ?? []
+        defaults.set(kept + [command], forKey: commandsKey)
     }
 }
 
@@ -75,6 +108,9 @@ struct OngoingWorkoutRequest {
             restEnd: (arguments["restEnd"] as? NSNumber).map(Self.date),
             restLabel: arguments["restLabel"] as? String,
             restOver: arguments["restOver"] as? String,
+            restMinus: arguments["restMinus"] as? String,
+            restPlus: arguments["restPlus"] as? String,
+            restSkip: arguments["restSkip"] as? String,
             accent: color("accent"),
             accentDark: color("accentDark"),
             accentInk: color("accentInk"),

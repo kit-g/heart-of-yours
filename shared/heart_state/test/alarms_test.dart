@@ -1,11 +1,95 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/alarms.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  group('Alarms persistence (#141)', () {
+    late _Store store;
+    late DateTime clock;
+    late Alarms alarms;
+    final bench = Exercise.fromJson({
+      'id': 'id-bench',
+      'name': 'Bench Press',
+      'category': 'Barbell',
+      'target': 'Chest',
+      'archived': false,
+    });
+
+    setUp(() {
+      clock = DateTime.utc(2026, 1, 1);
+      store = _Store();
+      alarms = Alarms(tick: const Duration(milliseconds: 10), now: () => clock, store: store);
+    });
+
+    tearDown(() => alarms.stopActiveExerciseTimer());
+
+    test('a started rest is written, an adjusted one rewritten, a skipped one cleared', () async {
+      alarms.startActiveExerciseTimer(90, exerciseId: 'x1');
+      expect(store.saved, (exerciseId: 'x1', end: clock.add(const Duration(seconds: 90)), total: 90));
+
+      alarms.adjustActiveExerciseTime(10);
+      expect(store.saved, (exerciseId: 'x1', end: clock.add(const Duration(seconds: 100)), total: 100));
+
+      alarms.stopActiveExerciseTimer();
+      expect(store.saved, isNull);
+    });
+
+    test('a rest that ran out is cleared', () async {
+      alarms.startActiveExerciseTimer(1, exerciseId: 'x1');
+      clock = clock.add(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+      expect(alarms.remainsInActiveExercise, isNull);
+      expect(store.saved, isNull);
+    });
+
+    test('restore picks up a rest of the active workout with the time it has left', () async {
+      final workout = Workout(name: 'Push');
+      final exercise = workout.add(bench);
+      store.saved = (exerciseId: exercise.id, end: clock.add(const Duration(seconds: 40)), total: 90);
+
+      await alarms.restore(workout);
+
+      expect(alarms.activeExerciseId, exercise.id);
+      expect(alarms.remainsInActiveExercise?.value, 40);
+      expect(alarms.activeExerciseTotal, 90);
+      expect(alarms.activeExerciseEnd, clock.add(const Duration(seconds: 40)));
+    });
+
+    test('restore forgets a rest that is over, or of an exercise the workout does not have', () async {
+      final workout = Workout(name: 'Push')..add(bench);
+      store.saved = (exerciseId: 'elsewhere', end: clock.add(const Duration(seconds: 40)), total: 90);
+      await alarms.restore(workout);
+      expect(alarms.activeExerciseId, isNull);
+      expect(store.saved, isNull);
+
+      final exercise = workout.first;
+      store.saved = (exerciseId: exercise.id, end: clock.subtract(const Duration(seconds: 1)), total: 90);
+      await alarms.restore(workout);
+      expect(alarms.activeExerciseId, isNull);
+      expect(store.saved, isNull);
+
+      store.saved = (exerciseId: exercise.id, end: clock.add(const Duration(seconds: 40)), total: 90);
+      await alarms.restore(null);
+      expect(alarms.activeExerciseId, isNull);
+      expect(store.saved, isNull);
+    });
+
+    test('restore never replaces a rest already counting', () async {
+      final workout = Workout(name: 'Push');
+      final exercise = workout.add(bench);
+      alarms.startActiveExerciseTimer(30, exerciseId: 'live');
+      store.saved = (exerciseId: exercise.id, end: clock.add(const Duration(seconds: 40)), total: 90);
+
+      await alarms.restore(workout);
+
+      expect(alarms.activeExerciseId, 'live');
+    });
+  });
+
   group('Alarms (unit)', () {
     late Alarms alarms;
     late int notifications;
@@ -256,4 +340,18 @@ void main() {
       expect(find.byType(Text), findsOneWidget);
     });
   });
+}
+
+/// The device's memory of a rest, in memory.
+class _Store implements RestStore {
+  SavedRest? saved;
+
+  @override
+  Future<SavedRest?> read() async => saved;
+
+  @override
+  Future<void> write(SavedRest rest) async => saved = rest;
+
+  @override
+  Future<void> clear() async => saved = null;
 }
