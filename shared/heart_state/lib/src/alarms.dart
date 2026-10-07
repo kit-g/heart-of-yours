@@ -28,6 +28,13 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   /// The rest's home between launches (#141); null keeps it in memory only.
   final RestStore? _store;
 
+  /// Whether [restore] has had its say this launch — true from the start with
+  /// no store, since there is nothing to pick up. A command about the rest
+  /// that arrives before this would find no rest and be dropped as stale,
+  /// though the rest is on its way: what waits on it waits on this too.
+  bool get hasRestored => _restored;
+  bool _restored;
+
   /// The clock the countdown measures against.
   ///
   /// Injectable because the remaining count is *derived* from it rather than
@@ -43,7 +50,8 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
     this.cancelRestTimerNotifications,
     DateTime Function()? now,
     this._store,
-  }) : _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now,
+       _restored = _store == null;
 
   @override
   void onSignOut() {
@@ -100,20 +108,27 @@ class Alarms with ChangeNotifier implements SignOutStateSentry {
   /// that is over, or belongs to an exercise [active] does not have, is
   /// forgotten.
   Future<void> restore(Workout? active) async {
-    final saved = await _store?.read();
-    if (saved == null) return;
-    final remaining = saved.end.difference(_now()).inMilliseconds;
-    final owned = active?.any((exercise) => exercise.id == saved.exerciseId) ?? false;
-    if (!owned || remaining <= 0 || _activeExercise != null) {
-      await _store?.clear();
-      return;
+    try {
+      final saved = await _store?.read();
+      if (saved == null) return;
+      final remaining = saved.end.difference(_now()).inMilliseconds;
+      final owned = active?.any((exercise) => exercise.id == saved.exerciseId) ?? false;
+      if (!owned || remaining <= 0 || _activeExercise != null) {
+        await _store?.clear();
+        return;
+      }
+      _start(
+        remaining: (remaining / 1000).ceil(),
+        total: saved.total,
+        end: saved.end,
+        exerciseId: saved.exerciseId,
+      );
+    } finally {
+      // said, whatever was found: listeners waiting on it (the lock screen's
+      // queued buttons) go ahead now
+      _restored = true;
+      notifyListeners();
     }
-    _start(
-      remaining: (remaining / 1000).ceil(),
-      total: saved.total,
-      end: saved.end,
-      exerciseId: saved.exerciseId,
-    );
   }
 
   void startActiveExerciseTimer(
