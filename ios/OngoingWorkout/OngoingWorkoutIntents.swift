@@ -29,23 +29,12 @@ enum OngoingWorkoutIntents {
     static func rest(workoutId: String, seconds: Int?) async {
         for activity in Activity<OngoingWorkoutAttributes>.activities
         where activity.attributes.workoutId == workoutId {
-            var state = activity.content.state
-            guard let end = state.restEnd else { continue }
-            switch seconds {
-            case let seconds?:
-                let moved = end.addingTimeInterval(TimeInterval(seconds))
-                state.restEnd = moved
-                await activity.update(ActivityContent(state: state, staleDate: moved))
+            guard let state = adjusted(activity.content.state, by: seconds) else { continue }
+            await activity.update(ActivityContent(state: state, staleDate: state.restEnd))
+            switch state.restEnd {
+            case let moved?:
                 await reschedule(to: moved)
             case nil:
-                state.restStart = nil
-                state.restEnd = nil
-                state.restLabel = nil
-                state.restOver = nil
-                state.restMinus = nil
-                state.restPlus = nil
-                state.restSkip = nil
-                await activity.update(ActivityContent(state: state, staleDate: nil))
                 UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restNotification])
             }
         }
@@ -57,6 +46,27 @@ enum OngoingWorkoutIntents {
         ]
         if let seconds { command["seconds"] = seconds }
         handoff?(command)
+    }
+
+    /// [state] with its rest moved by [seconds], or over for nil: every rest
+    /// field cleared, so the view draws no rest row and no buttons. Nil when
+    /// there is no rest to act on — a button pressed after the rest ended.
+    static func adjusted(_ state: OngoingWorkoutAttributes.ContentState, by seconds: Int?) -> OngoingWorkoutAttributes.ContentState? {
+        guard let end = state.restEnd else { return nil }
+        var state = state
+        switch seconds {
+        case let seconds?:
+            state.restEnd = end.addingTimeInterval(TimeInterval(seconds))
+        case nil:
+            state.restStart = nil
+            state.restEnd = nil
+            state.restLabel = nil
+            state.restOver = nil
+            state.restMinus = nil
+            state.restPlus = nil
+            state.restSkip = nil
+        }
+        return state
     }
 
     /// The pending "rest complete" notification, moved to [date]: the same

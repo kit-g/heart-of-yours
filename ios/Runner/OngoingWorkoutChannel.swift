@@ -11,10 +11,8 @@ import os
 /// that cannot be shown is never the workout's problem.
 enum OngoingWorkoutChannel {
     /// Commands from the lock screen's buttons (#141) that no Dart was
-    /// listening for — the intent ran with the engine down, or not listening.
-    /// Dart takes them once the active workout is loaded; each names the
-    /// workout it is about, so one gone stale by then is dropped there.
-    private static let commandsKey = "ongoingWorkout.pendingCommands"
+    /// listening for.
+    static let queue = CommandQueue(key: "ongoingWorkout.pendingCommands")
 
     nonisolated(unsafe) private static var channel: FlutterMethodChannel?
 
@@ -29,10 +27,7 @@ enum OngoingWorkoutChannel {
 
             switch call.method {
             case "takeCommands":
-                let defaults = UserDefaults.standard
-                let kept = defaults.array(forKey: commandsKey) ?? []
-                defaults.removeObject(forKey: commandsKey)
-                result(kept)
+                result(queue.take())
             case "supported":
                 // Live Activities are an iPhone feature; an iPad has the API
                 // and never shows one, so the setting would be a dead switch
@@ -61,17 +56,11 @@ enum OngoingWorkoutChannel {
     /// Hands a command to Dart, or keeps it if nothing there is listening.
     private static func forward(_ command: [String: Any]) {
         DispatchQueue.main.async {
-            guard let channel else { return keep(command) }
+            guard let channel else { return queue.keep(command) }
             channel.invokeMethod("command", arguments: command) { answer in
-                if (answer as? Bool) != true { keep(command) }
+                if (answer as? Bool) != true { queue.keep(command) }
             }
         }
-    }
-
-    private static func keep(_ command: [String: Any]) {
-        let defaults = UserDefaults.standard
-        let kept = defaults.array(forKey: commandsKey) ?? []
-        defaults.set(kept + [command], forKey: commandsKey)
     }
 }
 
