@@ -155,6 +155,51 @@ void main() {
     expect(alarms.remainsInActiveExercise, isNull, reason: 'the queued skip lands once the workout is known');
   });
 
+  testWidgets('a queued button waits for the rest a killed process left, and lands on it', (tester) async {
+    // a cold start: the workout is read, then the rest comes back from the
+    // store; a skip queued before both must not be dropped in between
+    final workout = push();
+    final store = _Store()
+      ..saved = (exerciseId: workout.first.id, end: clock.add(const Duration(seconds: 60)), total: 90);
+    alarms.dispose();
+    alarms = Alarms(now: () => clock, store: store);
+    surface.queued = [WatchSkipRest(workout.id)];
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+    await pump(tester);
+    await tester.pump();
+
+    await workouts.init();
+    await tester.pump();
+    expect(alarms.remainsInActiveExercise, isNull, reason: 'nothing to skip yet: the rest is still on its way');
+
+    await alarms.restore(workout);
+    await tester.pump();
+
+    expect(alarms.remainsInActiveExercise, isNull, reason: 'the queued skip lands on the restored rest');
+    expect(store.saved, isNull);
+  });
+
+  testWidgets('a queued button is not judged a stray before the preferences are read', (tester) async {
+    // a cold start: the button arrives before the device's preferences, among
+    // them the lock-screen switch, have been read — "off" would be a lie
+    final workout = push();
+    preferences.dispose();
+    preferences = Preferences();
+    surface.queued = [WatchSkipRest(workout.id)];
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+    alarms.startActiveExerciseTimer(90, exerciseId: workout.first.id);
+    await workouts.init();
+    await pump(tester);
+    await tester.pump();
+    expect(alarms.remainsInActiveExercise, isNotNull, reason: 'waits for the preferences');
+
+    await preferences.init();
+    preferences.lockScreenWorkout = true;
+    await tester.pump();
+
+    expect(alarms.remainsInActiveExercise, isNull);
+  });
+
   testWidgets('a button about another workout changes nothing, and the surface is put right', (tester) async {
     await restingWorkout(tester);
     final end = alarms.activeExerciseEnd;
@@ -233,4 +278,18 @@ class _Surface implements OngoingWorkoutSurface {
     queued = [];
     return taken;
   }
+}
+
+/// The device's memory of a rest, in memory.
+class _Store implements RestStore {
+  SavedRest? saved;
+
+  @override
+  Future<SavedRest?> read() async => saved;
+
+  @override
+  Future<void> write(SavedRest rest) async => saved = rest;
+
+  @override
+  Future<void> clear() async => saved = null;
 }

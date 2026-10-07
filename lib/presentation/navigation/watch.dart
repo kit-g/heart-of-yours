@@ -138,12 +138,22 @@ class _WatchPresenterState extends State<WatchPresenter> {
     }
   }
 
+  /// The preferences read, the active workout known, and the rest a killed
+  /// process left running picked up (#141): a command judged before any of
+  /// these — the feature not yet read, no rest yet — would be dropped wrongly.
+  bool get _ready {
+    return Preferences.of(context).isInitialized &&
+        (_workouts?.hasResolvedActiveWorkout ?? false) &&
+        (_alarms?.hasRestored ?? true);
+  }
+
   void _onCommand(WatchCommand command) {
-    if (!mounted || !Preferences.of(context).isOn(.watchApp)) return;
-    if (!(_workouts?.hasResolvedActiveWorkout ?? false)) {
+    if (!mounted) return;
+    if (!_ready) {
       _waiting.add(command);
       return;
     }
+    if (!Preferences.of(context).isOn(.watchApp)) return;
 
     final outcome = applyWorkoutCommand(context, command);
     // a tick, landed or not, may be the first of a late batch (#206)
@@ -291,10 +301,12 @@ class _WatchPresenterState extends State<WatchPresenter> {
     final link = widget.link;
     if (link == null || !mounted) return;
 
-    if (_waiting.isNotEmpty && (_workouts?.hasResolvedActiveWorkout ?? false)) {
+    if (_waiting.isNotEmpty && _ready) {
       final waiting = [..._waiting];
       _waiting.clear();
-      waiting.forEach(_onCommand);
+      // off the build this may have been called from (a dependency changed):
+      // applying a command repaints the app
+      scheduleMicrotask(() => waiting.forEach(_onCommand));
       return;
     }
 
