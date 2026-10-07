@@ -662,6 +662,7 @@ void main() {
           plus: '+10s',
           skip: 'Skip',
         ),
+        done: null,
         preset: .forge,
         stopwatch: null,
         channel: 'Workout in progress',

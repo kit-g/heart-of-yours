@@ -68,6 +68,7 @@ void main() {
   OngoingWorkout workout({
     String id = 'w1',
     OngoingRest? rest,
+    OngoingDone? done,
     ({DateTime start, DateTime? pausedAt, String label})? stopwatch,
     String channel = 'Workout in progress',
     DateTime? clockStart,
@@ -83,6 +84,7 @@ void main() {
       exercise: 'Bench Press (Barbell)',
       next: 'Next: set 2 · 60 kg x 5',
       rest: rest,
+      done: done,
       preset: Preset.forge,
       stopwatch: stopwatch,
       channel: channel,
@@ -142,6 +144,114 @@ void main() {
   test('with no rest running there are no buttons: absent, not dead', () async {
     await showOngoingWorkoutNotification(workout());
     expect(details()['actions'], isNull);
+  });
+
+  /// The set up next as the snapshot names it (#246), with what follows it.
+  OngoingDone upNext({int? rest = 90}) => (
+    setId: 's1',
+    exerciseId: 'x1',
+    label: 'Done',
+    afterExercise: 'Bench Press (Barbell)',
+    afterNext: 'Next: set 3 · 65 kg x 5',
+    restSeconds: rest,
+    restLabel: 'Rest',
+    restOver: 'Rest complete!',
+    restMinus: '-10s',
+    restPlus: '+10s',
+    restSkip: 'Skip',
+    restTitle: 'Rest complete!',
+    restBody: '65 kg x 5',
+    restSubtitle: 'Bench Press (Barbell) is next',
+  );
+
+  test('with a set to tick and no rest on the clock, Done is the one button (#246)', () async {
+    await showOngoingWorkoutNotification(workout(done: upNext()));
+
+    final actions = (details()['actions'] as List).cast<Map>();
+    expect(actions.map((action) => action['id']), ['set-done']);
+    expect(actions.map((action) => action['title']), ['Done']);
+    expect((jsonDecode(shown()['payload'] as String) as Map)['doneSetId'], 's1');
+  });
+
+  test('while resting the rest keeps its three buttons: Android allows no fourth', () async {
+    final now = DateTime.now();
+    await showOngoingWorkoutNotification(
+      workout(
+        rest: (
+          start: now,
+          end: now.add(const Duration(seconds: 60)),
+          label: 'Rest',
+          over: 'Rest complete!',
+          minus: '-10s',
+          plus: '+10s',
+          skip: 'Skip',
+        ),
+        done: upNext(),
+      ),
+    );
+    final actions = (details()['actions'] as List).cast<Map>();
+    expect(actions.map((action) => action['id']), ['rest-minus', 'rest-plus', 'rest-skip']);
+  });
+
+  group('Done, pressed with no app around (#246)', () {
+    Future<NotificationResponse> pressed({int? rest = 90}) async {
+      await showOngoingWorkoutNotification(workout(done: upNext(rest: rest)));
+      final payload = shown()['payload'] as String;
+      calls.clear();
+      return NotificationResponse(
+        id: 2,
+        actionId: 'set-done',
+        payload: payload,
+        notificationResponseType: NotificationResponseType.selectedNotificationAction,
+      );
+    }
+
+    test('moves on to the next set, starts the rest with its notification, and the app hears the tick', () async {
+      final response = await pressed();
+      final commands = <WatchCommand>[];
+      final listening = ongoingNotificationCommands.listen(commands.add);
+      final before = DateTime.now();
+
+      await onOngoingNotificationAction(response);
+      await pumpEventQueue();
+      await listening.cancel();
+
+      // the shade: the lines that follow, a rest counting down, its buttons
+      expect(shown()['title'], 'Bench Press (Barbell)');
+      expect(shown()['body'], 'Rest · Next: set 3 · 65 kg x 5');
+      expect(details()['chronometerCountDown'], isTrue);
+      final end = DateTime.fromMillisecondsSinceEpoch(details()['when'] as int);
+      expect(end.difference(before).inSeconds, inInclusiveRange(89, 91));
+      expect((details()['actions'] as List).map((action) => (action as Map)['id']), [
+        'rest-minus',
+        'rest-plus',
+        'rest-skip',
+      ]);
+      expect(
+        (jsonDecode(shown()['payload'] as String) as Map)['doneSetId'],
+        isNull,
+        reason: 'no Done until the app says what is next',
+      );
+      // the "rest complete" notification, as the app would have scheduled it
+      final scheduled = calls.lastWhere((call) => call.method == 'zonedSchedule').arguments as Map;
+      expect(scheduled['id'], 0);
+      expect(scheduled['title'], 'Rest complete!');
+      expect(scheduled['body'], '65 kg x 5');
+      expect(scheduled['payload'], 'x1');
+      // and the tick itself, for the app to make real
+      expect(commands, [isA<WatchComplete>().having((c) => c.setId, 'setId', 's1')]);
+    });
+
+    test('an exercise without a rest timer moves on with no rest and no notification', () async {
+      final response = await pressed(rest: null);
+
+      await onOngoingNotificationAction(response);
+
+      expect(shown()['body'], 'Next: set 3 · 65 kg x 5');
+      expect(details()['chronometerCountDown'], isFalse);
+      expect(details()['actions'], isNull);
+      expect(calls.where((call) => call.method == 'zonedSchedule'), isEmpty);
+    });
   });
 
   test('a rest already over is shown as the elapsed clock', () async {

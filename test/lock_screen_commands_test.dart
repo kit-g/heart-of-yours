@@ -65,7 +65,15 @@ void main() {
       catalogService: MockLocalCatalogService(),
       preferenceService: MockRemoteExercisePreferenceService(),
     );
-    timers = Timers(service: MockTimersService())..userId = 'u1';
+    final timersService = MockTimersService();
+    when(
+      timersService.setRestTimer(
+        exerciseName: anyNamed('exerciseName'),
+        userId: anyNamed('userId'),
+        seconds: anyNamed('seconds'),
+      ),
+    ).thenAnswer((_) async {});
+    timers = Timers(service: timersService)..userId = 'u1';
     surface = _Surface();
   });
 
@@ -225,6 +233,79 @@ void main() {
 
     expect(alarms.remainsInActiveExercise, isNotNull);
     alarms.stopActiveExerciseTimer();
+  });
+
+  testWidgets('the snapshot names the set up next for the Done button, with what follows it', (tester) async {
+    final workout = push();
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+    when(local.markSetAsComplete(any)).thenAnswer((_) async {});
+    await workouts.init();
+    await pump(tester);
+
+    final done = surface.last?.done;
+    expect(done?.setId, workout.first.first.id);
+    expect(done?.exerciseId, workout.first.id);
+    expect(done?.label, 'Done');
+    // the set after it, and the exercise's rest — none set for the bench
+    expect(done?.afterExercise, 'Bench Press (Barbell)');
+    expect(done?.afterNext, 'Next: set 2');
+    expect(done?.restSeconds, isNull);
+    expect(done?.restTitle, 'Rest complete!');
+    expect(done?.restSkip, 'Skip');
+
+    // the second set has nothing filled in: it cannot be ticked as it
+    // stands, so once the first is done there is no button
+    workouts.markSetAsComplete(workout.first, workout.first.first);
+    await tester.pump();
+    expect(surface.last?.done, isNull);
+  });
+
+  testWidgets('Done from the lock screen ticks the set up next and starts its rest', (tester) async {
+    // two sets filled in: the second can be ticked as it stands, so it gets
+    // the button once the first is done
+    final block = WorkoutExercise(starter: ExerciseSet(bench, weight: 60, reps: 5))
+      ..add(ExerciseSet(bench, weight: 60, reps: 5));
+    final workout = Workout.fromExercises([block], name: 'Push day');
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+    when(local.markSetAsComplete(any)).thenAnswer((_) async {});
+    await workouts.init();
+    // the applier starts the exercise's rest, as a tick on the phone would
+    timers.setRestTimer(bench.id, 90);
+    await pump(tester);
+    final set = workout.first.first;
+    expect(set.isCompleted, isFalse);
+
+    surface.command(WatchComplete(workout.id, setId: set.id));
+    await tester.pump();
+
+    expect(set.isCompleted, isTrue);
+    expect(alarms.activeExerciseId, workout.first.id);
+    expect(alarms.remainsInActiveExercise?.value, 90);
+    // the surface hears the next set, and the rest it is counting down
+    expect(surface.last?.done?.setId, workout.first.toList()[1].id);
+    expect(surface.last?.rest, isNotNull);
+    alarms.stopActiveExerciseTimer();
+  });
+
+  testWidgets('a tick for a set already done, or gone, changes nothing and the surface is put right', (
+    tester,
+  ) async {
+    final workout = push();
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+    await workouts.init();
+    await pump(tester);
+    final set = workout.first.first;
+    workouts.markSetAsComplete(workout.first, set);
+    await tester.pump();
+    final shows = surface.calls.length;
+
+    surface.command(WatchComplete(workout.id, setId: set.id));
+    surface.command(WatchComplete(workout.id, setId: 'gone'));
+    await tester.pump();
+
+    expect(workout.first.where((set) => set.isCompleted), hasLength(1), reason: 'never ticked twice');
+    expect(alarms.remainsInActiveExercise, isNull);
+    expect(surface.calls.length, greaterThan(shows));
   });
 
   test('the lock screen sends the labels of its buttons with the rest', () {
