@@ -520,6 +520,21 @@ void main() {
       expect((row.reps, row.done), (4, true));
     });
 
+    testWidgets('a value typed into a set on the phone reaches the watch (#282)', (tester) async {
+      await running(tester);
+      final second = workout.first.elementAt(1);
+      final before = link.sent.length;
+
+      // the row's own typing: it writes the set, then stores — no `editSet`
+      second.setMeasurements(weight: 70, reps: 8);
+      await workouts.storeMeasurements(second);
+      await tester.pump();
+
+      expect(link.sent.length, before + 1, reason: 'the watch shows the set up next too, and has to hear');
+      final row = (link.sent.last as WatchWorkout).exercises.single.sets.elementAt(1);
+      expect((row.weight, row.reps, row.done), (70.0, 8, false));
+    });
+
     testWidgets('a set ticked by mistake is unticked', (tester) async {
       await running(tester);
       final first = workout.first.first;
