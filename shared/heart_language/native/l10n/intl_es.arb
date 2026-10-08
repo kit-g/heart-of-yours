@@ -77,5 +77,191 @@
     "description": "Label of the \"Start a workout\" shortcut shown on long-pressing the Android launcher icon. Short: launchers truncate. Generated into android res/values*/strings_shortcuts.xml on translation import",
     "type": "text",
     "placeholders": {}
+  },
+  "iosShortcutPhraseStartRest": "Empezar descanso en ${applicationName}",
+  "@iosShortcutPhraseStartRest": {
+    "description": "Siri phrase for the Start Rest App Shortcut; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseRestFor": "Descansar ${length} en ${applicationName}",
+  "@iosShortcutPhraseRestFor": {
+    "description": "Siri phrase for a rest of a said length; ${length} is the length (30 seconds, 1 minute…), ${applicationName} the app name, both must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseAddRest": "Añadir ${length} a mi descanso en ${applicationName}",
+  "@iosShortcutPhraseAddRest": {
+    "description": "Siri phrase for extending the running rest; ${length} and ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseSkipRest": "Saltar descanso en ${applicationName}",
+  "@iosShortcutPhraseSkipRest": {
+    "description": "Siri phrase for skipping the running rest; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutStartRestTitle": "Empezar descanso",
+  "@iosShortcutStartRestTitle": {
+    "description": "Title of the Start Rest tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutExtendRestTitle": "Alargar descanso",
+  "@iosShortcutExtendRestTitle": {
+    "description": "Title of the Extend Rest tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutSkipRestTitle": "Saltar descanso",
+  "@iosShortcutSkipRestTitle": {
+    "description": "Title of the Skip Rest tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutStartRestIntent": "Empezar descanso",
+  "@iosShortcutStartRestIntent": {
+    "description": "Name of the Start Rest action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutExtendRestIntent": "Alargar descanso",
+  "@iosShortcutExtendRestIntent": {
+    "description": "Name of the Extend Rest action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutSkipRestIntent": "Saltar descanso",
+  "@iosShortcutSkipRestIntent": {
+    "description": "Name of the Skip Rest action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRestLength": "Duración del descanso",
+  "@iosShortcutRestLength": {
+    "description": "The length parameter of the rest actions in the iOS Shortcuts app, and the type name of a rest length there. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLengthParam": "Duración",
+  "@iosShortcutLengthParam": {
+    "description": "Title of the Length parameter of the rest actions in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutThirtySeconds": "30 segundos",
+  "@iosShortcutThirtySeconds": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutOneMinute": "1 minuto",
+  "@iosShortcutOneMinute": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNinetySeconds": "90 segundos",
+  "@iosShortcutNinetySeconds": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutTwoMinutes": "2 minutos",
+  "@iosShortcutTwoMinutes": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutThreeMinutes": "3 minutos",
+  "@iosShortcutThreeMinutes": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutResting": "Descansando %@",
+  "@iosShortcutResting": {
+    "description": "What Siri says when a rest was started by voice; %@ is the clock (1:30) and must stay. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRestExtended": "Descanso alargado, queda %@",
+  "@iosShortcutRestExtended": {
+    "description": "What Siri says when the running rest was extended by voice; %@ is the time left (1:12) and must stay. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRestSkipped": "Descanso saltado",
+  "@iosShortcutRestSkipped": {
+    "description": "What Siri says when the running rest was skipped by voice. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNoWorkout": "No hay entrenamiento en marcha",
+  "@iosShortcutNoWorkout": {
+    "description": "What Siri says to a rest command with no workout running. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNoRest": "No hay descanso en marcha",
+  "@iosShortcutNoRest": {
+    "description": "What Siri says to extend or skip with no rest running. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNoTimer": "Este ejercicio no tiene temporizador de descanso",
+  "@iosShortcutNoTimer": {
+    "description": "What Siri says to \"start rest\" for an exercise with no rest timer and no length said. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseLogSet": "Registrar una serie en ${applicationName}",
+  "@iosShortcutPhraseLogSet": {
+    "description": "Siri phrase for logging the set up next; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogSetTitle": "Registrar serie",
+  "@iosShortcutLogSetTitle": {
+    "description": "Title of the Log a set tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogSetIntent": "Registrar serie",
+  "@iosShortcutLogSetIntent": {
+    "description": "Name of the Log Set action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutWeightParam": "Peso",
+  "@iosShortcutWeightParam": {
+    "description": "Title of the Weight parameter of the Log Set action. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRepsParam": "Repeticiones",
+  "@iosShortcutRepsParam": {
+    "description": "Title of the Reps parameter of the Log Set action. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogged": "Registrado: %@",
+  "@iosShortcutLogged": {
+    "description": "What Siri says when a set was logged by voice; %@ is what was logged (100 kg × 5, Bench Press) and must stay. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNothingLeft": "No queda nada por registrar",
+  "@iosShortcutNothingLeft": {
+    "description": "What Siri says to \"log a set\" with every set of the workout done. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutSayValues": "Di el peso y las repeticiones",
+  "@iosShortcutSayValues": {
+    "description": "What Siri says to \"log a set\" for a set with nothing filled in and nothing said. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
   }
 }

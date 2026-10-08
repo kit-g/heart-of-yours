@@ -54,6 +54,21 @@ enum OngoingWorkoutIntents {
     /// until the app says what is next. Then the command goes to Dart, which
     /// ticks the set for real — or drops a tick for a set already done.
     static func complete(workoutId: String, setId: String) async {
+        await complete(
+            workoutId: workoutId,
+            setId: setId,
+            command: [
+                "action": "complete",
+                "workoutId": workoutId,
+                "setId": setId,
+                "at": Int(Date().timeIntervalSince1970 * 1000),
+            ]
+        )
+    }
+
+    /// The same, handing Dart [command] — a tick with the values said to it
+    /// (#287) — once the activity has moved on.
+    static func complete(workoutId: String, setId: String, command: [String: Any]) async {
         for activity in Activity<OngoingWorkoutAttributes>.activities
         where activity.attributes.workoutId == workoutId {
             let now = Date()
@@ -61,13 +76,7 @@ enum OngoingWorkoutIntents {
             await activity.update(ActivityContent(state: state, staleDate: state.restEnd))
             if let notification { await schedule(notification) }
         }
-
-        handoff?([
-            "action": "complete",
-            "workoutId": workoutId,
-            "setId": setId,
-            "at": Int(Date().timeIntervalSince1970 * 1000),
-        ])
+        handoff?(command)
     }
 
     /// The "rest complete" notification a tick schedules, as Dart would.
@@ -136,10 +145,37 @@ enum OngoingWorkoutIntents {
         return (next, notification)
     }
 
+    /// Starts a rest of [seconds] on the activity for [workoutId] at [at]
+    /// (#98): the rest row with the buttons the state carries the labels for,
+    /// where it carries them. Nothing without them — a state from before the
+    /// Done button — and the app draws the rest when it is next heard from.
+    static func startRest(workoutId: String, seconds: Int, at: Date) async {
+        for activity in Activity<OngoingWorkoutAttributes>.activities
+        where activity.attributes.workoutId == workoutId {
+            guard let state = resting(activity.content.state, for: seconds, at: at) else { continue }
+            await activity.update(ActivityContent(state: state, staleDate: state.restEnd))
+        }
+    }
+
+    /// [state] with a rest of [seconds] starting at [at], drawn with the rest
+    /// labels the state carries for its Done button; nil without them.
+    static func resting(_ state: OngoingWorkoutAttributes.ContentState, for seconds: Int, at: Date) -> OngoingWorkoutAttributes.ContentState? {
+        guard let label = state.afterRestLabel, let over = state.afterRestOver else { return nil }
+        var next = state
+        next.restStart = at
+        next.restEnd = at.addingTimeInterval(TimeInterval(seconds))
+        next.restLabel = label
+        next.restOver = over
+        next.restMinus = state.afterRestMinus
+        next.restPlus = state.afterRestPlus
+        next.restSkip = state.afterRestSkip
+        return next
+    }
+
     /// Schedules [notification] under Dart's id, as flutter_local_notifications
     /// would have: the same identifier, the payload where the plugin keeps it,
     /// so a tap on it reaches the app's own router.
-    private static func schedule(_ notification: RestNotification) async {
+    static func schedule(_ notification: RestNotification) async {
         let content = UNMutableNotificationContent()
         content.title = notification.title
         content.subtitle = notification.subtitle
