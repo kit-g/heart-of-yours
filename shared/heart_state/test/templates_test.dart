@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/src/remote.dart';
 import 'package:heart_state/src/templates.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -393,6 +396,112 @@ void main() {
         expect(templates.editable, isNotNull);
         expect(templates.editable!.name, 'Morning');
         expect(probe.notifications, 1);
+      });
+    });
+
+    group('duplicate (#262)', () {
+      late Template original;
+
+      setUp(() {
+        clearInteractions(local);
+        clearInteractions(remote);
+        final bench = wEx(ex('Bench Press'), sets: 2)..note = 'pause at the chest';
+        bench.first
+          ..setMeasurements(weight: 60, reps: 8)
+          ..setType = .warmup;
+        original = tmpl(id: 'orig', order: 2, name: 'Push', exercises: [bench, wEx(ex('Dip'))], folder: fldr());
+        templates.userId = 'u1';
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'copy-1', order: 3));
+        when(local.updateTemplate(any)).thenAnswer((_) async {});
+        when(local.deleteTemplate(any)).thenAnswer((_) async {});
+        when(local.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+        when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
+      });
+
+      test('the copy carries every exercise, set and note under fresh ids, filed with the original', () async {
+        final copy = await templates.duplicate(original, name: 'Push (copy)');
+
+        expect(copy.name, 'Push (copy)');
+        expect(copy.folderId, 'f1');
+        expect(copy.order, 3, reason: 'last, like any new template');
+        expect(copy.map((e) => e.exercise.id), original.map((e) => e.exercise.id));
+        expect(copy.map((e) => e.length), [2, 1]);
+        // Template.toWorkout drops the note; a copy must not
+        expect(copy.first.note, 'pause at the chest');
+        final ExerciseSet(:weight, :reps, :setType) = copy.first.first;
+        expect((weight, reps, setType), (60.0, 8, SetType.warmup));
+        expect(copy.first.id, isNot(original.first.id));
+        expect(copy.first.first.id, isNot(original.first.first.id));
+        expect(templates.single, copy);
+        verify(local.updateTemplate(copy)).called(1);
+        verify(remote.saveTemplate(copy)).called(1);
+        expect(probe.notifications, 2, reason: 'once with the copy in the list, once with the server\'s row');
+      });
+
+      test('edits to the copy leave the original alone', () async {
+        final copy = await templates.duplicate(original, name: 'Push (copy)');
+
+        templates.addSet(copy.first);
+        copy.first.first.setMeasurements(weight: 100, reps: 3);
+        copy.first.note = null;
+        copy.remove(copy.last);
+
+        expect(original.map((e) => e.length), [2, 1]);
+        expect(original.first.first.weight, 60);
+        expect(original.first.note, 'pause at the chest');
+      });
+
+      test('shows the copy before the server answers, then keeps the server\'s row', () async {
+        final answer = Completer<Template>();
+        when(remote.saveTemplate(any)).thenAnswer((_) => answer.future);
+
+        final pending = templates.duplicate(original, name: 'Push (copy)');
+        await pumpEventQueue();
+
+        expect(templates.single.id, 'copy-1');
+        expect(probe.notifications, 1);
+
+        answer.complete(tmpl(id: 'server-1', order: 3, name: 'Push (copy)', folder: fldr()));
+        final saved = await pending;
+
+        expect(saved.id, 'server-1');
+        expect(templates.single.id, 'server-1');
+        verify(local.deleteTemplate('copy-1')).called(1);
+        verify(local.storeTemplates(any, userId: 'u1')).called(1);
+        expect(probe.notifications, 2);
+      });
+
+      test('a sample\'s copy is the user\'s own, unfiled', () async {
+        final sample = tmpl(id: 's1', name: 'Push Day', exercises: [wEx(ex('Push Up'))]);
+
+        final copy = await templates.duplicate(sample, name: 'Push Day (copy)');
+
+        expect(copy.folder, isNull);
+        expect(copy.single.exercise.id, 'id-push-up');
+        expect(templates.single, copy);
+        verify(remote.saveTemplate(copy)).called(1);
+      });
+
+      test('without the remote leg the copy stays local, under its own id', () async {
+        templates = Templates(
+          remoteService: remote,
+          service: local,
+          configService: config,
+          folderService: localFolders,
+          remoteFolderService: remoteFolders,
+          filingService: filing,
+          remote: RemoteAccess(allowed: false),
+        )..userId = 'u1';
+
+        final copy = await templates.duplicate(original, name: 'Push (copy)');
+
+        expect(copy.id, 'copy-1');
+        expect(copy.local, isTrue);
+        expect(templates.single, copy);
+        verify(local.updateTemplate(copy)).called(1);
+        verifyNever(remote.saveTemplate(any));
       });
     });
 

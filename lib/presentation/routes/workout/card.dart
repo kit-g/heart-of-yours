@@ -4,6 +4,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
   final Template template;
   final void Function(Template)? onDelete;
   final void Function(Template)? onEdit;
+  final void Function(Template)? onDuplicate;
   final void Function(Template)? onMove;
   final void Function(Template)? onStartWorkout;
   final void Function(Template) onTap;
@@ -13,6 +14,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
     required this.template,
     this.onDelete,
     this.onEdit,
+    this.onDuplicate,
     this.onMove,
     this.onStartWorkout,
     this.options,
@@ -125,6 +127,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
   void _onSelected(_TemplateOption option) {
     return switch (option) {
       .edit => onEdit?.call(template),
+      .duplicate => onDuplicate?.call(template),
       .move => onMove?.call(template),
       .delete => onDelete?.call(template),
       .startWorkout => onStartWorkout?.call(template),
@@ -145,6 +148,11 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
         style: textTheme.titleSmall,
         icon: const Icon(Icons.edit_rounded, size: 16),
       ),
+      .duplicate => (
+        copy: L.of(context).duplicate,
+        style: textTheme.titleSmall,
+        icon: const Icon(Icons.content_copy_rounded, size: 16),
+      ),
       .move => (
         copy: L.of(context).moveToFolder,
         style: textTheme.titleSmall,
@@ -161,7 +169,7 @@ class _TemplateCard extends StatelessWidget with HasHaptic<_TemplateCard> {
 
 const _maxPerCard = 5;
 
-enum _TemplateOption { edit, move, startWorkout, delete }
+enum _TemplateOption { edit, duplicate, move, startWorkout, delete }
 
 const _shape = RoundedRectangleBorder(borderRadius: .all(.circular(8)));
 

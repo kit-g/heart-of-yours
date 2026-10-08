@@ -1462,6 +1462,18 @@ abstract class L {
   /// **'Edit Template'**
   String get editTemplate;
 
+  /// Template menu item: makes a copy of the template, named <name> (copy), that can be edited without touching the original
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicate;
+
+  /// The name a duplicated template gets: the original's name plus a copy mark. {name} is the original's name
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (copy)'**
+  String templateCopyName(Object name);
+
   /// Edit workout form header
   ///
   /// In en, this message translates to:
