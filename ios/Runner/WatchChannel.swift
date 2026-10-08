@@ -27,10 +27,8 @@ final class WatchChannel: NSObject {
 
     /// Commands from the watch (#183) that no Dart was listening for — the
     /// message woke this process in the background, and the engine had not
-    /// started, or was not listening. Dart takes them once the active workout
-    /// is loaded; each names the workout and set it is about, so one that has
-    /// gone stale by then is dropped there, not here.
-    private let commandsKey = "watch.pendingCommands"
+    /// started, or was not listening.
+    private let queue = CommandQueue(key: "watch.pendingCommands")
 
     /// The workout the watch is measuring with a workout session (#184), as the
     /// watch reported it. Persisted: the phone app may be relaunched between
@@ -69,9 +67,7 @@ final class WatchChannel: NSObject {
                 // handed over yet: commands queued while the phone was away (#206)
                 self.whenActive { result(self.session?.hasContentPending ?? false) }
             case "takeCommands":
-                let defaults = UserDefaults.standard
-                result(defaults.array(forKey: self.commandsKey) ?? [])
-                defaults.removeObject(forKey: self.commandsKey)
+                result(self.queue.take())
             case "measures":
                 let workoutId = (call.arguments as? [String: Any])?["workoutId"] as? String
                 result(workoutId != nil && UserDefaults.standard.string(forKey: self.measuringKey) == workoutId)
@@ -178,9 +174,7 @@ final class WatchChannel: NSObject {
     }
 
     private func keep(_ command: [String: Any]) {
-        let defaults = UserDefaults.standard
-        let kept = defaults.array(forKey: commandsKey) ?? []
-        defaults.set(kept + [command], forKey: commandsKey)
+        queue.keep(command)
     }
 }
 

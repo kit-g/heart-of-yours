@@ -22,6 +22,7 @@ void main() {
   late AppTheme theme;
   late Preferences preferences;
   late Exercises exercises;
+  late Timers timers;
   late _Surface surface;
 
   final bench = Exercise.fromJson({
@@ -57,6 +58,7 @@ void main() {
       catalogService: MockLocalCatalogService(),
       preferenceService: MockRemoteExercisePreferenceService(),
     );
+    timers = Timers(service: MockTimersService())..userId = 'u1';
     surface = _Surface();
   });
 
@@ -69,6 +71,8 @@ void main() {
           ChangeNotifierProvider<AppTheme>.value(value: theme),
           ChangeNotifierProvider<Preferences>.value(value: preferences),
           ChangeNotifierProvider<Exercises>.value(value: exercises),
+          // the Done button's rest (#246) is the exercise's timer
+          ChangeNotifierProvider<Timers>.value(value: timers),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,
@@ -266,6 +270,8 @@ void main() {
           ChangeNotifierProvider<AppTheme>.value(value: theme),
           ChangeNotifierProvider<Preferences>.value(value: preferences),
           ChangeNotifierProvider<Exercises>.value(value: exercises),
+          // the Done button's rest (#246) is the exercise's timer
+          ChangeNotifierProvider<Timers>.value(value: timers),
         ],
         child: MaterialApp(
           localizationsDelegates: localizationsDelegates,

@@ -10,8 +10,9 @@ import androidx.core.graphics.drawable.IconCompat
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 
-/// The launcher's per-template shortcuts (#286): the app's half of the
-/// `heart/shortcuts` channel, the same one iOS answers. Dart publishes the
+/// The launcher's per-template shortcuts (#286), and the store the App
+/// Functions read (#289): the app's half of the `heart/shortcuts` channel, the
+/// same one iOS answers. Dart publishes the
 /// templates it can name — the user's own, then the samples — and this turns
 /// them into dynamic shortcuts that open the app on `heart://app/start?template=…`
 /// (#284). Replaced wholesale on every change; an empty list, which the
@@ -25,6 +26,7 @@ object ShortcutsChannel {
     private const val STATIC_SHORTCUTS = 1
 
     fun register(context: Context, messenger: BinaryMessenger) {
+        val store = ShortcutsStore.prefs(context.applicationContext)
         MethodChannel(messenger, "heart/shortcuts").setMethodCallHandler { call, result ->
             when (call.method) {
                 "setTemplates" -> {
@@ -33,8 +35,31 @@ object ShortcutsChannel {
                         result.error("bad_arguments", "setTemplates needs a list", null)
                     } else {
                         setTemplates(context.applicationContext, list)
+                        ShortcutsStore.put(store, ShortcutsStore.TEMPLATES, list)
                         result.success(null)
                     }
+                }
+                // what the App Functions act on (#289): kept as published
+                "setExercises" -> {
+                    val list = call.arguments as? List<*>
+                    if (list == null) {
+                        result.error("bad_arguments", "setExercises needs a list", null)
+                    } else {
+                        ShortcutsStore.put(store, ShortcutsStore.EXERCISES, list)
+                        result.success(null)
+                    }
+                }
+                "setRest" -> {
+                    ShortcutsStore.put(store, ShortcutsStore.REST, call.arguments as? Map<*, *>)
+                    result.success(null)
+                }
+                "setNextSet" -> {
+                    ShortcutsStore.put(store, ShortcutsStore.NEXT_SET, call.arguments as? Map<*, *>)
+                    result.success(null)
+                }
+                "setSession" -> {
+                    ShortcutsStore.put(store, ShortcutsStore.USER_ID, call.arguments as? String)
+                    result.success(null)
                 }
                 else -> result.notImplemented()
             }

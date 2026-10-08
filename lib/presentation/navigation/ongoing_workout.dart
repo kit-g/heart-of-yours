@@ -4,6 +4,7 @@ import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/presentation/navigation/commands.dart';
+import 'package:heart/presentation/widgets/workout/rest.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart_language/heart_language.dart';
@@ -235,8 +236,53 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
       ),
       _ => null,
     },
+    // the Done button (#246): the set up next, if it can be ticked as it
+    // stands, and what the surface shows the moment it is — a set being timed
+    // is ticked by its stopwatch, not here
+    done: switch (upNext) {
+      (:WorkoutExercise exercise, set: ExerciseSet set, number: _) when !timing && set.canBeCompleted => _doneOf(
+        context,
+        workout,
+        exercise,
+        set,
+      ),
+      _ => null,
+    },
     preset: AppTheme.of(context).preset,
     channel: l.ongoingWorkoutChannel,
+  );
+}
+
+/// What the lock screen shows once [set] of [exercise] is ticked (#246): the
+/// set after it, and the rest the exercise's timer starts, with its
+/// notification's words — so the surface can show both without the app.
+OngoingDone _doneOf(BuildContext context, Workout workout, WorkoutExercise exercise, ExerciseSet set) {
+  final l = L.of(context);
+  final following = upNextIn(workout, after: (exercise, set));
+  final next = switch (following) {
+    (:WorkoutExercise exercise, set: ExerciseSet set, number: _) => (exercise, set),
+    _ => null,
+  };
+  final copy = restNotificationCopy(context, exercise, next: next);
+  return (
+    setId: set.id,
+    exerciseId: exercise.id,
+    label: l.lockScreenDone,
+    afterExercise: following?.exercise.exercise.name ?? '',
+    afterNext: switch (following) {
+      (set: ExerciseSet set, :int number, exercise: _) => nextSetLine(context, set, number),
+      (set: null, number: _, exercise: _) => l.ongoingWorkoutAllDone,
+      null => '',
+    },
+    restSeconds: Timers.of(context)[exercise.exercise.id],
+    restLabel: l.ongoingWorkoutRest,
+    restOver: l.restComplete,
+    restMinus: l.subtractSeconds,
+    restPlus: l.addSeconds,
+    restSkip: l.skip,
+    restTitle: copy.title,
+    restBody: copy.body,
+    restSubtitle: copy.subtitle,
   );
 }
 

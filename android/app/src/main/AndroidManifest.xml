@@ -76,6 +76,29 @@
         android:label="@string/app_name"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- App Functions (#289): Android 16's assistant calls the app's functions
+             in-process through this service, generated from
+             BaseHeartAppFunctionService; the metadata it names is generated into
+             the assets, in the first format Android 16 indexes and the second.
+             Below Android 16 nothing binds it. -->
+        <service
+            android:name=".HeartAppFunctionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            tools:targetApi="36">
+            <property
+                android:name="android.app.appfunctions"
+                android:value="heart_app_functions-v1.xml" />
+            <property
+                android:name="android.app.appfunctions.schema"
+                android:value="app_functions_schema.xsd" />
+            <property
+                android:name="android.app.appfunctions.v2"
+                android:value="heart_app_functions.xml" />
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"

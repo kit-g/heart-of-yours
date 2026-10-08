@@ -20,7 +20,7 @@ import os
 private let log = Logger(subsystem: "me.heart-of", category: "Shortcuts")
 
 /// The links an intent opens the app on. The verbs are Dart's (`ShortcutLink`).
-private enum ShortcutURL {
+enum ShortcutURL {
     static func start(template: String? = nil) -> URL {
         var components = URLComponents()
         components.scheme = "heart"
@@ -133,6 +133,71 @@ struct HeartShortcuts: AppShortcutsProvider {
             shortTitle: "Finish workout",
             systemImageName: "checkmark.circle"
         )
+        AppShortcut(
+            intent: StartRestIntent(),
+            phrases: [
+                "Start rest in \(.applicationName)",
+                "Rest for \(\.$length) in \(.applicationName)",
+            ],
+            shortTitle: "Start rest",
+            systemImageName: "timer"
+        )
+        AppShortcut(
+            intent: AddRestIntent(),
+            phrases: [
+                "Add \(\.$length) to my rest in \(.applicationName)",
+            ],
+            shortTitle: "Extend rest",
+            systemImageName: "plus.circle"
+        )
+        AppShortcut(
+            intent: EndRestIntent(),
+            phrases: [
+                "Skip rest in \(.applicationName)",
+            ],
+            shortTitle: "Skip rest",
+            systemImageName: "forward.end"
+        )
+        AppShortcut(
+            intent: LogSetIntent(),
+            phrases: [
+                "Log a set in \(.applicationName)",
+            ],
+            shortTitle: "Log a set",
+            systemImageName: "checkmark.circle.fill"
+        )
+        AppShortcut(
+            intent: PersonalRecordIntent(),
+            phrases: [
+                "What's my \(\.$exercise) record in \(.applicationName)",
+            ],
+            shortTitle: "Personal record",
+            systemImageName: "trophy"
+        )
+        AppShortcut(
+            intent: LastExerciseIntent(),
+            phrases: [
+                "When did I last do \(\.$exercise) in \(.applicationName)",
+            ],
+            shortTitle: "Last time",
+            systemImageName: "clock.arrow.circlepath"
+        )
+        AppShortcut(
+            intent: LastTemplateIntent(),
+            phrases: [
+                "When did I last train \(\.$template) in \(.applicationName)",
+            ],
+            shortTitle: "Last session",
+            systemImageName: "calendar"
+        )
+        AppShortcut(
+            intent: WorkoutsThisWeekIntent(),
+            phrases: [
+                "How many workouts this week in \(.applicationName)",
+            ],
+            shortTitle: "Workouts this week",
+            systemImageName: "chart.bar"
+        )
     }
 }
 
@@ -141,6 +206,10 @@ struct HeartShortcuts: AppShortcutsProvider {
 /// template phrases changed, so Siri learns the names.
 enum ShortcutsChannel {
     private static let templatesKey = "shortcuts.templates"
+    static let restKey = "shortcuts.rest"
+    static let setKey = "shortcuts.nextSet"
+    static let sessionKey = "shortcuts.userId"
+    static let exercisesKey = "shortcuts.exercises"
 
     static func register(with messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "heart/shortcuts", binaryMessenger: messenger)
@@ -150,11 +219,41 @@ enum ShortcutsChannel {
                 guard let list = call.arguments as? [[String: Any]] else {
                     return result(FlutterError(code: "bad_arguments", message: "setTemplates needs a list", details: nil))
                 }
-                let templates = list.compactMap { entry -> [String: String]? in
-                    guard let id = entry["id"] as? String, let name = entry["name"] as? String else { return nil }
-                    return ["id": id, "name": name]
+                store(list)
+                refresh()
+                result(nil)
+            case "setRest":
+                // the rest a voice command acts on (#98), or nothing to act on
+                switch call.arguments {
+                case let rest as [String: Any]:
+                    UserDefaults.standard.set(rest, forKey: restKey)
+                default:
+                    UserDefaults.standard.removeObject(forKey: restKey)
                 }
-                UserDefaults.standard.set(templates, forKey: templatesKey)
+                result(nil)
+            case "setNextSet":
+                // the set a voice command logs (#287), or nothing left
+                switch call.arguments {
+                case let set as [String: Any]:
+                    UserDefaults.standard.set(set, forKey: setKey)
+                default:
+                    UserDefaults.standard.removeObject(forKey: setKey)
+                }
+                result(nil)
+            case "setSession":
+                // whose training the questions are about (#288)
+                switch call.arguments {
+                case let userId as String:
+                    UserDefaults.standard.set(userId, forKey: sessionKey)
+                default:
+                    UserDefaults.standard.removeObject(forKey: sessionKey)
+                }
+                result(nil)
+            case "setExercises":
+                guard let list = call.arguments as? [[String: Any]] else {
+                    return result(FlutterError(code: "bad_arguments", message: "setExercises needs a list", details: nil))
+                }
+                storeExercises(list)
                 refresh()
                 result(nil)
             default:
@@ -171,12 +270,45 @@ enum ShortcutsChannel {
         }
     }
 
+    /// The catalogue as Dart published it (#288), for [ExerciseEntity].
     @available(iOS 16, *)
-    static var templates: [TemplateEntity] {
-        let stored = UserDefaults.standard.array(forKey: templatesKey) as? [[String: String]] ?? []
+    static var exercises: [ExerciseEntity] { exercises(in: .standard) }
+
+    @available(iOS 16, *)
+    static func exercises(in defaults: UserDefaults) -> [ExerciseEntity] {
+        let stored = defaults.array(forKey: exercisesKey) as? [[String: String]] ?? []
+        return stored.compactMap { entry in
+            guard let id = entry["id"], let name = entry["name"] else { return nil }
+            return ExerciseEntity(id: id, name: name)
+        }
+    }
+
+    static func storeExercises(_ list: [[String: Any]], in defaults: UserDefaults = .standard) {
+        let exercises = list.compactMap { entry -> [String: String]? in
+            guard let id = entry["id"] as? String, let name = entry["name"] as? String else { return nil }
+            return ["id": id, "name": name]
+        }
+        defaults.set(exercises, forKey: exercisesKey)
+    }
+
+    @available(iOS 16, *)
+    static var templates: [TemplateEntity] { templates(in: .standard) }
+
+    @available(iOS 16, *)
+    static func templates(in defaults: UserDefaults) -> [TemplateEntity] {
+        let stored = defaults.array(forKey: templatesKey) as? [[String: String]] ?? []
         return stored.compactMap { entry in
             guard let id = entry["id"], let name = entry["name"] else { return nil }
             return TemplateEntity(id: id, name: name)
         }
+    }
+
+    /// Keeps what Dart published, as [templates] reads it back.
+    static func store(_ list: [[String: Any]], in defaults: UserDefaults = .standard) {
+        let templates = list.compactMap { entry -> [String: String]? in
+            guard let id = entry["id"] as? String, let name = entry["name"] as? String else { return nil }
+            return ["id": id, "name": name]
+        }
+        defaults.set(templates, forKey: templatesKey)
     }
 }

@@ -2381,4 +2381,56 @@ class LRu extends L {
   @override
   String get shortcutsSubtitle =>
       'Начинайте или завершайте тренировку через Siri, «Быстрые команды» или с главного экрана';
+
+  @override
+  String get lockScreenDone => 'Готово';
+
+  @override
+  String askRecord(Object exercise, Object value, Object date) {
+    return 'Ваш рекорд в $exercise — $value, установлен $date';
+  }
+
+  @override
+  String askNoRecord(Object exercise) {
+    return 'Рекорда в $exercise пока нет';
+  }
+
+  @override
+  String askLastExercise(Object exercise, Object date, Object workout) {
+    return 'В последний раз вы делали $exercise $date, в тренировке $workout';
+  }
+
+  @override
+  String askNeverDid(Object exercise) {
+    return 'Вы ещё не делали $exercise';
+  }
+
+  @override
+  String askLastTemplate(Object template, Object date) {
+    return 'В последний раз вы делали $template $date';
+  }
+
+  @override
+  String askNeverDidTemplate(Object template) {
+    return 'Вы ещё не делали $template';
+  }
+
+  @override
+  String askWeekly(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count тренировок на этой неделе',
+      few: '$count тренировки на этой неделе',
+      one: 'Одна тренировка на этой неделе',
+      zero: 'На этой неделе тренировок пока нет',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askNoWorkouts => 'Тренировок пока нет';
+
+  @override
+  String get askUnknownExercise => 'Я не знаю такого упражнения';
 }

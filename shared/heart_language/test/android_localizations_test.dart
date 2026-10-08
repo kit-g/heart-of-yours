@@ -55,7 +55,7 @@ void main() {
     translations['en']!['androidShortcutStart'] = 'Let\'s "go" & <lift>';
     expect(
       androidStrings(translations, 'en'),
-      contains('<string name="shortcut_start_workout">Let&#39;s &quot;go&quot; &amp; &lt;lift&gt;</string>'),
+      contains('<string name="shortcut_start_workout">Let\\\'s \\"go\\" &amp; &lt;lift&gt;</string>'),
     );
   });
 }
