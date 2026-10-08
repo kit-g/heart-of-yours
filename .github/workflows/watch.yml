@@ -101,11 +101,37 @@ jobs:
 
       # RunnerTests is hosted in the app, so the app is built — Dart and all,
       # through Flutter's own build phase. `pub get` writes what that phase
-      # needs; the Firebase options it imports are stubbed as `make lint` does.
+      # needs; the Firebase options it imports are stubbed as `make lint` does,
+      # and the GoogleService-Info.plist the Runner's provisioning phase copies
+      # into the bundle (gitignored; the TestFlight job fetches the real one)
+      # is a placeholder with the same keys. Nothing in these tests reaches
+      # Firebase: the Dart side's init throws on the stub and is logged, the
+      # test host stays up.
       - name: "Dependencies"
         run: |
           flutter pub get
           make lib/firebase_options.dart lib/firebase_options_prod.dart
+          mkdir -p ios/Env/dev
+          cat > ios/Env/dev/GoogleService-Info.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>API_KEY</key><string>ci-placeholder</string>
+            <key>GCM_SENDER_ID</key><string>000000000000</string>
+            <key>PLIST_VERSION</key><string>1</string>
+            <key>BUNDLE_ID</key><string>me.heart-of.ios.dev</string>
+            <key>PROJECT_ID</key><string>ci-placeholder</string>
+            <key>STORAGE_BUCKET</key><string>ci-placeholder.appspot.com</string>
+            <key>IS_ADS_ENABLED</key><false/>
+            <key>IS_ANALYTICS_ENABLED</key><false/>
+            <key>IS_APPINVITE_ENABLED</key><false/>
+            <key>IS_GCM_ENABLED</key><false/>
+            <key>IS_SIGNIN_ENABLED</key><false/>
+            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000</string>
+          </dict>
+          </plist>
+          PLIST
 
       - name: "Pick an iPhone simulator"
         id: sim
