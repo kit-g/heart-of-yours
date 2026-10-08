@@ -1,3 +1,4 @@
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/shortcuts.dart';
 import 'package:heart/core/utils/templates.dart';
@@ -14,6 +15,8 @@ import 'mocks.mocks.dart';
 class _Recorder implements SystemShortcuts {
   final told = <List<ShortcutTemplate>>[];
   final rests = <ShortcutRest?>[];
+  final sessions = <String?>[];
+  final exercises = <List<ShortcutExercise>>[];
 
   @override
   Future<void> setTemplates(Iterable<ShortcutTemplate> templates) async {
@@ -31,6 +34,16 @@ class _Recorder implements SystemShortcuts {
   Future<void> setNextSet(ShortcutSet? set) async {
     sets.add(set);
   }
+
+  @override
+  Future<void> setSession(String? userId) async {
+    sessions.add(userId);
+  }
+
+  @override
+  Future<void> setExercises(Iterable<ShortcutExercise> list) async {
+    exercises.add(list.toList());
+  }
 }
 
 void main() {
@@ -38,8 +51,10 @@ void main() {
   late Templates templates;
   late Workouts workouts;
   late Timers timers;
-  late Exercises exercises;
   late MockLocalDatabase db;
+  late MockAccountService accounts;
+  late Auth auth;
+  late Exercises exercises;
   late MockApi api;
   late MockCdn cdn;
   late _Recorder recorder;
@@ -74,19 +89,34 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     timers = Timers(service: timersService)..userId = 'u1';
+    recorder = _Recorder();
+    accounts = MockAccountService();
+    when(accounts.isAuthenticated).thenReturn(false);
+    auth = Auth(
+      service: accounts,
+      firebase: MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+      ),
+    );
+    final remote = MockRemoteExerciseService();
+    when(db.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
+    when(db.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+    when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
     exercises = Exercises(
-      remoteService: MockRemoteExerciseService(),
-      service: MockExerciseService(),
+      remoteService: remote,
+      service: db,
       libraryService: MockExerciseLibraryService(),
       catalogService: MockLocalCatalogService(),
       preferenceService: MockRemoteExercisePreferenceService(),
     );
-    recorder = _Recorder();
   });
 
   tearDown(() {
     templates.dispose();
     preferences.dispose();
+    auth.dispose();
+    exercises.dispose();
   });
 
   Future<void> pump(WidgetTester tester) async {
@@ -97,6 +127,7 @@ void main() {
           ChangeNotifierProvider<Templates>.value(value: templates),
           ChangeNotifierProvider<Workouts>.value(value: workouts),
           ChangeNotifierProvider<Timers>.value(value: timers),
+          ChangeNotifierProvider<Auth>.value(value: auth),
           ChangeNotifierProvider<Exercises>.value(value: exercises),
         ],
         child: MaterialApp(
@@ -279,6 +310,56 @@ void main() {
       await tester.pump();
 
       expect(recorder.sets.last, isNull);
+    });
+  });
+
+  group('the questions (#288)', () {
+    testWidgets('publish the session as Firebase reports it, once per change', (tester) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+      await pump(tester);
+      await tester.pump();
+      expect(recorder.sessions.last, 'u1');
+      final told = recorder.sessions.length;
+
+      await tester.pump();
+      await tester.pump();
+      expect(recorder.sessions.length, told, reason: 'a repaint says nothing new');
+    });
+
+    testWidgets('publish the catalogue by id and localized name, once per change', (tester) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+      final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
+      await pump(tester);
+      expect(recorder.exercises, [<ShortcutExercise>[]]);
+
+      await exercises.init();
+      await tester.pump();
+      expect(recorder.exercises.last, [ShortcutExercise(id: bench.id, name: 'Bench Press')]);
+      final told = recorder.exercises.length;
+
+      await tester.pump();
+      expect(recorder.exercises.length, told);
+    });
+
+    testWidgets('off: no session and no exercises, as if never built', (tester) async {
+      when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+      final bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
+      preferences.setFeature(.shortcuts, on: false);
+      await pump(tester);
+      await exercises.init();
+      await tester.pump();
+      expect(recorder.sessions, [null]);
+      expect(recorder.exercises, [<ShortcutExercise>[]]);
+
+      preferences.setFeature(.shortcuts, on: true);
+      await tester.pump();
+      expect(recorder.sessions.last, 'u1');
+      expect(recorder.exercises.last, isNotEmpty);
     });
   });
 }
