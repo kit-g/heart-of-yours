@@ -38,6 +38,8 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
   Preferences? _preferences;
   Workouts? _workouts;
   Timers? _timers;
+  Auth? _auth;
+  Exercises? _exercises;
 
   /// What was last told, so the same list is not sent again on every repaint.
   List<ShortcutTemplate>? _published;
@@ -45,6 +47,9 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
   bool _restPublished = false;
   ShortcutSet? _publishedSet;
   bool _setPublished = false;
+  List<ShortcutExercise>? _publishedExercises;
+  String? _publishedSession;
+  bool _sessionPublished = false;
 
   @override
   void didChangeDependencies() {
@@ -71,6 +76,16 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
     }
     // the rest's words follow the language and the unit
     L.of(context);
+    final auth = Auth.of(context);
+    if (!identical(auth, _auth)) {
+      _auth?.removeListener(_sync);
+      _auth = auth..addListener(_sync);
+    }
+    final exercises = Exercises.of(context);
+    if (!identical(exercises, _exercises)) {
+      _exercises?.removeListener(_sync);
+      _exercises = exercises..addListener(_sync);
+    }
     _sync();
   }
 
@@ -80,6 +95,8 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
     _preferences?.removeListener(_sync);
     _workouts?.removeListener(_sync);
     _timers?.removeListener(_sync);
+    _auth?.removeListener(_sync);
+    _exercises?.removeListener(_sync);
     super.dispose();
   }
 
@@ -115,10 +132,31 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
       true => null,
       false => _nextSet(),
     };
-    if (_setPublished && set == _publishedSet) return;
-    _setPublished = true;
-    _publishedSet = set;
-    shortcuts.setNextSet(set);
+    if (!_setPublished || set != _publishedSet) {
+      _setPublished = true;
+      _publishedSet = set;
+      shortcuts.setNextSet(set);
+    }
+
+    // the questions (#288): whose training, and the exercises they can name
+    final session = switch (off) {
+      true => null,
+      false => _auth?.user?.id,
+    };
+    if (!_sessionPublished || session != _publishedSession) {
+      _sessionPublished = true;
+      _publishedSession = session;
+      shortcuts.setSession(session);
+    }
+    final exercises = switch ((off, _exercises)) {
+      (true, _) || (_, null) => const <ShortcutExercise>[],
+      (false, Exercises exercises) => [
+        for (final exercise in exercises) ShortcutExercise(id: exercise.id, name: exercise.name),
+      ],
+    };
+    if (_publishedExercises case List<ShortcutExercise> published when listEquals(published, exercises)) return;
+    _publishedExercises = exercises;
+    shortcuts.setExercises(exercises);
   }
 
   /// The set a voice command logs (#287): the one up next, with what it takes
