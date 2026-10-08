@@ -2338,4 +2338,7 @@ class LEs extends L {
   @override
   String get shortcutsSubtitle =>
       'Empieza o termina un entrenamiento desde Siri, la app Atajos o tu pantalla de inicio';
+
+  @override
+  String get lockScreenDone => 'Hecho';
 }

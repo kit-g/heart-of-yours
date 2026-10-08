@@ -21,6 +21,36 @@ typedef OngoingRest = ({
   String skip,
 });
 
+/// The Done button on the lock screen (#246): the set up next, which it ticks,
+/// and what the surface shows the moment it has — before the app has heard —
+/// so the button answers at once: the lines that follow, and the rest the
+/// exercise's timer starts, with the copy of its notification and its own
+/// buttons. Null when there is no set to tick, or it cannot be ticked as it
+/// stands.
+typedef OngoingDone = ({
+  String setId,
+  String exerciseId,
+  String label,
+  String afterExercise,
+  String afterNext,
+
+  /// The rest that starts on the tick, in seconds; null for an exercise with
+  /// no rest timer.
+  int? restSeconds,
+  String restLabel,
+  String restOver,
+  String restMinus,
+  String restPlus,
+  String restSkip,
+
+  /// The "rest complete" notification's copy, for the surface to schedule
+  /// as the app would: title, body (the set that follows, if any) and
+  /// subtitle naming the exercise.
+  String restTitle,
+  String? restBody,
+  String restSubtitle,
+});
+
 /// The active workout, summarised for surfaces outside the app (#133): the
 /// iOS Live Activity (lock screen, Dynamic Island) and Android's ongoing
 /// notification.
@@ -53,6 +83,9 @@ typedef OngoingWorkout = ({
   String exercise,
   String next,
   OngoingRest? rest,
+
+  /// The set up next and what ticking it shows (#246).
+  OngoingDone? done,
 
   /// A timed set's stopwatch (#171): its effective start, and when it
   /// paused while it is paused.
@@ -183,6 +216,22 @@ class _LiveActivity implements OngoingWorkoutSurface {
           'stopwatchStart': clock.start.millisecondsSinceEpoch,
           'stopwatchLabel': clock.label,
           if (clock.pausedAt case final at?) 'stopwatchPausedAt': at.millisecondsSinceEpoch,
+        },
+        if (workout.done case OngoingDone done) ...{
+          'doneSetId': done.setId,
+          'doneExerciseId': done.exerciseId,
+          'doneLabel': done.label,
+          'afterExercise': done.afterExercise,
+          'afterNext': done.afterNext,
+          'afterRest': ?done.restSeconds,
+          'afterRestLabel': done.restLabel,
+          'afterRestOver': done.restOver,
+          'afterRestMinus': done.restMinus,
+          'afterRestPlus': done.restPlus,
+          'afterRestSkip': done.restSkip,
+          'afterRestTitle': done.restTitle,
+          'afterRestBody': ?done.restBody,
+          'afterRestSubtitle': done.restSubtitle,
         },
         // ARGB ints; the native side picks per appearance
         'accent': workout.preset.light.accent.toARGB32(),

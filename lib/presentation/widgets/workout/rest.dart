@@ -13,14 +13,38 @@ import 'package:material_ui/material_ui.dart';
 /// keeps it awake to tap the wrist itself, and iOS would forward this
 /// notification to the same wrist as a second tap. One owner per rest.
 Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exercise, DateTime when) async {
-  final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :kg, :lbs) = L.of(context);
   final prefs = Preferences.of(context);
   final workouts = Workouts.of(context);
-  final next = workouts.nextIncomplete;
   final watch = switch (prefs.isOn(.watchApp)) {
     true => watchLink(Theme.of(context).platform),
     _ => null,
   };
+  final copy = restNotificationCopy(context, exercise, next: workouts.nextIncomplete);
+  // and one scheduled before the watch took over must not fire either
+  if (workouts.activeWorkout?.id case String id when await watch?.measures(id) ?? false) {
+    return cancelExerciseNotification();
+  }
+  return scheduleExerciseNotification(
+    copy.exerciseId,
+    when,
+    title: copy.title,
+    body: copy.body,
+    subtitle: copy.subtitle,
+  );
+}
+
+/// The "rest complete" notification's words: the title, the set that comes
+/// [next] as its body (null with nothing to say), and a subtitle naming the
+/// exercise it is for — the next one, or [exercise] just worked when nothing
+/// is left. Also what the lock screen schedules itself when its Done button
+/// starts a rest with the app gone (#246).
+({String exerciseId, String title, String? body, String subtitle}) restNotificationCopy(
+  BuildContext context,
+  WorkoutExercise exercise, {
+  (WorkoutExercise, ExerciseSet)? next,
+}) {
+  final L(:restComplete, :restCompleteBody, :weightedSetRepresentation, :kg, :lbs) = L.of(context);
+  final prefs = Preferences.of(context);
   final exercises = Exercises.of(context);
   // Honour the next exercise's per-exercise unit, falling back to the global
   // weight setting — the notification used to always emit the raw metric
@@ -37,13 +61,8 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
     _ => null,
   };
   final nextExercise = next?.$1 ?? exercise;
-  // and one scheduled before the watch took over must not fire either
-  if (workouts.activeWorkout?.id case String id when await watch?.measures(id) ?? false) {
-    return cancelExerciseNotification();
-  }
-  return scheduleExerciseNotification(
-    nextExercise.id,
-    when,
+  return (
+    exerciseId: nextExercise.id,
     title: restComplete,
     body: body,
     subtitle: restCompleteBody(nextExercise.exercise.name),

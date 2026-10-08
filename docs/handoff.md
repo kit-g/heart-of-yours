@@ -12,7 +12,12 @@ satisfied or explicitly flagged in the handoff.
    suites) pass; record the exact commands and outcomes. A red lint or test
    is never "satisfied", whatever you believe the cause to be, and a command
    you could not run is not a pass — either is a blocker to name, not an
-   open end to flag.
+   open end to flag. Swift under `ios/` has its own gate: the Swift
+   workflow runs `WatchTests` and `RunnerTests` on a pull request that
+   touches it, and a change to the native layer brings its test with it
+   (`ios/RunnerTests`, run locally with `xcodebuild test -workspace
+   ios/Runner.xcworkspace -scheme dev -only-testing:RunnerTests
+   -destination 'id=<simulator>' CODE_SIGNING_ALLOWED=NO`).
 2. **Strings** — every new user-facing string, including tooltips and
    semantic labels, goes through `shared/heart_language` via the
    translations workflow: hand-edit only `intl_en.arb`; other locales flow
