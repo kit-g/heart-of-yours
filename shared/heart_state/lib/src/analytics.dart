@@ -77,10 +77,12 @@ enum WorkoutSource {
 
 /// How a template came to exist. `fromWorkout` is the interesting one: it is
 /// the user turning something they already did into something they intend to
-/// repeat, which is the habit forming in one action.
+/// repeat, which is the habit forming in one action. `duplicate` is week 2
+/// made out of week 1 (#262).
 enum TemplateSource {
   editor('editor'),
-  fromWorkout('from_workout');
+  fromWorkout('from_workout'),
+  duplicate('duplicate');
 
   final String id;
 

@@ -257,46 +257,92 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     await _service.deleteTemplate(draft.id);
   }
 
-  /// With the remote leg closed the template stays [Template.local] under its
-  /// client-minted id — the state a template made offline is in until a save
-  /// reaches the server.
   Future<void> saveEditable() async {
     if (editable case Template template) {
       // `local` is the server-id-not-yet-assigned mark, which is exactly what
       // separates a new template from an edit to an existing one.
       if (template.local) analytics?.templateCreated(source: .editor);
-      _templates.add(template);
-      await _service.updateTemplate(template);
-
-      if (!_remote.allowed) {
-        editable = null;
-        notifyListeners();
-        return;
-      }
-
-      try {
-        final save = template.local ? _remoteService.saveTemplate : _remoteService.editTemplate;
-
-        final saved = await save(template);
-        _templates
-          ..remove(template)
-          ..add(saved);
-        if (userId case String id) {
-          // A locally-created template is persisted under a client-generated
-          // id, but the server assigns its own id on save. Drop the stale local
-          // row first, otherwise storing the server copy leaves a duplicate.
-          if (saved.id != template.id) {
-            await _service.deleteTemplate(template.id);
-          }
-          await _service.storeTemplates([saved], userId: id);
-        }
-      } catch (error, stacktrace) {
-        onError?.call(error, stacktrace: stacktrace);
-      }
+      await _save(template);
     }
     editable = null;
 
     notifyListeners();
+  }
+
+  /// A new template of the user's own holding [template]'s exercises, sets
+  /// and notes, named [name] — the caller's, since "(copy)" is copy — and
+  /// filed where the original is. Saved outright rather than opened in the
+  /// editor: the point is week 2 out of week 1 without rebuilding it set by
+  /// set, and the editor is a tap away. It sorts last, like any new template.
+  ///
+  /// A sample is nobody's to edit, so its copy is how one gets edited; it
+  /// comes out unfiled, as the sample was.
+  ///
+  /// Notifies as soon as the copy is in the list, and again once the server
+  /// has had its say — its row replaces the copy, as with any save.
+  Future<Template> duplicate(Template template, {required String name}) async {
+    analytics?.templateCreated(source: .duplicate);
+    final raw = await _service.startTemplate(
+      userId: userId,
+      order: (_templates.lastOrNull?.order ?? 0) + 1,
+    );
+    final copy = Template.fromWorkout(raw.id, _copyOf(template), raw.order, folder: template.folder)..name = name;
+    _templates.add(copy);
+    notifyListeners();
+    final saved = await _save(copy);
+    notifyListeners();
+    return saved;
+  }
+
+  /// [template]'s exercises as fresh objects under fresh ids, with the sets'
+  /// values and types and each exercise's note — which [Template.toWorkout]
+  /// leaves behind, so this is not that. An exercise without sets is not
+  /// carried, as there.
+  static Workout _copyOf(Template template) {
+    WorkoutExercise exerciseCopy(WorkoutExercise exercise) {
+      final copy = WorkoutExercise(starter: exercise.first.copy())..note = exercise.note;
+      exercise.skip(1).map((set) => set.copy()).forEach(copy.add);
+      return copy;
+    }
+
+    return Workout.fromExercises([
+      for (final exercise in template)
+        if (exercise.isNotEmpty) exerciseCopy(exercise),
+    ]);
+  }
+
+  /// Keeps [template] here and in the mirror and, with the remote leg open,
+  /// sends it to the server, whose row then replaces it in both. Returns
+  /// whichever of the two stayed.
+  ///
+  /// With the remote leg closed the template stays [Template.local] under its
+  /// client-minted id — the state a template made offline is in until a save
+  /// reaches the server.
+  Future<Template> _save(Template template) async {
+    _templates.add(template);
+    await _service.updateTemplate(template);
+
+    if (!_remote.allowed) return template;
+
+    try {
+      final save = template.local ? _remoteService.saveTemplate : _remoteService.editTemplate;
+
+      final saved = await save(template);
+      _swap(template, saved);
+      if (userId case String id) {
+        // A locally-created template is persisted under a client-generated
+        // id, but the server assigns its own id on save. Drop the stale local
+        // row first, otherwise storing the server copy leaves a duplicate.
+        if (saved.id != template.id) {
+          await _service.deleteTemplate(template.id);
+        }
+        await _service.storeTemplates([saved], userId: id);
+      }
+      return saved;
+    } catch (error, stacktrace) {
+      onError?.call(error, stacktrace: stacktrace);
+      return template;
+    }
   }
 
   Future<void> delete(Template template) {
