@@ -2,3 +2,12 @@
 "Start a workout in ${applicationName}" = "Empezar un entrenamiento en ${applicationName}";
 "Start ${template} in ${applicationName}" = "Empezar ${template} en ${applicationName}";
 "Finish my workout in ${applicationName}" = "Terminar mi entrenamiento en ${applicationName}";
+"Start rest in ${applicationName}" = "Empezar descanso en ${applicationName}";
+"Rest for ${length} in ${applicationName}" = "Descansar ${length} en ${applicationName}";
+"Add ${length} to my rest in ${applicationName}" = "Añadir ${length} a mi descanso en ${applicationName}";
+"Skip rest in ${applicationName}" = "Saltar descanso en ${applicationName}";
+"Log a set in ${applicationName}" = "Registrar una serie en ${applicationName}";
+"What's my ${exercise} record in ${applicationName}" = "Cuál es mi récord en ${exercise} en ${applicationName}";
+"When did I last do ${exercise} in ${applicationName}" = "Cuándo hice ${exercise} por última vez en ${applicationName}";
+"When did I last train ${template} in ${applicationName}" = "Cuándo entrené ${template} por última vez en ${applicationName}";
+"How many workouts this week in ${applicationName}" = "Cuántos entrenamientos esta semana en ${applicationName}";

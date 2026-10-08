@@ -77,5 +77,359 @@
     "description": "Label of the \"Start a workout\" shortcut shown on long-pressing the Android launcher icon. Short: launchers truncate. Generated into android res/values*/strings_shortcuts.xml on translation import",
     "type": "text",
     "placeholders": {}
+  },
+  "iosShortcutPhraseStartRest": "Start rest in ${applicationName}",
+  "@iosShortcutPhraseStartRest": {
+    "description": "Siri phrase for the Start Rest App Shortcut; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseRestFor": "Rest for ${length} in ${applicationName}",
+  "@iosShortcutPhraseRestFor": {
+    "description": "Siri phrase for a rest of a said length; ${length} is the length (30 seconds, 1 minute…), ${applicationName} the app name, both must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseAddRest": "Add ${length} to my rest in ${applicationName}",
+  "@iosShortcutPhraseAddRest": {
+    "description": "Siri phrase for extending the running rest; ${length} and ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseSkipRest": "Skip rest in ${applicationName}",
+  "@iosShortcutPhraseSkipRest": {
+    "description": "Siri phrase for skipping the running rest; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutStartRestTitle": "Start rest",
+  "@iosShortcutStartRestTitle": {
+    "description": "Title of the Start Rest tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutExtendRestTitle": "Extend rest",
+  "@iosShortcutExtendRestTitle": {
+    "description": "Title of the Extend Rest tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutSkipRestTitle": "Skip rest",
+  "@iosShortcutSkipRestTitle": {
+    "description": "Title of the Skip Rest tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutStartRestIntent": "Start Rest",
+  "@iosShortcutStartRestIntent": {
+    "description": "Name of the Start Rest action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutExtendRestIntent": "Extend Rest",
+  "@iosShortcutExtendRestIntent": {
+    "description": "Name of the Extend Rest action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutSkipRestIntent": "Skip Rest",
+  "@iosShortcutSkipRestIntent": {
+    "description": "Name of the Skip Rest action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRestLength": "Rest length",
+  "@iosShortcutRestLength": {
+    "description": "The length parameter of the rest actions in the iOS Shortcuts app, and the type name of a rest length there. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLengthParam": "Length",
+  "@iosShortcutLengthParam": {
+    "description": "Title of the Length parameter of the rest actions in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutThirtySeconds": "30 seconds",
+  "@iosShortcutThirtySeconds": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutOneMinute": "1 minute",
+  "@iosShortcutOneMinute": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNinetySeconds": "90 seconds",
+  "@iosShortcutNinetySeconds": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutTwoMinutes": "2 minutes",
+  "@iosShortcutTwoMinutes": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutThreeMinutes": "3 minutes",
+  "@iosShortcutThreeMinutes": {
+    "description": "A rest length Siri offers. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutResting": "Resting %@",
+  "@iosShortcutResting": {
+    "description": "What Siri says when a rest was started by voice; %@ is the clock (1:30) and must stay. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRestExtended": "Rest extended, %@ left",
+  "@iosShortcutRestExtended": {
+    "description": "What Siri says when the running rest was extended by voice; %@ is the time left (1:12) and must stay. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRestSkipped": "Rest skipped",
+  "@iosShortcutRestSkipped": {
+    "description": "What Siri says when the running rest was skipped by voice. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNoWorkout": "No workout is running",
+  "@iosShortcutNoWorkout": {
+    "description": "What Siri says to a rest command with no workout running. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNoRest": "No rest is running",
+  "@iosShortcutNoRest": {
+    "description": "What Siri says to extend or skip with no rest running. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNoTimer": "This exercise has no rest timer",
+  "@iosShortcutNoTimer": {
+    "description": "What Siri says to \"start rest\" for an exercise with no rest timer and no length said. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseLogSet": "Log a set in ${applicationName}",
+  "@iosShortcutPhraseLogSet": {
+    "description": "Siri phrase for logging the set up next; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogSetTitle": "Log a set",
+  "@iosShortcutLogSetTitle": {
+    "description": "Title of the Log a set tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogSetIntent": "Log Set",
+  "@iosShortcutLogSetIntent": {
+    "description": "Name of the Log Set action in the iOS Shortcuts app (Title Case in English). Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutWeightParam": "Weight",
+  "@iosShortcutWeightParam": {
+    "description": "Title of the Weight parameter of the Log Set action. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRepsParam": "Reps",
+  "@iosShortcutRepsParam": {
+    "description": "Title of the Reps parameter of the Log Set action. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLogged": "Logged %@",
+  "@iosShortcutLogged": {
+    "description": "What Siri says when a set was logged by voice; %@ is what was logged (100 kg × 5, Bench Press) and must stay. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutNothingLeft": "Nothing left to log",
+  "@iosShortcutNothingLeft": {
+    "description": "What Siri says to \"log a set\" with every set of the workout done. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutSayValues": "Say the weight and reps",
+  "@iosShortcutSayValues": {
+    "description": "What Siri says to \"log a set\" for a set with nothing filled in and nothing said. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseRecord": "What's my ${exercise} record in ${applicationName}",
+  "@iosShortcutPhraseRecord": {
+    "description": "Siri phrase asking for a personal record; ${exercise} is the exercise, ${applicationName} the app, both must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseLastExercise": "When did I last do ${exercise} in ${applicationName}",
+  "@iosShortcutPhraseLastExercise": {
+    "description": "Siri phrase asking when an exercise was last done; ${exercise} and ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseLastTemplate": "When did I last train ${template} in ${applicationName}",
+  "@iosShortcutPhraseLastTemplate": {
+    "description": "Siri phrase asking when a template was last trained; ${template} and ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseWeekly": "How many workouts this week in ${applicationName}",
+  "@iosShortcutPhraseWeekly": {
+    "description": "Siri phrase asking for this week's workout count; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRecordTitle": "Personal record",
+  "@iosShortcutRecordTitle": {
+    "description": "Title of the Personal record tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastTimeTitle": "Last time",
+  "@iosShortcutLastTimeTitle": {
+    "description": "Title of the Last time tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastSessionTitle": "Last session",
+  "@iosShortcutLastSessionTitle": {
+    "description": "Title of the Last session tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutWeeklyTitle": "Workouts this week",
+  "@iosShortcutWeeklyTitle": {
+    "description": "Title of the Workouts this week tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRecordIntent": "Personal Record",
+  "@iosShortcutRecordIntent": {
+    "description": "Name of the Personal Record action in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastExerciseIntent": "Last Time I Did an Exercise",
+  "@iosShortcutLastExerciseIntent": {
+    "description": "Name of the action that says when an exercise was last done, in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastTemplateIntent": "Last Time I Did a Template",
+  "@iosShortcutLastTemplateIntent": {
+    "description": "Name of the action that says when a template was last trained, in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutWeeklyIntent": "Workouts This Week",
+  "@iosShortcutWeeklyIntent": {
+    "description": "Name of the Workouts This Week action in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutExercise": "Exercise",
+  "@iosShortcutExercise": {
+    "description": "The exercise parameter of the question actions in the iOS Shortcuts app, and the type name of an exercise there. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutCouldNotAnswer": "Heart could not answer that right now",
+  "@iosShortcutCouldNotAnswer": {
+    "description": "What Siri says when the app could not answer a training question. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionNoWorkout": "No workout is running",
+  "@androidFunctionNoWorkout": {
+    "description": "What the assistant says to a workout command with no workout running (Android App Functions, #289). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionNoRest": "No rest is running",
+  "@androidFunctionNoRest": {
+    "description": "What the assistant says to extend or skip with no rest running (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionNoTimer": "This exercise has no rest timer",
+  "@androidFunctionNoTimer": {
+    "description": "What the assistant says to \"start rest\" for an exercise with no rest timer and no length said (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionResting": "Resting %1$s",
+  "@androidFunctionResting": {
+    "description": "What the assistant says when a rest was started (Android); %1$s is the clock (1:30) and must stay. Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionRestExtended": "Rest extended, %1$s left",
+  "@androidFunctionRestExtended": {
+    "description": "What the assistant says when the running rest was extended (Android); %1$s is the time left (1:12) and must stay. Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionRestSkipped": "Rest skipped",
+  "@androidFunctionRestSkipped": {
+    "description": "What the assistant says when the running rest was skipped (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionLogged": "Logged %1$s",
+  "@androidFunctionLogged": {
+    "description": "What the assistant says when a set was logged (Android); %1$s is what was logged (100 kg × 5, Bench Press) and must stay. Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionNothingLeft": "Nothing left to log",
+  "@androidFunctionNothingLeft": {
+    "description": "What the assistant says to \"log a set\" with every set of the workout done (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionSayValues": "Say the weight and reps",
+  "@androidFunctionSayValues": {
+    "description": "What the assistant says to \"log a set\" for a set with nothing filled in and nothing said (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionCouldNotAnswer": "Heart could not answer that right now",
+  "@androidFunctionCouldNotAnswer": {
+    "description": "What the assistant says when the app could not answer a training question (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionUnknownExercise": "I don't know that exercise",
+  "@androidFunctionUnknownExercise": {
+    "description": "What the assistant says when the exercise asked about is not in the catalogue (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionUnknownTemplate": "I don't know that template",
+  "@androidFunctionUnknownTemplate": {
+    "description": "What the assistant says when the template named is not one of the user's (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionOpening": "Opening Heart",
+  "@androidFunctionOpening": {
+    "description": "What the assistant says when a command opens the app — to start or finish a workout (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionAppClosed": "Heart is not running; it will apply this when opened",
+  "@androidFunctionAppClosed": {
+    "description": "What the assistant says when a command was kept for the app, which is not running, to apply when opened (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
   }
 }

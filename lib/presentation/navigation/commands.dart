@@ -84,6 +84,26 @@ CommandOutcome applyWorkoutCommand(BuildContext context, WatchCommand command) {
         return .finished;
       }
       return .stale;
+    case WatchStartRest(:final seconds, :final at):
+      // the exercise the user is on: the one the next set belongs to, or the
+      // last one once every set is done
+      final exercise = upNextIn(workout, after: workouts.latestMarkedSet)?.exercise ?? workout.lastOrNull;
+      if (exercise == null) return .stale;
+      final length = seconds ?? Timers.of(context)[exercise.exercise.id];
+      if (length == null) return .stale;
+      // placed when it was asked for, which a queue may have held a while;
+      // one that would already be over does not start at all
+      final total = switch (at) {
+        DateTime at => length - DateTime.now().difference(at).inSeconds.clamp(0, length),
+        null => length,
+      };
+      if (total <= 0) return .stale;
+      Alarms.of(context).startActiveExerciseTimer(
+        total,
+        exerciseId: exercise.id,
+        scheduleNotification: (when) => scheduleRestNotification(context, exercise, when),
+      );
+      return .applied;
     case WatchAdjustRest(:final seconds):
       final alarms = Alarms.of(context);
       if (alarms.remainsInActiveExercise == null) return .stale;
@@ -131,6 +151,23 @@ bool _complete(
       .expand((exercise) => exercise.map((set) => (exercise, set)))
       .where((pair) => pair.$2.id == setId)
       .firstOrNull;
+}
+
+/// Whether [exercise]'s sets take a weight, and whether they take a count —
+/// what a second actor may fill in. A carry's or a hold's load is a weight;
+/// its distance or time is the phone's, as a run's is.
+(bool weighted, bool counted) measuresOf(WorkoutExercise exercise) {
+  final weighted = switch (exercise.exercise.category) {
+    .barbell ||
+    .dumbbell ||
+    .machine ||
+    .assistedBodyWeight ||
+    .weightedBodyWeight ||
+    .weightedDistance ||
+    .weightedDuration => true,
+    .repsOnly || .cardio || .duration => false,
+  };
+  return (weighted, weighted || exercise.exercise.category == .repsOnly);
 }
 
 /// The unit [exercise] is shown in: its own override, or the app's.

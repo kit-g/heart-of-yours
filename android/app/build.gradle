@@ -4,6 +4,7 @@ plugins {
     id 'com.google.gms.google-services'
     // END: FlutterFire Configuration
     id "kotlin-android"
+    id "com.google.devtools.ksp"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -36,6 +37,7 @@ android {
     }
 
     defaultConfig {
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         applicationId = "me.heart.android"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -44,7 +46,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        compileSdk 36
+        // 37: androidx.appfunctions compiles against the Android 17 APIs (#289)
+        compileSdk 37
     }
 
     // Guarded, because Gradle evaluates this block whichever build type you
@@ -108,4 +111,33 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     // ShortcutManagerCompat, for the launcher's template shortcuts (#286)
     implementation 'androidx.core:core:1.13.1'
+    // App Functions (#289): the assistant calls the app's functions in-process
+    // on Android 16+; the compiler generates the service and its metadata
+    implementation 'androidx.appfunctions:appfunctions:1.0.0-alpha13'
+    ksp 'androidx.appfunctions:appfunctions-compiler:1.0.0-alpha13'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+
+    testImplementation 'junit:junit:4.13.2'
+    // org.json on the JVM, for the plans' tests; on the device it is the platform's
+    testImplementation 'org.json:json:20240303'
+    // the functions called through the platform, on an Android 16 emulator
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test:runner:1.3.0' // the version a plugin pins on the main classpath
+    androidTestImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
+}
+
+ksp {
+    arg("appfunctions:aggregateAppFunctions", "true")
+    // Android 16's indexer reads the first metadata format (the `android.app.appfunctions`
+    // property); the v2 file is for what comes after. Both are shipped.
+    arg("appfunctions:generateV1Xml", "true")
+}
+
+// The App Functions compiler names a generated registry after the Kotlin
+// module, which Gradle calls "android:app" here — a colon no class name can
+// carry. A module name of our own.
+kotlin {
+    compilerOptions {
+        moduleName = "heart"
+    }
 }
