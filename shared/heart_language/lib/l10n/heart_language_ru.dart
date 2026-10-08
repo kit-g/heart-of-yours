@@ -787,6 +787,14 @@ class LRu extends L {
   String get editTemplate => 'Редактировать шаблон';
 
   @override
+  String get duplicate => 'Дублировать';
+
+  @override
+  String templateCopyName(Object name) {
+    return '$name (копия)';
+  }
+
+  @override
   String get editWorkout => 'Редактировать тренировку';
 
   @override

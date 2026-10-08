@@ -784,6 +784,14 @@ class LFr extends L {
   String get editTemplate => 'Modifier le modèle';
 
   @override
+  String get duplicate => 'Dupliquer';
+
+  @override
+  String templateCopyName(Object name) {
+    return '$name (copie)';
+  }
+
+  @override
   String get editWorkout => 'Modifier la séance';
 
   @override
