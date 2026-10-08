@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/questions.dart';
 import 'package:heart/core/env/licenses.dart';
 import 'package:heart/core/env/logging.dart';
 import 'package:heart/core/env/sentry.dart';
@@ -233,3 +234,10 @@ Future<void> main() {
     hasLocalNotifications: true,
   );
 }
+
+/// The assistant's questions (#288), answered by a second engine the native
+/// side runs headless, with the app possibly not running. Here rather than in
+/// its own file because an entrypoint has to be in the compiled app, and
+/// this is the one library every build compiles.
+@pragma('vm:entry-point')
+Future<void> questionsMain() => runQuestions();

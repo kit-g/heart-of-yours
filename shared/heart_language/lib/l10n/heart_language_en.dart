@@ -2332,6 +2332,54 @@ class LEn extends L {
 
   @override
   String get lockScreenDone => 'Done';
+
+  @override
+  String askRecord(Object exercise, Object value, Object date) {
+    return 'Your $exercise record is $value, set on $date';
+  }
+
+  @override
+  String askNoRecord(Object exercise) {
+    return 'No record for $exercise yet';
+  }
+
+  @override
+  String askLastExercise(Object exercise, Object date, Object workout) {
+    return 'You last did $exercise on $date, in $workout';
+  }
+
+  @override
+  String askNeverDid(Object exercise) {
+    return 'You haven\'t done $exercise yet';
+  }
+
+  @override
+  String askLastTemplate(Object template, Object date) {
+    return 'You last did $template on $date';
+  }
+
+  @override
+  String askNeverDidTemplate(Object template) {
+    return 'You haven\'t done $template yet';
+  }
+
+  @override
+  String askWeekly(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts this week',
+      one: 'One workout this week',
+      zero: 'No workouts this week yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askNoWorkouts => 'No workouts yet';
+
+  @override
+  String get askUnknownExercise => 'I don\'t know that exercise';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4661,4 +4709,52 @@ class LEnCa extends LEn {
 
   @override
   String get lockScreenDone => 'Done';
+
+  @override
+  String askRecord(Object exercise, Object value, Object date) {
+    return 'Your $exercise record is $value, set on $date';
+  }
+
+  @override
+  String askNoRecord(Object exercise) {
+    return 'No record for $exercise yet';
+  }
+
+  @override
+  String askLastExercise(Object exercise, Object date, Object workout) {
+    return 'You last did $exercise on $date, in $workout';
+  }
+
+  @override
+  String askNeverDid(Object exercise) {
+    return 'You haven\'t done $exercise yet';
+  }
+
+  @override
+  String askLastTemplate(Object template, Object date) {
+    return 'You last did $template on $date';
+  }
+
+  @override
+  String askNeverDidTemplate(Object template) {
+    return 'You haven\'t done $template yet';
+  }
+
+  @override
+  String askWeekly(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count workouts this week',
+      one: 'One workout this week',
+      zero: 'No workouts this week yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askNoWorkouts => 'No workouts yet';
+
+  @override
+  String get askUnknownExercise => 'I don\'t know that exercise';
 }
