@@ -46,6 +46,9 @@
 		B61F8DBC4B2355876ADFCF41 /* PhoneSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A0491C57699186BFA19493 /* PhoneSession.swift */; };
 		B6A4DB06A155551F3A02FBA8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F9EDB7416C00AE0CB904F8DA /* PrivacyInfo.xcprivacy */; };
 		B74ADED1ADF65E7B22533F18 /* WatchChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AF6233C108365F4B3E34C6B /* WatchChannel.swift */; };
+		600000000000000000000011 /* QuestionsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000000000000000000001 /* QuestionsEngine.swift */; };
+		600000000000000000000012 /* Questions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000000000000000000002 /* Questions.swift */; };
+		600000000000000000000013 /* QuestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000000000000000000003 /* QuestionsTests.swift */; };
 		5C0000000000000000000002 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0000000000000000000001 /* Shortcuts.swift */; };
 		5C0000000000000000000004 /* AppShortcuts.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5C0000000000000000000003 /* AppShortcuts.strings */; };
 		5C0000000000000000000006 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 5C0000000000000000000005 /* Localizable.xcstrings */; };
@@ -198,6 +201,9 @@
 		7A0000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		8AF6233C108365F4B3E34C6B /* WatchChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchChannel.swift; sourceTree = "<group>"; };
+		600000000000000000000001 /* QuestionsEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuestionsEngine.swift; sourceTree = "<group>"; };
+		600000000000000000000002 /* Questions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Questions.swift; sourceTree = "<group>"; };
+		600000000000000000000003 /* QuestionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionsTests.swift; sourceTree = "<group>"; };
 		5C0000000000000000000001 /* Shortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
 		5C0000000000000000000008 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
 		5C0000000000000000000009 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
@@ -302,6 +308,8 @@
 				5E0000000000000000000003 /* OngoingWorkoutIntentsTests.swift */,
 				5F0000000000000000000002 /* RestVoiceTests.swift */,
 				5F0000000000000000000004 /* LogSetVoiceTests.swift */,
+				331C807B294A618700263BE5 /* RunnerTests.swift */,
+				600000000000000000000003 /* QuestionsTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -405,6 +413,8 @@
 				5E0000000000000000000004 /* CommandQueue.swift */,
 				5F0000000000000000000001 /* RestVoice.swift */,
 				5F0000000000000000000003 /* LogSetVoice.swift */,
+				600000000000000000000001 /* QuestionsEngine.swift */,
+				600000000000000000000002 /* Questions.swift */,
 				5C0000000000000000000001 /* Shortcuts.swift */,
 				5C0000000000000000000003 /* AppShortcuts.strings */,
 				5C0000000000000000000005 /* Localizable.xcstrings */,
@@ -786,6 +796,8 @@
 				5E0000000000000000000013 /* OngoingWorkoutIntentsTests.swift in Sources */,
 				5F0000000000000000000012 /* RestVoiceTests.swift in Sources */,
 				5F0000000000000000000014 /* LogSetVoiceTests.swift in Sources */,
+				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
+				600000000000000000000013 /* QuestionsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -820,6 +832,8 @@
 				5E0000000000000000000014 /* CommandQueue.swift in Sources */,
 				5F0000000000000000000011 /* RestVoice.swift in Sources */,
 				5F0000000000000000000013 /* LogSetVoice.swift in Sources */,
+				600000000000000000000011 /* QuestionsEngine.swift in Sources */,
+				600000000000000000000012 /* Questions.swift in Sources */,
 				5C0000000000000000000002 /* Shortcuts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

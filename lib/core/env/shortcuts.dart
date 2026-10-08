@@ -102,6 +102,23 @@ typedef ShortcutSet = ({
   bool completable,
 });
 
+/// An exercise as the assistant names it (#288): the catalogue's id and its
+/// localized name, for "what's my ${exercise} record".
+final class ShortcutExercise {
+  final String id;
+  final String name;
+
+  const new({required this.id, required this.name});
+
+  Map<String, String> toMap() => {'id': id, 'name': name};
+
+  @override
+  bool operator ==(Object other) => other is ShortcutExercise && other.id == id && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(id, name);
+}
+
 /// The system's assistant layer: Siri, the Shortcuts app and Spotlight on iOS,
 /// the launcher on Android. Dart tells it what it needs to know and nothing
 /// more; the intents and shortcuts themselves live natively and open the app
@@ -118,6 +135,14 @@ abstract interface class SystemShortcuts {
   /// The set a voice command logs (#287); null with nothing left to log, no
   /// workout running, or the feature off.
   Future<void> setNextSet(ShortcutSet? set);
+
+  /// Whose training a question is about (#288): the session's user, or null
+  /// with none — or the feature off. The questions' engine runs without the
+  /// app's session, so this is how it knows.
+  Future<void> setSession(String? userId);
+
+  /// The exercises the assistant can name (#288). Empty: none.
+  Future<void> setExercises(Iterable<ShortcutExercise> exercises);
 }
 
 /// Null where there is no assistant layer to speak to.
@@ -173,6 +198,14 @@ class _MethodChannelShortcuts implements SystemShortcuts {
       },
       null => null,
     });
+  }
+
+  @override
+  Future<void> setSession(String? userId) => _tell('setSession', userId);
+
+  @override
+  Future<void> setExercises(Iterable<ShortcutExercise> exercises) {
+    return _tell('setExercises', exercises.map((exercise) => exercise.toMap()).toList());
   }
 
   Future<void> _tell(String method, Object? arguments) async {
