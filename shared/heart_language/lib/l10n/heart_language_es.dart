@@ -782,6 +782,14 @@ class LEs extends L {
   String get editTemplate => 'Editar plantilla';
 
   @override
+  String get duplicate => 'Duplicar';
+
+  @override
+  String templateCopyName(Object name) {
+    return '$name (copia)';
+  }
+
+  @override
   String get editWorkout => 'Editar entrenamiento';
 
   @override

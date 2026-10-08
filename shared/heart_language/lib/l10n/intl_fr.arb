@@ -4272,5 +4272,19 @@
     "description": "Subtitle under the shortcuts switch in Settings › Features, saying what it does",
     "type": "text",
     "placeholders": {}
+  },
+  "duplicate": "Dupliquer",
+  "@duplicate": {
+    "description": "Template menu item: makes a copy of the template, named <name> (copy), that can be edited without touching the original",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateCopyName": "{name} (copie)",
+  "@templateCopyName": {
+    "description": "The name a duplicated template gets: the original's name plus a copy mark. {name} is the original's name",
+    "type": "text",
+    "placeholders": {
+      "name": {}
+    }
   }
 }
