@@ -7,3 +7,7 @@
 "Add ${length} to my rest in ${applicationName}" = "Добавить ${length} к отдыху в ${applicationName}";
 "Skip rest in ${applicationName}" = "Пропустить отдых в ${applicationName}";
 "Log a set in ${applicationName}" = "Записать подход в ${applicationName}";
+"What's my ${exercise} record in ${applicationName}" = "Какой мой рекорд в ${exercise} в ${applicationName}";
+"When did I last do ${exercise} in ${applicationName}" = "Когда я в последний раз делал ${exercise} в ${applicationName}";
+"When did I last train ${template} in ${applicationName}" = "Когда я в последний раз тренировал ${template} в ${applicationName}";
+"How many workouts this week in ${applicationName}" = "Сколько тренировок на этой неделе в ${applicationName}";
