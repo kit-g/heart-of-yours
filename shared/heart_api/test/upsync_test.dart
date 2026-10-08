@@ -157,6 +157,32 @@ void main() {
 
       expect(created, isFalse);
     });
+
+    test('a filed template says so at the top level, where a create reads it (#262)', () async {
+      final id = uuidV7();
+      final folder = TemplateFolder(id: 'f1', name: 'Push', order: 0);
+      _post(client, Router.templates, 201, {
+        'id': id,
+        'name': 'Push day',
+        'order': 0,
+        'exercises': [],
+        'folder': folder.toMap(),
+      });
+
+      final (:row, created: _) = await api.replayTemplate(template(id).copyWith(folder: folder));
+
+      expect(sentBody(), containsPair('folderId', 'f1'));
+      expect(row.folderId, 'f1');
+    });
+
+    test('an unfiled template sends no folderId', () async {
+      final id = uuidV7();
+      _post(client, Router.templates, 201, {'id': id, 'name': 'Push day', 'order': 0, 'exercises': []});
+
+      await api.replayTemplate(template(id));
+
+      expect(sentBody(), isNot(contains('folderId')));
+    });
   });
 
   group('workouts', () {
