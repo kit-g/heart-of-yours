@@ -347,5 +347,89 @@
     "description": "What Siri says when the app could not answer a training question. Generated into Localizable.xcstrings",
     "type": "text",
     "placeholders": {}
+  },
+  "androidFunctionNoWorkout": "No hay entrenamiento en marcha",
+  "@androidFunctionNoWorkout": {
+    "description": "What the assistant says to a workout command with no workout running (Android App Functions, #289). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionNoRest": "No hay descanso en marcha",
+  "@androidFunctionNoRest": {
+    "description": "What the assistant says to extend or skip with no rest running (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionNoTimer": "Este ejercicio no tiene temporizador de descanso",
+  "@androidFunctionNoTimer": {
+    "description": "What the assistant says to \"start rest\" for an exercise with no rest timer and no length said (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionResting": "Descansando %1$s",
+  "@androidFunctionResting": {
+    "description": "What the assistant says when a rest was started (Android); %1$s is the clock (1:30) and must stay. Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionRestExtended": "Descanso alargado, queda %1$s",
+  "@androidFunctionRestExtended": {
+    "description": "What the assistant says when the running rest was extended (Android); %1$s is the time left (1:12) and must stay. Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionRestSkipped": "Descanso saltado",
+  "@androidFunctionRestSkipped": {
+    "description": "What the assistant says when the running rest was skipped (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionLogged": "Registrado: %1$s",
+  "@androidFunctionLogged": {
+    "description": "What the assistant says when a set was logged (Android); %1$s is what was logged (100 kg × 5, Bench Press) and must stay. Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionNothingLeft": "No queda nada por registrar",
+  "@androidFunctionNothingLeft": {
+    "description": "What the assistant says to \"log a set\" with every set of the workout done (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionSayValues": "Di el peso y las repeticiones",
+  "@androidFunctionSayValues": {
+    "description": "What the assistant says to \"log a set\" for a set with nothing filled in and nothing said (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionCouldNotAnswer": "Heart no ha podido responder ahora mismo",
+  "@androidFunctionCouldNotAnswer": {
+    "description": "What the assistant says when the app could not answer a training question (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionUnknownExercise": "No conozco ese ejercicio",
+  "@androidFunctionUnknownExercise": {
+    "description": "What the assistant says when the exercise asked about is not in the catalogue (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionUnknownTemplate": "No conozco esa plantilla",
+  "@androidFunctionUnknownTemplate": {
+    "description": "What the assistant says when the template named is not one of the user's (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionOpening": "Abriendo Heart",
+  "@androidFunctionOpening": {
+    "description": "What the assistant says when a command opens the app — to start or finish a workout (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "androidFunctionAppClosed": "Heart no está abierto; lo aplicará cuando lo abras",
+  "@androidFunctionAppClosed": {
+    "description": "What the assistant says when a command was kept for the app, which is not running, to apply when opened (Android). Generated into strings_shortcuts.xml",
+    "type": "text",
+    "placeholders": {}
   }
 }

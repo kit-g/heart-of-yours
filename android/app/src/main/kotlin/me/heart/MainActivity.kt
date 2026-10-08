@@ -56,8 +56,13 @@ class MainActivity : FlutterFragmentActivity() {
         super.onCreate(savedInstanceState)
     }
 
+    /// The App Functions' way into the running app (#289): the same channel
+    /// the Live Activity uses on iOS, carrying one command at a time.
+    private var commands: MethodChannel? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        commands = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "heart/ongoing_workout").also(CommandRelay::attach)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel).setMethodCallHandler { call, result ->
             when (call.method) {
                 "isFirebaseTestLab" -> result.success(isFirebaseTestLab())
@@ -140,5 +145,11 @@ class MainActivity : FlutterFragmentActivity() {
         // and earlier, androidx's HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS.
         const val HEALTH_HOME_SETTINGS = "android.health.connect.action.HEALTH_HOME_SETTINGS"
         const val LEGACY_HEALTH_CONNECT_SETTINGS = "androidx.health.connect.action.HEALTH_CONNECT_SETTINGS"
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        commands?.let(CommandRelay::detach)
+        commands = null
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 }

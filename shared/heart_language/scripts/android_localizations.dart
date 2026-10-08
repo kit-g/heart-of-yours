@@ -1,11 +1,26 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// The Android launcher's static shortcut labels (#286), as translation key =>
-/// resource name. Dynamic shortcuts carry the user's own template names and
-/// need nothing here.
+/// The Android launcher's static shortcut labels (#286) and what the App
+/// Functions say (#289), as translation key => resource name. Dynamic
+/// shortcuts carry the user's own template names and need nothing here.
 const androidShortcutKeys = {
   'androidShortcutStart': 'shortcut_start_workout',
+  // what the App Functions say (#289), read by HeartFunctions.kt
+  'androidFunctionNoWorkout': 'function_no_workout',
+  'androidFunctionNoRest': 'function_no_rest',
+  'androidFunctionNoTimer': 'function_no_timer',
+  'androidFunctionResting': 'function_resting',
+  'androidFunctionRestExtended': 'function_rest_extended',
+  'androidFunctionRestSkipped': 'function_rest_skipped',
+  'androidFunctionLogged': 'function_logged',
+  'androidFunctionNothingLeft': 'function_nothing_left',
+  'androidFunctionSayValues': 'function_say_values',
+  'androidFunctionCouldNotAnswer': 'function_could_not_answer',
+  'androidFunctionUnknownExercise': 'function_unknown_exercise',
+  'androidFunctionUnknownTemplate': 'function_unknown_template',
+  'androidFunctionOpening': 'function_opening',
+  'androidFunctionAppClosed': 'function_app_closed',
 };
 
 /// Keeps the launcher's labels on the same translation import as Flutter:
@@ -43,6 +58,11 @@ String androidStrings(Map<String, Map<String, dynamic>> translations, String lan
       '<resources>\n${strings.join('\n')}\n</resources>\n';
 }
 
-/// XML escaping that also keeps the resource compiler's own markup out: an
-/// apostrophe or a quote becomes its entity, which it reads as text.
-String _escaped(String value) => const HtmlEscape(.unknown).convert(value);
+/// What the resource compiler reads as text: XML's own characters as
+/// entities, and the quotes it treats as markup — an apostrophe ends a
+/// string, a double quote starts a quoted run — behind a backslash. An entity
+/// does not do: aapt2 resolves `&#39;` to the apostrophe first and then
+/// chokes on it.
+String _escaped(String value) {
+  return const HtmlEscape(.element).convert(value).replaceAll("'", r"\'").replaceAll('"', r'\"');
+}
