@@ -105,8 +105,9 @@ jobs:
       # and the GoogleService-Info.plist the Runner's provisioning phase copies
       # into the bundle (gitignored; the TestFlight job fetches the real one)
       # is a placeholder with the same keys. Nothing in these tests reaches
-      # Firebase: the Dart side's init throws on the stub and is logged, the
-      # test host stays up.
+      # Firebase, but FirebaseCore validates the key's shape at configure
+      # (39 characters, leading A) and aborts the host on anything else; the
+      # Dart side's init throws on the stub and is logged, the host stays up.
       - name: "Dependencies"
         run: |
           flutter pub get
@@ -117,7 +118,7 @@ jobs:
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
-            <key>API_KEY</key><string>ci-placeholder</string>
+            <key>API_KEY</key><string>AIzaSyA00000000000000000000000000000000</string>
             <key>GCM_SENDER_ID</key><string>000000000000</string>
             <key>PLIST_VERSION</key><string>1</string>
             <key>BUNDLE_ID</key><string>me.heart-of.ios.dev</string>
