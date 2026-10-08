@@ -166,6 +166,38 @@ struct HeartShortcuts: AppShortcutsProvider {
             shortTitle: "Log a set",
             systemImageName: "checkmark.circle.fill"
         )
+        AppShortcut(
+            intent: PersonalRecordIntent(),
+            phrases: [
+                "What's my \(\.$exercise) record in \(.applicationName)",
+            ],
+            shortTitle: "Personal record",
+            systemImageName: "trophy"
+        )
+        AppShortcut(
+            intent: LastExerciseIntent(),
+            phrases: [
+                "When did I last do \(\.$exercise) in \(.applicationName)",
+            ],
+            shortTitle: "Last time",
+            systemImageName: "clock.arrow.circlepath"
+        )
+        AppShortcut(
+            intent: LastTemplateIntent(),
+            phrases: [
+                "When did I last train \(\.$template) in \(.applicationName)",
+            ],
+            shortTitle: "Last session",
+            systemImageName: "calendar"
+        )
+        AppShortcut(
+            intent: WorkoutsThisWeekIntent(),
+            phrases: [
+                "How many workouts this week in \(.applicationName)",
+            ],
+            shortTitle: "Workouts this week",
+            systemImageName: "chart.bar"
+        )
     }
 }
 
@@ -176,6 +208,8 @@ enum ShortcutsChannel {
     private static let templatesKey = "shortcuts.templates"
     static let restKey = "shortcuts.rest"
     static let setKey = "shortcuts.nextSet"
+    static let sessionKey = "shortcuts.userId"
+    static let exercisesKey = "shortcuts.exercises"
 
     static func register(with messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "heart/shortcuts", binaryMessenger: messenger)
@@ -206,6 +240,22 @@ enum ShortcutsChannel {
                     UserDefaults.standard.removeObject(forKey: setKey)
                 }
                 result(nil)
+            case "setSession":
+                // whose training the questions are about (#288)
+                switch call.arguments {
+                case let userId as String:
+                    UserDefaults.standard.set(userId, forKey: sessionKey)
+                default:
+                    UserDefaults.standard.removeObject(forKey: sessionKey)
+                }
+                result(nil)
+            case "setExercises":
+                guard let list = call.arguments as? [[String: Any]] else {
+                    return result(FlutterError(code: "bad_arguments", message: "setExercises needs a list", details: nil))
+                }
+                storeExercises(list)
+                refresh()
+                result(nil)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -218,6 +268,27 @@ enum ShortcutsChannel {
         if #available(iOS 17, *) {
             HeartShortcuts.updateAppShortcutParameters()
         }
+    }
+
+    /// The catalogue as Dart published it (#288), for [ExerciseEntity].
+    @available(iOS 16, *)
+    static var exercises: [ExerciseEntity] { exercises(in: .standard) }
+
+    @available(iOS 16, *)
+    static func exercises(in defaults: UserDefaults) -> [ExerciseEntity] {
+        let stored = defaults.array(forKey: exercisesKey) as? [[String: String]] ?? []
+        return stored.compactMap { entry in
+            guard let id = entry["id"], let name = entry["name"] else { return nil }
+            return ExerciseEntity(id: id, name: name)
+        }
+    }
+
+    static func storeExercises(_ list: [[String: Any]], in defaults: UserDefaults = .standard) {
+        let exercises = list.compactMap { entry -> [String: String]? in
+            guard let id = entry["id"] as? String, let name = entry["name"] as? String else { return nil }
+            return ["id": id, "name": name]
+        }
+        defaults.set(exercises, forKey: exercisesKey)
     }
 
     @available(iOS 16, *)

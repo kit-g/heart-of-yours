@@ -7,3 +7,7 @@
 "Add ${length} to my rest in ${applicationName}" = "Add ${length} to my rest in ${applicationName}";
 "Skip rest in ${applicationName}" = "Skip rest in ${applicationName}";
 "Log a set in ${applicationName}" = "Log a set in ${applicationName}";
+"What's my ${exercise} record in ${applicationName}" = "What's my ${exercise} record in ${applicationName}";
+"When did I last do ${exercise} in ${applicationName}" = "When did I last do ${exercise} in ${applicationName}";
+"When did I last train ${template} in ${applicationName}" = "When did I last train ${template} in ${applicationName}";
+"How many workouts this week in ${applicationName}" = "How many workouts this week in ${applicationName}";

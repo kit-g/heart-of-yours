@@ -138,7 +138,7 @@ void main() {
       // catalog is keyed by them: a word changed on one side only loses the
       // localization silently
       // every Swift file of the app: the phrases in Shortcuts.swift, the rest
-      // commands' words in RestVoice.swift
+      // commands' words in RestVoice.swift, the questions' in Questions.swift
       final swift = Directory('${root.path}/../../ios/Runner')
           .listSync()
           .whereType<File>()
@@ -149,7 +149,8 @@ void main() {
         final english = (translations['en']![key] as String)
             .replaceAll(r'${applicationName}', r'\(.applicationName)')
             .replaceAll(r'${template}', r'\(\.$template)')
-            .replaceAll(r'${length}', r'\(\.$length)');
+            .replaceAll(r'${length}', r'\(\.$length)')
+            .replaceAll(r'${exercise}', r'\(\.$exercise)');
         // a line Siri goes on with a clock ("Resting 1:30") is keyed by its
         // format, and the source says it up to the interpolation
         final literal = english.split(' %@').first;
