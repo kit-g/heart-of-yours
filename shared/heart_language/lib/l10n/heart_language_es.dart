@@ -2341,4 +2341,52 @@ class LEs extends L {
 
   @override
   String get lockScreenDone => 'Hecho';
+
+  @override
+  String askRecord(Object exercise, Object value, Object date) {
+    return 'Tu récord en $exercise es $value, conseguido el $date';
+  }
+
+  @override
+  String askNoRecord(Object exercise) {
+    return 'Aún no hay récord en $exercise';
+  }
+
+  @override
+  String askLastExercise(Object exercise, Object date, Object workout) {
+    return 'La última vez que hiciste $exercise fue el $date, en $workout';
+  }
+
+  @override
+  String askNeverDid(Object exercise) {
+    return 'Aún no has hecho $exercise';
+  }
+
+  @override
+  String askLastTemplate(Object template, Object date) {
+    return 'La última vez que hiciste $template fue el $date';
+  }
+
+  @override
+  String askNeverDidTemplate(Object template) {
+    return 'Aún no has hecho $template';
+  }
+
+  @override
+  String askWeekly(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entrenamientos esta semana',
+      one: 'Un entrenamiento esta semana',
+      zero: 'Aún no hay entrenamientos esta semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askNoWorkouts => 'Aún no hay entrenamientos';
+
+  @override
+  String get askUnknownExercise => 'No conozco ese ejercicio';
 }
