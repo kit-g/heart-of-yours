@@ -4278,5 +4278,78 @@
     "description": "Button on the lock-screen workout (iOS Live Activity, Android notification) that ticks the set up next. Short: it sits beside the set's line",
     "type": "text",
     "placeholders": {}
+  },
+  "askRecord": "Tu récord en {exercise} es {value}, conseguido el {date}",
+  "@askRecord": {
+    "description": "Siri's answer to \"what's my {exercise} record\": {value} is the record as a set reads (100 kg × 5), {date} the day it was set",
+    "type": "text",
+    "placeholders": {
+      "exercise": {},
+      "value": {},
+      "date": {}
+    }
+  },
+  "askNoRecord": "Aún no hay récord en {exercise}",
+  "@askNoRecord": {
+    "description": "Siri's answer to a record question for an exercise with no completed sets",
+    "type": "text",
+    "placeholders": {
+      "exercise": {}
+    }
+  },
+  "askLastExercise": "La última vez que hiciste {exercise} fue el {date}, en {workout}",
+  "@askLastExercise": {
+    "description": "Siri's answer to \"when did I last do {exercise}\": the day and the workout it was in",
+    "type": "text",
+    "placeholders": {
+      "exercise": {},
+      "date": {},
+      "workout": {}
+    }
+  },
+  "askNeverDid": "Aún no has hecho {exercise}",
+  "@askNeverDid": {
+    "description": "Siri's answer to \"when did I last do {exercise}\" for an exercise never done",
+    "type": "text",
+    "placeholders": {
+      "exercise": {}
+    }
+  },
+  "askLastTemplate": "La última vez que hiciste {template} fue el {date}",
+  "@askLastTemplate": {
+    "description": "Siri's answer to \"when did I last train {template}\": the day of the last finished workout of that name",
+    "type": "text",
+    "placeholders": {
+      "template": {},
+      "date": {}
+    }
+  },
+  "askNeverDidTemplate": "Aún no has hecho {template}",
+  "@askNeverDidTemplate": {
+    "description": "Siri's answer to \"when did I last train {template}\" when no workout of that name was finished",
+    "type": "text",
+    "placeholders": {
+      "template": {}
+    }
+  },
+  "askWeekly": "{count, plural, =0{Aún no hay entrenamientos esta semana} =1{Un entrenamiento esta semana} other{{count} entrenamientos esta semana}}",
+  "@askWeekly": {
+    "description": "Siri's answer to \"how many workouts this week\"",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "askNoWorkouts": "Aún no hay entrenamientos",
+  "@askNoWorkouts": {
+    "description": "Siri's answer to any training question when the device has no session, so no training to speak of",
+    "type": "text",
+    "placeholders": {}
+  },
+  "askUnknownExercise": "No conozco ese ejercicio",
+  "@askUnknownExercise": {
+    "description": "Siri's answer when the exercise asked about is not in the catalogue",
+    "type": "text",
+    "placeholders": {}
   }
 }

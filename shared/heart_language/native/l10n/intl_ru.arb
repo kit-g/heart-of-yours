@@ -263,5 +263,89 @@
     "description": "What Siri says to \"log a set\" for a set with nothing filled in and nothing said. Generated into Localizable.xcstrings",
     "type": "text",
     "placeholders": {}
+  },
+  "iosShortcutPhraseRecord": "Какой мой рекорд в ${exercise} в ${applicationName}",
+  "@iosShortcutPhraseRecord": {
+    "description": "Siri phrase asking for a personal record; ${exercise} is the exercise, ${applicationName} the app, both must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseLastExercise": "Когда я в последний раз делал ${exercise} в ${applicationName}",
+  "@iosShortcutPhraseLastExercise": {
+    "description": "Siri phrase asking when an exercise was last done; ${exercise} and ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseLastTemplate": "Когда я в последний раз тренировал ${template} в ${applicationName}",
+  "@iosShortcutPhraseLastTemplate": {
+    "description": "Siri phrase asking when a template was last trained; ${template} and ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutPhraseWeekly": "Сколько тренировок на этой неделе в ${applicationName}",
+  "@iosShortcutPhraseWeekly": {
+    "description": "Siri phrase asking for this week's workout count; ${applicationName} must stay. Generated into AppShortcuts.strings; must match ios/Runner/Shortcuts.swift",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRecordTitle": "Личный рекорд",
+  "@iosShortcutRecordTitle": {
+    "description": "Title of the Personal record tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastTimeTitle": "Последний раз",
+  "@iosShortcutLastTimeTitle": {
+    "description": "Title of the Last time tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastSessionTitle": "Последняя сессия",
+  "@iosShortcutLastSessionTitle": {
+    "description": "Title of the Last session tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutWeeklyTitle": "Тренировки за неделю",
+  "@iosShortcutWeeklyTitle": {
+    "description": "Title of the Workouts this week tile in the iOS Shortcuts app. Short. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutRecordIntent": "Личный рекорд",
+  "@iosShortcutRecordIntent": {
+    "description": "Name of the Personal Record action in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastExerciseIntent": "Когда я делал упражнение",
+  "@iosShortcutLastExerciseIntent": {
+    "description": "Name of the action that says when an exercise was last done, in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutLastTemplateIntent": "Когда я делал шаблон",
+  "@iosShortcutLastTemplateIntent": {
+    "description": "Name of the action that says when a template was last trained, in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutWeeklyIntent": "Тренировки на этой неделе",
+  "@iosShortcutWeeklyIntent": {
+    "description": "Name of the Workouts This Week action in the iOS Shortcuts app. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutExercise": "Упражнение",
+  "@iosShortcutExercise": {
+    "description": "The exercise parameter of the question actions in the iOS Shortcuts app, and the type name of an exercise there. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutCouldNotAnswer": "Heart сейчас не может ответить",
+  "@iosShortcutCouldNotAnswer": {
+    "description": "What Siri says when the app could not answer a training question. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
   }
 }

@@ -2345,4 +2345,52 @@ class LFr extends L {
 
   @override
   String get lockScreenDone => 'Fait';
+
+  @override
+  String askRecord(Object exercise, Object value, Object date) {
+    return 'Votre record en $exercise est $value, établi le $date';
+  }
+
+  @override
+  String askNoRecord(Object exercise) {
+    return 'Pas encore de record en $exercise';
+  }
+
+  @override
+  String askLastExercise(Object exercise, Object date, Object workout) {
+    return 'Vous avez fait $exercise pour la dernière fois le $date, dans $workout';
+  }
+
+  @override
+  String askNeverDid(Object exercise) {
+    return 'Vous n’avez pas encore fait $exercise';
+  }
+
+  @override
+  String askLastTemplate(Object template, Object date) {
+    return 'Vous avez fait $template pour la dernière fois le $date';
+  }
+
+  @override
+  String askNeverDidTemplate(Object template) {
+    return 'Vous n’avez pas encore fait $template';
+  }
+
+  @override
+  String askWeekly(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count séances cette semaine',
+      one: 'Une séance cette semaine',
+      zero: 'Pas encore de séance cette semaine',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askNoWorkouts => 'Pas encore de séances';
+
+  @override
+  String get askUnknownExercise => 'Je ne connais pas cet exercice';
 }

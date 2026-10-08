@@ -4089,6 +4089,60 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Done'**
   String get lockScreenDone;
+
+  /// Siri's answer to "what's my {exercise} record": {value} is the record as a set reads (100 kg × 5), {date} the day it was set
+  ///
+  /// In en, this message translates to:
+  /// **'Your {exercise} record is {value}, set on {date}'**
+  String askRecord(Object exercise, Object value, Object date);
+
+  /// Siri's answer to a record question for an exercise with no completed sets
+  ///
+  /// In en, this message translates to:
+  /// **'No record for {exercise} yet'**
+  String askNoRecord(Object exercise);
+
+  /// Siri's answer to "when did I last do {exercise}": the day and the workout it was in
+  ///
+  /// In en, this message translates to:
+  /// **'You last did {exercise} on {date}, in {workout}'**
+  String askLastExercise(Object exercise, Object date, Object workout);
+
+  /// Siri's answer to "when did I last do {exercise}" for an exercise never done
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t done {exercise} yet'**
+  String askNeverDid(Object exercise);
+
+  /// Siri's answer to "when did I last train {template}": the day of the last finished workout of that name
+  ///
+  /// In en, this message translates to:
+  /// **'You last did {template} on {date}'**
+  String askLastTemplate(Object template, Object date);
+
+  /// Siri's answer to "when did I last train {template}" when no workout of that name was finished
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t done {template} yet'**
+  String askNeverDidTemplate(Object template);
+
+  /// Siri's answer to "how many workouts this week"
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No workouts this week yet} =1{One workout this week} other{{count} workouts this week}}'**
+  String askWeekly(num count);
+
+  /// Siri's answer to any training question when the device has no session, so no training to speak of
+  ///
+  /// In en, this message translates to:
+  /// **'No workouts yet'**
+  String get askNoWorkouts;
+
+  /// Siri's answer when the exercise asked about is not in the catalogue
+  ///
+  /// In en, this message translates to:
+  /// **'I don\'t know that exercise'**
+  String get askUnknownExercise;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
