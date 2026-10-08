@@ -20,7 +20,7 @@ import os
 private let log = Logger(subsystem: "me.heart-of", category: "Shortcuts")
 
 /// The links an intent opens the app on. The verbs are Dart's (`ShortcutLink`).
-private enum ShortcutURL {
+enum ShortcutURL {
     static func start(template: String? = nil) -> URL {
         var components = URLComponents()
         components.scheme = "heart"
@@ -150,11 +150,7 @@ enum ShortcutsChannel {
                 guard let list = call.arguments as? [[String: Any]] else {
                     return result(FlutterError(code: "bad_arguments", message: "setTemplates needs a list", details: nil))
                 }
-                let templates = list.compactMap { entry -> [String: String]? in
-                    guard let id = entry["id"] as? String, let name = entry["name"] as? String else { return nil }
-                    return ["id": id, "name": name]
-                }
-                UserDefaults.standard.set(templates, forKey: templatesKey)
+                store(list)
                 refresh()
                 result(nil)
             default:
@@ -172,11 +168,23 @@ enum ShortcutsChannel {
     }
 
     @available(iOS 16, *)
-    static var templates: [TemplateEntity] {
-        let stored = UserDefaults.standard.array(forKey: templatesKey) as? [[String: String]] ?? []
+    static var templates: [TemplateEntity] { templates(in: .standard) }
+
+    @available(iOS 16, *)
+    static func templates(in defaults: UserDefaults) -> [TemplateEntity] {
+        let stored = defaults.array(forKey: templatesKey) as? [[String: String]] ?? []
         return stored.compactMap { entry in
             guard let id = entry["id"], let name = entry["name"] else { return nil }
             return TemplateEntity(id: id, name: name)
         }
+    }
+
+    /// Keeps what Dart published, as [templates] reads it back.
+    static func store(_ list: [[String: Any]], in defaults: UserDefaults = .standard) {
+        let templates = list.compactMap { entry -> [String: String]? in
+            guard let id = entry["id"] as? String, let name = entry["name"] as? String else { return nil }
+            return ["id": id, "name": name]
+        }
+        defaults.set(templates, forKey: templatesKey)
     }
 }

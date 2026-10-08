@@ -41,6 +41,25 @@ struct OngoingWorkoutAttributes: ActivityAttributes {
         var restPlus: String?
         var restSkip: String?
 
+        /// The Done button (#246): the set up next, which it ticks, and what
+        /// the activity shows the moment it has — the lines that follow, the
+        /// rest the exercise's timer starts, the words of its notification.
+        /// Nil with nothing to tick, or from a build before the button.
+        var doneSetId: String?
+        var doneExerciseId: String?
+        var doneLabel: String?
+        var afterExercise: String?
+        var afterNext: String?
+        var afterRest: Int?
+        var afterRestLabel: String?
+        var afterRestOver: String?
+        var afterRestMinus: String?
+        var afterRestPlus: String?
+        var afterRestSkip: String?
+        var afterRestTitle: String?
+        var afterRestBody: String?
+        var afterRestSubtitle: String?
+
         /// The user's theme, per appearance, as ARGB. The lock screen follows
         /// the system appearance rather than the app's.
         var accent: UInt32

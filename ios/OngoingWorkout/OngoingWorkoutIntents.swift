@@ -29,23 +29,12 @@ enum OngoingWorkoutIntents {
     static func rest(workoutId: String, seconds: Int?) async {
         for activity in Activity<OngoingWorkoutAttributes>.activities
         where activity.attributes.workoutId == workoutId {
-            var state = activity.content.state
-            guard let end = state.restEnd else { continue }
-            switch seconds {
-            case let seconds?:
-                let moved = end.addingTimeInterval(TimeInterval(seconds))
-                state.restEnd = moved
-                await activity.update(ActivityContent(state: state, staleDate: moved))
+            guard let state = adjusted(activity.content.state, by: seconds) else { continue }
+            await activity.update(ActivityContent(state: state, staleDate: state.restEnd))
+            switch state.restEnd {
+            case let moved?:
                 await reschedule(to: moved)
             case nil:
-                state.restStart = nil
-                state.restEnd = nil
-                state.restLabel = nil
-                state.restOver = nil
-                state.restMinus = nil
-                state.restPlus = nil
-                state.restSkip = nil
-                await activity.update(ActivityContent(state: state, staleDate: nil))
                 UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [restNotification])
             }
         }
@@ -57,6 +46,135 @@ enum OngoingWorkoutIntents {
         ]
         if let seconds { command["seconds"] = seconds }
         handoff?(command)
+    }
+
+    /// Ticks [setId] on the activity for [workoutId] (#246): the lines that
+    /// follow take over, the exercise's rest starts with the notification
+    /// the app would have scheduled for its end, and the Done button goes
+    /// until the app says what is next. Then the command goes to Dart, which
+    /// ticks the set for real — or drops a tick for a set already done.
+    static func complete(workoutId: String, setId: String) async {
+        for activity in Activity<OngoingWorkoutAttributes>.activities
+        where activity.attributes.workoutId == workoutId {
+            let now = Date()
+            guard let (state, notification) = completed(activity.content.state, setId: setId, at: now) else { continue }
+            await activity.update(ActivityContent(state: state, staleDate: state.restEnd))
+            if let notification { await schedule(notification) }
+        }
+
+        handoff?([
+            "action": "complete",
+            "workoutId": workoutId,
+            "setId": setId,
+            "at": Int(Date().timeIntervalSince1970 * 1000),
+        ])
+    }
+
+    /// The "rest complete" notification a tick schedules, as Dart would.
+    struct RestNotification: Equatable {
+        let title: String
+        let body: String?
+        let subtitle: String
+        let exerciseId: String
+        let at: Date
+    }
+
+    /// [state] once [setId] is ticked at [at], and the notification for the
+    /// rest it starts — nil when the state's Done is not for [setId]: the
+    /// app has moved on, and the tick is stale.
+    static func completed(
+        _ state: OngoingWorkoutAttributes.ContentState,
+        setId: String,
+        at: Date
+    ) -> (OngoingWorkoutAttributes.ContentState, RestNotification?)? {
+        guard state.doneSetId == setId, let exerciseId = state.doneExerciseId else { return nil }
+        var next = state
+        next.exercise = state.afterExercise ?? ""
+        next.next = state.afterNext ?? ""
+        next.stopwatchStart = nil
+        next.stopwatchLabel = nil
+        next.stopwatchPausedAt = nil
+        var notification: RestNotification?
+        switch state.afterRest {
+        case let seconds? where seconds > 0:
+            let end = at.addingTimeInterval(TimeInterval(seconds))
+            next.restStart = at
+            next.restEnd = end
+            next.restLabel = state.afterRestLabel
+            next.restOver = state.afterRestOver
+            next.restMinus = state.afterRestMinus
+            next.restPlus = state.afterRestPlus
+            next.restSkip = state.afterRestSkip
+            if let title = state.afterRestTitle, let subtitle = state.afterRestSubtitle {
+                notification = RestNotification(
+                    title: title, body: state.afterRestBody, subtitle: subtitle, exerciseId: exerciseId, at: end
+                )
+            }
+        default:
+            next.restStart = nil
+            next.restEnd = nil
+            next.restLabel = nil
+            next.restOver = nil
+            next.restMinus = nil
+            next.restPlus = nil
+            next.restSkip = nil
+        }
+        next.doneSetId = nil
+        next.doneExerciseId = nil
+        next.doneLabel = nil
+        next.afterExercise = nil
+        next.afterNext = nil
+        next.afterRest = nil
+        next.afterRestLabel = nil
+        next.afterRestOver = nil
+        next.afterRestMinus = nil
+        next.afterRestPlus = nil
+        next.afterRestSkip = nil
+        next.afterRestTitle = nil
+        next.afterRestBody = nil
+        next.afterRestSubtitle = nil
+        return (next, notification)
+    }
+
+    /// Schedules [notification] under Dart's id, as flutter_local_notifications
+    /// would have: the same identifier, the payload where the plugin keeps it,
+    /// so a tap on it reaches the app's own router.
+    private static func schedule(_ notification: RestNotification) async {
+        let content = UNMutableNotificationContent()
+        content.title = notification.title
+        content.subtitle = notification.subtitle
+        if let body = notification.body { content.body = body }
+        content.sound = .default
+        content.userInfo = ["payload": notification.exerciseId]
+        let components = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second],
+            from: max(notification.at, Date().addingTimeInterval(1))
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [restNotification])
+        try? await center.add(UNNotificationRequest(identifier: restNotification, content: content, trigger: trigger))
+    }
+
+    /// [state] with its rest moved by [seconds], or over for nil: every rest
+    /// field cleared, so the view draws no rest row and no buttons. Nil when
+    /// there is no rest to act on — a button pressed after the rest ended.
+    static func adjusted(_ state: OngoingWorkoutAttributes.ContentState, by seconds: Int?) -> OngoingWorkoutAttributes.ContentState? {
+        guard let end = state.restEnd else { return nil }
+        var state = state
+        switch seconds {
+        case let seconds?:
+            state.restEnd = end.addingTimeInterval(TimeInterval(seconds))
+        case nil:
+            state.restStart = nil
+            state.restEnd = nil
+            state.restLabel = nil
+            state.restOver = nil
+            state.restMinus = nil
+            state.restPlus = nil
+            state.restSkip = nil
+        }
+        return state
     }
 
     /// The pending "rest complete" notification, moved to [date]: the same
@@ -100,6 +218,33 @@ struct AdjustRestIntent: LiveActivityIntent {
 
     func perform() async throws -> some IntentResult {
         await OngoingWorkoutIntents.rest(workoutId: workoutId, seconds: seconds)
+        return .result()
+    }
+}
+
+@available(iOS 17, *)
+struct CompleteSetIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Mark Set Done"
+    static let isDiscoverable = false
+
+    @Parameter(title: "Workout")
+    var workoutId: String
+
+    @Parameter(title: "Set")
+    var setId: String
+
+    init() {
+        workoutId = ""
+        setId = ""
+    }
+
+    init(workoutId: String, setId: String) {
+        self.workoutId = workoutId
+        self.setId = setId
+    }
+
+    func perform() async throws -> some IntentResult {
+        await OngoingWorkoutIntents.complete(workoutId: workoutId, setId: setId)
         return .result()
     }
 }

@@ -4272,5 +4272,11 @@
     "description": "Subtitle under the shortcuts switch in Settings › Features, saying what it does",
     "type": "text",
     "placeholders": {}
+  },
+  "lockScreenDone": "Fait",
+  "@lockScreenDone": {
+    "description": "Button on the lock-screen workout (iOS Live Activity, Android notification) that ticks the set up next. Short: it sits beside the set's line",
+    "type": "text",
+    "placeholders": {}
   }
 }

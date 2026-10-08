@@ -59,7 +59,13 @@ struct OngoingWorkoutLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 8) {
-                        ExerciseLines(state: state)
+                        HStack(alignment: .center, spacing: 10) {
+                            ExerciseLines(state: state)
+                            Spacer(minLength: 0)
+                            if #available(iOS 17, *) {
+                                DoneButton(state: state, workoutId: context.attributes.workoutId, accent: accent, ink: ink)
+                            }
+                        }
                         RestRow(state: state, workoutId: context.attributes.workoutId, isStale: context.isStale, accent: accent, ink: ink)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -134,10 +140,39 @@ private struct LockScreenView: View {
                         .frame(maxWidth: 90, alignment: .trailing)
                 }
             }
-            ExerciseLines(state: state)
+            HStack(alignment: .center, spacing: 10) {
+                ExerciseLines(state: state)
+                Spacer(minLength: 0)
+                if #available(iOS 17, *) {
+                    DoneButton(state: state, workoutId: context.attributes.workoutId, accent: accent, ink: ink)
+                }
+            }
             RestRow(state: state, workoutId: context.attributes.workoutId, isStale: context.isStale, accent: accent, ink: ink)
         }
         .padding(16)
+    }
+}
+
+/// The Done button (#246), beside the set it ticks. Absent, not dead, when
+/// there is no set to tick or the state predates the button.
+@available(iOS 17, *)
+private struct DoneButton: View {
+    let state: OngoingWorkoutAttributes.ContentState
+    let workoutId: String
+    let accent: Color
+    let ink: Color
+
+    var body: some View {
+        if let setId = state.doneSetId, let label = state.doneLabel {
+            Button(intent: CompleteSetIntent(workoutId: workoutId, setId: setId)) {
+                Label(label, systemImage: "checkmark")
+                    .labelStyle(.titleAndIcon)
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(accent)
+            .foregroundStyle(ink)
+        }
     }
 }
 

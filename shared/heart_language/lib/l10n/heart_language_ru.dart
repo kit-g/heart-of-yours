@@ -2373,4 +2373,7 @@ class LRu extends L {
   @override
   String get shortcutsSubtitle =>
       'Начинайте или завершайте тренировку через Siri, «Быстрые команды» или с главного экрана';
+
+  @override
+  String get lockScreenDone => 'Готово';
 }

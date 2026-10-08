@@ -2342,4 +2342,7 @@ class LFr extends L {
   @override
   String get shortcutsSubtitle =>
       'Démarrez ou terminez une séance depuis Siri, l’app Raccourcis ou votre écran d’accueil';
+
+  @override
+  String get lockScreenDone => 'Fait';
 }

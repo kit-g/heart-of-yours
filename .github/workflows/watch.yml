@@ -1,10 +1,12 @@
-name: "Watch"
+name: "Swift"
 
-# The watch app's Swift (#175), compiled and unit-tested on pull requests that
-# touch it. Everything else in CI runs on Ubuntu and never compiles Swift: until
-# this, a Swift error first surfaced in the middle of a tag's TestFlight deploy,
-# after the whole Flutter build. Scoped to Swift and the project file — which
-# says what each target compiles — so a Dart-only change never waits on macOS.
+# The app's Swift, compiled and unit-tested on pull requests that touch it:
+# the watch app (#175) and the phone's native layer — the Live Activity and
+# its intents (#141), the App Intents (#285), the channels. Everything else
+# in CI runs on Ubuntu and never compiles Swift: until this, a Swift error
+# first surfaced in the middle of a tag's TestFlight deploy, after the whole
+# Flutter build. Scoped to Swift and the project file — which says what each
+# target compiles — so a Dart-only change never waits on macOS.
 on:
   pull_request:
     paths:
@@ -77,4 +79,75 @@ jobs:
             -scheme watch-dev \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -only-testing:WatchTests \
+            CODE_SIGNING_ALLOWED=NO
+
+  runner:
+    name: "iOS • unit tests"
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: "Read pinned Flutter version"
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - name: "Set up Flutter"
+        uses: flutter-actions/setup-flutter@adb607ae976a9e00473569facfc69813c637a060 # v4.3
+        with:
+          channel: 'stable'
+          version: ${{ steps.flutter.outputs.version }}
+          cache: true
+          cache-key: pub-${{ hashFiles('pubspec.lock') }}
+
+      # RunnerTests is hosted in the app, so the app is built — Dart and all,
+      # through Flutter's own build phase. `pub get` writes what that phase
+      # needs; the Firebase options it imports are stubbed as `make lint` does,
+      # and the GoogleService-Info.plist the Runner's provisioning phase copies
+      # into the bundle (gitignored; the TestFlight job fetches the real one)
+      # is a placeholder with the same keys. Nothing in these tests reaches
+      # Firebase, but FirebaseCore validates the key's shape at configure
+      # (39 characters, leading A) and aborts the host on anything else; the
+      # Dart side's init throws on the stub and is logged, the host stays up.
+      - name: "Dependencies"
+        run: |
+          flutter pub get
+          make lib/firebase_options.dart lib/firebase_options_prod.dart
+          mkdir -p ios/Env/dev
+          cat > ios/Env/dev/GoogleService-Info.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>API_KEY</key><string>AIzaSyA00000000000000000000000000000000</string>
+            <key>GCM_SENDER_ID</key><string>000000000000</string>
+            <key>PLIST_VERSION</key><string>1</string>
+            <key>BUNDLE_ID</key><string>me.heart-of.ios.dev</string>
+            <key>PROJECT_ID</key><string>ci-placeholder</string>
+            <key>STORAGE_BUCKET</key><string>ci-placeholder.appspot.com</string>
+            <key>IS_ADS_ENABLED</key><false/>
+            <key>IS_ANALYTICS_ENABLED</key><false/>
+            <key>IS_APPINVITE_ENABLED</key><false/>
+            <key>IS_GCM_ENABLED</key><false/>
+            <key>IS_SIGNIN_ENABLED</key><false/>
+            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: "Pick an iPhone simulator"
+        id: sim
+        run: |
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | test("iPhone"))] | first | .udid // empty')
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
+      # Unsigned — a simulator needs no signature, and CI has no Apple account.
+      - name: "Build and test"
+        working-directory: ios
+        run: |
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme dev \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:RunnerTests \
             CODE_SIGNING_ALLOWED=NO
