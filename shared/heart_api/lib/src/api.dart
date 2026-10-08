@@ -601,8 +601,13 @@ class Api
   }
 
   /// See [replayWorkout]. Two templates may share a name — no name match here.
+  ///
+  /// The folder goes as a top-level `folderId`, the one key a create reads it
+  /// from: `toMap()` only nests the folder, which the server passes over, and
+  /// a copy made inside a folder (#262) would land unfiled.
   Future<({Template row, bool created})> replayTemplate(Template template) async {
-    final (json, created) = _created(await post(Router.templates, body: _withClientId(template.toMap())));
+    final body = <String, dynamic>{...template.toMap(), 'folderId': ?template.folderId};
+    final (json, created) = _created(await post(Router.templates, body: _withClientId(body)));
     return (row: Template.fromJson(json), created: created);
   }
 
