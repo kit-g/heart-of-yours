@@ -193,6 +193,19 @@ void _listenForCommands() {
         if (WatchCommand.fromMap(map) case WatchCommand command) _ongoingCommands.add(command);
       }
     });
+  // the App Functions' door (#289): the native side's own commands, one at a
+  // time, answered with whether the app took it — the channel iOS's Live
+  // Activity uses, kept to the same name and shape
+  const MethodChannel('heart/ongoing_workout').setMethodCallHandler((call) async {
+    if (call.method != 'command') throw MissingPluginException('heart/ongoing_workout has no ${call.method}');
+    if (call.arguments case Map map) {
+      if (WatchCommand.fromMap(map) case WatchCommand command) {
+        _ongoingCommands.add(command);
+        return true;
+      }
+    }
+    return false;
+  });
 }
 
 /// Buttons pressed while the app was not running — oldest first. Asking

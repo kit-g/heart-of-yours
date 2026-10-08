@@ -498,4 +498,39 @@ void main() {
       expect(calls, isEmpty);
     });
   });
+
+  group('the App Functions\' door (#289)', () {
+    Future<Object?> knock(Object? arguments) async {
+      const codec = StandardMethodCodec();
+      Object? reply;
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+        'heart/ongoing_workout',
+        codec.encodeMethodCall(MethodCall('command', arguments)),
+        (data) => reply = data == null ? null : codec.decodeEnvelope(data),
+      );
+      return reply;
+    }
+
+    test('a command the native side sends is taken and acknowledged', () async {
+      final commands = <WatchCommand>[];
+      final listening = ongoingNotificationCommands.listen(commands.add);
+      addTearDown(listening.cancel);
+
+      final taken = await knock({'action': 'startRest', 'workoutId': 'w1', 'seconds': 90, 'at': 1000});
+      await Future<void>.delayed(Duration.zero);
+      expect(taken, isTrue);
+      expect(commands, [isA<WatchStartRest>().having((c) => c.seconds, 'seconds', 90)]);
+    });
+
+    test('nonsense is refused, not dropped on the floor', () async {
+      final commands = <WatchCommand>[];
+      final listening = ongoingNotificationCommands.listen(commands.add);
+      addTearDown(listening.cancel);
+
+      expect(await knock({'action': 'dance'}), isFalse);
+      expect(await knock('not a map'), isFalse);
+      await Future<void>.delayed(Duration.zero);
+      expect(commands, isEmpty);
+    });
+  });
 }
