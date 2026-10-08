@@ -2,3 +2,8 @@
 "Start a workout in ${applicationName}" = "Démarrer une séance dans ${applicationName}";
 "Start ${template} in ${applicationName}" = "Démarrer ${template} dans ${applicationName}";
 "Finish my workout in ${applicationName}" = "Terminer ma séance dans ${applicationName}";
+"Start rest in ${applicationName}" = "Démarrer le repos dans ${applicationName}";
+"Rest for ${length} in ${applicationName}" = "Repos de ${length} dans ${applicationName}";
+"Add ${length} to my rest in ${applicationName}" = "Ajouter ${length} à mon repos dans ${applicationName}";
+"Skip rest in ${applicationName}" = "Passer le repos dans ${applicationName}";
+"Log a set in ${applicationName}" = "Enregistrer une série dans ${applicationName}";

@@ -137,12 +137,23 @@ void main() {
       // the build reads the phrases out of the source as literals, and the
       // catalog is keyed by them: a word changed on one side only loses the
       // localization silently
-      final swift = File('${root.path}/../../ios/Runner/Shortcuts.swift').readAsStringSync();
+      // every Swift file of the app: the phrases in Shortcuts.swift, the rest
+      // commands' words in RestVoice.swift
+      final swift = Directory('${root.path}/../../ios/Runner')
+          .listSync()
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.swift'))
+          .map((file) => file.readAsStringSync())
+          .join('\n');
       for (final key in [...runnerShortcutPhraseKeys, ...runnerShortcutTitleKeys]) {
         final english = (translations['en']![key] as String)
             .replaceAll(r'${applicationName}', r'\(.applicationName)')
-            .replaceAll(r'${template}', r'\(\.$template)');
-        expect(swift, contains('"$english"'), reason: key);
+            .replaceAll(r'${template}', r'\(\.$template)')
+            .replaceAll(r'${length}', r'\(\.$length)');
+        // a line Siri goes on with a clock ("Resting 1:30") is keyed by its
+        // format, and the source says it up to the interpolation
+        final literal = english.split(' %@').first;
+        expect(swift, contains('"$literal'), reason: key);
       }
     });
 

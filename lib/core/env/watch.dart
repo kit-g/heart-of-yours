@@ -333,6 +333,11 @@ sealed class WatchCommand {
         at: at,
       ),
       {'action': 'pause', 'workoutId': String workoutId} => WatchPauseWorkout(workoutId, at: at),
+      {'action': 'startRest', 'workoutId': String workoutId} => WatchStartRest(
+        workoutId,
+        seconds: (map['seconds'] as num?)?.toInt(),
+        at: at,
+      ),
       {'action': 'resume', 'workoutId': String workoutId} => WatchResumeWorkout(workoutId, at: at),
       _ => null,
     };
@@ -374,6 +379,15 @@ final class WatchUntickSet extends WatchCommand {
 /// ticked — anything left unticked is the phone's question to ask.
 final class WatchFinishWorkout extends WatchCommand {
   const new(super.workoutId, {super.at});
+}
+
+/// Start the rest for the exercise the user is on (#98): for [seconds], or
+/// for the exercise's own rest setting when none were said. From the voice
+/// assistant, not the watch, which starts rests from a tick.
+final class WatchStartRest extends WatchCommand {
+  final int? seconds;
+
+  const new(super.workoutId, {this.seconds, super.at});
 }
 
 final class WatchAdjustRest extends WatchCommand {
