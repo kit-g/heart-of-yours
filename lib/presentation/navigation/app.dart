@@ -675,6 +675,10 @@ Future<void> _initApp(
   bool? hasLocalNotifications,
 }) async {
   return Zone.root.run(() async {
+    // a session reported after the tree is gone — a test's teardown, a
+    // process on its way out — has nothing to initialize; the state it would
+    // read is disposed
+    if (!context.mounted) return;
     final workouts = Workouts.of(context);
     final alarms = Alarms.of(context);
     if (hasLocalNotifications ?? false) {

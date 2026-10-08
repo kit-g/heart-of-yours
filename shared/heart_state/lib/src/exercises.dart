@@ -224,7 +224,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
       if (local.isNotEmpty) {
         _exercises.addAll(local.byId);
         _glossary = await _catalogService.getSearchGlossary() ?? .empty();
-        notifyListeners();
+        if (!_disposed) notifyListeners();
       }
     });
     if (userId case String id) {
@@ -236,9 +236,20 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     final synced = await _step(_syncLibrary);
     if (_remote.allowed) await _step(_syncOwn);
 
+    // the app may be gone by the time the catalog is read — a tree torn down
+    // mid-init has no one to tell
+    if (_disposed) return false;
     isInitialized = synced || _exercises.values.any((each) => !each.isMine);
     notifyListeners();
     return isInitialized;
+  }
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   /// Runs one step of [init], reporting what it throws instead of letting it
