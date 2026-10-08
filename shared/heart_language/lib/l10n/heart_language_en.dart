@@ -781,6 +781,14 @@ class LEn extends L {
   String get editTemplate => 'Edit Template';
 
   @override
+  String get duplicate => 'Duplicate';
+
+  @override
+  String templateCopyName(Object name) {
+    return '$name (copy)';
+  }
+
+  @override
   String get editWorkout => 'Edit Workout';
 
   @override
@@ -3156,6 +3164,14 @@ class LEnCa extends LEn {
 
   @override
   String get editTemplate => 'Edit Template';
+
+  @override
+  String get duplicate => 'Duplicate';
+
+  @override
+  String templateCopyName(Object name) {
+    return '$name (copy)';
+  }
 
   @override
   String get editWorkout => 'Edit Workout';

@@ -185,7 +185,12 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                 );
                 if (started) widget.onNewWorkout();
               },
-              options: const [.startWorkout],
+              onDuplicate: (template) => _duplicate(context, template),
+              // a sample is not the user's to edit; a copy of it is
+              options: [
+                if (templates.allowsNewTemplate) .duplicate,
+                .startWorkout,
+              ],
             );
           },
         ),
@@ -197,12 +202,17 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
     final templates = Templates.of(context);
     final card = _TemplateCard(
       template: template,
-      // no folders without an account (see the new-folder button), so nothing
-      // to move into
-      options: switch (Auth.of(context).isAnonymous) {
-        true => _TemplateOption.values.where((option) => option != .move).toList(),
-        false => null,
-      },
+      options: [
+        .edit,
+        // past the cap there is no new-template button either
+        if (templates.allowsNewTemplate) .duplicate,
+        // no folders without an account (see the new-folder button), so
+        // nothing to move into
+        if (!Auth.of(context).isAnonymous) .move,
+        .startWorkout,
+        .delete,
+      ],
+      onDuplicate: (template) => _duplicate(context, template),
       onDelete: (template) {
         _showDeleteTemplateDialog(context, template);
       },
@@ -264,6 +274,12 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
     } catch (error) {
       if (mounted) _showFolderError(context, error);
     }
+  }
+
+  /// The copy is named here: "(copy)" is a word, and the notifier has none.
+  Future<void> _duplicate(BuildContext context, Template template) {
+    final name = L.of(context).templateCopyName(template.name ?? '');
+    return Templates.of(context).duplicate(template, name: name);
   }
 
   Future<void> _createFolder(BuildContext context) {
