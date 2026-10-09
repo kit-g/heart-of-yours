@@ -243,6 +243,28 @@
         }
       }
     },
+    "How many reps?": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Cuántas repeticiones?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combien de répétitions ?"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько повторов?"
+          }
+        }
+      }
+    },
     "Last Time I Did a Template": {
       "localizations": {
         "es": {
@@ -855,6 +877,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Вес"
+          }
+        }
+      }
+    },
+    "What weight?": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué peso?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quel poids ?"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Какой вес?"
           }
         }
       }

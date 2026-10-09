@@ -431,5 +431,17 @@
     "description": "What the assistant says when a command was kept for the app, which is not running, to apply when opened (Android). Generated into strings_shortcuts.xml",
     "type": "text",
     "placeholders": {}
+  },
+  "iosShortcutAskWeight": "Quel poids ?",
+  "@iosShortcutAskWeight": {
+    "description": "What Siri asks when a set is logged by voice with no weight said and none planned. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
+  },
+  "iosShortcutAskReps": "Combien de répétitions ?",
+  "@iosShortcutAskReps": {
+    "description": "What Siri asks when a set is logged by voice with no rep count said and none planned. Generated into Localizable.xcstrings",
+    "type": "text",
+    "placeholders": {}
   }
 }

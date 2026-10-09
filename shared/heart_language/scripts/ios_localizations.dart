@@ -118,6 +118,8 @@ const runnerShortcutTitleKeys = [
   'iosShortcutLogged',
   'iosShortcutNothingLeft',
   'iosShortcutSayValues',
+  'iosShortcutAskWeight',
+  'iosShortcutAskReps',
   'iosShortcutRecordTitle',
   'iosShortcutLastTimeTitle',
   'iosShortcutLastSessionTitle',
