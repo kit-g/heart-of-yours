@@ -48,9 +48,16 @@ class ImportDataPage extends StatefulWidget {
 class _ImportDataPageState extends State<ImportDataPage> with LoadingState<ImportDataPage>, HasHaptic<ImportDataPage> {
   final _outcome = ValueNotifier<_ImportOutcome?>(null);
 
+  /// The unit the export was made in (#307), as the user says — null until
+  /// they do, which reads as the account's own. Strong's CSV carries no unit,
+  /// and only the person who exported knows which Strong was set to: a
+  /// pounds export read as kilograms is stored 2.2 times too heavy, silently.
+  final _unit = ValueNotifier<MeasurementUnit?>(null);
+
   @override
   void dispose() {
     _outcome.dispose();
+    _unit.dispose();
     super.dispose();
   }
 
@@ -60,6 +67,10 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       :importData,
       :importExplainerStrong,
       :importSafeToRetry,
+      :importUnitTitle,
+      :importUnitBody,
+      :kg,
+      :lbs,
       :chooseFile,
       :importInFlight,
     ) = L.of(
@@ -92,6 +103,26 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                   Text(
                     importSafeToRetry,
                     style: textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 24),
+                  // which unit the export is in (#307): asked before the file,
+                  // preset to the account's, read by both halves of the import
+                  Text(importUnitTitle, style: textTheme.titleSmall),
+                  const SizedBox(height: 4),
+                  Text(importUnitBody, style: textTheme.bodySmall),
+                  const SizedBox(height: 12),
+                  ValueListenableBuilder<MeasurementUnit?>(
+                    valueListenable: _unit,
+                    builder: (context, chosen, _) {
+                      return SettingSwitcher<MeasurementUnit>(
+                        value: chosen ?? _fallbackUnit ?? .metric,
+                        onValueChanged: (value) => _unit.value = value,
+                        children: {
+                          .metric: Text(kg),
+                          .imperial: Text(lbs),
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   ValueListenableBuilder<_ImportOutcome?>(
@@ -157,8 +188,9 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     );
   }
 
-  /// The unit fields are `late` and this page can be reached before the
-  /// startup read lands — the parameter is an optional fallback anyway.
+  /// The account's unit, which is what the question above starts on. The
+  /// unit fields are `late` and this page can be reached before the startup
+  /// read lands — the parameter is an optional fallback anyway.
   MeasurementUnit? get _fallbackUnit {
     final preferences = Preferences.of(context);
     return switch (preferences.isInitialized) {
@@ -166,6 +198,11 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       false => null,
     };
   }
+
+  /// What the import sends: the export's unit as the user said, else the
+  /// account's. The server reads it only for rows that carry no unit of
+  /// their own, and applies it to weights and distances alike.
+  MeasurementUnit? get _exportUnit => _unit.value ?? _fallbackUnit;
 
   /// The dry run: nothing is written until the user has said which unmatched
   /// exercises may become their customs — those can only be archived, never
@@ -193,9 +230,9 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       final csv = await file.readAsString();
       final preview = await Api.instance.previewImportedWorkouts(
         csv,
-        // fallback for exports whose rows carry no unit columns; ignored when
+        // for exports whose rows carry no unit columns (#307); ignored when
         // the CSV declares its own
-        unit: _fallbackUnit,
+        unit: _exportUnit,
         // Strong timestamps are naive local time
         tzOffset: DateTime.now().timeZoneOffset,
       );
@@ -245,7 +282,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     try {
       final report = await Api.instance.importWorkouts(
         csv,
-        unit: _fallbackUnit,
+        unit: _exportUnit,
         tzOffset: DateTime.now().timeZoneOffset,
         createCustom: createCustom,
       );
