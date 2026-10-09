@@ -4155,6 +4155,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'I don\'t know that exercise'**
   String get askUnknownExercise;
+
+  /// Import page, heading of the question which unit the Strong export was made in (#307)
+  ///
+  /// In en, this message translates to:
+  /// **'Weights in your export'**
+  String get importUnitTitle;
+
+  /// Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say
+  ///
+  /// In en, this message translates to:
+  /// **'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.'**
+  String get importUnitBody;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

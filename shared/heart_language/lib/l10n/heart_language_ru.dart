@@ -2433,4 +2433,11 @@ class LRu extends L {
 
   @override
   String get askUnknownExercise => 'Я не знаю такого упражнения';
+
+  @override
+  String get importUnitTitle => 'Единицы в вашем экспорте';
+
+  @override
+  String get importUnitBody =>
+      'Strong выгружает в тех единицах, что были выбраны в нём, и файл об этом не говорит. Укажите их здесь, иначе 100 lb станут 100 кг.';
 }
