@@ -521,6 +521,9 @@ WITH _recent AS (
     JOIN workouts w ON w.id = we.workout_id
     WHERE s.completed = 1
       AND w.user_id = ?
+      -- finished sessions only: the workout in progress is never "last
+      -- time", and after a restart mid-workout it was the newest one
+      AND w."end" IS NOT NULL
     GROUP BY we.exercise_id
     HAVING max(w.start)
 )
