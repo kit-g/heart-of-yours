@@ -35,6 +35,7 @@ struct OngoingWorkoutLiveActivity: Widget {
             let state = context.state
             let accent = Color(argb: state.accentDark)
             let ink = Color(argb: state.accentInkDark)
+            let onAccent = Color(argb: state.onAccentDark ?? state.accentInkDark)
             let resting = state.rest != nil && !context.isStale
 
             return DynamicIsland {
@@ -63,7 +64,7 @@ struct OngoingWorkoutLiveActivity: Widget {
                             ExerciseLines(state: state)
                             Spacer(minLength: 0)
                             if #available(iOS 17, *) {
-                                DoneButton(state: state, workoutId: context.attributes.workoutId, accent: accent, ink: ink)
+                                DoneButton(state: state, workoutId: context.attributes.workoutId, accent: accent, onAccent: onAccent)
                             }
                         }
                         RestRow(state: state, workoutId: context.attributes.workoutId, isStale: context.isStale, accent: accent, ink: ink)
@@ -114,12 +115,18 @@ private struct LockScreenView: View {
 
     var body: some View {
         let state = context.state
-        let (accent, ink) = switch scheme {
-        case .dark: (Color(argb: state.accentDark), Color(argb: state.accentInkDark))
-        default: (Color(argb: state.accent), Color(argb: state.accentInk))
+        let (accent, ink, onAccent) = switch scheme {
+        case .dark: (
+            Color(argb: state.accentDark), Color(argb: state.accentInkDark), Color(argb: state.onAccentDark ?? state.accentInkDark)
+        )
+        default: (Color(argb: state.accent), Color(argb: state.accentInk), Color(argb: state.onAccent ?? state.accentInk))
         }
 
-        VStack(alignment: .leading, spacing: 10) {
+        // The lock screen gives an activity 160pt and clips the rest. With a
+        // rest running this is four rows — title, exercise and Done, the
+        // countdown, its buttons — which only fit tight: 8pt between rows,
+        // 14pt above and below, small buttons.
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 HeartMark()
                     .fill(accent)
@@ -144,12 +151,13 @@ private struct LockScreenView: View {
                 ExerciseLines(state: state)
                 Spacer(minLength: 0)
                 if #available(iOS 17, *) {
-                    DoneButton(state: state, workoutId: context.attributes.workoutId, accent: accent, ink: ink)
+                    DoneButton(state: state, workoutId: context.attributes.workoutId, accent: accent, onAccent: onAccent)
                 }
             }
             RestRow(state: state, workoutId: context.attributes.workoutId, isStale: context.isStale, accent: accent, ink: ink)
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 
@@ -160,7 +168,10 @@ private struct DoneButton: View {
     let state: OngoingWorkoutAttributes.ContentState
     let workoutId: String
     let accent: Color
-    let ink: Color
+    /// The label's colour: what reads on the accent the button is filled
+    /// with. The ink the rest buttons use is the accent itself on the dark
+    /// half, and vanished into the fill.
+    let onAccent: Color
 
     var body: some View {
         if let setId = state.doneSetId, let label = state.doneLabel {
@@ -171,7 +182,7 @@ private struct DoneButton: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(accent)
-            .foregroundStyle(ink)
+            .foregroundStyle(onAccent)
         }
     }
 }
@@ -281,6 +292,7 @@ private struct RestButtons: View {
                 }
             }
             .buttonStyle(.bordered)
+            .controlSize(.small)
             .font(.subheadline.weight(.semibold))
             .tint(accent)
             .foregroundStyle(ink)
