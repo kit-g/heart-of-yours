@@ -53,4 +53,14 @@ final class LogSetVoiceTests: XCTestCase {
     func testNoSetIsNoWorkout() {
         XCTAssertEqual(LogSetVoice.plan(nil, weight: 60, reps: 8).outcome, .noWorkout)
     }
+
+    func testSiriAsksForWhatTheSetLacksWeightFirst() {
+        let empty = LogSetVoice.NextSet(["workoutId": "w1", "setId": "s1", "exerciseName": "Bench", "weighted": true, "counted": true, "unit": "kg", "completable": false])
+        XCTAssertEqual(LogSetVoice.missing(empty, weight: nil, reps: nil), .weight)
+        XCTAssertEqual(LogSetVoice.missing(empty, weight: 100, reps: nil), .reps)
+        XCTAssertNil(LogSetVoice.missing(empty, weight: 100, reps: 5))
+        let planned = LogSetVoice.NextSet(["workoutId": "w1", "setId": "s1", "exerciseName": "Bench", "weighted": true, "counted": true, "unit": "kg", "weight": 100.0, "reps": 5, "completable": true])
+        XCTAssertNil(LogSetVoice.missing(planned, weight: nil, reps: nil), "a set that can be ticked as it stands asks for nothing")
+        XCTAssertNil(LogSetVoice.missing(nil, weight: nil, reps: nil), "nothing to log is said, not asked")
+    }
 }

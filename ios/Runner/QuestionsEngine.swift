@@ -28,10 +28,20 @@ final class QuestionsEngine {
         if let exerciseId { arguments["exerciseId"] = exerciseId }
         if let template { arguments["template"] = template }
 
+        // One resume, whatever comes first: the answer, or the deadline — an
+        // engine that came up without its Dart side never answers, and a
+        // continuation left hanging is Siri hanging.
         let answer: String? = await withCheckedContinuation { continuation in
+            let once = Once()
             DispatchQueue.main.async {
                 channel.invokeMethod("ask", arguments: arguments) { result in
-                    continuation.resume(returning: result as? String)
+                    once.run { continuation.resume(returning: result as? String) }
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.deadline) {
+                    once.run {
+                        self.log.error("\(question, privacy: .public) was not answered in \(Self.deadline) s")
+                        continuation.resume(returning: nil)
+                    }
                 }
             }
         }
@@ -39,11 +49,30 @@ final class QuestionsEngine {
         return answer
     }
 
+    private static let deadline: TimeInterval = 15
+
+    /// A gate that lets one of two racing closures through.
+    private final class Once {
+        private var done = false
+        private let lock = NSLock()
+
+        func run(_ body: () -> Void) {
+            lock.lock()
+            defer { lock.unlock() }
+            guard !done else { return }
+            done = true
+            body()
+        }
+    }
+
     @MainActor
     private func start() -> FlutterMethodChannel? {
         if let channel { return channel }
         let engine = FlutterEngine(name: "questions", project: nil, allowHeadlessExecution: true)
-        guard engine.run(withEntrypoint: "questionsMain") else {
+        // by library, not by the root library: a build started from another
+        // entrypoint (the driver's main_driver.dart) has main.dart imported,
+        // not as its root, and the lookup would miss
+        guard engine.run(withEntrypoint: "questionsMain", libraryURI: "package:heart/main.dart") else {
             log.error("The questions engine did not start")
             return nil
         }
