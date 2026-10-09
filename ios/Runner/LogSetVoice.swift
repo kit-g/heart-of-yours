@@ -81,6 +81,22 @@ enum LogSetVoice {
         return values.isEmpty ? set.exerciseName : "\(values), \(set.exerciseName)"
     }
 
+    /// What a set needs that was not said, for Siri to ask for in turn: the
+    /// weight first, then the reps. Nil with nothing missing — or nothing to
+    /// log, which [log] says in its own words.
+    enum Missing { case weight, reps }
+
+    static func missing(_ set: NextSet?, weight: Double?, reps: Int?) -> Missing? {
+        guard let set, !set.completable else { return nil }
+        if set.weighted, weight == nil, set.weight == nil { return .weight }
+        if set.counted, reps == nil, set.reps == nil { return .reps }
+        return nil
+    }
+
+    static func missing(weight: Double?, reps: Int?, defaults: UserDefaults = .standard) -> Missing? {
+        missing(NextSet(defaults.object(forKey: ShortcutsChannel.setKey)), weight: weight, reps: reps)
+    }
+
     static func log(weight: Double?, reps: Int?, defaults: UserDefaults = .standard) async -> Outcome {
         let set = NextSet(defaults.object(forKey: ShortcutsChannel.setKey))
         // a workout with nothing left: Dart publishes the rest but no set
@@ -123,6 +139,16 @@ struct LogSetIntent: AppIntent {
     }
 
     func perform() async throws -> some ProvidesDialog {
+        // a set with nothing to go on: Siri asks for what is missing, one
+        // value at a time, and runs this again with it
+        switch LogSetVoice.missing(weight: weight, reps: reps) {
+        case .weight:
+            throw $weight.needsValueError("What weight?")
+        case .reps:
+            throw $reps.needsValueError("How many reps?")
+        case nil:
+            break
+        }
         let outcome = await LogSetVoice.log(weight: weight, reps: reps)
         return .result(dialog: LogSetVoice.dialog(outcome))
     }
