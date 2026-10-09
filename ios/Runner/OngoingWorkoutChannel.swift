@@ -118,6 +118,8 @@ struct OngoingWorkoutRequest {
             accentDark: color("accentDark"),
             accentInk: color("accentInk"),
             accentInkDark: color("accentInkDark"),
+            onAccent: arguments["onAccent"].flatMap { ($0 as? NSNumber)?.uint32Value },
+            onAccentDark: arguments["onAccentDark"].flatMap { ($0 as? NSNumber)?.uint32Value },
             clockStart: (arguments["clockStart"] as? NSNumber).map(Self.date),
             pausedAt: (arguments["pausedAt"] as? NSNumber).map(Self.date),
             pausedLabel: arguments["pausedLabel"] as? String

@@ -66,6 +66,12 @@ struct OngoingWorkoutAttributes: ActivityAttributes {
         var accentDark: UInt32
         var accentInk: UInt32
         var accentInkDark: UInt32
+        /// What reads on an accent fill, for a filled button's label (#246).
+        /// Optional: an activity from before it has none and falls back to
+        /// the ink, which on the dark half is the accent itself — the empty
+        /// button this fixed.
+        var onAccent: UInt32? = nil
+        var onAccentDark: UInt32? = nil
 
         /// Where the elapsed clock counts from: the start, moved on by every
         /// pause the workout has closed (#134). Here rather than an attribute,
