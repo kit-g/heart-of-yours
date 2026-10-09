@@ -4365,5 +4365,17 @@
     "description": "Siri's answer when the exercise asked about is not in the catalogue",
     "type": "text",
     "placeholders": {}
+  },
+  "importUnitTitle": "Weights in your export",
+  "@importUnitTitle": {
+    "description": "Import page, heading of the question which unit the Strong export was made in (#307)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importUnitBody": "Strong exports in whichever unit you had it set to, and the file doesn't say. Pick it here, or 100 lb would come over as 100 kg.",
+  "@importUnitBody": {
+    "description": "Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say",
+    "type": "text",
+    "placeholders": {}
   }
 }

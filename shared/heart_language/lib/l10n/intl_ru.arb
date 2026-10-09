@@ -4365,5 +4365,17 @@
     "description": "Siri's answer when the exercise asked about is not in the catalogue",
     "type": "text",
     "placeholders": {}
+  },
+  "importUnitTitle": "Единицы в вашем экспорте",
+  "@importUnitTitle": {
+    "description": "Import page, heading of the question which unit the Strong export was made in (#307)",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importUnitBody": "Strong выгружает в тех единицах, что были выбраны в нём, и файл об этом не говорит. Укажите их здесь, иначе 100 lb станут 100 кг.",
+  "@importUnitBody": {
+    "description": "Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say",
+    "type": "text",
+    "placeholders": {}
   }
 }

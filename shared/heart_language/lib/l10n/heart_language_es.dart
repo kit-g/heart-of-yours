@@ -2397,4 +2397,11 @@ class LEs extends L {
 
   @override
   String get askUnknownExercise => 'No conozco ese ejercicio';
+
+  @override
+  String get importUnitTitle => 'Unidades de tu exportación';
+
+  @override
+  String get importUnitBody =>
+      'Strong exporta en la unidad que tenías elegida allí, y el archivo no lo dice. Elígela aquí, o 100 lb llegarían como 100 kg.';
 }

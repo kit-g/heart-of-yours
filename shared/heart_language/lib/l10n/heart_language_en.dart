@@ -2388,6 +2388,13 @@ class LEn extends L {
 
   @override
   String get askUnknownExercise => 'I don\'t know that exercise';
+
+  @override
+  String get importUnitTitle => 'Weights in your export';
+
+  @override
+  String get importUnitBody =>
+      'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4773,4 +4780,11 @@ class LEnCa extends LEn {
 
   @override
   String get askUnknownExercise => 'I don\'t know that exercise';
+
+  @override
+  String get importUnitTitle => 'Weights in your export';
+
+  @override
+  String get importUnitBody =>
+      'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.';
 }

@@ -2401,4 +2401,11 @@ class LFr extends L {
 
   @override
   String get askUnknownExercise => 'Je ne connais pas cet exercice';
+
+  @override
+  String get importUnitTitle => 'Unités de votre export';
+
+  @override
+  String get importUnitBody =>
+      'Strong exporte dans l’unité que vous y aviez choisie, et le fichier ne le dit pas. Choisissez-la ici, sinon 100 lb arriveraient comme 100 kg.';
 }
