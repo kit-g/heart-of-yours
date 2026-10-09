@@ -418,4 +418,50 @@ void main() {
     expect(find.text("That file didn't work"), findsNothing);
     expect(find.text('Choose file'), findsOneWidget);
   });
+
+  group('the unit the export was made in (#307)', () {
+    testWidgets('starts on the account\'s unit and sends what the user picks, to both halves', (tester) async {
+      await Preferences().let((p) async {
+        await p.init();
+        await p.setWeightUnit(MeasurementUnit.metric);
+      });
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+      );
+      await pumpImportPage(tester);
+
+      // the question is on the page, with the account's unit selected
+      expect(find.text('Weights in your export'), findsOneWidget);
+      await tester.tap(find.text('lbs'));
+      await tester.pumpTimes();
+
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(requests, hasLength(2));
+      final [preview, commit] = requests;
+      expect(preview.url.queryParameters['unit'], 'imperial');
+      expect(commit.url.queryParameters['unit'], 'imperial');
+    });
+
+    testWidgets('left alone, the account\'s unit is what goes', (tester) async {
+      await Preferences().let((p) async {
+        await p.init();
+        await p.setWeightUnit(MeasurementUnit.metric);
+      });
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+      );
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(requests, hasLength(2));
+      expect(requests.first.url.queryParameters['unit'], 'metric');
+    });
+  });
+}
+
+extension<T> on T {
+  R let<R>(R Function(T it) block) => block(this);
 }
