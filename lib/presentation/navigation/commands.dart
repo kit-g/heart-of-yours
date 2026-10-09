@@ -1,5 +1,7 @@
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
+import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/workout/rest.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show finishWorkout, pauseActiveWorkout;
 import 'package:heart_models/heart_models.dart' hide Health;
@@ -103,6 +105,7 @@ CommandOutcome applyWorkoutCommand(BuildContext context, WatchCommand command) {
         exerciseId: exercise.id,
         scheduleNotification: (when) => scheduleRestNotification(context, exercise, when),
       );
+      surfaceRest(context, exercise);
       return .applied;
     case WatchAdjustRest(:final seconds):
       final alarms = Alarms.of(context);
@@ -140,6 +143,7 @@ bool _complete(
     if (set.canBeCompleted) {
       workouts.markSetAsComplete(exercise, set, at: at);
       startRest(context, exercise, since: at);
+      surfaceRest(context, exercise);
       return true;
     }
   }
@@ -181,5 +185,39 @@ double? kilogramsOf(BuildContext context, WorkoutExercise exercise, double? weig
     (double weight, .imperial) => weight.asKilograms,
     (double weight, .metric) => weight,
     (null, _) => null,
+  };
+}
+
+/// A rest started from outside the app — Siri, the lock screen, the watch —
+/// with the app on screen shows the countdown a tick shows, so whoever asked
+/// sees it start; the Siri sheet leaves the app inactive, which is still on
+/// screen. Off screen, the lock screen is the surface and nothing is shown.
+/// One dialog at a time: a second command while it is up only moves the rest
+/// it already shows.
+void surfaceRest(BuildContext context, WorkoutExercise exercise) {
+  if (!restSurfaces(WidgetsBinding.instance.lifecycleState)) return;
+  final alarms = Alarms.of(context);
+  if (alarms.activeExerciseId != exercise.id) return;
+  final total = alarms.activeExerciseTotal?.toInt();
+  final root = HeartRouter.maybeOf(context)?.rootContext;
+  if (total == null || root == null || !root.mounted || _countdownShowing) return;
+  _countdownShowing = true;
+  showCountdownDialog(
+    root,
+    total,
+    exerciseId: exercise.id,
+    scheduleNotification: (when) => scheduleRestNotification(context, exercise, when),
+  ).whenComplete(() => _countdownShowing = false);
+}
+
+bool _countdownShowing = false;
+
+/// Whether a rest started by a command gets the in-app countdown: the app
+/// is on screen, which includes inactive — Siri's sheet, the notification
+/// shade — but not the background.
+bool restSurfaces(AppLifecycleState? state) {
+  return switch (state) {
+    .resumed || .inactive => true,
+    _ => false,
   };
 }

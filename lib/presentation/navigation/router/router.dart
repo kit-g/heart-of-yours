@@ -297,6 +297,15 @@ final class HeartRouter {
     return Provider.of<HeartRouter>(context, listen: false);
   }
 
+  /// Null where no router is provided — a widget test's bare tree.
+  static HeartRouter? maybeOf(BuildContext context) {
+    return Provider.of<HeartRouter?>(context, listen: false);
+  }
+
+  /// A context under the root navigator, for a dialog shown by code that
+  /// sits above it — the presenters in the app's `builder`.
+  BuildContext? get rootContext => _rootNavigatorKey.currentContext;
+
   void refresh() {
     return config.refresh();
   }
