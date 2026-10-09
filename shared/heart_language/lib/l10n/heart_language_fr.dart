@@ -2408,4 +2408,7 @@ class LFr extends L {
   @override
   String get importUnitBody =>
       'Strong exporte dans l’unité que vous y aviez choisie, et le fichier ne le dit pas. Choisissez-la ici, sinon 100 lb arriveraient comme 100 kg.';
+
+  @override
+  String get shortcutsSubtitleAndroid => 'Démarrez ou terminez une séance depuis Gemini ou votre écran d’accueil';
 }

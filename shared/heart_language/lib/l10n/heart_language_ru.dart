@@ -2440,4 +2440,7 @@ class LRu extends L {
   @override
   String get importUnitBody =>
       'Strong выгружает в тех единицах, что были выбраны в нём, и файл об этом не говорит. Укажите их здесь, иначе 100 lb станут 100 кг.';
+
+  @override
+  String get shortcutsSubtitleAndroid => 'Начинайте или завершайте тренировку через Gemini или с главного экрана';
 }
