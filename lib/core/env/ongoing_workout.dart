@@ -238,6 +238,10 @@ class _LiveActivity implements OngoingWorkoutSurface {
         'accentDark': workout.preset.dark.accent.toARGB32(),
         'accentInk': workout.preset.light.accentInk.toARGB32(),
         'accentInkDark': workout.preset.dark.accentInk.toARGB32(),
+        // what reads on an accent fill — the Done button's label (#246);
+        // accentInk is the accent as ink on the surface, not ink on the accent
+        'onAccent': workout.preset.light.onAccent.toARGB32(),
+        'onAccentDark': workout.preset.dark.onAccent.toARGB32(),
       },
     );
   }
