@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
+import 'package:heart/presentation/widgets/keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
@@ -41,6 +42,20 @@ MockUser _providerAccount({String uid = 'u1', String email = 'u1@test'}) {
       fb.UserInfo.fromPigeon(
         InternalUserInfo(email: email, uid: uid, providerId: 'google.com', isAnonymous: false, isEmailVerified: true),
       ),
+    ],
+  );
+}
+
+/// An account with two sign-ins, which is what makes Disconnect appear.
+MockUser _twoProviderAccount({String uid = 'u1', String email = 'u1@test'}) {
+  return MockUser(
+    uid: uid,
+    email: email,
+    providerData: [
+      for (final provider in ['google.com', 'password'])
+        fb.UserInfo.fromPigeon(
+          InternalUserInfo(email: email, uid: uid, providerId: provider, isAnonymous: false, isEmailVerified: true),
+        ),
     ],
   );
 }
@@ -254,6 +269,48 @@ void main() {
       expect(find.textContaining("Well, that didn't work"), findsOneWidget);
       verifyNever(api.deleteAccount(accountId: anyNamed('accountId'), appleGrant: anyNamed('appleGrant')));
       expect(find.byType(AccountManagementPage), findsOneWidget);
+    });
+  });
+
+  group('sign-ins (#323)', () {
+    testWidgets('a password account offers Google to connect, and keeps its only sign-in', (tester) async {
+      await pumpToAccountManagement(tester, firebase: MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true));
+
+      expect(find.text('Sign-ins'), findsOneWidget);
+      expect(find.byKey(AppKeys.connectSignIn('google')), findsOneWidget);
+      // the last sign-in has no Disconnect: absent, not dead
+      expect(find.byKey(AppKeys.disconnectSignIn('password')), findsNothing);
+      expect(find.byKey(AppKeys.connectSignIn('password')), findsNothing);
+    });
+
+    testWidgets('a Google account shows its address and offers to set a password', (tester) async {
+      await pumpToAccountManagement(tester, firebase: MockFirebaseAuth(mockUser: _providerAccount(), signedIn: true));
+
+      expect(find.byKey(AppKeys.connectSignIn('google')), findsNothing);
+      expect(find.byKey(AppKeys.disconnectSignIn('google')), findsNothing);
+      expect(find.text('Set a password'), findsOneWidget);
+
+      // the password is set through the reset email: the same dialog
+      await tester.tap(find.text('Set a password'));
+      await tester.pumpTimes();
+      expect(find.text('Reset password', skipOffstage: false), findsWidgets);
+    });
+
+    testWidgets('with two sign-ins either can be disconnected, and the row flips to Connect', (tester) async {
+      await pumpToAccountManagement(
+        tester,
+        firebase: MockFirebaseAuth(mockUser: _twoProviderAccount(), signedIn: true),
+      );
+
+      expect(find.byKey(AppKeys.disconnectSignIn('google')), findsOneWidget);
+      expect(find.byKey(AppKeys.disconnectSignIn('password')), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.disconnectSignIn('google')));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.connectSignIn('google')), findsOneWidget);
+      // one left: nothing offers to disconnect it
+      expect(find.byKey(AppKeys.disconnectSignIn('password')), findsNothing);
     });
   });
 }

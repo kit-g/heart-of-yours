@@ -9,6 +9,7 @@ String _errorCopy(L l, AuthExceptionReason reason) {
     .unknown => l.unknownError,
     .emailInUse => l.unknownError,
     .accountUnderOtherProvider => l.accountUnderOtherProvider,
+    .providerInUse => l.providerInUse,
     .weakPassword => l.weakPassword,
     .networkRequestFailed => l.noConnectivity,
   };
@@ -23,7 +24,10 @@ bool _isApple(BuildContext context) {
 }
 
 mixin AsyncState<T extends StatefulWidget> on State<T>, LoadingState<T>, HasError<T>, HasHaptic<T> {
-  Future<void> run(AsyncCallback callback, {AsyncCallback? onEmailExists}) async {
+  Future<void> run(
+    AsyncCallback callback, {
+    AsyncCallback? onEmailExists,
+  }) async {
     buzz();
     error.value = null;
     final l = L.of(context);

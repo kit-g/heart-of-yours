@@ -180,6 +180,8 @@ const _setTypeChanged = 'set_type_changed';
 const _featureLinked = 'feature_linked';
 const _apiTokenCreated = 'api_token_created';
 const _apiTokenRevoked = 'api_token_revoked';
+const _signInConnected = 'sign_in_connected';
+const _signInDisconnected = 'sign_in_disconnected';
 
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
@@ -251,10 +253,7 @@ class Analytics {
   final AnalyticsService _service;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  new({
-    required this._service,
-    this.onError,
-  });
+  new({required this._service, this.onError});
 
   void _log(String name, [Map<String, Object> parameters = const {}]) {
     _service.logEvent(name, parameters).catchError(_swallow);
@@ -279,13 +278,22 @@ class Analytics {
     _log(_signupPromptShown, {_placement: placement});
   }
 
-  void signupStarted({required AuthProvider provider, required bool fromAnonymous}) {
-    _log(_signupStarted, {_provider: provider.id, _fromAnonymous: _flag(fromAnonymous)});
+  void signupStarted({
+    required AuthProvider provider,
+    required bool fromAnonymous,
+  }) {
+    _log(_signupStarted, {
+      _provider: provider.id,
+      _fromAnonymous: _flag(fromAnonymous),
+    });
   }
 
   /// An account that did not exist before now does — Firebase's own
   /// `isNewUser`, not a guess from which method was called.
-  void signupCompleted({required AuthProvider provider, required AccountArrival arrival}) {
+  void signupCompleted({
+    required AuthProvider provider,
+    required AccountArrival arrival,
+  }) {
     _log(_signupCompleted, {_provider: provider.id, _arrival: arrival.id});
   }
 
@@ -298,7 +306,10 @@ class Analytics {
   /// A sign-in to an account that already existed. Carries [arrival] for the
   /// same reason a sign-up does: this is where [AccountArrival.takeover] is
   /// common, and where the replay it triggers is worth watching.
-  void loginCompleted({required AuthProvider provider, required AccountArrival arrival}) {
+  void loginCompleted({
+    required AuthProvider provider,
+    required AccountArrival arrival,
+  }) {
     _log(_loginCompleted, {_provider: provider.id, _arrival: arrival.id});
   }
 
@@ -337,8 +348,14 @@ class Analytics {
   // are what the user typed into this app, never anything read back out of
   // the health store — see the note at the top of this class.
 
-  void workoutStarted({required WorkoutSource source, required bool pinnedNotes}) {
-    _log(_workoutStarted, {_source: source.id, _pinnedNotes: _flag(pinnedNotes)});
+  void workoutStarted({
+    required WorkoutSource source,
+    required bool pinnedNotes,
+  }) {
+    _log(_workoutStarted, {
+      _source: source.id,
+      _pinnedNotes: _flag(pinnedNotes),
+    });
   }
 
   /// [untickedSets] is the UX smell: sets that were typed into and never
@@ -363,8 +380,14 @@ class Analytics {
   /// [hadContent] separates the two cancellations that look identical from
   /// here: opening a workout and thinking better of it, and abandoning one
   /// with sets already in it.
-  void workoutCancelled({required bool hadContent, required int exerciseCount}) {
-    _log(_workoutCancelled, {_hadContent: _flag(hadContent), _exerciseCount: exerciseCount});
+  void workoutCancelled({
+    required bool hadContent,
+    required int exerciseCount,
+  }) {
+    _log(_workoutCancelled, {
+      _hadContent: _flag(hadContent),
+      _exerciseCount: exerciseCount,
+    });
   }
 
   void workoutEdited({required WorkoutEditField field}) {
@@ -428,17 +451,36 @@ class Analytics {
   /// The Features page opened at one [feature] (#239), from [source] — the
   /// question being whether a note or a tutorial gets anyone to the switch.
   /// What they did with it there is the feature's own answer, not this event.
-  void featureLinked({required Feature feature, required FeatureLinkSource source}) {
+  void featureLinked({
+    required Feature feature,
+    required FeatureLinkSource source,
+  }) {
     _log(_featureLinked, {_feature: feature.value, _source: source.id});
   }
 
   /// A personal access token minted (#271): what the owner said it is for
   /// and how long it lives. Never its name, never its secret.
-  void apiTokenCreated({required ApiTokenPurpose? purpose, required ApiTokenExpiry expiry}) {
-    _log(_apiTokenCreated, {_purpose: purpose?.name ?? 'unset', _expiry: expiry.name});
+  void apiTokenCreated({
+    required ApiTokenPurpose? purpose,
+    required ApiTokenExpiry expiry,
+  }) {
+    _log(_apiTokenCreated, {
+      _purpose: purpose?.name ?? 'unset',
+      _expiry: expiry.name,
+    });
   }
 
   void apiTokenRevoked() => _log(_apiTokenRevoked);
+
+  /// A second sign-in linked onto the account from Account control (#323),
+  /// or the one a refused sign-in left pending.
+  void signInConnected({required AuthProvider provider}) {
+    _log(_signInConnected, {_provider: provider.id});
+  }
+
+  void signInDisconnected({required AuthProvider provider}) {
+    _log(_signInDisconnected, {_provider: provider.id});
+  }
 
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);
 
