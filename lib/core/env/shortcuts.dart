@@ -124,6 +124,12 @@ final class ShortcutExercise {
 /// more; the intents and shortcuts themselves live natively and open the app
 /// on a [ShortcutLink], or hand the app a command.
 abstract interface class SystemShortcuts {
+  /// Whether the feature is on. Android shows the launcher's "Start a
+  /// workout" only while it is — absent rather than dead, since off, its link
+  /// does nothing. iOS has nothing to hide: its App Shortcuts are declared
+  /// in the binary.
+  Future<void> setEnabled({required bool enabled});
+
   /// Replaces the templates the assistant can name. Empty: none, which is what
   /// the feature switched off publishes.
   Future<void> setTemplates(Iterable<ShortcutTemplate> templates);
@@ -161,6 +167,9 @@ class _MethodChannelShortcuts implements SystemShortcuts {
   static const _channel = MethodChannel('heart/shortcuts');
 
   new _();
+
+  @override
+  Future<void> setEnabled({required bool enabled}) => _tell('setEnabled', enabled);
 
   @override
   Future<void> setTemplates(Iterable<ShortcutTemplate> templates) {
