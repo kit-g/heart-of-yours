@@ -869,6 +869,13 @@ class Api
     final json = _tryDecode(response.body);
     return switch ((response.statusCode, json)) {
       (200, Map json) => json,
+      // kept for a manual import, on a dry run and a commit alike
+      (202, Map json) => throw ImportParked(
+        reason: switch (json['reason']) {
+          String reason => reason,
+          _ => null,
+        },
+      ),
       (400, {'reason': String reason}) => throw ImportRejected(reason: reason),
       _ => throw NetworkException(
         statusCode: response.statusCode,
