@@ -66,4 +66,63 @@ void main() {
 
     alarms.stopActiveExerciseTimer();
   });
+
+  testWidgets('a rest skipped from elsewhere closes the dialog instead of leaving it at 00:00', (tester) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider<Alarms>.value(
+        value: alarms,
+        child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showCountdownDialog(context, 90, exerciseId: 'bench', scheduleNotification: (_) {}),
+                child: const Text('rest'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('rest'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Countdown), findsOneWidget);
+
+    // the notification's Skip, applied by the phone
+    alarms.stopActiveExerciseTimer();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Countdown), findsNothing);
+    // and only the dialog went
+    expect(find.text('rest'), findsOneWidget);
+  });
+
+  testWidgets('its own Skip closes it once, not the page under it', (tester) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider<Alarms>.value(
+        value: alarms,
+        child: MaterialApp(
+          localizationsDelegates: localizationsDelegates,
+          supportedLocales: L.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showCountdownDialog(context, 90, exerciseId: 'bench', scheduleNotification: (_) {}),
+                child: const Text('rest'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('rest'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Countdown), findsNothing);
+    expect(find.text('rest'), findsOneWidget);
+  });
 }

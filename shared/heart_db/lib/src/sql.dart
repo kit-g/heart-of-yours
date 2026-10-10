@@ -509,7 +509,15 @@ LIMIT ?
 ;
 ''';
 
-const getPreviousExercises = """
+final getPreviousExercises = _previousExercises('');
+
+/// [getPreviousExercises] as of a moment: last time *before* the workout
+/// starting at the second argument — what a past workout's editor shows,
+/// where the newest session would otherwise be the one being edited.
+final getPreviousExercisesBefore = _previousExercises('AND julianday(w.start) < julianday(?)');
+
+String _previousExercises(String before) =>
+    """
 WITH _recent AS (
     SELECT
         we.exercise_id,
@@ -524,6 +532,7 @@ WITH _recent AS (
       -- finished sessions only: the workout in progress is never "last
       -- time", and after a restart mid-workout it was the newest one
       AND w."end" IS NOT NULL
+      $before
     GROUP BY we.exercise_id
     HAVING max(w.start)
 )

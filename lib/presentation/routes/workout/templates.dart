@@ -277,9 +277,12 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   }
 
   /// The copy is named here: "(copy)" is a word, and the notifier has none.
+  /// A name already taken gets a number, "(copy 2)", so two copies of the
+  /// same template can be told apart — on screen and by voice.
   Future<void> _duplicate(BuildContext context, Template template) {
-    final name = L.of(context).templateCopyName(template.name ?? '');
-    return Templates.of(context).duplicate(template, name: name);
+    final templates = Templates.of(context);
+    final name = templateCopyName(L.of(context), template.name ?? '', taken: templates.map((each) => each.name));
+    return templates.duplicate(template, name: name);
   }
 
   Future<void> _createFolder(BuildContext context) {
@@ -1229,4 +1232,16 @@ class _FolderNameFormState extends State<_FolderNameForm> {
       },
     );
   }
+}
+
+/// The name a copy of [original] gets: "(copy)", or "(copy 2)" and up when
+/// that is [taken].
+@visibleForTesting
+String templateCopyName(L l, String original, {required Iterable<String?> taken}) {
+  final names = taken.toSet();
+  return [
+        l.templateCopyName(original),
+        for (var n = 2; n < 100; n++) l.templateCopyNumberedName(original, n),
+      ].where((candidate) => !names.contains(candidate)).firstOrNull ??
+      l.templateCopyName(original);
 }

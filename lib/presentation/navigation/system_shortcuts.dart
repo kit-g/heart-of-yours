@@ -42,6 +42,8 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
   Exercises? _exercises;
 
   /// What was last told, so the same list is not sent again on every repaint.
+  /// What [SystemShortcuts.setEnabled] was last told; null before the first.
+  bool? _publishedEnabled;
   List<ShortcutTemplate>? _published;
   ShortcutRest? _publishedRest;
   bool _restPublished = false;
@@ -107,6 +109,10 @@ class _SystemShortcutsPresenterState extends State<SystemShortcutsPresenter> {
     final shortcuts = widget.shortcuts;
     if (shortcuts == null) return;
     final off = _preferences?.featureAnswer(.shortcuts) == FeatureAnswer.off;
+    if (_publishedEnabled != !off) {
+      _publishedEnabled = !off;
+      shortcuts.setEnabled(enabled: !off);
+    }
     final list = switch ((off, _templates)) {
       (true, _) || (_, null) => const <ShortcutTemplate>[],
       (false, Templates templates) => [...templates, ...templates.samples].map(_named).nonNulls.toList(),
