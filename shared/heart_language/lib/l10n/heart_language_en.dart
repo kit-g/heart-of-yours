@@ -2395,6 +2395,145 @@ class LEn extends L {
   @override
   String get importUnitBody =>
       'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.';
+
+  @override
+  String get developerApi => 'Developer API';
+
+  @override
+  String get apiTokensExplainer =>
+      'Your training log, readable by your own scripts, spreadsheets and AI assistants. A token can show what you logged and change nothing.';
+
+  @override
+  String get apiTokensHowTo => 'How to use a token';
+
+  @override
+  String get newApiToken => 'New token';
+
+  @override
+  String apiTokensAtCapacity(Object count) {
+    return 'You can hold $count active tokens. Revoke one to make room for another.';
+  }
+
+  @override
+  String get apiTokensEmpty => 'Nothing minted yet.';
+
+  @override
+  String get apiTokensLoadFailed => 'The list didn\'t make it here.';
+
+  @override
+  String get apiTokensActive => 'Active';
+
+  @override
+  String get apiTokensPast => 'No longer valid';
+
+  @override
+  String apiTokenCreatedOn(Object date) {
+    return 'Created $date';
+  }
+
+  @override
+  String apiTokenExpiresOn(Object date) {
+    return 'Expires $date';
+  }
+
+  @override
+  String get apiTokenNeverExpires => 'Never expires';
+
+  @override
+  String apiTokenLastUsedOn(Object date) {
+    return 'Last used $date';
+  }
+
+  @override
+  String get apiTokenNeverUsed => 'Never used';
+
+  @override
+  String apiTokenRevokedOn(Object date) {
+    return 'Revoked $date';
+  }
+
+  @override
+  String apiTokenExpiredOn(Object date) {
+    return 'Expired $date';
+  }
+
+  @override
+  String apiTokenEndsWith(Object hint) {
+    return 'Ends in $hint';
+  }
+
+  @override
+  String get revokeApiToken => 'Revoke';
+
+  @override
+  String revokeApiTokenTitle(Object name) {
+    return 'Revoke $name?';
+  }
+
+  @override
+  String get revokeApiTokenBody =>
+      'Whatever uses it stops reading your log on its next request. No undo, but a new token is one tap away.';
+
+  @override
+  String get keepApiToken => 'Keep it';
+
+  @override
+  String get apiTokenNameHint => 'My sheet, Home Assistant, Claude…';
+
+  @override
+  String get apiTokenExpiry => 'Expires';
+
+  @override
+  String get apiTokenExpiryYear => 'In a year';
+
+  @override
+  String get apiTokenExpiryNever => 'Never';
+
+  @override
+  String get apiTokenPurpose => 'Used by';
+
+  @override
+  String get apiTokenPurposeHelp => 'Optional. It changes nothing; it tells you, and us, what tokens are for.';
+
+  @override
+  String get apiTokenPurposeScript => 'A script';
+
+  @override
+  String get apiTokenPurposeSpreadsheet => 'A spreadsheet';
+
+  @override
+  String get apiTokenPurposeHomeAutomation => 'Home automation';
+
+  @override
+  String get apiTokenPurposeAiAssistant => 'An AI assistant';
+
+  @override
+  String get apiTokenPurposeOther => 'Something else';
+
+  @override
+  String get apiTokenPurposeUnset => 'Not saying';
+
+  @override
+  String get createApiToken => 'Create token';
+
+  @override
+  String get apiTokenReady => 'Here it is';
+
+  @override
+  String get apiTokenRevealBody =>
+      'This is the one time Heart shows it. Copy it into your tool now; from here on you\'ll only see its last four characters.';
+
+  @override
+  String get apiTokenSecretLabel => 'Your new token';
+
+  @override
+  String get copyApiToken => 'Copy';
+
+  @override
+  String get apiTokenCopied => 'Copied';
+
+  @override
+  String get apiTokenStored => 'I\'ve got it';
 }
 
 /// The translations for English, as used in Canada (`en_CA`).
@@ -4787,4 +4926,143 @@ class LEnCa extends LEn {
   @override
   String get importUnitBody =>
       'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.';
+
+  @override
+  String get developerApi => 'Developer API';
+
+  @override
+  String get apiTokensExplainer =>
+      'Your training log, readable by your own scripts, spreadsheets and AI assistants. A token can show what you logged and change nothing.';
+
+  @override
+  String get apiTokensHowTo => 'How to use a token';
+
+  @override
+  String get newApiToken => 'New token';
+
+  @override
+  String apiTokensAtCapacity(Object count) {
+    return 'You can hold $count active tokens. Revoke one to make room for another.';
+  }
+
+  @override
+  String get apiTokensEmpty => 'Nothing minted yet.';
+
+  @override
+  String get apiTokensLoadFailed => 'The list didn\'t make it here.';
+
+  @override
+  String get apiTokensActive => 'Active';
+
+  @override
+  String get apiTokensPast => 'No longer valid';
+
+  @override
+  String apiTokenCreatedOn(Object date) {
+    return 'Created $date';
+  }
+
+  @override
+  String apiTokenExpiresOn(Object date) {
+    return 'Expires $date';
+  }
+
+  @override
+  String get apiTokenNeverExpires => 'Never expires';
+
+  @override
+  String apiTokenLastUsedOn(Object date) {
+    return 'Last used $date';
+  }
+
+  @override
+  String get apiTokenNeverUsed => 'Never used';
+
+  @override
+  String apiTokenRevokedOn(Object date) {
+    return 'Revoked $date';
+  }
+
+  @override
+  String apiTokenExpiredOn(Object date) {
+    return 'Expired $date';
+  }
+
+  @override
+  String apiTokenEndsWith(Object hint) {
+    return 'Ends in $hint';
+  }
+
+  @override
+  String get revokeApiToken => 'Revoke';
+
+  @override
+  String revokeApiTokenTitle(Object name) {
+    return 'Revoke $name?';
+  }
+
+  @override
+  String get revokeApiTokenBody =>
+      'Whatever uses it stops reading your log on its next request. No undo, but a new token is one tap away.';
+
+  @override
+  String get keepApiToken => 'Keep it';
+
+  @override
+  String get apiTokenNameHint => 'My sheet, Home Assistant, Claude…';
+
+  @override
+  String get apiTokenExpiry => 'Expires';
+
+  @override
+  String get apiTokenExpiryYear => 'In a year';
+
+  @override
+  String get apiTokenExpiryNever => 'Never';
+
+  @override
+  String get apiTokenPurpose => 'Used by';
+
+  @override
+  String get apiTokenPurposeHelp => 'Optional. It changes nothing; it tells you, and us, what tokens are for.';
+
+  @override
+  String get apiTokenPurposeScript => 'A script';
+
+  @override
+  String get apiTokenPurposeSpreadsheet => 'A spreadsheet';
+
+  @override
+  String get apiTokenPurposeHomeAutomation => 'Home automation';
+
+  @override
+  String get apiTokenPurposeAiAssistant => 'An AI assistant';
+
+  @override
+  String get apiTokenPurposeOther => 'Something else';
+
+  @override
+  String get apiTokenPurposeUnset => 'Not saying';
+
+  @override
+  String get createApiToken => 'Create token';
+
+  @override
+  String get apiTokenReady => 'Here it is';
+
+  @override
+  String get apiTokenRevealBody =>
+      'This is the one time Heart shows it. Copy it into your tool now; from here on you\'ll only see its last four characters.';
+
+  @override
+  String get apiTokenSecretLabel => 'Your new token';
+
+  @override
+  String get copyApiToken => 'Copy';
+
+  @override
+  String get apiTokenCopied => 'Copied';
+
+  @override
+  String get apiTokenStored => 'I\'ve got it';
 }
