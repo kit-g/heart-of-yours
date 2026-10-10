@@ -64,6 +64,10 @@ enum _Screen {
   eraseDataDialog,
   importData,
   exportData,
+  apiTokens,
+  newApiToken,
+  apiTokenRevealed,
+  revokeApiTokenDialog,
   whatsNew,
   restTimers,
   features,
@@ -76,6 +80,24 @@ enum _Screen {
 }
 
 /// The exercise the rest-timers screen resolves one of its timers to.
+/// A live token and a revoked one, so both sections of the tokens page render.
+final _liveToken = ApiToken(
+  id: 'tok-live',
+  name: 'My sheet',
+  purpose: .spreadsheet,
+  hint: '-hbo',
+  createdAt: DateTime.utc(2026, 10, 5),
+  expiresAt: DateTime.utc(2027, 10, 5),
+);
+
+final _pastToken = ApiToken(
+  id: 'tok-past',
+  name: 'Old script',
+  hint: '2ruU',
+  createdAt: DateTime.utc(2026, 9, 1),
+  revokedAt: DateTime.utc(2026, 10, 1),
+);
+
 final _bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
 
 final _squat = Exercise(name: 'Squat', category: .barbell, target: .legs);
@@ -479,6 +501,38 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.exportData, _Guideline.androidTapTarget, null),
   (_Screen.exportData, _Guideline.iosTapTarget, null),
 
+  (_Screen.apiTokens, _Guideline.labeledTapTarget, null),
+  (_Screen.apiTokens, _Guideline.textContrastLight, null),
+  (_Screen.apiTokens, _Guideline.textContrastDark, null),
+  (_Screen.apiTokens, _Guideline.androidTapTarget, null),
+  (_Screen.apiTokens, _Guideline.iosTapTarget, null),
+
+  (_Screen.newApiToken, _Guideline.labeledTapTarget, null),
+  (_Screen.newApiToken, _Guideline.textContrastLight, null),
+  (_Screen.newApiToken, _Guideline.textContrastDark, null),
+  (_Screen.newApiToken, _Guideline.androidTapTarget, null),
+  (_Screen.newApiToken, _Guideline.iosTapTarget, null),
+
+  (_Screen.apiTokenRevealed, _Guideline.labeledTapTarget, null),
+  (_Screen.apiTokenRevealed, _Guideline.textContrastLight, null),
+  (_Screen.apiTokenRevealed, _Guideline.textContrastDark, null),
+  (_Screen.apiTokenRevealed, _Guideline.androidTapTarget, null),
+  (_Screen.apiTokenRevealed, _Guideline.iosTapTarget, null),
+
+  (_Screen.revokeApiTokenDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.revokeApiTokenDialog, _Guideline.textContrastLight, null),
+  (_Screen.revokeApiTokenDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.revokeApiTokenDialog,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.revokeApiTokenDialog,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+
   // What's new (lib/presentation/routes/settings/whats_new.dart): cards of
   // text over the real bundled notes, and a 48pt button under each note that
   // names a feature (#239).
@@ -638,6 +692,14 @@ void main() {
 
     when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[]));
     when(api.getExercises()).thenAnswer((_) async => <Exercise>[]);
+    // the developer API's tokens (#271): one live, one revoked, and a mint
+    // that hands back a secret
+    when(api.listApiTokens()).thenAnswer((_) async => [_liveToken, _pastToken]);
+    when(
+      api.createApiToken(name: anyNamed('name'), expiry: anyNamed('expiry'), purpose: anyNamed('purpose')),
+    ).thenAnswer(
+      (_) async => MintedApiToken(token: _liveToken, secret: 'hrt_6PnLB1AcxbmXGK1ZeqJVevM9pFCAxx-i7iUShZD-hbo'),
+    );
     when(api.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
     when(db.getPreferences(any)).thenAnswer((_) async => <ChartPreference>[]);
 
@@ -992,6 +1054,26 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tapByKey(AppKeys.exportData);
+      case _Screen.apiTokens || _Screen.newApiToken || _Screen.apiTokenRevealed || _Screen.revokeApiTokenDialog:
+        await tester.tap(find.byIcon(Icons.settings_rounded));
+        await tester.pumpTimes();
+        await tester.ensureVisible(find.byKey(AppKeys.developerApi));
+        await tester.tapByKey(AppKeys.developerApi);
+        await tester.pumpTimes();
+        switch (screen) {
+          case _Screen.newApiToken || _Screen.apiTokenRevealed:
+            await tester.tapByKey(AppKeys.newApiToken);
+            await tester.pumpTimes();
+            if (screen == _Screen.apiTokenRevealed) {
+              await tester.enterText(find.byKey(AppKeys.apiTokenName), 'My sheet');
+              await tester.pumpTimes();
+              await tester.tapByKey(AppKeys.createApiToken);
+            }
+          case _Screen.revokeApiTokenDialog:
+            await tester.tapByKey(AppKeys.revokeApiToken(_liveToken.id));
+          default:
+            break;
+        }
       case _Screen.whatsNew:
         // rootBundle caches each load's future, and one cached under an
         // earlier test's fake clock never delivers to a later test

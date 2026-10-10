@@ -436,6 +436,19 @@
         "android"
       ],
       "highlight": false
+    },
+    {
+      "id": "developer-api",
+      "category": "data",
+      "title": "Your log, by API",
+      "pitch": "Mint a read-only token in Settings and read your own workouts from a script, a spreadsheet or an AI assistant over MCP. Free, and never your health data.",
+      "since": null,
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": true
     }
   ]
 }

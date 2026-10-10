@@ -42,6 +42,7 @@ RouteBase _profileRoute() {
             onWhatsNew: context.goToWhatsNew,
             onRestTimers: context.goToRestTimers,
             onFeatures: context.goToFeatures,
+            onDeveloperApi: context.goToApiTokens,
             onErased: context.goToProfile,
           );
         },
@@ -66,6 +67,18 @@ RouteBase _profileRoute() {
             path: _exportDataPath,
             builder: (_, _) => const ExportDataPage(onError: reportToSentry),
             name: _exportDataName,
+          ),
+          GoRoute(
+            path: _apiTokensPath,
+            builder: (context, _) => ApiTokensPage(onNewToken: context.goToNewApiToken, onError: reportToSentry),
+            name: _apiTokensName,
+            routes: [
+              GoRoute(
+                path: _newApiTokenPath,
+                builder: (context, _) => NewApiTokenPage(onDone: context.goToApiTokens, onError: reportToSentry),
+                name: _newApiTokenName,
+              ),
+            ],
           ),
           GoRoute(
             path: _whatsNewPath,
