@@ -939,7 +939,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "finishWorkoutWarningBody": "Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные.",
+  "finishWorkoutWarningBody": "Сохранятся только отмеченные подходы. Остальные не войдут в тренировку.",
   "@finishWorkoutWarningBody": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
@@ -1616,12 +1616,14 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteAccountBody": "Ваш аккаунт запланирован на удаление через {deadline} дней. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда.",
+  "deleteAccountBody": "Ваш аккаунт запланирован на удаление через {deadline, plural, one{{deadline} день} few{{deadline} дня} other{{deadline} дней}}. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда.",
   "@deleteAccountBody": {
     "description": "Delete account dialog",
     "type": "text",
     "placeholders": {
-      "deadline": {}
+      "deadline": {
+        "type": "int"
+      }
     }
   },
   "deleteAccountCancelMessage": "О нет, мне здесь нравится!",
@@ -4383,5 +4385,21 @@
     "description": "Subtitle under the shortcuts switch in Settings › Features on Android, saying what it does: Gemini and the home screen, where iOS has Siri and the Shortcuts app",
     "type": "text",
     "placeholders": {}
+  },
+  "templateCopyNumberedName": "{name} (копия {number})",
+  "@templateCopyNumberedName": {
+    "description": "Name of a duplicated template when \"<name> (copy)\" is already taken: the copy's number, 2 and up",
+    "type": "text",
+    "placeholders": {
+      "name": {},
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcutTemplateGone": "Этого шаблона больше нет",
+  "@shortcutTemplateGone": {
+    "description": "Brief notice when a home-screen shortcut or link names a template that no longer exists; the templates list is shown under it",
+    "type": "text"
   }
 }

@@ -159,6 +159,8 @@ void main() {
     expect(Workouts.of(context).hasActiveWorkout, isFalse);
     expect(sheetOpen(router), isFalse);
     expect(find.byType(WorkoutPage), findsOneWidget);
+    // and says why the list is what opened
+    expect(find.text(copy(tester).shortcutTemplateGone), findsOneWidget);
   });
 
   testWidgets('finish opens the active workout and asks the Finish question', (tester) async {
