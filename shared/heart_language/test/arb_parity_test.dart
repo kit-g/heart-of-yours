@@ -135,6 +135,25 @@ void main() {
     }
   });
 
+  test('gen-l10n found nothing untranslated, en_CA aside', () {
+    // untranslated.json is gen-l10n's report of the keys each locale lacks,
+    // written by every import and not committed. A key with an empty CSV
+    // cell lands here, which used to show as a diff on the committed file;
+    // now this is where it shows. en_CA may lag (see above), nobody else.
+    final file = File('${root.path}/untranslated.json');
+    expect(
+      file.existsSync(),
+      isTrue,
+      reason: '${file.path} is missing: run the import first',
+    );
+    final report = json.decode(file.readAsStringSync()) as Map<String, dynamic>;
+    expect(
+      report.keys.where((locale) => locale != 'en_CA'),
+      isEmpty,
+      reason: 'untranslated keys: $report',
+    );
+  });
+
   test('translations.csv is well-formed', () {
     final file = File('${root.path}/scripts/translations.csv');
     expect(file.existsSync(), isTrue, reason: '${file.path} is missing');
@@ -144,17 +163,12 @@ void main() {
     expect(rows, isNotEmpty, reason: 'CSV has no header row');
 
     final header = rows.first.cast<String>();
-    expect(
-      header.take(2),
-      ['id', 'description'],
-      reason: 'unexpected CSV header shape',
-    );
+    expect(header.take(2), [
+      'id',
+      'description',
+    ], reason: 'unexpected CSV header shape');
     for (final locale in ['en', 'en_CA', 'ru']) {
-      expect(
-        header,
-        contains(locale),
-        reason: 'CSV lost the $locale column',
-      );
+      expect(header, contains(locale), reason: 'CSV lost the $locale column');
     }
 
     final enColumn = header.indexOf('en');
