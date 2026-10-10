@@ -2,8 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/launch_screen.dart';
 
-/// The launch screen stays up until the app is ready, for at least half a
-/// second from launch, and the first frame is let through exactly once.
+/// The launch screen stays up until the app is ready, for at least the
+/// minimum from launch, and the first frame is let through exactly once.
 /// Static state: one process, one launch — so one test.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
