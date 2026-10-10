@@ -76,7 +76,9 @@ class SettingSwitcher<T extends Object> extends StatelessWidget {
           isSelected: [
             for (final key in children.keys) key == value,
           ],
-          constraints: const BoxConstraints(maxHeight: 28, minHeight: 28),
+          // 48 wide at the least: a segment as short as "kg" is a tap target
+          // like any other (Android's guideline, held by the a11y matrix)
+          constraints: const BoxConstraints(maxHeight: 28, minHeight: 28, minWidth: 48),
           children: children.values.map(
             (child) {
               return Padding(

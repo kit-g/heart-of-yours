@@ -986,14 +986,18 @@ Future<void> _showOngoing(_OngoingDisplay workout) {
       visibility: .public,
       category: .progress,
       // three is what Android allows: the rest's buttons while resting, Done
-      // (#246) when there is a set to tick and no rest on the clock
+      // (#246) when there is a set to tick and no rest on the clock. None of
+      // them cancels the notification on press, the plugin's default: a
+      // notification that vanishes and is posted again comes back collapsed,
+      // and, gone from the shade after it was posted, reads as the user's
+      // swipe — from the second press on it was never posted again
       actions: switch ((resting, workout.rest, workout.done)) {
         (true, OngoingRest rest, _) => [
-          AndroidNotificationAction(_restMinusAction, rest.minus, showsUserInterface: false),
-          AndroidNotificationAction(_restPlusAction, rest.plus, showsUserInterface: false),
-          AndroidNotificationAction(_restSkipAction, rest.skip, showsUserInterface: false),
+          _button(_restMinusAction, rest.minus),
+          _button(_restPlusAction, rest.plus),
+          _button(_restSkipAction, rest.skip),
         ],
-        (false, _, OngoingDone done) => [AndroidNotificationAction(_doneAction, done.label, showsUserInterface: false)],
+        (false, _, OngoingDone done) => [_button(_doneAction, done.label)],
         _ => null,
       },
     ),
@@ -1068,6 +1072,12 @@ Future<void> _ensureOngoingChannel(String name) async {
         ),
       );
   _ongoingChannelName = name;
+}
+
+/// A button on the ongoing notification: handled in the background, and the
+/// notification left where it is — the handler posts its new state in place.
+AndroidNotificationAction _button(String id, String label) {
+  return AndroidNotificationAction(id, label, showsUserInterface: false, cancelNotification: false);
 }
 
 Future<void> cancelOngoingWorkoutNotification() {

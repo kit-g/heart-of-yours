@@ -35,7 +35,8 @@ class AppConfig {
     required this._testUserCredentials,
   });
 
-  final String accountDeletionDeadline;
+  /// Days between a deletion request and the deletion.
+  final int accountDeletionDeadline;
   final String api;
   final String appName;
   final Env env;
@@ -54,7 +55,7 @@ class AppConfig {
 
   factory fromDartDefine() {
     return AppConfig._(
-      accountDeletionDeadline: const .fromEnvironment('ACCOUNT_DELETION_DEADLINE'),
+      accountDeletionDeadline: const int.fromEnvironment('ACCOUNT_DELETION_DEADLINE', defaultValue: 30),
       api: const .fromEnvironment('API'),
       appName: const .fromEnvironment('APP_NAME'),
       env: Env.fromString(const String.fromEnvironment('ENV').trim()),
@@ -70,7 +71,7 @@ class AppConfig {
   }
 
   factory test({
-    String accountDeletionDeadline = '2',
+    int accountDeletionDeadline = 2,
     String api = '',
     String appName = 'Heart',
     Env env = Env.dev,

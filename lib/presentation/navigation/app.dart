@@ -145,7 +145,7 @@ class HeartApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<PreviousExercises>(
-          create: (_) => PreviousExercises(service: db),
+          create: (_) => PreviousExercises(service: db, readBefore: db.getPreviousSetsBefore),
         ),
         ChangeNotifierProvider<Preferences>(
           // Loaded here, before there is a session, not with the rest of

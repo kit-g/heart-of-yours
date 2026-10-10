@@ -939,7 +939,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "finishWorkoutWarningBody": "Les séries vides ou invalides seront supprimées, et toutes les séries valides seront marquées comme terminées.",
+  "finishWorkoutWarningBody": "Seules les séries cochées seront enregistrées. Les autres seront écartées.",
   "@finishWorkoutWarningBody": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
@@ -1616,12 +1616,14 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteAccountBody": "La suppression de votre compte est programmée dans {deadline} jours. D’ici là, vous pouvez toujours vous connecter et revenir sur votre décision. Une fois le délai passé, votre compte et vos données personnelles seront définitivement supprimés.",
+  "deleteAccountBody": "La suppression de votre compte est programmée dans {deadline, plural, =1{1 jour} other{{deadline} jours}}. D’ici là, vous pouvez toujours vous connecter et revenir sur votre décision. Une fois le délai passé, votre compte et vos données personnelles seront définitivement supprimés.",
   "@deleteAccountBody": {
     "description": "Delete account dialog",
     "type": "text",
     "placeholders": {
-      "deadline": {}
+      "deadline": {
+        "type": "int"
+      }
     }
   },
   "deleteAccountCancelMessage": "Oh non, je me plais ici !",
@@ -4377,5 +4379,27 @@
     "description": "Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say",
     "type": "text",
     "placeholders": {}
+  },
+  "shortcutsSubtitleAndroid": "Démarrez ou terminez une séance depuis Gemini ou votre écran d’accueil",
+  "@shortcutsSubtitleAndroid": {
+    "description": "Subtitle under the shortcuts switch in Settings › Features on Android, saying what it does: Gemini and the home screen, where iOS has Siri and the Shortcuts app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateCopyNumberedName": "{name} (copie {number})",
+  "@templateCopyNumberedName": {
+    "description": "Name of a duplicated template when \"<name> (copy)\" is already taken: the copy's number, 2 and up",
+    "type": "text",
+    "placeholders": {
+      "name": {},
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcutTemplateGone": "Ce modèle n’existe plus",
+  "@shortcutTemplateGone": {
+    "description": "Brief notice when a home-screen shortcut or link names a template that no longer exists; the templates list is shown under it",
+    "type": "text"
   }
 }
