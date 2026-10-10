@@ -121,4 +121,9 @@ const _migrations = <int, List<String>>{
     addCatalogGlossary,
     invalidateCatalogStamp,
   ],
+  19: [
+    addWorkoutUnread,
+    addWorkoutExerciseUnread,
+    addTemplateUnread,
+  ],
 };

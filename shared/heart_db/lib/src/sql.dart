@@ -54,6 +54,7 @@ SELECT
     _workout.synced,
     _workout.note,
     _workout.pauses,
+    _workout.unread,
     (
         SELECT json_group_array(
             json_object(
@@ -61,6 +62,8 @@ SELECT
                 'order', _ex.exercise_order,
                 'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
+                -- sets this build could not read, put back by toWorkout (#277)
+                'unread', json(_ex.unread),
                 'sets', (
                     SELECT json_group_array(
                         json_object(
@@ -135,6 +138,7 @@ SELECT
     _workout.synced,
     _workout.note,
     _workout.pauses,
+    _workout.unread,
     (
         SELECT json_group_array(
             json_object(
@@ -142,6 +146,8 @@ SELECT
                 'order', _ex.exercise_order,
                 'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
+                -- sets this build could not read, put back by toWorkout (#277)
+                'unread', json(_ex.unread),
                 'sets', (
                     SELECT json_group_array(
                         json_object(
@@ -214,6 +220,7 @@ SELECT
     _workouts.synced,
     _workouts.note,
     _workouts.pauses,
+    _workouts.unread,
     (
         SELECT json_group_array(
             json_object(
@@ -221,6 +228,8 @@ SELECT
                 'order', _ex.exercise_order,
                 'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
+                -- sets this build could not read, put back by toWorkout (#277)
+                'unread', json(_ex.unread),
                 'sets', (
                     SELECT json_group_array(
                         json_object(
@@ -262,8 +271,8 @@ WHERE completed = 0
 /// foreign keys on, REPLACE is a delete + insert, and the delete cascades
 /// through `workout_exercises` into `sets` (heart-of-yours#85).
 const upsertWorkout = '''
-INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses, unread)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
     start   = EXCLUDED.start,
     user_id = EXCLUDED.user_id,
@@ -272,7 +281,10 @@ ON CONFLICT(id) DO UPDATE SET
     images  = EXCLUDED.images,
     synced  = EXCLUDED.synced,
     note    = EXCLUDED.note,
-    pauses  = EXCLUDED.pauses;
+    pauses  = EXCLUDED.pauses,
+    -- the exercises this build could not read belong with the children: only
+    -- a payload authoritative for them (the last argument) replaces them
+    unread  = CASE WHEN ? THEN EXCLUDED.unread ELSE workouts.unread END;
 ''';
 
 const getTemplates = """
@@ -309,6 +321,7 @@ SELECT
     _templates.id,
     _templates.name,
     _templates.order_in_parent AS "order",
+    _templates.unread,
     (
         SELECT json_group_array(
             json_object(
@@ -382,6 +395,7 @@ SELECT
     id,
     name,
     order_in_parent AS "order",
+    unread,
     (
         SELECT json_group_array(
             json_object(

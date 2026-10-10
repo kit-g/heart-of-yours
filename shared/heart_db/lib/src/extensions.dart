@@ -76,7 +76,7 @@ extension on Map {
   /// `json_object`/`json_group_array` return strings — while
   /// `Template.fromJson` expects them decoded.
   Map toTemplate() {
-    return map(
+    final template = map(
       (key, value) {
         return switch (key) {
           'exercises' when value is String => MapEntry(key, _orderedByStamp(jsonDecode(value))),
@@ -85,10 +85,11 @@ extension on Map {
         };
       },
     );
+    return template.._restoreUnread();
   }
 
   Map toWorkout() {
-    return map(
+    final workout = map(
       (key, value) {
         return switch (key) {
           'exercises' => MapEntry(key, _ordered(jsonDecode(value))),
@@ -99,6 +100,36 @@ extension on Map {
         };
       },
     );
+    for (final exercise in switch (workout['exercises']) {
+      List exercises => exercises.whereType<Map>(),
+      _ => const <Map>[],
+    }) {
+      exercise._restoreUnread(into: 'sets');
+    }
+    return workout.._restoreUnread();
+  }
+
+  /// Puts back what this build could not read (#277): the stored `unread`
+  /// column, a JSON list, joins the list [into] — a workout's or a template's
+  /// exercises, an exercise's sets — where `fromJson` sets it aside again, so
+  /// the model carries it to the next save. At the end of the list: an unread
+  /// item's place among the others is approximate once anything around it
+  /// moved, as heart_models notes.
+  void _restoreUnread({String into = 'exercises'}) {
+    final unread = switch (remove('unread')) {
+      String json => jsonDecode(json),
+      final List list => list,
+      _ => null,
+    };
+    if (unread case List items when items.isNotEmpty) {
+      this[into] = [
+        ...switch (this[into]) {
+          List present => present,
+          _ => const [],
+        },
+        ...items,
+      ];
+    }
   }
 }
 

@@ -8,7 +8,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
         txn
           ..update(
             _templates,
-            {'name': template.name},
+            {'name': template.name, 'unread': _Workouts._encodeUnread(template.unread)},
             where: 'id = ?',
             whereArgs: [template.id],
           )
@@ -21,7 +21,9 @@ mixin _Templates on _LocalDatabase implements TemplateService {
         final batch = txn.batch();
 
         for (final (index, exercise) in template.indexed) {
-          var desc = exercise.map((set) => set.toMap()).toList();
+          // sets this build could not read stay among the rest, where
+          // `fromJson` sets them aside again on the way out (#277)
+          final desc = [...exercise.map((set) => set.toMap()), ...exercise.unread];
           final ts = DateTime.timestamp();
           batch.insert(
             _templatesExercises,
@@ -96,6 +98,8 @@ mixin _Templates on _LocalDatabase implements TemplateService {
               ...template.toRow(),
               'user_id': userId,
               'folder_id': template.folderId,
+              // exercises this build could not read (#277)
+              'unread': _Workouts._encodeUnread(template.unread),
             },
             conflictAlgorithm: .replace,
           );
@@ -113,7 +117,9 @@ mixin _Templates on _LocalDatabase implements TemplateService {
           final ts = DateTime.timestamp();
 
           for (final (index, exercise) in template.indexed) {
-            var desc = exercise.map((set) => set.toMap()).toList();
+            // sets this build could not read stay among the rest, where
+            // `fromJson` sets them aside again on the way out (#277)
+            final desc = [...exercise.map((set) => set.toMap()), ...exercise.unread];
 
             batch.insert(
               _templatesExercises,

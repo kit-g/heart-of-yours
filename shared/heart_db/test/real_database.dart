@@ -107,6 +107,10 @@ const _schema = [
   addExerciseAliases,
   addCatalogGlossary,
   invalidateCatalogStamp,
+  // v19 (#277)
+  addWorkoutUnread,
+  addWorkoutExerciseUnread,
+  addTemplateUnread,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -116,7 +120,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 18,
+      version: 19,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
