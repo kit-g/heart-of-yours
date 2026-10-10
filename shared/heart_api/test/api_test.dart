@@ -586,6 +586,29 @@ void main() {
       expect(result.first.templateCount, 3);
     });
 
+    test('a folder this build cannot read costs that folder, not the list (#277)', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.templateFolders,
+        statusCode: 200,
+        body: {
+          'folders': [
+            {'id': 'f1', 'name': 'Push', 'order': 0, 'templateCount': 3},
+            // a shape from a server newer than this build
+            {
+              'id': 'f2',
+              'name': {'en': 'Pull'},
+              'order': 1,
+            },
+          ],
+        },
+      );
+
+      final result = await api.getFolders(userId: 'u1');
+      expect(result.map((each) => each.id), ['f1']);
+    });
+
     test('createFolder round-trips the folder', () async {
       _response(
         client: client,
@@ -1235,9 +1258,12 @@ void main() {
       expect(goals.map((each) => each.id), ['goal-1']);
     });
 
-    test('a goal this build cannot read fails the whole list', () async {
-      // the caller replaces its synced goals with this list: a goal skipped
-      // here would be deleted locally, so the list is whole or not at all
+    test('a goal this build cannot read costs that goal, not the list (#277)', () async {
+      // The caller replaces its synced goals with this list, so the goal
+      // skipped here leaves the device's mirror — and only the mirror: no
+      // remote delete follows from a refresh, the server keeps it, and a build
+      // that can read it shows it again. Failing the list instead would stop
+      // every goal from refreshing until the app is updated.
       _response(
         client: client,
         method: 'GET',
@@ -1251,7 +1277,9 @@ void main() {
         },
       );
 
-      expect(api.getTargetUserGoals(requesterId: userId, targetUserId: userId), throwsA(anything));
+      final goals = await api.getTargetUserGoals(requesterId: userId, targetUserId: userId);
+
+      expect(goals.map((each) => each.id), ['goal-1']);
     });
 
     test('asks for the achieved slice with a query parameter, not a path', () async {
