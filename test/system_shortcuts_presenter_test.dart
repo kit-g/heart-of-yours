@@ -14,6 +14,13 @@ import 'mocks.mocks.dart';
 /// The platform's layer, remembering every list it was told.
 class _Recorder implements SystemShortcuts {
   final told = <List<ShortcutTemplate>>[];
+  final enabled = <bool>[];
+
+  @override
+  Future<void> setEnabled({required bool enabled}) async {
+    this.enabled.add(enabled);
+  }
+
   final rests = <ShortcutRest?>[];
   final sessions = <String?>[];
   final exercises = <List<ShortcutExercise>>[];
@@ -184,6 +191,27 @@ void main() {
     preferences.setFeature(.shortcuts, on: true);
     await tester.pump();
     expect(recorder.told.last, [const ShortcutTemplate(id: 's1', name: 'Push')]);
+  });
+
+  testWidgets('the launcher\'s Start a workout follows the switch, told once per change', (tester) async {
+    when(db.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+    when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+    await pump(tester);
+    await templates.init();
+    await tester.pump();
+    // on with nothing to name is still on: Start a workout needs no template
+    expect(recorder.told.last, isEmpty);
+    expect(recorder.enabled, [true]);
+
+    preferences.setFeature(.shortcuts, on: false);
+    await tester.pump();
+    preferences.setFeature(.rpe, on: true);
+    await tester.pump();
+    expect(recorder.enabled, [true, false]);
+
+    preferences.setFeature(.shortcuts, on: true);
+    await tester.pump();
+    expect(recorder.enabled, [true, false, true]);
   });
 
   testWidgets('a template without a name is left out', (tester) async {
