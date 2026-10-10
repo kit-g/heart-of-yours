@@ -10,6 +10,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
   final VoidCallback onWhatsNew;
   final VoidCallback onRestTimers;
   final VoidCallback onFeatures;
+  final VoidCallback onDeveloperApi;
 
   /// Where the app goes once an anonymous session's data is erased.
   final VoidCallback onErased;
@@ -22,6 +23,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
     required this.onWhatsNew,
     required this.onRestTimers,
     required this.onFeatures,
+    required this.onDeveloperApi,
     required this.onErased,
   });
 
@@ -50,6 +52,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :yourData,
       :account,
       :app,
+      :developerApi,
     ) = L.of(
       context,
     );
@@ -235,6 +238,14 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                         leading: const Icon(Icons.manage_accounts_rounded),
                         title: Text(accountControl),
                         onTap: onAccountManagement,
+                      ),
+                      // the developer API's tokens (#271): under the account
+                      // because a token is the account, read by its own tools
+                      ListTile(
+                        key: AppKeys.developerApi,
+                        leading: const Icon(Icons.key_rounded),
+                        title: Text(developerApi),
+                        onTap: onDeveloperApi,
                       ),
                     ],
                   ),

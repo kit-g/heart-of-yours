@@ -15,6 +15,7 @@ import 'package:heart/core/utils/whats_new.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/theme.dart';
 import 'package:heart/core/theme/tokens.dart';
+import 'package:heart/core/utils/api_tokens.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
@@ -183,6 +184,15 @@ class HeartApp extends StatelessWidget {
           create: (context) => Goals(
             service: LocalGoals(db),
             remoteService: api,
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
+        // The developer API's tokens (#271): server-only, read when their page
+        // opens, gated by the same remote leg as everything else.
+        ChangeNotifierProvider<ApiTokens>(
+          create: (context) => ApiTokens(
+            service: RemoteApiTokens(api),
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),
