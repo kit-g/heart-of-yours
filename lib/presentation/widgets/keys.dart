@@ -154,4 +154,10 @@ abstract final class AppKeys {
   static const apiTokenSecret = Key('NewApiToken.secret');
   static const copyApiToken = Key('NewApiToken.copy');
   static const apiTokenStored = Key('NewApiToken.stored');
+
+  /// Account control's sign-ins (#323): one row per provider, by its id, and
+  /// the button on it.
+  static Key signInRow(String provider) => Key('SignIns.row.$provider');
+  static Key connectSignIn(String provider) => Key('SignIns.connect.$provider');
+  static Key disconnectSignIn(String provider) => Key('SignIns.disconnect.$provider');
 }

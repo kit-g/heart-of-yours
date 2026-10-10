@@ -17,6 +17,7 @@ import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/theme/tokens.dart';
 import 'package:heart/core/utils/headers.dart';
+import 'package:heart/core/utils/icons.dart';
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/visual.dart';

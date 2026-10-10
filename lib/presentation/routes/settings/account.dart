@@ -47,12 +47,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
       :saveName,
       :changeName,
       :resetPassword,
-      :noConnectivity,
-      :recoveryLinkMessageSent,
       :yourEmail,
-      :resetPasswordBody,
-      :cancel,
-      :ok,
     ) = L.of(
       context,
     );
@@ -70,9 +65,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
         valueListenable: loader,
         builder: (_, loading, child) {
           if (loading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
           final auth = Auth.watch(context);
 
@@ -111,88 +104,24 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               if (auth.user?.email case String email) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    yourEmail,
-                    style: textTheme.titleMedium,
-                  ),
+                  child: Text(yourEmail, style: textTheme.titleMedium),
                 ),
-                ListTile(
-                  title: Text(email),
-                ),
+                ListTile(title: Text(email)),
               ],
+              // the account's sign-ins (#323): what opens it today, and the
+              // way to add another, so one person stays one account
+              _SignIns(
+                onError: widget.onError,
+                onSetPassword: () => _onResetPassword(context),
+              ),
               ListTile(
                 title: Text(resetPassword),
-                onTap: () async {
-                  return showBrandedDialog<void>(
-                    context,
-                    title: Text(
-                      resetPassword,
-                      textAlign: TextAlign.center,
-                    ),
-                    content: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        resetPasswordBody,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    actions: [
-                      Column(
-                        spacing: 8,
-                        children: [
-                          PrimaryButton.wide(
-                            backgroundColor: colorScheme.surfaceContainerHighest,
-                            child: Center(
-                              child: Text(
-                                cancel,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.of(context, rootNavigator: true).pop();
-                            },
-                          ),
-                          PrimaryButton.wide(
-                            child: Center(
-                              child: Text(
-                                ok,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            onPressed: () async {
-                              Navigator.of(context, rootNavigator: true).pop();
-                              if (auth.user?.email case String email) {
-                                final messenger = ScaffoldMessenger.of(context);
-                                try {
-                                  startLoading();
-                                  await auth.sendPasswordRecoveryEmail(email);
-                                  messenger.snack(recoveryLinkMessageSent);
-                                } on AuthException catch (e, s) {
-                                  switch (e.reason) {
-                                    case AuthExceptionReason.networkRequestFailed:
-                                      messenger.snack(noConnectivity);
-                                    default:
-                                      widget.onError?.call(e, stacktrace: s);
-                                  }
-                                } finally {
-                                  stopLoading();
-                                }
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
+                onTap: () => _onResetPassword(context),
               ),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  changeName,
-                  style: textTheme.titleMedium,
-                ),
+                child: Text(changeName, style: textTheme.titleMedium),
               ),
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _nameController,
@@ -243,7 +172,9 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
                   dangerZone,
-                  style: textTheme.titleMedium?.copyWith(color: colorScheme.error),
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.error,
+                  ),
                 ),
               ),
               ListTile(
@@ -256,13 +187,75 @@ class _AccountManagementPageState extends State<AccountManagementPage>
                 ),
                 title: Text(
                   deleteAccount,
-                  style: textTheme.bodyLarge?.copyWith(color: colorScheme.error),
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.error,
+                  ),
                 ),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  Future<void> _onResetPassword(BuildContext context) {
+    final L(
+      :resetPassword,
+      :resetPasswordBody,
+      :cancel,
+      :ok,
+      :noConnectivity,
+      :recoveryLinkMessageSent,
+    ) = L.of(
+      context,
+    );
+    final ThemeData(:colorScheme) = Theme.of(context);
+    final auth = Auth.of(context);
+    return showBrandedDialog<void>(
+      context,
+      title: Text(resetPassword, textAlign: TextAlign.center),
+      content: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(resetPasswordBody, textAlign: TextAlign.center),
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              child: Center(child: Text(cancel, textAlign: TextAlign.center)),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+            PrimaryButton.wide(
+              child: Center(child: Text(ok, textAlign: TextAlign.center)),
+              onPressed: () async {
+                Navigator.of(context, rootNavigator: true).pop();
+                if (auth.user?.email case String email) {
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    startLoading();
+                    await auth.sendPasswordRecoveryEmail(email);
+                    messenger.snack(recoveryLinkMessageSent);
+                  } on AuthException catch (e, s) {
+                    switch (e.reason) {
+                      case AuthExceptionReason.networkRequestFailed:
+                        messenger.snack(noConnectivity);
+                      default:
+                        widget.onError?.call(e, stacktrace: s);
+                    }
+                  } finally {
+                    stopLoading();
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -279,10 +272,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
 
     return showBrandedDialog(
       context,
-      title: Text(
-        deleteAccountTitle,
-        textAlign: TextAlign.center,
-      ),
+      title: Text(deleteAccountTitle, textAlign: TextAlign.center),
       content: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Text(
@@ -290,19 +280,14 @@ class _AccountManagementPageState extends State<AccountManagementPage>
           textAlign: TextAlign.center,
         ),
       ),
-      icon: Icon(
-        Icons.auto_delete_rounded,
-        color: colorScheme.error,
-      ),
+      icon: Icon(Icons.auto_delete_rounded, color: colorScheme.error),
       actions: [
         Column(
           spacing: 8,
           children: [
             PrimaryButton.wide(
               backgroundColor: colorScheme.surfaceContainerHighest,
-              child: Center(
-                child: Text(deleteAccountCancelMessage),
-              ),
+              child: Center(child: Text(deleteAccountCancelMessage)),
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
@@ -312,7 +297,9 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               child: Center(
                 child: Text(
                   deleteAccountConfirmMessage,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                  ),
                 ),
               ),
               onPressed: () {
@@ -351,10 +338,7 @@ class _AccountManagementPageState extends State<AccountManagementPage>
 
     return showBrandedDialog(
       context,
-      title: Text(
-        confirmDeleteAccountTitle,
-        textAlign: TextAlign.center,
-      ),
+      title: Text(confirmDeleteAccountTitle, textAlign: TextAlign.center),
       content: Padding(
         padding: const EdgeInsets.all(8.0),
         child: ValueListenableBuilder<bool>(
@@ -371,19 +355,14 @@ class _AccountManagementPageState extends State<AccountManagementPage>
           },
         ),
       ),
-      icon: Icon(
-        Icons.auto_delete_rounded,
-        color: colorScheme.error,
-      ),
+      icon: Icon(Icons.auto_delete_rounded, color: colorScheme.error),
       actions: [
         Column(
           spacing: 8,
           children: [
             PrimaryButton.wide(
               backgroundColor: colorScheme.surfaceContainerHighest,
-              child: Center(
-                child: Text(cancel),
-              ),
+              child: Center(child: Text(cancel)),
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
               },
@@ -393,7 +372,9 @@ class _AccountManagementPageState extends State<AccountManagementPage>
               child: Center(
                 child: Text(
                   ok,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                  ),
                 ),
               ),
               onPressed: () {
@@ -448,7 +429,10 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     }
   }
 
-  Future<void> _uploadAvatar(BuildContext context, Future<LocalImage?> Function() getImage) async {
+  Future<void> _uploadAvatar(
+    BuildContext context,
+    Future<LocalImage?> Function() getImage,
+  ) async {
     final auth = Auth.of(context);
     final config = AppConfig.of(context);
     buzz();
@@ -484,44 +468,243 @@ class _AccountManagementPageState extends State<AccountManagementPage>
     final pop = Navigator.of(context).pop;
     final supportsTakingPhoto = context.supportsTakingPhoto();
 
-    return showBottomMenu<void>(
-      context,
-      [
-        if (supportsTakingPhoto)
-          BottomMenuAction(
-            title: capturePhoto,
-            onPressed: () {
-              pop();
-              _uploadAvatar(context, () => captureAndCropPhoto(context, L.of(context).cropAvatar));
-            },
-            icon: const Icon(Icons.camera_alt_rounded),
-          ),
+    return showBottomMenu<void>(context, [
+      if (supportsTakingPhoto)
         BottomMenuAction(
-          title: chooseFromGallery,
+          title: capturePhoto,
           onPressed: () {
             pop();
-            _uploadAvatar(context, () => pickAndCropGalleryImage(context, L.of(context).cropAvatar));
+            _uploadAvatar(
+              context,
+              () => captureAndCropPhoto(context, L.of(context).cropAvatar),
+            );
           },
-          icon: const Icon(Icons.photo_library_rounded),
+          icon: const Icon(Icons.camera_alt_rounded),
         ),
-        BottomMenuAction(
-          title: removeCurrentPhoto,
-          onPressed: () {
-            pop();
-            _removeExistingAvatar(context);
-          },
-          icon: Icon(
-            Icons.delete_rounded,
-            color: colorScheme.error,
+      BottomMenuAction(
+        title: chooseFromGallery,
+        onPressed: () {
+          pop();
+          _uploadAvatar(
+            context,
+            () => pickAndCropGalleryImage(context, L.of(context).cropAvatar),
+          );
+        },
+        icon: const Icon(Icons.photo_library_rounded),
+      ),
+      BottomMenuAction(
+        title: removeCurrentPhoto,
+        onPressed: () {
+          pop();
+          _removeExistingAvatar(context);
+        },
+        icon: Icon(Icons.delete_rounded, color: colorScheme.error),
+        isDestructive: true,
+      ),
+      BottomMenuAction(
+        title: cancel,
+        onPressed: pop,
+        icon: const Icon(Icons.close_rounded),
+      ),
+    ]);
+  }
+}
+
+/// The account's sign-ins (#323): Google, Apple and email-plus-password, each
+/// connected or not, with the way to connect it and, while another remains,
+/// the way to disconnect it. One uid throughout, so the server sees nothing.
+///
+/// Apple's row shows where Apple's sheet can: the same test the login page
+/// makes. A password is "set", not connected: the reset email is how Firebase
+/// adds one to an account that has none.
+class _SignIns extends StatefulWidget {
+  final void Function(dynamic error, {dynamic stacktrace})? onError;
+  final VoidCallback onSetPassword;
+
+  const new({required this.onError, required this.onSetPassword});
+
+  @override
+  State<_SignIns> createState() => _SignInsState();
+}
+
+class _SignInsState extends State<_SignIns> with HasHaptic<_SignIns> {
+  late final Future<bool> _apple = Auth.isAppleSignInAvailable();
+
+  /// The provider a connect or disconnect is in flight for: its row shows
+  /// progress, the others keep their buttons.
+  final _busy = ValueNotifier<AuthProvider?>(null);
+
+  @override
+  void dispose() {
+    _busy.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:signIns) = L.of(context);
+    final ThemeData(:textTheme) = Theme.of(context);
+    return Column(
+      crossAxisAlignment: .start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Semantics(
+            header: true,
+            child: Text(signIns, style: textTheme.titleMedium),
           ),
-          isDestructive: true,
         ),
-        BottomMenuAction(
-          title: cancel,
-          onPressed: pop,
-          icon: const Icon(Icons.close_rounded),
+        _row(context, .google),
+        FutureBuilder<bool>(
+          future: _apple,
+          builder: (context, snapshot) => switch (snapshot.data) {
+            true => _row(context, .apple),
+            _ => const SizedBox.shrink(),
+          },
         ),
+        _row(context, .password),
+        const SizedBox(height: 8),
       ],
+    );
+  }
+
+  Widget _row(BuildContext context, AuthProvider provider) {
+    return ValueListenableBuilder<AuthProvider?>(
+      valueListenable: _busy,
+      builder: (context, busy, _) {
+        return _SignInRow(
+          provider: provider,
+          busy: busy == provider,
+          onConnect: switch ((provider, busy)) {
+            (_, AuthProvider()) => null,
+            (.password, null) => widget.onSetPassword,
+            (.google || .apple, null) => () => _connect(context, provider),
+          },
+          onDisconnect: switch (busy) {
+            AuthProvider() => null,
+            null => () => _disconnect(context, provider),
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _connect(BuildContext context, AuthProvider provider) async {
+    buzz();
+    final messenger = ScaffoldMessenger.of(context);
+    final l = L.of(context);
+    _busy.value = provider;
+    try {
+      await Auth.of(context).connect(provider);
+    } on AuthException catch (e) {
+      messenger.snack(switch (e.reason) {
+        .providerInUse => l.providerInUse,
+        .networkRequestFailed => l.noConnectivity,
+        .invalidEmail ||
+        .wrongPassword ||
+        .userDisabled ||
+        .userNotFound ||
+        .emailInUse ||
+        .accountUnderOtherProvider ||
+        .weakPassword ||
+        .unknown => l.unknownError,
+      });
+    } catch (e, s) {
+      widget.onError?.call(e, stacktrace: s);
+      messenger.snack(l.unknownError);
+    } finally {
+      _busy.value = null;
+    }
+  }
+
+  Future<void> _disconnect(BuildContext context, AuthProvider provider) async {
+    buzz();
+    final messenger = ScaffoldMessenger.of(context);
+    final l = L.of(context);
+    _busy.value = provider;
+    try {
+      await Auth.of(context).disconnect(provider);
+    } on AuthException {
+      messenger.snack(l.unknownError);
+    } finally {
+      _busy.value = null;
+    }
+  }
+}
+
+/// One sign-in: its mark and name, the address it knows the account by, and
+/// the one action its state allows — Connect while it is not on the account,
+/// Disconnect while it is and is not the last. Absent, not dead: the last
+/// sign-in shows no button at all.
+class _SignInRow extends StatelessWidget {
+  final AuthProvider provider;
+  final bool busy;
+  final VoidCallback? onConnect;
+  final VoidCallback? onDisconnect;
+
+  const new({
+    required this.provider,
+    required this.busy,
+    this.onConnect,
+    this.onDisconnect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final L(
+      :providerGoogle,
+      :providerApple,
+      :providerPassword,
+      :signInConnected,
+      :connectSignIn,
+      :disconnectSignIn,
+      :setPassword,
+    ) = L.of(
+      context,
+    );
+    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+    final auth = Auth.watch(context);
+    final connected = auth.providers.contains(provider);
+    final canDisconnect = connected && auth.providers.length > 1;
+
+    final (icon, name) = switch (provider) {
+      .google => (const Icon(CustomIcons.google), providerGoogle),
+      .apple => (const Icon(CustomIcons.appstore), providerApple),
+      .password => (const Icon(Icons.password_rounded), providerPassword),
+    };
+
+    return ListTile(
+      key: AppKeys.signInRow(provider.id),
+      leading: icon,
+      title: Text(name),
+      subtitle: switch (connected) {
+        true => Text(
+          auth.providerEmail(provider) ?? signInConnected,
+          style: textTheme.bodySmall,
+        ),
+        false => null,
+      },
+      trailing: switch ((busy, connected, canDisconnect)) {
+        (true, _, _) => const SizedBox.square(
+          dimension: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        (false, false, _) => PrimaryButton.shrunk(
+          key: AppKeys.connectSignIn(provider.id),
+          onPressed: onConnect,
+          child: Text(switch (provider) {
+            .password => setPassword,
+            .google || .apple => connectSignIn,
+          }),
+        ),
+        (false, true, true) => PrimaryButton.shrunk(
+          key: AppKeys.disconnectSignIn(provider.id),
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          onPressed: onDisconnect,
+          child: Text(disconnectSignIn),
+        ),
+        (false, true, false) => null,
+      },
     );
   }
 }
