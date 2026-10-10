@@ -167,3 +167,43 @@ class LogoStripe extends StatelessWidget {
     };
   }
 }
+
+/// The heart: the launcher icon's and the splash's mark, one shape from one
+/// source (the confetti heart, `routes/done/heart.dart`, fitted to a 64-unit
+/// square — `ic_splash_heart.xml` carries the same curves).
+class HeartMark extends StatelessWidget {
+  final double size;
+  final Color? color;
+
+  const new({super.key, required this.size, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: .square(size),
+      painter: _HeartPainter(color ?? Theme.of(context).colorScheme.onSurface),
+    );
+  }
+}
+
+class _HeartPainter extends CustomPainter {
+  final Color color;
+
+  const new(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.shortestSide / 64;
+    final path = Path()
+      ..moveTo(32.00, 13.42)
+      ..cubicTo(10.07, -8.51, -22.82, 28.04, 32.00, 57.27)
+      ..cubicTo(86.82, 28.04, 53.93, -8.51, 32.00, 13.42)
+      ..close();
+    canvas
+      ..scale(scale)
+      ..drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_HeartPainter old) => old.color != color;
+}
