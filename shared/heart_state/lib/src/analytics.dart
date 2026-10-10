@@ -1,4 +1,4 @@
-import 'package:heart_models/heart_models.dart' show SetType;
+import 'package:heart_models/heart_models.dart' show ApiTokenExpiry, ApiTokenPurpose, SetType;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -178,6 +178,8 @@ const _notificationPermission = 'notification_permission_result';
 const _watchAppSwitched = 'watch_app_switched';
 const _setTypeChanged = 'set_type_changed';
 const _featureLinked = 'feature_linked';
+const _apiTokenCreated = 'api_token_created';
+const _apiTokenRevoked = 'api_token_revoked';
 
 const _source = 'source';
 const _pinnedNotes = 'pinned_notes';
@@ -197,6 +199,8 @@ const _on = 'on';
 const _fromWatch = 'from_watch';
 const _setType = 'set_type';
 const _feature = 'feature';
+const _purpose = 'purpose';
+const _expiry = 'expiry';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -427,6 +431,14 @@ class Analytics {
   void featureLinked({required Feature feature, required FeatureLinkSource source}) {
     _log(_featureLinked, {_feature: feature.value, _source: source.id});
   }
+
+  /// A personal access token minted (#271): what the owner said it is for
+  /// and how long it lives. Never its name, never its secret.
+  void apiTokenCreated({required ApiTokenPurpose? purpose, required ApiTokenExpiry expiry}) {
+    _log(_apiTokenCreated, {_purpose: purpose?.name ?? 'unset', _expiry: expiry.name});
+  }
+
+  void apiTokenRevoked() => _log(_apiTokenRevoked);
 
   void setAccountState(AccountState? state) => _property(_accountStateProperty, state?.id);
 

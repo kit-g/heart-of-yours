@@ -48,6 +48,14 @@ void main() {
       expect(parametersOf('signup_completed'), {'provider': 'apple', 'arrival': 'takeover'});
     });
 
+    test('a minted token reports its purpose and expiry, and a purpose left blank is named (#271)', () {
+      sut.apiTokenCreated(purpose: .aiAssistant, expiry: .never);
+      expect(parametersOf('api_token_created'), {'purpose': 'aiAssistant', 'expiry': 'never'});
+
+      sut.apiTokenCreated(purpose: null, expiry: .year);
+      expect(parametersOf('api_token_created'), {'purpose': 'unset', 'expiry': 'year'});
+    });
+
     test('a set type goes as its wire word (#151)', () {
       sut.setTypeChanged(type: .warmup);
 
