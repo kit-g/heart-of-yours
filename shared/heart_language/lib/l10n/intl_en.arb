@@ -4430,5 +4430,7 @@
   "apiTokenCopied": "Copied",
   "@apiTokenCopied": {"description": "Snack after copying the secret", "type": "text", "placeholders": {}},
   "apiTokenStored": "I've got it",
-  "@apiTokenStored": {"description": "Create page after minting: the way back to the list, once the secret is safe", "type": "text", "placeholders": {}}
+  "@apiTokenStored": {"description": "Create page after minting: the way back to the list, once the secret is safe", "type": "text", "placeholders": {}},
+  "accountUnderOtherProvider": "This email already has a Heart account under a different sign-in. Use the one you started with.",
+  "@accountUnderOtherProvider": {"description": "Login page, when a Google or Apple sign-in is refused because the email already has an account under another provider", "type": "text", "placeholders": {}}
 }

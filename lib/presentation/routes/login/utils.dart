@@ -8,6 +8,7 @@ String _errorCopy(L l, AuthExceptionReason reason) {
     .userDisabled => l.userDisabled,
     .unknown => l.unknownError,
     .emailInUse => l.unknownError,
+    .accountUnderOtherProvider => l.accountUnderOtherProvider,
     .weakPassword => l.weakPassword,
     .networkRequestFailed => l.noConnectivity,
   };
