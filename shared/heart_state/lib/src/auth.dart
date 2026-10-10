@@ -45,6 +45,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   final String? appleServiceId;
   final String? appleSignInRedirect;
 
+  /// Apple's sheet: a credential for the signed-in Apple ID. The plugin's
+  /// static call in the app; a fake in tests, which the plugin leaves no
+  /// other way to reach.
+  final AppleCredentials _appleCredentials;
+
   /// The remote leg's gate, shared with every state class. This is where it is
   /// decided — see [_adopt].
   final RemoteAccess remote;
@@ -93,7 +98,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// False for Apple and Google accounts, which never had one — asking them
   /// for it is how account deletion came to be impossible for them.
   bool get hasPassword {
-    return _firebase.currentUser?.providerData.any((each) => each.providerId == 'password') ?? false;
+    return _firebase.currentUser?.providerData.any(
+          (each) => each.providerId == 'password',
+        ) ??
+        false;
   }
 
   bool _isInitialized = false;
@@ -119,25 +127,27 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     this.appleBundleId,
     fb.FirebaseAuth? firebase,
     GoogleSignIn? googleSignIn,
+    AppleCredentials? appleCredentials,
     RemoteAccess? remote,
   }) : _firebase = firebase ?? fb.FirebaseAuth.instance,
        _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
+       _appleCredentials = appleCredentials ?? SignInWithApple.getAppleIDCredential,
        remote = remote ?? RemoteAccess() {
     // such is the way with Google sign-in
     // on the web - Firebase does not pick it up
     if (isWeb) {
-      _googleSignIn.authenticationEvents.listen(
-        (event) async {
-          switch (event) {
-            case GoogleSignInAuthenticationEventSignIn(user: GoogleSignInAccount account):
-              await _loginWithGoogle(account);
-              await onEnter?.call(account.authentication.idToken, user?.id);
-            case GoogleSignInAuthenticationEventSignOut():
-              _user = null;
-              notifyListeners();
-          }
-        },
-      );
+      _googleSignIn.authenticationEvents.listen((event) async {
+        switch (event) {
+          case GoogleSignInAuthenticationEventSignIn(
+            user: GoogleSignInAccount account,
+          ):
+            await _loginWithGoogle(account);
+            await onEnter?.call(account.authentication.idToken, user?.id);
+          case GoogleSignInAuthenticationEventSignOut():
+            _user = null;
+            notifyListeners();
+        }
+      });
     }
 
     _users = _firebase.userChanges().listen(
@@ -251,13 +261,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     remote.account = user != null && !_isAnonymous;
     if (user != null) _sessionUnavailable = false;
     analytics
-      ?..setAccountState(
-        switch (user) {
-          fb.User(isAnonymous: false) => .account,
-          fb.User() => .anonymous,
-          null => null,
-        },
-      )
+      ?..setAccountState(switch (user) {
+        fb.User(isAnonymous: false) => .account,
+        fb.User() => .anonymous,
+        null => null,
+      })
       ..setAuthProvider(_providerOf(user));
   }
 
@@ -269,11 +277,108 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// Null for an anonymous session, which has no provider at all.
   AuthProvider? _providerOf(fb.User? user) {
     return switch (user?.providerData.firstOrNull?.providerId) {
+      String id => _providerFor(id),
+      null => null,
+    };
+  }
+
+  static AuthProvider? _providerFor(String providerId) {
+    return switch (providerId) {
       'google.com' => .google,
       'apple.com' => .apple,
       'password' => .password,
       _ => null,
     };
+  }
+
+  /// The sign-ins on the account, as Firebase lists them (#323). Empty for an
+  /// anonymous session.
+  Set<AuthProvider> get providers {
+    return {
+      for (final info in _firebase.currentUser?.providerData ?? const <fb.UserInfo>[]) ?_providerFor(info.providerId),
+    };
+  }
+
+  /// The address [provider] knows the account by, when it said one.
+  String? providerEmail(AuthProvider provider) {
+    return _firebase.currentUser?.providerData
+        .where((info) => info.providerId == provider.firebaseId)
+        .firstOrNull
+        ?.email;
+  }
+
+  /// Connects [provider] to the signed-in account (#323): the provider's
+  /// sheet, then a link onto the same uid, so nothing moves on the server and
+  /// either sheet opens this account from now on. A password is not connected
+  /// here: the reset email sets one.
+  ///
+  /// Throws [AuthException] for a refusal the page can word — the one that
+  /// matters is the provider's account already being its own Heart account —
+  /// and nothing for a sheet the user backed out of.
+  Future<void> connect(AuthProvider provider) async {
+    final user = _firebase.currentUser;
+    if (user == null || user.isAnonymous) return;
+    try {
+      final credential = switch (provider) {
+        .google => await _googleCredential(),
+        .apple => (await _askApple()).token,
+        .password => throw ArgumentError.value(
+          provider,
+          'provider',
+          'a password is set through the reset email',
+        ),
+      };
+      if (credential == null) return;
+      await user.linkWithCredential(credential);
+      analytics?.signInConnected(provider: provider);
+      notifyListeners();
+    } on fb.FirebaseAuthException catch (e, s) {
+      // already there: the row was stale, not the request wrong
+      if (e.code == 'provider-already-linked') return notifyListeners();
+      onError?.call(e, stacktrace: s);
+      throw AuthException(.fromCode(e.code));
+    } catch (e, s) {
+      if (_isCancellation(e)) return;
+      onError?.call(e, stacktrace: s);
+      rethrow;
+    }
+  }
+
+  /// Disconnects [provider] from the account — never the last one, which
+  /// would leave an account nobody can open.
+  Future<void> disconnect(AuthProvider provider) async {
+    final user = _firebase.currentUser;
+    if (user == null || providers.length < 2 || !providers.contains(provider)) return;
+    try {
+      await user.unlink(provider.firebaseId);
+      analytics?.signInDisconnected(provider: provider);
+      notifyListeners();
+    } on fb.FirebaseAuthException catch (e, s) {
+      onError?.call(e, stacktrace: s);
+      throw AuthException(.fromCode(e.code));
+    }
+  }
+
+  /// A credential the sign-in refused because its address belongs to an
+  /// account under a sign-in Firebase trusts more. Kept until the person is in
+  /// that way, then connected — Firebase's own recipe for the refusal.
+  ({fb.AuthCredential credential, String? email})? _pending;
+
+  Future<void> _connectPending() async {
+    final user = _firebase.currentUser;
+    if ((_pending, user) case ((:final credential, :final email), fb.User(email: final mine?)) when email == mine) {
+      _pending = null;
+      try {
+        await user!.linkWithCredential(credential);
+        analytics?.signInConnected(
+          provider: _providerFor(credential.providerId) ?? .password,
+        );
+        notifyListeners();
+      } on fb.FirebaseAuthException catch (e, s) {
+        // the account is in either way; the connect can be made from Settings
+        onError?.call(e, stacktrace: s);
+      }
+    }
   }
 
   /// The anonymous uid a sign-in is under way from, until the stream delivers
@@ -310,44 +415,64 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// The [AccountArrival] beside the credential is this method's alone to
   /// report: it is the only place that knows which of the three branches
   /// below ran, and the caller cannot tell them apart afterwards.
-  Future<(fb.UserCredential, AccountArrival)> _linkOrSignIn(fb.AuthCredential credential) {
-    return _fromAnonymous(
-      () async {
-        final anonymous = _firebase.currentUser;
-        if (anonymous == null || !anonymous.isAnonymous) {
-          return (await _firebase.signInWithCredential(credential), AccountArrival.direct);
-        }
+  ///
+  /// [renew] is how a spent credential is replaced when Firebase hands none
+  /// back with its refusal: Apple's sheet again, for a new identity token.
+  /// Google's credential survives a second use, so Google passes nothing.
+  Future<(fb.UserCredential, AccountArrival)> _linkOrSignIn(
+    fb.AuthCredential credential, {
+    Future<fb.AuthCredential> Function()? renew,
+  }) {
+    return _fromAnonymous(() async {
+      final anonymous = _firebase.currentUser;
+      if (anonymous == null || !anonymous.isAnonymous) {
+        return (
+          await _firebase.signInWithCredential(credential),
+          AccountArrival.direct,
+        );
+      }
+      try {
+        return (
+          await anonymous.linkWithCredential(credential),
+          AccountArrival.linked,
+        );
+      } on fb.FirebaseAuthException catch (e) {
+        // `email-already-in-use` is the same refusal one step removed: the
+        // credential is new, but its email already belongs to an account
+        // under another provider. A sign-in with it lands on that account
+        // wherever Firebase trusts this provider for the address — Google
+        // for its own mail — and fails as an ordinary sign-in error
+        // everywhere else, which is what the link already did.
+        if (e.code case != 'credential-already-in-use' && != 'email-already-in-use') rethrow;
+        // `credential` is spent. An Apple identity token may be presented to
+        // Firebase exactly once — the link above consumed it deciding the
+        // account already existed — so re-sending it is a replay, and
+        // Firebase says so in the least helpful way available:
+        //   [missing-or-invalid-nonce] Duplicate credential received.
+        // which reads like a nonce bug and is really a double-use.
+        //
+        // Firebase returns a fresh, unconsumed credential on this exception
+        // for precisely this handover, so prefer it. It comes with
+        // `credential-already-in-use` and not with `email-already-in-use`,
+        // which is the refusal an Apple ID whose email already has a Heart
+        // account under Google or a password gets — and that one came back
+        // as the duplicate-nonce error on a real phone (HEART-OF-YOURS-DEV-6K).
+        // So when nothing is handed back, the provider that cannot replay
+        // is asked for a new credential; the one that can is replayed.
+        final next = e.credential ?? await renew?.call() ?? credential;
         try {
-          return (await anonymous.linkWithCredential(credential), AccountArrival.linked);
-        } on fb.FirebaseAuthException catch (e) {
-          // `email-already-in-use` is the same refusal one step removed: the
-          // credential is new, but its email already belongs to an account
-          // under another provider. A sign-in with it lands on that account
-          // wherever Firebase trusts this provider for the address — Google
-          // for its own mail — and fails as an ordinary sign-in error
-          // everywhere else, which is what the link already did.
-          if (e.code case != 'credential-already-in-use' && != 'email-already-in-use') rethrow;
-          // `credential` is spent. An Apple identity token may be presented to
-          // Firebase exactly once — the link above consumed it deciding the
-          // account already existed — so re-sending it is a replay, and
-          // Firebase says so in the least helpful way available:
-          //   [missing-or-invalid-nonce] Duplicate credential received.
-          // which reads like a nonce bug and is really a double-use.
-          //
-          // Firebase returns a fresh, unconsumed credential on this exception
-          // for precisely this handover, so prefer it.
-          //
-          // Falling back to the spent one when it is absent is deliberate, and
-          // it is not a fix — it is the behaviour that shipped. Google's
-          // credential survives the second use, so retrying it is how this
-          // path has always worked; rethrowing instead would break a working
-          // sign-in whenever the plugin declines to populate `e.credential`.
-          // Apple in that case fails exactly as it does today, which is no
-          // worse, and the case that matters in practice is the one above.
-          return (await _firebase.signInWithCredential(e.credential ?? credential), AccountArrival.takeover);
+          return (
+            await _firebase.signInWithCredential(next),
+            AccountArrival.takeover,
+          );
+        } on fb.FirebaseAuthException catch (refusal) {
+          if (refusal.code == 'account-exists-with-different-credential') {
+            _pending = (credential: next, email: refusal.email);
+          }
+          rethrow;
         }
-      },
-    );
+      }
+    });
   }
 
   Future<void> _loginWithGoogle(GoogleSignInAccount user) async {
@@ -361,60 +486,93 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     return _firebase.validatePassword(_firebase, password);
   }
 
+  /// Google's sheet: a Firebase credential for the account picked, or null
+  /// when Google answered without an id token.
+  Future<fb.OAuthCredential?> _googleCredential() async {
+    await _googleSignIn.initialize();
+    final account = await _googleSignIn.authenticate(
+      scopeHint: ['profile', 'email'],
+    );
+    return switch (account.authentication.idToken) {
+      String idToken => fb.GoogleAuthProvider.credential(idToken: idToken),
+      null => null,
+    };
+  }
+
   Future<void> loginWithGoogle() async {
     analytics?.signupStarted(provider: .google, fromAnonymous: _isAnonymous);
     try {
-      await _googleSignIn.initialize();
-      final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
-      if (account.authentication case GoogleSignInAuthentication(:String? idToken)) {
-        final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
+      if (await _googleCredential() case final cred?) {
         return await _loginWithCredential(cred, provider: .google);
       }
+    } on fb.FirebaseAuthException catch (e, s) {
+      _reportFailure(e, provider: .google);
+      onError?.call(e, stacktrace: s);
+      throw AuthException(.fromCode(e.code));
     } catch (e, s) {
       _reportFailure(e, provider: .google);
       if (!_isCancellation(e)) onError?.call(e, stacktrace: s);
     }
   }
 
+  /// One pass through Apple's sheet: the identity token as a Firebase
+  /// credential, with the name and email Apple says once, on the first
+  /// authorization, and never again.
+  ///
+  /// The identity token alone. The authorization code beside it is what a
+  /// server exchanges with Apple, and Apple honours it exactly once — so
+  /// handing it to Firebase here spends it for nothing, and leaves account
+  /// deletion with no grant to revoke. Firebase needs only the id token.
+  Future<({fb.OAuthCredential token, String? email, String? name})> _askApple() async {
+    final credential = await _appleCredentials(
+      scopes: [.email, .fullName],
+      webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
+        (String clientId, String redirect) => WebAuthenticationOptions(
+          clientId: clientId,
+          redirectUri: Uri.parse(redirect),
+        ),
+        _ => null,
+      },
+    );
+    final name = switch ((credential.givenName, credential.familyName)) {
+      (String first, String last) when first.isNotEmpty && last.isNotEmpty => '$first $last',
+      (String first, _) when first.isNotEmpty => first,
+      (_, String last) when last.isNotEmpty => last,
+      _ => null,
+    };
+    return (
+      token: fb.OAuthProvider('apple.com').credential(idToken: credential.identityToken),
+      email: credential.email,
+      name: name,
+    );
+  }
+
   Future<void> loginWithApple() async {
     analytics?.signupStarted(provider: .apple, fromAnonymous: _isAnonymous);
     try {
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [.email, .fullName],
-        webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
-          (String clientId, String redirect) => WebAuthenticationOptions(
-            clientId: clientId,
-            redirectUri: Uri.parse(redirect),
-          ),
-          _ => null,
-        },
-      );
-
-      // The identity token alone. The authorization code beside it is what a
-      // server exchanges with Apple, and Apple honours it exactly once — so
-      // handing it to Firebase here spends it for nothing, and leaves account
-      // deletion with no grant to revoke. Firebase needs only the id token.
-      final oAuth = fb.OAuthProvider('apple.com');
-      final appleToken = oAuth.credential(idToken: credential.identityToken);
-
-      final name = switch ((credential.givenName, credential.familyName)) {
-        (String first, String last) when first.isNotEmpty && last.isNotEmpty => '$first $last',
-        (String first, _) when first.isNotEmpty => first,
-        (_, String last) when last.isNotEmpty => last,
-        _ => null,
-      };
-
+      final first = await _askApple();
       return await _loginWithCredential(
-        appleToken,
+        first.token,
         provider: .apple,
-        appleEmail: credential.email,
-        appleName: name,
+        appleEmail: first.email,
+        appleName: first.name,
+        // an Apple identity token is redeemed once; when the link spends it
+        // deciding the account exists and Firebase hands nothing back, the
+        // sign-in needs a new one — the sheet again, which for an Apple ID
+        // already authorized is a Face ID and no more
+        renew: () async => (await _askApple()).token,
       );
     } on SignInWithAppleCredentialsException catch (e) {
       if (e.message.contains('popup_closed_by_user')) {
         return;
       }
       _reportFailure(e, provider: .apple);
+    } on fb.FirebaseAuthException catch (e, s) {
+      // the page shows this one as words; silently stopping the spinner is
+      // how "couldn't log in with Apple" had no message behind it
+      _reportFailure(e, provider: .apple);
+      onError?.call(e, stacktrace: s);
+      throw AuthException(.fromCode(e.code));
     } catch (e, s) {
       _reportFailure(e, provider: .apple);
       if (_isCancellation(e)) return;
@@ -427,27 +585,27 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     required AuthProvider provider,
     String? appleName,
     String? appleEmail,
+    Future<fb.AuthCredential> Function()? renew,
   }) {
-    return _linkOrSignIn(credential).then<void>(
-      (result) async {
-        final (cred, arrival) = result;
-        // Apple says the name once, on the first authorization, and Firebase
-        // does not keep it: written only to memory, it was gone the moment the
-        // user stream re-read the account — which registered it nameless, and
-        // the server stores the name it is sent, null included. So it goes to
-        // Firebase first, as the email sign-up's does, and every later read
-        // of the account carries it.
-        if ((appleName, cred.user) case (String name, fb.User user) when (user.displayName ?? '').isEmpty) {
-          await user.updateDisplayName(name);
-        }
-        _adopt(_firebase.currentUser ?? cred.user);
-        _user = _user?.copyWith(displayName: appleName, email: appleEmail);
-        _reportArrival(cred, provider: provider, arrival: arrival);
+    return _linkOrSignIn(credential, renew: renew).then<void>((result) async {
+      final (cred, arrival) = result;
+      // Apple says the name once, on the first authorization, and Firebase
+      // does not keep it: written only to memory, it was gone the moment the
+      // user stream re-read the account — which registered it nameless, and
+      // the server stores the name it is sent, null included. So it goes to
+      // Firebase first, as the email sign-up's does, and every later read
+      // of the account carries it.
+      if ((appleName, cred.user) case (String name, fb.User user) when (user.displayName ?? '').isEmpty) {
+        await user.updateDisplayName(name);
+      }
+      _adopt(_firebase.currentUser ?? cred.user);
+      _user = _user?.copyWith(displayName: appleName, email: appleEmail);
+      _reportArrival(cred, provider: provider, arrival: arrival);
 
-        _user = await _registerUser(_user);
-        notifyListeners();
-      },
-    );
+      _user = await _registerUser(_user);
+      notifyListeners();
+      await _connectPending();
+    });
   }
 
   /// A new account or a returning one, as Firebase saw it rather than as the
@@ -507,7 +665,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     return switch (error) {
       GoogleSignInException(:final code) => code == GoogleSignInExceptionCode.canceled,
       SignInWithAppleAuthorizationException(:final code) => code == AuthorizationErrorCode.canceled,
-      SignInWithAppleCredentialsException(:final message) => message.contains('popup_closed_by_user'),
+      SignInWithAppleCredentialsException(:final message) => message.contains(
+        'popup_closed_by_user',
+      ),
       _ => false,
     };
   }
@@ -515,45 +675,54 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// Logging in is signing into an account that exists, so from an anonymous
   /// session this is always the uid-changing case: the session's store moves
   /// onto the account (see [onLink]), never the other way round.
-  Future<void> logInWithEmailAndPassword({required String email, required String password}) {
+  Future<void> logInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) {
     final wasAnonymous = _isAnonymous;
     return _toFirebase<fb.UserCredential>(
-          _fromAnonymous(() => _firebase.signInWithEmailAndPassword(email: email, password: password)),
+          _fromAnonymous(
+            () => _firebase.signInWithEmailAndPassword(
+              email: email,
+              password: password,
+            ),
+          ),
         )
-        .onError<Object>(
-          (error, stacktrace) {
-            _reportFailure(error, provider: .password);
-            // Reported, not handled: the presentation layer still has to see this
-            // exactly as it did before, stack trace included.
-            Error.throwWithStackTrace(error, stacktrace);
-          },
-        )
-        .then(
-          (cred) async {
-            // Signing in with a password never links: an anonymous session that
-            // does it is always the takeover path, and `onLink` moves its rows.
-            analytics?.loginCompleted(
-              provider: .password,
-              arrival: wasAnonymous ? .takeover : .direct,
-            );
-            // the stream usually got here first; adopting again is harmless and
-            // makes sure an anonymous session does not read as one past this point
-            _adopt(cred?.user);
-            // from an anonymous session the stream handler owns the rest: it moves
-            // the store first, and only then keys the new uid in — starting the
-            // app up here as well would read the store while the rows are moving
-            if (wasAnonymous) return;
-            onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
-            _user = await _registerUser(_user);
-          },
-        );
+        .onError<Object>((error, stacktrace) {
+          _reportFailure(error, provider: .password);
+          // Reported, not handled: the presentation layer still has to see this
+          // exactly as it did before, stack trace included.
+          Error.throwWithStackTrace(error, stacktrace);
+        })
+        .then((cred) async {
+          // Signing in with a password never links: an anonymous session that
+          // does it is always the takeover path, and `onLink` moves its rows.
+          analytics?.loginCompleted(
+            provider: .password,
+            arrival: wasAnonymous ? .takeover : .direct,
+          );
+          // the stream usually got here first; adopting again is harmless and
+          // makes sure an anonymous session does not read as one past this point
+          _adopt(cred?.user);
+          // from an anonymous session the stream handler owns the rest: it moves
+          // the store first, and only then keys the new uid in — starting the
+          // app up here as well would read the store while the rows are moving
+          await _connectPending();
+          if (wasAnonymous) return;
+          onEnter?.call(await cred?.user?.getIdToken(), cred?.user?.uid);
+          _user = await _registerUser(_user);
+        });
   }
 
   /// From an anonymous session the account is made *on* the session — the
   /// email credential is linked onto it and the uid survives, so everything
   /// the device holds is already the account's; only the replay is owed. An
   /// email that already has an account is the same refusal it always was.
-  Future<void> signUpWithEmailAndPassword({required String email, required String password, String? name}) async {
+  Future<void> signUpWithEmailAndPassword({
+    required String email,
+    required String password,
+    String? name,
+  }) async {
     analytics?.signupStarted(provider: .password, fromAnonymous: _isAnonymous);
 
     final status = await validatePassword(password);
@@ -571,17 +740,21 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
           _fromAnonymous(
             () => switch (_firebase.currentUser) {
               fb.User(isAnonymous: true) && final session => session.linkWithCredential(
-                fb.EmailAuthProvider.credential(email: email, password: password),
+                fb.EmailAuthProvider.credential(
+                  email: email,
+                  password: password,
+                ),
               ),
-              _ => _firebase.createUserWithEmailAndPassword(email: email, password: password),
+              _ => _firebase.createUserWithEmailAndPassword(
+                email: email,
+                password: password,
+              ),
             },
           ),
-        ).onError<Object>(
-          (error, stacktrace) {
-            _reportFailure(error, provider: .password);
-            Error.throwWithStackTrace(error, stacktrace);
-          },
-        );
+        ).onError<Object>((error, stacktrace) {
+          _reportFailure(error, provider: .password);
+          Error.throwWithStackTrace(error, stacktrace);
+        });
 
     // An anonymous session links the credential on, so the uid it already had
     // survives; anything else creates the account outright.
@@ -615,9 +788,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   }
 
   Future<void> sendPasswordRecoveryEmail(String email) {
-    return _toFirebase<void>(
-      _firebase.sendPasswordResetEmail(email: email),
-    );
+    return _toFirebase<void>(_firebase.sendPasswordResetEmail(email: email));
   }
 
   Future<T?> _toFirebase<T>(Future<T?> action) async {
@@ -636,6 +807,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   }
 
   Future<void> _logout() async {
+    _pending = null;
     await _googleSignIn.initialize();
     await _googleSignIn.signOut();
     await _firebase.signOut();
@@ -666,7 +838,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   Future<Settings?> saveSettings(Settings settings) async {
     final user = _user;
     if (user == null || _isAnonymous || !_service.isAuthenticated) return null;
-    final saved = await _service.registerAccount(user.copyWith(settings: settings));
+    final saved = await _service.registerAccount(
+      user.copyWith(settings: settings),
+    );
     // the session may have changed hands while the write was out
     if (_user?.id != saved.id) return null;
     _user = saved;
@@ -717,7 +891,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         final authenticated = await _firebase.currentUser?.reauthenticateWithCredential(credential);
         onAuthenticate(await authenticated?.user?.getIdToken());
         try {
-          await _service.deleteAccount(accountId: accountId, appleGrant: appleGrant);
+          await _service.deleteAccount(
+            accountId: accountId,
+            appleGrant: appleGrant,
+          );
           analytics?.accountDeletionScheduled();
           onScheduled?.call();
           await _logout();
@@ -738,13 +915,18 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// here would leave nothing for the server to exchange — the revocation
   /// would fail silently weeks later, which is the failure this whole path
   /// exists to avoid.
-  Future<(fb.AuthCredential, AppleDeletionGrant?)> _reauthentication(String? password) async {
+  Future<(fb.AuthCredential, AppleDeletionGrant?)> _reauthentication(
+    String? password,
+  ) async {
     final providers = _firebase.currentUser?.providerData.map((each) => each.providerId).toSet() ?? {};
 
     if (providers.contains('apple.com')) {
       final apple = await SignInWithApple.getAppleIDCredential(
         scopes: [.email, .fullName],
-        webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
+        webAuthenticationOptions: switch ((
+          appleServiceId,
+          appleSignInRedirect,
+        )) {
           (String clientId, String redirect) => WebAuthenticationOptions(
             clientId: clientId,
             redirectUri: Uri.parse(redirect),
@@ -760,7 +942,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
       return (
         credential,
         switch ((apple.authorizationCode, client)) {
-          (String code, String id) when code.isNotEmpty => AppleDeletionGrant(authorizationCode: code, clientId: id),
+          (String code, String id) when code.isNotEmpty => AppleDeletionGrant(
+            authorizationCode: code,
+            clientId: id,
+          ),
           _ => null,
         },
       );
@@ -768,11 +953,24 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
 
     if (providers.contains('google.com')) {
       await _googleSignIn.initialize();
-      final account = await _googleSignIn.authenticate(scopeHint: ['profile', 'email']);
-      return (fb.GoogleAuthProvider.credential(idToken: account.authentication.idToken), null);
+      final account = await _googleSignIn.authenticate(
+        scopeHint: ['profile', 'email'],
+      );
+      return (
+        fb.GoogleAuthProvider.credential(
+          idToken: account.authentication.idToken,
+        ),
+        null,
+      );
     }
 
-    return (fb.EmailAuthProvider.credential(email: _user?.email ?? '', password: password ?? ''), null);
+    return (
+      fb.EmailAuthProvider.credential(
+        email: _user?.email ?? '',
+        password: password ?? '',
+      ),
+      null,
+    );
   }
 
   /// "Erase my data", the anonymous session's counterpart to account deletion.
@@ -801,7 +999,14 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
 
   Future<void> deleteAccountDeletionSchedule() async {
     switch (_user) {
-      case User(:final id, :final displayName, :final email, :final avatar, :final createdAt, :final settings):
+      case User(
+        :final id,
+        :final displayName,
+        :final email,
+        :final avatar,
+        :final createdAt,
+        :final settings,
+      ):
         await _service.undoAccountDeletion();
         analytics?.accountDeletionCancelled();
         // Rebuilt rather than copied, because clearing the schedule is the
@@ -824,7 +1029,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     }
   }
 
-  Future<({String url, Map<String, String> fields})?> getAvatarUploadLink({String? imageMimeType}) async {
+  Future<({String url, Map<String, String> fields})?> getAvatarUploadLink({
+    String? imageMimeType,
+  }) async {
     if (user?.id case String userId) {
       return _service.getAvatarUploadLink(userId, imageMimeType: imageMimeType);
     }
@@ -846,11 +1053,23 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
       notifyListeners();
       try {
         // get pre-signed URL for the upload
-        final uploadLink = await _service.getAvatarUploadLink(user.id, imageMimeType: localImage.mimeType);
+        final uploadLink = await _service.getAvatarUploadLink(
+          user.id,
+          imageMimeType: localImage.mimeType,
+        );
         if (uploadLink != null) {
           // push the image to the bucket
-          final avatar = ('file', localImage.$1, contentType: localImage.mimeType, filename: localImage.name);
-          final success = await _service.uploadFile(uploadLink, avatar, onProgress: onProgress);
+          final avatar = (
+            'file',
+            localImage.$1,
+            contentType: localImage.mimeType,
+            filename: localImage.name,
+          );
+          final success = await _service.uploadFile(
+            uploadLink,
+            avatar,
+            onProgress: onProgress,
+          );
           if (success) {
             // if it succeeds, store the URL in the database
             // and notify Firebase about it
@@ -890,6 +1109,14 @@ enum AuthExceptionReason {
   userDisabled,
   userNotFound,
   emailInUse,
+
+  /// The email already has an account under another sign-in, and Firebase
+  /// will not hand it to this one.
+  accountUnderOtherProvider,
+
+  /// The provider's account is already a Heart account of its own, so it
+  /// cannot be connected to this one (#323).
+  providerInUse,
   weakPassword,
   networkRequestFailed,
   unknown;
@@ -902,6 +1129,8 @@ enum AuthExceptionReason {
       'user-disabled' => userDisabled,
       'user-not-found' => userNotFound,
       'email-already-in-use' => emailInUse,
+      'account-exists-with-different-credential' => accountUnderOtherProvider,
+      'credential-already-in-use' => providerInUse,
       'weak-password' => weakPassword,
       'network-request-failed' => networkRequestFailed,
       _ => unknown,
@@ -918,4 +1147,20 @@ class AuthException implements Exception {
   String toString() {
     return reason.toString();
   }
+}
+
+/// The shape of `SignInWithApple.getAppleIDCredential`, so a test can stand
+/// in for the sheet.
+typedef AppleCredentials = Future<AuthorizationCredentialAppleID> Function({
+  required List<AppleIDAuthorizationScopes> scopes,
+  WebAuthenticationOptions? webAuthenticationOptions,
+});
+
+extension AuthProviderFirebase on AuthProvider {
+  /// Firebase's name for the provider, as `providerData` lists it.
+  String get firebaseId => switch (this) {
+    .google => 'google.com',
+    .apple => 'apple.com',
+    .password => 'password',
+  };
 }

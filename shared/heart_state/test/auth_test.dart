@@ -2,7 +2,8 @@ import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart' show PasswordPolicy;
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart'
+    show InternalUserInfo, PasswordPolicy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heart_models/heart_models.dart' show User;
@@ -84,6 +85,102 @@ class _TakenCredentialWithFresh extends MockUser {
   Future<fb.UserCredential> linkWithCredential(fb.AuthCredential credential) async {
     auth.mockUser = MockUser(uid: 'acct-1', email: 'acct@test');
     throw fb.FirebaseAuthException(code: 'credential-already-in-use', credential: fresh);
+  }
+}
+
+/// Apple's sheet, as a test can stand in for it: every showing hands out a
+/// new identity token, numbered, so a test can tell the first from the
+/// second — which is the whole question when a link spends the first.
+class _AppleSheet {
+  var shown = 0;
+
+  Future<AuthorizationCredentialAppleID> call({
+    required List<AppleIDAuthorizationScopes> scopes,
+    WebAuthenticationOptions? webAuthenticationOptions,
+  }) async {
+    shown++;
+    return AuthorizationCredentialAppleID(
+      userIdentifier: 'apple-user',
+      givenName: null,
+      familyName: null,
+      authorizationCode: 'code-$shown',
+      email: null,
+      identityToken: 'apple-token-$shown',
+      state: null,
+    );
+  }
+}
+
+/// A Firebase that refuses every provider sign-in the way it does when the
+/// email already belongs to an account under another provider.
+class _RefusingFirebase extends _Firebase {
+  @override
+  Future<fb.UserCredential> signInWithCredential(fb.AuthCredential? credential) {
+    if (credential != null) redeemed.add(credential);
+    throw fb.FirebaseAuthException(code: 'account-exists-with-different-credential');
+  }
+}
+
+/// A signed-in account that records what gets linked onto it and grows its
+/// provider list the way Firebase's would.
+// ignore: must_be_immutable — see _LinkableAnonymous
+class _Account extends MockUser {
+  final linked = <fb.AuthCredential>[];
+
+  /// Thrown by the next link, as Firebase would refuse it.
+  fb.FirebaseAuthException? refusal;
+
+  // a plain parameter, not `super.email`: the initializer list cannot read a
+  // super parameter, and the getter it falls back to is nullable
+  new({required String uid, required String email, List<String> providers = const ['google.com']})
+    : super(
+        uid: uid,
+        email: email,
+        isAnonymous: false,
+        providerData: [
+          for (final id in providers)
+            fb.UserInfo.fromPigeon(
+              InternalUserInfo(providerId: id, uid: uid, email: email, isAnonymous: false, isEmailVerified: true),
+            ),
+        ],
+      );
+
+  @override
+  Future<fb.UserCredential> linkWithCredential(fb.AuthCredential credential) async {
+    if (refusal case final refusal?) throw refusal;
+    linked.add(credential);
+    providerData.add(
+      fb.UserInfo.fromPigeon(
+        InternalUserInfo(
+          providerId: credential.providerId,
+          uid: uid,
+          email: email,
+          isAnonymous: false,
+          isEmailVerified: true,
+        ),
+      ),
+    );
+    return super.linkWithCredential(credential);
+  }
+}
+
+/// A Firebase whose provider sign-in is refused because the address belongs
+/// to an account under another sign-in, and whose password sign-in then
+/// lands on that account.
+class _OtherProviderFirebase extends _Firebase {
+  late final _Account owner;
+
+  @override
+  Future<fb.UserCredential> signInWithCredential(fb.AuthCredential? credential) {
+    if (credential != null) redeemed.add(credential);
+    throw fb.FirebaseAuthException(code: 'account-exists-with-different-credential', email: 'acct@test');
+  }
+
+  @override
+  Future<fb.UserCredential> signInWithEmailAndPassword({required String email, required String password}) {
+    owner = _Account(uid: 'acct-1', email: email, providers: const ['password']);
+    mockUser = owner;
+    return super.signInWithEmailAndPassword(email: email, password: password);
   }
 }
 
@@ -524,6 +621,7 @@ void main() {
     late RemoteAccess remote;
     late MockGoogleSignIn google;
     late _Firebase firebase;
+    late _AppleSheet apple;
 
     /// Fresh per [build], unlike the file-level mocks: these assertions are
     /// about what one run reported, and a shared one would carry the previous
@@ -533,15 +631,20 @@ void main() {
     /// An [Auth] over a Firebase that has minted [anonymous] as the session,
     /// with the Google sheet answering an account whose credential the
     /// anonymous user decides the fate of.
-    Future<Auth> build(MockUser Function(MockFirebaseAuth) anonymous, {void Function(Object)? onError}) async {
+    Future<Auth> build(
+      MockUser Function(MockFirebaseAuth) anonymous, {
+      void Function(Object)? onError,
+      _Firebase Function()? firebaseOf,
+    }) async {
       events = [];
       remote = RemoteAccess();
       google = MockGoogleSignIn();
+      apple = _AppleSheet();
       when(google.initialize()).thenAnswer((_) async {});
       when(google.authenticate(scopeHint: anyNamed('scopeHint'))).thenAnswer((_) async => _GoogleAccount());
       when(account.isAuthenticated).thenReturn(true);
       when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
-      firebase = _Firebase();
+      firebase = firebaseOf?.call() ?? _Firebase();
       firebase.mockUser = anonymous(firebase);
       reported = ReportedAnalytics();
       final sut = Auth(
@@ -549,6 +652,7 @@ void main() {
         firebase: firebase,
         remote: remote,
         googleSignIn: google,
+        appleCredentials: apple.call,
         analytics: Analytics(service: reported),
         onLink: (from, to) async => events.add('link $from→$to allowed=${remote.allowed}'),
         onUserChange: (user) => events.add('user ${user?.id}'),
@@ -648,11 +752,58 @@ void main() {
       );
     });
 
-    test('a link that fails for any other reason puts the leg back and links nothing', () async {
+    test('an existing Apple account with nothing handed back is asked for a new token, not replayed', () async {
+      final sut = await build((auth) => _TakenCredential(auth, code: 'email-already-in-use'));
+
+      await sut.loginWithApple();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user?.id, 'acct-1');
+      expect(apple.shown, 2, reason: 'the sheet once more, for a token the link did not spend');
+      final redeemed = firebase.redeemed.last;
+      expect(redeemed, isA<fb.OAuthCredential>().having((c) => c.idToken, 'idToken', 'apple-token-2'));
+      expect(reported.arrivals, ['takeover']);
+    });
+
+    test('a Google account is not asked again: its credential survives a second use', () async {
+      final sut = await build((auth) => _TakenCredential(auth, code: 'email-already-in-use'));
+
+      await sut.loginWithGoogle();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user?.id, 'acct-1');
+      expect(apple.shown, 0);
+    });
+
+    test('an Apple email already under another sign-in is refused with words the page can show', () async {
+      final errors = <Object>[];
+      final sut = await build(
+        (auth) => _TakenCredential(auth, code: 'email-already-in-use'),
+        onError: errors.add,
+        firebaseOf: _RefusingFirebase.new,
+      );
+
+      await expectLater(
+        sut.loginWithApple(),
+        throwsA(isA<AuthException>().having((e) => e.reason, 'reason', AuthExceptionReason.accountUnderOtherProvider)),
+      );
+
+      expect(apple.shown, 2);
+      expect(sut.isAnonymous, isTrue, reason: 'the leg is put back');
+      expect(remote.replaying, isFalse);
+      expect(errors, hasLength(1), reason: 'still reported: it is worth knowing how often');
+    });
+
+    test('a link that fails for any other reason puts the leg back, links nothing, and says so', () async {
       final errors = <Object>[];
       final sut = await build((_) => _UnlinkableAnonymous(), onError: errors.add);
 
-      await sut.loginWithGoogle();
+      // reported, and thrown as the reason the page can word: a sign-in
+      // that silently stopped is one the user cannot tell from a hang
+      await expectLater(
+        sut.loginWithGoogle(),
+        throwsA(isA<AuthException>().having((e) => e.reason, 'reason', AuthExceptionReason.networkRequestFailed)),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
       expect(sut.isAnonymous, isTrue);
@@ -786,6 +937,136 @@ void main() {
       await sut.onSignOut();
 
       verify(google.signOut()).called(1);
+    });
+  });
+
+  group('sign-ins on one account (#323)', () {
+    late _Account user;
+    late MockFirebaseAuth firebase;
+    late MockGoogleSignIn google;
+    late _AppleSheet apple;
+    late ReportedAnalytics reported;
+    late List<Object> errors;
+
+    Auth build({List<String> providers = const ['google.com']}) {
+      user = _Account(uid: 'acct-1', email: 'acct@test', providers: providers);
+      firebase = MockFirebaseAuth(signedIn: true, mockUser: user);
+      google = MockGoogleSignIn();
+      when(google.initialize()).thenAnswer((_) async {});
+      when(google.authenticate(scopeHint: anyNamed('scopeHint'))).thenAnswer((_) async => _GoogleAccount());
+      apple = _AppleSheet();
+      reported = ReportedAnalytics();
+      errors = [];
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
+      return Auth(
+        service: account,
+        firebase: firebase,
+        googleSignIn: google,
+        appleCredentials: apple.call,
+        analytics: Analytics(service: reported),
+        onError: (error, {stacktrace}) => errors.add(error),
+      );
+    }
+
+    test('the providers are what Firebase lists on the account', () {
+      final sut = build(providers: const ['google.com', 'password']);
+      expect(sut.providers, {AuthProvider.google, AuthProvider.password});
+      expect(sut.providerEmail(.google), 'acct@test');
+    });
+
+    test('connecting Apple shows its sheet once and links the token onto the same uid', () async {
+      final sut = build();
+      var notified = 0;
+      sut.addListener(() => notified++);
+
+      await sut.connect(.apple);
+
+      expect(apple.shown, 1);
+      expect(user.linked.single.providerId, 'apple.com');
+      expect(sut.providers, {AuthProvider.google, AuthProvider.apple});
+      expect(notified, greaterThanOrEqualTo(1));
+      expect(reported.names, contains('sign_in_connected'));
+    });
+
+    test('connecting Google links the account Google answered with', () async {
+      final sut = build(providers: const ['apple.com']);
+
+      await sut.connect(.google);
+
+      expect(user.linked.single.providerId, 'google.com');
+      expect(sut.providers, {AuthProvider.apple, AuthProvider.google});
+    });
+
+    test('a provider that is already a Heart account of its own is refused with words', () async {
+      final sut = build();
+      user.refusal = fb.FirebaseAuthException(code: 'credential-already-in-use');
+
+      await expectLater(
+        sut.connect(.apple),
+        throwsA(isA<AuthException>().having((e) => e.reason, 'reason', AuthExceptionReason.providerInUse)),
+      );
+      expect(sut.providers, {AuthProvider.google});
+      expect(errors, hasLength(1));
+    });
+
+    test('backing out of the sheet connects nothing and says nothing', () async {
+      final sut = build();
+      when(
+        google.authenticate(scopeHint: anyNamed('scopeHint')),
+      ).thenThrow(const GoogleSignInException(code: GoogleSignInExceptionCode.canceled));
+
+      await sut.connect(.google);
+
+      expect(user.linked, isEmpty);
+      expect(errors, isEmpty);
+    });
+
+    test('disconnecting leaves the account with the other sign-in, never with none', () async {
+      final sut = build(providers: const ['google.com', 'apple.com']);
+
+      await sut.disconnect(.google);
+      expect(sut.providers, {AuthProvider.apple});
+      expect(reported.names, contains('sign_in_disconnected'));
+
+      await sut.disconnect(.apple);
+      expect(sut.providers, {AuthProvider.apple}, reason: 'the last sign-in stays');
+    });
+
+    test('a refused provider sign-in is connected once the person is in the other way', () async {
+      // an anonymous session, as the login page sees it
+      final otherProvider = _OtherProviderFirebase();
+      otherProvider.mockUser = _TakenCredential(otherProvider, code: 'email-already-in-use');
+      google = MockGoogleSignIn();
+      when(google.initialize()).thenAnswer((_) async {});
+      when(google.authenticate(scopeHint: anyNamed('scopeHint'))).thenAnswer((_) async => _GoogleAccount());
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
+      reported = ReportedAnalytics();
+      final sut = Auth(
+        service: account,
+        firebase: otherProvider,
+        googleSignIn: google,
+        analytics: Analytics(service: reported),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      await expectLater(
+        sut.loginWithGoogle(),
+        throwsA(isA<AuthException>().having((e) => e.reason, 'reason', AuthExceptionReason.accountUnderOtherProvider)),
+      );
+
+      await sut.logInWithEmailAndPassword(email: 'acct@test', password: 'pw');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // the mock's password sign-in mints its own user object, so the link
+      // is observed through what it reports rather than through the fake
+      expect(
+        reported.names.where((name) => name == 'sign_in_connected'),
+        hasLength(1),
+        reason: 'the refused Google sign-in, connected onto the account it landed in',
+      );
+      expect(sut.isAnonymous, isFalse);
     });
   });
 }
