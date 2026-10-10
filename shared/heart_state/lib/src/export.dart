@@ -237,15 +237,26 @@ Map<String, dynamic> _templateJson(Template template) {
 /// the localized display copy, which is the only part of an exercise a person
 /// reading their own file is looking for. A custom of theirs keeps everything
 /// it has, in the envelope's own `exercises` list.
+///
+/// What this build could not read (#277) comes through here as it arrived,
+/// raw JSON among the rest, so nothing below assumes more than a map: it goes
+/// into the file as the server sent it, short of the same timestamps.
 List<Map<String, dynamic>> _exercisesJson(List exercises) {
   return [
-    for (final exercise in exercises.cast<Map<String, dynamic>>())
-      {...exercise}
+    for (final Map exercise in exercises.whereType<Map>())
+      Map<String, dynamic>.from(exercise)
         ..remove('start')
         ..remove('met')
-        ..['exercise'] = (exercise['exercise'] as Map<String, dynamic>)['name']
+        ..['exercise'] = switch (exercise['exercise']) {
+          Map named => named['name'],
+          final other => other,
+        }
         ..['sets'] = [
-          for (final set in (exercise['sets'] as List).cast<Map<String, dynamic>>()) {...set}..remove('started_at'),
+          for (final Map set in switch (exercise['sets']) {
+            List sets => sets.whereType<Map>(),
+            _ => const <Map>[],
+          })
+            Map<String, dynamic>.from(set)..remove('started_at'),
         ],
   ];
 }

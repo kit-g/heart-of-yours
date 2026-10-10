@@ -518,7 +518,8 @@ class Api
     return switch (json) {
       // whole or not at all: the caller replaces its synced slice with this,
       // so a goal skipped here would delete its local copy (see [_readable])
-      {'goals': List l} => l.map((each) => Goal.fromJson(each as Map)).toList(),
+      // a goal of a kind a newer build added costs that goal, not the list (#277)
+      {'goals': List l} => _readable(l, Goal.fromJson),
       _ => const <Goal>[],
     };
   }
@@ -645,7 +646,7 @@ class Api
     return switch ((code, json)) {
       // whole or not at all: the caller replaces its folders with these, so a
       // folder skipped here would delete its local copy (see [_readable])
-      (200, {'folders': List l}) => l.map((e) => TemplateFolder.fromJson(e as Map)).toList(),
+      (200, {'folders': List l}) => _readable(l, TemplateFolder.fromJson),
       _ => throw json,
     };
   }

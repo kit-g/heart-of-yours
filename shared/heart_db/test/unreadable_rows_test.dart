@@ -66,7 +66,7 @@ void main() {
     expect(await db.query('exercises'), hasLength(2), reason: 'the unreadable row stays for a build that can read it');
   });
 
-  test('a workout joining an unreadable exercise leaves the rest of History', () async {
+  test('a workout joining an unreadable exercise reads, and carries that exercise aside (#277)', () async {
     final bench = exercise('bench', 'Bench Press (Barbell)');
     final squat = exercise('squat', 'Squat (Barbell)');
     await db.insert('exercises', exerciseRow('bench', 'Bench Press (Barbell)'));
@@ -84,8 +84,12 @@ void main() {
 
     final history = await local.getWorkoutHistory(user);
 
-    expect(history?.map((each) => each.id), ['w1']);
-    expect(await local.getWorkout(user, 'w2'), isNull, reason: 'unreadable reads as absent');
+    // it used to take the whole workout out of History; now only the
+    // exercise is set aside, and kept for the next save to carry
+    expect(history?.map((each) => each.id), ['w1', 'w2']);
+    final w2 = (await local.getWorkout(user, 'w2'))!;
+    expect(w2, isEmpty, reason: 'nothing this build can show');
+    expect(w2.unread.map((each) => (each['exercise'] as Map)['id']), ['squat']);
     expect(await local.getWorkout(user, 'w1'), isNotNull);
   });
 

@@ -18,7 +18,6 @@
       "pauses": [],
       "exercises": [
         {
-          "order": 0,
           "id": "we-1",
           "exercise": "Bench Press (Barbell)",
           "sets": [
@@ -38,10 +37,10 @@
               "set_type": "normal",
               "rpe": null
             }
-          ]
+          ],
+          "order": 0
         },
         {
-          "order": 1,
           "id": "we-2",
           "exercise": "Muffin, \"special\" pull-up",
           "note": "one hand at a time",
@@ -53,7 +52,8 @@
               "set_type": "normal",
               "rpe": null
             }
-          ]
+          ],
+          "order": 1
         }
       ],
       "images": [
@@ -74,7 +74,6 @@
       "pauses": [],
       "exercises": [
         {
-          "order": 0,
           "id": "we-3",
           "exercise": "Run",
           "sets": [
@@ -86,10 +85,10 @@
               "set_type": "normal",
               "rpe": null
             }
-          ]
+          ],
+          "order": 0
         },
         {
-          "order": 1,
           "id": "we-4",
           "exercise": "Plank",
           "sets": [
@@ -100,7 +99,8 @@
               "set_type": "normal",
               "rpe": null
             }
-          ]
+          ],
+          "order": 1
         }
       ],
       "images": []

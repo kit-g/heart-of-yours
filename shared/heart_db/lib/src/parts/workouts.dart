@@ -26,12 +26,20 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   }
 
   /// A plain set has no type, as on the server and in every row from before
-  /// types existed: one shape for "normal", not two.
+  /// types existed: one shape for "normal", not two. The word the set carries,
+  /// not its parsed type: a type a newer build added reads here as normal, and
+  /// storing that would rewrite it as normal on the next save (#277).
   static String? _setType(ExerciseSet set) {
-    return switch (set.setType) {
-      .normal => null,
-      final type => type.value,
+    return switch (set.setTypeValue) {
+      final word when word == SetType.normal.value => null,
+      final word => word,
     };
+  }
+
+  /// What this build could not read, as stored: JSON, null for nothing (#277).
+  static String? _encodeUnread(List<Map> unread) {
+    if (unread.isEmpty) return null;
+    return jsonEncode(unread);
   }
 
   /// Whether [workout] carries its own detail — at least one set somewhere.
@@ -41,8 +49,11 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
   /// server copy with no sets at all is a *shallow* one — a list page, a PATCH
   /// echo, a shape the parser could not fully read — and says nothing about
   /// the exercises the mirror already holds for it.
+  ///
+  /// What this build could not read counts: a workout whose exercises are all
+  /// of a kind a newer build added iterates as empty, and is still whole.
   static bool _carriesDetail(Workout workout) {
-    return workout.any((exercise) => exercise.isNotEmpty);
+    return workout.unread.isNotEmpty || workout.any((exercise) => exercise.isNotEmpty || exercise.unread.isNotEmpty);
   }
 
   /// Writes [workout] into the mirror, updating the row in place.
@@ -77,6 +88,10 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       synced ? 1 : 0,
       note,
       _encodePauses(pauses),
+      // only a payload authoritative for the children speaks for what it
+      // could not read; a shallow one leaves the stored list alone
+      replaceExercises ? _encodeUnread(workout.unread) : null,
+      replaceExercises ? 1 : 0,
     ]);
 
     if (!replaceExercises) return;
@@ -93,6 +108,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
         'note': ?exercise.note,
         'exercise_order': order,
         'id': exercise.id,
+        'unread': _encodeUnread(exercise.unread),
       };
 
       batch.insert(_workoutExercises, exerciseRow, conflictAlgorithm: .replace);

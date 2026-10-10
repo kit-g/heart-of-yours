@@ -17,7 +17,7 @@ dependencies:
       url: "https://github.com/kit-g/heart-api.git"
       path: "shared/heart_models"
       ref: "main"
-    version: 2.10.0
+    version: 2.14.0
   material_ui: ^1.5.0
   provider: ^6.1.2
   shared_preferences: ^2.3.2

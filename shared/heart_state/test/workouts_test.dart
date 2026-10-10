@@ -1363,6 +1363,33 @@ void main() {
       verifyNever(local.storeWorkoutHistory([full], any));
     });
 
+    test('an edit of a workout made only of exercises a newer build added does not wipe it (#277)', () async {
+      // it iterates as empty — nothing this build can show — and is whole:
+      // dropping the row would take the kept exercises with it
+      final newer = Workout.fromJson({
+        'id': 'w1',
+        'start': '2026-08-21T10:00:00.000Z',
+        'end': '2026-08-21T11:00:00.000Z',
+        'exercises': [
+          {
+            'order': 0,
+            'id': 'sled-ex',
+            'exercise': {'id': 'sled', 'category': 'Weighted Push', 'name': 'Sled Push', 'target': 'Legs'},
+            'sets': [
+              {'id': 's1', 'completed': true, 'reps': 5},
+            ],
+          },
+        ],
+      });
+      expect(newer, isEmpty);
+      when(remote.editWorkout(any)).thenAnswer((_) async => newer);
+
+      await sut.editWorkout(newer);
+
+      verifyNever(local.deleteWorkout(any));
+      verify(local.storeWorkoutHistory([newer], 'u1')).called(1);
+    });
+
     test('an edit that kept its sets does not touch the row first', () async {
       final full = detailed('w1');
       when(remote.editWorkout(any)).thenAnswer((_) async => full);

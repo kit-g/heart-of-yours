@@ -367,9 +367,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// At least one set somewhere — the same test `heart_db` applies before it
-  /// lets a server copy replace the mirror's exercises.
+  /// lets a server copy replace the mirror's exercises. What this build could
+  /// not read counts (#277): a workout of exercises a newer build added
+  /// iterates as empty and is still whole.
   static bool _carriesDetail(Workout workout) {
-    return workout.any((exercise) => exercise.isNotEmpty);
+    return workout.unread.isNotEmpty || workout.any((exercise) => exercise.isNotEmpty || exercise.unread.isNotEmpty);
   }
 
   /// [source] is stated by the caller rather than inferred from [template],
