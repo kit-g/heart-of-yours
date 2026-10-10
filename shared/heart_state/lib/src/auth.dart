@@ -696,9 +696,15 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// re-authentication rather than from sign-in because Apple honours a code
   /// once and expires it in minutes, and this is the only moment close enough
   /// to the deletion to matter.
+  ///
+  /// [onScheduled] runs once the server has accepted the deletion and before
+  /// the session ends — where the caller forgets what the session held, so
+  /// nothing of the deleted account lingers into the anonymous session that
+  /// replaces it. The same order as a sign-out: memory first, then Auth.
   Future<void> scheduleAccountForDeletion({
     String? password,
     required void Function(String?) onAuthenticate,
+    VoidCallback? onScheduled,
   }) async {
     Future<void> callback() async {
       if (_user?.id case String accountId) {
@@ -708,6 +714,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         try {
           await _service.deleteAccount(accountId: accountId, appleGrant: appleGrant);
           analytics?.accountDeletionScheduled();
+          onScheduled?.call();
           await _logout();
         } on UpgradeRequired catch (e) {
           onError?.call(e);

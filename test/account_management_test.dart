@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart' show InternalUserInfo;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart_state/heart_state.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:material_ui/material_ui.dart';
@@ -170,6 +171,25 @@ void main() {
       // platform channel for — so the page navigating away on success is not
       // asserted here (see the HANDOFF for this gap).
       verify(api.deleteAccount(accountId: 'u1', appleGrant: null)).called(1);
+    });
+
+    testWidgets('a deleted account leaves nothing of itself in memory for the session after it', (tester) async {
+      final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+      await pumpToAccountManagement(tester, firebase: firebase);
+      final workouts = Workouts.of(tester.element(find.byType(AccountManagementPage)));
+      expect(workouts.userId, 'u1');
+
+      await tester.tap(find.text('Delete account'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Yep, go on without me!'));
+      await tester.pumpTimes();
+      await tester.enterTextAndWait(find.byType(TextField).last, 'correct-horse');
+      await tester.tap(find.text('Farewell!'));
+      await tester.pumpTimes();
+
+      verify(api.deleteAccount(accountId: 'u1', appleGrant: null)).called(1);
+      // cleared before the sign-out, as the profile's log-out does
+      expect(workouts.userId, isNull);
     });
 
     testWidgets('cancelling the first confirmation deletes nothing', (tester) async {

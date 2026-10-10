@@ -4167,6 +4167,12 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.'**
   String get importUnitBody;
+
+  /// Subtitle under the shortcuts switch in Settings › Features on Android, saying what it does: Gemini and the home screen, where iOS has Siri and the Shortcuts app
+  ///
+  /// In en, this message translates to:
+  /// **'Start or finish a workout from Gemini or your home screen'**
+  String get shortcutsSubtitleAndroid;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

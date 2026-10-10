@@ -4377,5 +4377,11 @@
     "description": "Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say",
     "type": "text",
     "placeholders": {}
+  },
+  "shortcutsSubtitleAndroid": "Start or finish a workout from Gemini or your home screen",
+  "@shortcutsSubtitleAndroid": {
+    "description": "Subtitle under the shortcuts switch in Settings › Features on Android, saying what it does: Gemini and the home screen, where iOS has Siri and the Shortcuts app",
+    "type": "text",
+    "placeholders": {}
   }
 }
