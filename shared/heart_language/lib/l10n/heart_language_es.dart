@@ -2404,4 +2404,8 @@ class LEs extends L {
   @override
   String get importUnitBody =>
       'Strong exporta en la unidad que tenías elegida allí, y el archivo no lo dice. Elígela aquí, o 100 lb llegarían como 100 kg.';
+
+  @override
+  String get shortcutsSubtitleAndroid =>
+      'Empieza o termina un entrenamiento desde Gemini o desde tu pantalla de inicio';
 }

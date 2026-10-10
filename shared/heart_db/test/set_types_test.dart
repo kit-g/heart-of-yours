@@ -182,6 +182,20 @@ void main() {
     expect(previous[bench]?.single['workout_start'], '2026-09-26T08:00:00.000Z');
   });
 
+  test('last time is never the workout in progress, which a restart mid-workout read back', () async {
+    await local.storeWorkoutHistory([
+      server('done', start: '2026-09-20T08:00:00.000Z', sets: [set('last', weight: 90)]),
+    ], user);
+    final running = server('now', start: '2026-09-26T08:00:00.000Z', sets: [set('today', weight: 100)]);
+    running.end = null;
+    await local.startWorkout(running, user);
+    await local.storeWorkoutHistory([running], user);
+
+    final previous = await local.getPreviousSets(user);
+
+    expect(previous[bench]?.map((each) => each['set_id']), ['last']);
+  });
+
   group('warm-ups are no record', () {
     final exercise = benchPress;
 
