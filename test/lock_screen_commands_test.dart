@@ -235,6 +235,17 @@ void main() {
     alarms.stopActiveExerciseTimer();
   });
 
+  testWidgets('the last set\'s rest alert names its exercise, not a "Next:" that is not coming', (tester) async {
+    final workout = Workout.fromExercises([
+      WorkoutExercise(starter: ExerciseSet(bench, weight: 60, reps: 5)),
+    ], name: 'Push day');
+    when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+    await workouts.init();
+    await pump(tester);
+
+    expect(surface.last?.done?.restSubtitle, 'Bench Press (Barbell)');
+  });
+
   testWidgets('the snapshot names the set up next for the Done button, with what follows it', (tester) async {
     final workout = push();
     when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
@@ -252,6 +263,8 @@ void main() {
     expect(done?.restSeconds, isNull);
     expect(done?.restTitle, 'Rest complete!');
     expect(done?.restSkip, 'Skip');
+    // something comes after it, so its rest's alert says what
+    expect(done?.restSubtitle, 'Next: Bench Press (Barbell)');
 
     // the second set has nothing filled in: it cannot be ticked as it
     // stands, so once the first is done there is no button

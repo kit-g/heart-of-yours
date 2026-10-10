@@ -312,9 +312,10 @@ class _SignUpPageState extends State<SignUpPage>
         emailExistsBody(email),
         textAlign: TextAlign.center,
       ),
+      // not an error: the account exists, and signing in is the way forward
       icon: Icon(
-        Icons.error_outline_rounded,
-        color: colorScheme.error,
+        Icons.account_circle_outlined,
+        color: colorScheme.primary,
       ),
       actions: [
         Column(
@@ -331,12 +332,8 @@ class _SignUpPageState extends State<SignUpPage>
               },
             ),
             PrimaryButton.wide(
-              backgroundColor: colorScheme.errorContainer,
               child: Center(
-                child: Text(
-                  emailExistsOkButton,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onErrorContainer),
-                ),
+                child: Text(emailExistsOkButton),
               ),
               onPressed: () {
                 buzz();

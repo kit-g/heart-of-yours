@@ -68,6 +68,7 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
   void dispose() {
     _total.dispose();
     alarms.remainsInActiveExercise?.removeListener(_tickerListener);
+    alarms.removeListener(_onAlarms);
 
     super.dispose();
   }
@@ -268,6 +269,18 @@ class _CountdownState extends State<Countdown> with AfterLayoutMixin<Countdown> 
         );
     }
     alarms.remainsInActiveExercise?.addListener(_tickerListener);
+    alarms.addListener(_onAlarms);
+  }
+
+  /// The rest this shows was skipped or replaced from elsewhere — the
+  /// notification, the lock screen, the watch — so there is nothing left to
+  /// count: the dialog goes rather than sit at 00:00.
+  void _onAlarms() {
+    if (!mounted) return;
+    if (alarms.remainsInActiveExercise != null && alarms.activeExerciseId == widget.exerciseId) return;
+    // already on its way out, after its own Skip or close
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    Navigator.of(context).pop();
   }
 
   void _tickerListener() {

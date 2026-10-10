@@ -528,8 +528,7 @@ class LFr extends L {
   String get finishWorkoutWarningTitle => 'Terminer votre séance ?';
 
   @override
-  String get finishWorkoutWarningBody =>
-      'Les séries vides ou invalides seront supprimées, et toutes les séries valides seront marquées comme terminées.';
+  String get finishWorkoutWarningBody => 'Seules les séries cochées seront enregistrées. Les autres seront écartées.';
 
   @override
   String get notificationsOffPrompt =>
@@ -898,8 +897,14 @@ class LFr extends L {
   String get deleteAccountTitle => 'Voulez-vous vraiment supprimer votre compte ?';
 
   @override
-  String deleteAccountBody(Object deadline) {
-    return 'La suppression de votre compte est programmée dans $deadline jours. D’ici là, vous pouvez toujours vous connecter et revenir sur votre décision. Une fois le délai passé, votre compte et vos données personnelles seront définitivement supprimés.';
+  String deleteAccountBody(int deadline) {
+    String _temp0 = intl.Intl.pluralLogic(
+      deadline,
+      locale: localeName,
+      other: '$deadline jours',
+      one: '1 jour',
+    );
+    return 'La suppression de votre compte est programmée dans $_temp0. D’ici là, vous pouvez toujours vous connecter et revenir sur votre décision. Une fois le délai passé, votre compte et vos données personnelles seront définitivement supprimés.';
   }
 
   @override
@@ -2411,4 +2416,12 @@ class LFr extends L {
 
   @override
   String get shortcutsSubtitleAndroid => 'Démarrez ou terminez une séance depuis Gemini ou votre écran d’accueil';
+
+  @override
+  String templateCopyNumberedName(Object name, int number) {
+    return '$name (copie $number)';
+  }
+
+  @override
+  String get shortcutTemplateGone => 'Ce modèle n’existe plus';
 }
