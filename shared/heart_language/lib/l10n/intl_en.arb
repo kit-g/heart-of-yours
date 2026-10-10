@@ -2928,6 +2928,18 @@
     "type": "text",
     "placeholders": {}
   },
+  "importExplainerHevy": "Lifted with Hevy before? Bring your history along.\n\nIn the Hevy app or on hevy.com, go to Settings → Export Data and export your workouts. Save the CSV file, then pick it here.",
+  "@importExplainerHevy": {
+    "description": "Import page, explains where the Hevy export file comes from",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importSourceTitle": "Exported from",
+  "@importSourceTitle": {
+    "description": "Import page, title above the Strong/Hevy switch: which app the export came from",
+    "type": "text",
+    "placeholders": {}
+  },
   "importSafeToRetry": "Everything comes over — workouts, sets, exercises. Importing the same file twice is safe: anything already here is skipped, never duplicated.",
   "@importSafeToRetry": {
     "description": "Import page, reassurance below the explainer",
@@ -2961,6 +2973,24 @@
   "importFailedBody": "It couldn't be read as a Strong export. Pick the CSV file from Strong's export email and try again.",
   "@importFailedBody": {
     "description": "Import page, body of the rejected-file error state",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedBodyHevy": "It couldn't be read as a Hevy export. Pick the CSV file from Hevy's Export Data and try again.",
+  "@importFailedBodyHevy": {
+    "description": "Import page, body of the rejected-file error state when the file was sent as a Hevy export",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importParkedHeadline": "We kept your file",
+  "@importParkedHeadline": {
+    "description": "Import page, headline when the server kept a file it could not read for a person to import by hand",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importParkedBody": "It couldn't be read automatically, so we'll import it by hand and let you know once your workouts are in. No need to send it again.",
+  "@importParkedBody": {
+    "description": "Import page, body under importParkedHeadline: nothing imported yet, a person will do it, the user hears back, nothing to resend",
     "type": "text",
     "placeholders": {}
   },
