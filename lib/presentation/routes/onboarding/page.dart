@@ -98,18 +98,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 controller: _controller,
                 onPageChanged: (index) => _page.value = index,
                 children: [
+                  // the splash's heart, met again on the first thing the
+                  // app says
                   _Screen(
-                    asset: Assets.emptyWorkout,
+                    glyph: .heart,
                     title: onboardingWelcomeTitle,
                     body: [onboardingWelcomeBody],
                   ),
                   _Screen(
-                    icon: Icons.smartphone_outlined,
+                    glyph: const .icon(Icons.smartphone_outlined),
                     title: onboardingLocalTitle,
                     body: [onboardingLocalBody, onboardingLocalTrade],
                   ),
                   _Screen(
-                    icon: Icons.cloud_sync_outlined,
+                    glyph: const .icon(Icons.cloud_sync_outlined),
                     title: onboardingAccountTitle,
                     body: [onboardingAccountBody],
                   ),
@@ -142,14 +144,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
 /// copy to [readableWidth]. Left to fill, the illustration asked for 250pt on
 /// an iPad and the paragraph ran the full 1194.
 class _Screen extends StatelessWidget {
-  final String? asset;
-  final IconData? icon;
+  final _Glyph glyph;
   final String title;
   final List<String> body;
 
   const new({
-    this.asset,
-    this.icon,
+    required this.glyph,
     required this.title,
     required this.body,
   });
@@ -182,8 +182,7 @@ class _Screen extends StatelessWidget {
                         child: _Illustration(
                           key: AppKeys.onboardingIllustration,
                           size: size,
-                          asset: asset,
-                          icon: icon,
+                          glyph: glyph,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -214,14 +213,12 @@ class _Screen extends StatelessWidget {
 /// full-page surfaces read as one family.
 class _Illustration extends StatelessWidget {
   final double size;
-  final String? asset;
-  final IconData? icon;
+  final _Glyph glyph;
 
   const new({
     super.key,
     required this.size,
-    this.asset,
-    this.icon,
+    required this.glyph,
   });
 
   @override
@@ -237,14 +234,32 @@ class _Illustration extends StatelessWidget {
         border: Border.all(color: color, width: 2),
       ),
       child: Center(
-        child: switch ((asset, icon)) {
-          (String asset, _) => Vector(asset, width: glyph, height: glyph, color: color),
-          (null, IconData icon) => Icon(icon, size: glyph, color: color),
-          (null, null) => const SizedBox.shrink(),
+        child: switch (this.glyph) {
+          _Heart() => HeartMark(size: glyph, color: color),
+          _Icon(:final icon) => Icon(icon, size: glyph, color: color),
         },
       ),
     );
   }
+}
+
+/// What sits in a screen's ring.
+sealed class _Glyph {
+  const new();
+
+  static const heart = _Heart();
+
+  const factory icon(IconData icon) = _Icon;
+}
+
+class _Heart extends _Glyph {
+  const new();
+}
+
+class _Icon extends _Glyph {
+  final IconData icon;
+
+  const new(this.icon);
 }
 
 /// One page dot; the active one stretches into a pill.
