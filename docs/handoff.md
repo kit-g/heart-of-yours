@@ -21,7 +21,9 @@ satisfied or explicitly flagged in the handoff.
 2. **Strings** — every new user-facing string, including tooltips and
    semantic labels, goes through `shared/heart_language` via the
    translations workflow: hand-edit only `intl_en.arb`; other locales flow
-   through the CSV import, edited one row at a time.
+   through the CSV import, edited one row at a time. The locale ARBs and
+   the generated Dart are derived and not committed: the diff carries the
+   two sources only, and `make codegen-heart_language` rebuilds the rest.
 3. **Accessibility** — new interactive controls announce themselves (label,
    role); screens you touched keep their entries in `test/a11y_test.dart`'s
    screen×guideline matrix honest: enable what now passes, skip what doesn't
