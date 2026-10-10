@@ -985,7 +985,7 @@ abstract class L {
   /// Workout completion confirmation dialog
   ///
   /// In en, this message translates to:
-  /// **'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.'**
+  /// **'Only the sets you ticked will be saved. The rest are left out.'**
   String get finishWorkoutWarningBody;
 
   /// Shown when a workout starts while notifications are off: what the user loses by leaving them off
@@ -1675,8 +1675,8 @@ abstract class L {
   /// Delete account dialog
   ///
   /// In en, this message translates to:
-  /// **'Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.'**
-  String deleteAccountBody(Object deadline);
+  /// **'Your account is scheduled for deletion in {deadline, plural, =1{1 day} other{{deadline} days}}. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.'**
+  String deleteAccountBody(int deadline);
 
   /// Delete account dialog
   ///
@@ -4173,6 +4173,18 @@ abstract class L {
   /// In en, this message translates to:
   /// **'Start or finish a workout from Gemini or your home screen'**
   String get shortcutsSubtitleAndroid;
+
+  /// Name of a duplicated template when "<name> (copy)" is already taken: the copy's number, 2 and up
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (copy {number})'**
+  String templateCopyNumberedName(Object name, int number);
+
+  /// Brief notice when a home-screen shortcut or link names a template that no longer exists; the templates list is shown under it
+  ///
+  /// In en, this message translates to:
+  /// **'That template isn\'t here anymore'**
+  String get shortcutTemplateGone;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
