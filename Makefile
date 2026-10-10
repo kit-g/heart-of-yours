@@ -11,14 +11,15 @@
 
 # Packages with a test suite in the CI matrix.
 PACKAGES := heart_api heart_db heart_state heart_charts heart_language heart_health
-# Packages that need build_runner before their tests (heart_language has no codegen).
+# Packages that need build_runner before their tests. heart_language's codegen
+# is the translation import instead (codegen-heart_language, below).
 CODEGEN_PACKAGES := heart_api heart_db heart_state heart_charts heart_health
 
 TEST_TARGETS := $(addprefix test-,$(PACKAGES))
 CODEGEN_TARGETS := $(addprefix codegen-,$(CODEGEN_PACKAGES))
 
-.PHONY: bootstrap deps hooks codegen codegen-app lint format format-check test test-app profiles reclaim \
-        $(TEST_TARGETS) $(CODEGEN_TARGETS)
+.PHONY: bootstrap deps hooks codegen codegen-app codegen-heart_language lint format format-check test test-app \
+        test-scripts profiles reclaim $(TEST_TARGETS) $(CODEGEN_TARGETS)
 
 bootstrap: hooks deps codegen codegen-app
 	@echo "Ready. Note: lib/firebase_options.dart and lib/firebase_options_prod.dart"
@@ -36,11 +37,23 @@ deps:
 
 hooks:
 	git config core.hooksPath .githooks
+# the translation sources merge by key (.gitattributes, scripts/l10n_merge.py)
+	git config merge.l10n-arb.name "key-aware merge of an ARB"
+	git config merge.l10n-arb.driver "python3 scripts/l10n_merge.py arb %O %A %B"
+	git config merge.l10n-csv.name "row-aware merge of the translations CSV"
+	git config merge.l10n-csv.driver "python3 scripts/l10n_merge.py csv %O %A %B"
 
-codegen: $(CODEGEN_TARGETS)
+codegen: $(CODEGEN_TARGETS) codegen-heart_language
 
 $(CODEGEN_TARGETS): codegen-%:
 	cd shared/$* && dart run build_runner build
+
+# The other locales' ARBs, the generated Dart and the native permission strings,
+# from scripts/translations.csv and the two intl_en.arb sources. Not committed
+# (shared/heart_language/.gitignore), so a fresh checkout — and every CI job
+# that analyzes, tests or builds the app — runs this first.
+codegen-heart_language:
+	cd shared/heart_language && dart run scripts/move.dart import
 
 codegen-app:
 	dart run build_runner build
@@ -96,7 +109,7 @@ format-check:
 format:
 	git ls-files -co --exclude-standard '*.dart' | xargs dart format
 
-test: $(TEST_TARGETS) test-app
+test: $(TEST_TARGETS) test-app test-scripts
 
 # With REPORTS_DIR set (CI), each suite also writes a dart-test JSON report
 # there for the Test Summary job to aggregate; locally nothing changes.
@@ -105,14 +118,18 @@ define suite_test
 $(if $(REPORTS_DIR),mkdir -p "$(REPORTS_DIR)" && )flutter test $(1) $(if $(REPORTS_DIR),--file-reporter="json:$(REPORTS_DIR)/$(2).json")
 endef
 
-test-heart_language:
+test-heart_language: codegen-heart_language
 	$(call suite_test,shared/heart_language,heart_language)
 
 $(filter-out test-heart_language,$(TEST_TARGETS)): test-%: codegen-%
 	$(call suite_test,shared/$*,$*)
 
-test-app: codegen-app
+test-app: codegen-app codegen-heart_language
 	$(call suite_test,,app)
+
+# the repo's own Python tooling (the translation merge driver)
+test-scripts:
+	cd scripts && python3 -m unittest discover -p 'test_*.py'
 
 # just the screen×guideline accessibility matrix, for quick local runs
 a11y: codegen-app

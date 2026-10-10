@@ -107,6 +107,11 @@ jobs:
         # leave it undated, and the card shows no date.
         run: dart scripts/whats_new.dart stamp
 
+      # the locale ARBs and the generated Dart are not committed
+      # (shared/heart_language/.gitignore); the import writes them
+      - name: "Generate localizations"
+        run: make codegen-heart_language
+
       - name: "Build app bundle"
         run: flutter build appbundle --release --flavor ${{ inputs.flavor }} --build-number ${{ github.run_number }} --dart-define-from-file=appconfig.json
 

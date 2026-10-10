@@ -5,4 +5,11 @@
 # to read into the generated locale ARBs — flipping \n and \r\n back and forth
 # across seven commits. Pinning the working copy to LF makes the import
 # deterministic whoever runs it.
-shared/heart_language/scripts/translations.csv text eol=lf
+shared/heart_language/scripts/translations.csv text eol=lf merge=l10n-csv
+
+# The translation sources merge by key, not by line (scripts/l10n_merge.py,
+# registered by `make hooks`): two branches that each add strings no longer
+# conflict on the tail of the file. The files the import derives from these
+# are not committed, so they have nothing to merge.
+shared/heart_language/lib/l10n/intl_en.arb merge=l10n-arb
+shared/heart_language/native/l10n/intl_en.arb merge=l10n-arb
