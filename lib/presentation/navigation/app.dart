@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/rest_store.dart';
@@ -778,6 +779,17 @@ Future<void> _initApp(
     theme
       ..preset = Preset.fromStored(prefs.getBaseColor(userId))
       ..toMode(prefs.themeMode);
+
+    // What the opening page shows, from the device alone: the profile's
+    // aggregations (read again once the history pull lands, below) and its
+    // charts. Then the launch screen can go — the first frame is the app as
+    // it will look, not one that repaints and jumps.
+    unawaited(
+      Future.wait([
+        stats.init(),
+        if (!isInitialized) charts.init(),
+      ]).catchError((_) => const <void>[]).whenComplete(LaunchScreen.release),
+    );
 
     // `onUserChange` has already set the id — it runs before this — so the only
     // thing left to wait for is the token.
