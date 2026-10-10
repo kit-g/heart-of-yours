@@ -45,6 +45,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   final String? appleServiceId;
   final String? appleSignInRedirect;
 
+  /// Apple's sheet: a credential for the signed-in Apple ID. The plugin's
+  /// static call in the app; a fake in tests, which the plugin leaves no
+  /// other way to reach.
+  final AppleCredentials _appleCredentials;
+
   /// The remote leg's gate, shared with every state class. This is where it is
   /// decided — see [_adopt].
   final RemoteAccess remote;
@@ -119,9 +124,11 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     this.appleBundleId,
     fb.FirebaseAuth? firebase,
     GoogleSignIn? googleSignIn,
+    AppleCredentials? appleCredentials,
     RemoteAccess? remote,
   }) : _firebase = firebase ?? fb.FirebaseAuth.instance,
        _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
+       _appleCredentials = appleCredentials ?? SignInWithApple.getAppleIDCredential,
        remote = remote ?? RemoteAccess() {
     // such is the way with Google sign-in
     // on the web - Firebase does not pick it up
@@ -310,7 +317,14 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// The [AccountArrival] beside the credential is this method's alone to
   /// report: it is the only place that knows which of the three branches
   /// below ran, and the caller cannot tell them apart afterwards.
-  Future<(fb.UserCredential, AccountArrival)> _linkOrSignIn(fb.AuthCredential credential) {
+  ///
+  /// [renew] is how a spent credential is replaced when Firebase hands none
+  /// back with its refusal: Apple's sheet again, for a new identity token.
+  /// Google's credential survives a second use, so Google passes nothing.
+  Future<(fb.UserCredential, AccountArrival)> _linkOrSignIn(
+    fb.AuthCredential credential, {
+    Future<fb.AuthCredential> Function()? renew,
+  }) {
     return _fromAnonymous(
       () async {
         final anonymous = _firebase.currentUser;
@@ -335,16 +349,15 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
           // which reads like a nonce bug and is really a double-use.
           //
           // Firebase returns a fresh, unconsumed credential on this exception
-          // for precisely this handover, so prefer it.
-          //
-          // Falling back to the spent one when it is absent is deliberate, and
-          // it is not a fix — it is the behaviour that shipped. Google's
-          // credential survives the second use, so retrying it is how this
-          // path has always worked; rethrowing instead would break a working
-          // sign-in whenever the plugin declines to populate `e.credential`.
-          // Apple in that case fails exactly as it does today, which is no
-          // worse, and the case that matters in practice is the one above.
-          return (await _firebase.signInWithCredential(e.credential ?? credential), AccountArrival.takeover);
+          // for precisely this handover, so prefer it. It comes with
+          // `credential-already-in-use` and not with `email-already-in-use`,
+          // which is the refusal an Apple ID whose email already has a Heart
+          // account under Google or a password gets — and that one came back
+          // as the duplicate-nonce error on a real phone (HEART-OF-YOURS-DEV-6K).
+          // So when nothing is handed back, the provider that cannot replay
+          // is asked for a new credential; the one that can is replayed.
+          final next = e.credential ?? await renew?.call() ?? credential;
+          return (await _firebase.signInWithCredential(next), AccountArrival.takeover);
         }
       },
     );
@@ -370,51 +383,74 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         final cred = fb.GoogleAuthProvider.credential(idToken: idToken);
         return await _loginWithCredential(cred, provider: .google);
       }
+    } on fb.FirebaseAuthException catch (e, s) {
+      _reportFailure(e, provider: .google);
+      onError?.call(e, stacktrace: s);
+      throw AuthException(.fromCode(e.code));
     } catch (e, s) {
       _reportFailure(e, provider: .google);
       if (!_isCancellation(e)) onError?.call(e, stacktrace: s);
     }
   }
 
+  /// One pass through Apple's sheet: the identity token as a Firebase
+  /// credential, with the name and email Apple says once, on the first
+  /// authorization, and never again.
+  ///
+  /// The identity token alone. The authorization code beside it is what a
+  /// server exchanges with Apple, and Apple honours it exactly once — so
+  /// handing it to Firebase here spends it for nothing, and leaves account
+  /// deletion with no grant to revoke. Firebase needs only the id token.
+  Future<({fb.OAuthCredential token, String? email, String? name})> _askApple() async {
+    final credential = await _appleCredentials(
+      scopes: [.email, .fullName],
+      webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
+        (String clientId, String redirect) => WebAuthenticationOptions(
+          clientId: clientId,
+          redirectUri: Uri.parse(redirect),
+        ),
+        _ => null,
+      },
+    );
+    final name = switch ((credential.givenName, credential.familyName)) {
+      (String first, String last) when first.isNotEmpty && last.isNotEmpty => '$first $last',
+      (String first, _) when first.isNotEmpty => first,
+      (_, String last) when last.isNotEmpty => last,
+      _ => null,
+    };
+    return (
+      token: fb.OAuthProvider('apple.com').credential(idToken: credential.identityToken),
+      email: credential.email,
+      name: name,
+    );
+  }
+
   Future<void> loginWithApple() async {
     analytics?.signupStarted(provider: .apple, fromAnonymous: _isAnonymous);
     try {
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [.email, .fullName],
-        webAuthenticationOptions: switch ((appleServiceId, appleSignInRedirect)) {
-          (String clientId, String redirect) => WebAuthenticationOptions(
-            clientId: clientId,
-            redirectUri: Uri.parse(redirect),
-          ),
-          _ => null,
-        },
-      );
-
-      // The identity token alone. The authorization code beside it is what a
-      // server exchanges with Apple, and Apple honours it exactly once — so
-      // handing it to Firebase here spends it for nothing, and leaves account
-      // deletion with no grant to revoke. Firebase needs only the id token.
-      final oAuth = fb.OAuthProvider('apple.com');
-      final appleToken = oAuth.credential(idToken: credential.identityToken);
-
-      final name = switch ((credential.givenName, credential.familyName)) {
-        (String first, String last) when first.isNotEmpty && last.isNotEmpty => '$first $last',
-        (String first, _) when first.isNotEmpty => first,
-        (_, String last) when last.isNotEmpty => last,
-        _ => null,
-      };
-
+      final first = await _askApple();
       return await _loginWithCredential(
-        appleToken,
+        first.token,
         provider: .apple,
-        appleEmail: credential.email,
-        appleName: name,
+        appleEmail: first.email,
+        appleName: first.name,
+        // an Apple identity token is redeemed once; when the link spends it
+        // deciding the account exists and Firebase hands nothing back, the
+        // sign-in needs a new one — the sheet again, which for an Apple ID
+        // already authorized is a Face ID and no more
+        renew: () async => (await _askApple()).token,
       );
     } on SignInWithAppleCredentialsException catch (e) {
       if (e.message.contains('popup_closed_by_user')) {
         return;
       }
       _reportFailure(e, provider: .apple);
+    } on fb.FirebaseAuthException catch (e, s) {
+      // the page shows this one as words; silently stopping the spinner is
+      // how "couldn't log in with Apple" had no message behind it
+      _reportFailure(e, provider: .apple);
+      onError?.call(e, stacktrace: s);
+      throw AuthException(.fromCode(e.code));
     } catch (e, s) {
       _reportFailure(e, provider: .apple);
       if (_isCancellation(e)) return;
@@ -427,8 +463,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     required AuthProvider provider,
     String? appleName,
     String? appleEmail,
+    Future<fb.AuthCredential> Function()? renew,
   }) {
-    return _linkOrSignIn(credential).then<void>(
+    return _linkOrSignIn(credential, renew: renew).then<void>(
       (result) async {
         final (cred, arrival) = result;
         // Apple says the name once, on the first authorization, and Firebase
@@ -890,6 +927,10 @@ enum AuthExceptionReason {
   userDisabled,
   userNotFound,
   emailInUse,
+
+  /// The email already has an account under another sign-in, and Firebase
+  /// will not hand it to this one.
+  accountUnderOtherProvider,
   weakPassword,
   networkRequestFailed,
   unknown;
@@ -902,6 +943,7 @@ enum AuthExceptionReason {
       'user-disabled' => userDisabled,
       'user-not-found' => userNotFound,
       'email-already-in-use' => emailInUse,
+      'account-exists-with-different-credential' => accountUnderOtherProvider,
       'weak-password' => weakPassword,
       'network-request-failed' => networkRequestFailed,
       _ => unknown,
@@ -919,3 +961,10 @@ class AuthException implements Exception {
     return reason.toString();
   }
 }
+
+/// The shape of `SignInWithApple.getAppleIDCredential`, so a test can stand
+/// in for the sheet.
+typedef AppleCredentials = Future<AuthorizationCredentialAppleID> Function({
+  required List<AppleIDAuthorizationScopes> scopes,
+  WebAuthenticationOptions? webAuthenticationOptions,
+});

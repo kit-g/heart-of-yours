@@ -87,6 +87,39 @@ class _TakenCredentialWithFresh extends MockUser {
   }
 }
 
+/// Apple's sheet, as a test can stand in for it: every showing hands out a
+/// new identity token, numbered, so a test can tell the first from the
+/// second — which is the whole question when a link spends the first.
+class _AppleSheet {
+  var shown = 0;
+
+  Future<AuthorizationCredentialAppleID> call({
+    required List<AppleIDAuthorizationScopes> scopes,
+    WebAuthenticationOptions? webAuthenticationOptions,
+  }) async {
+    shown++;
+    return AuthorizationCredentialAppleID(
+      userIdentifier: 'apple-user',
+      givenName: null,
+      familyName: null,
+      authorizationCode: 'code-$shown',
+      email: null,
+      identityToken: 'apple-token-$shown',
+      state: null,
+    );
+  }
+}
+
+/// A Firebase that refuses every provider sign-in the way it does when the
+/// email already belongs to an account under another provider.
+class _RefusingFirebase extends _Firebase {
+  @override
+  Future<fb.UserCredential> signInWithCredential(fb.AuthCredential? credential) {
+    if (credential != null) redeemed.add(credential);
+    throw fb.FirebaseAuthException(code: 'account-exists-with-different-credential');
+  }
+}
+
 /// A user whose link attempt fails for any other reason — the SDK's own
 /// refusal, a dropped network.
 // ignore: must_be_immutable — see _LinkableAnonymous
@@ -524,6 +557,7 @@ void main() {
     late RemoteAccess remote;
     late MockGoogleSignIn google;
     late _Firebase firebase;
+    late _AppleSheet apple;
 
     /// Fresh per [build], unlike the file-level mocks: these assertions are
     /// about what one run reported, and a shared one would carry the previous
@@ -533,15 +567,20 @@ void main() {
     /// An [Auth] over a Firebase that has minted [anonymous] as the session,
     /// with the Google sheet answering an account whose credential the
     /// anonymous user decides the fate of.
-    Future<Auth> build(MockUser Function(MockFirebaseAuth) anonymous, {void Function(Object)? onError}) async {
+    Future<Auth> build(
+      MockUser Function(MockFirebaseAuth) anonymous, {
+      void Function(Object)? onError,
+      _Firebase Function()? firebaseOf,
+    }) async {
       events = [];
       remote = RemoteAccess();
       google = MockGoogleSignIn();
+      apple = _AppleSheet();
       when(google.initialize()).thenAnswer((_) async {});
       when(google.authenticate(scopeHint: anyNamed('scopeHint'))).thenAnswer((_) async => _GoogleAccount());
       when(account.isAuthenticated).thenReturn(true);
       when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
-      firebase = _Firebase();
+      firebase = firebaseOf?.call() ?? _Firebase();
       firebase.mockUser = anonymous(firebase);
       reported = ReportedAnalytics();
       final sut = Auth(
@@ -549,6 +588,7 @@ void main() {
         firebase: firebase,
         remote: remote,
         googleSignIn: google,
+        appleCredentials: apple.call,
         analytics: Analytics(service: reported),
         onLink: (from, to) async => events.add('link $from→$to allowed=${remote.allowed}'),
         onUserChange: (user) => events.add('user ${user?.id}'),
@@ -648,11 +688,58 @@ void main() {
       );
     });
 
-    test('a link that fails for any other reason puts the leg back and links nothing', () async {
+    test('an existing Apple account with nothing handed back is asked for a new token, not replayed', () async {
+      final sut = await build((auth) => _TakenCredential(auth, code: 'email-already-in-use'));
+
+      await sut.loginWithApple();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user?.id, 'acct-1');
+      expect(apple.shown, 2, reason: 'the sheet once more, for a token the link did not spend');
+      final redeemed = firebase.redeemed.last;
+      expect(redeemed, isA<fb.OAuthCredential>().having((c) => c.idToken, 'idToken', 'apple-token-2'));
+      expect(reported.arrivals, ['takeover']);
+    });
+
+    test('a Google account is not asked again: its credential survives a second use', () async {
+      final sut = await build((auth) => _TakenCredential(auth, code: 'email-already-in-use'));
+
+      await sut.loginWithGoogle();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(sut.user?.id, 'acct-1');
+      expect(apple.shown, 0);
+    });
+
+    test('an Apple email already under another sign-in is refused with words the page can show', () async {
+      final errors = <Object>[];
+      final sut = await build(
+        (auth) => _TakenCredential(auth, code: 'email-already-in-use'),
+        onError: errors.add,
+        firebaseOf: _RefusingFirebase.new,
+      );
+
+      await expectLater(
+        sut.loginWithApple(),
+        throwsA(isA<AuthException>().having((e) => e.reason, 'reason', AuthExceptionReason.accountUnderOtherProvider)),
+      );
+
+      expect(apple.shown, 2);
+      expect(sut.isAnonymous, isTrue, reason: 'the leg is put back');
+      expect(remote.replaying, isFalse);
+      expect(errors, hasLength(1), reason: 'still reported: it is worth knowing how often');
+    });
+
+    test('a link that fails for any other reason puts the leg back, links nothing, and says so', () async {
       final errors = <Object>[];
       final sut = await build((_) => _UnlinkableAnonymous(), onError: errors.add);
 
-      await sut.loginWithGoogle();
+      // reported, and thrown as the reason the page can word: a sign-in
+      // that silently stopped is one the user cannot tell from a hang
+      await expectLater(
+        sut.loginWithGoogle(),
+        throwsA(isA<AuthException>().having((e) => e.reason, 'reason', AuthExceptionReason.networkRequestFailed)),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
       expect(sut.isAnonymous, isTrue);
