@@ -1104,6 +1104,48 @@ void main() {
       );
     });
 
+    test('a Hevy export goes up as source=hevy and reads the same preview', () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'hevy', 'dryRun': 'true'},
+        statusCode: 200,
+        body: {'source': 'hevy', 'workoutsFound': 12, 'setsFound': 140},
+      );
+
+      final preview = await api.previewImportedWorkouts(csv, source: .hevy);
+
+      expect(preview.workoutsFound, 12);
+      expect(preview.setsFound, 140);
+    });
+
+    test('a 202 is a parked file, on the dry run and the commit alike', () async {
+      const body = {
+        'source': 'hevy',
+        'status': 'parked',
+        'message': "We couldn't read this Hevy export automatically.",
+        'reason': 'unreadable date "22.09.2026, 17:00"',
+      };
+      for (final query in [
+        {'source': 'hevy', 'dryRun': 'true'},
+        {'source': 'hevy'},
+      ]) {
+        _response(
+          client: client,
+          method: 'POST',
+          path: Router.workoutImports,
+          query: query,
+          statusCode: 202,
+          body: body,
+        );
+      }
+
+      final parked = isA<ImportParked>().having((e) => e.reason, 'reason', contains('unreadable date'));
+      expect(() => api.previewImportedWorkouts(csv, source: .hevy), throwsA(parked));
+      expect(() => api.importWorkouts(csv, source: .hevy), throwsA(parked));
+    });
+
     test('previewImportedWorkouts asks for the dry run and reads the unmatched names', () async {
       final query = {'source': 'strong', 'dryRun': 'true', 'tzOffset': '-04:00'};
       _response(

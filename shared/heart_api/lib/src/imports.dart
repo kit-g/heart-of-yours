@@ -3,9 +3,8 @@ library;
 
 /// A third-party app whose export the server can ingest.
 ///
-/// The server rejects anything else with a 400. Hevy is a planned follow-up
-/// and becomes a new value here when it ships — nothing else changes.
-enum ImportSource { strong }
+/// The server rejects anything else with a 400. [name] is the wire value.
+enum ImportSource { strong, hevy }
 
 /// The import endpoint's 400: the file was not a readable export.
 ///
@@ -18,6 +17,21 @@ class ImportRejected implements Exception {
 
   @override
   String toString() => 'ImportRejected(${reason ?? 'no reason given'})';
+}
+
+/// The import endpoint's 202: the file is in a known layout but nothing in it
+/// could be read automatically, so the server kept it for a person to import
+/// by hand and will message the user once that is done. Nothing was imported,
+/// and sending the same file again changes nothing — there is no retry.
+///
+/// [reason] is developer-grade, like [ImportRejected.reason].
+class ImportParked implements Exception {
+  final String? reason;
+
+  const new({this.reason});
+
+  @override
+  String toString() => 'ImportParked(${reason ?? 'no reason given'})';
 }
 
 /// What an import *would* do — the `dryRun=true` response.

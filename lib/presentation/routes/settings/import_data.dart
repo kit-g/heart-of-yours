@@ -1,8 +1,8 @@
 part of 'settings.dart';
 
 /// Where a workout-history import stands: awaiting the user's word on
-/// unmatched exercises, the server's report on success, or its refusal when
-/// the file was not a readable export.
+/// unmatched exercises, the server's report on success, its refusal when the
+/// file was not a readable export, or a file it kept to import by hand.
 sealed class _ImportOutcome {
   const new();
 }
@@ -15,7 +15,11 @@ final class _AwaitingConsent extends _ImportOutcome {
   final WorkoutImportPreview preview;
   final String csv;
 
-  const new(this.preview, {required this.csv});
+  /// The source the preview ran as — the commit goes up as the same, whatever
+  /// the switch says by then.
+  final ImportSource source;
+
+  const new(this.preview, {required this.csv, required this.source});
 }
 
 final class _Imported extends _ImportOutcome {
@@ -26,11 +30,22 @@ final class _Imported extends _ImportOutcome {
 
 final class _Rejected extends _ImportOutcome {
   final String? reason;
+  final ImportSource source;
+
+  const new(this.reason, {required this.source});
+}
+
+/// The server's 202 (#324): a file in a known layout that nothing could read
+/// automatically — today a hevy.com export in a language other than English.
+/// It was kept, a person imports it, and the user hears back; nothing was
+/// imported, and sending it again changes nothing.
+final class _Parked extends _ImportOutcome {
+  final String? reason;
 
   const new(this.reason);
 }
 
-/// Uploads a Strong CSV export and shows the server's report.
+/// Uploads a Strong or Hevy CSV export and shows the server's report.
 ///
 /// The server does all parsing, matching and dedup — this page is transport
 /// and UX. The import is idempotent, so there is no confirmation dialog and
@@ -48,6 +63,10 @@ class ImportDataPage extends StatefulWidget {
 class _ImportDataPageState extends State<ImportDataPage> with LoadingState<ImportDataPage>, HasHaptic<ImportDataPage> {
   final _outcome = ValueNotifier<_ImportOutcome?>(null);
 
+  /// Which app the export came from (#324). The server reads each in its own
+  /// layout, so the user says which rather than the page guessing.
+  final _source = ValueNotifier<ImportSource>(.strong);
+
   /// The unit the export was made in (#307), as the user says — null until
   /// they do, which reads as the account's own. Strong's CSV carries no unit,
   /// and only the person who exported knows which Strong was set to: a
@@ -57,6 +76,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
   @override
   void dispose() {
     _outcome.dispose();
+    _source.dispose();
     _unit.dispose();
     super.dispose();
   }
@@ -65,7 +85,9 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
   Widget build(BuildContext context) {
     final L(
       :importData,
+      :importSourceTitle,
       :importExplainerStrong,
+      :importExplainerHevy,
       :importSafeToRetry,
       :importUnitTitle,
       :importUnitBody,
@@ -98,33 +120,64 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text(importExplainerStrong),
+                  Text(importSourceTitle, style: textTheme.titleSmall),
                   const SizedBox(height: 12),
-                  Text(
-                    importSafeToRetry,
-                    style: textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 24),
-                  // which unit the export is in (#307): asked before the file,
-                  // preset to the account's, read by both halves of the import
-                  Text(importUnitTitle, style: textTheme.titleSmall),
-                  const SizedBox(height: 4),
-                  Text(importUnitBody, style: textTheme.bodySmall),
-                  const SizedBox(height: 12),
-                  ValueListenableBuilder<MeasurementUnit?>(
-                    valueListenable: _unit,
-                    builder: (context, chosen, _) {
-                      return SettingSwitcher<MeasurementUnit>(
-                        value: chosen ?? _fallbackUnit ?? .metric,
-                        onValueChanged: (value) => _unit.value = value,
-                        children: {
-                          .metric: Text(kg),
-                          .imperial: Text(lbs),
-                        },
+                  ValueListenableBuilder<ImportSource>(
+                    valueListenable: _source,
+                    builder: (context, source, _) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SettingSwitcher<ImportSource>(
+                            value: source,
+                            onValueChanged: (value) => _source.value = value ?? source,
+                            // the apps' own names, never translated
+                            children: const {
+                              .strong: Text('Strong'),
+                              .hevy: Text('Hevy'),
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            switch (source) {
+                              .strong => importExplainerStrong,
+                              .hevy => importExplainerHevy,
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            importSafeToRetry,
+                            style: textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 24),
+                          // which unit the export is in (#307): asked before the
+                          // file, preset to the account's, read by both halves of
+                          // the import. A Hevy file names its units in its own
+                          // header, so the question has no Hevy form.
+                          if (source == .strong) ...[
+                            Text(importUnitTitle, style: textTheme.titleSmall),
+                            const SizedBox(height: 4),
+                            Text(importUnitBody, style: textTheme.bodySmall),
+                            const SizedBox(height: 12),
+                            ValueListenableBuilder<MeasurementUnit?>(
+                              valueListenable: _unit,
+                              builder: (context, chosen, _) {
+                                return SettingSwitcher<MeasurementUnit>(
+                                  value: chosen ?? _fallbackUnit ?? .metric,
+                                  onValueChanged: (value) => _unit.value = value,
+                                  children: {
+                                    .metric: Text(kg),
+                                    .imperial: Text(lbs),
+                                  },
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ],
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
                   ValueListenableBuilder<_ImportOutcome?>(
                     valueListenable: _outcome,
                     builder: (_, outcome, child) {
@@ -169,13 +222,17 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                     builder: (_, outcome, _) {
                       return switch (outcome) {
                         null => const SizedBox.shrink(),
-                        _AwaitingConsent(:final preview, :final csv) => _ImportConsentView(
+                        _AwaitingConsent(:final preview, :final csv, :final source) => _ImportConsentView(
                           preview: preview,
-                          onImport: (approved) => _commit(csv, createCustom: approved),
+                          onImport: (approved) => _commit(csv, source: source, createCustom: approved),
                           onCancel: () => _outcome.value = null,
                         ),
                         _Imported(:final report) => _ImportReportView(report: report),
-                        _Rejected(:final reason) => _ImportRejectionView(reason: reason),
+                        _Rejected(:final reason, :final source) => _ImportRejectionView(
+                          reason: reason,
+                          source: source,
+                        ),
+                        _Parked(:final reason) => _ImportParkedView(reason: reason),
                       };
                     },
                   ),
@@ -201,8 +258,14 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
 
   /// What the import sends: the export's unit as the user said, else the
   /// account's. The server reads it only for rows that carry no unit of
-  /// their own, and applies it to weights and distances alike.
-  MeasurementUnit? get _exportUnit => _unit.value ?? _fallbackUnit;
+  /// their own, and applies it to weights and distances alike — which a
+  /// Hevy row never is, so a Hevy import sends none.
+  MeasurementUnit? _exportUnit(ImportSource source) {
+    return switch (source) {
+      .strong => _unit.value ?? _fallbackUnit,
+      .hevy => null,
+    };
+  }
 
   /// The dry run: nothing is written until the user has said which unmatched
   /// exercises may become their customs — those can only be archived, never
@@ -224,16 +287,18 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     );
     if (file == null) return; // backed out of the picker
 
+    final source = _source.value;
     startLoading();
     _outcome.value = null;
     try {
       final csv = await file.readAsString();
       final preview = await Api.instance.previewImportedWorkouts(
         csv,
+        source: source,
         // for exports whose rows carry no unit columns (#307); ignored when
         // the CSV declares its own
-        unit: _exportUnit,
-        // Strong timestamps are naive local time
+        unit: _exportUnit(source),
+        // Strong and Hevy timestamps alike are naive local time
         tzOffset: DateTime.now().timeZoneOffset,
       );
       // Held for the commit, which happens either immediately or a consent
@@ -241,12 +306,14 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       _unmatchedInPreview = preview.exercisesUnmatched.length;
       switch (preview.exercisesUnmatched) {
         case []:
-          await _commit(csv);
+          await _commit(csv, source: source);
         case _:
-          _outcome.value = _AwaitingConsent(preview, csv: csv);
+          _outcome.value = _AwaitingConsent(preview, csv: csv, source: source);
       }
     } on ImportRejected catch (e) {
-      _outcome.value = _Rejected(e.reason);
+      _outcome.value = _Rejected(e.reason, source: source);
+    } on ImportParked catch (e) {
+      _outcome.value = _Parked(e.reason);
     } catch (e, s) {
       widget.onError?.call(e, stacktrace: s);
       messenger.snack(e.toString());
@@ -262,7 +329,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
   /// has run, which is the only way [_commit] is ever reached.
   int _unmatchedInPreview = 0;
 
-  Future<void> _commit(String csv, {List<String>? createCustom}) async {
+  Future<void> _commit(String csv, {required ImportSource source, List<String>? createCustom}) async {
     buzz();
     final workouts = Workouts.of(context);
     final exercises = Exercises.of(context);
@@ -271,6 +338,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     final messenger = ScaffoldMessenger.of(context);
 
     Analytics.of(context).dataImported(
+      source: source.name,
       unmatched: _unmatchedInPreview,
       createdCustom: createCustom?.length ?? 0,
     );
@@ -282,7 +350,8 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     try {
       final report = await Api.instance.importWorkouts(
         csv,
-        unit: _exportUnit,
+        source: source,
+        unit: _exportUnit(source),
         tzOffset: DateTime.now().timeZoneOffset,
         createCustom: createCustom,
       );
@@ -313,7 +382,9 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
             ),
       );
     } on ImportRejected catch (e) {
-      _outcome.value = _Rejected(e.reason);
+      _outcome.value = _Rejected(e.reason, source: source);
+    } on ImportParked catch (e) {
+      _outcome.value = _Parked(e.reason);
     } catch (e, s) {
       widget.onError?.call(e, stacktrace: s);
       messenger.snack(e.toString());
@@ -586,12 +657,13 @@ class _ImportReportView extends StatelessWidget {
 
 class _ImportRejectionView extends StatelessWidget {
   final String? reason;
+  final ImportSource source;
 
-  const new({required this.reason});
+  const new({required this.reason, required this.source});
 
   @override
   Widget build(BuildContext context) {
-    final L(:importFailedHeadline, :importFailedBody) = L.of(context);
+    final L(:importFailedHeadline, :importFailedBody, :importFailedBodyHevy) = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return Column(
@@ -611,9 +683,55 @@ class _ImportRejectionView extends StatelessWidget {
             ),
           ],
         ),
-        Text(importFailedBody),
+        Text(
+          switch (source) {
+            .strong => importFailedBody,
+            .hevy => importFailedBodyHevy,
+          },
+        ),
         // the server's own words — developer-grade, so detail text, not the
         // headline
+        if (reason case String detail)
+          Text(
+            detail,
+            style: textTheme.bodySmall?.copyWith(color: colorScheme.outline),
+          ),
+      ],
+    );
+  }
+}
+
+/// The file was kept for a person to import (#324). Not an error — nothing
+/// for the user to fix or retry — so the headline is the outcome, not a
+/// failure, and the server's reason stays detail text as on a rejection.
+class _ImportParkedView extends StatelessWidget {
+  final String? reason;
+
+  const new({required this.reason});
+
+  @override
+  Widget build(BuildContext context) {
+    final L(:importParkedHeadline, :importParkedBody) = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Row(
+          spacing: 8,
+          children: [
+            Icon(
+              Icons.schedule_rounded,
+              color: colorScheme.primary,
+            ),
+            Text(
+              importParkedHeadline,
+              style: textTheme.titleMedium,
+            ),
+          ],
+        ),
+        Text(importParkedBody),
         if (reason case String detail)
           Text(
             detail,
