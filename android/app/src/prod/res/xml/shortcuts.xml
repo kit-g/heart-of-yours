@@ -1,30 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The launcher's shortcuts (#286): long-press the icon and start a workout.
-     The static one opens the app on `heart://app/start`, the link Dart owns
-     (#284); the per-template ones are dynamic, set from `ShortcutsChannel`
-     with what Dart publishes. The capability is Google's App Actions binding
-     for "start a workout in Heart" — best effort, App Actions being in
-     maintenance; the Android 16 route is #289.
+<!-- Google's App Actions capability for "start a workout in Heart" (#286):
+     best effort, App Actions being in maintenance; the Android 16 route is
+     #289. The launcher's shortcuts themselves — Start a workout, and the
+     templates — are all dynamic, set from `ShortcutsChannel` while the
+     feature is on: a static one could not be taken away when it is off.
 
      One copy per flavour (src/dev, src/prod), identical but for the package:
-     a static shortcut's intent has to name its package literally — the
+     a capability's intent has to name its package literally — the
      system does not resolve a resource reference there — and the dev build's
      differs. Change both. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <shortcut
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutId="start_workout"
-        android:shortcutLongLabel="@string/shortcut_start_workout"
-        android:shortcutShortLabel="@string/shortcut_start_workout">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:data="heart://app/start"
-            android:targetClass="me.heart.MainActivity"
-            android:targetPackage="me.heart.android" />
-        <capability-binding android:key="actions.intent.START_EXERCISE" />
-    </shortcut>
-
     <capability android:name="actions.intent.START_EXERCISE">
         <intent
             android:action="android.intent.action.VIEW"

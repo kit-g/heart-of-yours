@@ -527,8 +527,7 @@ class LEs extends L {
   String get finishWorkoutWarningTitle => '¿Completar tu entrenamiento?';
 
   @override
-  String get finishWorkoutWarningBody =>
-      'Las series vacías o inválidas se descartarán, y todas las series válidas se marcarán como completadas.';
+  String get finishWorkoutWarningBody => 'Solo se guardarán las series que marcaste. El resto se descartará.';
 
   @override
   String get notificationsOffPrompt =>
@@ -897,8 +896,14 @@ class LEs extends L {
   String get deleteAccountTitle => '¿Seguro que quieres eliminar tu cuenta?';
 
   @override
-  String deleteAccountBody(Object deadline) {
-    return 'Tu cuenta quedará programada para eliminarse en $deadline días. Durante ese tiempo, aún puedes iniciar sesión y revertir esta decisión. Una vez pasado el plazo, tu cuenta y tus datos personales se eliminarán de forma permanente.';
+  String deleteAccountBody(int deadline) {
+    String _temp0 = intl.Intl.pluralLogic(
+      deadline,
+      locale: localeName,
+      other: '$deadline días',
+      one: '1 día',
+    );
+    return 'Tu cuenta quedará programada para eliminarse en $_temp0. Durante ese tiempo, aún puedes iniciar sesión y revertir esta decisión. Una vez pasado el plazo, tu cuenta y tus datos personales se eliminarán de forma permanente.';
   }
 
   @override
@@ -2404,6 +2409,18 @@ class LEs extends L {
   @override
   String get importUnitBody =>
       'Strong exporta en la unidad que tenías elegida allí, y el archivo no lo dice. Elígela aquí, o 100 lb llegarían como 100 kg.';
+
+  @override
+  String get shortcutsSubtitleAndroid =>
+      'Empieza o termina un entrenamiento desde Gemini o desde tu pantalla de inicio';
+
+  @override
+  String templateCopyNumberedName(Object name, int number) {
+    return '$name (copia $number)';
+  }
+
+  @override
+  String get shortcutTemplateGone => 'Esa plantilla ya no existe';
 
   @override
   String get developerApi => 'API para desarrolladores';

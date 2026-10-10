@@ -91,11 +91,21 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
                     ),
                   ),
                 ),
-                Text(
-                  switch (isAnonymous) {
-                    true => noAccount,
-                    false => displayName ?? '?',
-                  },
+                // an email is long: it gives way to the actions beside it
+                Flexible(
+                  child: Text(
+                    switch (isAnonymous) {
+                      true => noAccount,
+                      // an account signed up without a name goes by its
+                      // email, never a placeholder
+                      false => switch (displayName?.trim()) {
+                        String name when name.isNotEmpty => name,
+                        _ => email ?? '',
+                      },
+                    },
+                    maxLines: 1,
+                    overflow: .ellipsis,
+                  ),
                 ),
               ],
             ),
