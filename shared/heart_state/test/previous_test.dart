@@ -266,4 +266,65 @@ void main() {
     expect(sut.lastDone('plank'), isNull);
     expect(sut.lastDone('deadlift'), isNull);
   });
+
+  group('before a moment (a past workout\'s editor)', () {
+    test('reads last time as of the workout\'s start, under the same user, leaving the app\'s own alone', () async {
+      final service = _FakePreviousService(
+        response: {
+          'squat': [
+            {'set_id': 'itself'},
+          ],
+        },
+      );
+      final asked = <(String, DateTime)>[];
+      final app = PreviousExercises(
+        service: service,
+        readBefore: (userId, before) async {
+          asked.add((userId, before));
+          return {
+            'squat': [
+              {'set_id': 'before'},
+            ],
+          };
+        },
+      )..userId = 'user-1';
+      await app.init();
+
+      final start = DateTime.utc(2026, 10, 3, 8);
+      final scoped = app.before(start);
+      await scoped.init();
+
+      expect(asked, [('user-1', start)]);
+      expect(scoped.last('squat'), {'set_id': 'before'});
+      expect(app.last('squat'), {'set_id': 'itself'});
+      expect(service.requested, ['user-1'], reason: 'the scoped copy never reads the undated table');
+    });
+
+    test('without a dated reader it knows no last time rather than the workout itself', () async {
+      final service = _FakePreviousService(
+        response: {
+          'squat': [
+            {'set_id': 'itself'},
+          ],
+        },
+      );
+      final scoped = (PreviousExercises(service: service)..userId = 'user-1').before(DateTime.utc(2026));
+      await scoped.init();
+
+      expect(scoped.last('squat'), isNull);
+      expect(service.requested, isEmpty);
+    });
+
+    test('a copy disposed before its read lands does not notify', () async {
+      final scoped = PreviousExercises(
+        service: _FakePreviousService(),
+        readBefore: (_, _) async => {},
+      )..userId = 'user-1';
+      final copy = scoped.before(DateTime.utc(2026));
+      final reading = copy.init();
+      copy.dispose();
+
+      await expectLater(reading, completes);
+    });
+  });
 }
