@@ -1,5 +1,40 @@
 [
   {
+    "version": "1.13.0",
+    "items": [
+      {
+        "id": "shortcuts",
+        "title": "Heart, à la voix",
+        "body": "Demandez à Siri de lancer une séance ou un modèle, de gérer votre repos ou de noter la série en cours, et interrogez-le sur un record ou sur votre semaine. Sur Android, lancez une séance depuis l’icône de l’app."
+      },
+      {
+        "id": "lock-screen-buttons",
+        "title": "Repos et Fait sur l’écran verrouillé",
+        "body": "Lancez, prolongez ou sautez le repos depuis l’écran verrouillé, et **Fait** coche la série suivante sans ouvrir l’app."
+      },
+      {
+        "id": "duplicate-template",
+        "title": "Dupliquer un modèle",
+        "body": "**Dupliquer** dans le menu **⋯** d’un modèle en crée une copie à côté de l’original. Les exemples aussi se copient."
+      },
+      {
+        "id": "hevy-import",
+        "title": "Votre historique Hevy",
+        "body": "**Paramètres → Vos données → Importer l’historique de séances** accepte désormais l’export CSV de Hevy en plus de celui de Strong. Un import Strong demande l’unité de votre export."
+      },
+      {
+        "id": "sign-ins",
+        "title": "Un compte, toutes les connexions",
+        "body": "Reliez Apple, Google et un mot de passe au même compte dans **Paramètres → Compte**, et déliez ceux dont vous ne vous servez pas."
+      },
+      {
+        "id": "developer-api",
+        "title": "API développeur",
+        "body": "Créez un jeton en lecture seule dans **Paramètres → API développeur** et lisez votre journal d’entraînement depuis un script, un tableur ou un assistant IA. Vos données de santé n’en font jamais partie."
+      }
+    ]
+  },
+  {
     "version": "1.12.0",
     "items": [
       {

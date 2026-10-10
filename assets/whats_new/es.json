@@ -1,5 +1,40 @@
 [
   {
+    "version": "1.13.0",
+    "items": [
+      {
+        "id": "shortcuts",
+        "title": "Heart, con la voz",
+        "body": "Pídele a Siri que empiece un entrenamiento o una plantilla, que lleve tu descanso o que registre la serie que toca, y pregúntale por un récord o por tu semana. En Android, empieza un entrenamiento desde el icono de la app."
+      },
+      {
+        "id": "lock-screen-buttons",
+        "title": "Descanso y Hecho en la pantalla de bloqueo",
+        "body": "Empieza, alarga o salta el descanso desde la pantalla de bloqueo, y **Hecho** marca la siguiente serie sin abrir la app."
+      },
+      {
+        "id": "duplicate-template",
+        "title": "Duplicar una plantilla",
+        "body": "**Duplicar** en el menú **⋯** de una plantilla crea una copia junto a la original. Los ejemplos también se pueden copiar."
+      },
+      {
+        "id": "hevy-import",
+        "title": "Trae tu historial de Hevy",
+        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** ahora acepta la exportación CSV de Hevy además de la de Strong. Al importar de Strong, eliges la unidad de tu exportación."
+      },
+      {
+        "id": "sign-ins",
+        "title": "Una cuenta, todos los accesos",
+        "body": "Conecta Apple, Google y una contraseña a la misma cuenta en **Ajustes → Cuenta**, y desconecta los que no uses."
+      },
+      {
+        "id": "developer-api",
+        "title": "API para desarrolladores",
+        "body": "Crea un token de solo lectura en **Ajustes → API para desarrolladores** y lee tu registro de entrenamientos desde un script, una hoja de cálculo o un asistente de IA. Tus datos de salud nunca forman parte de él."
+      }
+    ]
+  },
+  {
     "version": "1.12.0",
     "items": [
       {

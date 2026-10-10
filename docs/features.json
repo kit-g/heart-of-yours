@@ -130,8 +130,21 @@
       "id": "lock-screen-workout",
       "category": "train",
       "title": "Your workout on the lock screen",
-      "pitch": "Elapsed time, the next set and your rest countdown on the lock screen, in the Dynamic Island on iPhone and as a live notification on Android. Off until you turn it on.",
+      "pitch": "Elapsed time, the next set and your rest on the lock screen, in the Dynamic Island on iPhone or a live notification on Android. Start, extend or skip rest, tick a set. Off until you turn it on.",
       "since": "1.9.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "shortcuts",
+      "category": "everywhere",
+      "title": "Heart, by voice",
+      "pitch": "Start a workout, run your rest and log a set with Siri and Shortcuts, or start one from the app icon on Android. Ask for a record or your week. Off until you turn it on.",
+      "since": "1.13.0",
       "tier": "free",
       "platforms": [
         "ios",
@@ -155,7 +168,7 @@
       "id": "templates",
       "category": "train",
       "title": "Templates, as many as you like",
-      "pitch": "Build your own, save any finished workout as one, or start from the examples. File them in folders. No cap on how many.",
+      "pitch": "Build your own, save any finished workout as one, duplicate any of them, or start from the examples. File them in folders. No cap on how many.",
       "since": "1.0.5",
       "tier": "free",
       "platforms": [
@@ -350,7 +363,7 @@
       "id": "sync",
       "category": "data",
       "title": "Sync across devices",
-      "pitch": "Sign in with Apple, Google or email, and your workouts, templates and goals follow you to every device.",
+      "pitch": "Sign in with Apple, Google or email, or connect all three to one account, and your workouts, templates and goals follow you to every device.",
       "since": "1.0.5",
       "tier": "free",
       "platforms": [
@@ -375,8 +388,8 @@
     {
       "id": "strong-import",
       "category": "data",
-      "title": "Bring your Strong history",
-      "pitch": "Import the CSV from Strong's export and your workouts, sets and exercises come with you, warm-ups, RPE and notes included. Importing the same file twice never duplicates anything.",
+      "title": "Bring your Strong or Hevy history",
+      "pitch": "Import the CSV from Strong's or Hevy's export and your workouts, sets and exercises come with you, warm-ups, RPE and notes included. Importing the same file twice never duplicates anything.",
       "since": "1.5.0",
       "tier": "free",
       "platforms": [
@@ -442,7 +455,7 @@
       "category": "data",
       "title": "Your log, by API",
       "pitch": "Mint a read-only token in Settings and read your own workouts from a script, a spreadsheet or an AI assistant over MCP. Free, and never your health data.",
-      "since": null,
+      "since": "1.13.0",
       "tier": "free",
       "platforms": [
         "ios",

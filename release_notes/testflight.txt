@@ -1,47 +1,49 @@
-Pause a workout
-Stop the clock from the workout's ⋯ menu; ticking a set starts it again.
-Left a workout running? Open it from the reminder and Heart offers to end
-it at your last set. Pausing works from your Apple Watch too.
+Heart, by voice
+Ask Siri to start a workout or one of your templates, finish it, start,
+extend or skip your rest, or log the set you're on. Ask it things too:
+your record on an exercise, when you last did it, how many workouts this
+week. The Shortcuts app has all of it. Turn it on in Settings › Features.
 
-Time a set
-Timed sets get a stopwatch: tap play in the time cell and it runs, on the
-lock screen too. Stop it to log the time.
+Rest and Done on the lock screen
+The Live Activity gets buttons: start, extend or skip your rest, and Done
+ticks off the set up next without opening the app.
 
-Keep the screen awake
-The screen stays on through your workout, with a sun on the Workout tab
-while it does.
+Duplicate a template
+Duplicate on a template's ⋯ menu makes a copy beside the original. The
+examples can be copied too.
 
-Find exercises faster
-Search knows other names and abbreviations (OHP, RDL, DB), muscle words,
-and forgives typos. The picker opens on what you did last.
+Bring your Hevy history
+Import now takes Hevy's CSV export as well as Strong's. A Strong import
+asks which unit your export is in, so 100 lb stays 100 lb.
 
-Carries, sleds and loaded holds
-Two new kinds of exercise: a weight carried a distance, in metres or yards,
-and a weight held for a time. Records, charts, History and your Apple Watch
-all follow.
+One account, every sign-in
+Connect Apple, Google and a password to the same account in
+Settings › Account, and disconnect the ones you don't use.
 
-Pause, the set stopwatch and keep-awake are off until you turn them on in
-Settings › Features.
+Developer API
+Create a read-only token in Settings › Developer API and read your own
+training log from a script, a spreadsheet or an AI assistant. Your Apple
+Health data is never part of it.
+
+Plus fixes throughout.
 
 What to test
-- Pause from ⋯: the clock stops; tick a set and it runs again. The
-  finished workout's duration leaves out the paused time.
-- Leave a workout running, open it from the reminder: it offers "Finished
-  at <time>?" and ends at your last set.
-- Apple Watch: pause and resume from the watch; the phone follows.
-- Set stopwatch: start it from the play button on a timed set, lock the
-  phone (the Live Activity shows one clock), pause, resume, Done logs the
-  time.
-- Keep awake on: the screen never dims mid-workout and the sun shows on
-  the Workout tab; it dims normally after finishing.
-- Search "ohp", "rdl", "lats", "benchpress", and a typo; the picker opens
-  on Recent.
-- Log a Farmer's Walk in yards, then metres: the set row, History,
-  records, its Charts tab and a goal on its distance all read m or yd,
-  never km.
-- With the lock-screen workout on, update or reinstall the app mid-workout:
-  it comes back on the lock screen on the next launch.
-- A workout with planks or push-ups: total volume on its card counts only
-  weight lifted.
-- Signed out, link a Google account whose email already has a Heart
-  account: you land in that account.
+- Turn on Shortcuts, then say each phrase with "in Heart": start a workout,
+  start a template by name, rest for 90 seconds, add 30 seconds to my rest,
+  skip rest, log a set, finish my workout. Do it once with the app on
+  screen (the rest countdown should appear) and once from the lock screen.
+- Ask "What's my Bench Press record", "When did I last do Squat", "How many
+  workouts this week". An answer that never comes, or Siri saying the app
+  isn't responding, is the failure.
+- Live Activity: start, extend and skip the rest from the lock screen; Done
+  ticks the next set and the app agrees when you open it.
+- Start a rest, swipe the app away, open it again: the rest is still
+  running.
+- Duplicate a template twice: "(copy)", then "(copy 2)", in the same folder.
+- Import a Hevy CSV; import a Strong CSV in lb and pick lb.
+- Settings › Account: connect Google to an Apple account, sign out, sign in
+  with Google, and you land in the same account. Disconnect it again.
+- Create a token, copy it, revoke it.
+- Account deletion on a Google account (only Apple and password were tried).
+- Update from the App Store build with history on the phone: everything is
+  still there, and the exercise list is complete.

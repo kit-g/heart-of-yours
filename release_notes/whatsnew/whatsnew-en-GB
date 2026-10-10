@@ -1,6 +1,7 @@
-• Pause a workout, and end a forgotten one at your last set.
-• A set stopwatch for timed sets, right on the lock screen.
-• Keep the screen awake while you train.
-• Exercise search understands abbreviations, other names, muscles and typos, and starts with your recent exercises.
-• Log carries, sled pushes and loaded holds: weight with distance or time.
-Pause, the stopwatch and keep-awake are opt-in, in Settings › Features.
+• Shortcuts: start a workout or a template from the app icon. Turn it on in Settings › Features.
+• Rest buttons and Done on the lock-screen notification.
+• Duplicate a template from its menu.
+• Import your Hevy history. Strong imports ask which unit your export is in.
+• Connect Google, Apple and a password to one account.
+• Developer API: read your own training log from scripts and spreadsheets with a read-only token.
+Plus fixes throughout.

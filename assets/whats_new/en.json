@@ -1,7 +1,44 @@
 [
   {
-    "version": "1.12.0",
+    "version": "1.13.0",
     "date": null,
+    "items": [
+      {
+        "id": "shortcuts",
+        "title": "Heart, by voice",
+        "body": "Ask Siri to start a workout or a template, run your rest or log the set you're on, and ask for a record or your week. On Android, start a workout from the app icon.",
+        "feature": "shortcuts"
+      },
+      {
+        "id": "lock-screen-buttons",
+        "title": "Rest and Done on the lock screen",
+        "body": "Start, extend or skip your rest from the lock screen, and **Done** ticks off the set up next without opening the app."
+      },
+      {
+        "id": "duplicate-template",
+        "title": "Duplicate a template",
+        "body": "**Duplicate** on a template's **⋯** menu makes a copy beside the original. The examples can be copied too."
+      },
+      {
+        "id": "hevy-import",
+        "title": "Bring your Hevy history",
+        "body": "**Settings → Your data → Import workout history** now takes Hevy's CSV export as well as Strong's. A Strong import asks which unit your export is in."
+      },
+      {
+        "id": "sign-ins",
+        "title": "One account, every sign-in",
+        "body": "Connect Apple, Google and a password to the same account in **Settings → Account**, and disconnect the ones you don't use."
+      },
+      {
+        "id": "developer-api",
+        "title": "Developer API",
+        "body": "Create a read-only token in **Settings → Developer API** and read your own training log from a script, a spreadsheet or an AI assistant. Health data is never part of it."
+      }
+    ]
+  },
+  {
+    "version": "1.12.0",
+    "date": "2026-10-06",
     "items": [
       {
         "id": "pause-workout",
