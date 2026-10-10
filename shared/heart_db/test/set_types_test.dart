@@ -196,6 +196,21 @@ void main() {
     expect(previous[bench]?.map((each) => each['set_id']), ['last']);
   });
 
+  test('as of a past workout, last time is the session before it, not itself', () async {
+    await local.storeWorkoutHistory([
+      server('older', start: '2026-09-20T08:00:00.000Z', sets: [set('before', weight: 90)]),
+      // a start stored without the milliseconds' padding and with an offset:
+      // compared as a time, not as a string
+      server('edited', start: '2026-09-26T08:00:00Z', sets: [set('itself', weight: 100)]),
+    ], user);
+
+    expect((await local.getPreviousSets(user))[bench]?.map((each) => each['set_id']), ['itself']);
+    final before = await local.getPreviousSetsBefore(user, DateTime.utc(2026, 9, 26, 8));
+    expect(before[bench]?.map((each) => each['set_id']), ['before']);
+    // nothing earlier than the first session
+    expect(await local.getPreviousSetsBefore(user, DateTime.utc(2026, 9, 20, 8)), isEmpty);
+  });
+
   group('warm-ups are no record', () {
     final exercise = benchPress;
 

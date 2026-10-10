@@ -328,21 +328,25 @@ mixin _Exercises on _LocalDatabase
   Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSets(
     String userId,
   ) {
-    return _db.rawQuery(sql.getPreviousExercises, [userId]).then(
-      (rows) {
-        return Map.fromEntries(
-          rows.map(
-            (row) {
-              return MapEntry(
-                row['exerciseId'] as String,
-                List.castFrom<dynamic, Map<String, dynamic>>(
-                  jsonDecode(row['sets'] as String) as List,
-                ),
-              );
-            },
-          ),
-        );
-      },
+    return _db.rawQuery(sql.getPreviousExercises, [userId]).then(_previousByExercise);
+  }
+
+  /// [getPreviousSets] as of [before]: each exercise's last finished session
+  /// that started earlier — "last time" from a past workout's point of view.
+  Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSetsBefore(String userId, DateTime before) {
+    return _db
+        .rawQuery(sql.getPreviousExercisesBefore, [userId, before.toUtc().toIso8601String()])
+        .then(_previousByExercise);
+  }
+
+  static Map<ExerciseId, List<Map<String, dynamic>>> _previousByExercise(List<Map<String, Object?>> rows) {
+    return Map.fromEntries(
+      rows.map(
+        (row) => MapEntry(
+          row['exerciseId'] as String,
+          List.castFrom<dynamic, Map<String, dynamic>>(jsonDecode(row['sets'] as String) as List),
+        ),
+      ),
     );
   }
 
