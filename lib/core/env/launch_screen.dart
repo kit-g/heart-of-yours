@@ -18,7 +18,7 @@ import 'package:flutter/widgets.dart';
 /// flicker — and never later than [maximum], so a launch that cannot get ready
 /// (no session offline, a slow disk) still opens.
 abstract final class LaunchScreen {
-  static const minimum = Duration(milliseconds: 500);
+  static const minimum = Duration(milliseconds: 300);
   static const maximum = Duration(milliseconds: 1500);
 
   /// Started by [startClock] as early as the process can: [minimum] is counted
