@@ -429,18 +429,23 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     String? appleEmail,
   }) {
     return _linkOrSignIn(credential).then<void>(
-      (result) {
+      (result) async {
         final (cred, arrival) = result;
-        _adopt(cred.user);
+        // Apple says the name once, on the first authorization, and Firebase
+        // does not keep it: written only to memory, it was gone the moment the
+        // user stream re-read the account — which registered it nameless, and
+        // the server stores the name it is sent, null included. So it goes to
+        // Firebase first, as the email sign-up's does, and every later read
+        // of the account carries it.
+        if ((appleName, cred.user) case (String name, fb.User user) when (user.displayName ?? '').isEmpty) {
+          await user.updateDisplayName(name);
+        }
+        _adopt(_firebase.currentUser ?? cred.user);
         _user = _user?.copyWith(displayName: appleName, email: appleEmail);
         _reportArrival(cred, provider: provider, arrival: arrival);
 
-        return _registerUser(_user).then(
-          (user) {
-            _user = user;
-            notifyListeners();
-          },
-        );
+        _user = await _registerUser(_user);
+        notifyListeners();
       },
     );
   }
@@ -696,9 +701,15 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// re-authentication rather than from sign-in because Apple honours a code
   /// once and expires it in minutes, and this is the only moment close enough
   /// to the deletion to matter.
+  ///
+  /// [onScheduled] runs once the server has accepted the deletion and before
+  /// the session ends — where the caller forgets what the session held, so
+  /// nothing of the deleted account lingers into the anonymous session that
+  /// replaces it. The same order as a sign-out: memory first, then Auth.
   Future<void> scheduleAccountForDeletion({
     String? password,
     required void Function(String?) onAuthenticate,
+    VoidCallback? onScheduled,
   }) async {
     Future<void> callback() async {
       if (_user?.id case String accountId) {
@@ -708,6 +719,7 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         try {
           await _service.deleteAccount(accountId: accountId, appleGrant: appleGrant);
           analytics?.accountDeletionScheduled();
+          onScheduled?.call();
           await _logout();
         } on UpgradeRequired catch (e) {
           onError?.call(e);

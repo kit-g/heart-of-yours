@@ -939,7 +939,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "finishWorkoutWarningBody": "Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.",
+  "finishWorkoutWarningBody": "Only the sets you ticked will be saved. The rest are left out.",
   "@finishWorkoutWarningBody": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
@@ -1616,12 +1616,14 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteAccountBody": "Your account is scheduled for deletion in {deadline} days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.",
+  "deleteAccountBody": "Your account is scheduled for deletion in {deadline, plural, =1{1 day} other{{deadline} days}}. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.",
   "@deleteAccountBody": {
     "description": "Delete account dialog",
     "type": "text",
     "placeholders": {
-      "deadline": {}
+      "deadline": {
+        "type": "int"
+      }
     }
   },
   "deleteAccountCancelMessage": "Oh no, I like it here!",
@@ -4377,6 +4379,28 @@
     "description": "Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say",
     "type": "text",
     "placeholders": {}
+  },
+  "shortcutsSubtitleAndroid": "Start or finish a workout from Gemini or your home screen",
+  "@shortcutsSubtitleAndroid": {
+    "description": "Subtitle under the shortcuts switch in Settings › Features on Android, saying what it does: Gemini and the home screen, where iOS has Siri and the Shortcuts app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateCopyNumberedName": "{name} (copy {number})",
+  "@templateCopyNumberedName": {
+    "description": "Name of a duplicated template when \"<name> (copy)\" is already taken: the copy's number, 2 and up",
+    "type": "text",
+    "placeholders": {
+      "name": {},
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcutTemplateGone": "That template isn't here anymore",
+  "@shortcutTemplateGone": {
+    "description": "Brief notice when a home-screen shortcut or link names a template that no longer exists; the templates list is shown under it",
+    "type": "text"
   },
   "developerApi": "Developer API",
   "@developerApi": {

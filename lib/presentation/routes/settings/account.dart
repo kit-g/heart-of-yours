@@ -428,6 +428,13 @@ class _AccountManagementPageState extends State<AccountManagementPage>
             );
           }
         },
+        // the profile's log-out pair, minus the sign-out Auth does itself: a
+        // deleted account's history must not stay on screen in the anonymous
+        // session that follows
+        onScheduled: () {
+          AppTheme.of(context).onSignOut();
+          clearUserState(context);
+        },
       );
       _passwordController.clear();
       widget.onDeleted?.call();

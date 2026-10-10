@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/rest_store.dart';
@@ -145,7 +146,7 @@ class HeartApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<PreviousExercises>(
-          create: (_) => PreviousExercises(service: db),
+          create: (_) => PreviousExercises(service: db, readBefore: db.getPreviousSetsBefore),
         ),
         ChangeNotifierProvider<Preferences>(
           // Loaded here, before there is a session, not with the rest of
@@ -323,6 +324,7 @@ class HeartApp extends StatelessWidget {
                 Templates.of(context).userId = user?.id;
                 Timers.of(context).userId = user?.id;
                 Workouts.of(context).userId = user?.id;
+                if (user?.id case String id) unawaited(_prepareOpening(context, id));
               },
               onError: reportToSentry,
               firebase: firebaseAuth,
@@ -842,6 +844,32 @@ Future<void> _initApp(
       );
     }
   });
+}
+
+/// What the opening page needs, from the device alone, and then the launch
+/// screen goes (see [LaunchScreen]): the stored theme, the profile's
+/// aggregations and its charts. Run on the user change itself — Firebase
+/// restores the user from the device — rather than in [_initApp], which an
+/// account reaches only after a fresh ID token, a network round trip on most
+/// cold starts that held the splash to its cap. [_initApp] reads the same
+/// again later; each read is idempotent or simply fresher.
+Future<void> _prepareOpening(BuildContext context, String userId) async {
+  final prefs = Preferences.of(context);
+  final theme = AppTheme.of(context);
+  final stats = Stats.of(context);
+  final charts = Charts.of(context);
+  try {
+    await prefs.initialized;
+    if (!context.mounted) return;
+    theme
+      ..preset = Preset.fromStored(prefs.getBaseColor(userId))
+      ..toMode(prefs.themeMode);
+    await Future.wait([stats.init(), charts.init()]);
+  } catch (_) {
+    // a read that fails here is read again by startup; the splash goes anyway
+  } finally {
+    unawaited(LaunchScreen.release());
+  }
 }
 
 /// Where a workout notification lands: the workout if it is still going, the

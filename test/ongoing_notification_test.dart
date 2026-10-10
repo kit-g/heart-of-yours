@@ -135,6 +135,9 @@ void main() {
     expect(actions.map((action) => action['id']), ['rest-minus', 'rest-plus', 'rest-skip']);
     expect(actions.map((action) => action['title']), ['-10s', '+10s', 'Skip']);
     expect(actions.map((action) => action['showsUserInterface']), everyElement(isFalse));
+    // a press leaves the notification up: Android removing it reads as the
+    // user's swipe, and the workout's notification was never posted again
+    expect(actions.map((action) => action['cancelNotification']), everyElement(isFalse));
     // and the payload carries the rest, for the background isolate to repost from
     final payload = jsonDecode(shown()['payload'] as String) as Map;
     expect(payload['restEnd'], end.millisecondsSinceEpoch);
@@ -170,6 +173,7 @@ void main() {
     final actions = (details()['actions'] as List).cast<Map>();
     expect(actions.map((action) => action['id']), ['set-done']);
     expect(actions.map((action) => action['title']), ['Done']);
+    expect(actions.single['cancelNotification'], isFalse);
     expect((jsonDecode(shown()['payload'] as String) as Map)['doneSetId'], 's1');
   });
 

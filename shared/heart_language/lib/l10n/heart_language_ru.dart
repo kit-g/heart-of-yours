@@ -533,8 +533,7 @@ class LRu extends L {
   String get finishWorkoutWarningTitle => 'Завершить тренировку?';
 
   @override
-  String get finishWorkoutWarningBody =>
-      'Пустые и некорректные подходы будут удалены, а все правильные будут отмечены как выполненные.';
+  String get finishWorkoutWarningBody => 'Сохранятся только отмеченные подходы. Остальные не войдут в тренировку.';
 
   @override
   String get notificationsOffPrompt =>
@@ -901,8 +900,15 @@ class LRu extends L {
   String get deleteAccountTitle => 'Вы уверены, что хотите удалить свой аккаунт?';
 
   @override
-  String deleteAccountBody(Object deadline) {
-    return 'Ваш аккаунт запланирован на удаление через $deadline дней. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда.';
+  String deleteAccountBody(int deadline) {
+    String _temp0 = intl.Intl.pluralLogic(
+      deadline,
+      locale: localeName,
+      other: '$deadline дней',
+      few: '$deadline дня',
+      one: '$deadline день',
+    );
+    return 'Ваш аккаунт запланирован на удаление через $_temp0. В течение этого времени вы все еще можете войти и отменить это решение. После истечения срока ваш аккаунт и личные данные будут удалены навсегда.';
   }
 
   @override
@@ -2440,6 +2446,17 @@ class LRu extends L {
   @override
   String get importUnitBody =>
       'Strong выгружает в тех единицах, что были выбраны в нём, и файл об этом не говорит. Укажите их здесь, иначе 100 lb станут 100 кг.';
+
+  @override
+  String get shortcutsSubtitleAndroid => 'Начинайте или завершайте тренировку через Gemini или с главного экрана';
+
+  @override
+  String templateCopyNumberedName(Object name, int number) {
+    return '$name (копия $number)';
+  }
+
+  @override
+  String get shortcutTemplateGone => 'Этого шаблона больше нет';
 
   @override
   String get developerApi => 'API для разработчиков';

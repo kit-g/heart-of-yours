@@ -526,8 +526,7 @@ class LEn extends L {
   String get finishWorkoutWarningTitle => 'Complete Your Workout?';
 
   @override
-  String get finishWorkoutWarningBody =>
-      'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
+  String get finishWorkoutWarningBody => 'Only the sets you ticked will be saved. The rest are left out.';
 
   @override
   String get notificationsOffPrompt =>
@@ -895,8 +894,14 @@ class LEn extends L {
   String get deleteAccountTitle => 'Are you sure you want to delete your account?';
 
   @override
-  String deleteAccountBody(Object deadline) {
-    return 'Your account is scheduled for deletion in $deadline days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.';
+  String deleteAccountBody(int deadline) {
+    String _temp0 = intl.Intl.pluralLogic(
+      deadline,
+      locale: localeName,
+      other: '$deadline days',
+      one: '1 day',
+    );
+    return 'Your account is scheduled for deletion in $_temp0. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.';
   }
 
   @override
@@ -2397,6 +2402,17 @@ class LEn extends L {
       'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.';
 
   @override
+  String get shortcutsSubtitleAndroid => 'Start or finish a workout from Gemini or your home screen';
+
+  @override
+  String templateCopyNumberedName(Object name, int number) {
+    return '$name (copy $number)';
+  }
+
+  @override
+  String get shortcutTemplateGone => 'That template isn\'t here anymore';
+
+  @override
   String get developerApi => 'Developer API';
 
   @override
@@ -3057,8 +3073,7 @@ class LEnCa extends LEn {
   String get finishWorkoutWarningTitle => 'Complete Your Workout?';
 
   @override
-  String get finishWorkoutWarningBody =>
-      'Any empty or invalid sets will be discarded, and all valid sets will be marked as completed.';
+  String get finishWorkoutWarningBody => 'Only the sets you ticked will be saved. The rest are left out.';
 
   @override
   String get notificationsOffPrompt =>
@@ -3426,8 +3441,14 @@ class LEnCa extends LEn {
   String get deleteAccountTitle => 'Are you sure you want to delete your account?';
 
   @override
-  String deleteAccountBody(Object deadline) {
-    return 'Your account is scheduled for deletion in $deadline days. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.';
+  String deleteAccountBody(int deadline) {
+    String _temp0 = intl.Intl.pluralLogic(
+      deadline,
+      locale: localeName,
+      other: '$deadline days',
+      one: '1 day',
+    );
+    return 'Your account is scheduled for deletion in $_temp0. During this time, you can still sign in and reverse this decision. Once the deadline has passed, your account and personal data will be permanently deleted.';
   }
 
   @override
@@ -4926,6 +4947,17 @@ class LEnCa extends LEn {
   @override
   String get importUnitBody =>
       'Strong exports in whichever unit you had it set to, and the file doesn\'t say. Pick it here, or 100 lb would come over as 100 kg.';
+
+  @override
+  String get shortcutsSubtitleAndroid => 'Start or finish a workout from Gemini or your home screen';
+
+  @override
+  String templateCopyNumberedName(Object name, int number) {
+    return '$name (copy $number)';
+  }
+
+  @override
+  String get shortcutTemplateGone => 'That template isn\'t here anymore';
 
   @override
   String get developerApi => 'Developer API';

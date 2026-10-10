@@ -18,23 +18,33 @@ import io.flutter.plugin.common.MethodChannel
 /// (#284). Replaced wholesale on every change; an empty list, which the
 /// feature switched off publishes, clears them.
 ///
-/// The static "Start a workout" shortcut lives in `res/xml/shortcuts.xml` and
-/// counts against the launcher's limit, so one fewer template fits than the
-/// limit says.
+/// "Start a workout" heads the list, dynamic like the rest so that the
+/// feature switched off takes it away (`setEnabled`): a static one would stay
+/// on the launcher with a link that, off, does nothing. Off clears them all.
 object ShortcutsChannel {
     private const val TAG = "HeartShortcuts"
-    private const val STATIC_SHORTCUTS = 1
+    private const val START_ID = "start_workout"
+
+    /// What Dart last said; both arrive on every launch's first sync.
+    private var enabled = false
+    private var templates: List<*> = emptyList<Any>()
 
     fun register(context: Context, messenger: BinaryMessenger) {
         val store = ShortcutsStore.prefs(context.applicationContext)
         MethodChannel(messenger, "heart/shortcuts").setMethodCallHandler { call, result ->
             when (call.method) {
+                "setEnabled" -> {
+                    enabled = call.arguments as? Boolean ?: false
+                    publish(context.applicationContext)
+                    result.success(null)
+                }
                 "setTemplates" -> {
                     val list = call.arguments as? List<*>
                     if (list == null) {
                         result.error("bad_arguments", "setTemplates needs a list", null)
                     } else {
-                        setTemplates(context.applicationContext, list)
+                        templates = list
+                        publish(context.applicationContext)
                         ShortcutsStore.put(store, ShortcutsStore.TEMPLATES, list)
                         result.success(null)
                     }
@@ -66,17 +76,19 @@ object ShortcutsChannel {
         }
     }
 
-    private fun setTemplates(context: Context, list: List<*>) {
-        val room = (ShortcutManagerCompat.getMaxShortcutCountPerActivity(context) - STATIC_SHORTCUTS).coerceAtLeast(0)
-        val shortcuts = list.asSequence()
-            .mapNotNull { entry ->
+    private fun publish(context: Context) {
+        val room = ShortcutManagerCompat.getMaxShortcutCountPerActivity(context)
+        val shortcuts = when (enabled) {
+            false -> emptyList<ShortcutInfoCompat>()
+            true -> (sequenceOf(start(context)) + templates.asSequence().mapNotNull { entry ->
                 val map = entry as? Map<*, *> ?: return@mapNotNull null
                 val id = map["id"] as? String ?: return@mapNotNull null
                 val name = map["name"] as? String ?: return@mapNotNull null
                 shortcut(context, id, name)
-            }
-            .take(room)
-            .toList()
+            })
+                .take(room)
+                .toList()
+        }
         try {
             if (shortcuts.isEmpty()) {
                 ShortcutManagerCompat.removeAllDynamicShortcuts(context)
@@ -85,8 +97,23 @@ object ShortcutsChannel {
             }
         } catch (error: Exception) {
             // a launcher that refuses is never the app's problem
-            Log.w(TAG, "Could not set template shortcuts", error)
+            Log.w(TAG, "Could not set the launcher's shortcuts", error)
         }
+    }
+
+    /// Google's App Actions binding for "start a workout in Heart" rides on it,
+    /// as it did on the static one — best effort, App Actions being in
+    /// maintenance.
+    private fun start(context: Context): ShortcutInfoCompat {
+        val label = context.getString(R.string.shortcut_start_workout)
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("heart://app/start"), context, MainActivity::class.java)
+        return ShortcutInfoCompat.Builder(context, START_ID)
+            .setShortLabel(label)
+            .setLongLabel(label)
+            .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
+            .setIntent(intent)
+            .addCapabilityBinding("actions.intent.START_EXERCISE")
+            .build()
     }
 
     private fun shortcut(context: Context, id: String, name: String): ShortcutInfoCompat {

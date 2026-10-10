@@ -133,16 +133,12 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                         child: PrimaryButton.shrunk(
                           backgroundColor: colorScheme.secondaryContainer,
                           onPressed: switch (enabled) {
+                            // an edit saves as it stands: nothing is
+                            // discarded or ticked, so there is nothing to ask
                             true => () {
-                              _showFinishWorkoutDialog(
-                                context,
-                                workout,
-                                onFinish: () {
-                                  workout.resolveName(defaultWorkoutName());
-                                  Workouts.of(context).editWorkout(workout);
-                                  Navigator.of(context).pop();
-                                },
-                              );
+                              workout.resolveName(defaultWorkoutName());
+                              Workouts.of(context).editWorkout(workout);
+                              Navigator.of(context).pop();
                             },
                             false => buzz,
                           },
@@ -171,66 +167,71 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
               ),
             ),
             body: SafeArea(
-              child: WorkoutDetail(
-                exercises: workout,
-                needsCancelWorkoutButton: false,
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _WorkoutTimesSummary(
-                      workout: workout,
-                      onTap: () => _openTimesDialog(context, workout),
-                    ),
-                  ),
-                  if (workout.note case String note)
+              // "last time" as this workout saw it: the session before it,
+              // never itself — the newest one would otherwise be its own
+              child: ChangeNotifierProvider<PreviousExercises>(
+                create: (context) => PreviousExercises.of(context).before(workout.start)..init(),
+                child: WorkoutDetail(
+                  exercises: workout,
+                  needsCancelWorkoutButton: false,
+                  slivers: [
                     SliverToBoxAdapter(
-                      child: WorkoutNote(note: note, onChanged: _setNote),
+                      child: _WorkoutTimesSummary(
+                        workout: workout,
+                        onTap: () => _openTimesDialog(context, workout),
+                      ),
                     ),
-                ],
-                // what the session worked, as a summary under it (#223)
-                trailingSlivers: [
-                  SliverToBoxAdapter(
-                    child: WorkoutMuscleMap(
-                      workout: workout,
-                      padding: const .fromLTRB(16, 16, 16, 32),
+                    if (workout.note case String note)
+                      SliverToBoxAdapter(
+                        child: WorkoutNote(note: note, onChanged: _setNote),
+                      ),
+                  ],
+                  // what the session worked, as a summary under it (#223)
+                  trailingSlivers: [
+                    SliverToBoxAdapter(
+                      child: WorkoutMuscleMap(
+                        workout: workout,
+                        padding: const .fromLTRB(16, 16, 16, 32),
+                      ),
                     ),
-                  ),
-                ],
-                controller: Scrolls.of(context).editWorkoutScrollController,
-                onDragExercise: _notifier.append,
-                onSwapExercise: _notifier.swap,
-                onAddSet: _notifier.addSet,
-                onNoteChanged: _notifier.setNote,
-                onRemoveSet: _notifier.removeSet,
-                onSetType: _notifier.setSetType,
-                onSetRpe: _notifier.setRpe,
-                onRemoveExercise: _notifier.removeExercise,
-                onSetDone: _notifier.markSet,
-                workoutImages: workout.images?.values,
-                onTapImage: widget.onTapImage,
-                onAddExercises: (exercises) async {
-                  final preferences = Exercises.of(context);
-                  for (final each in exercises.toList()) {
-                    await Future.delayed(
-                      // for different IDs
-                      const Duration(milliseconds: 2),
-                      () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                  ],
+                  controller: Scrolls.of(context).editWorkoutScrollController,
+                  onDragExercise: _notifier.append,
+                  onSwapExercise: _notifier.swap,
+                  onAddSet: _notifier.addSet,
+                  onNoteChanged: _notifier.setNote,
+                  onRemoveSet: _notifier.removeSet,
+                  onSetType: _notifier.setSetType,
+                  onSetRpe: _notifier.setRpe,
+                  onRemoveExercise: _notifier.removeExercise,
+                  onSetDone: _notifier.markSet,
+                  workoutImages: workout.images?.values,
+                  onTapImage: widget.onTapImage,
+                  onAddExercises: (exercises) async {
+                    final preferences = Exercises.of(context);
+                    for (final each in exercises.toList()) {
+                      await Future.delayed(
+                        // for different IDs
+                        const Duration(milliseconds: 2),
+                        () => _notifier.add(each, note: preferences.noteFor(each.id)),
+                      );
+                    }
+                  },
+                  allowsCompletingSet: true,
+                  onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+                  onDeleteImage: (image) {
+                    return showDeleteImageDialog(
+                      context,
+                      workout,
+                      image,
+                      onDeleted: (context) async {
+                        Navigator.of(context, rootNavigator: true).pop();
+                        _notifier.detachImageFromWorkout(image);
+                        await Workouts.of(context).detachImageFromWorkout(workout, image);
+                      },
                     );
-                  }
-                },
-                allowsCompletingSet: true,
-                onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
-                onDeleteImage: (image) {
-                  return showDeleteImageDialog(
-                    context,
-                    workout,
-                    image,
-                    onDeleted: (context) async {
-                      Navigator.of(context, rootNavigator: true).pop();
-                      _notifier.detachImageFromWorkout(image);
-                      await Workouts.of(context).detachImageFromWorkout(workout, image);
-                    },
-                  );
-                },
+                  },
+                ),
               ),
             ),
           ),
@@ -316,59 +317,6 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
           ],
         ),
       ],
-    );
-  }
-
-  Future<void> _showFinishWorkoutDialog(BuildContext context, Workout workout, {VoidCallback? onFinish}) async {
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-    final L(
-      :finishWorkoutWarningTitle,
-      :finishWorkoutWarningBody,
-      :readyToFinish,
-      :notReadyToFinish,
-    ) = L.of(
-      context,
-    );
-
-    final actions = [
-      Column(
-        spacing: 8,
-        children: [
-          PrimaryButton.wide(
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            child: Center(
-              child: Text(notReadyToFinish),
-            ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).pop();
-            },
-          ),
-          PrimaryButton.wide(
-            child: Center(
-              child: Text(readyToFinish),
-            ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).pop();
-              onFinish?.call();
-            },
-          ),
-        ],
-      ),
-    ];
-
-    return showBrandedDialog(
-      context,
-      title: Text(finishWorkoutWarningTitle),
-      titleTextStyle: textTheme.titleMedium,
-      icon: Icon(
-        Icons.error_outline_rounded,
-        color: colorScheme.error,
-      ),
-      content: Text(
-        finishWorkoutWarningBody,
-        textAlign: TextAlign.center,
-      ),
-      actions: actions,
     );
   }
 

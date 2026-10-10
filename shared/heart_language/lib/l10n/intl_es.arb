@@ -939,7 +939,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "finishWorkoutWarningBody": "Las series vacías o inválidas se descartarán, y todas las series válidas se marcarán como completadas.",
+  "finishWorkoutWarningBody": "Solo se guardarán las series que marcaste. El resto se descartará.",
   "@finishWorkoutWarningBody": {
     "description": "Workout completion confirmation dialog",
     "type": "text",
@@ -1616,12 +1616,14 @@
     "type": "text",
     "placeholders": {}
   },
-  "deleteAccountBody": "Tu cuenta quedará programada para eliminarse en {deadline} días. Durante ese tiempo, aún puedes iniciar sesión y revertir esta decisión. Una vez pasado el plazo, tu cuenta y tus datos personales se eliminarán de forma permanente.",
+  "deleteAccountBody": "Tu cuenta quedará programada para eliminarse en {deadline, plural, =1{1 día} other{{deadline} días}}. Durante ese tiempo, aún puedes iniciar sesión y revertir esta decisión. Una vez pasado el plazo, tu cuenta y tus datos personales se eliminarán de forma permanente.",
   "@deleteAccountBody": {
     "description": "Delete account dialog",
     "type": "text",
     "placeholders": {
-      "deadline": {}
+      "deadline": {
+        "type": "int"
+      }
     }
   },
   "deleteAccountCancelMessage": "¡Ay no, me gusta estar aquí!",
@@ -4377,6 +4379,28 @@
     "description": "Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say",
     "type": "text",
     "placeholders": {}
+  },
+  "shortcutsSubtitleAndroid": "Empieza o termina un entrenamiento desde Gemini o desde tu pantalla de inicio",
+  "@shortcutsSubtitleAndroid": {
+    "description": "Subtitle under the shortcuts switch in Settings › Features on Android, saying what it does: Gemini and the home screen, where iOS has Siri and the Shortcuts app",
+    "type": "text",
+    "placeholders": {}
+  },
+  "templateCopyNumberedName": "{name} (copia {number})",
+  "@templateCopyNumberedName": {
+    "description": "Name of a duplicated template when \"<name> (copy)\" is already taken: the copy's number, 2 and up",
+    "type": "text",
+    "placeholders": {
+      "name": {},
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcutTemplateGone": "Esa plantilla ya no existe",
+  "@shortcutTemplateGone": {
+    "description": "Brief notice when a home-screen shortcut or link names a template that no longer exists; the templates list is shown under it",
+    "type": "text"
   },
   "developerApi": "API para desarrolladores",
   "@developerApi": {

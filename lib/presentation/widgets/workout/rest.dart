@@ -35,8 +35,8 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
 
 /// The "rest complete" notification's words: the title, the set that comes
 /// [next] as its body (null with nothing to say), and a subtitle naming the
-/// exercise it is for — the next one, or [exercise] just worked when nothing
-/// is left. Also what the lock screen schedules itself when its Done button
+/// exercise it is for — "Next: …" the next one, or [exercise] just worked,
+/// by its name alone, when nothing is left. Also what the lock screen schedules itself when its Done button
 /// starts a rest with the app gone (#246).
 ({String exerciseId, String title, String? body, String subtitle}) restNotificationCopy(
   BuildContext context,
@@ -65,7 +65,12 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
     exerciseId: nextExercise.id,
     title: restComplete,
     body: body,
-    subtitle: restCompleteBody(nextExercise.exercise.name),
+    // "Next:" only when something is next: with every set done, the exercise
+    // just worked is named as itself
+    subtitle: switch (next) {
+      (WorkoutExercise(:final exercise), _) => restCompleteBody(exercise.name),
+      null => exercise.exercise.name,
+    },
   );
 }
 
