@@ -34,6 +34,10 @@ const _whatsNewPath = 'whats-new';
 const _whatsNewName = 'whatsNew';
 const _restTimersPath = 'rest-timers';
 const _restTimersName = 'restTimers';
+const _apiTokensPath = 'tokens';
+const _apiTokensName = 'apiTokens';
+const _newApiTokenPath = 'new';
+const _newApiTokenName = 'newApiToken';
 const _featuresPath = 'features';
 const _featuresName = 'features';
 // the feature the Features page opens at (#239), by `Feature.value` — a

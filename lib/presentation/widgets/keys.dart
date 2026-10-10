@@ -138,4 +138,20 @@ abstract final class AppKeys {
   static const loginEmail = Key('Login.email');
   static const loginName = Key('Login.name');
   static const loginPassword = Key('Login.password');
+
+  /// The developer API (#271): the Settings row, the tokens page's controls
+  /// and each token's row and revoke button.
+  static const developerApi = Key('Settings.developerApi');
+  static const apiTokensDocs = Key('ApiTokens.docs');
+  static const newApiToken = Key('ApiTokens.new');
+  static const retryApiTokens = Key('ApiTokens.retry');
+  static Key apiTokenRow(String id) => Key('ApiTokens.row.$id');
+  static Key revokeApiToken(String id) => Key('ApiTokens.revoke.$id');
+  static const confirmRevokeApiToken = Key('ApiTokens.revoke.confirm');
+  static const apiTokenName = Key('NewApiToken.name');
+  static Key apiTokenPurposeOption(Object? purpose) => Key('NewApiToken.purpose.${purpose ?? 'unset'}');
+  static const createApiToken = Key('NewApiToken.create');
+  static const apiTokenSecret = Key('NewApiToken.secret');
+  static const copyApiToken = Key('NewApiToken.copy');
+  static const apiTokenStored = Key('NewApiToken.stored');
 }

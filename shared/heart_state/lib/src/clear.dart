@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'alarms.dart';
+import 'api_tokens.dart';
 import 'auth.dart';
 import 'backfill.dart';
 import 'charts.dart';
@@ -48,6 +49,7 @@ Future<void> eraseState(BuildContext context) async {
 /// account's lists or, worse, get pushed to its server as pending writes.
 void clearUserState(BuildContext context) {
   Alarms.of(context).onSignOut();
+  ApiTokens.of(context).onSignOut();
   Backfill.of(context).onSignOut();
   Charts.of(context).onSignOut();
   Exercises.of(context).onSignOut();

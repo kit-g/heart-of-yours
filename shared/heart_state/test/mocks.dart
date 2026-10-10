@@ -8,6 +8,7 @@ import 'package:mockito/annotations.dart';
     MockSpec<Exercise>(),
     MockSpec<TimersService>(),
     MockSpec<AccountService>(),
+    MockSpec<ApiTokenService>(),
     MockSpec<LocalStatsService>(),
     MockSpec<LocalGoalService>(),
     MockSpec<GoalService>(),

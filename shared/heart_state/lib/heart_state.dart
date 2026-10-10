@@ -5,6 +5,7 @@ export 'package:shared_preferences/shared_preferences.dart';
 
 export 'src/alarms.dart';
 export 'src/analytics.dart';
+export 'src/api_tokens.dart';
 export 'src/auth.dart';
 export 'src/backfill.dart';
 export 'src/charts.dart';

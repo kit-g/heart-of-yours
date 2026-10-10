@@ -4185,6 +4185,246 @@ abstract class L {
   /// In en, this message translates to:
   /// **'That template isn\'t here anymore'**
   String get shortcutTemplateGone;
+
+  /// Settings row under Account, and the page title: the personal access tokens for the read-only developer API
+  ///
+  /// In en, this message translates to:
+  /// **'Developer API'**
+  String get developerApi;
+
+  /// Tokens page, first paragraph: what a token is for
+  ///
+  /// In en, this message translates to:
+  /// **'Your training log, readable by your own scripts, spreadsheets and AI assistants. A token can show what you logged and change nothing.'**
+  String get apiTokensExplainer;
+
+  /// Tokens page, a link to the developer docs on the website
+  ///
+  /// In en, this message translates to:
+  /// **'How to use a token'**
+  String get apiTokensHowTo;
+
+  /// Tokens page, the create button; and the create page's title
+  ///
+  /// In en, this message translates to:
+  /// **'New token'**
+  String get newApiToken;
+
+  /// Tokens page, in place of the create button when the account holds the maximum of active tokens; also the message when the server refuses one more
+  ///
+  /// In en, this message translates to:
+  /// **'You can hold {count} active tokens. Revoke one to make room for another.'**
+  String apiTokensAtCapacity(Object count);
+
+  /// Tokens page, when the account never minted one
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing minted yet.'**
+  String get apiTokensEmpty;
+
+  /// Tokens page, when the list could not be read from the server; a Retry button follows
+  ///
+  /// In en, this message translates to:
+  /// **'The list didn\'t make it here.'**
+  String get apiTokensLoadFailed;
+
+  /// Tokens page, header over the tokens that still work
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get apiTokensActive;
+
+  /// Tokens page, header over the revoked and expired tokens
+  ///
+  /// In en, this message translates to:
+  /// **'No longer valid'**
+  String get apiTokensPast;
+
+  /// Token row: when it was made; date is already formatted
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String apiTokenCreatedOn(Object date);
+
+  /// Token row: when it stops working; date is already formatted
+  ///
+  /// In en, this message translates to:
+  /// **'Expires {date}'**
+  String apiTokenExpiresOn(Object date);
+
+  /// Token row: it lives until revoked
+  ///
+  /// In en, this message translates to:
+  /// **'Never expires'**
+  String get apiTokenNeverExpires;
+
+  /// Token row: last request made with it; date is already formatted
+  ///
+  /// In en, this message translates to:
+  /// **'Last used {date}'**
+  String apiTokenLastUsedOn(Object date);
+
+  /// Token row: no request was ever made with it
+  ///
+  /// In en, this message translates to:
+  /// **'Never used'**
+  String get apiTokenNeverUsed;
+
+  /// Token row, past section: when it was revoked; date is already formatted
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked {date}'**
+  String apiTokenRevokedOn(Object date);
+
+  /// Token row, past section: when it expired; date is already formatted
+  ///
+  /// In en, this message translates to:
+  /// **'Expired {date}'**
+  String apiTokenExpiredOn(Object date);
+
+  /// Token row: the secret's last four characters, the only part ever shown again
+  ///
+  /// In en, this message translates to:
+  /// **'Ends in {hint}'**
+  String apiTokenEndsWith(Object hint);
+
+  /// Token row: the revoke button's tooltip, and the confirm dialog's destructive action
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get revokeApiToken;
+
+  /// Revoke confirmation, title; name is the token's name
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke {name}?'**
+  String revokeApiTokenTitle(Object name);
+
+  /// Revoke confirmation, body
+  ///
+  /// In en, this message translates to:
+  /// **'Whatever uses it stops reading your log on its next request. No undo, but a new token is one tap away.'**
+  String get revokeApiTokenBody;
+
+  /// Revoke confirmation, the way out
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get keepApiToken;
+
+  /// Create page, the name field's hint: examples of names
+  ///
+  /// In en, this message translates to:
+  /// **'My sheet, Home Assistant, Claude…'**
+  String get apiTokenNameHint;
+
+  /// Create page, label of the expiry choice
+  ///
+  /// In en, this message translates to:
+  /// **'Expires'**
+  String get apiTokenExpiry;
+
+  /// Create page, expiry option: a year from now
+  ///
+  /// In en, this message translates to:
+  /// **'In a year'**
+  String get apiTokenExpiryYear;
+
+  /// Create page, expiry option: until revoked
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get apiTokenExpiryNever;
+
+  /// Create page, label of the optional purpose choice
+  ///
+  /// In en, this message translates to:
+  /// **'Used by'**
+  String get apiTokenPurpose;
+
+  /// Create page, under the purpose choice: why it is asked
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. It changes nothing; it tells you, and us, what tokens are for.'**
+  String get apiTokenPurposeHelp;
+
+  /// Purpose option
+  ///
+  /// In en, this message translates to:
+  /// **'A script'**
+  String get apiTokenPurposeScript;
+
+  /// Purpose option
+  ///
+  /// In en, this message translates to:
+  /// **'A spreadsheet'**
+  String get apiTokenPurposeSpreadsheet;
+
+  /// Purpose option
+  ///
+  /// In en, this message translates to:
+  /// **'Home automation'**
+  String get apiTokenPurposeHomeAutomation;
+
+  /// Purpose option
+  ///
+  /// In en, this message translates to:
+  /// **'An AI assistant'**
+  String get apiTokenPurposeAiAssistant;
+
+  /// Purpose option
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get apiTokenPurposeOther;
+
+  /// Purpose option: none chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Not saying'**
+  String get apiTokenPurposeUnset;
+
+  /// Create page, the button that mints the token
+  ///
+  /// In en, this message translates to:
+  /// **'Create token'**
+  String get createApiToken;
+
+  /// Create page after minting: title over the secret
+  ///
+  /// In en, this message translates to:
+  /// **'Here it is'**
+  String get apiTokenReady;
+
+  /// Create page after minting: why to copy it now
+  ///
+  /// In en, this message translates to:
+  /// **'This is the one time Heart shows it. Copy it into your tool now; from here on you\'ll only see its last four characters.'**
+  String get apiTokenRevealBody;
+
+  /// Create page after minting: the screen reader's label for the secret text
+  ///
+  /// In en, this message translates to:
+  /// **'Your new token'**
+  String get apiTokenSecretLabel;
+
+  /// Create page after minting: copies the secret
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyApiToken;
+
+  /// Snack after copying the secret
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get apiTokenCopied;
+
+  /// Create page after minting: the way back to the list, once the secret is safe
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve got it'**
+  String get apiTokenStored;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

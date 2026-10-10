@@ -59,6 +59,14 @@ extension on BuildContext {
     return goNamed(_featuresName);
   }
 
+  void goToApiTokens() {
+    return goNamed(_apiTokensName);
+  }
+
+  void goToNewApiToken() {
+    return goNamed(_newApiTokenName);
+  }
+
   /// Opens Features at [feature] over What's new (#239): pushed, so back
   /// returns to the note that sent the user there.
   void pushFeature(Feature feature) {

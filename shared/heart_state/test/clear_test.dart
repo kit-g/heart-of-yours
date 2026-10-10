@@ -105,6 +105,15 @@ class _Timers extends Timers {
   void onSignOut() => calls++;
 }
 
+class _ApiTokens extends ApiTokens {
+  int calls = 0;
+
+  new() : super(service: MockApiTokenService());
+
+  @override
+  void onSignOut() => calls++;
+}
+
 class _Goals extends Goals {
   int calls = 0;
 
@@ -235,6 +244,7 @@ Directory _packageRoot() {
 void main() {
   group('clearState fan-out', () {
     late _Alarms alarms;
+    late _ApiTokens apiTokens;
     late _Auth auth;
     late _Backfill backfill;
     late _Charts charts;
@@ -251,6 +261,7 @@ void main() {
 
     Future<void> pumpProviders(WidgetTester tester) async {
       alarms = _Alarms();
+      apiTokens = _ApiTokens();
       auth = _Auth();
       backfill = _Backfill();
       charts = _Charts();
@@ -268,6 +279,7 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
@@ -294,6 +306,7 @@ void main() {
     List<int> counts() {
       return [
         alarms.calls,
+        apiTokens.calls,
         auth.calls,
         charts.calls,
         exercises.calls,
@@ -328,6 +341,7 @@ void main() {
 
   group('eraseState', () {
     late _Alarms alarms;
+    late _ApiTokens apiTokens;
     late _Backfill backfill;
     late _Charts charts;
     late _Exercises exercises;
@@ -352,6 +366,7 @@ void main() {
     }) async {
       SharedPreferences.setMockInitialValues({Preferences.onboardingSeenKey: true});
       alarms = _Alarms();
+      apiTokens = _ApiTokens();
       backfill = _Backfill();
       charts = _Charts();
       exercises = _Exercises();
@@ -379,6 +394,7 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider<Alarms>.value(value: alarms),
+            ChangeNotifierProvider<ApiTokens>.value(value: apiTokens),
             ChangeNotifierProvider<Auth>.value(value: auth),
             ChangeNotifierProvider<Backfill>.value(value: backfill),
             ChangeNotifierProvider<Charts>.value(value: charts),
@@ -407,6 +423,7 @@ void main() {
     List<int> counts() {
       return [
         alarms.calls,
+        apiTokens.calls,
         charts.calls,
         exercises.calls,
         goals.calls,
@@ -504,6 +521,7 @@ void main() {
 
       expect(fanned, {
         'Alarms',
+        'ApiTokens',
         'Auth',
         'Backfill',
         'Charts',
