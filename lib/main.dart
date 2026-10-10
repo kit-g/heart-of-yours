@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:heart/core/env/analytics.dart';
 import 'package:heart/core/env/app_upgrade.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/questions.dart';
 import 'package:heart/core/env/licenses.dart';
 import 'package:heart/core/env/logging.dart';
@@ -42,6 +43,7 @@ Future<void> bootstrap({
   FirebaseAuth? firebase,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
+  LaunchScreen.startClock();
   initLogging?.call(config.logLevel);
   registerLicenses();
 
@@ -176,6 +178,11 @@ Future<void> _runner({
       ),
     };
   }
+
+  // The launch screen stays up until the app has its theme and its opening
+  // page's data (see LaunchScreen); released from `_initApp`. The web has no
+  // launch screen to hold, only a blank page.
+  if (!kIsWeb) LaunchScreen.hold();
 
   return Future.wait([
     applyOrientations(),
