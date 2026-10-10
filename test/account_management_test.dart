@@ -104,6 +104,21 @@ void main() {
     expect(find.byType(AccountManagementPage), findsOneWidget);
   }
 
+  testWidgets('an account signed up without a name goes by its email in the profile, never "?"', (tester) async {
+    final firebase = MockFirebaseAuth(mockUser: _passwordAccount(email: 'muffin@heart.test'), signedIn: true);
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await harness.pumpHeartApp(tester, db: db, api: api, cdn: cdn, firebaseAuth: firebase, settle: false);
+    await tester.pumpTimes();
+
+    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(find.text('muffin@heart.test'), findsOneWidget);
+    expect(find.text('?'), findsNothing);
+  });
+
   group('reset password', () {
     testWidgets('sends the reset link to the signed-in email on confirmation', (tester) async {
       final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
