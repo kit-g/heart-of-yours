@@ -419,6 +419,88 @@ void main() {
     expect(find.text('Choose file'), findsOneWidget);
   });
 
+  group('a Hevy export (#324)', () {
+    const hevy =
+        'title,start_time,end_time,description,exercise_title,superset_id,exercise_notes,'
+        'set_index,set_type,weight_kg,reps,distance_km,duration_seconds,rpe\n'
+        '"Push","1 Jan 2027, 09:00","1 Jan 2027, 10:00","","Bench Press (Barbell)",,"",0,"normal",60,8,,,';
+
+    testWidgets('goes up as source=hevy, with no unit question and no unit', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(hevy), name: 'workout_data.csv'),
+      );
+      serveImport(
+        preview: {'source': 'hevy', 'workoutsFound': 1, 'setsFound': 1, 'exercisesUnmatched': []},
+        report: {'source': 'hevy', 'workoutsFound': 1, 'workoutsCreated': 1, 'setsCreated': 1},
+      );
+
+      await pumpImportPage(tester);
+      expect(find.text('Weights in your export'), findsOneWidget);
+      await tester.tap(find.text('Hevy'));
+      await tester.pumpTimes();
+
+      // the file names its own units; the question has no Hevy form
+      expect(find.text('Weights in your export'), findsNothing);
+      expect(find.textContaining('Lifted with Hevy before?'), findsOneWidget);
+
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(requests, hasLength(2));
+      for (final request in requests) {
+        expect(request.url.queryParameters['source'], 'hevy');
+        expect(request.url.queryParameters, isNot(contains('unit')));
+        expect(request.body, hevy);
+      }
+      expect(find.text('1 workout imported'), findsOneWidget);
+    });
+
+    testWidgets('a rejected Hevy file points back at Hevy, not Strong', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+      );
+      serveImport(statusCode: 400, preview: {'reason': 'not a readable Hevy export: missing "title"'});
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Hevy'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(find.text("That file didn't work"), findsOneWidget);
+      expect(find.textContaining('as a Hevy export'), findsOneWidget);
+    });
+
+    testWidgets('a parked file says it was kept, and nothing is committed', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(hevy), name: 'workouts.csv'),
+      );
+      serveImport(
+        statusCode: 202,
+        preview: {
+          'source': 'hevy',
+          'status': 'parked',
+          'message': "We couldn't read this Hevy export automatically.",
+          'reason': 'unreadable date "22.09.2026, 17:00"',
+        },
+      );
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Hevy'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      // the dry run parked it — no commit follows, no empty preview renders
+      expect(requests, hasLength(1));
+      expect(find.text('We kept your file'), findsOneWidget);
+      expect(find.text('unreadable date "22.09.2026, 17:00"'), findsOneWidget);
+      expect(find.text('Ready to import'), findsNothing);
+      expect(find.text('Imported!'), findsNothing);
+      expect(find.text("That file didn't work"), findsNothing);
+    });
+  });
+
   group('the unit the export was made in (#307)', () {
     testWidgets('starts on the account\'s unit and sends what the user picks, to both halves', (tester) async {
       await Preferences().let((p) async {
@@ -428,6 +510,7 @@ void main() {
       FileSelectorPlatform.instance = _FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
+      serveImport();
       await pumpImportPage(tester);
 
       // the question is on the page, with the account's unit selected
@@ -452,6 +535,7 @@ void main() {
       FileSelectorPlatform.instance = _FakePicker(
         XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
       );
+      serveImport();
       await pumpImportPage(tester);
       await tester.tap(find.text('Choose file'));
       await tester.pumpTimes();
