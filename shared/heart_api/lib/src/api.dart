@@ -723,6 +723,58 @@ class Api
     );
   }
 
+  /// The account's personal access tokens, newest first, revoked and expired
+  /// ones included (heart-api#111). Never carries a secret.
+  ///
+  /// Read item by item, like the preferences: a purpose this build has never
+  /// heard of is dropped from the token rather than the token from the list,
+  /// because a token the app cannot show is one the owner cannot revoke.
+  Future<Iterable<ApiToken>> listApiTokens() async {
+    final (json, _) = await get(Router.accountTokens);
+    return switch (json) {
+      {'tokens': List l} => _readable(l, (each) => ApiToken.fromJson(_withKnownPurpose(each))),
+      _ => const <ApiToken>[],
+    };
+  }
+
+  /// Mints a token. `201` with the secret, the one time it exists in
+  /// plaintext; anything else is thrown whole, so the caller can tell the cap
+  /// (`token_limit`) from an outage.
+  Future<MintedApiToken> createApiToken({
+    required String name,
+    required ApiTokenExpiry expiry,
+    ApiTokenPurpose? purpose,
+  }) async {
+    final (json, code) = await post(
+      Router.accountTokens,
+      body: {'name': name, 'expiry': expiry.name, 'purpose': ?purpose?.name},
+    );
+    return switch ((code, json)) {
+      (201, Map json) => MintedApiToken.fromJson(json),
+      _ => throw json,
+    };
+  }
+
+  /// Revokes a token. `204`, also for one already revoked; `404` for one the
+  /// account does not own, thrown whole like every refusal.
+  Future<void> revokeApiToken(String tokenId) async {
+    final (json, code) = await delete(Router.accountToken(tokenId));
+    if (code != 204) throw json;
+  }
+
+  /// [json] with its `purpose` only when it is one this build can name.
+  ///
+  /// The server's enum may grow ahead of the app in the stores, and
+  /// `ApiToken.fromJson` refuses a value it does not know. The purpose is a
+  /// label the owner chose, nothing the app acts on, so losing it costs less
+  /// than losing the row.
+  static Map _withKnownPurpose(Map json) {
+    return switch (json['purpose']) {
+      String p when ApiTokenPurpose.values.any((each) => each.name == p) => json,
+      _ => {...json}..remove('purpose'),
+    };
+  }
+
   @override
   Future<ProgressGalleryResponse> getWorkoutGallery({String? cursor, String? userId}) async {
     final (json, _) = await get('${Router.workouts}/images', query: {'cursor': ?cursor});
@@ -873,6 +925,7 @@ abstract final class Router {
   static const templateFolders = 'v1/template-folders';
   static const workouts = 'v1/workouts';
   static const workoutImports = '$workouts/imports';
+  static const accountTokens = '$accounts/tokens';
 
   static String goal(String goalId) {
     return '$goals/$goalId';
@@ -908,6 +961,10 @@ abstract final class Router {
 
   static String workout(String workoutId) {
     return '$workouts/$workoutId';
+  }
+
+  static String accountToken(String tokenId) {
+    return '$accountTokens/$tokenId';
   }
 }
 
