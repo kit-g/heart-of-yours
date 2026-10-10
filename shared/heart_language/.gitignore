@@ -27,3 +27,14 @@ migrate_working_dir/
 **/doc/api/
 .dart_tool/
 build/
+
+# Derived from scripts/translations.csv and the two intl_en.arb sources by
+# `make codegen-heart_language` (the translation import): the other locales'
+# ARBs, the generated Dart, and gen-l10n's report. Two branches adding strings
+# collided in every one of these; now only the sources are merged.
+lib/l10n/intl_*.arb
+!lib/l10n/intl_en.arb
+native/l10n/intl_*.arb
+!native/l10n/intl_en.arb
+lib/l10n/heart_language*.dart
+untranslated.json

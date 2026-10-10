@@ -44,8 +44,9 @@ jobs:
         run: make deps
 
       - name: Analyze
-        # codegen first: analysis needs the generated mocks
-        run: make codegen codegen-app lint
+        # codegen first: analysis needs the generated mocks and localizations;
+        # test-scripts is the translation merge driver's own suite
+        run: make codegen codegen-app lint test-scripts
 
   test_packages:
     name: "Pkg • ${{ matrix.package }}"

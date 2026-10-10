@@ -111,7 +111,7 @@ jobs:
       - name: "Dependencies"
         run: |
           flutter pub get
-          make lib/firebase_options.dart lib/firebase_options_prod.dart
+          make codegen-heart_language lib/firebase_options.dart lib/firebase_options_prod.dart
           mkdir -p ios/Env/dev
           cat > ios/Env/dev/GoogleService-Info.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>

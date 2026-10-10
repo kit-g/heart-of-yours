@@ -89,6 +89,11 @@ jobs:
         # leave it undated, and the card shows no date.
         run: dart scripts/whats_new.dart stamp
 
+      # the locale ARBs and the generated Dart are not committed
+      # (shared/heart_language/.gitignore); the import writes them
+      - name: "Generate localizations"
+        run: make codegen-heart_language
+
       # Runner embeds the watch app (#187), and Xcode refuses to build a scheme
       # with an embedded watch app unless the watchOS platform is installed —
       # "watchOS 26.2 must be installed in order to run the scheme" — even for a
