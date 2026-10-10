@@ -2457,4 +2457,144 @@ class LRu extends L {
 
   @override
   String get shortcutTemplateGone => 'Этого шаблона больше нет';
+
+  @override
+  String get developerApi => 'API для разработчиков';
+
+  @override
+  String get apiTokensExplainer =>
+      'Ваш журнал тренировок, доступный вашим собственным скриптам, таблицам и ИИ-ассистентам. Токен может показать, что вы записали, и ничего не изменить.';
+
+  @override
+  String get apiTokensHowTo => 'Как пользоваться токеном';
+
+  @override
+  String get newApiToken => 'Новый токен';
+
+  @override
+  String apiTokensAtCapacity(Object count) {
+    return 'Можно держать до $count активных токенов. Отзовите один, чтобы освободить место для нового.';
+  }
+
+  @override
+  String get apiTokensEmpty => 'Пока ни одного токена.';
+
+  @override
+  String get apiTokensLoadFailed => 'Список не дошёл.';
+
+  @override
+  String get apiTokensActive => 'Активные';
+
+  @override
+  String get apiTokensPast => 'Больше не действуют';
+
+  @override
+  String apiTokenCreatedOn(Object date) {
+    return 'Создан $date';
+  }
+
+  @override
+  String apiTokenExpiresOn(Object date) {
+    return 'Истекает $date';
+  }
+
+  @override
+  String get apiTokenNeverExpires => 'Бессрочный';
+
+  @override
+  String apiTokenLastUsedOn(Object date) {
+    return 'Использован $date';
+  }
+
+  @override
+  String get apiTokenNeverUsed => 'Ни разу не использован';
+
+  @override
+  String apiTokenRevokedOn(Object date) {
+    return 'Отозван $date';
+  }
+
+  @override
+  String apiTokenExpiredOn(Object date) {
+    return 'Истёк $date';
+  }
+
+  @override
+  String apiTokenEndsWith(Object hint) {
+    return 'Оканчивается на $hint';
+  }
+
+  @override
+  String get revokeApiToken => 'Отозвать';
+
+  @override
+  String revokeApiTokenTitle(Object name) {
+    return 'Отозвать $name?';
+  }
+
+  @override
+  String get revokeApiTokenBody =>
+      'Всё, что им пользуется, перестанет читать ваш журнал со следующего запроса. Отменить нельзя, но новый токен — в одном нажатии.';
+
+  @override
+  String get keepApiToken => 'Оставить';
+
+  @override
+  String get apiTokenNameHint => 'Моя таблица, Home Assistant, Claude…';
+
+  @override
+  String get apiTokenExpiry => 'Срок действия';
+
+  @override
+  String get apiTokenExpiryYear => 'Через год';
+
+  @override
+  String get apiTokenExpiryNever => 'Никогда';
+
+  @override
+  String get apiTokenPurpose => 'Кем используется';
+
+  @override
+  String get apiTokenPurposeHelp =>
+      'Необязательно. Ни на что не влияет; просто подскажет вам — и нам — для чего нужны токены.';
+
+  @override
+  String get apiTokenPurposeScript => 'Скрипт';
+
+  @override
+  String get apiTokenPurposeSpreadsheet => 'Таблица';
+
+  @override
+  String get apiTokenPurposeHomeAutomation => 'Умный дом';
+
+  @override
+  String get apiTokenPurposeAiAssistant => 'ИИ-ассистент';
+
+  @override
+  String get apiTokenPurposeOther => 'Что-то ещё';
+
+  @override
+  String get apiTokenPurposeUnset => 'Не скажу';
+
+  @override
+  String get createApiToken => 'Создать токен';
+
+  @override
+  String get apiTokenReady => 'Вот он';
+
+  @override
+  String get apiTokenRevealBody =>
+      'Heart показывает его только один раз. Скопируйте его в свой инструмент сейчас; дальше будут видны только последние четыре символа.';
+
+  @override
+  String get apiTokenSecretLabel => 'Ваш новый токен';
+
+  @override
+  String get copyApiToken => 'Скопировать';
+
+  @override
+  String get apiTokenCopied => 'Скопировано';
+
+  @override
+  String get apiTokenStored => 'Сохранил';
 }

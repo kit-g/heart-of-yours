@@ -1305,6 +1305,145 @@ void main() {
       expect(jsonDecode(captured as String), containsPair('archived', true));
     });
   });
+
+  group('ApiTokenService (heart-api#111)', () {
+    const minted = {
+      'id': '01a10960-7cfa-7903-ab88-cd79b607caed',
+      'name': 'My sheet',
+      'purpose': 'spreadsheet',
+      'hint': '-hbo',
+      'scopes': ['read'],
+      'createdAt': '2026-10-05T00:04:40.825245Z',
+      'expiresAt': '2027-10-05T00:04:40.820101Z',
+      'secret': 'hrt_6PnLB1AcxbmXGK1ZeqJVevM9pFCAxx-i7iUShZD-hbo',
+    };
+
+    test('listApiTokens reads every token, newest first, with its dates', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.accountTokens,
+        statusCode: 200,
+        body: {
+          'tokens': [
+            {
+              'id': '01a10960-7d14-7cb5-9a4c-fe244bdb76c9',
+              'name': 'n4',
+              'hint': '2ruU',
+              'scopes': ['read'],
+              'createdAt': '2026-10-05T00:04:40.852563Z',
+            },
+            {
+              ...minted,
+              'revokedAt': '2026-10-05T00:04:40.840568Z',
+            }..remove('secret'),
+          ],
+        },
+      );
+
+      final tokens = (await api.listApiTokens()).toList();
+
+      expect(tokens.map((t) => t.name), ['n4', 'My sheet']);
+      expect(tokens.first.expiresAt, isNull);
+      expect(tokens.first.purpose, isNull);
+      expect(tokens.first.isActive(), isTrue);
+      expect(tokens.last.purpose, ApiTokenPurpose.spreadsheet);
+      expect(tokens.last.revokedAt, isNotNull);
+      expect(tokens.last.isActive(), isFalse);
+    });
+
+    test('listApiTokens keeps a token whose purpose this build cannot name', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.accountTokens,
+        statusCode: 200,
+        body: {
+          'tokens': [
+            {...minted, 'purpose': 'quantumToaster'}..remove('secret'),
+          ],
+        },
+      );
+
+      final token = (await api.listApiTokens()).single;
+
+      expect(token.id, minted['id']);
+      expect(token.purpose, isNull);
+    });
+
+    test('listApiTokens is empty for an account that never minted one', () async {
+      _response(client: client, method: 'GET', path: Router.accountTokens, statusCode: 200, body: {'tokens': []});
+      expect(await api.listApiTokens(), isEmpty);
+    });
+
+    test('createApiToken sends the choice and returns the secret once', () async {
+      _response(client: client, method: 'POST', path: Router.accountTokens, statusCode: 201, body: minted);
+
+      final result = await api.createApiToken(name: 'My sheet', expiry: .year, purpose: .spreadsheet);
+
+      expect(result.secret, minted['secret']);
+      expect(result.token.hint, '-hbo');
+      expect(result.token.purpose, ApiTokenPurpose.spreadsheet);
+      final sent = verify(
+        client.post(
+          Uri.https('api.example.com', Router.accountTokens),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {'name': 'My sheet', 'expiry': 'year', 'purpose': 'spreadsheet'});
+    });
+
+    test('createApiToken leaves out a purpose that was not chosen', () async {
+      _response(client: client, method: 'POST', path: Router.accountTokens, statusCode: 201, body: minted);
+
+      await api.createApiToken(name: 'My sheet', expiry: .never);
+
+      final sent = verify(
+        client.post(
+          Uri.https('api.example.com', Router.accountTokens),
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+        ),
+      ).captured.single;
+      expect(jsonDecode(sent as String), {'name': 'My sheet', 'expiry': 'never'});
+    });
+
+    test('createApiToken throws the refusal whole, code included', () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.accountTokens,
+        statusCode: 400,
+        body: {
+          'error': 'bad request',
+          'code': 'token_limit',
+          'reason': 'you can have at most 5 active tokens; revoke one first',
+        },
+      );
+
+      expect(
+        () => api.createApiToken(name: 'one more', expiry: .year),
+        throwsA(isA<Map>().having((m) => m['code'], 'code', 'token_limit')),
+      );
+    });
+
+    test('revokeApiToken is quiet on 204', () async {
+      _response(client: client, method: 'DELETE', path: Router.accountToken('t1'), statusCode: 204, body: {});
+      await expectLater(api.revokeApiToken('t1'), completes);
+    });
+
+    test('revokeApiToken throws the 404 whole', () async {
+      _response(
+        client: client,
+        method: 'DELETE',
+        path: Router.accountToken('nope'),
+        statusCode: 404,
+        body: {'error': 'not found', 'code': 'not_found', 'message': 'token #nope not found'},
+      );
+      expect(() => api.revokeApiToken('nope'), throwsA(isA<Map>().having((m) => m['code'], 'code', 'not_found')));
+    });
+  });
 }
 
 void _response({

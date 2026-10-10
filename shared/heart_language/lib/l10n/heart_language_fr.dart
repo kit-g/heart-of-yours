@@ -2424,4 +2424,144 @@ class LFr extends L {
 
   @override
   String get shortcutTemplateGone => 'Ce modèle n’existe plus';
+
+  @override
+  String get developerApi => 'API développeur';
+
+  @override
+  String get apiTokensExplainer =>
+      'Votre journal d’entraînement, lisible par vos propres scripts, tableurs et assistants IA. Un jeton peut montrer ce que vous avez enregistré et ne rien modifier.';
+
+  @override
+  String get apiTokensHowTo => 'Comment utiliser un jeton';
+
+  @override
+  String get newApiToken => 'Nouveau jeton';
+
+  @override
+  String apiTokensAtCapacity(Object count) {
+    return 'Vous pouvez avoir $count jetons actifs. Révoquez-en un pour faire de la place à un autre.';
+  }
+
+  @override
+  String get apiTokensEmpty => 'Rien d’émis pour l’instant.';
+
+  @override
+  String get apiTokensLoadFailed => 'La liste n’est pas arrivée.';
+
+  @override
+  String get apiTokensActive => 'Actifs';
+
+  @override
+  String get apiTokensPast => 'Plus valables';
+
+  @override
+  String apiTokenCreatedOn(Object date) {
+    return 'Créé le $date';
+  }
+
+  @override
+  String apiTokenExpiresOn(Object date) {
+    return 'Expire le $date';
+  }
+
+  @override
+  String get apiTokenNeverExpires => 'N’expire jamais';
+
+  @override
+  String apiTokenLastUsedOn(Object date) {
+    return 'Dernière utilisation le $date';
+  }
+
+  @override
+  String get apiTokenNeverUsed => 'Jamais utilisé';
+
+  @override
+  String apiTokenRevokedOn(Object date) {
+    return 'Révoqué le $date';
+  }
+
+  @override
+  String apiTokenExpiredOn(Object date) {
+    return 'Expiré le $date';
+  }
+
+  @override
+  String apiTokenEndsWith(Object hint) {
+    return 'Se termine par $hint';
+  }
+
+  @override
+  String get revokeApiToken => 'Révoquer';
+
+  @override
+  String revokeApiTokenTitle(Object name) {
+    return 'Révoquer $name ?';
+  }
+
+  @override
+  String get revokeApiTokenBody =>
+      'Ce qui l’utilise cessera de lire votre journal à sa prochaine requête. Pas de retour en arrière, mais un nouveau jeton est à un geste.';
+
+  @override
+  String get keepApiToken => 'Le garder';
+
+  @override
+  String get apiTokenNameHint => 'Ma feuille, Home Assistant, Claude…';
+
+  @override
+  String get apiTokenExpiry => 'Expire';
+
+  @override
+  String get apiTokenExpiryYear => 'Dans un an';
+
+  @override
+  String get apiTokenExpiryNever => 'Jamais';
+
+  @override
+  String get apiTokenPurpose => 'Utilisé par';
+
+  @override
+  String get apiTokenPurposeHelp =>
+      'Facultatif. Ça ne change rien ; ça vous dit, et à nous aussi, à quoi servent les jetons.';
+
+  @override
+  String get apiTokenPurposeScript => 'Un script';
+
+  @override
+  String get apiTokenPurposeSpreadsheet => 'Un tableur';
+
+  @override
+  String get apiTokenPurposeHomeAutomation => 'Domotique';
+
+  @override
+  String get apiTokenPurposeAiAssistant => 'Un assistant IA';
+
+  @override
+  String get apiTokenPurposeOther => 'Autre chose';
+
+  @override
+  String get apiTokenPurposeUnset => 'Je ne dis pas';
+
+  @override
+  String get createApiToken => 'Créer le jeton';
+
+  @override
+  String get apiTokenReady => 'Le voici';
+
+  @override
+  String get apiTokenRevealBody =>
+      'Heart ne le montre que cette fois. Copiez-le maintenant dans votre outil ; ensuite vous n’en verrez plus que les quatre derniers caractères.';
+
+  @override
+  String get apiTokenSecretLabel => 'Votre nouveau jeton';
+
+  @override
+  String get copyApiToken => 'Copier';
+
+  @override
+  String get apiTokenCopied => 'Copié';
+
+  @override
+  String get apiTokenStored => 'C’est noté';
 }

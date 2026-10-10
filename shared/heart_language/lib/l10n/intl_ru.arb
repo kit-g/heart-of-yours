@@ -4401,5 +4401,261 @@
   "@shortcutTemplateGone": {
     "description": "Brief notice when a home-screen shortcut or link names a template that no longer exists; the templates list is shown under it",
     "type": "text"
+  },
+  "developerApi": "API для разработчиков",
+  "@developerApi": {
+    "description": "Settings row under Account, and the page title: the personal access tokens for the read-only developer API",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensExplainer": "Ваш журнал тренировок, доступный вашим собственным скриптам, таблицам и ИИ-ассистентам. Токен может показать, что вы записали, и ничего не изменить.",
+  "@apiTokensExplainer": {
+    "description": "Tokens page, first paragraph: what a token is for",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensHowTo": "Как пользоваться токеном",
+  "@apiTokensHowTo": {
+    "description": "Tokens page, a link to the developer docs on the website",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newApiToken": "Новый токен",
+  "@newApiToken": {
+    "description": "Tokens page, the create button; and the create page's title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensAtCapacity": "Можно держать до {count} активных токенов. Отзовите один, чтобы освободить место для нового.",
+  "@apiTokensAtCapacity": {
+    "description": "Tokens page, in place of the create button when the account holds the maximum of active tokens; also the message when the server refuses one more",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "apiTokensEmpty": "Пока ни одного токена.",
+  "@apiTokensEmpty": {
+    "description": "Tokens page, when the account never minted one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensLoadFailed": "Список не дошёл.",
+  "@apiTokensLoadFailed": {
+    "description": "Tokens page, when the list could not be read from the server; a Retry button follows",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensActive": "Активные",
+  "@apiTokensActive": {
+    "description": "Tokens page, header over the tokens that still work",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensPast": "Больше не действуют",
+  "@apiTokensPast": {
+    "description": "Tokens page, header over the revoked and expired tokens",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenCreatedOn": "Создан {date}",
+  "@apiTokenCreatedOn": {
+    "description": "Token row: when it was made; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenExpiresOn": "Истекает {date}",
+  "@apiTokenExpiresOn": {
+    "description": "Token row: when it stops working; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenNeverExpires": "Бессрочный",
+  "@apiTokenNeverExpires": {
+    "description": "Token row: it lives until revoked",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenLastUsedOn": "Использован {date}",
+  "@apiTokenLastUsedOn": {
+    "description": "Token row: last request made with it; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenNeverUsed": "Ни разу не использован",
+  "@apiTokenNeverUsed": {
+    "description": "Token row: no request was ever made with it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenRevokedOn": "Отозван {date}",
+  "@apiTokenRevokedOn": {
+    "description": "Token row, past section: when it was revoked; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenExpiredOn": "Истёк {date}",
+  "@apiTokenExpiredOn": {
+    "description": "Token row, past section: when it expired; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenEndsWith": "Оканчивается на {hint}",
+  "@apiTokenEndsWith": {
+    "description": "Token row: the secret's last four characters, the only part ever shown again",
+    "type": "text",
+    "placeholders": {
+      "hint": {}
+    }
+  },
+  "revokeApiToken": "Отозвать",
+  "@revokeApiToken": {
+    "description": "Token row: the revoke button's tooltip, and the confirm dialog's destructive action",
+    "type": "text",
+    "placeholders": {}
+  },
+  "revokeApiTokenTitle": "Отозвать {name}?",
+  "@revokeApiTokenTitle": {
+    "description": "Revoke confirmation, title; name is the token's name",
+    "type": "text",
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "revokeApiTokenBody": "Всё, что им пользуется, перестанет читать ваш журнал со следующего запроса. Отменить нельзя, но новый токен — в одном нажатии.",
+  "@revokeApiTokenBody": {
+    "description": "Revoke confirmation, body",
+    "type": "text",
+    "placeholders": {}
+  },
+  "keepApiToken": "Оставить",
+  "@keepApiToken": {
+    "description": "Revoke confirmation, the way out",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenNameHint": "Моя таблица, Home Assistant, Claude…",
+  "@apiTokenNameHint": {
+    "description": "Create page, the name field's hint: examples of names",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenExpiry": "Срок действия",
+  "@apiTokenExpiry": {
+    "description": "Create page, label of the expiry choice",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenExpiryYear": "Через год",
+  "@apiTokenExpiryYear": {
+    "description": "Create page, expiry option: a year from now",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenExpiryNever": "Никогда",
+  "@apiTokenExpiryNever": {
+    "description": "Create page, expiry option: until revoked",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurpose": "Кем используется",
+  "@apiTokenPurpose": {
+    "description": "Create page, label of the optional purpose choice",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeHelp": "Необязательно. Ни на что не влияет; просто подскажет вам — и нам — для чего нужны токены.",
+  "@apiTokenPurposeHelp": {
+    "description": "Create page, under the purpose choice: why it is asked",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeScript": "Скрипт",
+  "@apiTokenPurposeScript": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeSpreadsheet": "Таблица",
+  "@apiTokenPurposeSpreadsheet": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeHomeAutomation": "Умный дом",
+  "@apiTokenPurposeHomeAutomation": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeAiAssistant": "ИИ-ассистент",
+  "@apiTokenPurposeAiAssistant": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeOther": "Что-то ещё",
+  "@apiTokenPurposeOther": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeUnset": "Не скажу",
+  "@apiTokenPurposeUnset": {
+    "description": "Purpose option: none chosen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "createApiToken": "Создать токен",
+  "@createApiToken": {
+    "description": "Create page, the button that mints the token",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenReady": "Вот он",
+  "@apiTokenReady": {
+    "description": "Create page after minting: title over the secret",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenRevealBody": "Heart показывает его только один раз. Скопируйте его в свой инструмент сейчас; дальше будут видны только последние четыре символа.",
+  "@apiTokenRevealBody": {
+    "description": "Create page after minting: why to copy it now",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenSecretLabel": "Ваш новый токен",
+  "@apiTokenSecretLabel": {
+    "description": "Create page after minting: the screen reader's label for the secret text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "copyApiToken": "Скопировать",
+  "@copyApiToken": {
+    "description": "Create page after minting: copies the secret",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenCopied": "Скопировано",
+  "@apiTokenCopied": {
+    "description": "Snack after copying the secret",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenStored": "Сохранил",
+  "@apiTokenStored": {
+    "description": "Create page after minting: the way back to the list, once the secret is safe",
+    "type": "text",
+    "placeholders": {}
   }
 }
