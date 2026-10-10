@@ -4377,5 +4377,261 @@
     "description": "Import page, under the unit question: why it is asked. Strong exports in whichever unit the user set there and the file does not say",
     "type": "text",
     "placeholders": {}
+  },
+  "developerApi": "Developer API",
+  "@developerApi": {
+    "description": "Settings row under Account, and the page title: the personal access tokens for the read-only developer API",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensExplainer": "Your training log, readable by your own scripts, spreadsheets and AI assistants. A token can show what you logged and change nothing.",
+  "@apiTokensExplainer": {
+    "description": "Tokens page, first paragraph: what a token is for",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensHowTo": "How to use a token",
+  "@apiTokensHowTo": {
+    "description": "Tokens page, a link to the developer docs on the website",
+    "type": "text",
+    "placeholders": {}
+  },
+  "newApiToken": "New token",
+  "@newApiToken": {
+    "description": "Tokens page, the create button; and the create page's title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensAtCapacity": "You can hold {count} active tokens. Revoke one to make room for another.",
+  "@apiTokensAtCapacity": {
+    "description": "Tokens page, in place of the create button when the account holds the maximum of active tokens; also the message when the server refuses one more",
+    "type": "text",
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "apiTokensEmpty": "Nothing minted yet.",
+  "@apiTokensEmpty": {
+    "description": "Tokens page, when the account never minted one",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensLoadFailed": "The list didn't make it here.",
+  "@apiTokensLoadFailed": {
+    "description": "Tokens page, when the list could not be read from the server; a Retry button follows",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensActive": "Active",
+  "@apiTokensActive": {
+    "description": "Tokens page, header over the tokens that still work",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokensPast": "No longer valid",
+  "@apiTokensPast": {
+    "description": "Tokens page, header over the revoked and expired tokens",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenCreatedOn": "Created {date}",
+  "@apiTokenCreatedOn": {
+    "description": "Token row: when it was made; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenExpiresOn": "Expires {date}",
+  "@apiTokenExpiresOn": {
+    "description": "Token row: when it stops working; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenNeverExpires": "Never expires",
+  "@apiTokenNeverExpires": {
+    "description": "Token row: it lives until revoked",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenLastUsedOn": "Last used {date}",
+  "@apiTokenLastUsedOn": {
+    "description": "Token row: last request made with it; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenNeverUsed": "Never used",
+  "@apiTokenNeverUsed": {
+    "description": "Token row: no request was ever made with it",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenRevokedOn": "Revoked {date}",
+  "@apiTokenRevokedOn": {
+    "description": "Token row, past section: when it was revoked; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenExpiredOn": "Expired {date}",
+  "@apiTokenExpiredOn": {
+    "description": "Token row, past section: when it expired; date is already formatted",
+    "type": "text",
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "apiTokenEndsWith": "Ends in {hint}",
+  "@apiTokenEndsWith": {
+    "description": "Token row: the secret's last four characters, the only part ever shown again",
+    "type": "text",
+    "placeholders": {
+      "hint": {}
+    }
+  },
+  "revokeApiToken": "Revoke",
+  "@revokeApiToken": {
+    "description": "Token row: the revoke button's tooltip, and the confirm dialog's destructive action",
+    "type": "text",
+    "placeholders": {}
+  },
+  "revokeApiTokenTitle": "Revoke {name}?",
+  "@revokeApiTokenTitle": {
+    "description": "Revoke confirmation, title; name is the token's name",
+    "type": "text",
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "revokeApiTokenBody": "Whatever uses it stops reading your log on its next request. No undo, but a new token is one tap away.",
+  "@revokeApiTokenBody": {
+    "description": "Revoke confirmation, body",
+    "type": "text",
+    "placeholders": {}
+  },
+  "keepApiToken": "Keep it",
+  "@keepApiToken": {
+    "description": "Revoke confirmation, the way out",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenNameHint": "My sheet, Home Assistant, Claude…",
+  "@apiTokenNameHint": {
+    "description": "Create page, the name field's hint: examples of names",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenExpiry": "Expires",
+  "@apiTokenExpiry": {
+    "description": "Create page, label of the expiry choice",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenExpiryYear": "In a year",
+  "@apiTokenExpiryYear": {
+    "description": "Create page, expiry option: a year from now",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenExpiryNever": "Never",
+  "@apiTokenExpiryNever": {
+    "description": "Create page, expiry option: until revoked",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurpose": "Used by",
+  "@apiTokenPurpose": {
+    "description": "Create page, label of the optional purpose choice",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeHelp": "Optional. It changes nothing; it tells you, and us, what tokens are for.",
+  "@apiTokenPurposeHelp": {
+    "description": "Create page, under the purpose choice: why it is asked",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeScript": "A script",
+  "@apiTokenPurposeScript": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeSpreadsheet": "A spreadsheet",
+  "@apiTokenPurposeSpreadsheet": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeHomeAutomation": "Home automation",
+  "@apiTokenPurposeHomeAutomation": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeAiAssistant": "An AI assistant",
+  "@apiTokenPurposeAiAssistant": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeOther": "Something else",
+  "@apiTokenPurposeOther": {
+    "description": "Purpose option",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenPurposeUnset": "Not saying",
+  "@apiTokenPurposeUnset": {
+    "description": "Purpose option: none chosen",
+    "type": "text",
+    "placeholders": {}
+  },
+  "createApiToken": "Create token",
+  "@createApiToken": {
+    "description": "Create page, the button that mints the token",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenReady": "Here it is",
+  "@apiTokenReady": {
+    "description": "Create page after minting: title over the secret",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenRevealBody": "This is the one time Heart shows it. Copy it into your tool now; from here on you'll only see its last four characters.",
+  "@apiTokenRevealBody": {
+    "description": "Create page after minting: why to copy it now",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenSecretLabel": "Your new token",
+  "@apiTokenSecretLabel": {
+    "description": "Create page after minting: the screen reader's label for the secret text",
+    "type": "text",
+    "placeholders": {}
+  },
+  "copyApiToken": "Copy",
+  "@copyApiToken": {
+    "description": "Create page after minting: copies the secret",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenCopied": "Copied",
+  "@apiTokenCopied": {
+    "description": "Snack after copying the secret",
+    "type": "text",
+    "placeholders": {}
+  },
+  "apiTokenStored": "I've got it",
+  "@apiTokenStored": {
+    "description": "Create page after minting: the way back to the list, once the secret is safe",
+    "type": "text",
+    "placeholders": {}
   }
 }
