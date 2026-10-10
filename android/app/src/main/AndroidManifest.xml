@@ -119,8 +119,8 @@
             <meta-data
                 android:name="com.google.firebase.messaging.default_notification_channel_id"
                 android:value="default_channel_id" />
-            <!-- Long-press the launcher icon: Start a workout, and the
-                 templates (#286). -->
+            <!-- App Actions' "start a workout" (#286). The long-press
+                 shortcuts are dynamic: ShortcutsChannel. -->
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />

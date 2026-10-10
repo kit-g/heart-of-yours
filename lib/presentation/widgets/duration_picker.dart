@@ -81,7 +81,7 @@ Future<int?> _cupertinoDialog(BuildContext context, {int? initialValue, String? 
 
 Future<int?> _defaultDialog(BuildContext context, {int? initialValue, String? subtitle}) {
   final L(:restTimer) = L.of(context);
-  final ThemeData(:textTheme) = Theme.of(context);
+  final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
   // the wheel's index, not seconds: what the wheel reports as it turns, and
   // what Set timer turns back into a duration
@@ -119,20 +119,39 @@ Future<int?> _defaultDialog(BuildContext context, {int? initialValue, String? su
                   ),
                 SizedBox(
                   height: 200,
-                  child: ListWheelScrollView(
-                    itemExtent: 40,
-                    onSelectedItemChanged: (index) {
-                      HapticFeedback.lightImpact();
-                      selected.value = index;
-                    },
-                    controller: _controller(initialValue),
-                    children: List<Widget>.generate(
-                      120,
-                      (index) => _Item(
-                        duration: _duration(index),
-                        textStyle: textTheme.bodyLarge,
+                  // the selected row's band, as the iOS wheel has: without it
+                  // nothing says which of the five rows on show is the pick
+                  child: Stack(
+                    alignment: .center,
+                    children: [
+                      IgnorePointer(
+                        child: Container(
+                          height: 40,
+                          margin: const .symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            // translucent, as iOS's: a band in any surface
+                            // colour vanishes against a dialog of that colour
+                            color: colorScheme.onSurface.withValues(alpha: .08),
+                            borderRadius: const .all(.circular(8)),
+                          ),
+                        ),
                       ),
-                    ),
+                      ListWheelScrollView(
+                        itemExtent: 40,
+                        onSelectedItemChanged: (index) {
+                          HapticFeedback.lightImpact();
+                          selected.value = index;
+                        },
+                        controller: _controller(initialValue),
+                        children: List<Widget>.generate(
+                          120,
+                          (index) => _Item(
+                            duration: _duration(index),
+                            textStyle: textTheme.bodyLarge,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const _CancelButton(),

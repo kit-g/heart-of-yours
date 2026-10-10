@@ -258,7 +258,12 @@ OngoingWorkout? ongoingWorkoutOf(BuildContext context) {
 /// notification's words — so the surface can show both without the app.
 OngoingDone _doneOf(BuildContext context, Workout workout, WorkoutExercise exercise, ExerciseSet set) {
   final l = L.of(context);
-  final following = upNextIn(workout, after: (exercise, set));
+  // what follows the set once it is ticked: never itself, which is what the
+  // search wraps around to when it is the last open set
+  final following = switch (upNextIn(workout, after: (exercise, set))) {
+    (set: ExerciseSet next, exercise: _, number: _) when next.id == set.id => null,
+    final following => following,
+  };
   final next = switch (following) {
     (:WorkoutExercise exercise, set: ExerciseSet set, number: _) => (exercise, set),
     _ => null,

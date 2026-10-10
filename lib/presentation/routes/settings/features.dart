@@ -171,7 +171,7 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
       key: ValueKey('feature-${feature.value}'),
       secondary: Icon(feature.icon),
       title: Text(feature.title(l)),
-      subtitle: Text(feature.subtitle(l)),
+      subtitle: Text(feature.subtitle(l, Theme.of(context).platform)),
       value: on,
       // the lock-screen switch's colors: the accent as a fill, and a
       // hairline track so "off" is still a visible control

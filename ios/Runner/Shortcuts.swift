@@ -249,6 +249,9 @@ enum ShortcutsChannel {
                     UserDefaults.standard.removeObject(forKey: sessionKey)
                 }
                 result(nil)
+            case "setEnabled":
+                // Android's launcher shortcut; iOS's App Shortcuts are in the binary
+                result(nil)
             case "setExercises":
                 guard let list = call.arguments as? [[String: Any]] else {
                     return result(FlutterError(code: "bad_arguments", message: "setExercises needs a list", details: nil))

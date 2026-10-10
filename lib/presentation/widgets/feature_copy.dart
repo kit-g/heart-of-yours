@@ -17,7 +17,9 @@ extension FeatureCopy on Feature {
     };
   }
 
-  String subtitle(L l) {
+  /// What the feature does, in the words of the [platform] it runs on: the
+  /// assistants that drive Shortcuts differ between iOS and Android.
+  String subtitle(L l, TargetPlatform platform) {
     return switch (this) {
       .muscleMap => l.muscleMapSubtitle,
       .watchApp => l.watchAppSubtitle,
@@ -25,7 +27,10 @@ extension FeatureCopy on Feature {
       .keepAwake => l.keepAwakeSubtitle,
       .setStopwatch => l.setStopwatchSubtitle,
       .pauseWorkout => l.workoutPausesSubtitle,
-      .shortcuts => l.shortcutsSubtitle,
+      .shortcuts => switch (platform) {
+        .android => l.shortcutsSubtitleAndroid,
+        _ => l.shortcutsSubtitle,
+      },
     };
   }
 

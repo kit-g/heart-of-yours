@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:heart/core/env/shortcuts.dart';
+import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';
@@ -82,9 +83,13 @@ Future<void> _apply(
         String id => templates.lookup(id),
         null => null,
       };
-      // a template this device does not have: the tab underneath lists the
-      // ones it does
-      if (templateId != null && template == null) return;
+      // a template this device does not have — deleted, say, under a shortcut
+      // pinned to the home screen: the tab underneath lists the ones it does,
+      // and a line says why that is what opened
+      if (templateId != null && template == null) {
+        ScaffoldMessenger.maybeOf(context)?.snack(L.of(context).shortcutTemplateGone);
+        return;
+      }
 
       await startWorkoutOverActive(
         context,
