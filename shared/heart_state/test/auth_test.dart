@@ -9,6 +9,7 @@ import 'package:heart_models/heart_models.dart' show User;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'mocks.mocks.dart';
 import 'test_utils.dart';
@@ -266,6 +267,81 @@ void main() {
       expect(onEnterUid, isNotEmpty);
       expect(onEnterToken, isNotNull);
       verify(account.registerAccount(any)).called(1);
+    });
+  });
+
+  group('Sign in with Apple', () {
+    /// What Apple's sheet hands back. The name comes on the first
+    /// authorization only; every later one has none.
+    void appleAnswers({String? givenName, String? familyName}) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SignInWithApple.channel,
+        (call) async => {
+          'type': 'appleid',
+          'authorizationCode': 'code',
+          'identityToken': 'apple-token',
+          'givenName': givenName,
+          'familyName': familyName,
+          'email': 'muffin@heart.test',
+        },
+      );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+          SignInWithApple.channel,
+          null,
+        ),
+      );
+    }
+
+    testWidgets('the name Apple says once is kept on the account, so no later read registers it nameless', (
+      tester,
+    ) async {
+      appleAnswers(givenName: 'Muffin', familyName: 'Cat');
+      final firebase = MockFirebaseAuth(
+        signedIn: false,
+        mockUser: MockUser(uid: 'apple-1', email: 'muffin@heart.test'),
+      );
+      final registered = <String?>[];
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenAnswer((inv) async {
+        final user = inv.positionalArguments.first as User;
+        registered.add(user.displayName);
+        // the server keeps the name it is sent, null included
+        return user;
+      });
+      final sut = Auth(service: account, firebase: firebase, isWeb: false);
+
+      await tester.runAsync(() async {
+        await sut.loginWithApple();
+        // the user stream's own registration, behind the sign-in's
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      expect(firebase.currentUser?.displayName, 'Muffin Cat');
+      expect(sut.user?.displayName, 'Muffin Cat');
+      expect(registered, isNotEmpty);
+      expect(registered, everyElement('Muffin Cat'));
+      sut.dispose();
+    });
+
+    testWidgets('a later sign-in, which Apple sends without a name, keeps the one on the account', (tester) async {
+      appleAnswers();
+      final firebase = MockFirebaseAuth(
+        signedIn: false,
+        mockUser: MockUser(uid: 'apple-1', email: 'muffin@heart.test', displayName: 'Muffin Cat'),
+      );
+      when(account.isAuthenticated).thenReturn(true);
+      when(account.registerAccount(any)).thenAnswer((inv) async => inv.positionalArguments.first as User);
+      final sut = Auth(service: account, firebase: firebase, isWeb: false);
+
+      await tester.runAsync(() async {
+        await sut.loginWithApple();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      expect(firebase.currentUser?.displayName, 'Muffin Cat');
+      expect(sut.user?.displayName, 'Muffin Cat');
+      sut.dispose();
     });
   });
 

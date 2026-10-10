@@ -429,18 +429,23 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     String? appleEmail,
   }) {
     return _linkOrSignIn(credential).then<void>(
-      (result) {
+      (result) async {
         final (cred, arrival) = result;
-        _adopt(cred.user);
+        // Apple says the name once, on the first authorization, and Firebase
+        // does not keep it: written only to memory, it was gone the moment the
+        // user stream re-read the account — which registered it nameless, and
+        // the server stores the name it is sent, null included. So it goes to
+        // Firebase first, as the email sign-up's does, and every later read
+        // of the account carries it.
+        if ((appleName, cred.user) case (String name, fb.User user) when (user.displayName ?? '').isEmpty) {
+          await user.updateDisplayName(name);
+        }
+        _adopt(_firebase.currentUser ?? cred.user);
         _user = _user?.copyWith(displayName: appleName, email: appleEmail);
         _reportArrival(cred, provider: provider, arrival: arrival);
 
-        return _registerUser(_user).then(
-          (user) {
-            _user = user;
-            notifyListeners();
-          },
-        );
+        _user = await _registerUser(_user);
+        notifyListeners();
       },
     );
   }
