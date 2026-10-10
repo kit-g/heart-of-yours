@@ -278,6 +278,9 @@ class _TokenRow extends StatelessWidget {
 
     return ListTile(
       key: AppKeys.apiTokenRow(token.id),
+      // a three-line tile pins its leading and trailing to the top by
+      // default; the key and the revoke belong level with the name block
+      titleAlignment: .center,
       leading: Icon(onRevoke == null ? Icons.key_off_rounded : Icons.key_rounded),
       title: Text(token.name),
       subtitle: Text(
@@ -426,41 +429,53 @@ class _NewApiTokenPageState extends State<NewApiTokenPage>
     final l = L.of(context);
     final ThemeData(:textTheme) = Theme.of(context);
 
+    // vertical padding on the list, horizontal on each row: the purpose tile
+    // is an ink surface, and inside a padded list its splash stopped a
+    // gutter short of the edges while the ripple ran on underneath
     return ListView(
-      padding: const .all(16),
+      padding: const .symmetric(vertical: 16),
       children: [
-        Text(name, style: textTheme.titleMedium),
+        Padding(
+          padding: const .symmetric(horizontal: 16),
+          child: Text(name, style: textTheme.titleMedium),
+        ),
         const SizedBox(height: 8),
-        TextField(
-          key: AppKeys.apiTokenName,
-          controller: _name,
-          focusNode: _nameFocus,
-          autofocus: true,
-          autocorrect: false,
-          textCapitalization: .sentences,
-          textInputAction: .done,
-          // the server's cap, applied at the keyboard rather than reported
-          // after a round trip
-          inputFormatters: [LengthLimitingTextInputFormatter(ApiToken.maxNameLength)],
-          decoration: InputDecoration(hintText: apiTokenNameHint),
-          selectionControls: context.platformSpecificSelectionControls(),
-          onSubmitted: (_) => _create(context),
+        Padding(
+          padding: const .symmetric(horizontal: 16),
+          child: TextField(
+            key: AppKeys.apiTokenName,
+            controller: _name,
+            focusNode: _nameFocus,
+            autofocus: true,
+            autocorrect: false,
+            textCapitalization: .sentences,
+            textInputAction: .done,
+            // the server's cap, applied at the keyboard rather than reported
+            // after a round trip
+            inputFormatters: [LengthLimitingTextInputFormatter(ApiToken.maxNameLength)],
+            decoration: InputDecoration(hintText: apiTokenNameHint),
+            selectionControls: context.platformSpecificSelectionControls(),
+            onSubmitted: (_) => _create(context),
+          ),
         ),
         const SizedBox(height: 24),
         ValueListenableBuilder<ApiTokenExpiry>(
           valueListenable: _expiry,
           builder: (_, expiry, _) {
-            return FixedLengthSettingPicker<ApiTokenExpiry>(
-              title: apiTokenExpiry,
-              value: expiry,
-              onValueChanged: (picked) {
-                buzz();
-                if (picked != null) _expiry.value = picked;
-              },
-              children: {
-                .year: Text(apiTokenExpiryYear),
-                .never: Text(apiTokenExpiryNever),
-              },
+            return Padding(
+              padding: const .symmetric(horizontal: 16),
+              child: FixedLengthSettingPicker<ApiTokenExpiry>(
+                title: apiTokenExpiry,
+                value: expiry,
+                onValueChanged: (picked) {
+                  buzz();
+                  if (picked != null) _expiry.value = picked;
+                },
+                children: {
+                  .year: Text(apiTokenExpiryYear),
+                  .never: Text(apiTokenExpiryNever),
+                },
+              ),
             );
           },
         ),
@@ -469,7 +484,7 @@ class _NewApiTokenPageState extends State<NewApiTokenPage>
           valueListenable: _purpose,
           builder: (_, purpose, _) {
             return ListTile(
-              contentPadding: .zero,
+              contentPadding: const .symmetric(horizontal: 16),
               title: Text(apiTokenPurpose),
               // the menu hangs off the value, not the row's far-left edge
               trailing: Row(
@@ -485,26 +500,32 @@ class _NewApiTokenPageState extends State<NewApiTokenPage>
             );
           },
         ),
-        Text(apiTokenPurposeHelp, style: textTheme.bodySmall),
+        Padding(
+          padding: const .symmetric(horizontal: 16),
+          child: Text(apiTokenPurposeHelp, style: textTheme.bodySmall),
+        ),
         const SizedBox(height: 24),
-        ValueListenableBuilder<bool>(
-          valueListenable: loader,
-          builder: (_, loading, _) {
-            // live even before there is a name: a tap then only puts the
-            // caret back in the field, and a greyed button is ink the dark
-            // presets cannot carry legibly
-            return switch (loading) {
-              true => const LinearProgressIndicator(),
-              false => PrimaryButton.wide(
-                key: AppKeys.createApiToken,
-                margin: _tallButton,
-                onPressed: () => _create(context),
-                child: Center(
-                  child: Text(createApiToken),
+        Padding(
+          padding: const .symmetric(horizontal: 16),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: loader,
+            builder: (_, loading, _) {
+              // live even before there is a name: a tap then only puts the
+              // caret back in the field, and a greyed button is ink the dark
+              // presets cannot carry legibly
+              return switch (loading) {
+                true => const LinearProgressIndicator(),
+                false => PrimaryButton.wide(
+                  key: AppKeys.createApiToken,
+                  margin: _tallButton,
+                  onPressed: () => _create(context),
+                  child: Center(
+                    child: Text(createApiToken),
+                  ),
                 ),
-              ),
-            };
-          },
+              };
+            },
+          ),
         ),
       ],
     );
