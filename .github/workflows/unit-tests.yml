@@ -183,7 +183,7 @@ jobs:
 
       # the wrapper script is gitignored (Flutter writes it on build), so
       # Gradle itself is set up at the wrapper's pinned version
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '9.8.0'
 
