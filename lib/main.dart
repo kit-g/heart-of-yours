@@ -13,12 +13,14 @@ import 'package:heart/core/env/licenses.dart';
 import 'package:heart/core/env/logging.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/firebase.dart';
+import 'package:heart/core/utils/headers.dart';
 import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart_api/heart_api.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 typedef AppRunner = Future<void> Function({
@@ -81,9 +83,17 @@ Future<void> bootstrap({
   return Future.wait<dynamic>([
     initFirebase(config.env),
     initDb(isWeb: kIsWeb),
+    _appVersion(),
   ]).then<void>(
     (initialized) async {
-      final [_, db] = initialized;
+      final [_, db, version] = initialized;
+
+      // Every request states the build from the very first one; the token
+      // joins it once there is one (heart-of-yours#336). Here, before the tree
+      // exists, because the opening page dials out before startup has read
+      // anything — and a request with no version is what the API's version
+      // gate answers with the upgrade screen.
+      api.authenticate(headers(config: config, appVersion: version as String?, isWeb: kIsWeb));
 
       // After `initFirebase`, which the wait above covers: the transport
       // reaches for `FirebaseAnalytics.instance`.
@@ -110,6 +120,17 @@ Future<void> bootstrap({
       };
     },
   );
+}
+
+/// The running build as the API's version gate reads it, `1.13.0+42`. Null
+/// when the platform will not say: the header is then left out, not invented.
+Future<String?> _appVersion() async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return '${info.version}+${info.buildNumber}';
+  } catch (_) {
+    return null;
+  }
 }
 
 /// The conventional phone/tablet split: 600 logical pixels on the short edge.
