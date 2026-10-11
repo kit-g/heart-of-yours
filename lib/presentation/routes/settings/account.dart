@@ -684,27 +684,57 @@ class _SignInRow extends StatelessWidget {
         ),
         false => null,
       },
-      trailing: switch ((busy, connected, canDisconnect)) {
-        (true, _, _) => const SizedBox.square(
-          dimension: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        (false, false, _) => PrimaryButton.shrunk(
-          key: AppKeys.connectSignIn(provider.id),
-          onPressed: onConnect,
-          child: Text(switch (provider) {
-            .password => setPassword,
-            .google || .apple => connectSignIn,
-          }),
-        ),
-        (false, true, true) => PrimaryButton.shrunk(
-          key: AppKeys.disconnectSignIn(provider.id),
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          onPressed: onDisconnect,
-          child: Text(disconnectSignIn),
-        ),
-        (false, true, false) => null,
-      },
+      // One slot, as wide as the widest button this row can show: moving
+      // between Connect, the spinner, Disconnect and nothing used to resize
+      // the trailing and shift the row's text with every step. Measured in
+      // the style the tile gives its trailing, which is the style the label
+      // renders in.
+      trailing: Builder(
+        builder: (context) {
+          final style = DefaultTextStyle.of(context).style;
+          final scaler = MediaQuery.textScalerOf(context);
+          double widthOf(String label) {
+            final painter = TextPainter(
+              text: TextSpan(text: label, style: style),
+              textDirection: Directionality.of(context),
+              textScaler: scaler,
+              maxLines: 1,
+            )..layout();
+            return painter.width;
+          }
+
+          final labels = [connectSignIn, disconnectSignIn, if (provider == .password) setPassword];
+          final slot = labels.map(widthOf).reduce(math.max) + primaryButtonPadding.horizontal;
+          return ConstrainedBox(
+            constraints: BoxConstraints(minWidth: slot),
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              widthFactor: 1,
+              child: switch ((busy, connected, canDisconnect)) {
+                (true, _, _) => const SizedBox.square(
+                  dimension: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                (false, false, _) => PrimaryButton.shrunk(
+                  key: AppKeys.connectSignIn(provider.id),
+                  onPressed: onConnect,
+                  child: Text(switch (provider) {
+                    .password => setPassword,
+                    .google || .apple => connectSignIn,
+                  }),
+                ),
+                (false, true, true) => PrimaryButton.shrunk(
+                  key: AppKeys.disconnectSignIn(provider.id),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  onPressed: onDisconnect,
+                  child: Text(disconnectSignIn),
+                ),
+                (false, true, false) => const SizedBox.shrink(),
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
