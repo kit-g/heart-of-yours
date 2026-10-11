@@ -673,6 +673,10 @@ void main() {
     cdn = MockCdn();
     harness = const TestAppHarness();
 
+    // the session's token is on the client, so the remote leg opens for the
+    // screens that read the account (see stubStartup)
+    when(api.isAuthenticated).thenReturn(true);
+
     // The history backfill's two reads, answered as "this device is whole" —
     // every screen but the two that are about the row itself re-stubs them.
     when(db.isHistoryBackfilled(any)).thenAnswer((_) async => true);

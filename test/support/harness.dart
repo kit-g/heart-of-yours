@@ -23,6 +23,13 @@ import '../mocks.mocks.dart';
 void stubStartup(MockLocalDatabase db, MockApi api) {
   SharedPreferences.setMockInitialValues(pastOnboarding());
 
+  // the client carries the session's token, which is what opens the remote
+  // leg (RemoteAccess.hasToken). Startup installs it past `_initApp`'s first
+  // await, which a widget test never gets beyond, so the mock says so itself.
+  when(api.isAuthenticated).thenReturn(true);
+  // …so a signed-in launch registers the account, and the server keeps it as sent
+  when(api.registerAccount(any)).thenAnswer((invocation) async => invocation.positionalArguments.single);
+
   when(
     db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
   ).thenAnswer((_) async => WorkoutAggregation.empty());

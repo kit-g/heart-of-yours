@@ -76,7 +76,7 @@ class HeartApp extends StatelessWidget {
         // One gate for every remote leg below; Auth decides, the rest consult.
         // Above them all because each takes it at construction.
         Provider<RemoteAccess>(
-          create: (_) => RemoteAccess(),
+          create: (_) => RemoteAccess(hasToken: () => api.isAuthenticated),
         ),
         ChangeNotifierProvider<AppTheme>(
           create: (_) => AppTheme(),
@@ -734,13 +734,11 @@ Future<void> _initApp(
     final info = AppInfo.of(context);
     final appConfig = AppConfig.of(context);
 
-    /// Completes once the API carries a session token.
+    /// Completes once the API carries the session's token.
     ///
-    /// Held rather than fired and forgotten, because anything that talks to the
-    /// server before it lands gets a 401 and pays for a forced token refresh to
-    /// recover. The goals pull used to be exactly that: kicked from
-    /// `onUserChange`, which runs *before* this, so every launch opened with a
-    /// wasted round trip.
+    /// Awaited before anything below dials out. Until it lands the remote leg
+    /// stays closed ([RemoteAccess.hasToken]), so a sweep started ahead of it
+    /// would not fail, it would quietly skip its server half for the session.
     final authenticated = _initAppInfo(context).then(
       (_) {
         _initApi(
@@ -768,6 +766,7 @@ Future<void> _initApp(
     await Future.wait(
       [
         prefs.init(locale: View.of(context).platformDispatcher.locale),
+        authenticated,
       ],
     );
 
@@ -791,17 +790,13 @@ Future<void> _initApp(
       ..preset = Preset.fromStored(prefs.getBaseColor(userId))
       ..toMode(prefs.themeMode);
 
-    // `onUserChange` has already set the id — it runs before this — so the only
-    // thing left to wait for is the token.
-    authenticated.then<void>(
-      (_) {
-        if (!context.mounted) return;
-        Goals.of(context).init();
-        // the replay needs the token too; it resumes from the ledger, so a
-        // launch mid-run picks up where the last one stopped
-        if (owed && userId != null) upsync.run(userId);
-      },
-    );
+    // `onUserChange` has already set the id — it runs before this — and the
+    // token is on the client. The profile may have started a goals run before
+    // it was; this one then follows it with the server's copy.
+    Goals.of(context).init();
+    // the replay resumes from the ledger, so a launch mid-run picks up where
+    // the last one stopped
+    if (owed && userId != null) upsync.run(userId);
 
     if (!isInitialized) {
       // chart preferences are local-only and independent of the exercise

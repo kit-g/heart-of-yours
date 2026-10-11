@@ -393,4 +393,20 @@ void main() {
       verifyZeroInteractions(remote);
     });
   });
+
+  group('RemoteAccess', () {
+    test('an account stays offline until its token is on the client', () {
+      // Firebase restores the account before the app has its token, and the
+      // opening page dials out in between (heart-of-yours#336)
+      var hasToken = false;
+      final access = RemoteAccess(hasToken: () => hasToken)..account = true;
+      expect(access.allowed, isFalse);
+
+      hasToken = true;
+      expect(access.allowed, isTrue);
+
+      access.account = false;
+      expect(access.allowed, isFalse, reason: 'a token alone is not an account');
+    });
+  });
 }
