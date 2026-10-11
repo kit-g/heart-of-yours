@@ -416,13 +416,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   /// report: it is the only place that knows which of the three branches
   /// below ran, and the caller cannot tell them apart afterwards.
   ///
-  /// [renew] is how a spent credential is replaced when Firebase hands none
-  /// back with its refusal: Apple's sheet again, for a new identity token.
-  /// Google's credential survives a second use, so Google passes nothing.
-  Future<(fb.UserCredential, AccountArrival)> _linkOrSignIn(
-    fb.AuthCredential credential, {
-    Future<fb.AuthCredential> Function()? renew,
-  }) {
+  /// Google's alone since Apple signs in directly ([_signInFromAnonymous]):
+  /// its credential survives a second use, which the refusal below needs.
+  Future<(fb.UserCredential, AccountArrival)> _linkOrSignIn(fb.AuthCredential credential) {
     return _fromAnonymous(() async {
       final anonymous = _firebase.currentUser;
       if (anonymous == null || !anonymous.isAnonymous) {
@@ -444,22 +440,10 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
         // for its own mail — and fails as an ordinary sign-in error
         // everywhere else, which is what the link already did.
         if (e.code case != 'credential-already-in-use' && != 'email-already-in-use') rethrow;
-        // `credential` is spent. An Apple identity token may be presented to
-        // Firebase exactly once — the link above consumed it deciding the
-        // account already existed — so re-sending it is a replay, and
-        // Firebase says so in the least helpful way available:
-        //   [missing-or-invalid-nonce] Duplicate credential received.
-        // which reads like a nonce bug and is really a double-use.
-        //
-        // Firebase returns a fresh, unconsumed credential on this exception
-        // for precisely this handover, so prefer it. It comes with
-        // `credential-already-in-use` and not with `email-already-in-use`,
-        // which is the refusal an Apple ID whose email already has a Heart
-        // account under Google or a password gets — and that one came back
-        // as the duplicate-nonce error on a real phone (HEART-OF-YOURS-DEV-6K).
-        // So when nothing is handed back, the provider that cannot replay
-        // is asked for a new credential; the one that can is replayed.
-        final next = e.credential ?? await renew?.call() ?? credential;
+        // Firebase hands back a credential for this handover with
+        // `credential-already-in-use`; Google's own survives a second use, so
+        // it is the fallback.
+        final next = e.credential ?? credential;
         try {
           return (
             await _firebase.signInWithCredential(next),
@@ -471,6 +455,41 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
           }
           rethrow;
         }
+      }
+    });
+  }
+
+  /// Signs in with [credential] outright, never linking it first — Apple's
+  /// path. An Apple identity token is redeemed by Firebase exactly once, and a
+  /// link that is refused (the Apple ID already has an account, the usual case
+  /// for anyone signing back in) spends it: the sign-in after it then needed
+  /// the sheet a second time, and the credential Firebase hands back for the
+  /// handover failed on a real phone with "accessToken or refreshToken is nil"
+  /// (HEART-OF-YOURS-DEV-6K). One sheet, one sign-in.
+  ///
+  /// From the anonymous session the uid changes even for a new account, and
+  /// the session's store follows it the way a takeover's does ([onLink]); the
+  /// anonymous user is left behind, empty and unreachable.
+  Future<(fb.UserCredential, AccountArrival)> _signInFromAnonymous(fb.AuthCredential credential) {
+    return _fromAnonymous(() async {
+      final fromAnonymous = _firebase.currentUser?.isAnonymous ?? false;
+      try {
+        final signedIn = await _firebase.signInWithCredential(credential);
+        return (
+          signedIn,
+          switch ((fromAnonymous, _isNewAccount(signedIn))) {
+            (false, _) => AccountArrival.direct,
+            (true, true) => AccountArrival.moved,
+            (true, false) => AccountArrival.takeover,
+          },
+        );
+      } on fb.FirebaseAuthException catch (refusal) {
+        // the address has an account under a sign-in Firebase trusts more:
+        // kept, to be connected once the person is in that way
+        if (refusal.code == 'account-exists-with-different-credential') {
+          _pending = (credential: refusal.credential ?? credential, email: refusal.email);
+        }
+        rethrow;
       }
     });
   }
@@ -550,17 +569,14 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
   Future<void> loginWithApple() async {
     analytics?.signupStarted(provider: .apple, fromAnonymous: _isAnonymous);
     try {
-      final first = await _askApple();
+      final apple = await _askApple();
       return await _loginWithCredential(
-        first.token,
+        apple.token,
         provider: .apple,
-        appleEmail: first.email,
-        appleName: first.name,
-        // an Apple identity token is redeemed once; when the link spends it
-        // deciding the account exists and Firebase hands nothing back, the
-        // sign-in needs a new one — the sheet again, which for an Apple ID
-        // already authorized is a Face ID and no more
-        renew: () async => (await _askApple()).token,
+        appleEmail: apple.email,
+        appleName: apple.name,
+        // a token Firebase redeems once is never spent on a link first
+        signIn: _signInFromAnonymous,
       );
     } on SignInWithAppleCredentialsException catch (e) {
       if (e.message.contains('popup_closed_by_user')) {
@@ -585,9 +601,9 @@ class Auth with ChangeNotifier implements SignOutStateSentry, SettingsAccount {
     required AuthProvider provider,
     String? appleName,
     String? appleEmail,
-    Future<fb.AuthCredential> Function()? renew,
+    Future<(fb.UserCredential, AccountArrival)> Function(fb.AuthCredential)? signIn,
   }) {
-    return _linkOrSignIn(credential, renew: renew).then<void>((result) async {
+    return (signIn ?? _linkOrSignIn)(credential).then<void>((result) async {
       final (cred, arrival) = result;
       // Apple says the name once, on the first authorization, and Firebase
       // does not keep it: written only to memory, it was gone the moment the

@@ -65,14 +65,9 @@ class _TakenCredential extends MockUser {
 }
 
 /// The same refusal as [_TakenCredential], but carrying the replacement
-/// credential the way Firebase really does.
-///
-/// This is the Apple case. An Apple identity token may be redeemed once, so
-/// the token the link just spent cannot be sent again — doing so is a replay
-/// and comes back as `[missing-or-invalid-nonce] Duplicate credential
-/// received`, which reads like a nonce bug and is a double-use. Firebase hands
-/// back a fresh credential on the exception for exactly this handover, and the
-/// sign-in has to use *that* one.
+/// credential the way Firebase does with `credential-already-in-use`, which
+/// the sign-in after the refusal prefers. Apple no longer comes this way: its
+/// token goes straight to a sign-in (see [_AppleFirebase]).
 // ignore: must_be_immutable — see _LinkableAnonymous
 class _TakenCredentialWithFresh extends MockUser {
   final MockFirebaseAuth auth;
@@ -182,6 +177,50 @@ class _OtherProviderFirebase extends _Firebase {
     mockUser = owner;
     return super.signInWithEmailAndPassword(email: email, password: password);
   }
+}
+
+/// An anonymous session that must never be linked: Apple's token goes
+/// straight to a sign-in, and a link would spend it.
+// ignore: must_be_immutable — see _LinkableAnonymous
+class _NeverLinked extends MockUser {
+  new() : super(isAnonymous: true, uid: 'anon-1');
+
+  @override
+  Future<fb.UserCredential> linkWithCredential(fb.AuthCredential credential) {
+    fail('an Apple token was spent on a link');
+  }
+}
+
+/// A Firebase whose provider sign-in lands on an Apple account: an existing
+/// one, or one the sign-in just created.
+class _AppleFirebase extends _Firebase {
+  final bool newAccount;
+
+  new({this.newAccount = false});
+
+  @override
+  Future<fb.UserCredential> signInWithCredential(fb.AuthCredential? credential) async {
+    mockUser = MockUser(uid: newAccount ? 'apple-new' : 'acct-1', email: 'apple@test');
+    return _Arrived(await super.signInWithCredential(credential), isNewUser: newAccount);
+  }
+}
+
+/// A sign-in's result that says whether it created the account, as
+/// Firebase's does and the mock's does not.
+class _Arrived implements fb.UserCredential {
+  final fb.UserCredential _inner;
+  final bool isNewUser;
+
+  new(this._inner, {required this.isNewUser});
+
+  @override
+  fb.User? get user => _inner.user;
+
+  @override
+  fb.AuthCredential? get credential => _inner.credential;
+
+  @override
+  fb.AdditionalUserInfo? get additionalUserInfo => fb.AdditionalUserInfo(isNewUser: isNewUser);
 }
 
 /// A user whose link attempt fails for any other reason — the SDK's own
@@ -752,17 +791,36 @@ void main() {
       );
     });
 
-    test('an existing Apple account with nothing handed back is asked for a new token, not replayed', () async {
-      final sut = await build((auth) => _TakenCredential(auth, code: 'email-already-in-use'));
+    test('Apple is one sheet: its token goes straight to a sign-in, never spent on a link', () async {
+      // an Apple token is redeemed once; linking first spent it on every
+      // returning user, and the sheet came twice
+      final sut = await build((_) => _NeverLinked(), firebaseOf: _AppleFirebase.new);
 
       await sut.loginWithApple();
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
+      expect(apple.shown, 1);
+      expect(
+        firebase.redeemed.single,
+        isA<fb.OAuthCredential>().having((c) => c.idToken, 'idToken', 'apple-token-1'),
+      );
       expect(sut.user?.id, 'acct-1');
-      expect(apple.shown, 2, reason: 'the sheet once more, for a token the link did not spend');
-      final redeemed = firebase.redeemed.last;
-      expect(redeemed, isA<fb.OAuthCredential>().having((c) => c.idToken, 'idToken', 'apple-token-2'));
+      expect(sut.isAnonymous, isFalse);
+      // the session's store follows the account as a takeover's does
+      expect(events, ['link anon-1→acct-1 allowed=false', 'user acct-1', 'enter acct-1']);
       expect(reported.arrivals, ['takeover']);
+    });
+
+    test('a new Apple account from the anonymous session moves the store to its uid', () async {
+      final sut = await build((_) => _NeverLinked(), firebaseOf: () => _AppleFirebase(newAccount: true));
+
+      await sut.loginWithApple();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(apple.shown, 1);
+      expect(sut.user?.id, 'apple-new');
+      expect(events, ['link anon-1→apple-new allowed=false', 'user apple-new', 'enter apple-new']);
+      expect(reported.arrivals, ['moved'], reason: 'new, but the uid changed: not a link');
     });
 
     test('a Google account is not asked again: its credential survives a second use', () async {
@@ -788,7 +846,7 @@ void main() {
         throwsA(isA<AuthException>().having((e) => e.reason, 'reason', AuthExceptionReason.accountUnderOtherProvider)),
       );
 
-      expect(apple.shown, 2);
+      expect(apple.shown, 1);
       expect(sut.isAnonymous, isTrue, reason: 'the leg is put back');
       expect(remote.replaying, isFalse);
       expect(errors, hasLength(1), reason: 'still reported: it is worth knowing how often');
