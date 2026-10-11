@@ -49,6 +49,12 @@ enum AccountArrival {
   /// copy of the same rows.
   takeover('takeover'),
 
+  /// A new account, signed into directly from the anonymous session rather
+  /// than linked onto it — Apple, whose token Firebase redeems only once. The
+  /// uid changed, so `Upsync.claim` rekeyed the rows as for a [takeover], but
+  /// the account is new and the server has none of them yet.
+  moved('moved'),
+
   /// No anonymous session stood behind the sign-in — the web's gate, or an app
   /// that was signed out. Nothing to carry, which is a third answer and not a
   /// quiet [takeover].
