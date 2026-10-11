@@ -176,11 +176,27 @@ class Goals with ChangeNotifier, Iterable<Goal> implements SignOutStateSentry {
   /// auth settles — so concurrent callers share one run. Without that they each
   /// reach [pushPending] with the same unsynced row and the server mints a goal
   /// for both, which is how duplicates appeared.
-  Future<void> init() {
-    return _initializing ??= _init().whenComplete(() => _initializing = null);
+  ///
+  /// A caller that joins a run begun while the remote leg was still closed —
+  /// the profile's first layout beats the token on a cold start — runs once
+  /// more after it: the run it joined read the device alone, and nothing else
+  /// pulls this session.
+  Future<void> init() async {
+    final online = _remote.allowed;
+    await _run();
+    if (online && !_runWasOnline) await _run();
+  }
+
+  Future<void> _run() {
+    if (_initializing case final running?) return running;
+    _runWasOnline = _remote.allowed;
+    return _initializing = _init().whenComplete(() => _initializing = null);
   }
 
   Future<void>? _initializing;
+
+  /// Whether the latest run began with the remote leg open.
+  bool _runWasOnline = false;
 
   /// The signed-in user's own goals. Goals are read by *whose* they are now —
   /// the server lets one account see another's — and this app only ever asks

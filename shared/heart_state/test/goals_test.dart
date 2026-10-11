@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/src/goals.dart';
+import 'package:heart_state/src/remote.dart';
 
 void main() {
   late _FakeLocal local;
@@ -76,6 +77,38 @@ void main() {
 
       await sut.init();
       expect(remote.reads, 3, reason: 'a pull that succeeded is never repeated');
+    });
+
+    test('a caller that joins a run begun before the token landed still pulls', () async {
+      // a cold start: the profile's first layout starts a run while the token
+      // is a round trip away (heart-of-yours#336), and startup's own call,
+      // made once it lands, arrives while that run is still going
+      var hasToken = false;
+      final hold = local.holdUpdates = Completer<void>();
+      local.goals.add(
+        Goal(
+          id: 'goal-1',
+          metric: .topSetWeight,
+          exerciseId: 'exercise-1',
+          stages: [GoalStage(id: 'goal-1s', target: 100, achievedAt: DateTime.utc(2026, 8, 1))],
+        ),
+      );
+      sut = Goals(
+        service: local,
+        remoteService: remote,
+        remote: RemoteAccess(hasToken: () => hasToken),
+      )..userId = userId;
+
+      final opening = sut.init();
+      await pumpEventQueue();
+      expect(remote.reads, 0, reason: 'no request leaves without the token');
+
+      hasToken = true;
+      final startup = sut.init();
+      hold.complete();
+      await Future.wait([opening, startup]);
+
+      expect(remote.reads, 2, reason: 'one pull: both slices');
     });
   });
 
@@ -727,8 +760,13 @@ class _FakeLocal implements LocalGoalService {
     return stamped;
   }
 
+  /// Holds every local update until completed: a run kept in flight past
+  /// its pull.
+  Completer<void>? holdUpdates;
+
   @override
   Future<Goal> updateGoal(String goalId, Goal goal, String userId) async {
+    await holdUpdates?.future;
     return goal.copyWith(id: goalId);
   }
 
