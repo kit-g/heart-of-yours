@@ -119,7 +119,7 @@ dependencies {
 
     testImplementation 'junit:junit:4.13.2'
     // org.json on the JVM, for the plans' tests; on the device it is the platform's
-    testImplementation 'org.json:json:20240303'
+    testImplementation 'org.json:json:20260814'
     // the functions called through the platform, on an Android 16 emulator
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test:runner:1.3.0' // the version a plugin pins on the main classpath
