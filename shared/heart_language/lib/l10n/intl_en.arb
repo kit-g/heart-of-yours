@@ -2934,6 +2934,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "importExplainerHeart": "From another account or another phone? Bring your Heart history along.\n\nIn Heart, go to Settings → Export my data → Export as CSV. Save the file, then pick it here. Workouts and their sets come over; workout names, notes and set types stay behind.",
+  "@importExplainerHeart": {
+    "description": "Import page, explains where Heart's own CSV export comes from and what it carries",
+    "type": "text",
+    "placeholders": {}
+  },
   "importSourceTitle": "Exported from",
   "@importSourceTitle": {
     "description": "Import page, title above the Strong/Hevy switch: which app the export came from",
@@ -2979,6 +2985,12 @@
   "importFailedBodyHevy": "It couldn't be read as a Hevy export. Pick the CSV file from Hevy's Export Data and try again.",
   "@importFailedBodyHevy": {
     "description": "Import page, body of the rejected-file error state when the file was sent as a Hevy export",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedBodyHeart": "It couldn't be read as a Heart export. Pick the CSV file from Export my data and try again.",
+  "@importFailedBodyHeart": {
+    "description": "Import page, body of the rejected-file error state when the file was sent as Heart's own CSV export",
     "type": "text",
     "placeholders": {}
   },

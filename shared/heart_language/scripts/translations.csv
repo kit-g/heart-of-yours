@@ -913,3 +913,15 @@ widgetLastQuarter,"A date range of the training widget, and its caption under th
 widgetKg,The training widget's weight unit after a volume total (617 kg). Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml,kg,kg,кг,kg,kg
 widgetLbs,The training widget's weight unit after a volume total (617 lbs). Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml,lbs,lbs,фнт,lbs,lb
 widgetDone,"Button closing the training widget's settings screen on Android, keeping what was picked. One short word. Generated into android res/values*/strings_widgets.xml",Done,Done,Готово,Hecho,Terminé
+importExplainerHeart,"Import page, explains where Heart's own CSV export comes from and what it carries","From another account or another phone? Bring your Heart history along.
+
+In Heart, go to Settings → Export my data → Export as CSV. Save the file, then pick it here. Workouts and their sets come over; workout names, notes and set types stay behind.","From another account or another phone? Bring your Heart history along.
+
+In Heart, go to Settings → Export my data → Export as CSV. Save the file, then pick it here. Workouts and their sets come over; workout names, notes and set types stay behind.","С другого аккаунта или телефона? Забирайте историю Heart с собой.
+
+В Heart откройте Настройки → Экспорт моих данных → Экспорт в CSV. Сохраните файл, а затем выберите его здесь. Тренировки и подходы перенесутся; названия тренировок, заметки и типы подходов — нет.","¿Desde otra cuenta u otro teléfono? Trae tu historial de Heart contigo.
+
+En Heart, ve a Ajustes → Exportar mis datos → Exportar como CSV. Guarda el archivo y luego elígelo aquí. Llegan los entrenamientos y sus series; los nombres de los entrenamientos, las notas y los tipos de serie se quedan fuera.","Depuis un autre compte ou un autre téléphone ? Emportez votre historique Heart avec vous.
+
+Dans Heart, allez dans Paramètres → Exporter mes données → Exporter en CSV. Enregistrez le fichier, puis choisissez-le ici. Les séances et leurs séries arrivent ; les noms des séances, les notes et les types de série restent de côté."
+importFailedBodyHeart,"Import page, body of the rejected-file error state when the file was sent as Heart's own CSV export",It couldn't be read as a Heart export. Pick the CSV file from Export my data and try again.,It couldn't be read as a Heart export. Pick the CSV file from Export my data and try again.,Не получилось прочитать его как экспорт Heart. Выберите CSV-файл из «Экспорт моих данных» и попробуйте ещё раз.,No se pudo leer como una exportación de Heart. Elige el archivo CSV de Exportar mis datos e inténtalo de nuevo.,Impossible de le lire comme un export Heart. Choisissez le fichier CSV d’Exporter mes données et réessayez.
