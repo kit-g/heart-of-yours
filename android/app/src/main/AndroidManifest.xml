@@ -99,6 +99,28 @@
                 <action android:name="android.app.appfunctions.AppFunctionService" />
             </intent-filter>
         </service>
+        <!-- The training widget on the Home Screen (#161) and its settings. -->
+        <receiver
+            android:name=".TrainingWidget"
+            android:exported="false"
+            android:label="@string/widget_training_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/training_widget_info" />
+        </receiver>
+        <activity
+            android:name=".TrainingWidgetSettings"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/WidgetSettingsTheme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"

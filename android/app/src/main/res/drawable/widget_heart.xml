@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Heart's mark on the training widget (#161), outlined: the same curves as
+     the launcher icon and ic_stat_heart.xml, in their own 64-unit space. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:pathData="M32,13.42 C10.07,-8.51 -22.82,28.04 32,57.27 C86.82,28.04 53.93,-8.51 32,13.42 Z"
+        android:strokeWidth="5"
+        android:strokeColor="@color/widget_text" />
+</vector>

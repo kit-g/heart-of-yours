@@ -6,6 +6,10 @@ import WidgetKit
 struct OngoingWorkoutBundle: WidgetBundle {
     var body: some Widget {
         OngoingWorkoutLiveActivity()
+        // the Home Screen's (#161): its edit sheet is an App Intent's
+        if #available(iOS 17, *) {
+            TrainingWidget()
+        }
     }
 }
 

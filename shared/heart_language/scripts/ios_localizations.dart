@@ -195,3 +195,29 @@ String stringCatalog(Map<String, Map<String, dynamic>> translations, List<String
   };
   return '${const JsonEncoder.withIndent('  ').convert(catalog)}\n';
 }
+
+/// The training widget's copy (#161), as the keys of the English strings the
+/// Swift source uses: its name and description in the widget gallery, the
+/// edit sheet's settings and their choices — which double as the widget's
+/// heading and caption — and the weight unit after a volume total.
+const widgetCatalogKeys = [
+  'widgetName',
+  'widgetDescription',
+  'widgetDataType',
+  'widgetDateRange',
+  'widgetVolume',
+  'widgetWorkouts',
+  'widgetDuration',
+  'widgetSets',
+  'widgetReps',
+  'widgetLastWeek',
+  'widgetLastQuarter',
+  'widgetKg',
+  'widgetLbs',
+];
+
+/// Writes the widget extension's catalog beside its Info.plist: the
+/// extension is its own bundle, and reads only its own.
+void writeIosWidgetCatalog(Map<String, Map<String, dynamic>> translations, Directory extension) {
+  File('${extension.path}/Localizable.xcstrings').writeAsStringSync(stringCatalog(translations, widgetCatalogKeys));
+}

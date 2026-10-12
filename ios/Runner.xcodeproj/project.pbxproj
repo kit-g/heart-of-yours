@@ -62,6 +62,12 @@
 		F551872CB324653080A0F356 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3C40913D963F97A8F864DDB /* ActivityKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		F95532206C0282CE73074885 /* WatchStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA46C60E9E57C24D765D3DEC /* WatchStateTests.swift */; };
 		F9F0C754A7939666F8BB1D3B /* WorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD57D645F6830CD033192B34 /* WorkoutView.swift */; };
+		610000000000000000000011 /* TrainingSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000001 /* TrainingSnapshot.swift */; };
+		610000000000000000000012 /* TrainingSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000001 /* TrainingSnapshot.swift */; };
+		610000000000000000000013 /* TrainingWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000002 /* TrainingWidget.swift */; };
+		610000000000000000000014 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000003 /* Localizable.xcstrings */; };
+		610000000000000000000015 /* HomeWidgetsChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000005 /* HomeWidgetsChannel.swift */; };
+		610000000000000000000016 /* TrainingSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000006 /* TrainingSnapshotTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -229,6 +235,12 @@
 		F89929DA70B04D84A50B22D8 /* WatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F9EDB7416C00AE0CB904F8DA /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FDF3F4CD8F30591F05A41007 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		610000000000000000000001 /* TrainingSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingSnapshot.swift; sourceTree = "<group>"; };
+		610000000000000000000002 /* TrainingWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingWidget.swift; sourceTree = "<group>"; };
+		610000000000000000000003 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		610000000000000000000004 /* OngoingWorkout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OngoingWorkout.entitlements; sourceTree = "<group>"; };
+		610000000000000000000005 /* HomeWidgetsChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWidgetsChannel.swift; sourceTree = "<group>"; };
+		610000000000000000000006 /* TrainingSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingSnapshotTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -310,6 +322,7 @@
 				5F0000000000000000000004 /* LogSetVoiceTests.swift */,
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 				600000000000000000000003 /* QuestionsTests.swift */,
+				610000000000000000000006 /* TrainingSnapshotTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -418,6 +431,7 @@
 				5C0000000000000000000001 /* Shortcuts.swift */,
 				5C0000000000000000000003 /* AppShortcuts.strings */,
 				5C0000000000000000000005 /* Localizable.xcstrings */,
+				610000000000000000000005 /* HomeWidgetsChannel.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -440,6 +454,10 @@
 				733AF7004A0E5D7C29F40C21 /* OngoingWorkoutAttributes.swift */,
 				5D0000000000000000000001 /* OngoingWorkoutIntents.swift */,
 				D104CFDB124801058D590F5E /* OngoingWorkoutLiveActivity.swift */,
+				610000000000000000000001 /* TrainingSnapshot.swift */,
+				610000000000000000000002 /* TrainingWidget.swift */,
+				610000000000000000000003 /* Localizable.xcstrings */,
+				610000000000000000000004 /* OngoingWorkout.entitlements */,
 				2A0C5B8E54CEBCC76AF5841F /* Info.plist */,
 			);
 			name = OngoingWorkout;
@@ -720,6 +738,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				610000000000000000000014 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -798,6 +817,7 @@
 				5F0000000000000000000014 /* LogSetVoiceTests.swift in Sources */,
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
 				600000000000000000000013 /* QuestionsTests.swift in Sources */,
+				610000000000000000000016 /* TrainingSnapshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -816,6 +836,8 @@
 				A572FE5611AD14DA7EBFFAE2 /* OngoingWorkoutAttributes.swift in Sources */,
 				5D0000000000000000000002 /* OngoingWorkoutIntents.swift in Sources */,
 				DAFD43D3D3BBD91C867B2544 /* OngoingWorkoutLiveActivity.swift in Sources */,
+				610000000000000000000011 /* TrainingSnapshot.swift in Sources */,
+				610000000000000000000013 /* TrainingWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -828,6 +850,8 @@
 				DA2FE7023D59B64576DB9856 /* OngoingWorkoutAttributes.swift in Sources */,
 				5D0000000000000000000003 /* OngoingWorkoutIntents.swift in Sources */,
 				72D04C271B451DC07C15ADEB /* OngoingWorkoutChannel.swift in Sources */,
+				610000000000000000000012 /* TrainingSnapshot.swift in Sources */,
+				610000000000000000000015 /* HomeWidgetsChannel.swift in Sources */,
 				B74ADED1ADF65E7B22533F18 /* WatchChannel.swift in Sources */,
 				5E0000000000000000000014 /* CommandQueue.swift in Sources */,
 				5F0000000000000000000011 /* RestVoice.swift in Sources */,
@@ -1843,6 +1867,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2000,6 +2026,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2113,6 +2141,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2417,6 +2447,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2496,6 +2528,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2639,6 +2673,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2768,6 +2804,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.dev.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2797,6 +2835,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				CODE_SIGN_ENTITLEMENTS = OngoingWorkout/OngoingWorkout.entitlements;
+				HOST_BUNDLE_IDENTIFIER = "me.heart-of.ios";
 				PRODUCT_BUNDLE_IDENTIFIER = "me.heart-of.ios.OngoingWorkout";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

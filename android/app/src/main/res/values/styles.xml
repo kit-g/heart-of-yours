@@ -19,4 +19,10 @@
     </style>
     <style name="Ucrop.CropTheme" parent="Theme.AppCompat.Light.NoActionBar"/>
 
+    <!-- The training widget's settings (#161): a dialog over the Home Screen. -->
+    <style name="WidgetSettingsTheme" parent="@android:style/Theme.DeviceDefault.Light.Dialog.NoActionBar">
+        <!-- a dialog sizes to its content, which wrapped every choice mid-word -->
+        <item name="android:windowMinWidthMinor">90%</item>
+        <item name="android:windowMinWidthMajor">50%</item>
+    </style>
 </resources>

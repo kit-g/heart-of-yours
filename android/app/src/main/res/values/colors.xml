@@ -4,4 +4,8 @@
          the first frame without a flash of a different colour. -->
     <color name="splash_background">#FFFFFF</color>
     <color name="splash_mark">#1A1815</color>
+    <!-- The training widget (#161): a card in the system's own light and dark. -->
+    <color name="widget_background">#FFFFFF</color>
+    <color name="widget_text">#1A1815</color>
+    <color name="widget_secondary">#8A8780</color>
 </resources>
