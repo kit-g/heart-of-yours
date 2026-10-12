@@ -41,5 +41,6 @@ jobs:
       secrets_bucket: "922419543441-ca-central-1-static"
       # Closed testing
       track: "alpha"
-      # until the app is verified
-      status: "draft"
+      # Live for testers on the tag. Draft was forced while the app was
+      # unpublished (Play takes only drafts then); 1.13.0 published the track.
+      status: "completed"
