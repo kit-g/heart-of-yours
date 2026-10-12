@@ -30,13 +30,22 @@ apply=0
 [[ "${1:-}" == "--apply" || "${APPLY:-0}" == 1 ]] && apply=1
 only="${WORKTREE:-}"
 
-HERE="$(cd "$(dirname "$0")/.." && pwd)"
+# the main checkout, even when this copy runs from inside a worktree: the
+# worktree is what gets removed, and git cannot run from a deleted directory
+HERE="$(dirname "$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir)")"
 REPOS=("$HERE" "$HOME/mine/heart-api")
 CANONICAL_SIMS=(agent-iphone agent-ipad)
 
 say() { printf '%8s  %s\n' "$1" "$2"; }
 size() { du -sh "$1" 2>/dev/null | cut -f1; }
 act() { if [[ $apply == 1 ]]; then "$@"; fi; }
+
+# a branch is merged by its PR (a squash leaves it off main) or as an ancestor
+# of origin/main
+merged() {
+  (cd "$1" && gh pr list --head "$2" --state merged --json number -q 'length' 2>/dev/null | grep -qv '^0$') ||
+    git -C "$1" merge-base --is-ancestor "$2" origin/main 2>/dev/null
+}
 
 free_before=$(df -k / | tail -1 | awk '{print $4}')
 [[ $apply == 1 ]] && echo "reclaiming" || echo "dry run (APPLY=1 or --apply to remove)"
@@ -55,19 +64,21 @@ for repo in "${REPOS[@]}"; do
     [[ -n "$only" && "$br" != "$only" ]] && continue
     [[ "$locked" == 1 ]] && continue
     [[ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]] && continue
-    merged=0
-    if (cd "$repo" && gh pr list --head "$br" --state merged --json number -q 'length' 2>/dev/null | grep -qv '^0$'); then
-      merged=1
-    elif git -C "$repo" merge-base --is-ancestor "$br" origin/main 2>/dev/null; then
-      merged=1
-    fi
-    [[ $merged == 1 ]] || continue
+    merged "$repo" "$br" || continue
     say "$(size "$wt")" "$wt ($br)"
     act git -C "$repo" worktree remove "$wt" && act git -C "$repo" branch -D "$br"
   done
 done
 
 if [[ -n "$only" ]]; then
+  # a merged branch whose worktree is already gone: what an interrupted
+  # cleanup leaves behind
+  if git -C "$HERE" show-ref -q --verify "refs/heads/$only" &&
+    ! git -C "$HERE" worktree list --porcelain | grep -qx "branch refs/heads/$only" &&
+    merged "$HERE" "$only"; then
+    say "branch" "$only"
+    act git -C "$HERE" branch -D "$only"
+  fi
   echo "== free: $(($(df -k / | tail -1 | awk '{print $4}') / 1048576)) GB"
   exit 0
 fi
