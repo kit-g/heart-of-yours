@@ -4,11 +4,17 @@
 #
 #   scripts/reclaim.sh            # or: make reclaim
 #   scripts/reclaim.sh --apply    # or: make reclaim APPLY=1
+#   WORKTREE=<branch> APPLY=1 scripts/reclaim.sh   # or: make reclaim APPLY=1 WORKTREE=<branch>
+#
+# WORKTREE narrows it to one finished tree and nothing else: how a session
+# puts its own worktree away once the PR has merged, without the user's hand.
 #
 # What it touches, all of it rebuildable or finished:
 # - worktrees under .claude/worktrees (this repo and heart-api) whose branch
 #   is merged, with a clean tree and no lock: an agent's live work is never
-#   either of the last two;
+#   either of the last two. The branch goes with it: merged is checked here,
+#   against the PR or origin/main, because `git branch -d` asks the local main,
+#   which is usually behind;
 # - agent simulators other than the canonical agent-iphone and agent-ipad
 #   (agents/host-agent creates those two and nothing else), and duplicates of
 #   those names;
@@ -22,6 +28,7 @@ set -uo pipefail
 
 apply=0
 [[ "${1:-}" == "--apply" || "${APPLY:-0}" == 1 ]] && apply=1
+only="${WORKTREE:-}"
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPOS=("$HERE" "$HOME/mine/heart-api")
@@ -45,6 +52,7 @@ for repo in "${REPOS[@]}"; do
     /^$/         { if (wt ~ /\.claude\/worktrees\//) print wt, br, locked }
     END          { if (wt ~ /\.claude\/worktrees\//) print wt, br, locked }
   ' | sort -u | while read -r wt br locked; do
+    [[ -n "$only" && "$br" != "$only" ]] && continue
     [[ "$locked" == 1 ]] && continue
     [[ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]] && continue
     merged=0
@@ -55,9 +63,14 @@ for repo in "${REPOS[@]}"; do
     fi
     [[ $merged == 1 ]] || continue
     say "$(size "$wt")" "$wt ($br)"
-    act git -C "$repo" worktree remove "$wt"
+    act git -C "$repo" worktree remove "$wt" && act git -C "$repo" branch -D "$br"
   done
 done
+
+if [[ -n "$only" ]]; then
+  echo "== free: $(($(df -k / | tail -1 | awk '{print $4}') / 1048576)) GB"
+  exit 0
+fi
 
 echo "== stray agent simulators"
 seen=" "
