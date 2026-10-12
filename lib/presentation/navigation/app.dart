@@ -304,6 +304,12 @@ class HeartApp extends StatelessWidget {
                 if (from != to) await preferences.rekeyUser(from, to);
               },
               onUserChange: (user) {
+                // A session ended or changed hands: its token goes before
+                // anything can dial out as the next one, and the remote leg
+                // stays closed until that one's own token lands (#363). The
+                // same uid re-reported — a token refresh, a profile edit —
+                // keeps it.
+                if (user?.id != current) api.unauthenticate();
                 router.refresh();
                 // One uid replacing another under a running app — an account
                 // signed into from an anonymous session. A sign-out clears the
