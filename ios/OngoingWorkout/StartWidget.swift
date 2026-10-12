@@ -58,10 +58,6 @@ struct StartChoiceQuery: EntityQuery {
     func suggestedEntities() async throws -> [StartChoice] {
         all
     }
-
-    func defaultResult() async -> StartChoice? {
-        all.first
-    }
 }
 
 @available(iOS 17, *)
@@ -77,7 +73,8 @@ struct StartWidgetIntent: WidgetConfigurationIntent {
 struct StartEntry: TimelineEntry {
     let date: Date
     let snapshot: StartSnapshot
-    /// The small widget's pick; nil, the first template.
+    /// The small widget's pick; nil until the user picks, which starts the
+    /// first template.
     let choice: StartChoice?
     /// `Color.toARGB32()` of the theme's accent, from the training snapshot;
     /// nil before the app has published one.
@@ -158,10 +155,13 @@ private struct StartView: View {
                 .font(.headline)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
-            Text("Start")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            // a template's name says what; the caption says it starts
+            if template != nil {
+                Text("Start")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
         }
         .widgetURL(entry.snapshot.link(template: template?.id))
     }
