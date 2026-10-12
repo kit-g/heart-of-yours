@@ -108,6 +108,16 @@ class Api
     };
   }
 
+  /// Drops the session's token and keeps every other header.
+  ///
+  /// For the moment a session ends or changes hands: the token belongs to the
+  /// account that signed in, and until the next one's lands, nothing should
+  /// leave as that account (heart-of-yours#363). [isAuthenticated] reads
+  /// false from here until then.
+  void unauthenticate() {
+    instance.defaultHeaders?.remove('Authorization');
+  }
+
   /// Re-states what language the user speaks, mid-session.
   ///
   /// `Accept-Language` is set on every request via [defaultHeaders], built

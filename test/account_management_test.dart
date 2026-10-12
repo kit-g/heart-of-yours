@@ -134,6 +134,20 @@ void main() {
     expect(find.text('?'), findsNothing);
   });
 
+  testWidgets('a session that ends takes its token with it', (tester) async {
+    // the next account's opening page must not dial out as this one (#363)
+    final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
+    await harness.pumpHeartApp(tester, db: db, api: api, cdn: cdn, firebaseAuth: firebase, settle: false);
+    await tester.pumpTimes();
+    // the restored account arriving is a change of hands too: from nobody
+    verify(api.unauthenticate()).called(1);
+
+    await firebase.signOut();
+    await tester.pumpTimes();
+
+    verify(api.unauthenticate()).called(greaterThanOrEqualTo(1));
+  });
+
   group('reset password', () {
     testWidgets('sends the reset link to the signed-in email on confirmation', (tester) async {
       final firebase = MockFirebaseAuth(mockUser: _passwordAccount(), signedIn: true);
