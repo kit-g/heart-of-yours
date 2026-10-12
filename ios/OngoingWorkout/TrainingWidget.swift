@@ -25,7 +25,8 @@ struct TrainingWidget: Widget {
         }
         .configurationDisplayName("Training")
         .description("Your volume, workouts, time, sets or reps over the last 7 days or 3 months.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        // the Lock Screen's and StandBy's too (#365)
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryInline, .accessoryCircular, .accessoryRectangular])
     }
 }
 
@@ -41,6 +42,17 @@ enum TrainingMetricOption: String, AppEnum {
         .sets: "Sets",
         .reps: "Reps",
     ]
+
+    /// What a Lock Screen circle (#365) wears over its number.
+    var symbol: String {
+        switch self {
+        case .volume: "dumbbell"
+        case .workouts: "figure.strengthtraining.traditional"
+        case .duration: "clock"
+        case .sets: "square.stack"
+        case .reps: "arrow.triangle.2.circlepath"
+        }
+    }
 
     var metric: TrainingMetric {
         switch self {
@@ -67,6 +79,14 @@ enum TrainingRangeOption: String, AppEnum {
         switch self {
         case .week: .week
         case .quarter: .quarter
+        }
+    }
+
+    /// The range where there's no room for "Last" (#365): 7 days, 3 months.
+    var short: String.LocalizationValue {
+        switch self {
+        case .week: "7 days"
+        case .quarter: "3 months"
         }
     }
 }
@@ -151,6 +171,44 @@ private struct TrainingView: View {
         let chart = TrainingBars(bars: bars, range: entry.range.range, accent: accent)
 
         switch family {
+        case .accessoryInline:
+            // one line above the clock: 617 lbs · 7 days
+            Text("\(formatted(total, metric, unit: unit)) · \(String(localized: entry.range.short))")
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                VStack(spacing: 0) {
+                    Image(systemName: entry.metric.symbol)
+                        .font(.caption)
+                    Text(compact(total, metric, unit: unit))
+                        .font(.system(size: 15, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text(String(localized: entry.range.short))
+                        .font(.system(size: 9))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+                .padding(4)
+            }
+        case .accessoryRectangular:
+            // tinted or vibrant on the Lock Screen: the bars in the
+            // foreground's own colour, never the accent
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(formatted(total, metric, unit: unit))
+                        .font(.headline)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Spacer(minLength: 0)
+                    Text(String(localized: entry.range.short))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .layoutPriority(1)
+                TrainingBars(bars: bars, range: entry.range.range, accent: .primary)
+            }
         case .systemMedium:
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -178,6 +236,25 @@ private struct TrainingView: View {
             .stroke(.primary, lineWidth: 2)
             .frame(width: 20, height: 20)
             .accessibilityHidden(true)
+    }
+
+    /// 23K, 12, 3h: what fits a circle, the volume without its unit.
+    private func compact(_ value: Double, _ metric: TrainingMetric, unit: TrainingSnapshot.Unit) -> String {
+        switch metric {
+        case .volume:
+            let shown = switch unit {
+            case .imperial: value * 2.20462262
+            case .metric: value
+            }
+            return Int(shown.rounded()).formatted(.number.notation(.compactName))
+        case .duration:
+            let formatter = DateComponentsFormatter()
+            formatter.unitsStyle = .abbreviated
+            formatter.allowedUnits = value >= 3600 ? [.hour] : [.minute]
+            return formatter.string(from: value) ?? ""
+        case .workouts, .sets, .reps:
+            return Int(value.rounded()).formatted(.number.notation(.compactName))
+        }
     }
 
     /// 617 lbs, 12, 3h 20m: whole numbers, in the user's unit and locale.

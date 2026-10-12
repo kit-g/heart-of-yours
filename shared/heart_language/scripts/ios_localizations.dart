@@ -212,6 +212,8 @@ const widgetCatalogKeys = [
   'widgetReps',
   'widgetLastWeek',
   'widgetLastQuarter',
+  'widgetShortWeek',
+  'widgetShortQuarter',
   'widgetKg',
   'widgetLbs',
 ];
