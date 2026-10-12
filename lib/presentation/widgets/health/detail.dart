@@ -100,6 +100,7 @@ class const _HealthMetricDetail({
             const SizedBox(height: 12),
             TimelineChart(
               height: _chartHeight,
+              firstWeekday: settings.firstWeekday,
               semanticName: metric.label(l),
               leftAxisSize: metric.axisWidth,
               yStepCandidates: metric.yStepCandidates,

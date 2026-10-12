@@ -21,6 +21,11 @@ class LocalStats implements LocalStatsService {
   }
 
   @override
+  Future<int> getWorkoutCountBetween(DateTime from, DateTime to, {String? userId}) {
+    return _db.getWorkoutCountBetween(from, to, userId: userId);
+  }
+
+  @override
   Future<int> getMonthlyWorkoutCount(DateTime d, {String? userId}) {
     return _db.getMonthlyWorkoutCount(d, userId: userId);
   }

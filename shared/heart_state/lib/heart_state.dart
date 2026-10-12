@@ -36,5 +36,6 @@ export 'src/supersets.dart';
 export 'src/templates.dart';
 export 'src/timers.dart';
 export 'src/upsync.dart';
+export 'src/weeks.dart';
 export 'src/workout_activity.dart';
 export 'src/workouts.dart';

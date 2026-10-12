@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:heart_models/heart_models.dart';
+import 'package:intl/date_symbol_data_local.dart' show dateTimeSymbolMap;
+import 'package:intl/date_symbols.dart' show DateSymbols;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +13,7 @@ const _baseColor = 'baseColor';
 const _themeMode = 'themeMode';
 const _weightUnit = 'weightUnit';
 const _distanceUnit = 'distanceUnit';
+const _firstWeekday = 'firstWeekday';
 const _collapsedFolders = 'collapsedTemplateFolders';
 const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
@@ -47,6 +50,38 @@ class Preferences with ChangeNotifier {
   MeasurementUnit get weightUnit => _weight;
 
   MeasurementUnit get distanceUnit => _distance;
+
+  /// The locale's own first day, what [firstWeekday] is until the user picks
+  /// one. Monday until [init] has read the locale, so it never throws.
+  int _localeFirstWeekday = DateTime.monday;
+
+  /// The day the user's week starts on, as a [DateTime] weekday (#339). Every
+  /// weekly count reads it: goals, the Done page, charts, the calendar.
+  ///
+  /// A device preference like the units, not a synced one. Unset, it is the
+  /// locale's first day, which is where the calendar started its weeks before
+  /// there was a choice.
+  int get firstWeekday => _prefs?.getInt(_firstWeekday) ?? _localeFirstWeekday;
+
+  Future<bool>? setFirstWeekday(int weekday) {
+    final write = _prefs?.setInt(_firstWeekday, weekday);
+    notifyListeners();
+    return write;
+  }
+
+  /// The first day of the week where [locale] lives, from the same CLDR data
+  /// Flutter's calendars use: Sunday in the US and Canada, Monday in most of
+  /// Europe, Saturday across much of the Middle East.
+  static int localeFirstWeekday(Locale? locale) {
+    if (locale == null) return DateTime.monday;
+    final symbols = dateTimeSymbolMap();
+    final found = symbols['${locale.languageCode}_${locale.countryCode}'] ?? symbols[locale.languageCode];
+    return switch (found) {
+      // intl counts from Monday as 0
+      DateSymbols symbols => symbols.FIRSTDAYOFWEEK + 1,
+      _ => DateTime.monday,
+    };
+  }
 
   /// Whether this is the app's first run since it was installed, recording
   /// that it has now run. True exactly once per install.
@@ -96,6 +131,7 @@ class Preferences with ChangeNotifier {
     if (_disposed) return;
 
     _isInitialized = true;
+    _localeFirstWeekday = localeFirstWeekday(locale);
     final unit = defaultUnit(locale?.countryCode);
     _initMeasurementUnits(
       defaultWeightUnit: unit,

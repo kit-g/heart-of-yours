@@ -104,19 +104,31 @@ void main() {
       expect(lastDays(rows, 30, now: now).map((each) => each.sets), [1, 2, 4]);
     });
 
-    test('lastWeeks is the Mondays of the weeks ending with this one, oldest first', () {
-      expect(lastWeeks(3, now: now), [DateTime(2026, 9, 7), DateTime(2026, 9, 14), DateTime(2026, 9, 21)]);
+    test('lastWeeks is the first days of the weeks ending with this one, oldest first', () {
+      expect(
+        lastWeeks(3, now: now, firstWeekday: DateTime.monday),
+        [DateTime(2026, 9, 7), DateTime(2026, 9, 14), DateTime(2026, 9, 21)],
+      );
+      // the same Sunday-ending fortnight, for a user whose week starts on Sunday (#339)
+      expect(
+        lastWeeks(3, now: now, firstWeekday: DateTime.sunday),
+        [DateTime(2026, 9, 13), DateTime(2026, 9, 20), DateTime(2026, 9, 27)],
+      );
     });
 
     test('weeklyMuscleVolume buckets by the week a workout started in, and drops the rest', () {
-      final weeks = lastWeeks(2, now: now);
-      final weekly = weeklyMuscleVolume([
-        row(3, start: DateTime(2026, 9, 14, 7), primaryGroups: ['chest']), // Monday of week one
-        row(2, start: DateTime(2026, 9, 20, 23), primaryGroups: ['chest']), // Sunday, still week one
-        row(5, start: DateTime(2026, 9, 21, 6), primaryGroups: ['back']), // Monday: week two
-        row(9, start: DateTime(2026, 9, 1), primaryGroups: ['legs']), // before both
-        row(1, start: DateTime(2026, 9, 25)), // untagged
-      ], weeks);
+      final weeks = lastWeeks(2, now: now, firstWeekday: DateTime.monday);
+      final weekly = weeklyMuscleVolume(
+        [
+          row(3, start: DateTime(2026, 9, 14, 7), primaryGroups: ['chest']), // Monday of week one
+          row(2, start: DateTime(2026, 9, 20, 23), primaryGroups: ['chest']), // Sunday, still week one
+          row(5, start: DateTime(2026, 9, 21, 6), primaryGroups: ['back']), // Monday: week two
+          row(9, start: DateTime(2026, 9, 1), primaryGroups: ['legs']), // before both
+          row(1, start: DateTime(2026, 9, 25)), // untagged
+        ],
+        weeks,
+        firstWeekday: DateTime.monday,
+      );
 
       expect(weekly.keys, weeks);
       expect(weekly[weeks.first]?.sets, {MuscleGroup.chest: 5});

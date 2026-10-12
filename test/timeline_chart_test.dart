@@ -30,7 +30,7 @@ void main() {
         home: Scaffold(
           body: SizedBox(
             width: 390,
-            child: TimelineChart(series: series, initialRange: TimelineRange.month),
+            child: TimelineChart(series: series, firstWeekday: DateTime.monday, initialRange: TimelineRange.month),
           ),
         ),
       ),

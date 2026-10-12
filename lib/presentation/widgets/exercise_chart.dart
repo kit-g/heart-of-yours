@@ -29,6 +29,10 @@ class ExerciseChart extends StatefulWidget {
   /// and a small tile's job is the recent shape, not exploration.
   final bool timeline;
 
+  /// The day a week starts on, for the [timeline]'s weekly buckets (#339).
+  /// Required with [timeline]; a card has no weeks to draw.
+  final int? firstWeekday;
+
   /// Identity of the data this chart shows. The [callback] is invoked once and
   /// the result is kept across rebuilds, so purely cosmetic rebuilds (theme,
   /// units, a sibling loading) don't flash the loading state. Change this when
@@ -51,8 +55,9 @@ class ExerciseChart extends StatefulWidget {
     this.color,
     this.thresholds = const [],
     this.timeline = false,
+    this.firstWeekday,
     this.refreshKey,
-  });
+  }) : assert(!timeline || firstWeekday != null, 'a timeline buckets by week, so it needs the first weekday');
 
   @override
   State<ExerciseChart> createState() => _ExerciseChartState();
@@ -153,6 +158,7 @@ class _ExerciseChartState extends State<ExerciseChart> {
     if (widget.timeline) {
       return TimelineChart(
         height: 300,
+        firstWeekday: widget.firstWeekday!,
         // Not wrapped in `Semantics` here, deliberately: `TimelineChart` builds
         // its own summary from the window actually on screen, and that changes
         // as the user zooms. An outer label describing the whole series would

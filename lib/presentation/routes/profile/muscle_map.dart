@@ -84,16 +84,16 @@ enum _HeatmapRange {
 
   final int columns;
 
-  List<DateTime> buckets(DateTime now) {
+  List<DateTime> buckets(DateTime now, {required int firstWeekday}) {
     return switch (this) {
-      .quarter => lastWeeks(columns, now: now),
+      .quarter => lastWeeks(columns, now: now, firstWeekday: firstWeekday),
       .year => lastMonths(columns, now: now),
     };
   }
 
-  Map<DateTime, MuscleVolume> count(Iterable<MuscleSets> rows, List<DateTime> buckets) {
+  Map<DateTime, MuscleVolume> count(Iterable<MuscleSets> rows, List<DateTime> buckets, {required int firstWeekday}) {
     return switch (this) {
-      .quarter => weeklyMuscleVolume(rows, buckets),
+      .quarter => weeklyMuscleVolume(rows, buckets, firstWeekday: firstWeekday),
       .year => monthlyMuscleVolume(rows, buckets),
     };
   }
@@ -127,7 +127,7 @@ class _MuscleMapCardState extends State<_MuscleMapCard> {
   Future<List<MuscleSets>> _read(DateTime now) {
     return _rows ??= () {
       final monthAgo = DateTime(now.year, now.month, now.day - (_windows.last - 1));
-      final firstWeek = _HeatmapRange.quarter.buckets(now).first;
+      final firstWeek = _HeatmapRange.quarter.buckets(now, firstWeekday: Preferences.of(context).firstWeekday).first;
       final from = switch (firstWeek.isBefore(monthAgo)) {
         true => firstWeek,
         false => monthAgo,
@@ -294,7 +294,7 @@ class const _MuscleMapBody({
       ],
     );
 
-    final heatmap = _Heatmap(rows: rows, now: now, rank: rank);
+    final heatmap = _Heatmap(rows: rows, now: now, firstWeekday: Preferences.watch(context).firstWeekday, rank: rank);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -363,11 +363,14 @@ class _Heatmap extends StatefulWidget {
   final List<MuscleSets> rows;
   final DateTime now;
 
+  /// Where a column's week starts: the user's first day (#339).
+  final int firstWeekday;
+
   /// The list's order, which the heatmap keeps so a group sits in the same
   /// place in both, whatever range either shows.
   final int Function(MuscleGroup a, MuscleGroup b) rank;
 
-  const new({required this.rows, required this.now, required this.rank});
+  const new({required this.rows, required this.now, required this.firstWeekday, required this.rank});
 
   @override
   State<_Heatmap> createState() => _HeatmapState();
@@ -406,7 +409,7 @@ class _HeatmapState extends State<_Heatmap> {
     return switch (range) {
       .quarter => SynchronousFuture(widget.rows),
       .year => _year ??= Stats.of(context).getMuscleSets(
-        range.buckets(now).first,
+        range.buckets(now, firstWeekday: widget.firstWeekday).first,
         DateTime(now.year, now.month, now.day + 1),
       ),
     };
@@ -505,8 +508,8 @@ class _HeatmapState extends State<_Heatmap> {
       .year => DateFormat.MMM(l.localeName),
     };
 
-    final buckets = range.buckets(widget.now);
-    final counted = range.count(rows, buckets);
+    final buckets = range.buckets(widget.now, firstWeekday: widget.firstWeekday);
+    final counted = range.count(rows, buckets, firstWeekday: widget.firstWeekday);
     double count(MuscleGroup group, DateTime bucket) => counted[bucket]?.sets[group] ?? 0;
     double total(MuscleGroup group) => buckets.fold(0, (sum, bucket) => sum + count(group, bucket));
 

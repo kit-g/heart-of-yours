@@ -145,16 +145,29 @@ void main() {
   });
 
   group('this week', () {
-    test('counts through the stats query, as the dashboard does', () async {
-      when(db.getWeeklyWorkoutCount(now, userId: user)).thenAnswer((_) async => 3);
+    test('counts the week the Done page and the goals count', () async {
+      final (from, to) = weekOf(now, prefs.firstWeekday);
+      when(db.getWorkoutCountBetween(from, to, userId: user)).thenAnswer((_) async => 3);
       expect(await answers().weekly(user), '3 workouts this week');
 
-      when(db.getWeeklyWorkoutCount(now, userId: user)).thenAnswer((_) async => 1);
+      when(db.getWorkoutCountBetween(from, to, userId: user)).thenAnswer((_) async => 1);
       expect(await answers().weekly(user), 'One workout this week');
 
-      when(db.getWeeklyWorkoutCount(now, userId: user)).thenAnswer((_) async => 0);
+      when(db.getWorkoutCountBetween(from, to, userId: user)).thenAnswer((_) async => 0);
       expect(await answers().weekly(user), 'No workouts this week yet');
       expect(await answers().weekly(null), 'No workouts yet');
+    });
+
+    test("starts the week on the user's first day (#339)", () async {
+      await prefs.setFirstWeekday(DateTime.saturday);
+      await answers().weekly(user);
+
+      final [from as DateTime, to as DateTime] = verify(
+        db.getWorkoutCountBetween(captureAny, captureAny, userId: user),
+      ).captured;
+      expect(from.weekday, DateTime.saturday);
+      expect(to.difference(from).inDays, 7);
+      expect(!now.isBefore(from) && now.isBefore(to), isTrue);
     });
   });
 }

@@ -48,10 +48,11 @@ class _GoalRowState extends State<GoalRow> {
     final scale = goalScale(goal, exercises);
 
     // re-read only when the thing being measured changes, not on every notify
-    final key = (goal.id, exercise?.name, goal.cadence, widget.workouts.workoutCount);
+    // the week a weekly goal is read over moves with the user's first day
+    final key = (goal.id, exercise?.name, goal.cadence, widget.workouts.workoutCount, settings.firstWeekday);
     if (key != _key) {
       _key = key;
-      _reading = _read(exercises);
+      _reading = _read(exercises, settings.firstWeekday);
     }
 
     // Preferences loads from disk without being awaited at startup, and its
@@ -136,11 +137,12 @@ class _GoalRowState extends State<GoalRow> {
     );
   }
 
-  Future<num?> _read(Exercises exercises) {
+  Future<num?> _read(Exercises exercises, int firstWeekday) {
     return currentGoalValue(
       widget.goal,
       exercises: exercises,
-      workoutCount: workoutCounter(Stats.of(context)),
+      firstWeekday: firstWeekday,
+      workoutCount: workoutCounter(Stats.of(context), firstWeekday: firstWeekday),
       lensSets: widget.lensSets,
     );
   }

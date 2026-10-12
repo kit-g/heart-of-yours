@@ -74,13 +74,13 @@ Iterable<MuscleSets> lastDays(Iterable<MuscleSets> rows, int days, {required Dat
   return rows.where((row) => !row.start.isBefore(from));
 }
 
-/// The Mondays of the [weeks] calendar weeks ending with [now]'s, oldest
-/// first — the weeks the profile's workouts-per-week chart buckets by too.
-List<DateTime> lastWeeks(int weeks, {required DateTime now}) {
-  final monday = getMonday(now);
+/// The first days of the [weeks] weeks ending with [now]'s, oldest first, for
+/// weeks that start on [firstWeekday] — the user's (#339).
+List<DateTime> lastWeeks(int weeks, {required DateTime now, required int firstWeekday}) {
+  final start = weekStart(now, firstWeekday);
   return [
     for (final back in Iterable<int>.generate(weeks, (index) => weeks - 1 - index))
-      DateTime(monday.year, monday.month, monday.day - 7 * back),
+      DateTime(start.year, start.month, start.day - 7 * back),
   ];
 }
 
@@ -93,10 +93,15 @@ List<DateTime> lastMonths(int months, {required DateTime now}) {
   ];
 }
 
-/// [rows] counted into [weeks] (their Mondays, as [lastWeeks] gives them), one
-/// [MuscleVolume] per week. Rows outside every week are left out.
-Map<DateTime, MuscleVolume> weeklyMuscleVolume(Iterable<MuscleSets> rows, List<DateTime> weeks) {
-  return _bucketed(rows, weeks, getMonday);
+/// [rows] counted into [weeks] (their first days, as [lastWeeks] gives them,
+/// for the same [firstWeekday]), one [MuscleVolume] per week. Rows outside
+/// every week are left out.
+Map<DateTime, MuscleVolume> weeklyMuscleVolume(
+  Iterable<MuscleSets> rows,
+  List<DateTime> weeks, {
+  required int firstWeekday,
+}) {
+  return _bucketed(rows, weeks, (start) => weekStart(start, firstWeekday));
 }
 
 /// [rows] counted into [months] (their first days, as [lastMonths] gives

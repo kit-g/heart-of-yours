@@ -25,6 +25,15 @@ class RecordingStatsService implements LocalStatsService {
     return weeklyCountToReturn;
   }
 
+  final List<(DateTime, DateTime, String?)> betweenCalls = [];
+  int betweenCountToReturn = 0;
+
+  @override
+  Future<int> getWorkoutCountBetween(DateTime from, DateTime to, {String? userId}) async {
+    betweenCalls.add((from, to, userId));
+    return betweenCountToReturn;
+  }
+
   @override
   Future<int> getMonthlyWorkoutCount(DateTime d, {String? userId}) async {
     monthlyCountCalls.add((d, userId));
@@ -122,14 +131,21 @@ void main() {
       expect(notifications, 0, reason: 'onSignOut should not call notifyListeners');
     });
 
-    test('getWeeklyWorkoutCount delegates to service and returns expected value', () async {
-      final when = DateTime(2025, 8, 10);
-      service.weeklyCountToReturn = 5;
+    test('getWeeklyWorkoutCount counts the week that starts on the chosen day, for the user', () async {
+      // a Sunday: the first day of its week when weeks start on Sunday, the
+      // last when they start on Monday (#339)
+      final when = DateTime(2025, 8, 10, 18);
+      service.betweenCountToReturn = 5;
+      stats.userId = 'u1';
 
-      final result = await stats.getWeeklyWorkoutCount(when);
+      expect(await stats.getWeeklyWorkoutCount(when, firstWeekday: DateTime.sunday), 5);
+      await stats.getWeeklyWorkoutCount(when, firstWeekday: DateTime.monday);
 
-      expect(result, 5);
-      expect(service.weeklyCountCalls, [when]);
+      expect(service.betweenCalls, [
+        (DateTime(2025, 8, 10), DateTime(2025, 8, 17), 'u1'),
+        (DateTime(2025, 8, 4), DateTime(2025, 8, 11), 'u1'),
+      ]);
+      expect(service.weeklyCountCalls, isEmpty, reason: "the shared signature's week is always Monday's");
     });
 
     test('getMuscleSets delegates with the user, and holds nothing or notifies', () async {

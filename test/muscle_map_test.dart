@@ -198,7 +198,7 @@ void main() {
   });
 
   testWidgets('one read covers both windows and the eight weeks; the switcher only filters', (tester) async {
-    await pumpProfile(tester, answer: 'on');
+    final preferences = await pumpProfile(tester, answer: 'on');
     // calendar days, not a Duration: a DST week is not 7 × 24h
     DateTime day(int offset) => DateTime(now.year, now.month, now.day + offset);
     Finder inCard(String text) => find.descendant(of: byKey(AppKeys.muscleMapCard), matching: find.text(text));
@@ -211,7 +211,8 @@ void main() {
     expect(to, day(1));
     // eight calendar weeks back reaches further than thirty days
     expect(from.isBefore(day(-29)), isTrue);
-    expect(from.weekday, DateTime.monday);
+    // the oldest column's week starts on the user's first day (#339)
+    expect(from.weekday, preferences.firstWeekday);
 
     // this week: back trained three weeks ago keeps its row, at zero
     await tester.ensureVisible(byKey(AppKeys.muscleMapCard));
@@ -229,7 +230,7 @@ void main() {
   });
 
   testWidgets('the heatmap: thirteen weeks by default, told in words, with empty weeks marked', (tester) async {
-    await pumpProfile(tester, answer: 'on');
+    final preferences = await pumpProfile(tester, answer: 'on');
     final heatmap = byKey(AppKeys.muscleMapHeatmap);
     await tester.ensureVisible(heatmap);
 
@@ -251,7 +252,7 @@ void main() {
         )
         .first;
     final row = tester.getRect(chestRow);
-    final thisWeek = DateFormat.Md('en').format(getMonday(now));
+    final thisWeek = DateFormat.Md('en').format(weekStart(now, preferences.firstWeekday));
     final caption = byKey(AppKeys.muscleMapCellCaption);
 
     await tester.tapAt(Offset(row.right - 4, row.center.dy));

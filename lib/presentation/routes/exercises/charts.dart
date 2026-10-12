@@ -47,6 +47,7 @@ class _Charts extends StatelessWidget {
           emptyState: index == 0 ? const _EmptyState() : const SizedBox.shrink(),
           callback: () => exercises.getChartExerciseMetics(type, exercise.id, limit: _exerciseHistoryLimit),
           timeline: true,
+          firstWeekday: prefs.firstWeekday,
           refreshKey: (type, exercise.id),
           // the string still travels as [label] — it feeds the chart's
           // spoken summary — while the row adds the dashboard toggle

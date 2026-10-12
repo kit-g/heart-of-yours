@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
+import 'package:heart_state/heart_state.dart' show weekStart;
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -66,6 +67,10 @@ class TimelineChart extends StatefulWidget {
   /// rather than over the chart's whole width.
   final Widget? topLabel;
 
+  /// The day a week bucket starts on, as a [DateTime] weekday: the user's
+  /// choice (#339), from [Preferences.firstWeekday].
+  final int firstWeekday;
+
   /// What the plot measures, for the accessibility summary — a screen reader
   /// cannot perceive a painted line, so it is given the same thing as a
   /// sentence. Falls back to a generic word when the caller has no name for it.
@@ -74,6 +79,7 @@ class TimelineChart extends StatefulWidget {
   const new({
     super.key,
     required this.series,
+    required this.firstWeekday,
     this.height = 280,
     this.color,
     this.leftAxisSize = historyChartLeftAxisSize,
@@ -184,7 +190,7 @@ class _TimelineChartState extends State<TimelineChart> {
       valueListenable: _days,
       builder: (context, days, _) {
         final grain = TimelineChart.grainFor(days);
-        final points = _bucketed(_window(days), grain);
+        final points = _bucketed(_window(days), grain, widget.firstWeekday);
         final labelled = _labelled(points, grain);
         // "Aug — Feb — Aug — Feb — Aug" is three different Augusts wearing the
         // same label. Once the window covers more than one calendar year the
@@ -322,13 +328,13 @@ class _TimelineChartState extends State<TimelineChart> {
 
   /// [window] collapsed to one point per [grain], each the mean of its bucket
   /// and dated by the last reading in it.
-  List<TimelinePoint> _bucketed(List<TimelinePoint> window, TimelineGrain grain) {
+  List<TimelinePoint> _bucketed(List<TimelinePoint> window, TimelineGrain grain, int firstWeekday) {
     if (grain == .day || window.isEmpty) return window;
 
     final buckets = <DateTime, List<double>>{};
     final dates = <DateTime, DateTime>{};
     for (final point in window) {
-      final key = _key(point.at, grain);
+      final key = _key(point.at, grain, firstWeekday: firstWeekday);
       (buckets[key] ??= []).add(point.value);
       dates[key] = point.at;
     }
@@ -340,11 +346,12 @@ class _TimelineChartState extends State<TimelineChart> {
   }
 
   /// Calendar buckets, not rolling ones: a month is a month, so the axis reads
-  /// "Mar" rather than a date 30 days after some arbitrary start.
-  DateTime _key(DateTime at, TimelineGrain grain) {
+  /// "Mar" rather than a date 30 days after some arbitrary start, and a week
+  /// starts on the user's first day (#339).
+  DateTime _key(DateTime at, TimelineGrain grain, {required int firstWeekday}) {
     return switch (grain) {
       .day => DateTime(at.year, at.month, at.day),
-      .week => DateTime(at.year, at.month, at.day).subtract(Duration(days: at.weekday - 1)),
+      .week => weekStart(at, firstWeekday),
       .month => DateTime(at.year, at.month),
       .year => DateTime(at.year),
     };
@@ -365,7 +372,8 @@ class _TimelineChartState extends State<TimelineChart> {
     };
     final candidates = [
       for (final (index, point) in points.indexed)
-        if (index == points.length - 1 || _key(points[index + 1].at, .day) != _key(point.at, .day)) index,
+        if (index == points.length - 1 || DateUtils.dateOnly(points[index + 1].at) != DateUtils.dateOnly(point.at))
+          index,
     ];
     final every = (candidates.length / wanted).ceil().clamp(1, max(candidates.length, 1)).toInt();
     return {

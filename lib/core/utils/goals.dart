@@ -94,6 +94,7 @@ class LocalGoals implements LocalGoalService {
 Future<num?> currentGoalValue(
   Goal goal, {
   required Exercises exercises,
+  required int firstWeekday,
   Future<int> Function(GoalCadence? period)? workoutCount,
   LensSetsReader? lensSets,
   DateTime? asOf,
@@ -111,7 +112,7 @@ Future<num?> currentGoalValue(
   if (metric == null || exercise == null) return null;
 
   if (goal.cadence case final GoalCadence cadence) {
-    final (from, to) = goalPeriod(cadence, asOf ?? DateTime.now());
+    final (from, to) = goalPeriod(cadence, asOf ?? DateTime.now(), firstWeekday: firstWeekday);
     // The metric queries return a row per session; the period is cut here
     // rather than in SQL so that what "per week" means for each dimension stays
     // in one readable place instead of spread across eleven statements.
@@ -230,11 +231,11 @@ const _milestoneHistory = 500;
 ///
 /// One resolver so the three periods cannot drift apart, and so a goal without
 /// a cadence is answered rather than skipped.
-Future<int> Function(GoalCadence?) workoutCounter(Stats stats, {DateTime? asOf}) {
+Future<int> Function(GoalCadence?) workoutCounter(Stats stats, {required int firstWeekday, DateTime? asOf}) {
   return (period) {
     final now = asOf ?? DateTime.now();
     return switch (period) {
-      .week => stats.getWeeklyWorkoutCount(now),
+      .week => stats.getWeeklyWorkoutCount(now, firstWeekday: firstWeekday),
       .month => stats.getMonthlyWorkoutCount(now),
       null => stats.getTotalWorkoutCount(),
     };
@@ -243,11 +244,11 @@ Future<int> Function(GoalCadence?) workoutCounter(Stats stats, {DateTime? asOf})
 
 /// The half-open window a cadence goal is currently accumulating in.
 ///
-/// Local, not UTC: a Monday-morning session belongs to the week the user is
-/// living in. `getMonday` already normalises to midnight.
-(DateTime, DateTime) goalPeriod(GoalCadence cadence, DateTime now) {
+/// Local, not UTC: a first-morning session belongs to the week the user is
+/// living in, and that week starts on the day they chose (#339).
+(DateTime, DateTime) goalPeriod(GoalCadence cadence, DateTime now, {required int firstWeekday}) {
   return switch (cadence) {
-    .week => (getMonday(now), getMonday(now).add(const Duration(days: 7))),
+    .week => weekOf(now, firstWeekday),
     .month => (DateTime(now.year, now.month), DateTime(now.year, now.month + 1)),
   };
 }
