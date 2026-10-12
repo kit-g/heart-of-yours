@@ -33,6 +33,8 @@ import flutter_local_notifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ShortcutsChannel") {
       ShortcutsChannel.register(with: registrar.messenger())
+      // the icon's menu (#356)
+      registrar.addSceneDelegate(QuickActionsHandler.shared)
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HomeWidgetsChannel") {
       HomeWidgetsChannel.register(with: registrar.messenger())
