@@ -58,6 +58,8 @@
         <string>$(FLUTTER_BUILD_NUMBER)</string>
         <key>GIDClientID</key>
         <string>$(GOOGLE_CLIENT_ID)</string>
+        <key>HeartAppGroup</key>
+        <string>group.$(PRODUCT_BUNDLE_IDENTIFIER)</string>
         <key>LSRequiresIPhoneOS</key>
         <true/>
         <key>NSSupportsLiveActivities</key>

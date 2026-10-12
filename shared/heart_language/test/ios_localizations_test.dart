@@ -167,6 +167,18 @@ void main() {
       );
     });
 
+    test('the widget\'s Swift source says its copy word for word (#161)', () {
+      final swift = Directory('${root.path}/../../ios/OngoingWorkout')
+          .listSync()
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.swift'))
+          .map((file) => file.readAsStringSync())
+          .join('\n');
+      for (final key in widgetCatalogKeys) {
+        expect(swift, contains('"${translations['en']![key]}"'), reason: key);
+      }
+    });
+
     test('Siri phrases name the app', () {
       for (final key in runnerShortcutPhraseKeys) {
         for (final locale in translations.keys) {
