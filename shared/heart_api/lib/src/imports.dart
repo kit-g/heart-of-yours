@@ -1,10 +1,11 @@
 /// The workout-history import endpoint: what it accepts and what it reports.
 library;
 
-/// A third-party app whose export the server can ingest.
+/// An app whose export the server can ingest: another logger's, or Heart's
+/// own CSV ([heart], heart-api#175).
 ///
 /// The server rejects anything else with a 400. [name] is the wire value.
-enum ImportSource { strong, hevy }
+enum ImportSource { strong, hevy, heart }
 
 /// The import endpoint's 400: the file was not a readable export.
 ///

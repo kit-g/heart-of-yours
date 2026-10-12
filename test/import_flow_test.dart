@@ -501,6 +501,58 @@ void main() {
     });
   });
 
+  group("Heart's own CSV export (#357)", () {
+    const heart =
+        'workout_id,start,end,exercise_id,exercise_name,set_index,weight,unit,reps,duration,distance,notes\n'
+        '019a,2027-01-01T07:00:00.000Z,2027-01-01T08:00:00.000Z,019b,Bench Press,1,60,kg,8,,,\n';
+
+    testWidgets('goes up as source=heart, with no unit question, no unit and no offset', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(heart), name: 'heart.csv'),
+      );
+      serveImport(
+        preview: {'source': 'heart', 'workoutsFound': 1, 'setsFound': 1, 'exercisesUnmatched': []},
+        report: {'source': 'heart', 'workoutsFound': 1, 'workoutsCreated': 1, 'setsCreated': 1},
+      );
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pumpTimes();
+
+      // the file names its own units and offsets; nothing to ask
+      expect(find.text('Weights in your export'), findsNothing);
+      expect(find.textContaining('Bring your Heart history along'), findsOneWidget);
+
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(requests, hasLength(2));
+      for (final request in requests) {
+        expect(request.url.queryParameters['source'], 'heart');
+        expect(request.url.queryParameters, isNot(contains('unit')));
+        expect(request.url.queryParameters, isNot(contains('tzOffset')));
+        expect(request.body, heart);
+      }
+      expect(find.text('1 workout imported'), findsOneWidget);
+    });
+
+    testWidgets('a rejected file points back at Export my data', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+      );
+      serveImport(statusCode: 400, preview: {'reason': 'not a Heart CSV export'});
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(find.text("That file didn't work"), findsOneWidget);
+      expect(find.textContaining('as a Heart export'), findsOneWidget);
+    });
+  });
+
   group('the unit the export was made in (#307)', () {
     testWidgets('starts on the account\'s unit and sends what the user picks, to both halves', (tester) async {
       await Preferences().let((p) async {

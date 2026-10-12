@@ -45,7 +45,7 @@ final class _Parked extends _ImportOutcome {
   const new(this.reason);
 }
 
-/// Uploads a Strong or Hevy CSV export and shows the server's report.
+/// Uploads a Strong, Hevy or Heart CSV export and shows the server's report.
 ///
 /// The server does all parsing, matching and dedup — this page is transport
 /// and UX. The import is idempotent, so there is no confirmation dialog and
@@ -63,8 +63,9 @@ class ImportDataPage extends StatefulWidget {
 class _ImportDataPageState extends State<ImportDataPage> with LoadingState<ImportDataPage>, HasHaptic<ImportDataPage> {
   final _outcome = ValueNotifier<_ImportOutcome?>(null);
 
-  /// Which app the export came from (#324). The server reads each in its own
-  /// layout, so the user says which rather than the page guessing.
+  /// Which app the export came from (#324), Heart's own CSV included (#357).
+  /// The server reads each in its own layout, so the user says which rather
+  /// than the page guessing.
   final _source = ValueNotifier<ImportSource>(.strong);
 
   /// The unit the export was made in (#307), as the user says — null until
@@ -88,6 +89,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       :importSourceTitle,
       :importExplainerStrong,
       :importExplainerHevy,
+      :importExplainerHeart,
       :importSafeToRetry,
       :importUnitTitle,
       :importUnitBody,
@@ -135,6 +137,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                             children: const {
                               .strong: Text('Strong'),
                               .hevy: Text('Hevy'),
+                              .heart: Text('Heart'),
                             },
                           ),
                           const SizedBox(height: 16),
@@ -142,6 +145,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                             switch (source) {
                               .strong => importExplainerStrong,
                               .hevy => importExplainerHevy,
+                              .heart => importExplainerHeart,
                             },
                           ),
                           const SizedBox(height: 12),
@@ -152,8 +156,8 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                           const SizedBox(height: 24),
                           // which unit the export is in (#307): asked before the
                           // file, preset to the account's, read by both halves of
-                          // the import. A Hevy file names its units in its own
-                          // header, so the question has no Hevy form.
+                          // the import. Hevy and Heart files name their units in
+                          // their own rows, so the question has no form for them.
                           if (source == .strong) ...[
                             Text(importUnitTitle, style: textTheme.titleSmall),
                             const SizedBox(height: 4),
@@ -259,11 +263,21 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
   /// What the import sends: the export's unit as the user said, else the
   /// account's. The server reads it only for rows that carry no unit of
   /// their own, and applies it to weights and distances alike — which a
-  /// Hevy row never is, so a Hevy import sends none.
+  /// Hevy or Heart row never is, so those imports send none.
   MeasurementUnit? _exportUnit(ImportSource source) {
     return switch (source) {
       .strong => _unit.value ?? _fallbackUnit,
-      .hevy => null,
+      .hevy || .heart => null,
+    };
+  }
+
+  /// What anchors the export's timestamps. Strong and Hevy write naive local
+  /// time, read as this device's offset; Heart writes instants with their own
+  /// offset, so a Heart import sends none.
+  Duration? _exportOffset(ImportSource source) {
+    return switch (source) {
+      .strong || .hevy => DateTime.now().timeZoneOffset,
+      .heart => null,
     };
   }
 
@@ -298,8 +312,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
         // for exports whose rows carry no unit columns (#307); ignored when
         // the CSV declares its own
         unit: _exportUnit(source),
-        // Strong and Hevy timestamps alike are naive local time
-        tzOffset: DateTime.now().timeZoneOffset,
+        tzOffset: _exportOffset(source),
       );
       // Held for the commit, which happens either immediately or a consent
       // step later and cannot see the preview by then.
@@ -352,7 +365,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
         csv,
         source: source,
         unit: _exportUnit(source),
-        tzOffset: DateTime.now().timeZoneOffset,
+        tzOffset: _exportOffset(source),
         createCustom: createCustom,
       );
       _outcome.value = _Imported(report);
@@ -663,7 +676,7 @@ class _ImportRejectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final L(:importFailedHeadline, :importFailedBody, :importFailedBodyHevy) = L.of(context);
+    final L(:importFailedHeadline, :importFailedBody, :importFailedBodyHevy, :importFailedBodyHeart) = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return Column(
@@ -687,6 +700,7 @@ class _ImportRejectionView extends StatelessWidget {
           switch (source) {
             .strong => importFailedBody,
             .hevy => importFailedBodyHevy,
+            .heart => importFailedBodyHeart,
           },
         ),
         // the server's own words — developer-grade, so detail text, not the
