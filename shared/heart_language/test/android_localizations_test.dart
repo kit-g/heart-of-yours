@@ -51,6 +51,21 @@ void main() {
     expect(Directory('${res.path}/values-en_CA').existsSync(), isFalse);
   });
 
+  test('the shipped widget copy is what the translation source generates, per base language (#161)', () {
+    writeAndroidLocalizations(translations, res);
+    final shippedRes = '${root.path}/../../android/app/src/main/res';
+    final languages = translations.keys.where((locale) => !locale.contains('_')).toSet();
+    for (final language in languages) {
+      final folder = language == 'en' ? 'values' : 'values-$language';
+      final generated = File('${res.path}/$folder/strings_widgets.xml');
+      final shipped = File('$shippedRes/$folder/strings_widgets.xml');
+      expect(shipped.readAsStringSync(), generated.readAsStringSync(), reason: '$language widget copy is stale');
+      for (final MapEntry(key: key, value: name) in androidWidgetKeys.entries) {
+        expect(generated.readAsStringSync(), contains('<string name="$name">'), reason: '$language/$key');
+      }
+    }
+  });
+
   test('labels escape what the resource compiler reads as markup', () {
     translations['en']!['androidShortcutStart'] = 'Let\'s "go" & <lift>';
     expect(

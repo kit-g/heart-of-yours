@@ -210,6 +210,7 @@ void runImport(ArgResults args) {
   writeIosLocalizations(translations, Directory('../../ios/Runner'));
   writeIosLocalizations(translations, Directory('../../ios/Watch'), healthKeys: watchHealthKeys);
   writeIosStringCatalogs(translations, Directory('../../ios/Runner'));
+  writeIosWidgetCatalog(translations, Directory('../../ios/OngoingWorkout'));
   writeAndroidLocalizations(translations, Directory('../../android/app/src/main/res'));
   print('--- Import Complete (including iOS permission descriptions) ---');
 

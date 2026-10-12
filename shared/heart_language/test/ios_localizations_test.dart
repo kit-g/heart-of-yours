@@ -158,6 +158,15 @@ void main() {
       }
     });
 
+    test('the widget extension ships the catalog the translation source generates (#161)', () {
+      writeIosWidgetCatalog(translations, runner);
+      expect(
+        File('${root.path}/../../ios/OngoingWorkout/Localizable.xcstrings').readAsStringSync(),
+        File('${runner.path}/Localizable.xcstrings').readAsStringSync(),
+        reason: 'OngoingWorkout/Localizable.xcstrings is stale',
+      );
+    });
+
     test('Siri phrases name the app', () {
       for (final key in runnerShortcutPhraseKeys) {
         for (final locale in translations.keys) {

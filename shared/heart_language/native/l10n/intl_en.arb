@@ -442,5 +442,89 @@
     "description": "What Siri asks when a set is logged by voice with no rep count said and none planned. Generated into Localizable.xcstrings",
     "type": "text",
     "placeholders": {}
+  },
+  "widgetName": "Training",
+  "@widgetName": {
+    "description": "Name of the training Home Screen widget, in the iOS widget gallery and the Android widget picker. Short. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetDescription": "Your volume, workouts, time, sets or reps over the last 7 days or 3 months.",
+  "@widgetDescription": {
+    "description": "Description of the training Home Screen widget in the iOS widget gallery and the Android widget picker. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetDataType": "Data Type",
+  "@widgetDataType": {
+    "description": "The setting of the training widget that picks what it counts (volume, workouts…), in the widget's edit sheet. Title Case in English. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetDateRange": "Date Range",
+  "@widgetDateRange": {
+    "description": "The setting of the training widget that picks the period it covers, in the widget's edit sheet. Title Case in English. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetVolume": "Volume",
+  "@widgetVolume": {
+    "description": "A data type of the training widget, and its heading: total weight × reps lifted. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetWorkouts": "Workouts",
+  "@widgetWorkouts": {
+    "description": "A data type of the training widget, and its heading: the number of workouts. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetDuration": "Duration",
+  "@widgetDuration": {
+    "description": "A data type of the training widget, and its heading: total time spent training. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetSets": "Sets",
+  "@widgetSets": {
+    "description": "A data type of the training widget, and its heading: the number of sets done. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetReps": "Reps",
+  "@widgetReps": {
+    "description": "A data type of the training widget, and its heading: the number of reps done. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetLastWeek": "Last 7 days",
+  "@widgetLastWeek": {
+    "description": "A date range of the training widget, and its caption under the total: the last 7 days, today included. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetLastQuarter": "Last 3 months",
+  "@widgetLastQuarter": {
+    "description": "A date range of the training widget, and its caption under the total: the last 3 months, by week. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetKg": "kg",
+  "@widgetKg": {
+    "description": "The training widget's weight unit after a volume total (617 kg). Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetLbs": "lbs",
+  "@widgetLbs": {
+    "description": "The training widget's weight unit after a volume total (617 lbs). Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetDone": "Done",
+  "@widgetDone": {
+    "description": "Button closing the training widget's settings screen on Android, keeping what was picked. One short word. Generated into android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
   }
 }

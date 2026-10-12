@@ -23,33 +23,59 @@ const androidShortcutKeys = {
   'androidFunctionAppClosed': 'function_app_closed',
 };
 
-/// Keeps the launcher's labels on the same translation import as Flutter:
-/// `values/strings_shortcuts.xml` for English and `values-<lang>/` for every
+/// The training widget's copy (#161): its name and description in the
+/// widget picker, its settings screen, and its heading, caption and unit.
+const androidWidgetKeys = {
+  'widgetName': 'widget_training_name',
+  'widgetDescription': 'widget_training_description',
+  'widgetDataType': 'widget_data_type',
+  'widgetDateRange': 'widget_date_range',
+  'widgetVolume': 'widget_volume',
+  'widgetWorkouts': 'widget_workouts',
+  'widgetDuration': 'widget_duration',
+  'widgetSets': 'widget_sets',
+  'widgetReps': 'widget_reps',
+  'widgetLastWeek': 'widget_last_week',
+  'widgetLastQuarter': 'widget_last_quarter',
+  'widgetKg': 'widget_kg',
+  'widgetLbs': 'widget_lbs',
+  'widgetDone': 'widget_done',
+};
+
+/// Keeps the launcher's labels and the widget's copy on the same translation
+/// import as Flutter: `values/strings_shortcuts.xml` and
+/// `values/strings_widgets.xml` for English and `values-<lang>/` for every
 /// other base language. Regional locales inherit the base language, as they
 /// do on iOS.
 void writeAndroidLocalizations(Map<String, Map<String, dynamic>> translations, Directory res) {
   final languages = translations.keys.where((locale) => !locale.contains('_')).toList()..sort();
-  final contents = <String, String>{};
-  for (final language in languages) {
-    contents[language] = androidStrings(translations, language);
-  }
+  final files = {'strings_shortcuts.xml': androidShortcutKeys, 'strings_widgets.xml': androidWidgetKeys};
+  final contents = {
+    for (final language in languages)
+      for (final MapEntry(key: file, value: keys) in files.entries)
+        (language, file): androidStrings(translations, language, keys: keys),
+  };
   // Validate every translation before replacing any native resource.
-  for (final entry in contents.entries) {
-    final folder = switch (entry.key) {
+  for (final MapEntry(key: (language, file), :value) in contents.entries) {
+    final folder = switch (language) {
       'en' => 'values',
       String language => 'values-$language',
     };
     final directory = Directory('${res.path}/$folder')..createSync(recursive: true);
-    File('${directory.path}/strings_shortcuts.xml').writeAsStringSync(entry.value);
+    File('${directory.path}/$file').writeAsStringSync(value);
   }
 }
 
-/// One `strings.xml` body for [language].
-String androidStrings(Map<String, Map<String, dynamic>> translations, String language) {
-  final strings = androidShortcutKeys.entries.map((entry) {
+/// One `strings.xml` body for [language]: the launcher's labels, or [keys].
+String androidStrings(
+  Map<String, Map<String, dynamic>> translations,
+  String language, {
+  Map<String, String> keys = androidShortcutKeys,
+}) {
+  final strings = keys.entries.map((entry) {
     final value = translations[language]?[entry.key];
     if (value is! String || value.trim().isEmpty) {
-      throw StateError('Missing Android shortcut translation: $language/${entry.key}');
+      throw StateError('Missing Android translation: $language/${entry.key}');
     }
     return '    <string name="${entry.value}">${_escaped(value)}</string>';
   });
