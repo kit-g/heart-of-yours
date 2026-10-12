@@ -58,16 +58,23 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// the user is living in rather than UTC's. `end IS NOT NULL` matches the
   /// aggregation's rule — an unfinished workout is not one you have done.
   Future<int> getMonthlyWorkoutCount(DateTime d, {String? userId}) {
-    // Bounds in [d]'s own zone so "this month" is the month the user is living
-    // in, then converted to UTC: `start` is stored as a UTC ISO string, and the
-    // comparison is lexicographic, so both sides have to be in the same zone.
-    final from = DateTime(d.year, d.month).toUtc();
-    final to = DateTime(d.year, d.month + 1).toUtc();
+    return getWorkoutCountBetween(DateTime(d.year, d.month), DateTime(d.year, d.month + 1), userId: userId);
+  }
+
+  /// Finished workouts that started in [from, to).
+  ///
+  /// The one count every period is built on: the caller decides where a week
+  /// or a month begins — a week starts on the day the user chose (#339), which
+  /// this layer has no business knowing. Pass bounds in the user's own zone;
+  /// they are converted to UTC here because `start` is stored as a UTC ISO
+  /// string and the comparison is lexicographic. A workout belongs to the
+  /// period it started in, so one that spans a boundary counts once.
+  Future<int> getWorkoutCountBetween(DateTime from, DateTime to, {String? userId}) {
     return _db
         .rawQuery(
           'SELECT count(*) AS c FROM workouts '
           'WHERE start >= ? AND start < ? AND end IS NOT NULL AND user_id = ?',
-          [from.toIso8601String(), to.toIso8601String(), userId],
+          [from.toUtc().toIso8601String(), to.toUtc().toIso8601String(), userId],
         )
         .then(
           (rows) {
@@ -85,30 +92,12 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// that had ever signed in on the device. A null one matches nothing, same as
   /// [getWorkoutSummary]: `user_id = NULL` is never true, so there is no user to
   /// count for.
+  ///
+  /// The shared signature's week is Monday's. The app counts the user's own
+  /// week through [getWorkoutCountBetween] instead.
   Future<int> getWeeklyWorkoutCount(DateTime d, {String? userId}) {
-    // the user's week, expressed in the zone `start` is stored in — see
-    // [getMonthlyWorkoutCount]
-    final monday = getMonday(d).toUtc();
-    // a workout belongs to the week it started in; the old
-    // `start > monday AND end < next` dropped week-spanning workouts entirely
-    return _db
-        .rawQuery(
-          'SELECT count(*) AS c FROM workouts '
-          'WHERE start >= ? AND start < ? AND end IS NOT NULL AND user_id = ?',
-          [
-            monday.toIso8601String(),
-            (monday.add(const Duration(days: 7)).toIso8601String()),
-            userId,
-          ],
-        )
-        .then(
-          (rows) {
-            return switch (rows) {
-              [{'c': num count}] => count.toInt(),
-              _ => 0,
-            };
-          },
-        );
+    final monday = getMonday(d);
+    return getWorkoutCountBetween(monday, monday.add(const Duration(days: 7)), userId: userId);
   }
 
   /// Completed sets per exercise per finished workout started in [from, to),
