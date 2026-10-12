@@ -162,15 +162,26 @@ jobs:
           echo "checked $checked resource(s)"
           exit $failed
 
+      # Named outright: a release uploaded without one took the name of the
+      # draft already on the track, which is how 1.13.0 reached alpha as
+      # "1.10.0". The versionName from pubspec, then the versionCode, which is
+      # this run's number (see "Build app bundle").
+      - name: "Name the release"
+        id: release
+        run: |
+          version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          echo "name=$version (${{ github.run_number }})" >> "$GITHUB_OUTPUT"
+
       - name: "Upload to Play Store"
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
           serviceAccountJson: "playstore-sa-key.json"
           packageName: ${{ inputs.app_id }}
           releaseFiles: "build/app/outputs/bundle/${{ inputs.flavor }}Release/app-${{ inputs.flavor }}-release.aab"
+          releaseName: ${{ steps.release.outputs.name }}
           track: ${{ inputs.track }}
           status: ${{ inputs.status }}
           # Written by the `release-notes` skill. Files are named whatsnew-<locale>
-          # and capped at 500 characters each; the release lands as a draft, so
-          # they stay editable in the Play Console afterwards.
+          # and capped at 500 characters each. A draft keeps them editable in the
+          # Play Console; a completed release ships them as written.
           whatsNewDirectory: release_notes/whatsnew
