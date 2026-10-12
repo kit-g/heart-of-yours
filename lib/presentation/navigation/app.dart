@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:heart/core/env/config.dart';
+import 'package:heart/core/env/home_widgets.dart';
 import 'package:heart/core/env/launch_screen.dart';
 import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
@@ -25,6 +26,7 @@ import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/scrolls.dart';
+import 'package:heart/presentation/navigation/home_widgets.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/pause.dart';
@@ -490,7 +492,14 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                     true => systemShortcuts(Theme.of(context).platform),
                     false => null,
                   },
-                  child: PausePresenter(child: child ?? const SizedBox.shrink()),
+                  child: HomeWidgetsPresenter(
+                    // the same gate again: the widgets are native
+                    widgets: switch (widget.hasLocalNotifications) {
+                      true => homeWidgets(Theme.of(context).platform),
+                      false => null,
+                    },
+                    child: PausePresenter(child: child ?? const SizedBox.shrink()),
+                  ),
                 ),
               ),
             ),
