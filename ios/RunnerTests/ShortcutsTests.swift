@@ -63,3 +63,43 @@ final class ShortcutsTests: XCTestCase {
         XCTAssertEqual(ShortcutsChannel.templates(in: defaults).count, 0)
     }
 }
+
+/// The icon's menu (#356): Start a workout, then the templates, as many as
+/// the menu shows, and nothing with the feature off.
+final class QuickActionsTests: XCTestCase {
+    private let templates: [(id: String, name: String)] = [
+        ("t1", "Push Day"), ("t2", "Leg Day"), ("t3", "Pull Day"), ("t4", "Arms"),
+    ]
+
+    func testOffIsNoItems() {
+        XCTAssertTrue(QuickActions.items(enabled: false, templates: templates).isEmpty)
+    }
+
+    func testStartHeadsTheTemplatesUpToTheMenusRoom() {
+        let items = QuickActions.items(enabled: true, templates: templates)
+
+        XCTAssertEqual(items.count, QuickActions.room)
+        XCTAssertEqual(items.dropFirst().map(\.localizedTitle), ["Push Day", "Leg Day", "Pull Day"])
+        XCTAssertEqual(
+            items.compactMap(QuickActions.link(of:)).map(\.absoluteString),
+            [
+                "heart://app/start",
+                "heart://app/start?template=t1",
+                "heart://app/start?template=t2",
+                "heart://app/start?template=t3",
+            ]
+        )
+    }
+
+    func testNoTemplatesIsStartAlone() {
+        let items = QuickActions.items(enabled: true, templates: [])
+
+        XCTAssertEqual(items.compactMap(QuickActions.link(of:)), [ShortcutURL.start()])
+    }
+
+    func testAnItemThisBuildDidNotMakeOpensNothing() {
+        let foreign = UIApplicationShortcutItem(type: "elsewhere", localizedTitle: "Elsewhere")
+
+        XCTAssertNil(QuickActions.link(of: foreign))
+    }
+}

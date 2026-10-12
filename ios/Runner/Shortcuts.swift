@@ -201,15 +201,114 @@ struct HeartShortcuts: AppShortcutsProvider {
     }
 }
 
+/// The app's own items in the menu a long press on its icon opens (#356):
+/// iOS's twin of Android's launcher shortcuts (#286), built from the same
+/// list Dart publishes. "Start a workout" heads it, then the templates, as
+/// many as iOS shows. Each opens a shortcut link (#284) and the app does the
+/// rest. Dynamic only, nothing in `Info.plist`, so the feature switched off
+/// takes them all away.
+enum QuickActions {
+    /// As many of the app's own items as the menu shows.
+    static let room = 4
+    private static let type = "me.heart-of.start"
+    private static let linkKey = "link"
+
+    static func items(enabled: Bool, templates: [(id: String, name: String)]) -> [UIApplicationShortcutItem] {
+        guard enabled else { return [] }
+        let start = item(
+            title: String(localized: "Start a workout"),
+            icon: UIApplicationShortcutIcon(type: .add),
+            link: ShortcutURL.start()
+        )
+        let named = templates.map { template in
+            item(title: template.name, icon: templateIcon, link: ShortcutURL.start(template: template.id))
+        }
+        return Array(([start] + named).prefix(room))
+    }
+
+    /// The link an item opens; nil for one this build did not make.
+    static func link(of item: UIApplicationShortcutItem) -> URL? {
+        guard item.type == type, let link = item.userInfo?[linkKey] as? String else { return nil }
+        return URL(string: link)
+    }
+
+    private static var templateIcon: UIApplicationShortcutIcon {
+        if #available(iOS 16, *) {
+            return UIApplicationShortcutIcon(systemImageName: "figure.strengthtraining.traditional")
+        }
+        return UIApplicationShortcutIcon(type: .play)
+    }
+
+    private static func item(title: String, icon: UIApplicationShortcutIcon, link: URL) -> UIApplicationShortcutItem {
+        UIApplicationShortcutItem(
+            type: type,
+            localizedTitle: title,
+            localizedSubtitle: nil,
+            icon: icon,
+            userInfo: [linkKey: link.absoluteString as NSString]
+        )
+    }
+
+    /// Tells the menu; iOS keeps the items across launches on its own.
+    static func publish(_ items: [UIApplicationShortcutItem]) {
+        DispatchQueue.main.async {
+            UIApplication.shared.shortcutItems = items
+        }
+    }
+}
+
+/// Runs the item the user picked from the icon's menu, as the scene hears of
+/// it: in the connection options when the item launched the app, as an
+/// action when the app was in the background. Either way the link opens once
+/// the app is in front, as an intent's does (`open(_:)`).
+final class QuickActionsHandler: NSObject, FlutterSceneLifeCycleDelegate {
+    static let shared = QuickActionsHandler()
+
+    /// The item that launched the app, until the scene is active to open it.
+    private var pending: URL?
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions?
+    ) -> Bool {
+        if let item = connectionOptions?.shortcutItem {
+            pending = QuickActions.link(of: item)
+        }
+        // the rest of the launch is still everyone else's
+        return false
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        guard let link = pending else { return }
+        pending = nil
+        UIApplication.shared.open(link)
+    }
+
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        performActionFor shortcutItem: UIApplicationShortcutItem,
+        completionHandler: @escaping (Bool) -> Void
+    ) -> Bool {
+        guard let link = QuickActions.link(of: shortcutItem) else { return false }
+        UIApplication.shared.open(link) { opened in completionHandler(opened) }
+        return true
+    }
+}
+
 /// The app's half of the `heart/shortcuts` channel: Dart publishes the
 /// templates, this keeps them for the intents and tells the system the
-/// template phrases changed, so Siri learns the names.
+/// template phrases changed, so Siri learns the names. The same two, whether
+/// the feature is on and the templates, make the icon's menu (#356).
 enum ShortcutsChannel {
     private static let templatesKey = "shortcuts.templates"
     static let restKey = "shortcuts.rest"
     static let setKey = "shortcuts.nextSet"
     static let sessionKey = "shortcuts.userId"
     static let exercisesKey = "shortcuts.exercises"
+
+    /// What Dart last said; both arrive on every launch's first sync.
+    private static var enabled = false
 
     static func register(with messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "heart/shortcuts", binaryMessenger: messenger)
@@ -221,6 +320,7 @@ enum ShortcutsChannel {
                 }
                 store(list)
                 refresh()
+                publishQuickActions()
                 result(nil)
             case "setRest":
                 // the rest a voice command acts on (#98), or nothing to act on
@@ -250,7 +350,9 @@ enum ShortcutsChannel {
                 }
                 result(nil)
             case "setEnabled":
-                // Android's launcher shortcut; iOS's App Shortcuts are in the binary
+                // the icon's menu; the App Shortcuts are in the binary
+                enabled = call.arguments as? Bool ?? false
+                publishQuickActions()
                 result(nil)
             case "setExercises":
                 guard let list = call.arguments as? [[String: Any]] else {
@@ -299,11 +401,20 @@ enum ShortcutsChannel {
 
     @available(iOS 16, *)
     static func templates(in defaults: UserDefaults) -> [TemplateEntity] {
+        stored(in: defaults).map { TemplateEntity(id: $0.id, name: $0.name) }
+    }
+
+    /// The templates as [store] kept them, below the intents' iOS 16 floor.
+    static func stored(in defaults: UserDefaults) -> [(id: String, name: String)] {
         let stored = defaults.array(forKey: templatesKey) as? [[String: String]] ?? []
         return stored.compactMap { entry in
             guard let id = entry["id"], let name = entry["name"] else { return nil }
-            return TemplateEntity(id: id, name: name)
+            return (id, name)
         }
+    }
+
+    private static func publishQuickActions() {
+        QuickActions.publish(QuickActions.items(enabled: enabled, templates: stored(in: .standard)))
     }
 
     /// Keeps what Dart published, as [templates] reads it back.

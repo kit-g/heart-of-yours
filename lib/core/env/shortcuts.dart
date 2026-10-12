@@ -124,10 +124,10 @@ final class ShortcutExercise {
 /// more; the intents and shortcuts themselves live natively and open the app
 /// on a [ShortcutLink], or hand the app a command.
 abstract interface class SystemShortcuts {
-  /// Whether the feature is on. Android shows the launcher's "Start a
-  /// workout" only while it is — absent rather than dead, since off, its link
-  /// does nothing. iOS has nothing to hide: its App Shortcuts are declared
-  /// in the binary.
+  /// Whether the feature is on. The launcher's shortcuts on Android and the
+  /// icon's menu on iOS (#356) show "Start a workout" only while it is —
+  /// absent rather than dead, since off, its link does nothing. iOS's App
+  /// Shortcuts are declared in the binary and stay.
   Future<void> setEnabled({required bool enabled});
 
   /// Replaces the templates the assistant can name. Empty: none, which is what
