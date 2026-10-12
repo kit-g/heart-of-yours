@@ -118,6 +118,26 @@ void main() {
     );
 
     group(
+      'unauthenticate method',
+      () {
+        test(
+          'should drop the token and keep every other header',
+          () {
+            api.defaultHeaders = {
+              'Authorization': 'Bearer signed-out-token',
+              'X-App-Version': '1.13.0+42',
+            };
+
+            api.unauthenticate();
+
+            expect(api.isAuthenticated, false);
+            expect(api.defaultHeaders, {'X-App-Version': '1.13.0+42'});
+          },
+        );
+      },
+    );
+
+    group(
       'isAuthenticated property',
       () {
         test('should return true for valid Bearer token', () {
