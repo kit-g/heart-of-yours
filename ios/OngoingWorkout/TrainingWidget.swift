@@ -196,6 +196,9 @@ private struct TrainingView: View {
             // foreground's own colour, never the accent
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    // what the number counts: "3" alone could be anything
+                    Image(systemName: entry.metric.symbol)
+                        .font(.caption)
                     Text(formatted(total, metric, unit: unit))
                         .font(.headline)
                         .lineLimit(1)
