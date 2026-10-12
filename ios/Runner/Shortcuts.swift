@@ -234,7 +234,7 @@ enum QuickActions {
 
     private static var templateIcon: UIApplicationShortcutIcon {
         if #available(iOS 16, *) {
-            return UIApplicationShortcutIcon(systemImageName: "figure.strengthtraining.traditional")
+            return UIApplicationShortcutIcon(systemImageName: "dumbbell")
         }
         return UIApplicationShortcutIcon(type: .play)
     }
