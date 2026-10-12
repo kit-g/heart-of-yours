@@ -214,6 +214,13 @@ const widgetCatalogKeys = [
   'widgetLastQuarter',
   'widgetShortWeek',
   'widgetShortQuarter',
+  // the health data types (#366), in the app's own words for them
+  'healthRestingHeartRate',
+  'healthSleep',
+  'healthSteps',
+  'healthBodyMass',
+  'healthBpm',
+  'widgetDailyAverage',
   'widgetKg',
   'widgetLbs',
 ];

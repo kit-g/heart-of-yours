@@ -31,8 +31,10 @@ struct TrainingWidget: Widget {
 }
 
 @available(iOS 17, *)
-enum TrainingMetricOption: String, AppEnum {
+enum TrainingMetricOption: String, AppEnum, CaseIterable {
     case volume, workouts, duration, sets, reps
+    // health (#366): offered only while the app publishes them
+    case restingHeartRate, sleep, steps, bodyMass
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Data Type")
     static let caseDisplayRepresentations: [Self: DisplayRepresentation] = [
@@ -41,6 +43,10 @@ enum TrainingMetricOption: String, AppEnum {
         .duration: "Duration",
         .sets: "Sets",
         .reps: "Reps",
+        .restingHeartRate: "Resting heart rate",
+        .sleep: "Sleep",
+        .steps: "Steps",
+        .bodyMass: "Body mass",
     ]
 
     /// What a Lock Screen circle (#365) wears over its number.
@@ -51,17 +57,52 @@ enum TrainingMetricOption: String, AppEnum {
         case .duration: "clock"
         case .sets: "square.stack"
         case .reps: "arrow.triangle.2.circlepath"
+        case .restingHeartRate: "heart"
+        case .sleep: "bed.double"
+        case .steps: "figure.walk"
+        case .bodyMass: "scalemass"
         }
     }
 
-    var metric: TrainingMetric {
+    var measure: TrainingMeasure {
         switch self {
-        case .volume: .volume
-        case .workouts: .workouts
-        case .duration: .duration
-        case .sets: .sets
-        case .reps: .reps
+        case .volume: .training(.volume)
+        case .workouts: .training(.workouts)
+        case .duration: .training(.duration)
+        case .sets: .training(.sets)
+        case .reps: .training(.reps)
+        case .restingHeartRate: .health(.restingHeartRate)
+        case .sleep: .health(.sleep)
+        case .steps: .health(.steps)
+        case .bodyMass: .health(.bodyMass)
         }
+    }
+
+    /// What a widget set to this draws from [snapshot]: itself, or, for a
+    /// health type the app no longer publishes (health off, or forgotten),
+    /// volume, as if the health types had never been built.
+    func shown(in snapshot: TrainingSnapshot?) -> Self {
+        switch measure {
+        case .training: self
+        case .health(let kind): snapshot?.offers(kind) == true ? self : .volume
+        }
+    }
+}
+
+/// What the widget counts: the training (#161) or a health metric (#366).
+enum TrainingMeasure {
+    case training(TrainingMetric)
+    case health(HealthKind)
+}
+
+/// The edit sheet's data types: the training's always, a health metric's only
+/// while the app publishes it — health off, the sheet looks as it did before
+/// they were built.
+@available(iOS 17, *)
+struct TrainingMetricOptions: DynamicOptionsProvider {
+    func results() async throws -> [TrainingMetricOption] {
+        let snapshot = TrainingSnapshot.read()
+        return TrainingMetricOption.allCases.filter { $0.shown(in: snapshot) == $0 }
     }
 }
 
@@ -96,7 +137,7 @@ struct TrainingWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Training"
     static let description = IntentDescription("Your volume, workouts, time, sets or reps over the last 7 days or 3 months.")
 
-    @Parameter(title: "Data Type", default: .volume)
+    @Parameter(title: "Data Type", default: .volume, optionsProvider: TrainingMetricOptions())
     var metric: TrainingMetricOption
 
     @Parameter(title: "Date Range", default: .week)
@@ -122,13 +163,14 @@ struct TrainingProvider: AppIntentTimelineProvider {
     /// widget on the Home Screen shows only the user's own.
     func snapshot(for configuration: TrainingWidgetIntent, in context: Context) async -> TrainingEntry {
         let snapshot = TrainingSnapshot.read() ?? (context.isPreview ? .sample(now: .now) : nil)
-        return TrainingEntry(date: .now, metric: configuration.metric, range: configuration.range, snapshot: snapshot)
+        return TrainingEntry(date: .now, metric: configuration.metric.shown(in: snapshot), range: configuration.range, snapshot: snapshot)
     }
 
     /// One entry now, and the next after midnight, when the window moves on a
     /// day. The app reloads the timeline whenever the training changes.
     func timeline(for configuration: TrainingWidgetIntent, in context: Context) async -> Timeline<TrainingEntry> {
-        let entry = TrainingEntry(date: .now, metric: configuration.metric, range: configuration.range, snapshot: TrainingSnapshot.read())
+        let snapshot = TrainingSnapshot.read()
+        let entry = TrainingEntry(date: .now, metric: configuration.metric.shown(in: snapshot), range: configuration.range, snapshot: snapshot)
         let calendar = Calendar.training
         let midnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: .now)) ?? .now.addingTimeInterval(86_400)
         return Timeline(entries: [entry], policy: .after(midnight))
@@ -143,10 +185,24 @@ private struct TrainingView: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        let metric = entry.metric.metric
+        let measure = entry.metric.measure
         let unit = entry.snapshot?.unit ?? .metric
-        let bars = (entry.snapshot ?? .empty).bars(metric, entry.range.range, now: entry.date)
-        let total = bars.map(\.value).reduce(0, +)
+        let (bars, total) = figures(measure)
+        // a health value is the user's body: hidden until the phone is unlocked
+        let health = switch measure {
+        case .training: false
+        case .health: true
+        }
+        let averaged = switch measure {
+        case .training: false
+        case .health(let kind): kind.averaged
+        }
+        let value = formatted(total, measure, unit: unit)
+        // 58 bpm is a day's, not the week's: said so where there's room
+        let caption = switch averaged {
+        case true: "\(String(localized: "Daily average")) · \(String(localized: entry.range.short))"
+        case false: TrainingRangeOption.caseDisplayRepresentations[entry.range].map { String(localized: $0.title) } ?? ""
+        }
         let accent = switch (scheme, entry.snapshot) {
         case (.dark, let snapshot?): Color(argb: snapshot.accentDark)
         case (_, let snapshot?): Color(argb: snapshot.accent)
@@ -156,34 +212,39 @@ private struct TrainingView: View {
             Text(TrainingMetricOption.caseDisplayRepresentations[entry.metric]?.title ?? "")
                 .font(.headline)
                 .lineLimit(1)
-            Text(formatted(total, metric, unit: unit))
+            Text(value)
                 .font(.system(size: 30, weight: .bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-            Text(TrainingRangeOption.caseDisplayRepresentations[entry.range]?.title ?? "")
+                .privacySensitive(health)
+            Text(caption)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         // the text first: the bars take whatever height it leaves, and would
         // otherwise squeeze the total down to its minimum scale
         .layoutPriority(1)
-        let chart = TrainingBars(bars: bars, range: entry.range.range, accent: accent)
+        let chart = TrainingBars(bars: bars, range: entry.range.range, accent: accent, relative: averaged)
+            .privacySensitive(health)
 
         switch family {
         case .accessoryInline:
             // one line above the clock: 617 lbs · 7 days
-            Text("\(formatted(total, metric, unit: unit)) · \(String(localized: entry.range.short))")
+            Text("\(value) · \(String(localized: entry.range.short))")
+                .privacySensitive(health)
         case .accessoryCircular:
             ZStack {
                 AccessoryWidgetBackground()
                 VStack(spacing: 0) {
                     Image(systemName: entry.metric.symbol)
                         .font(.caption)
-                    Text(compact(total, metric, unit: unit))
+                    Text(compact(total, measure, unit: unit))
                         .font(.system(size: 15, weight: .bold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
+                        .privacySensitive(health)
                     Text(String(localized: entry.range.short))
                         .font(.system(size: 9))
                         .lineLimit(1)
@@ -199,10 +260,11 @@ private struct TrainingView: View {
                     // what the number counts: "3" alone could be anything
                     Image(systemName: entry.metric.symbol)
                         .font(.caption)
-                    Text(formatted(total, metric, unit: unit))
+                    Text(value)
                         .font(.headline)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
+                        .privacySensitive(health)
                     Spacer(minLength: 0)
                     Text(String(localized: entry.range.short))
                         .font(.caption2)
@@ -210,7 +272,8 @@ private struct TrainingView: View {
                         .lineLimit(1)
                 }
                 .layoutPriority(1)
-                TrainingBars(bars: bars, range: entry.range.range, accent: .primary)
+                TrainingBars(bars: bars, range: entry.range.range, accent: .primary, relative: averaged)
+                    .privacySensitive(health)
             }
         case .systemMedium:
             HStack(alignment: .top, spacing: 16) {
@@ -241,8 +304,33 @@ private struct TrainingView: View {
             .accessibilityHidden(true)
     }
 
-    /// 23K, 12, 3h: what fits a circle, the volume without its unit.
-    private func compact(_ value: Double, _ metric: TrainingMetric, unit: TrainingSnapshot.Unit) -> String {
+    /// The bars of the entry's window and the figure it comes to; nil, a
+    /// health window without a reading.
+    private func figures(_ measure: TrainingMeasure) -> (bars: [TrainingBar], total: Double?) {
+        let snapshot = entry.snapshot ?? .empty
+        switch measure {
+        case .training(let metric):
+            let bars = snapshot.bars(metric, entry.range.range, now: entry.date)
+            return (bars, bars.map(\.value).reduce(0, +))
+        case .health(let kind):
+            return snapshot.health(kind, entry.range.range, now: entry.date)
+        }
+    }
+
+    /// 23K, 12, 3h, 58: what fits a circle, without its unit.
+    private func compact(_ total: Double?, _ measure: TrainingMeasure, unit: TrainingSnapshot.Unit) -> String {
+        guard let value = total else { return "–" }
+        let metric: TrainingMetric
+        switch measure {
+        case .training(let training):
+            metric = training
+        case .health(.sleep):
+            return compactDuration(value * 60)
+        case .health(.bodyMass):
+            return Int(weight(value, unit).rounded()).formatted()
+        case .health(.restingHeartRate), .health(.steps):
+            return Int(value.rounded()).formatted(.number.notation(.compactName))
+        }
         switch metric {
         case .volume:
             let shown = switch unit {
@@ -251,17 +339,48 @@ private struct TrainingView: View {
             }
             return Int(shown.rounded()).formatted(.number.notation(.compactName))
         case .duration:
-            let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .abbreviated
-            formatter.allowedUnits = value >= 3600 ? [.hour] : [.minute]
-            return formatter.string(from: value) ?? ""
+            return compactDuration(value)
         case .workouts, .sets, .reps:
             return Int(value.rounded()).formatted(.number.notation(.compactName))
         }
     }
 
-    /// 617 lbs, 12, 3h 20m: whole numbers, in the user's unit and locale.
-    private func formatted(_ value: Double, _ metric: TrainingMetric, unit: TrainingSnapshot.Unit) -> String {
+    private func compactDuration(_ seconds: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .abbreviated
+        formatter.allowedUnits = seconds >= 3600 ? [.hour] : [.minute]
+        return formatter.string(from: seconds) ?? ""
+    }
+
+    /// Kilograms in [unit].
+    private func weight(_ kilograms: Double, _ unit: TrainingSnapshot.Unit) -> Double {
+        switch unit {
+        case .imperial: kilograms * 2.20462262
+        case .metric: kilograms
+        }
+    }
+
+    /// 617 lbs, 12, 3h 20m, 58 bpm, 81.4 kg: in the user's unit and locale; a
+    /// dash for a health window without a reading.
+    private func formatted(_ total: Double?, _ measure: TrainingMeasure, unit: TrainingSnapshot.Unit) -> String {
+        guard let value = total else { return "–" }
+        let metric: TrainingMetric
+        switch measure {
+        case .training(let training):
+            metric = training
+        case .health(.restingHeartRate):
+            return "\(Int(value.rounded()).formatted()) \(String(localized: "bpm"))"
+        case .health(.sleep):
+            return duration(value * 60)
+        case .health(.steps):
+            return Int(value.rounded()).formatted()
+        case .health(.bodyMass):
+            let label = switch unit {
+            case .imperial: String(localized: "lbs")
+            case .metric: String(localized: "kg")
+            }
+            return "\(weight(value, unit).formatted(.number.precision(.fractionLength(1)))) \(label)"
+        }
         switch metric {
         case .volume:
             let (shown, label) = switch unit {
@@ -270,14 +389,18 @@ private struct TrainingView: View {
             }
             return "\(Int(shown.rounded()).formatted()) \(label)"
         case .duration:
-            let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .abbreviated
-            formatter.allowedUnits = value >= 3600 ? [.hour, .minute] : [.minute]
-            formatter.zeroFormattingBehavior = .dropLeading
-            return formatter.string(from: value) ?? ""
+            return duration(value)
         case .workouts, .sets, .reps:
             return Int(value.rounded()).formatted()
         }
+    }
+
+    private func duration(_ seconds: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .abbreviated
+        formatter.allowedUnits = seconds >= 3600 ? [.hour, .minute] : [.minute]
+        formatter.zeroFormattingBehavior = .dropLeading
+        return formatter.string(from: seconds) ?? ""
     }
 }
 
@@ -288,15 +411,25 @@ private struct TrainingBars: View {
     let bars: [TrainingBar]
     let range: TrainingRange
     let accent: Color
+    /// Bars for readings around a level (resting heart rate, body mass): drawn
+    /// from below the lowest rather than from zero, where they'd all look
+    /// the same height.
+    var relative = false
 
     var body: some View {
         let highest = bars.map(\.value).max() ?? 0
+        let lowest = bars.map(\.value).filter { $0 > 0 }.min() ?? 0
+        let floor = relative ? max(0, lowest - (highest - lowest)) : 0
         let calendar = Calendar.training
         HStack(alignment: .bottom, spacing: range == .week ? 6 : 3) {
             ForEach(bars, id: \.start) { bar in
                 VStack(spacing: 4) {
                     GeometryReader { proxy in
-                        let share = highest > 0 ? bar.value / highest : 0
+                        let share = switch (bar.value > 0, highest > floor) {
+                        case (false, _): 0.0
+                        case (true, true): (bar.value - floor) / (highest - floor)
+                        case (true, false): 1.0
+                        }
                         VStack(spacing: 0) {
                             Spacer(minLength: 0)
                             RoundedRectangle(cornerRadius: 3)

@@ -521,6 +521,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "widgetDailyAverage": "Daily average",
+  "@widgetDailyAverage": {
+    "description": "The training widget's caption for a health metric shown as an average of its days (resting heart rate, sleep, body mass): Daily average · 7 days. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
   "widgetKg": "kg",
   "@widgetKg": {
     "description": "The training widget's weight unit after a volume total (617 kg). Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
