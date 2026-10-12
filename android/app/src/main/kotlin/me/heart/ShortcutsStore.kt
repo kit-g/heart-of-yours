@@ -18,6 +18,8 @@ object ShortcutsStore {
     const val REST = "rest"
     const val NEXT_SET = "nextSet"
     const val USER_ID = "userId"
+    /// Whether the feature is on, for the Start widget (#367): "true" or absent.
+    const val ENABLED = "enabled"
 
     fun prefs(context: Context): SharedPreferences = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 

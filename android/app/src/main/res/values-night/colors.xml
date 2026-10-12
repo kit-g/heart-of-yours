@@ -6,5 +6,7 @@
     <color name="splash_mark">#F2F0EA</color>
     <color name="widget_background">#141311</color>
     <color name="widget_text">#F2F0EA</color>
+    <!-- the Start widget's tiles (#367) -->
+    <color name="widget_tile">#1AF2F0EA</color>
     <color name="widget_secondary">#9A968E</color>
 </resources>
