@@ -179,6 +179,7 @@ profiles:
 	fastlane profiles env:$(ENV) force:$(if $(FORCE),true,false)
 
 # Disk leftovers: merged worktrees, stray agent simulators, stale DerivedData.
-# Lists by default; APPLY=1 removes. See scripts/reclaim.sh.
+# Lists by default; APPLY=1 removes; WORKTREE=<branch> touches that merged
+# worktree and its branch only. See scripts/reclaim.sh.
 reclaim:
-	APPLY=$(APPLY) scripts/reclaim.sh
+	APPLY=$(APPLY) WORKTREE=$(WORKTREE) scripts/reclaim.sh
