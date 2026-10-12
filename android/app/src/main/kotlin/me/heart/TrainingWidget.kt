@@ -30,7 +30,8 @@ import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /// The training widget (#161): a total and its bars, for what the user picks
-/// in its settings — volume, workouts, time, sets or reps, over the last 7
+/// in its settings — volume, workouts, time, sets or reps, or, while health is
+/// on, resting heart rate, sleep, steps or body mass (#366) — over the last 7
 /// days or the last 3 months. Small, a tile with the bars under the total;
 /// wide, the bars beside it. Tapping opens the profile, where the same
 /// training is charted.
@@ -57,9 +58,13 @@ class TrainingWidget : AppWidgetProvider() {
         fun metricKey(id: Int) = "metric.$id"
         fun rangeKey(id: Int) = "range.$id"
 
-        fun metric(context: Context, id: Int): TrainingMetric {
+        /// What widget [id] shows of [snapshot]: what was picked, or volume
+        /// for a health metric the app no longer publishes (health off, or
+        /// forgotten), as if the health types had never been built.
+        fun metric(context: Context, id: Int, snapshot: TrainingSnapshot): TrainingMetric {
             val stored = TrainingSnapshot.prefs(context).getString(metricKey(id), null)
-            return TrainingMetric.entries.firstOrNull { it.name == stored } ?: TrainingMetric.VOLUME
+            val picked = TrainingMetric.entries.firstOrNull { it.name == stored } ?: TrainingMetric.VOLUME
+            return if (snapshot.offers(picked)) picked else TrainingMetric.VOLUME
         }
 
         fun range(context: Context, id: Int): TrainingRange {
@@ -102,7 +107,7 @@ class TrainingWidget : AppWidgetProvider() {
 
         fun update(context: Context, manager: AppWidgetManager, id: Int) {
             val snapshot = TrainingSnapshot.read(TrainingSnapshot.prefs(context)) ?: TrainingSnapshot.EMPTY
-            val metric = metric(context, id)
+            val metric = metric(context, id, snapshot)
             val range = range(context, id)
             val options = manager.getAppWidgetOptions(id)
             val views = when {
@@ -145,8 +150,8 @@ class TrainingWidget : AppWidgetProvider() {
         ): RemoteViews {
             val layout = if (wide) R.layout.widget_training_wide else R.layout.widget_training_small
             val views = RemoteViews(context.packageName, layout)
-            val bars = snapshot.bars(metric, range, LocalDate.now())
-            val total = bars.sumOf { it.value }
+            val (bars, total) = snapshot.figures(metric, range, LocalDate.now())
+            val averaged = metric.health?.averaged == true
             val locale = context.resources.configuration.locales[0]
             val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
             val accent = when {
@@ -157,7 +162,12 @@ class TrainingWidget : AppWidgetProvider() {
 
             views.setTextViewText(R.id.widget_title, context.getString(metricTitle(metric)))
             views.setTextViewText(R.id.widget_value, formatted(context, total, metric, snapshot.imperial, locale))
-            views.setTextViewText(R.id.widget_caption, context.getString(rangeTitle(range)))
+            // 58 bpm is a day's, not the week's: the caption says so
+            val caption = when (averaged) {
+                true -> "${context.getString(R.string.widget_daily_average)} · ${context.getString(shortRangeTitle(range))}"
+                false -> context.getString(rangeTitle(range))
+            }
+            views.setTextViewText(R.id.widget_caption, caption)
 
             // the bars take what the text leaves: beside it when wide, under it when not
             val density = context.resources.displayMetrics.density
@@ -174,6 +184,7 @@ class TrainingWidget : AppWidgetProvider() {
                 (max(width, 60f) * density).roundToInt(),
                 (max(height, 40f) * density).roundToInt(),
                 density,
+                relative = averaged,
             )
             views.setImageViewBitmap(R.id.widget_chart, chart)
 
@@ -191,6 +202,10 @@ class TrainingWidget : AppWidgetProvider() {
             TrainingMetric.DURATION -> R.string.widget_duration
             TrainingMetric.SETS -> R.string.widget_sets
             TrainingMetric.REPS -> R.string.widget_reps
+            TrainingMetric.RESTING_HEART_RATE -> R.string.widget_resting_heart_rate
+            TrainingMetric.SLEEP -> R.string.widget_sleep
+            TrainingMetric.STEPS -> R.string.widget_steps
+            TrainingMetric.BODY_MASS -> R.string.widget_body_mass
         }
 
         fun rangeTitle(range: TrainingRange) = when (range) {
@@ -198,16 +213,39 @@ class TrainingWidget : AppWidgetProvider() {
             TrainingRange.QUARTER -> R.string.widget_last_quarter
         }
 
-        /// 617 lbs, 12, 3h 20m: whole numbers, in the user's unit and locale.
-        private fun formatted(context: Context, value: Double, metric: TrainingMetric, imperial: Boolean, locale: Locale): String {
+        private fun shortRangeTitle(range: TrainingRange) = when (range) {
+            TrainingRange.WEEK -> R.string.widget_short_week
+            TrainingRange.QUARTER -> R.string.widget_short_quarter
+        }
+
+        /// 617 lbs, 12, 3h 20m, 58 bpm, 81.4 kg: in the user's unit and
+        /// locale; a dash for a health window without a reading.
+        private fun formatted(context: Context, total: Double?, metric: TrainingMetric, imperial: Boolean, locale: Locale): String {
+            val value = total ?: return "–"
             val numbers = NumberFormat.getIntegerInstance(locale)
             return when (metric) {
                 TrainingMetric.VOLUME -> when (imperial) {
                     true -> "${numbers.format((value * 2.20462262).roundToLong())} ${context.getString(R.string.widget_lbs)}"
                     false -> "${numbers.format(value.roundToLong())} ${context.getString(R.string.widget_kg)}"
                 }
-                TrainingMetric.DURATION -> {
-                    val minutes = (value / 60).roundToLong()
+                TrainingMetric.RESTING_HEART_RATE -> "${numbers.format(value.roundToLong())} ${context.getString(R.string.widget_bpm)}"
+                TrainingMetric.STEPS -> numbers.format(value.roundToLong())
+                TrainingMetric.BODY_MASS -> {
+                    val tenths = NumberFormat.getNumberInstance(locale).apply {
+                        minimumFractionDigits = 1
+                        maximumFractionDigits = 1
+                    }
+                    when (imperial) {
+                        true -> "${tenths.format(value * 2.20462262)} ${context.getString(R.string.widget_lbs)}"
+                        false -> "${tenths.format(value)} ${context.getString(R.string.widget_kg)}"
+                    }
+                }
+                TrainingMetric.DURATION, TrainingMetric.SLEEP -> {
+                    // a night's sleep comes in minutes, a workout's time in seconds
+                    val minutes = when (metric) {
+                        TrainingMetric.SLEEP -> value.roundToLong()
+                        else -> (value / 60).roundToLong()
+                    }
                     val format = MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.NARROW)
                     when {
                         minutes >= 60 -> format.formatMeasures(
@@ -233,6 +271,10 @@ class TrainingWidget : AppWidgetProvider() {
             width: Int,
             height: Int,
             density: Float,
+            /// Readings around a level (resting heart rate, body mass) are
+            /// drawn from below the lowest, not from zero, where they'd all
+            /// look the same height.
+            relative: Boolean = false,
         ): Bitmap {
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
@@ -246,10 +288,16 @@ class TrainingWidget : AppWidgetProvider() {
             val gap = (if (range == TrainingRange.WEEK) 6 else 3) * density
             val slot = (width - gap * (bars.size - 1)) / bars.size
             val highest = bars.maxOf { it.value }
+            val lowest = bars.map { it.value }.filter { it > 0 }.minOrNull() ?: 0.0
+            val floor = if (relative) max(0.0, lowest - (highest - lowest)) else 0.0
             val area = height - labels
             bars.forEachIndexed { index, bar ->
                 val left = index * (slot + gap)
-                val share = if (highest > 0) bar.value / highest else 0.0
+                val share = when {
+                    bar.value <= 0 -> 0.0
+                    highest > floor -> (bar.value - floor) / (highest - floor)
+                    else -> 1.0
+                }
                 val top = height - labels - max(3 * density, (area * share).toFloat())
                 fill.color = if (bar.value > 0) accent else (secondary and 0x00FFFFFF) or 0x40000000
                 canvas.drawRoundRect(RectF(left, top, left + slot, area), 3 * density, 3 * density, fill)
