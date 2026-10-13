@@ -59,4 +59,40 @@ class TrainingSnapshotTest {
         val snapshot = snapshot("""{"2026-10-12":[10]}""")
         assertEquals(0.0, snapshot.bars(TrainingMetric.REPS, TrainingRange.WEEK, monday).last().value, 0.0)
     }
+
+    private fun withHealth(health: String) = TrainingSnapshot.parse(
+        JSONObject("""{"version":1,"unit":"metric","accent":0,"accentDark":0,"days":{},"health":$health}"""),
+    )!!
+
+    @Test
+    fun `health is offered only while Dart publishes it (#366)`() {
+        val snapshot = withHealth("""{"steps":{}}""")
+        assertEquals(true, snapshot.offers(TrainingMetric.VOLUME))
+        assertEquals(true, snapshot.offers(TrainingMetric.STEPS))
+        assertEquals(false, snapshot.offers(TrainingMetric.RESTING_HEART_RATE))
+        assertEquals(false, snapshot("{}").offers(TrainingMetric.STEPS))
+    }
+
+    @Test
+    fun `steps add up, a resting heart rate averages over the days with a reading`() {
+        val snapshot = withHealth(
+            """{"steps":{"2026-10-11":5000,"2026-10-12":7000},
+               "restingHeartRate":{"2026-10-10":60,"2026-10-12":56}}""",
+        )
+        val (steps, stepsTotal) = snapshot.figures(TrainingMetric.STEPS, TrainingRange.WEEK, monday)
+        assertEquals(12000.0, stepsTotal!!, 0.0)
+        assertEquals(7000.0, steps.last().value, 0.0)
+        val (_, resting) = snapshot.figures(TrainingMetric.RESTING_HEART_RATE, TrainingRange.WEEK, monday)
+        assertEquals(58.0, resting!!, 0.0)
+    }
+
+    @Test
+    fun `a week's bar of an averaged metric is its average, and no reading is no figure`() {
+        val snapshot = withHealth("""{"bodyMass":{"2026-10-06":80,"2026-10-07":81}}""")
+        val (bars, total) = snapshot.figures(TrainingMetric.BODY_MASS, TrainingRange.QUARTER, monday)
+        assertEquals(80.5, bars[bars.size - 2].value, 0.0)
+        assertEquals(80.5, total!!, 0.0)
+        val (_, none) = snapshot.figures(TrainingMetric.BODY_MASS, TrainingRange.WEEK, LocalDate.of(2026, 12, 1))
+        assertNull(none)
+    }
 }

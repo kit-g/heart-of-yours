@@ -12,6 +12,14 @@
     <string name="widget_reps">Répétitions</string>
     <string name="widget_last_week">7 derniers jours</string>
     <string name="widget_last_quarter">3 derniers mois</string>
+    <string name="widget_short_week">7 jours</string>
+    <string name="widget_short_quarter">3 mois</string>
+    <string name="widget_resting_heart_rate">Fréquence cardiaque au repos</string>
+    <string name="widget_sleep">Sommeil</string>
+    <string name="widget_steps">Pas</string>
+    <string name="widget_body_mass">Poids corporel</string>
+    <string name="widget_bpm">bpm</string>
+    <string name="widget_daily_average">Moyenne quotidienne</string>
     <string name="widget_kg">kg</string>
     <string name="widget_lbs">lb</string>
     <string name="widget_done">Terminé</string>

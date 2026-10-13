@@ -3,12 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/home_widgets.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/presentation/navigation/home_widgets.dart';
-import 'package:heart_models/heart_models.dart';
+import 'package:heart_health/heart_health.dart';
+import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
+import 'support/health_fakes.dart';
 
 /// The platform's layer, remembering every snapshot it was told.
 class _Recorder implements HomeWidgets {
@@ -65,10 +67,11 @@ void main() {
     auth.dispose();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {Health? health}) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          if (health != null) ChangeNotifierProvider<Health>.value(value: health),
           ChangeNotifierProvider<Preferences>.value(value: preferences),
           ChangeNotifierProvider<Workouts>.value(value: workouts),
           ChangeNotifierProvider<Auth>.value(value: auth),
@@ -116,5 +119,45 @@ void main() {
     preferences.setWeightUnit(other);
     await tester.pump();
     expect(recorder.told.last?.unit, other);
+  });
+
+  testWidgets('the health metrics the widget offers ride along while health has data (#366)', (tester) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final store = FakeHealthStore();
+    store.daily
+      ..[HealthMetric.restingHeartRate] = [
+        (day: today.subtract(const Duration(days: 200)), value: 64),
+        (day: today, value: 58),
+      ]
+      ..[HealthMetric.steps] = [(day: today.subtract(const Duration(days: 200)), value: 9000)]
+      // read, but not a data type of the widget
+      ..[HealthMetric.heartRateVariability] = [(day: today, value: 40)];
+    final health = Health(device: FakeHealthDevice(), local: store)..userId = 'u1';
+    await health.init();
+    when(service.getWorkoutHistory('u1')).thenAnswer((_) async => <Workout>[]);
+    await pump(tester, health: health);
+    await workouts.initHistory();
+    await tester.pump();
+
+    expect(recorder.told.last!.health, {
+      HealthMetric.restingHeartRate: {today: 58.0},
+      // offered, with nothing in the window
+      HealthMetric.steps: <DateTime, double>{},
+    });
+
+    await health.forget();
+    await tester.pump();
+    expect(recorder.told.last!.health, isEmpty, reason: 'the copy goes with the mirror');
+  });
+
+  testWidgets('without health, the snapshot carries none', (tester) async {
+    when(service.getWorkoutHistory('u1')).thenAnswer((_) async => <Workout>[]);
+    await pump(tester);
+    await workouts.initHistory();
+    await tester.pump();
+
+    expect(recorder.told.single!.health, isEmpty);
+    expect(recorder.told.single!.toMap().containsKey('health'), isFalse);
   });
 }

@@ -26,13 +26,15 @@ class TrainingWidgetSettings : Activity() {
         setContentView(R.layout.widget_training_settings)
         val metrics = findViewById<RadioGroup>(R.id.widget_metrics)
         val ranges = findViewById<RadioGroup>(R.id.widget_ranges)
-        TrainingMetric.entries.forEach { metric ->
+        // a health metric only while the app publishes it (#366)
+        val snapshot = TrainingSnapshot.read(TrainingSnapshot.prefs(this)) ?: TrainingSnapshot.EMPTY
+        TrainingMetric.entries.filter(snapshot::offers).forEach { metric ->
             metrics.addView(choice(METRICS + metric.ordinal, TrainingWidget.metricTitle(metric)))
         }
         TrainingRange.entries.forEach { range ->
             ranges.addView(choice(RANGES + range.ordinal, TrainingWidget.rangeTitle(range)))
         }
-        metrics.check(TrainingWidget.metric(this, widgetId).ordinal + METRICS)
+        metrics.check(TrainingWidget.metric(this, widgetId, snapshot).ordinal + METRICS)
         ranges.check(TrainingWidget.range(this, widgetId).ordinal + RANGES)
 
         findViewById<Button>(R.id.widget_done).setOnClickListener {
