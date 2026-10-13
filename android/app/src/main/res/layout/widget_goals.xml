@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Goals widget (#368): up to three goals, each with its status and a
+     bar to the current rung; the small widget shows one. With no active goal,
+     what a goal would show and the way to add one. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:clipToOutline="true"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:text="@string/widget_goals_name"
+            android:textColor="@color/widget_text"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_heart" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_goal0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_goal_title0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_goal_status0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_secondary"
+            android:textSize="12sp" />
+
+        <ProgressBar
+            android:id="@+id/widget_goal_bar0"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="4dp"
+            android:importantForAccessibility="no"
+            android:max="1000"
+            android:progressBackgroundTint="@color/widget_secondary" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/widget_goal1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_goal_title1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_goal_status1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_secondary"
+            android:textSize="12sp" />
+
+        <ProgressBar
+            android:id="@+id/widget_goal_bar1"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="4dp"
+            android:importantForAccessibility="no"
+            android:max="1000"
+            android:progressBackgroundTint="@color/widget_secondary" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/widget_goal2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_goal_title2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_goal_status2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_secondary"
+            android:textSize="12sp" />
+
+        <ProgressBar
+            android:id="@+id/widget_goal_bar2"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="4dp"
+            android:importantForAccessibility="no"
+            android:max="1000"
+            android:progressBackgroundTint="@color/widget_secondary" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_goals_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="3"
+        android:text="@string/widget_goals_empty"
+        android:textColor="@color/widget_secondary"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/widget_add_goal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="@string/widget_add_goal"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+</LinearLayout>
