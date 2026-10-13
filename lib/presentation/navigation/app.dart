@@ -364,6 +364,17 @@ class HeartApp extends StatelessWidget {
             goals: LocalGoals(db),
           ),
         ),
+        // its other half (#329): Heart's own JSON export read back into the
+        // mirror through the same adapters, for the upsync to carry onwards
+        Provider<DataImport>(
+          create: (_) => DataImport(
+            workouts: db,
+            templates: db,
+            folders: LocalTemplateFolders(db),
+            exercises: db,
+            goals: LocalGoals(db),
+          ),
+        ),
       ],
       builder: (_, _) {
         return Consumer<AppTheme>(

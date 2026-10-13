@@ -2934,6 +2934,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "importExplainerHeart": "From another account or another phone? Bring your Heart history along.\n\nIn Heart, go to Settings → Export my data and save either file, then pick it here. The JSON brings everything back: workouts, templates and folders, custom exercises and goals. The CSV brings workouts and their sets only.",
+  "@importExplainerHeart": {
+    "description": "Import page, explains where Heart's own export files (JSON and CSV) come from and what each carries",
+    "type": "text",
+    "placeholders": {}
+  },
   "importSourceTitle": "Exported from",
   "@importSourceTitle": {
     "description": "Import page, title above the Strong/Hevy switch: which app the export came from",
@@ -2981,6 +2987,60 @@
     "description": "Import page, body of the rejected-file error state when the file was sent as a Hevy export",
     "type": "text",
     "placeholders": {}
+  },
+  "importFailedBodyHeart": "It couldn't be read as a Heart export. Pick a file from Export my data and try again.",
+  "@importFailedBodyHeart": {
+    "description": "Import page, body of the rejected-file error state when the file was sent as Heart's own export",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importExplainerHeartJson": "Bring back what you exported from Heart, on this phone or another.\n\nIn Heart, go to Settings → Export my data → Export as JSON. Save the file, then pick it here. Everything in it comes back: workouts, templates and folders, custom exercises and goals.",
+  "@importExplainerHeartJson": {
+    "description": "Import page without an account, where only Heart's own JSON export can be imported: where the file comes from and what it carries",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importFailedBodyNewer": "It was exported by a newer version of Heart. Update the app, then try again.",
+  "@importFailedBodyNewer": {
+    "description": "Import page, body of the rejected-file error state when a Heart export was written by a newer app version",
+    "type": "text",
+    "placeholders": {}
+  },
+  "jsonFiles": "JSON files",
+  "@jsonFiles": {
+    "description": "File-type label shown in the platform file picker, for Heart's own JSON export",
+    "type": "text",
+    "placeholders": {}
+  },
+  "importedTemplates": "{count, plural, =1{1 template imported} other{{count} templates imported}}",
+  "@importedTemplates": {
+    "description": "Import report line, how many templates came over from a Heart JSON export",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importedFolders": "{count, plural, =1{1 folder imported} other{{count} folders imported}}",
+  "@importedFolders": {
+    "description": "Import report line, how many template folders came over from a Heart JSON export",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importedGoals": "{count, plural, =1{1 goal imported} other{{count} goals imported}}",
+  "@importedGoals": {
+    "description": "Import report line, how many goals came over from a Heart JSON export",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "importParkedHeadline": "We kept your file",
   "@importParkedHeadline": {
