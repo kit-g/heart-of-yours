@@ -97,6 +97,14 @@ class ArbMerge(unittest.TestCase):
 
         self.assertEqual(list(json.loads(render_arb(result.entries))), ["a", "@a", "b", "@b", "c", "@c", "d"])
 
+    def test_a_repeated_key_reads_as_json_reads_it(self):
+        source = arb(A, A_META, B, '"a": "Alpha, again"')
+
+        document = parse_arb(source)
+
+        self.assertEqual(document.order, ["a", "@a", "b"])
+        self.assertEqual(json.loads(render_arb(document.entries_in_order())), json.loads(source))
+
     def test_unchanged_file_round_trips_byte_for_byte(self):
         source = arb(A, A_META, B, B_META)
         self.assertEqual(render_arb(parse_arb(source).entries_in_order()), source)

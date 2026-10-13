@@ -73,9 +73,10 @@ def parse_arb(source: str) -> Document:
             raise ValueError(f"expected ':' after {key!r}")
         value_start = _skip(source, colon + 1, " \t\r\n")
         _, end = decoder.raw_decode(source, value_start)
-        if key in text:
-            raise ValueError(f"duplicate key {key!r}")
-        order.append(key)
+        # a repeated key reads as a JSON decoder reads it: the first one's
+        # place, the last one's value
+        if key not in text:
+            order.append(key)
         text[key] = source[position:end]
         position = end
     return Document(order, text)
