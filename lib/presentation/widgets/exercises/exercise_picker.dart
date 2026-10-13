@@ -19,6 +19,10 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   /// last either way.
   final bool showsRecent;
 
+  /// Which exercises the list holds at all, when only some can answer the
+  /// question; the rest are left out, not shown and refused.
+  final bool Function(Exercise)? offers;
+
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
 
@@ -32,7 +36,15 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     this.onExerciseSelected,
     this.highlightedName,
     this.showsRecent = true,
+    this.offers,
   });
+
+  List<Exercise> _offered(List<Exercise> exercises) {
+    return switch (offers) {
+      null => exercises,
+      final offers => exercises.where(offers).toList(),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -288,14 +300,18 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               // the last few done above the whole library, which keeps its
               // own order ([showsRecent]); the library tab shows just that.
               final searching = value.text.trim().isNotEmpty;
-              final recent = showsRecent && !searching
-                  ? exercises.recent(previous.lastDone, filters: true, isMine: mine)
-                  : const <Exercise>[];
-              final found = exercises.search(
-                value.text,
-                filters: true,
-                isMine: mine,
-                lastDone: searching ? previous.lastDone : null,
+              final recent = _offered(
+                showsRecent && !searching
+                    ? exercises.recent(previous.lastDone, filters: true, isMine: mine)
+                    : const <Exercise>[],
+              );
+              final found = _offered(
+                exercises.search(
+                  value.text,
+                  filters: true,
+                  isMine: mine,
+                  lastDone: searching ? previous.lastDone : null,
+                ),
               );
 
               SliverList list(List<Exercise> exercises) {

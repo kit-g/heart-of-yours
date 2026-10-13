@@ -53,20 +53,26 @@ Future<(Exercise, ChartPreferenceType)?> showExercisePicker(
 /// Picks one exercise, and that is the answer.
 ///
 /// [except] is shown highlighted, as the one the question is about, and a tap
-/// on it is not an answer. The search field's controller and focus belong to
+/// on it is not an answer. Only exercises [offers] lets through are listed,
+/// when given. The search field's controller and focus belong to
 /// the dialog, so they go when its route does, never under a field still
 /// animating away.
-Future<Exercise?> showSingleExercisePicker(BuildContext context, {ExerciseId? except}) {
+Future<Exercise?> showSingleExercisePicker(
+  BuildContext context, {
+  ExerciseId? except,
+  bool Function(Exercise)? offers,
+}) {
   return showDialog<Exercise?>(
     context: context,
-    builder: (_) => _SingleExercisePicker(except: except),
+    builder: (_) => _SingleExercisePicker(except: except, offers: offers),
   );
 }
 
 class _SingleExercisePicker extends StatefulWidget {
   final ExerciseId? except;
+  final bool Function(Exercise)? offers;
 
-  const new({this.except});
+  const new({this.except, this.offers});
 
   @override
   State<_SingleExercisePicker> createState() => _SingleExercisePickerState();
@@ -89,6 +95,7 @@ class _SingleExercisePickerState extends State<_SingleExercisePicker> {
       controller: _controller,
       focus: _focus,
       highlighted: widget.except,
+      offers: widget.offers,
       onExerciseSelected: (exercise, _) {
         if (exercise.id != widget.except) Navigator.of(context).pop(exercise);
       },
@@ -102,12 +109,14 @@ class _PickerCard extends StatelessWidget {
   final FocusNode focus;
   final void Function(Exercise, TapDownDetails?) onExerciseSelected;
   final ExerciseId? highlighted;
+  final bool Function(Exercise)? offers;
 
   const new({
     required this.controller,
     required this.focus,
     required this.onExerciseSelected,
     this.highlighted,
+    this.offers,
   });
 
   @override
@@ -148,6 +157,7 @@ class _PickerCard extends StatelessWidget {
             searchController: controller,
             focusNode: focus,
             highlightedName: highlighted,
+            offers: offers,
             onExerciseSelected: onExerciseSelected,
           ),
         ),

@@ -9,6 +9,14 @@ bool _canMoveHistory(BuildContext context, {required void Function(Exercise)? on
   return Exercises.of(context).canMoveHistory && !Workouts.of(context).hasActiveWorkout;
 }
 
+/// Whether [target]'s sets can hold [source]'s as they were logged: the same
+/// columns, so an ab wheel's reps never land on a ride's distance and time, and
+/// an assisted weight only where weight means assistance, never added load.
+bool _holdsHistoryOf(Exercise target, Exercise source) {
+  return listEquals(SetColumn.of(target.category), SetColumn.of(source.category)) &&
+      (target.category == .assistedBodyWeight) == (source.category == .assistedBodyWeight);
+}
+
 /// Moves [source]'s history onto an exercise the user picks: the target, then
 /// what the move would do, then the move. [onMoved] is handed the target once
 /// the history is there.
@@ -21,7 +29,11 @@ Future<void> _onMoveHistory(
   final messenger = ScaffoldMessenger.of(context);
   final copy = L.of(context);
 
-  final target = await showSingleExercisePicker(context, except: source.id);
+  final target = await showSingleExercisePicker(
+    context,
+    except: source.id,
+    offers: (exercise) => _holdsHistoryOf(exercise, source),
+  );
   if (target == null || !context.mounted) return;
 
   // started now, and read by the dialog once it is up: its failure is the

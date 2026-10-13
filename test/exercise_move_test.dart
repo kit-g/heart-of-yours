@@ -13,11 +13,11 @@ import 'support/exercise_detail_test_helpers.dart';
 
 /// Moving an exercise's history onto another, from its page (#338).
 void main() {
-  Exercise lift(String name, {bool mine = false}) {
+  Exercise lift(String name, {bool mine = false, String category = 'Barbell'}) {
     return Exercise.fromJson({
       'id': 'id-$name',
       'name': name,
-      'category': 'Barbell',
+      'category': category,
       'target': 'Chest',
       'isMine': mine,
     });
@@ -26,6 +26,9 @@ void main() {
   final bench = lift('Bench Press');
   final incline = lift('Incline Bench Press');
   final custom = lift('My Bench', mine: true);
+  final dumbbell = lift('Dumbbell Bench Press', category: 'Dumbbell');
+  final cycling = lift('Cycling', category: 'Cardio');
+  final assisted = lift('Assisted Dip', category: 'Assisted Body Weight');
 
   late _Moves moves;
   late RemoteAccess access;
@@ -47,7 +50,7 @@ void main() {
     final library = MockExerciseLibraryService();
     when(library.getLibrary(cached: anyNamed('cached'))).thenAnswer(
       (_) async => (
-        (exercises: [bench, incline], glossary: SearchGlossary.empty()),
+        (exercises: [bench, incline, dumbbell, cycling, assisted], glossary: SearchGlossary.empty()),
         (version: 'run-1', locale: 'en', etag: null),
       ),
     );
@@ -201,6 +204,22 @@ void main() {
     expect(moved, [bench]);
     expect(exercises.lookup(custom.id), isNull);
     expect(find.text(l.moveHistoryDone(bench.name)), findsOneWidget);
+  });
+
+  testWidgets('the picker offers only exercises whose sets hold the same columns', (tester) async {
+    await pump(tester, custom);
+    final l = copy(tester);
+
+    await tester.tap(find.byTooltip(l.exerciseOptions));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l.moveHistory));
+    await tester.pumpAndSettle();
+
+    // weight × reps takes weight × reps, whatever holds the weight
+    expect(find.text(dumbbell.name), findsOneWidget);
+    // a ride's distance and time, and an assisted weight, would not read as a press
+    expect(find.text(cycling.name), findsNothing);
+    expect(find.text(assisted.name), findsNothing);
   });
 
   testWidgets('a refused preview says so and offers no Move', (tester) async {
