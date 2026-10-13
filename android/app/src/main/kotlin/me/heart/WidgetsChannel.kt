@@ -20,6 +20,14 @@ object WidgetsChannel {
                     }
                     result.success(null)
                 }
+                // the Goals widget (#368): null, or anything unreadable, is
+                // nobody's goals
+                "setGoals" -> {
+                    if (GoalsWidget.write(GoalsWidget.prefs(app), call.arguments as? Map<*, *>)) {
+                        GoalsWidget.updateAll(app)
+                    }
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }

@@ -229,6 +229,12 @@ const widgetCatalogKeys = [
   'widgetStartWorkout',
   'widgetTemplate',
   'widgetEmptyWorkout',
+  // the Goals widget (#368)
+  'widgetGoalsName',
+  'widgetGoalsDescription',
+  'widgetGoal',
+  'widgetGoalsEmpty',
+  'widgetAddGoal',
 ];
 
 /// Writes the widget extension's catalog beside its Info.plist: the

@@ -28,4 +28,9 @@
     <string name="widget_start_workout">Empezar entrenamiento</string>
     <string name="widget_template">Plantilla</string>
     <string name="widget_empty_workout">Entrenamiento vacío</string>
+    <string name="widget_goals_name">Objetivos</string>
+    <string name="widget_goals_description">Tu progreso hacia tus objetivos activos.</string>
+    <string name="widget_goal">Objetivo</string>
+    <string name="widget_goals_empty">Fija un objetivo y mira aquí cuánto te falta.</string>
+    <string name="widget_add_goal">Añadir objetivo</string>
 </resources>

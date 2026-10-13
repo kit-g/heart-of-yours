@@ -574,5 +574,35 @@
     "description": "The choice in the Start widget's Template setting that starts a workout with no exercises instead of a template. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
     "type": "text",
     "placeholders": {}
+  },
+  "widgetGoalsName": "Goals",
+  "@widgetGoalsName": {
+    "description": "Name of the Goals Home Screen widget, which shows progress toward the active goals; in the iOS widget gallery and the Android widget picker. One short word. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetGoalsDescription": "Your progress toward your active goals.",
+  "@widgetGoalsDescription": {
+    "description": "Description of the Goals Home Screen widget in the iOS widget gallery and the Android widget picker. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetGoal": "Goal",
+  "@widgetGoal": {
+    "description": "The setting of the small Goals widget that picks which goal it shows. Title Case in English. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetGoalsEmpty": "Set a goal and see how close you are, right here.",
+  "@widgetGoalsEmpty": {
+    "description": "What the Goals widget says when the user has no active goals; tapping it opens the goals in the app. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetAddGoal": "Add a goal",
+  "@widgetAddGoal": {
+    "description": "The Goals widget's call to action when there are no active goals; tapping it opens the goals in the app. Short. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
   }
 }
