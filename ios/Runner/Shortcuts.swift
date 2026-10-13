@@ -415,6 +415,8 @@ enum ShortcutsChannel {
 
     private static func publishQuickActions() {
         QuickActions.publish(QuickActions.items(enabled: enabled, templates: stored(in: .standard)))
+        // the same list makes the Start widget (#367)
+        StartSnapshot.publish(enabled: enabled, templates: stored(in: .standard))
     }
 
     /// Keeps what Dart published, as [templates] reads it back.

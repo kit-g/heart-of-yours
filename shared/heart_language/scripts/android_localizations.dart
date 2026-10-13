@@ -37,9 +37,24 @@ const androidWidgetKeys = {
   'widgetReps': 'widget_reps',
   'widgetLastWeek': 'widget_last_week',
   'widgetLastQuarter': 'widget_last_quarter',
+  'widgetShortWeek': 'widget_short_week',
+  'widgetShortQuarter': 'widget_short_quarter',
+  // the health data types (#366), in the app's own words for them
+  'healthRestingHeartRate': 'widget_resting_heart_rate',
+  'healthSleep': 'widget_sleep',
+  'healthSteps': 'widget_steps',
+  'healthBodyMass': 'widget_body_mass',
+  'healthBpm': 'widget_bpm',
+  'widgetDailyAverage': 'widget_daily_average',
   'widgetKg': 'widget_kg',
   'widgetLbs': 'widget_lbs',
   'widgetDone': 'widget_done',
+  // the Start widget (#367)
+  'widgetStartName': 'widget_start_name',
+  'widgetStartDescription': 'widget_start_description',
+  'widgetStartWorkout': 'widget_start_workout',
+  'widgetTemplate': 'widget_template',
+  'widgetEmptyWorkout': 'widget_empty_workout',
 };
 
 /// Keeps the launcher's labels and the widget's copy on the same translation

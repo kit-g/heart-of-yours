@@ -550,6 +550,22 @@ void main() {
       expect(sut.status, UpsyncStatus.idle, reason: 'and so there is no line to show');
     });
 
+    test('adopt stands down in an anonymous session, so sign-in still replays its rows', () async {
+      // An anonymous launch reaches adopt like any other. Everything in its
+      // store is the user's own — written offline or imported from a file
+      // (#329) — and marking it already-there skips it at sign-in.
+      seedStore();
+      access.account = false;
+      await sut.adopt(uid);
+      expect(ledger.entries, isEmpty, reason: 'nothing marked as already there');
+
+      access.account = true;
+      await sut.claim(from: uid, to: uid);
+      await sut.run(uid);
+
+      expect(sut.report.uploaded, greaterThan(0), reason: 'the anonymous store still went up');
+    });
+
     test('adopt stands down while a replay is still owed', () async {
       // Otherwise it would mark the user's own unsent rows as already-there.
       seedStore();

@@ -135,11 +135,12 @@ void main() {
       expect(find.byKey(AppKeys.eraseData), findsNothing);
     });
 
-    testWidgets('stays for an anonymous session, where import is absent', (tester) async {
+    testWidgets('stays for an anonymous session, beside the import that reads it back', (tester) async {
       await pumpToSettings(tester, firebase: MockFirebaseAuth(signedIn: false));
 
       expect(find.byKey(AppKeys.exportData), findsOneWidget);
-      expect(find.byIcon(Icons.upload_file_rounded), findsNothing);
+      // its JSON imports without an account (#329)
+      expect(find.byIcon(Icons.upload_file_rounded), findsOneWidget);
       expect(find.byKey(AppKeys.eraseData), findsOneWidget);
     });
   });

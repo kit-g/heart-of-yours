@@ -12,7 +12,20 @@
     <string name="widget_reps">Повторы</string>
     <string name="widget_last_week">Последние 7 дней</string>
     <string name="widget_last_quarter">Последние 3 месяца</string>
+    <string name="widget_short_week">7 дней</string>
+    <string name="widget_short_quarter">3 месяца</string>
+    <string name="widget_resting_heart_rate">Пульс в покое</string>
+    <string name="widget_sleep">Сон</string>
+    <string name="widget_steps">Шаги</string>
+    <string name="widget_body_mass">Вес</string>
+    <string name="widget_bpm">уд/мин</string>
+    <string name="widget_daily_average">В среднем за день</string>
     <string name="widget_kg">кг</string>
     <string name="widget_lbs">фнт</string>
     <string name="widget_done">Готово</string>
+    <string name="widget_start_name">Старт</string>
+    <string name="widget_start_description">Начните тренировку или шаблон одним касанием.</string>
+    <string name="widget_start_workout">Начать тренировку</string>
+    <string name="widget_template">Шаблон</string>
+    <string name="widget_empty_workout">Пустая тренировка</string>
 </resources>

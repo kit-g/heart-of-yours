@@ -12,7 +12,20 @@
     <string name="widget_reps">Reps</string>
     <string name="widget_last_week">Last 7 days</string>
     <string name="widget_last_quarter">Last 3 months</string>
+    <string name="widget_short_week">7 days</string>
+    <string name="widget_short_quarter">3 months</string>
+    <string name="widget_resting_heart_rate">Resting heart rate</string>
+    <string name="widget_sleep">Sleep</string>
+    <string name="widget_steps">Steps</string>
+    <string name="widget_body_mass">Body mass</string>
+    <string name="widget_bpm">bpm</string>
+    <string name="widget_daily_average">Daily average</string>
     <string name="widget_kg">kg</string>
     <string name="widget_lbs">lbs</string>
     <string name="widget_done">Done</string>
+    <string name="widget_start_name">Start</string>
+    <string name="widget_start_description">Start a workout or one of your templates in one tap.</string>
+    <string name="widget_start_workout">Start a workout</string>
+    <string name="widget_template">Template</string>
+    <string name="widget_empty_workout">Empty workout</string>
 </resources>

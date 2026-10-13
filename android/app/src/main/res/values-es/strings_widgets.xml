@@ -12,7 +12,20 @@
     <string name="widget_reps">Repeticiones</string>
     <string name="widget_last_week">Últimos 7 días</string>
     <string name="widget_last_quarter">Últimos 3 meses</string>
+    <string name="widget_short_week">7 días</string>
+    <string name="widget_short_quarter">3 meses</string>
+    <string name="widget_resting_heart_rate">Frecuencia cardiaca en reposo</string>
+    <string name="widget_sleep">Sueño</string>
+    <string name="widget_steps">Pasos</string>
+    <string name="widget_body_mass">Masa corporal</string>
+    <string name="widget_bpm">lpm</string>
+    <string name="widget_daily_average">Promedio diario</string>
     <string name="widget_kg">kg</string>
     <string name="widget_lbs">lbs</string>
     <string name="widget_done">Hecho</string>
+    <string name="widget_start_name">Empezar</string>
+    <string name="widget_start_description">Empieza un entrenamiento o una de tus plantillas con un toque.</string>
+    <string name="widget_start_workout">Empezar entrenamiento</string>
+    <string name="widget_template">Plantilla</string>
+    <string name="widget_empty_workout">Entrenamiento vacío</string>
 </resources>

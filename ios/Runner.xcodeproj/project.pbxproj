@@ -65,6 +65,9 @@
 		610000000000000000000011 /* TrainingSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000001 /* TrainingSnapshot.swift */; };
 		610000000000000000000012 /* TrainingSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000001 /* TrainingSnapshot.swift */; };
 		610000000000000000000013 /* TrainingWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000002 /* TrainingWidget.swift */; };
+		670000000000000000000011 /* StartSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 670000000000000000000001 /* StartSnapshot.swift */; };
+		670000000000000000000012 /* StartSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 670000000000000000000001 /* StartSnapshot.swift */; };
+		670000000000000000000013 /* StartWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 670000000000000000000002 /* StartWidget.swift */; };
 		610000000000000000000014 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000003 /* Localizable.xcstrings */; };
 		610000000000000000000015 /* HomeWidgetsChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000005 /* HomeWidgetsChannel.swift */; };
 		610000000000000000000016 /* TrainingSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000000000000000000006 /* TrainingSnapshotTests.swift */; };
@@ -237,6 +240,8 @@
 		FDF3F4CD8F30591F05A41007 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		610000000000000000000001 /* TrainingSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingSnapshot.swift; sourceTree = "<group>"; };
 		610000000000000000000002 /* TrainingWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingWidget.swift; sourceTree = "<group>"; };
+		670000000000000000000001 /* StartSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartSnapshot.swift; sourceTree = "<group>"; };
+		670000000000000000000002 /* StartWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartWidget.swift; sourceTree = "<group>"; };
 		610000000000000000000003 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		610000000000000000000004 /* OngoingWorkout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OngoingWorkout.entitlements; sourceTree = "<group>"; };
 		610000000000000000000005 /* HomeWidgetsChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWidgetsChannel.swift; sourceTree = "<group>"; };
@@ -456,6 +461,8 @@
 				D104CFDB124801058D590F5E /* OngoingWorkoutLiveActivity.swift */,
 				610000000000000000000001 /* TrainingSnapshot.swift */,
 				610000000000000000000002 /* TrainingWidget.swift */,
+				670000000000000000000001 /* StartSnapshot.swift */,
+				670000000000000000000002 /* StartWidget.swift */,
 				610000000000000000000003 /* Localizable.xcstrings */,
 				610000000000000000000004 /* OngoingWorkout.entitlements */,
 				2A0C5B8E54CEBCC76AF5841F /* Info.plist */,
@@ -838,6 +845,8 @@
 				DAFD43D3D3BBD91C867B2544 /* OngoingWorkoutLiveActivity.swift in Sources */,
 				610000000000000000000011 /* TrainingSnapshot.swift in Sources */,
 				610000000000000000000013 /* TrainingWidget.swift in Sources */,
+				670000000000000000000011 /* StartSnapshot.swift in Sources */,
+				670000000000000000000013 /* StartWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -851,6 +860,7 @@
 				5D0000000000000000000003 /* OngoingWorkoutIntents.swift in Sources */,
 				72D04C271B451DC07C15ADEB /* OngoingWorkoutChannel.swift in Sources */,
 				610000000000000000000012 /* TrainingSnapshot.swift in Sources */,
+				670000000000000000000012 /* StartSnapshot.swift in Sources */,
 				610000000000000000000015 /* HomeWidgetsChannel.swift in Sources */,
 				B74ADED1ADF65E7B22533F18 /* WatchChannel.swift in Sources */,
 				5E0000000000000000000014 /* CommandQueue.swift in Sources */,
