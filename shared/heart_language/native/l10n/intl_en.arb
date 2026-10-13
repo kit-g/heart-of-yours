@@ -544,5 +544,35 @@
     "description": "Button closing the training widget's settings screen on Android, keeping what was picked. One short word. Generated into android res/values*/strings_widgets.xml",
     "type": "text",
     "placeholders": {}
+  },
+  "widgetStartName": "Start",
+  "@widgetStartName": {
+    "description": "Name of the Start Home Screen widget, which starts a workout or a template in one tap; in the iOS widget gallery and the Android widget picker. One short word. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetStartDescription": "Start a workout or one of your templates in one tap.",
+  "@widgetStartDescription": {
+    "description": "Description of the Start Home Screen widget in the iOS widget gallery and the Android widget picker. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetStartWorkout": "Start a workout",
+  "@widgetStartWorkout": {
+    "description": "The Start widget's button for a new empty workout. Short. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetTemplate": "Template",
+  "@widgetTemplate": {
+    "description": "The setting of the small Start widget that picks what it starts: a workout template, or an empty workout. Title Case in English. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
+  },
+  "widgetEmptyWorkout": "Empty workout",
+  "@widgetEmptyWorkout": {
+    "description": "The choice in the Start widget's Template setting that starts a workout with no exercises instead of a template. Generated into ios/OngoingWorkout/Localizable.xcstrings and android res/values*/strings_widgets.xml",
+    "type": "text",
+    "placeholders": {}
   }
 }

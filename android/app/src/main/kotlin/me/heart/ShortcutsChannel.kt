@@ -36,6 +36,9 @@ object ShortcutsChannel {
                 "setEnabled" -> {
                     enabled = call.arguments as? Boolean ?: false
                     publish(context.applicationContext)
+                    // the Start widget's links follow the feature (#367)
+                    ShortcutsStore.put(store, ShortcutsStore.ENABLED, enabled.takeIf { it })
+                    StartWidget.updateAll(context.applicationContext)
                     result.success(null)
                 }
                 "setTemplates" -> {
@@ -46,6 +49,7 @@ object ShortcutsChannel {
                         templates = list
                         publish(context.applicationContext)
                         ShortcutsStore.put(store, ShortcutsStore.TEMPLATES, list)
+                        StartWidget.updateAll(context.applicationContext)
                         result.success(null)
                     }
                 }

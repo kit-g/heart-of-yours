@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A tap on the wide Start widget (#367): a quiet tile on the card. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_tile" />
+    <corners android:radius="12dp" />
+</shape>

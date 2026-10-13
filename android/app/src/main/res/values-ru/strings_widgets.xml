@@ -23,4 +23,9 @@
     <string name="widget_kg">кг</string>
     <string name="widget_lbs">фнт</string>
     <string name="widget_done">Готово</string>
+    <string name="widget_start_name">Старт</string>
+    <string name="widget_start_description">Начните тренировку или шаблон одним касанием.</string>
+    <string name="widget_start_workout">Начать тренировку</string>
+    <string name="widget_template">Шаблон</string>
+    <string name="widget_empty_workout">Пустая тренировка</string>
 </resources>

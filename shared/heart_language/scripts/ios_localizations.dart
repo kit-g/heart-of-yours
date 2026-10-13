@@ -223,6 +223,12 @@ const widgetCatalogKeys = [
   'widgetDailyAverage',
   'widgetKg',
   'widgetLbs',
+  // the Start widget (#367)
+  'widgetStartName',
+  'widgetStartDescription',
+  'widgetStartWorkout',
+  'widgetTemplate',
+  'widgetEmptyWorkout',
 ];
 
 /// Writes the widget extension's catalog beside its Info.plist: the

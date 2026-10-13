@@ -23,4 +23,9 @@
     <string name="widget_kg">kg</string>
     <string name="widget_lbs">lbs</string>
     <string name="widget_done">Hecho</string>
+    <string name="widget_start_name">Empezar</string>
+    <string name="widget_start_description">Empieza un entrenamiento o una de tus plantillas con un toque.</string>
+    <string name="widget_start_workout">Empezar entrenamiento</string>
+    <string name="widget_template">Plantilla</string>
+    <string name="widget_empty_workout">Entrenamiento vacío</string>
 </resources>

@@ -23,4 +23,9 @@
     <string name="widget_kg">kg</string>
     <string name="widget_lbs">lb</string>
     <string name="widget_done">Terminé</string>
+    <string name="widget_start_name">Démarrer</string>
+    <string name="widget_start_description">Démarrez une séance ou l’un de vos modèles d’un seul geste.</string>
+    <string name="widget_start_workout">Démarrer une séance</string>
+    <string name="widget_template">Modèle</string>
+    <string name="widget_empty_workout">Séance vide</string>
 </resources>

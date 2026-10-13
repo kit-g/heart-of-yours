@@ -10,6 +10,10 @@ struct OngoingWorkoutBundle: WidgetBundle {
         if #available(iOS 17, *) {
             TrainingWidget()
         }
+        // one tap into a workout (#367)
+        if #available(iOS 17, *) {
+            StartWidget()
+        }
     }
 }
 

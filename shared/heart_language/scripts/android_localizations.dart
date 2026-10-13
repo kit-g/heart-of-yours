@@ -49,6 +49,12 @@ const androidWidgetKeys = {
   'widgetKg': 'widget_kg',
   'widgetLbs': 'widget_lbs',
   'widgetDone': 'widget_done',
+  // the Start widget (#367)
+  'widgetStartName': 'widget_start_name',
+  'widgetStartDescription': 'widget_start_description',
+  'widgetStartWorkout': 'widget_start_workout',
+  'widgetTemplate': 'widget_template',
+  'widgetEmptyWorkout': 'widget_empty_workout',
 };
 
 /// Keeps the launcher's labels and the widget's copy on the same translation

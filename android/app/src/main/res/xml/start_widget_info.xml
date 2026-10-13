@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Start widget (#367). Its settings are optional on adding it (the
+     first template until the user picks otherwise) and reachable again from a
+     long press. It redraws when the app publishes its templates, so there is
+     no periodic update. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="me.heart.StartWidgetSettings"
+    android:description="@string/widget_start_description"
+    android:initialLayout="@layout/widget_start_small"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:previewLayout="@layout/widget_start_small"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional" />
