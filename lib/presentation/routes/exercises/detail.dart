@@ -25,6 +25,11 @@ class ExerciseDetailPage extends StatelessWidget {
   /// (see [_AddToWorkoutAction]).
   final Future<void> Function(Exercise)? onAddToWorkout;
 
+  /// Where to go once this exercise's history has moved onto another (#338),
+  /// handed that other one. Injected like the actions above: without it the
+  /// menu does not offer the move at all.
+  final void Function(Exercise target)? onHistoryMoved;
+
   const new({
     super.key,
     required this.exercise,
@@ -36,6 +41,7 @@ class ExerciseDetailPage extends StatelessWidget {
     this.onFilter,
     this.onTapAlternative,
     this.onAddToWorkout,
+    this.onHistoryMoved,
   });
 
   @override
@@ -65,6 +71,7 @@ class ExerciseDetailPage extends StatelessWidget {
         onFilter: onFilter,
         onTapAlternative: onTapAlternative,
         onAddToWorkout: onAddToWorkout,
+        onHistoryMoved: onHistoryMoved,
       ),
       _ => _MaterialExerciseDetailPage(
         key: key,
@@ -77,6 +84,7 @@ class ExerciseDetailPage extends StatelessWidget {
         onFilter: onFilter,
         onTapAlternative: onTapAlternative,
         onAddToWorkout: onAddToWorkout,
+        onHistoryMoved: onHistoryMoved,
       ),
     };
   }

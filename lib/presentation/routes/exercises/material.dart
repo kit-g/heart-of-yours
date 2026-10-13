@@ -10,6 +10,7 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
   final void Function(ExerciseFilter)? onFilter;
   final void Function(Exercise)? onTapAlternative;
   final Future<void> Function(Exercise)? onAddToWorkout;
+  final void Function(Exercise target)? onHistoryMoved;
 
   const new({
     super.key,
@@ -22,6 +23,7 @@ class _MaterialExerciseDetailPage extends StatefulWidget {
     this.onFilter,
     this.onTapAlternative,
     this.onAddToWorkout,
+    this.onHistoryMoved,
   });
 
   @override
@@ -67,10 +69,10 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
         actions: [
           _AddToWorkoutAction(exercise: widget.exercise, onAdd: widget.onAddToWorkout),
           if (widget.allowOptions)
-            if (widget.exercise.isMine)
+            if (widget.exercise.isMine || _canMoveHistory(context, onMoved: widget.onHistoryMoved))
               IconButton(
                 tooltip: L.of(context).exerciseOptions,
-                onPressed: () => _onExerciseMenu(context, widget.exercise),
+                onPressed: () => _onExerciseMenu(context, widget.exercise, onHistoryMoved: widget.onHistoryMoved),
                 icon: const Icon(Icons.more_vert_rounded),
               ),
           if (!widget.exercise.isMine)

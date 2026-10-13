@@ -61,6 +61,7 @@ enum _Screen {
   anonymousSettings,
   accountManagement,
   newExerciseDialog,
+  moveHistoryDialog,
   eraseDataDialog,
   importData,
   exportData,
@@ -471,6 +472,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.newExerciseDialog, _Guideline.androidTapTarget, null),
   (_Screen.newExerciseDialog, _Guideline.iosTapTarget, null),
 
+  // The history move's confirmation (lib/presentation/routes/exercises/move.dart),
+  // over a library exercise's page, with the dry run's counts in.
+  (_Screen.moveHistoryDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.moveHistoryDialog, _Guideline.textContrastLight, null),
+  (_Screen.moveHistoryDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.moveHistoryDialog,
+    _Guideline.androidTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.moveHistoryDialog,
+    _Guideline.iosTapTarget,
+    'the two PrimaryButton.wide actions are 32pt tall by design (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+
   // The erase-my-data confirmation over those settings
   // (lib/presentation/routes/settings/page.dart, _onEraseData).
   (_Screen.eraseDataDialog, _Guideline.labeledTapTarget, null),
@@ -816,6 +833,25 @@ void main() {
             _ => Future.error(const SocketException('offline')),
           },
         );
+      case _Screen.moveHistoryDialog:
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench, _squat]));
+        when(db.getExerciseUnits(any)).thenAnswer((_) async => {});
+        when(
+          api.moveExerciseHistory(any, targetId: anyNamed('targetId'), dryRun: anyNamed('dryRun')),
+        ).thenAnswer(
+          (invocation) async => ExerciseMoveReport(
+            sourceId: invocation.positionalArguments.single as String,
+            targetId: invocation.namedArguments[#targetId] as String,
+            dryRun: true,
+            workoutExercises: 12,
+            templateExercises: 2,
+            preferences: 1,
+            preferencesDropped: 1,
+            chartPreferences: 0,
+            goals: 1,
+            sourceDeleted: false,
+          ),
+        );
       case _Screen.restTimers:
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [_bench]));
         when(api.getExercises()).thenAnswer((_) async => [_bench]);
@@ -1040,6 +1076,20 @@ void main() {
         await tester.tap(find.byIcon(Icons.settings_rounded));
         await tester.pumpTimes();
         await tester.tap(find.text('Account control'));
+      case _Screen.moveHistoryDialog:
+        // the catalog the way start-up would read it (see the upsync case)
+        unawaited(Exercises.of(tester.element(find.byType(MaterialApp))).init());
+        await tester.pumpTimes();
+        await tester.tapByKey(AppKeys.exercisesStack);
+        await tester.pumpTimes();
+        await tester.tap(find.text(_bench.name));
+        await tester.pumpTimes();
+        // the detail pane's, beside the library's own options
+        await tester.tap(find.byTooltip('Exercise options').last);
+        await tester.pumpTimes();
+        await tester.tap(find.text('Move history to…'));
+        await tester.pumpTimes();
+        await tester.tap(find.text(_squat.name).last);
       case _Screen.newExerciseDialog:
         await tester.tapByKey(AppKeys.exercisesStack);
         await tester.pumpTimes();

@@ -99,6 +99,7 @@ class HeartApp extends StatelessWidget {
               catalogService: LocalCatalog(db),
               preferenceService: RemoteExercisePreferences(api),
               noteService: ExerciseNotes(db, api),
+              moveService: ExerciseMoves(db, api),
               remote: RemoteAccess.of(context),
               onRestTimer: Timers.of(context).setRestTimer,
               analytics: analytics,

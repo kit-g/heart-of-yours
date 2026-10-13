@@ -108,6 +108,13 @@ extension on BuildContext {
     }
   }
 
+  /// Shows [exerciseId] in place of the exercise open now, on either layout:
+  /// for when the open one may no longer exist (its history moved onto this
+  /// one, #338), so nothing is left behind it to go back to.
+  void replaceExerciseDetail(String exerciseId) {
+    return go('$_exercisesPath/$exerciseId');
+  }
+
   /// Empties the two-pane detail without leaving the exercises stack.
   void closeExerciseDetail() {
     return go(_exercisesPath);

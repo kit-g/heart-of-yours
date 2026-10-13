@@ -114,8 +114,15 @@ extension on Duration {
 }
 
 /// finds "beautiful" timestamps
-Future<void> _onExerciseMenu(BuildContext context, Exercise exercise) {
-  final L(:archive, :unarchive, :edit) = L.of(context);
+///
+/// A library exercise has nothing here but the history move: it is not the
+/// user's to edit or archive.
+Future<void> _onExerciseMenu(
+  BuildContext context,
+  Exercise exercise, {
+  void Function(Exercise target)? onHistoryMoved,
+}) {
+  final L(:archive, :unarchive, :edit, :moveHistory) = L.of(context);
   return showBottomMenu(
     context,
     [
@@ -125,18 +132,28 @@ Future<void> _onExerciseMenu(BuildContext context, Exercise exercise) {
           onPressed: () => showNewExerciseDialog(context, editable: exercise),
           icon: const Icon(Icons.edit_rounded),
         ),
-      if (exercise.isArchived)
+      if (onHistoryMoved != null && _canMoveHistory(context, onMoved: onHistoryMoved))
         BottomMenuAction(
-          title: unarchive,
-          onPressed: () => _onUnarchive(context, exercise),
-          icon: const Icon(Icons.restore_outlined),
-        )
-      else
-        BottomMenuAction(
-          title: archive,
-          onPressed: () => _onArchive(context, exercise),
-          icon: const Icon(Icons.archive_rounded),
+          title: moveHistory,
+          onPressed: () {
+            Navigator.of(context).pop();
+            _onMoveHistory(context, exercise, onMoved: onHistoryMoved);
+          },
+          icon: const Icon(Icons.call_merge_rounded),
         ),
+      if (exercise.isMine)
+        if (exercise.isArchived)
+          BottomMenuAction(
+            title: unarchive,
+            onPressed: () => _onUnarchive(context, exercise),
+            icon: const Icon(Icons.restore_outlined),
+          )
+        else
+          BottomMenuAction(
+            title: archive,
+            onPressed: () => _onArchive(context, exercise),
+            icon: const Icon(Icons.archive_rounded),
+          ),
     ],
   );
 }

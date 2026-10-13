@@ -429,6 +429,7 @@ RouteBase _exercisesRoute() {
                     icon: const Icon(Icons.close),
                   ),
                 },
+                onHistoryMoved: (target) => context.replaceExerciseDetail(target.id),
                 onTapWorkout: (workoutId) {
                   return Workouts.of(context).fetchWorkout(workoutId).then<void>(
                     (_) {
