@@ -73,6 +73,7 @@ class LocalDatabase extends _LocalDatabase
         _Goals,
         _Health,
         _Mirror,
+        _Moves,
         _Stats,
         _TemplateFolders,
         _Templates,
