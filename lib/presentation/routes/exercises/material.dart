@@ -69,7 +69,8 @@ class _MaterialExerciseDetailPageState extends State<_MaterialExerciseDetailPage
         actions: [
           _AddToWorkoutAction(exercise: widget.exercise, onAdd: widget.onAddToWorkout),
           if (widget.allowOptions)
-            if (widget.exercise.isMine || _canMoveHistory(context, onMoved: widget.onHistoryMoved))
+            if (widget.exercise.isMine ||
+                _canMoveHistory(context, widget.exercise, onMoved: widget.onHistoryMoved, listen: true))
               IconButton(
                 tooltip: L.of(context).exerciseOptions,
                 onPressed: () => _onExerciseMenu(context, widget.exercise, onHistoryMoved: widget.onHistoryMoved),

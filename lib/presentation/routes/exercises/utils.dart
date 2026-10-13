@@ -132,7 +132,7 @@ Future<void> _onExerciseMenu(
           onPressed: () => showNewExerciseDialog(context, editable: exercise),
           icon: const Icon(Icons.edit_rounded),
         ),
-      if (onHistoryMoved != null && _canMoveHistory(context, onMoved: onHistoryMoved))
+      if (onHistoryMoved != null && _canMoveHistory(context, exercise, onMoved: onHistoryMoved))
         BottomMenuAction(
           title: moveHistory,
           onPressed: () {

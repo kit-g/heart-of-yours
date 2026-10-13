@@ -1,12 +1,24 @@
 part of 'exercises.dart';
 
-/// Whether an exercise's menu offers to move its history (#338): the page was
-/// given somewhere to go afterwards, there is an account to move it on, and no
-/// workout is in progress — that one lives on the device alone, and would go
-/// on naming an exercise the move may delete.
-bool _canMoveHistory(BuildContext context, {required void Function(Exercise)? onMoved}) {
+/// Whether [source]'s menu offers to move its history (#338): the page was
+/// given somewhere to go afterwards, there is an account to move it on, and the
+/// workout in progress, if any, does not hold [source]. That workout lives on
+/// the device alone: its sets would save under [source] once the history had
+/// left it, and fail outright where the move deleted it. [listen] is for a
+/// build, so adding [source] to the workout takes the offer away.
+bool _canMoveHistory(
+  BuildContext context,
+  Exercise source, {
+  required void Function(Exercise)? onMoved,
+  bool listen = false,
+}) {
   if (onMoved == null) return false;
-  return Exercises.of(context).canMoveHistory && !Workouts.of(context).hasActiveWorkout;
+  final workouts = listen ? Workouts.watch(context) : Workouts.of(context);
+  final holdsSource = switch (workouts.activeWorkout) {
+    null => false,
+    final workout => workout.any((each) => each.exercise.id == source.id),
+  };
+  return Exercises.of(context).canMoveHistory && !holdsSource;
 }
 
 /// Whether [target]'s sets can hold [source]'s as they were logged: the same

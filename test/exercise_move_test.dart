@@ -155,7 +155,9 @@ void main() {
     expect(find.text(l.edit), findsNothing);
   });
 
-  testWidgets('no account, no destination, or a workout running: no move, and no empty menu', (tester) async {
+  testWidgets('no account, no destination, or a running workout holding it: no move, and no empty menu', (
+    tester,
+  ) async {
     access.account = false;
     await pump(tester, bench);
     final l = copy(tester);
@@ -165,8 +167,14 @@ void main() {
     await pump(tester, bench, movable: false);
     expect(find.byTooltip(l.exerciseOptions), findsNothing);
 
+    // a workout running without it leaves the move be
     await workouts.startWorkout(source: .blank, name: 'Now');
     await pump(tester, bench);
+    expect(find.byTooltip(l.exerciseOptions), findsOneWidget);
+
+    // with it, those sets would stay behind on the source
+    await workouts.startExercise(bench);
+    await tester.pumpAndSettle();
     expect(find.byTooltip(l.exerciseOptions), findsNothing);
   });
 
