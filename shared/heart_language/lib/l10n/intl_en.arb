@@ -4530,5 +4530,7 @@
   "moveHistoryFailed": "Couldn't move the history. Nothing changed.",
   "@moveHistoryFailed": {"description": "Snack when an exercise history move failed and nothing was written", "type": "text", "placeholders": {}},
   "moveHistoryGone": "One of these exercises is no longer on your account.",
-  "@moveHistoryGone": {"description": "Snack when a history move is refused because one of the two exercises is no longer on the account", "type": "text", "placeholders": {}}
+  "@moveHistoryGone": {"description": "Snack when a history move is refused because one of the two exercises is no longer on the account", "type": "text", "placeholders": {}},
+  "moveHistoryIncompatible": "{target} logs its sets differently from {source}, so the history can't go there.",
+  "@moveHistoryIncompatible": {"description": "Tooltip on a greyed exercise in the history move picker: its sets have other columns, or an assisted weight, so the source's history cannot move onto it", "type": "text", "placeholders": {"target": {}, "source": {}}}
 }

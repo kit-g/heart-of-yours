@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
+import 'package:heart/presentation/widgets/exercises/exercises.dart' show ExerciseItem;
 import 'package:heart_api/heart_api.dart' show ExerciseMoveRefusal, ExerciseMoveRefused;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
@@ -207,7 +208,7 @@ void main() {
   });
 
   testWidgets('the picker offers only exercises whose sets hold the same columns', (tester) async {
-    await pump(tester, custom);
+    final moved = await pump(tester, custom);
     final l = copy(tester);
 
     await tester.tap(find.byTooltip(l.exerciseOptions));
@@ -215,11 +216,25 @@ void main() {
     await tester.tap(find.text(l.moveHistory));
     await tester.pumpAndSettle();
 
+    // a ride's distance and time, and an assisted weight, would not read as a
+    // press: listed, greyed, and a tap is no answer
+    for (final exercise in [cycling, assisted]) {
+      final row = find.ancestor(of: find.text(exercise.name), matching: find.byType(ExerciseItem));
+      expect(tester.widget<ExerciseItem>(row).enabled, isFalse);
+      await tester.tap(find.text(exercise.name));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text(l.moveHistoryIncompatible(exercise.name, custom.name)), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      expect(moves.calls, isEmpty);
+    }
+
     // weight × reps takes weight × reps, whatever holds the weight
-    expect(find.text(dumbbell.name), findsOneWidget);
-    // a ride's distance and time, and an assisted weight, would not read as a press
-    expect(find.text(cycling.name), findsNothing);
-    expect(find.text(assisted.name), findsNothing);
+    final row = find.ancestor(of: find.text(dumbbell.name), matching: find.byType(ExerciseItem));
+    expect(tester.widget<ExerciseItem>(row).enabled, isTrue);
+    await tester.tap(find.text(dumbbell.name));
+    await tester.pumpAndSettle();
+    expect(moves.calls, [(custom.id, dumbbell.id, true)]);
+    expect(moved, isEmpty);
   });
 
   testWidgets('a refused preview says so and offers no Move', (tester) async {

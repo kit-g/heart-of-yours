@@ -32,7 +32,10 @@ Future<void> _onMoveHistory(
   final target = await showSingleExercisePicker(
     context,
     except: source.id,
-    offers: (exercise) => _holdsHistoryOf(exercise, source),
+    refuses: (exercise) => switch (_holdsHistoryOf(exercise, source)) {
+      true => null,
+      false => copy.moveHistoryIncompatible(exercise.name, source.name),
+    },
   );
   if (target == null || !context.mounted) return;
 
