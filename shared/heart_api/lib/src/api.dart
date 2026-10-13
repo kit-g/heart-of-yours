@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart';
 
 import 'imports.dart';
+import 'moves.dart';
 
 class Api
     with Requests
@@ -469,6 +470,32 @@ class Api
     return switch (code) {
       200 => Exercise.fromJson(json),
       _ => throw ArgumentError(json),
+    };
+  }
+
+  /// Moves everything the account holds under [sourceId] onto [targetId]
+  /// (heart-api#140): logged exercises, template entries, the preference row
+  /// and goals. With [dryRun] nothing is written, and the report is exactly
+  /// what the real call would do, since the server runs the same code and
+  /// rolls it back.
+  ///
+  /// The two refusals the endpoint names are thrown as [ExerciseMoveRefused];
+  /// anything else as a [NetworkException].
+  Future<ExerciseMoveReport> moveExerciseHistory(
+    String sourceId, {
+    required String targetId,
+    bool dryRun = false,
+  }) async {
+    final (json, code) = await post(
+      Router.exerciseMoves(sourceId),
+      body: {'targetId': targetId},
+      query: {if (dryRun) 'dryRun': 'true'},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => ExerciseMoveReport.fromJson(json),
+      (400, {'code': 'same_exercise'}) => throw const ExerciseMoveRefused(.sameExercise),
+      (404, {'code': 'unknown_exercise'}) => throw const ExerciseMoveRefused(.unknownExercise),
+      _ => throw NetworkException(statusCode: code, body: json),
     };
   }
 
@@ -983,6 +1010,10 @@ abstract final class Router {
 
   static String accountToken(String tokenId) {
     return '$accountTokens/$tokenId';
+  }
+
+  static String exerciseMoves(String exerciseId) {
+    return '$exercises/$exerciseId/moves';
   }
 }
 
