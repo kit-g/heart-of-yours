@@ -93,6 +93,8 @@ EVENT_DIMENSIONS = {
     'feature': 'Feature',
     'purpose': 'Token purpose',
     'expiry': 'Token expiry',
+    'from_custom': 'From a custom exercise',
+    'to_custom': 'Onto a custom exercise',
 }
 
 # User properties are user-scoped dimensions; GA4 draws no other distinction.
@@ -117,6 +119,7 @@ METRICS = {
     'pages': 'Backfill pages',
     'unmatched': 'Unmatched exercises',
     'created_custom': 'Custom exercises created',
+    'workout_exercises': 'Logged exercises moved',
 }
 
 

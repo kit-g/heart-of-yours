@@ -175,6 +175,22 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     });
   }
 
+  /// Reads the user's own templates from the mirror again, replacing what is
+  /// held: the rows changed under them (an exercise's history moved, #338),
+  /// and the held copies still name the old exercise.
+  Future<void> reread() async {
+    if (userId case String id) {
+      await _step(() async {
+        final local = await _service.getTemplates(id);
+        if (userId != id) return;
+        _templates
+          ..clear()
+          ..addAll(local);
+        notifyListeners();
+      });
+    }
+  }
+
   /// Runs one step of [init], reporting what it throws instead of letting it
   /// cost the steps after it.
   Future<void> _step(Future<void> Function() body) async {

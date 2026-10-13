@@ -1287,6 +1287,22 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Reads every held workout that names [exerciseId] from the mirror again:
+  /// the rows were re-keyed under them (an exercise's history moved, #338).
+  /// The workout in progress is left alone; nothing moves while there is one.
+  Future<void> reread(ExerciseId exerciseId) async {
+    if (userId case String id) {
+      final holding = _workouts.values
+          .where((workout) => workout.id != _activeWorkoutId && workout.any((each) => each.exercise.id == exerciseId))
+          .map((workout) => workout.id)
+          .toList();
+      for (final workoutId in holding) {
+        if (await _localService.getWorkout(id, workoutId) case Workout fresh) _workouts[workoutId] = fresh;
+      }
+      if (holding.isNotEmpty) notifyListeners();
+    }
+  }
+
   void notifyOfActiveWorkout() {
     if (!_notifiedOfActiveWorkout) {
       _notifiedOfActiveWorkout = true;

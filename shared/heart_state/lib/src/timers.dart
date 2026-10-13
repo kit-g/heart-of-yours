@@ -56,10 +56,15 @@ class Timers with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Reads the stored timers, replacing what is held: the mirror is the
+  /// whole story, and a row it no longer has (an exercise's history moved,
+  /// #338) must not live on here.
   Future<void> init() async {
     if (userId case String userId) {
       final stored = await _service.getTimers(userId);
-      _timers.addAll(stored);
+      _timers
+        ..clear()
+        ..addAll(stored);
       notifyListeners();
     }
   }

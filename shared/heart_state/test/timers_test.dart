@@ -35,6 +35,15 @@ void main() {
       timers.addListener(() => notifications++);
     });
 
+    test('init replaces what is held: a row the store no longer has goes (#338)', () async {
+      timers.userId = 'user-1';
+      service.timersToReturn = {'source': 90};
+      await timers.init();
+      service.timersToReturn = {'target': 90};
+      await timers.init();
+      expect(timers.all, {'target': 90});
+    });
+
     test('operator [] returns expected values', () async {
       timers.userId = 'user-1';
 

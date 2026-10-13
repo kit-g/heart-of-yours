@@ -174,6 +174,7 @@ const _templateCreated = 'template_created';
 const _templateFolderCreated = 'template_folder_created';
 const _templateMoved = 'template_moved';
 const _exerciseCreated = 'exercise_created';
+const _exerciseHistoryMoved = 'exercise_history_moved';
 const _historyBackfilled = 'history_backfilled';
 
 const _dataExported = 'data_exported';
@@ -209,6 +210,9 @@ const _setType = 'set_type';
 const _feature = 'feature';
 const _purpose = 'purpose';
 const _expiry = 'expiry';
+const _fromCustom = 'from_custom';
+const _toCustom = 'to_custom';
+const _workoutExercises = 'workout_exercises';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -413,6 +417,18 @@ class Analytics {
   }
 
   void exerciseCreated() => _log(_exerciseCreated);
+
+  /// An exercise's history was moved onto another (#338). [fromCustom] and
+  /// [toCustom] tell a custom folded into the library apart from a wrong
+  /// import guess between two library exercises; [workoutExercises] is how
+  /// many logged exercises the move re-keyed, the size of what was fixed.
+  void exerciseHistoryMoved({required bool fromCustom, required bool toCustom, required int workoutExercises}) {
+    _log(_exerciseHistoryMoved, {
+      _fromCustom: _flag(fromCustom),
+      _toCustom: _flag(toCustom),
+      _workoutExercises: workoutExercises,
+    });
+  }
 
   void historyBackfilled({required int pages}) {
     _log(_historyBackfilled, {_pages: pages});

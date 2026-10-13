@@ -70,6 +70,17 @@ abstract interface class ExerciseNoteService {
   Future<void> sync(String exerciseId, String? note);
 }
 
+/// Moving an exercise's history onto another (#338): the account's move, and
+/// the mirror's copy of it. One interface for both halves, like
+/// [ExerciseNoteService], because the second only ever follows the first.
+abstract interface class ExerciseMoveService {
+  /// The account's move, or with [dryRun] what it would do, written nowhere.
+  Future<ExerciseMoveReport> move(String sourceId, String targetId, {bool dryRun = false});
+
+  /// Re-keys the device's rows the way [report] says the server did.
+  Future<void> mirror(ExerciseMoveReport report, {required String userId});
+}
+
 class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateSentry {
   final _selectedExercises = <Exercise>{};
   final ExerciseService _service;
@@ -96,6 +107,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   final _units = <ExerciseId, MeasurementUnit>{};
 
   final ExerciseNoteService? _noteService;
+  final ExerciseMoveService? _moveService;
   final _notes = <String, String>{};
 
   bool isInitialized = false;
@@ -119,6 +131,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     this.onError,
     this.onRestTimer,
     this._noteService,
+    this._moveService,
     required this._remoteService,
     required this._service,
     required this._libraryService,
@@ -682,6 +695,57 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     _service.storeExercises([saved], userId: userId);
     _exercises[saved.id] = saved;
     notifyListeners();
+  }
+
+  /// Whether an exercise's history can be moved: it is the account's to move,
+  /// so never without one.
+  bool get canMoveHistory => _moveService != null && _remote.allowed;
+
+  /// What moving [source]'s history onto [target] would do; nothing is written.
+  Future<ExerciseMoveReport> previewMove(Exercise source, Exercise target) {
+    return _moveService!.move(source.id, target.id, dryRun: true);
+  }
+
+  /// Moves everything the account holds under [source] onto [target], on the
+  /// server and then in the mirror, which reads afterwards as if [target] had
+  /// been used all along.
+  ///
+  /// Only this notifier's own state is brought up to date here. The other
+  /// readers of the mirror (templates, goals, timers, history) each read it
+  /// again; the app's exercise page (`_onMoveHistory`) asks each of them.
+  Future<ExerciseMoveReport> moveHistory(Exercise source, Exercise target) async {
+    final service = _moveService!;
+    final report = await service.move(source.id, target.id);
+    analytics?.exerciseHistoryMoved(
+      fromCustom: source.isMine,
+      toCustom: target.isMine,
+      workoutExercises: report.workoutExercises,
+    );
+    if (userId case String id) {
+      // The account has moved by now, so a mirror that fails to follow is
+      // reported, not thrown: the caller would read a throw as "nothing
+      // changed". What it left behind is what the next full read replaces.
+      try {
+        await service.mirror(report, userId: id);
+      } catch (e, s) {
+        onError?.call(e, stacktrace: s);
+      }
+      if (report.sourceDeleted) _exercises.remove(source.id);
+      // the preference row moved or was dropped whole, so the units and
+      // notes are read again rather than reasoned about
+      final units = await _service.getExerciseUnits(id);
+      final notes = await _noteService?.read(id) ?? {};
+      if (userId == id) {
+        _units
+          ..clear()
+          ..addAll(units);
+        _notes
+          ..clear()
+          ..addAll(notes);
+      }
+    }
+    notifyListeners();
+    return report;
   }
 
   Future<List<(num, DateTime)>?> getChartExerciseMetics(
