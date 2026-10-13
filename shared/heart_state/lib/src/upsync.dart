@@ -254,7 +254,13 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// Refuses to run while a replay is still owed. At that point the store holds
   /// the user's own unsent rows, and marking those as already-there would drop
   /// them on the floor.
+  ///
+  /// Refuses without an account for the same reason: nothing in an anonymous
+  /// session's store was downloaded, so all of it is the user's own and owed
+  /// to the account it becomes. Marked here, it would be skipped by the replay
+  /// at sign-in — the ledger moves with the rows.
   Future<void> adopt(String uid) async {
+    if (!_access.account) return;
     if (await _local.isOwed(uid)) return;
     final ledger = await _local.ledger(uid);
     for (final resource in _downloaded) {
