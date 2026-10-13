@@ -98,7 +98,7 @@ void main() {
     );
   }
 
-  Future<void> pumpImportPage(WidgetTester tester) async {
+  Future<void> pumpImportPage(WidgetTester tester, {MockFirebaseAuth? firebase}) async {
     // wide enough for the logo stripe under the test environment's fallback
     // font — see a11y_test.dart
     tester.view.physicalSize = const Size(1200, 2400);
@@ -110,10 +110,12 @@ void main() {
       db: db,
       api: api,
       cdn: cdn,
-      firebaseAuth: MockFirebaseAuth(
-        mockUser: MockUser(uid: 'u1', email: 'u1@test'),
-        signedIn: true,
-      ),
+      firebaseAuth:
+          firebase ??
+          MockFirebaseAuth(
+            mockUser: MockUser(uid: 'u1', email: 'u1@test'),
+            signedIn: true,
+          ),
       settle: false,
     );
     await tester.pumpTimes();
@@ -498,6 +500,187 @@ void main() {
       expect(find.text('Ready to import'), findsNothing);
       expect(find.text('Imported!'), findsNothing);
       expect(find.text("That file didn't work"), findsNothing);
+    });
+  });
+
+  group("Heart's own CSV export (#357)", () {
+    const heart =
+        'workout_id,start,end,exercise_id,exercise_name,set_index,weight,unit,reps,duration,distance,notes\n'
+        '019a,2027-01-01T07:00:00.000Z,2027-01-01T08:00:00.000Z,019b,Bench Press,1,60,kg,8,,,\n';
+
+    testWidgets('goes up as source=heart, with no unit question, no unit and no offset', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(heart), name: 'heart.csv'),
+      );
+      serveImport(
+        preview: {'source': 'heart', 'workoutsFound': 1, 'setsFound': 1, 'exercisesUnmatched': []},
+        report: {'source': 'heart', 'workoutsFound': 1, 'workoutsCreated': 1, 'setsCreated': 1},
+      );
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pumpTimes();
+
+      // the file names its own units and offsets; nothing to ask
+      expect(find.text('Weights in your export'), findsNothing);
+      expect(find.textContaining('Bring your Heart history along'), findsOneWidget);
+
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(requests, hasLength(2));
+      for (final request in requests) {
+        expect(request.url.queryParameters['source'], 'heart');
+        expect(request.url.queryParameters, isNot(contains('unit')));
+        expect(request.url.queryParameters, isNot(contains('tzOffset')));
+        expect(request.body, heart);
+      }
+      expect(find.text('1 workout imported'), findsOneWidget);
+    });
+
+    testWidgets('a rejected file points back at Export my data', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(_csv), name: 'strong.csv'),
+      );
+      serveImport(statusCode: 400, preview: {'reason': 'not a Heart CSV export'});
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(find.text("That file didn't work"), findsOneWidget);
+      expect(find.textContaining('as a Heart export'), findsOneWidget);
+    });
+  });
+
+  group("Heart's own JSON export (#329)", () {
+    final bench = Exercise.fromJson({
+      'id': 'ex-bench',
+      'name': 'Bench Press (Barbell)',
+      'category': 'Barbell',
+      'target': 'Chest',
+    });
+
+    /// What "Export my data" writes for one workout and one template.
+    String export() {
+      Map<String, dynamic> entry(String id) {
+        return {
+          'id': id,
+          'order': 0,
+          'exercise': bench.toMap(),
+          'sets': [
+            {'id': '$id-s', 'weight': 60, 'reps': 8, 'completed': 1},
+          ],
+        };
+      }
+
+      return ExportSnapshot(
+        workouts: [
+          Workout.fromJson({
+            'id': 'w1',
+            'start': '2027-01-01T09:00:00.000Z',
+            'end': '2027-01-01T10:00:00.000Z',
+            'exercises': [entry('w1-0')],
+          }),
+        ],
+        templates: [
+          Template.fromJson({
+            'id': 't1',
+            'name': 'Push day',
+            'order': 0,
+            'exercises': [entry('t1-0')],
+          }),
+        ],
+        folders: const [],
+        exercises: const [],
+        weightUnit: .metric,
+        distanceUnit: .metric,
+        exerciseUnits: const {},
+        goals: const [],
+      ).toJson(exportedAt: DateTime.utc(2027, 1, 2));
+    }
+
+    setUp(() {
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
+      when(db.getTemplates(any)).thenAnswer((_) async => <Template>[]);
+      when(db.getTemplateFolders(any)).thenAnswer((_) async => <TemplateFolder>[]);
+      when(db.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
+      when(
+        db.getTargetUserGoals(
+          requesterId: anyNamed('requesterId'),
+          targetUserId: anyNamed('targetUserId'),
+          archived: anyNamed('archived'),
+        ),
+      ).thenAnswer((_) async => <Goal>[]);
+    });
+
+    testWidgets('is read by the app, not sent, and the account is owed the replay', (tester) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(export()), name: 'heart-export.json'),
+      );
+      serveImport();
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pumpTimes();
+      expect(find.textContaining('The JSON brings everything back'), findsOneWidget);
+
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(requests, isEmpty, reason: 'nothing went to the import endpoint');
+      verify(db.finishWorkout(argThat(isA<Workout>().having((w) => w.id, 'id', 'w1')), 'u1')).called(1);
+      verify(db.storeTemplates(any, userId: 'u1')).called(1);
+      verify(db.oweUpsync('u1')).called(1);
+      expect(find.text('Imported!'), findsOneWidget);
+      expect(find.text('1 workout imported'), findsOneWidget);
+      expect(find.text('1 template imported'), findsOneWidget);
+    });
+
+    testWidgets('a newer layout is refused with a reason the user can act on', (tester) async {
+      final newer = {...jsonDecode(export()) as Map, 'schemaVersion': exportSchemaVersion + 1};
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(jsonEncode(newer)), name: 'heart-export.json'),
+      );
+      serveImport();
+
+      await pumpImportPage(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(find.text("That file didn't work"), findsOneWidget);
+      expect(find.textContaining('a newer version of Heart'), findsOneWidget);
+      verifyNever(db.finishWorkout(any, any));
+    });
+
+    testWidgets('without an account it is the only import, and nothing asks where the file came from', (
+      tester,
+    ) async {
+      FileSelectorPlatform.instance = _FakePicker(
+        XFile.fromData(utf8.encode(export()), name: 'heart-export.json'),
+      );
+      serveImport();
+      // an anonymous session past onboarding opens on the profile
+      SharedPreferences.setMockInitialValues(pastOnboarding());
+
+      await pumpImportPage(tester, firebase: MockFirebaseAuth(signedIn: false));
+
+      expect(find.text('Exported from'), findsNothing);
+      expect(find.text('Strong'), findsNothing);
+      expect(find.text('Weights in your export'), findsNothing);
+      expect(find.textContaining('Export as JSON'), findsOneWidget);
+
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpTimes();
+
+      expect(requests, isEmpty);
+      verify(db.finishWorkout(any, any)).called(1);
+      verifyNever(db.oweUpsync(any));
+      expect(find.text('1 workout imported'), findsOneWidget);
     });
   });
 

@@ -1120,6 +1120,22 @@ void main() {
       expect(preview.setsFound, 140);
     });
 
+    test("Heart's own CSV goes up as source=heart and reads the same preview (#357)", () async {
+      _response(
+        client: client,
+        method: 'POST',
+        path: Router.workoutImports,
+        query: {'source': 'heart', 'dryRun': 'true'},
+        statusCode: 200,
+        body: {'source': 'heart', 'workoutsFound': 3, 'workoutsAlreadyImported': 3, 'setsFound': 27},
+      );
+
+      final preview = await api.previewImportedWorkouts(csv, source: .heart);
+
+      expect(preview.workoutsFound, 3);
+      expect(preview.workoutsAlreadyImported, 3);
+    });
+
     test('a 202 is a parked file, on the dry run and the commit alike', () async {
       const body = {
         'source': 'hevy',
