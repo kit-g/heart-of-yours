@@ -20,4 +20,9 @@
     <string name="widget_start_workout">Начать тренировку</string>
     <string name="widget_template">Шаблон</string>
     <string name="widget_empty_workout">Пустая тренировка</string>
+    <string name="widget_goals_name">Цели</string>
+    <string name="widget_goals_description">Ваш прогресс к активным целям.</string>
+    <string name="widget_goal">Цель</string>
+    <string name="widget_goals_empty">Поставьте цель — и прогресс к ней будет здесь.</string>
+    <string name="widget_add_goal">Добавить цель</string>
 </resources>

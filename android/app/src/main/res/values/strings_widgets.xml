@@ -20,4 +20,9 @@
     <string name="widget_start_workout">Start a workout</string>
     <string name="widget_template">Template</string>
     <string name="widget_empty_workout">Empty workout</string>
+    <string name="widget_goals_name">Goals</string>
+    <string name="widget_goals_description">Your progress toward your active goals.</string>
+    <string name="widget_goal">Goal</string>
+    <string name="widget_goals_empty">Set a goal and see how close you are, right here.</string>
+    <string name="widget_add_goal">Add a goal</string>
 </resources>

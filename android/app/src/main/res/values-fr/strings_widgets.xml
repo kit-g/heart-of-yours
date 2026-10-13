@@ -20,4 +20,9 @@
     <string name="widget_start_workout">Démarrer une séance</string>
     <string name="widget_template">Modèle</string>
     <string name="widget_empty_workout">Séance vide</string>
+    <string name="widget_goals_name">Objectifs</string>
+    <string name="widget_goals_description">Votre progression vers vos objectifs en cours.</string>
+    <string name="widget_goal">Objectif</string>
+    <string name="widget_goals_empty">Fixez un objectif et suivez ici où vous en êtes.</string>
+    <string name="widget_add_goal">Ajouter un objectif</string>
 </resources>

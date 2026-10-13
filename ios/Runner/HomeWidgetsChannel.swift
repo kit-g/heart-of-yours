@@ -16,6 +16,13 @@ enum HomeWidgetsChannel {
                     WidgetCenter.shared.reloadTimelines(ofKind: TrainingSnapshot.kind)
                 }
                 result(nil)
+            case "setGoals":
+                // the Goals widget (#368): null, or anything unreadable, is
+                // nobody's goals
+                if GoalsSnapshot.write(GoalsSnapshot(map: call.arguments)) {
+                    WidgetCenter.shared.reloadTimelines(ofKind: GoalsSnapshot.kind)
+                }
+                result(nil)
             default:
                 result(FlutterMethodNotImplemented)
             }

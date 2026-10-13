@@ -14,6 +14,10 @@ struct OngoingWorkoutBundle: WidgetBundle {
         if #available(iOS 17, *) {
             StartWidget()
         }
+        // the active goals (#368)
+        if #available(iOS 17, *) {
+            GoalsWidget()
+        }
     }
 }
 

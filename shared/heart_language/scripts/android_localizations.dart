@@ -46,6 +46,12 @@ const androidWidgetKeys = {
   'widgetStartWorkout': 'widget_start_workout',
   'widgetTemplate': 'widget_template',
   'widgetEmptyWorkout': 'widget_empty_workout',
+  // the Goals widget (#368)
+  'widgetGoalsName': 'widget_goals_name',
+  'widgetGoalsDescription': 'widget_goals_description',
+  'widgetGoal': 'widget_goal',
+  'widgetGoalsEmpty': 'widget_goals_empty',
+  'widgetAddGoal': 'widget_add_goal',
 };
 
 /// Keeps the launcher's labels and the widget's copy on the same translation
