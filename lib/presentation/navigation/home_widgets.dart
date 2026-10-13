@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:heart/core/env/home_widgets.dart';
 import 'package:heart/core/theme/state.dart';
 import 'package:heart/core/utils/training_days.dart';
+import 'package:heart_health/heart_health.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -12,8 +13,10 @@ const _span = 91;
 
 /// Keeps the Home Screen's training widget (#161) told what it draws: the
 /// signed-in user's finished workouts per day, the weight unit, and the
-/// theme's accent. Told again whenever one of them changes, and only when
-/// what it would be told changed.
+/// theme's accent — and the health metrics it can show instead (#366), while
+/// health has read them. Told again whenever one of them changes, and only
+/// when what it would be told changed: health forgotten or signed out, the
+/// widget's copy goes with the mirror.
 ///
 /// Told whether or not a widget is on the Home Screen: the snapshot is a few
 /// kilobytes on the device, and a widget the user has just added then draws
@@ -37,6 +40,9 @@ class _HomeWidgetsPresenterState extends State<HomeWidgetsPresenter> {
   Preferences? _preferences;
   AppTheme? _theme;
   Auth? _auth;
+
+  /// Null where nothing provides it (tests that don't need it).
+  Health? _health;
 
   /// What was last told, encoded, so the same snapshot is not sent again on
   /// every set ticked; null before the first.
@@ -65,11 +71,17 @@ class _HomeWidgetsPresenterState extends State<HomeWidgetsPresenter> {
       _auth?.removeListener(_sync);
       _auth = auth..addListener(_sync);
     }
+    final health = Provider.of<Health?>(context, listen: false);
+    if (!identical(health, _health)) {
+      _health?.removeListener(_sync);
+      _health = health?..addListener(_sync);
+    }
     _sync();
   }
 
   @override
   void dispose() {
+    _health?.removeListener(_sync);
     _workouts?.removeListener(_sync);
     _preferences?.removeListener(_sync);
     _theme?.removeListener(_sync);
@@ -109,6 +121,22 @@ class _HomeWidgetsPresenterState extends State<HomeWidgetsPresenter> {
       unit: _preferences?.weightUnit ?? .metric,
       accent: preset.light.accent.toARGB32(),
       accentDark: preset.dark.accent.toARGB32(),
+      health: _healthDays(since: DateTime(now.year, now.month, now.day - _span)),
     );
+  }
+
+  /// The health metrics the widget offers that the mirror holds, each with
+  /// its days since [since]; none while health has read nothing.
+  Map<HealthMetric, Map<DateTime, double>> _healthDays({required DateTime since}) {
+    final health = _health;
+    if (health == null || !health.hasData) return const {};
+    final available = health.available.toSet();
+    return {
+      for (final metric in TrainingSnapshot.widgetHealth.where(available.contains))
+        metric: {
+          for (final (:day, :value) in health[metric])
+            if (!day.isBefore(since)) DateTime(day.year, day.month, day.day): value,
+        },
+    };
   }
 }

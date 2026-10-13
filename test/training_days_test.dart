@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/home_widgets.dart';
 import 'package:heart/core/utils/training_days.dart';
-import 'package:heart_models/heart_models.dart';
+import 'package:heart_health/heart_health.dart';
+import 'package:heart_models/heart_models.dart' hide Health;
 
 final _bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
 final _pullUp = Exercise(name: 'Pull-up', category: .repsOnly, target: .back);
@@ -117,6 +118,24 @@ void main() {
       'days': {
         '2026-10-02': [1234.6, 1, 3000, 12, 96],
       },
+    });
+  });
+
+  test('health days ride along by metric and date, to a tenth (#366)', () {
+    final snapshot = TrainingSnapshot(
+      days: const {},
+      unit: .metric,
+      accent: 0,
+      accentDark: 0,
+      health: {
+        HealthMetric.restingHeartRate: {DateTime(2026, 10, 2): 57.66},
+        HealthMetric.steps: const {},
+      },
+    );
+
+    expect(snapshot.toMap()['health'], {
+      'restingHeartRate': {'2026-10-02': 57.7},
+      'steps': <String, double>{},
     });
   });
 }

@@ -7,7 +7,9 @@ import Foundation
 /// Compiled into both. The app writes it whenever Dart publishes a change on
 /// `heart/widgets`; the widget only reads it, and picks its own window from
 /// the days and today's date, so the bars roll over at midnight with the app
-/// closed. Training totals only: nothing read from Health.
+/// closed. And, while the app's health mirror has them, the health metrics
+/// the widget can show instead (#366): device-only, drawn here and nowhere
+/// else, redacted while the phone is locked.
 struct TrainingSnapshot: Codable, Equatable {
     enum Unit: String, Codable {
         case metric, imperial
@@ -24,6 +26,9 @@ struct TrainingSnapshot: Codable, Equatable {
     /// `yyyy-MM-dd` => `[volume kg, workouts, seconds, sets, reps]`, in
     /// `Metric` order; days without a workout are absent.
     var days: [String: [Double]]
+    /// `HealthKind` raw value => `yyyy-MM-dd` => the day's value (#366);
+    /// a kind absent, nothing of it to offer.
+    var health: [String: [String: Double]]?
 
     /// From what Dart sends on the channel; nil for anything it doesn't
     /// recognise.
@@ -36,11 +41,12 @@ struct TrainingSnapshot: Codable, Equatable {
         self = decoded
     }
 
-    init(unit: Unit, accent: UInt32, accentDark: UInt32, days: [String: [Double]]) {
+    init(unit: Unit, accent: UInt32, accentDark: UInt32, days: [String: [Double]], health: [String: [String: Double]]? = nil) {
         self.unit = unit
         self.accent = accent
         self.accentDark = accentDark
         self.days = days
+        self.health = health
     }
 
     /// `group.<the phone app's bundle id>`, from the target's Info.plist, where
@@ -78,6 +84,20 @@ enum TrainingMetric: Int, CaseIterable {
     case volume, workouts, duration, sets, reps
 }
 
+/// A health data type the widget can show (#366), by the key Dart publishes it
+/// under: a reading a day for resting heart rate and body mass, a night's sleep
+/// in minutes, the day's steps.
+enum HealthKind: String, CaseIterable {
+    case restingHeartRate
+    case sleep = "sleepAsleep"
+    case steps
+    case bodyMass
+
+    /// Whether a window's figure is its days' average, not their sum: a week
+    /// of resting heart rates adds up to nothing.
+    var averaged: Bool { self != .steps }
+}
+
 /// The widget's window: the last 7 days, a bar each, or the last 13 weeks
 /// from a Monday, a bar each — the app's weeks start on Monday everywhere.
 enum TrainingRange: CaseIterable {
@@ -102,19 +122,59 @@ extension TrainingSnapshot {
                 }
             }
         case .quarter:
-            let weekday = calendar.component(.weekday, from: today)
-            // Sunday is 1, Monday 2: this many days since Monday
-            let monday = calendar.date(byAdding: .day, value: -((weekday + 5) % 7), to: today) ?? today
-            return (0..<13).reversed().compactMap { back in
-                calendar.date(byAdding: .weekOfYear, value: -back, to: monday).map { start in
-                    let total = (0..<7)
-                        .compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
-                        .map { value(of: metric, on: $0, calendar: calendar) }
-                        .reduce(0, +)
-                    return TrainingBar(start: start, value: total)
-                }
+            return Self.weeks(ending: today, calendar: calendar).map { start in
+                let total = Self.days(of: start, calendar: calendar)
+                    .map { value(of: metric, on: $0, calendar: calendar) }
+                    .reduce(0, +)
+                return TrainingBar(start: start, value: total)
             }
         }
+    }
+
+    /// Whether the app published [kind] (#366): health on, and read.
+    func offers(_ kind: HealthKind) -> Bool {
+        health?[kind.rawValue] != nil
+    }
+
+    /// [kind]'s bars over [range] ending today, oldest first, and the figure
+    /// the window comes to: steps summed, the rest averaged over the days with
+    /// a reading. A week's bar is the same: steps summed, the rest averaged.
+    /// Nil for a window without a single reading.
+    func health(_ kind: HealthKind, _ range: TrainingRange, now: Date, calendar: Calendar = .training) -> (bars: [TrainingBar], total: Double?) {
+        let readings = health?[kind.rawValue] ?? [:]
+        let today = calendar.startOfDay(for: now)
+        func reading(_ day: Date) -> Double? { readings[Self.date(day, calendar: calendar)] }
+        func combined(_ values: [Double]) -> Double? {
+            guard !values.isEmpty else { return nil }
+            let sum = values.reduce(0, +)
+            return kind.averaged ? sum / Double(values.count) : sum
+        }
+        switch range {
+        case .week:
+            let days = (0..<7).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: today) }
+            let bars = days.map { TrainingBar(start: $0, value: reading($0) ?? 0) }
+            return (bars, combined(days.compactMap(reading)))
+        case .quarter:
+            let weeks = Self.weeks(ending: today, calendar: calendar)
+            let bars = weeks.map { start in
+                TrainingBar(start: start, value: combined(Self.days(of: start, calendar: calendar).compactMap(reading)) ?? 0)
+            }
+            let days = weeks.flatMap { Self.days(of: $0, calendar: calendar) }.filter { $0 <= today }
+            return (bars, combined(days.compactMap(reading)))
+        }
+    }
+
+    /// The Mondays of the 13 weeks ending with [today]'s, oldest first.
+    private static func weeks(ending today: Date, calendar: Calendar) -> [Date] {
+        let weekday = calendar.component(.weekday, from: today)
+        // Sunday is 1, Monday 2: this many days since Monday
+        let monday = calendar.date(byAdding: .day, value: -((weekday + 5) % 7), to: today) ?? today
+        return (0..<13).reversed().compactMap { calendar.date(byAdding: .weekOfYear, value: -$0, to: monday) }
+    }
+
+    /// The seven days of the week that begins on [start].
+    private static func days(of start: Date, calendar: Calendar) -> [Date] {
+        (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
     }
 
     private func value(of metric: TrainingMetric, on day: Date, calendar: Calendar) -> Double {

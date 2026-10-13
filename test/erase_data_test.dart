@@ -57,12 +57,13 @@ void main() {
   L l(WidgetTester tester) => L.of(tester.element(find.byType(SettingsPage)));
 
   group('the settings row', () {
-    testWidgets('is the anonymous session\'s "Your data" row, where import stands for an account', (tester) async {
+    testWidgets('is in the anonymous session\'s "Your data", beside an import of its own export', (tester) async {
       await pumpToSettings(tester, firebase: MockFirebaseAuth(signedIn: false));
 
       expect(find.byKey(AppKeys.eraseData), findsOneWidget);
       expect(find.text(l(tester).yourData), findsOneWidget);
-      expect(find.byIcon(Icons.upload_file_rounded), findsNothing);
+      // Heart's own JSON export reads back without an account (#329)
+      expect(find.byIcon(Icons.upload_file_rounded), findsOneWidget);
     });
 
     testWidgets('is absent for a session with an account, which has account deletion instead', (tester) async {
