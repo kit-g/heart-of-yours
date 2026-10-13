@@ -427,9 +427,15 @@ class Analytics {
   /// the user agreed to create. The gap between them is the consent step
   /// being declined, which is the only part of this flow that can lose data.
   /// [source] is the app the export came from, as the import endpoint names
-  /// it (`strong`, `hevy`, `heart`).
-  void dataImported({required String source, required int unmatched, required int createdCustom}) {
-    _log(_dataImported, {_source: source, _unmatched: unmatched, _createdCustom: createdCustom});
+  /// it (`strong`, `hevy`, `heart`), and [format] the file's (`csv`, or `json`
+  /// for Heart's own export, which the app reads itself, #329).
+  void dataImported({
+    required String source,
+    required String format,
+    required int unmatched,
+    required int createdCustom,
+  }) {
+    _log(_dataImported, {_source: source, _format: format, _unmatched: unmatched, _createdCustom: createdCustom});
   }
 
   void avatarUpdated() => _log(_avatarUpdated);

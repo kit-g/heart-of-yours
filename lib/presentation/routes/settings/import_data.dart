@@ -7,32 +7,46 @@ sealed class _ImportOutcome {
   const new();
 }
 
+/// Who reads the picked file. Every CSV goes to the server; Heart's own JSON
+/// export is read by the app into its store (#329, heart-api#175), which is
+/// why it is the one import that works without an account.
+enum _Format { csv, json }
+
 /// The preview found exercise names that would become the user's custom
 /// exercises — customs can only ever be archived, not deleted, so each one
 /// needs the user's yes before it exists. Holds the picked file's contents
 /// for the commit that follows.
 final class _AwaitingConsent extends _ImportOutcome {
   final WorkoutImportPreview preview;
-  final String csv;
+  final String file;
 
   /// The source the preview ran as — the commit goes up as the same, whatever
   /// the switch says by then.
   final ImportSource source;
 
-  const new(this.preview, {required this.csv, required this.source});
+  final _Format format;
+
+  const new(this.preview, {required this.file, required this.source, required this.format});
 }
 
 final class _Imported extends _ImportOutcome {
   final WorkoutImportReport report;
 
-  const new(this.report);
+  /// What a Heart JSON export brings beside workouts; null for a CSV, which
+  /// carries none of it.
+  final ({int templates, int folders, int goals})? alongside;
+
+  const new(this.report, {this.alongside});
 }
 
 final class _Rejected extends _ImportOutcome {
   final String? reason;
   final ImportSource source;
 
-  const new(this.reason, {required this.source});
+  /// A Heart export from a newer build, in a layout this one cannot read.
+  final bool newer;
+
+  const new(this.reason, {required this.source, this.newer = false});
 }
 
 /// The server's 202 (#324): a file in a known layout that nothing could read
@@ -45,12 +59,16 @@ final class _Parked extends _ImportOutcome {
   const new(this.reason);
 }
 
-/// Uploads a Strong, Hevy or Heart CSV export and shows the server's report.
+/// Uploads a Strong, Hevy or Heart CSV export and shows the server's report,
+/// or reads Heart's own JSON export into the store ([DataImport], #329).
 ///
-/// The server does all parsing, matching and dedup — this page is transport
-/// and UX. The import is idempotent, so there is no confirmation dialog and
-/// no warning against re-picking the same file: choosing a file is safe by
-/// construction.
+/// For a CSV the server does all parsing, matching and dedup — this page is
+/// transport and UX. Either import is idempotent, so there is no confirmation
+/// dialog and no warning against re-picking the same file: choosing a file is
+/// safe by construction.
+///
+/// Without an account only the JSON can be read, so the page offers only that
+/// and asks nothing about where the file came from.
 class ImportDataPage extends StatefulWidget {
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
@@ -90,6 +108,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       :importExplainerStrong,
       :importExplainerHevy,
       :importExplainerHeart,
+      :importExplainerHeartJson,
       :importSafeToRetry,
       :importUnitTitle,
       :importUnitBody,
@@ -101,6 +120,7 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
       context,
     );
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final anonymous = Auth.of(context).isAnonymous;
 
     return Scaffold(
       appBar: AppBar(
@@ -122,66 +142,78 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text(importSourceTitle, style: textTheme.titleSmall),
-                  const SizedBox(height: 12),
-                  ValueListenableBuilder<ImportSource>(
-                    valueListenable: _source,
-                    builder: (context, source, _) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SettingSwitcher<ImportSource>(
-                            value: source,
-                            onValueChanged: (value) => _source.value = value ?? source,
-                            // the apps' own names, never translated
-                            children: const {
-                              .strong: Text('Strong'),
-                              .hevy: Text('Hevy'),
-                              .heart: Text('Heart'),
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            switch (source) {
-                              .strong => importExplainerStrong,
-                              .hevy => importExplainerHevy,
-                              .heart => importExplainerHeart,
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            importSafeToRetry,
-                            style: textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 24),
-                          // which unit the export is in (#307): asked before the
-                          // file, preset to the account's, read by both halves of
-                          // the import. Hevy and Heart files name their units in
-                          // their own rows, so the question has no form for them.
-                          if (source == .strong) ...[
-                            Text(importUnitTitle, style: textTheme.titleSmall),
-                            const SizedBox(height: 4),
-                            Text(importUnitBody, style: textTheme.bodySmall),
-                            const SizedBox(height: 12),
-                            ValueListenableBuilder<MeasurementUnit?>(
-                              valueListenable: _unit,
-                              builder: (context, chosen, _) {
-                                return SettingSwitcher<MeasurementUnit>(
-                                  value: chosen ?? _fallbackUnit ?? .metric,
-                                  onValueChanged: (value) => _unit.value = value,
-                                  children: {
-                                    .metric: Text(kg),
-                                    .imperial: Text(lbs),
-                                  },
-                                );
+                  // no account, no server: Heart's own JSON is the one file
+                  // there is, so there is nothing to choose between
+                  if (anonymous) ...[
+                    Text(importExplainerHeartJson),
+                    const SizedBox(height: 12),
+                    Text(
+                      importSafeToRetry,
+                      style: textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 24),
+                  ] else ...[
+                    Text(importSourceTitle, style: textTheme.titleSmall),
+                    const SizedBox(height: 12),
+                    ValueListenableBuilder<ImportSource>(
+                      valueListenable: _source,
+                      builder: (context, source, _) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SettingSwitcher<ImportSource>(
+                              value: source,
+                              onValueChanged: (value) => _source.value = value ?? source,
+                              // the apps' own names, never translated
+                              children: const {
+                                .strong: Text('Strong'),
+                                .hevy: Text('Hevy'),
+                                .heart: Text('Heart'),
                               },
                             ),
+                            const SizedBox(height: 16),
+                            Text(
+                              switch (source) {
+                                .strong => importExplainerStrong,
+                                .hevy => importExplainerHevy,
+                                .heart => importExplainerHeart,
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              importSafeToRetry,
+                              style: textTheme.bodySmall,
+                            ),
                             const SizedBox(height: 24),
+                            // which unit the export is in (#307): asked before the
+                            // file, preset to the account's, read by both halves of
+                            // the import. Hevy and Heart files name their units in
+                            // their own rows, so the question has no form for them.
+                            if (source == .strong) ...[
+                              Text(importUnitTitle, style: textTheme.titleSmall),
+                              const SizedBox(height: 4),
+                              Text(importUnitBody, style: textTheme.bodySmall),
+                              const SizedBox(height: 12),
+                              ValueListenableBuilder<MeasurementUnit?>(
+                                valueListenable: _unit,
+                                builder: (context, chosen, _) {
+                                  return SettingSwitcher<MeasurementUnit>(
+                                    value: chosen ?? _fallbackUnit ?? .metric,
+                                    onValueChanged: (value) => _unit.value = value,
+                                    children: {
+                                      .metric: Text(kg),
+                                      .imperial: Text(lbs),
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                            ],
                           ],
-                        ],
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+                  ],
                   ValueListenableBuilder<_ImportOutcome?>(
                     valueListenable: _outcome,
                     builder: (_, outcome, child) {
@@ -226,15 +258,25 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
                     builder: (_, outcome, _) {
                       return switch (outcome) {
                         null => const SizedBox.shrink(),
-                        _AwaitingConsent(:final preview, :final csv, :final source) => _ImportConsentView(
-                          preview: preview,
-                          onImport: (approved) => _commit(csv, source: source, createCustom: approved),
-                          onCancel: () => _outcome.value = null,
+                        _AwaitingConsent(:final preview, :final file, :final source, :final format) =>
+                          _ImportConsentView(
+                            preview: preview,
+                            onImport: (approved) => _commit(
+                              file,
+                              source: source,
+                              format: format,
+                              createCustom: approved,
+                            ),
+                            onCancel: () => _outcome.value = null,
+                          ),
+                        _Imported(:final report, :final alongside) => _ImportReportView(
+                          report: report,
+                          alongside: alongside,
                         ),
-                        _Imported(:final report) => _ImportReportView(report: report),
-                        _Rejected(:final reason, :final source) => _ImportRejectionView(
+                        _Rejected(:final reason, :final source, :final newer) => _ImportRejectionView(
                           reason: reason,
                           source: source,
+                          newer: newer,
                         ),
                         _Parked(:final reason) => _ImportParkedView(reason: reason),
                       };
@@ -288,43 +330,65 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
   Future<void> _onChooseFile(BuildContext context) async {
     buzz();
     final messenger = ScaffoldMessenger.of(context);
+    final dataImport = DataImport.of(context);
+    final userId = Auth.of(context).user?.id;
+    final L(:csvFiles, :jsonFiles) = L.of(context);
+    final anonymous = Auth.of(context).isAnonymous;
+    final source = switch (anonymous) {
+      true => ImportSource.heart,
+      false => _source.value,
+    };
 
     final file = await openFile(
       acceptedTypeGroups: [
-        XTypeGroup(
-          label: L.of(context).csvFiles,
-          extensions: const ['csv'],
-          mimeTypes: const ['text/csv', 'text/comma-separated-values'],
-          uniformTypeIdentifiers: const ['public.comma-separated-values-text', 'public.plain-text'],
-        ),
+        if (!anonymous)
+          XTypeGroup(
+            label: csvFiles,
+            extensions: const ['csv'],
+            mimeTypes: const ['text/csv', 'text/comma-separated-values'],
+            uniformTypeIdentifiers: const ['public.comma-separated-values-text', 'public.plain-text'],
+          ),
+        if (source == .heart)
+          XTypeGroup(
+            label: jsonFiles,
+            extensions: const ['json'],
+            mimeTypes: const ['application/json'],
+            uniformTypeIdentifiers: const ['public.json'],
+          ),
       ],
     );
     if (file == null) return; // backed out of the picker
 
-    final source = _source.value;
     startLoading();
     _outcome.value = null;
     try {
-      final csv = await file.readAsString();
-      final preview = await Api.instance.previewImportedWorkouts(
-        csv,
-        source: source,
-        // for exports whose rows carry no unit columns (#307); ignored when
-        // the CSV declares its own
-        unit: _exportUnit(source),
-        tzOffset: _exportOffset(source),
-      );
+      final text = await file.readAsString();
+      final format = _formatOf(source, text);
+      final preview = switch ((format, userId)) {
+        (.json, String uid) => _asPreview(await dataImport.preview(text, uid)),
+        (.json, null) => throw StateError('an import with no session to import into'),
+        (.csv, _) => await Api.instance.previewImportedWorkouts(
+          text,
+          source: source,
+          // for exports whose rows carry no unit columns (#307); ignored when
+          // the CSV declares its own
+          unit: _exportUnit(source),
+          tzOffset: _exportOffset(source),
+        ),
+      };
       // Held for the commit, which happens either immediately or a consent
       // step later and cannot see the preview by then.
       _unmatchedInPreview = preview.exercisesUnmatched.length;
       switch (preview.exercisesUnmatched) {
         case []:
-          await _commit(csv, source: source);
+          await _commit(text, source: source, format: format);
         case _:
-          _outcome.value = _AwaitingConsent(preview, csv: csv, source: source);
+          _outcome.value = _AwaitingConsent(preview, file: text, source: source, format: format);
       }
     } on ImportRejected catch (e) {
       _outcome.value = _Rejected(e.reason, source: source);
+    } on UnreadableExport catch (e) {
+      _outcome.value = _Rejected(null, source: source, newer: e.reason == .newer);
     } on ImportParked catch (e) {
       _outcome.value = _Parked(e.reason);
     } catch (e, s) {
@@ -335,23 +399,48 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     }
   }
 
-  /// The commit half. [createCustom] carries the user's decision (absent when
-  /// the preview found nothing to decide); sets on a declined name are
-  /// skipped server-side and come back counted in the report.
+  /// A Heart file is JSON or CSV, and the export writes both; which one was
+  /// picked is in its first character, whatever its name says. Every other
+  /// source is a CSV.
+  static _Format _formatOf(ImportSource source, String file) {
+    return switch ((source, file.trimLeft().startsWith('{'))) {
+      (.heart, true) => .json,
+      _ => .csv,
+    };
+  }
+
+  /// The app's own dry run, as the shape the server's comes in — the consent
+  /// step and its counts are the same either way.
+  static WorkoutImportPreview _asPreview(LocalImportPreview preview) {
+    return WorkoutImportPreview(
+      workoutsFound: preview.workoutsFound,
+      workoutsAlreadyImported: preview.workoutsAlreadyHere,
+      setsFound: preview.setsFound,
+      exercisesMatched: preview.exercisesMatched,
+      exercisesUnmatched: preview.exercisesUnmatched,
+      rowsSkipped: preview.rowsSkipped,
+    );
+  }
+
   /// How many exercise names the preview could not resolve. Zero until one
   /// has run, which is the only way [_commit] is ever reached.
   int _unmatchedInPreview = 0;
 
-  Future<void> _commit(String csv, {required ImportSource source, List<String>? createCustom}) async {
+  /// The commit half. [createCustom] carries the user's decision (absent when
+  /// the preview found nothing to decide); sets on a declined name are
+  /// skipped and come back counted in the report.
+  Future<void> _commit(
+    String file, {
+    required ImportSource source,
+    required _Format format,
+    List<String>? createCustom,
+  }) async {
     buzz();
-    final workouts = Workouts.of(context);
-    final exercises = Exercises.of(context);
-    final backfill = Backfill.of(context);
-    final userId = Auth.of(context).user?.id;
     final messenger = ScaffoldMessenger.of(context);
 
     Analytics.of(context).dataImported(
       source: source.name,
+      format: format.name,
       unmatched: _unmatchedInPreview,
       createdCustom: createCustom?.length ?? 0,
     );
@@ -361,41 +450,14 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     // upload is in flight
     _outcome.value = null;
     try {
-      final report = await Api.instance.importWorkouts(
-        csv,
-        source: source,
-        unit: _exportUnit(source),
-        tzOffset: _exportOffset(source),
-        createCustom: createCustom,
-      );
-      _outcome.value = _Imported(report);
-      // The imported workouts exist server-side only until the mirrors
-      // refresh. Fire and forget: the report above is the confirmation. The
-      // chain is ordered like startup (see app.dart): history rows hold a
-      // foreign key onto `exercises.name`, and an import that created custom
-      // exercises must land them in the catalog before the mirror writes
-      // workouts that reference them.
-      //
-      // [Backfill.resync] last, and it is what brings the *whole* import down:
-      // `initHistory` only ever asks for the newest page, and this device's
-      // mark was earned against the account as it stood before the import
-      // (heart-of-yours#113).
-      unawaited(
-        exercises
-            .init()
-            .then((_) => workouts.initHistory())
-            .then(
-              (_) => switch (userId) {
-                String uid => backfill.resync(uid),
-                null => null,
-              },
-            )
-            .catchError(
-              (e, s) => widget.onError?.call(e, stacktrace: s),
-            ),
-      );
+      _outcome.value = switch (format) {
+        .csv => await _upload(file, source: source, createCustom: createCustom),
+        .json => await _read(file, createCustom: createCustom),
+      };
     } on ImportRejected catch (e) {
       _outcome.value = _Rejected(e.reason, source: source);
+    } on UnreadableExport catch (e) {
+      _outcome.value = _Rejected(null, source: source, newer: e.reason == .newer);
     } on ImportParked catch (e) {
       _outcome.value = _Parked(e.reason);
     } catch (e, s) {
@@ -404,6 +466,101 @@ class _ImportDataPageState extends State<ImportDataPage> with LoadingState<Impor
     } finally {
       stopLoading();
     }
+  }
+
+  /// A CSV: the server imports it, and the mirrors come down after.
+  Future<_ImportOutcome> _upload(String csv, {required ImportSource source, List<String>? createCustom}) async {
+    final workouts = Workouts.of(context);
+    final exercises = Exercises.of(context);
+    final backfill = Backfill.of(context);
+    final userId = Auth.of(context).user?.id;
+
+    final report = await Api.instance.importWorkouts(
+      csv,
+      source: source,
+      unit: _exportUnit(source),
+      tzOffset: _exportOffset(source),
+      createCustom: createCustom,
+    );
+    // The imported workouts exist server-side only until the mirrors
+    // refresh. Fire and forget: the report is the confirmation. The chain is
+    // ordered like startup (see app.dart): history rows hold a foreign key
+    // onto `exercises.name`, and an import that created custom exercises must
+    // land them in the catalog before the mirror writes workouts that
+    // reference them.
+    //
+    // [Backfill.resync] last, and it is what brings the *whole* import down:
+    // `initHistory` only ever asks for the newest page, and this device's
+    // mark was earned against the account as it stood before the import
+    // (heart-of-yours#113).
+    unawaited(
+      exercises
+          .init()
+          .then((_) => workouts.initHistory())
+          .then(
+            (_) => switch (userId) {
+              String uid => backfill.resync(uid),
+              null => null,
+            },
+          )
+          .catchError(
+            (e, s) => widget.onError?.call(e, stacktrace: s),
+          ),
+    );
+    return _Imported(report);
+  }
+
+  /// Heart's own JSON: the app reads it into the store, then shows it.
+  ///
+  /// With an account the store is then owed a replay, exactly as after a
+  /// sign-in, and [Upsync] carries what landed to the server with its
+  /// progress line on the profile. The debt is recorded before anything is
+  /// read back, because reading back runs the sweeps, which would post the
+  /// imported workouts ahead of the custom exercises they name.
+  Future<_ImportOutcome> _read(String file, {List<String>? createCustom}) async {
+    final dataImport = DataImport.of(context);
+    final auth = Auth.of(context);
+    final upsync = Upsync.of(context);
+    final exercises = Exercises.of(context);
+    final templates = Templates.of(context);
+    final workouts = Workouts.of(context);
+    final goals = Goals.of(context);
+    final previous = PreviousExercises.of(context);
+    final stats = Stats.of(context);
+    final uid = switch (auth.user?.id) {
+      String id => id,
+      null => throw StateError('an import with no session to import into'),
+    };
+
+    final report = await dataImport.import(file, uid, createCustom: createCustom);
+
+    final account = !auth.isAnonymous;
+    if (account) await upsync.claim(from: uid, to: uid);
+    unawaited(
+      exercises
+          .init()
+          .then((_) => Future.wait([templates.init(), workouts.initHistory(), goals.init()]))
+          .then((_) => Future.wait([previous.init(), stats.init()]))
+          .then((_) => account ? upsync.run(uid) : null)
+          .catchError(
+            (e, s) => widget.onError?.call(e, stacktrace: s),
+          ),
+    );
+
+    return _Imported(
+      WorkoutImportReport(
+        workoutsFound: report.workoutsFound,
+        workoutsCreated: report.workoutsCreated,
+        workoutsSkipped: report.workoutsSkipped,
+        setsCreated: report.setsCreated,
+        setsSkipped: report.setsSkipped,
+        exercisesMatched: report.exercisesMatched,
+        exercisesCreated: report.exercisesCreated,
+        exercisesSkipped: report.exercisesSkipped,
+        rowsSkipped: report.rowsSkipped,
+      ),
+      alongside: (templates: report.templates, folders: report.folders, goals: report.goals),
+    );
   }
 }
 
@@ -598,8 +755,9 @@ class _ImportConsentViewState extends State<_ImportConsentView> {
 
 class _ImportReportView extends StatelessWidget {
   final WorkoutImportReport report;
+  final ({int templates, int folders, int goals})? alongside;
 
-  const new({required this.report});
+  const new({required this.report, this.alongside});
 
   @override
   Widget build(BuildContext context) {
@@ -612,6 +770,9 @@ class _ImportReportView extends StatelessWidget {
       :importSkippedRows,
       :importNewExercisesHeader,
       :importNewExercisesBody,
+      :importedTemplates,
+      :importedFolders,
+      :importedGoals,
     ) = L.of(
       context,
     );
@@ -644,6 +805,11 @@ class _ImportReportView extends StatelessWidget {
         ),
         Text(importedWorkouts(workoutsCreated)),
         if (setsCreated > 0) Text(importedSets(setsCreated)),
+        if (alongside case (:final templates, :final folders, :final goals)) ...[
+          if (templates > 0) Text(importedTemplates(templates)),
+          if (folders > 0) Text(importedFolders(folders)),
+          if (goals > 0) Text(importedGoals(goals)),
+        ],
         if (workoutsSkipped > 0) Text(importSkippedWorkouts(workoutsSkipped)),
         if (setsSkipped > 0) Text(importSkippedSets(setsSkipped)),
         if (rowsSkipped > 0)
@@ -671,12 +837,21 @@ class _ImportReportView extends StatelessWidget {
 class _ImportRejectionView extends StatelessWidget {
   final String? reason;
   final ImportSource source;
+  final bool newer;
 
-  const new({required this.reason, required this.source});
+  const new({required this.reason, required this.source, this.newer = false});
 
   @override
   Widget build(BuildContext context) {
-    final L(:importFailedHeadline, :importFailedBody, :importFailedBodyHevy, :importFailedBodyHeart) = L.of(context);
+    final L(
+      :importFailedHeadline,
+      :importFailedBody,
+      :importFailedBodyHevy,
+      :importFailedBodyHeart,
+      :importFailedBodyNewer,
+    ) = L.of(
+      context,
+    );
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return Column(
@@ -697,10 +872,11 @@ class _ImportRejectionView extends StatelessWidget {
           ],
         ),
         Text(
-          switch (source) {
-            .strong => importFailedBody,
-            .hevy => importFailedBodyHevy,
-            .heart => importFailedBodyHeart,
+          switch ((source, newer)) {
+            (_, true) => importFailedBodyNewer,
+            (.strong, _) => importFailedBody,
+            (.hevy, _) => importFailedBodyHevy,
+            (.heart, _) => importFailedBodyHeart,
           },
         ),
         // the server's own words — developer-grade, so detail text, not the

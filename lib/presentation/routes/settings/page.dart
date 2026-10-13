@@ -208,12 +208,12 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                 _Section(
                   title: yourData,
                   children: [
-                    if (!isAnonymous)
-                      ListTile(
-                        leading: const Icon(Icons.upload_file_rounded),
-                        title: Text(importData),
-                        onTap: onImportData,
-                      ),
+                    // without an account it reads Heart's own JSON export (#329)
+                    ListTile(
+                      leading: const Icon(Icons.upload_file_rounded),
+                      title: Text(importData),
+                      onTap: onImportData,
+                    ),
                     ListTile(
                       key: AppKeys.exportData,
                       leading: const Icon(Icons.file_download_rounded),
