@@ -755,11 +755,11 @@ packages:
     dependency: "direct main"
     description:
       path: "shared/heart_models"
-      ref: main
-      resolved-ref: "039d6d97badd7797a348d0b7b157b371ed50bd3b"
+      ref: "feat/program-position"
+      resolved-ref: "869dab290e3ec50510eafa478362bc7e7f599b25"
       url: "https://github.com/kit-g/heart-api.git"
     source: git
-    version: "2.15.0"
+    version: "2.23.0"
   highlight:
     dependency: transitive
     description:
