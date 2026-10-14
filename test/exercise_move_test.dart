@@ -246,7 +246,7 @@ void main() {
   });
 
   testWidgets('a refused preview says so and offers no Move', (tester) async {
-    moves.refuse = true;
+    moves.refuse = .unknownExercise;
     final moved = await pump(tester, bench);
     final l = copy(tester);
 
@@ -265,17 +265,33 @@ void main() {
     expect(moved, isEmpty);
     expect(moves.mirrored, isEmpty);
   });
+
+  testWidgets('a target the server finds incompatible says why, and offers no Move', (tester) async {
+    moves.refuse = .incompatibleExercise;
+    await pump(tester, bench);
+    final l = copy(tester);
+
+    await tester.tap(find.byTooltip(l.exerciseOptions));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l.moveHistory));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(incline.name).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l.moveHistoryIncompatible(incline.name, bench.name)), findsOneWidget);
+    expect(find.text(l.moveHistoryAction), findsNothing);
+  });
 }
 
 class _Moves implements ExerciseMoveService {
   final calls = <(String, String, bool)>[];
   final mirrored = <String>[];
-  bool refuse = false;
+  ExerciseMoveRefusal? refuse;
 
   @override
   Future<ExerciseMoveReport> move(String sourceId, String targetId, {bool dryRun = false}) async {
     calls.add((sourceId, targetId, dryRun));
-    if (refuse) throw const ExerciseMoveRefused(ExerciseMoveRefusal.unknownExercise);
+    if (refuse case final reason?) throw ExerciseMoveRefused(reason);
     return ExerciseMoveReport(
       sourceId: sourceId,
       targetId: targetId,

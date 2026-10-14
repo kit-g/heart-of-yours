@@ -479,7 +479,7 @@ class Api
   /// what the real call would do, since the server runs the same code and
   /// rolls it back.
   ///
-  /// The two refusals the endpoint names are thrown as [ExerciseMoveRefused];
+  /// The refusals the endpoint names are thrown as [ExerciseMoveRefused];
   /// anything else as a [NetworkException].
   Future<ExerciseMoveReport> moveExerciseHistory(
     String sourceId, {
@@ -495,6 +495,7 @@ class Api
       (200, Map json) => ExerciseMoveReport.fromJson(json),
       (400, {'code': 'same_exercise'}) => throw const ExerciseMoveRefused(.sameExercise),
       (404, {'code': 'unknown_exercise'}) => throw const ExerciseMoveRefused(.unknownExercise),
+      (400, {'code': 'incompatible_exercise'}) => throw const ExerciseMoveRefused(.incompatibleExercise),
       _ => throw NetworkException(statusCode: code, body: json),
     };
   }

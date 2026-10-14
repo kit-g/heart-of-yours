@@ -1591,7 +1591,7 @@ void main() {
       expect(real.queryParameters, isEmpty);
     });
 
-    test('the two named refusals are typed, anything else is a NetworkException', () async {
+    test('the named refusals are typed, anything else is a NetworkException', () async {
       answer({'error': 'bad request', 'code': 'same_exercise', 'reason': 'same'}, 400);
       await expectLater(
         api.moveExerciseHistory('source', targetId: 'source'),
@@ -1602,6 +1602,18 @@ void main() {
       await expectLater(
         api.moveExerciseHistory('source', targetId: 'target'),
         throwsA(isA<ExerciseMoveRefused>().having((e) => e.reason, 'reason', ExerciseMoveRefusal.unknownExercise)),
+      );
+
+      answer({
+        'error': 'bad request',
+        'code': 'incompatible_exercise',
+        'reason': 'Reps Only sets cannot move onto Cardio',
+      }, 400);
+      await expectLater(
+        api.moveExerciseHistory('source', targetId: 'target'),
+        throwsA(
+          isA<ExerciseMoveRefused>().having((e) => e.reason, 'reason', ExerciseMoveRefusal.incompatibleExercise),
+        ),
       );
 
       answer({'error': 'bad request', 'code': 'bad_request', 'reason': 'targetId missing'}, 400);
