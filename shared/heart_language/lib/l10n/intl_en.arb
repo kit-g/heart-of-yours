@@ -4710,5 +4710,15 @@
   "ruleAmrap": "The last set's reps decide the step",
   "@ruleAmrap": {"description": "How a program's growth rule works, under the rule's line: the number of reps done in the final as-many-as-you-can set picks how much the weight goes up", "type": "text", "placeholders": {}},
   "programDeload": "Every {every} weeks, a lighter one: {load} of the weight, {volume} of the sets",
-  "@programDeload": {"description": "Program page, How it grows: the program's scheduled lighter (deload) weeks, such as 'Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'", "type": "text", "placeholders": {"every": {"type": "int"}, "load": {}, "volume": {}}}
+  "@programDeload": {"description": "Program page, How it grows: the program's scheduled lighter (deload) weeks, such as 'Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'", "type": "text", "placeholders": {"every": {"type": "int"}, "load": {}, "volume": {}}},
+  "supersetWith": "Superset with {exercise}",
+  "@supersetWith": {"description": "Menu item on an exercise in a workout or template: does it back to back with the named exercise next to it", "type": "text", "placeholders": {"exercise": {"type": "String"}}},
+  "leaveSuperset": "Leave the superset",
+  "@leaveSuperset": {"description": "Menu item on an exercise grouped with one other: takes it out of the superset", "type": "text", "placeholders": {}},
+  "leaveCircuit": "Leave the circuit",
+  "@leaveCircuit": {"description": "Menu item on an exercise grouped with two or more others: takes it out of the circuit", "type": "text", "placeholders": {}},
+  "supersetLabel": "Superset",
+  "@supersetLabel": {"description": "Caption over two exercises done back to back in a workout or template", "type": "text", "placeholders": {}},
+  "circuitLabel": "Circuit",
+  "@circuitLabel": {"description": "Caption over three or more exercises done back to back, in turn, in a workout or template", "type": "text", "placeholders": {}}
 }
