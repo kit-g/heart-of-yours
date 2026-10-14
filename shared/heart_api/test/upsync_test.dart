@@ -175,6 +175,25 @@ void main() {
       expect(row.folderId, 'f1');
     });
 
+    test("a set's target goes on the wire, and a set without one says nothing (#173)", () async {
+      final id = uuidV7();
+      _post(client, Router.templates, 201, {'id': id, 'name': 'Push day', 'order': 0, 'exercises': []});
+      final bench = Exercise.fromJson({'id': 'bench', 'name': 'Bench', 'category': 'Barbell', 'target': 'Chest'});
+      final ranged = ExerciseSet(bench, weight: 60, target: SetTarget({.reps: const TargetRange(min: 6, max: 10)}));
+      final plain = ExerciseSet(bench, weight: 60, reps: 8);
+      final workout = Workout.fromExercises([WorkoutExercise(starter: ranged)..add(plain)]);
+
+      await api.replayTemplate(Template.fromWorkout(id, workout, 0)..name = 'Push day');
+
+      final [exercise] = sentBody()['exercises'] as List;
+      final [first, second] = (exercise as Map)['sets'] as List;
+      expect((first as Map)['target'], {
+        'reps': {'min': 6, 'max': 10},
+      });
+      // a 1.13-shaped set: no key, so the server keeps what it holds
+      expect(second as Map, isNot(contains('target')));
+    });
+
     test('an unfiled template sends no folderId', () async {
       final id = uuidV7();
       _post(client, Router.templates, 201, {'id': id, 'name': 'Push day', 'order': 0, 'exercises': []});
