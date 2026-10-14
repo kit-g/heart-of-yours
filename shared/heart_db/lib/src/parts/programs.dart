@@ -177,6 +177,27 @@ mixin _Programs on _LocalDatabase {
     ];
   }
 
+  /// [userId]'s finished workouts of [programId], whole and oldest first: the
+  /// sessions a growth rule's miss streak is read from (#350).
+  Future<List<Workout>> getProgramWorkouts(String userId, String programId) async {
+    final rows = await _db.query(
+      _workouts,
+      columns: ['id'],
+      where: 'user_id = ? AND program_id = ? AND "end" IS NOT NULL',
+      whereArgs: [userId, programId],
+      orderBy: 'start',
+    );
+    final workouts = await Future.wait(
+      rows.map((row) async {
+        return switch (await _db.rawQuery(sql.getWorkout, [row['id'], userId])) {
+          [Map row] => _readOne(() => Workout.fromJson(row.toWorkout()), what: 'workout'),
+          _ => null,
+        };
+      }),
+    );
+    return workouts.nonNulls.toList();
+  }
+
   /// [userId]'s program actions, of [programId] or of every program, in the
   /// order they were taken.
   Future<List<ProgramAction>> getProgramActions(String userId, {String? programId}) async {
