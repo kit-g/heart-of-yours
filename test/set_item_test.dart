@@ -704,6 +704,24 @@ void main() {
       expect(set.isCompleted, isTrue);
     });
 
+    testWidgets('a ghost tick logs the target as stored, never through the cells\' rounding', (tester) async {
+      final exercise = Exercise(name: 'Farmer\'s Carry', category: .weightedDistance, target: .fullBody);
+      final workout = Workout(name: 'W')..add(exercise);
+      final set = workout.first.first
+        ..target = SetTarget({
+          .weight: const TargetRange(min: 61.25),
+          .distance: const TargetRange(min: .04),
+        });
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
+      await tester.pumpTimes();
+
+      expect(set.isCompleted, isTrue);
+      expect(set.distance, .04, reason: 'a carry\'s 40 m, not "0" read back out of a kilometre cell');
+      expect(set.weight, 61.25, reason: 'not the 61.3 the cell shows');
+    });
+
     testWidgets('the ✓ header takes every ghost row\'s target too', (tester) async {
       final exercise = Exercise(name: 'Push Up', category: .repsOnly, target: .chest);
       final workout = aimed(exercise)..first.add(ExerciseSet(exercise));

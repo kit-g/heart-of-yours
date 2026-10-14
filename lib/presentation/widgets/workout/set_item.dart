@@ -132,7 +132,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     _syncField(_repsController, _repsFocus, _repsListener, set.reps?.toString());
     // and a column filled from its header (#225), cardio's included
     _syncField(_distanceController, _distanceFocus, _distanceListener, switch (set.distance) {
-      double distance => prefs.distance(distance, unit: _unitOverride),
+      double distance => _shownDistance(prefs, distance),
       null => null,
     });
     _syncField(_durationController, _durationFocus, _durationListener, set.duration?.toDuration());
@@ -725,6 +725,19 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       _durationFocus.unfocus();
       await workouts.acceptTarget(set);
       if (!context.mounted) return;
+      // the set now holds the target as stored; reading it back out of the
+      // fields would put it through display rounding, and a carry's 40 m
+      // through a field that shows 0.04 km as "0"
+      if (set.canBeCompleted) {
+        _hasWeightError.value = false;
+        _hasRepsError.value = false;
+        _hasDistanceError.value = false;
+        _hasDurationError.value = false;
+        workouts.markEdited(set);
+        workouts.markSetAsComplete(exercise, set);
+        _startTimer(context);
+        return;
+      }
     }
 
     try {
