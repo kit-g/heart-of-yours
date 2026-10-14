@@ -191,6 +191,8 @@ const _exerciseHistoryMoved = 'exercise_history_moved';
 const _programCreated = 'program_created';
 const _programSteered = 'program_steered';
 const _programDeleted = 'program_deleted';
+const _programSkipped = 'program_skipped';
+const _programUnskipped = 'program_unskipped';
 const _historyBackfilled = 'history_backfilled';
 
 const _dataExported = 'data_exported';
@@ -460,6 +462,20 @@ class Analytics {
   void programSteered({required ProgramActionKind action}) {
     _log(_programSteered, {_action: action.value});
   }
+
+  /// "Not today" (#312): a program session set aside, from its band on the
+  /// Workout tab or from the program's page. Never which session.
+  void programSkipped({required bool fromBand}) {
+    _log(_programSkipped, {
+      _source: switch (fromBand) {
+        true => 'band',
+        false => 'page',
+      },
+    });
+  }
+
+  /// A skip taken back with its Undo: how often "Not today" was a slip.
+  void programUnskipped() => _log(_programUnskipped);
 
   /// A program deleted, and whether its sessions stayed as templates.
   void programDeleted({required bool keptTemplates}) {
