@@ -5,6 +5,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'programs.dart';
 import 'templates.dart';
 
 /// The layout of the JSON envelope — its top-level keys and what each holds.
@@ -13,7 +14,11 @@ import 'templates.dart';
 ///
 /// `2`: a workout's or template's `exercise` is the exercise's name rather than
 /// a copy of its catalog row (heart-of-yours#113).
-const exportSchemaVersion = 2;
+///
+/// `3`: `programs`, `programActions` and `programBases` (#346), and the
+/// `templateId` / `programId` a workout carries and the `programId` / `note` a
+/// template does, in the models' own shapes.
+const exportSchemaVersion = 3;
 
 /// What the local store holds for one user, read once and written as many
 /// times as asked.
@@ -47,6 +52,15 @@ class ExportSnapshot {
   /// Live goals first, then the achieved ones.
   final List<Goal> goals;
 
+  /// Archived ones included, oldest first.
+  final List<Program> programs;
+
+  /// The steps taken in [programs] and the bases their rules gave, oldest
+  /// first: the history their positions are folded from.
+  final List<ProgramAction> programActions;
+
+  final List<ProgramBase> programBases;
+
   new({
     required Iterable<Workout> workouts,
     required Iterable<Template> templates,
@@ -56,7 +70,13 @@ class ExportSnapshot {
     required this.distanceUnit,
     required Map<ExerciseId, MeasurementUnit> exerciseUnits,
     required Iterable<Goal> goals,
-  }) : workouts = workouts.where((each) => each.isCompleted).toList()..sort(_byStart),
+    Iterable<Program> programs = const [],
+    Iterable<ProgramAction> programActions = const [],
+    Iterable<ProgramBase> programBases = const [],
+  }) : programs = programs.toList(),
+       programActions = programActions.toList(),
+       programBases = programBases.toList(),
+       workouts = workouts.where((each) => each.isCompleted).toList()..sort(_byStart),
        templates = templates.toList()..sort(),
        folders = folders.toList()..sort(),
        exercises = exercises.toList()..sort(_byName),
@@ -81,6 +101,9 @@ class ExportSnapshot {
       'folders': folders.map((each) => each.toMap()).toList(),
       'exercises': exercises.map((each) => each.toMap()).toList(),
       'goals': goals.map((each) => each.toMap()).toList(),
+      'programs': programs.map((each) => each.toMap()).toList(),
+      'programActions': programActions.map((each) => each.toMap()).toList(),
+      'programBases': programBases.map((each) => each.toMap()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(envelope);
   }
@@ -154,6 +177,7 @@ class DataExport {
   final LocalTemplateFolderService _folders;
   final ExerciseService _exercises;
   final GoalService _goals;
+  final LocalProgramService? _programs;
 
   const new({
     required this._workouts,
@@ -161,6 +185,7 @@ class DataExport {
     required this._folders,
     required this._exercises,
     required this._goals,
+    this._programs,
   });
 
   static DataExport of(BuildContext context) {
@@ -190,6 +215,9 @@ class DataExport {
       distanceUnit: distanceUnit,
       exerciseUnits: await _exercises.getExerciseUnits(userId),
       goals: [...live, ...achieved],
+      programs: await _programs?.getPrograms(userId) ?? const [],
+      programActions: await _programs?.getProgramActions(userId) ?? const [],
+      programBases: await _programs?.getProgramBases(userId) ?? const [],
     );
   }
 }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "exportedAt": "2026-09-06T12:00:00.000Z",
   "units": {
     "weight": "imperial",
@@ -201,6 +201,42 @@
       ],
       "archived": true,
       "createdAt": "2026-01-15T00:00:00.000Z"
+    }
+  ],
+  "programs": [
+    {
+      "id": "p1",
+      "name": "Upper / Lower",
+      "perWeek": 4,
+      "weeks": 12,
+      "rules": {
+        "ex-bench": {
+          "kind": "rangeThenWeight",
+          "step": 2.5
+        }
+      },
+      "archived": false,
+      "sessions": [
+        "t2"
+      ],
+      "createdAt": "2026-09-01T07:00:00.000Z"
+    }
+  ],
+  "programActions": [
+    {
+      "id": "a1",
+      "programId": "p1",
+      "kind": "repeat",
+      "at": "2026-09-08T07:00:00.000Z"
+    }
+  ],
+  "programBases": [
+    {
+      "id": "b1",
+      "programId": "p1",
+      "exerciseId": "ex-bench",
+      "value": 60,
+      "at": "2026-09-01T07:00:00.000Z"
     }
   ]
 }

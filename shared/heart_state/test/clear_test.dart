@@ -96,6 +96,20 @@ class _Templates extends Templates {
   void onSignOut() => calls++;
 }
 
+class _Programs extends Programs {
+  int calls = 0;
+
+  new()
+    : super(
+        service: MockLocalProgramService(),
+        remoteService: MockRemoteProgramService(),
+        templates: MockTemplateService(),
+      );
+
+  @override
+  void onSignOut() => calls++;
+}
+
 class _Timers extends Timers {
   int calls = 0;
 
@@ -254,6 +268,7 @@ void main() {
     late _Previous previous;
     late _Stats stats;
     late _Templates templates;
+    late _Programs programs;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
@@ -271,6 +286,7 @@ void main() {
       previous = _Previous();
       stats = _Stats();
       templates = _Templates();
+      programs = _Programs();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -289,6 +305,7 @@ void main() {
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
+            ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -315,6 +332,7 @@ void main() {
         previous.calls,
         stats.calls,
         templates.calls,
+        programs.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -350,6 +368,7 @@ void main() {
     late _Previous previous;
     late _Stats stats;
     late _Templates templates;
+    late _Programs programs;
     late _Timers timers;
     late _Upsync upsync;
     late _Workouts workouts;
@@ -375,6 +394,7 @@ void main() {
       previous = _Previous();
       stats = _Stats();
       templates = _Templates();
+      programs = _Programs();
       timers = _Timers();
       upsync = _Upsync();
       workouts = _Workouts();
@@ -404,6 +424,7 @@ void main() {
             ChangeNotifierProvider<PreviousExercises>.value(value: previous),
             ChangeNotifierProvider<Stats>.value(value: stats),
             ChangeNotifierProvider<Templates>.value(value: templates),
+            ChangeNotifierProvider<Programs>.value(value: programs),
             ChangeNotifierProvider<Timers>.value(value: timers),
             ChangeNotifierProvider<Upsync>.value(value: upsync),
             ChangeNotifierProvider<Workouts>.value(value: workouts),
@@ -431,6 +452,7 @@ void main() {
         previous.calls,
         stats.calls,
         templates.calls,
+        programs.calls,
         timers.calls,
         upsync.calls,
         workouts.calls,
@@ -514,7 +536,7 @@ void main() {
       );
     });
 
-    test('the fan-out list is the fourteen known notifiers', () {
+    test('the fan-out list is the fifteen known notifiers', () {
       final clear = File('${_packageRoot().path}/lib/src/clear.dart').readAsStringSync();
       final fanOutCall = RegExp(r'(\w+)\.of\(context\)\.onSignOut\(\)');
       final fanned = {for (final match in fanOutCall.allMatches(clear)) match.group(1)!};
@@ -529,6 +551,7 @@ void main() {
         'Goals',
         'Health',
         'PreviousExercises',
+        'Programs',
         'Stats',
         'Templates',
         'Timers',

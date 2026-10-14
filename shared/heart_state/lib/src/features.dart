@@ -39,7 +39,12 @@ enum Feature {
   /// Like the watch, the ask is not an in-app offer: the first command that
   /// arrives is the yes (`docs/opt-in.md`, *Precedent*). Off, such a link is
   /// one the app has no screen for.
-  shortcuts('shortcuts');
+  shortcuts('shortcuts'),
+
+  /// Templates on a schedule, with targets that grow as you do (#340). The
+  /// ask in context and the surfaces are #345 and #347; the programs the
+  /// account holds sync and stay whole whatever the answer (#346).
+  programs('programs');
 
   final String value;
 

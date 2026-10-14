@@ -10,6 +10,7 @@ import 'goals.dart';
 import 'health.dart';
 import 'preferences.dart';
 import 'previous.dart';
+import 'programs.dart';
 import 'stats.dart';
 import 'templates.dart';
 import 'timers.dart';
@@ -56,6 +57,7 @@ void clearUserState(BuildContext context) {
   Goals.of(context).onSignOut();
   Health.of(context).onSignOut();
   PreviousExercises.of(context).onSignOut();
+  Programs.of(context).onSignOut();
   Stats.of(context).onSignOut();
   Templates.of(context).onSignOut();
   Timers.of(context).onSignOut();

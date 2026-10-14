@@ -13,6 +13,8 @@ import 'package:mockito/annotations.dart';
     MockSpec<LocalGoalService>(),
     MockSpec<GoalService>(),
     MockSpec<TemplateService>(),
+    MockSpec<LocalProgramService>(),
+    MockSpec<RemoteProgramService>(),
     MockSpec<LocalTemplateFolderService>(),
     MockSpec<ApiTemplateFolderService>(),
     MockSpec<RemoteTemplateFilingService>(),
