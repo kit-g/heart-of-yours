@@ -1,5 +1,30 @@
 [
   {
+    "version": "1.14.0",
+    "items": [
+      {
+        "id": "home-screen-widgets",
+        "title": "Heart sur votre écran d’accueil",
+        "body": "Trois widgets dans la galerie : **Entraînement** affiche votre volume, vos séances, votre temps, vos séries ou vos répétitions, ou une donnée d’Apple Health, et tient aussi sur l’écran verrouillé. **Démarrer** lance une séance ou un modèle d’un geste. **Objectifs** montre où vous en êtes."
+      },
+      {
+        "id": "icon-menu",
+        "title": "Démarrez depuis l’icône",
+        "body": "Maintenez l’icône de Heart pour lancer une séance vide ou l’un de vos modèles."
+      },
+      {
+        "id": "move-history",
+        "title": "Déplacez l’historique d’un exercice",
+        "body": "Noté sous le mauvais exercice ? **Déplacer l’historique vers…**, dans le menu de l’exercice, transfère tout vers un autre. Un aperçu indique d’abord ce qui est déplacé. Nécessite un compte."
+      },
+      {
+        "id": "heart-import",
+        "title": "Récupérez votre historique Heart",
+        "body": "**Paramètres → Vos données → Importer l’historique de séances** lit désormais les exports de Heart. Le fichier JSON restaure tout : séances, modèles et dossiers, exercices personnels et objectifs."
+      }
+    ]
+  },
+  {
     "version": "1.13.0",
     "items": [
       {

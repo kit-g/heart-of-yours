@@ -1,5 +1,30 @@
 [
   {
+    "version": "1.14.0",
+    "items": [
+      {
+        "id": "home-screen-widgets",
+        "title": "Heart en tu pantalla de inicio",
+        "body": "Tres widgets en la galería: **Entrenamiento** muestra tu volumen, entrenamientos, tiempo, series o repeticiones, o un dato de Apple Health, y también cabe en la pantalla de bloqueo. **Empezar** inicia un entrenamiento o una plantilla con un toque. **Objetivos** muestra cómo vas con tus objetivos."
+      },
+      {
+        "id": "icon-menu",
+        "title": "Empieza desde el icono",
+        "body": "Mantén pulsado el icono de Heart para empezar un entrenamiento vacío o una de tus plantillas."
+      },
+      {
+        "id": "move-history",
+        "title": "Mueve el historial de un ejercicio",
+        "body": "¿Lo registraste en el ejercicio equivocado? **Mover el historial a…**, en el menú del ejercicio, lo pasa todo a otro. Antes, una vista previa te dice qué se mueve. Requiere una cuenta."
+      },
+      {
+        "id": "heart-import",
+        "title": "Recupera tu historial de Heart",
+        "body": "**Ajustes → Tus datos → Importar historial de entrenamientos** ahora lee las exportaciones de Heart. El archivo JSON lo recupera todo: entrenamientos, plantillas y carpetas, ejercicios propios y objetivos."
+      }
+    ]
+  },
+  {
     "version": "1.13.0",
     "items": [
       {

@@ -1,49 +1,41 @@
-Heart, by voice
-Ask Siri to start a workout or one of your templates, finish it, start,
-extend or skip your rest, or log the set you're on. Ask it things too:
-your record on an exercise, when you last did it, how many workouts this
-week. The Shortcuts app has all of it. Turn it on in Settings › Features.
+Heart on your Home Screen
+Three new widgets in the widget gallery:
+- Training: your volume, workouts, time, sets or reps over the last week
+  or months, or a reading from Apple Health instead. It fits the Lock
+  Screen too.
+- Start: one tap starts a workout or one of your templates.
+- Goals: how far along your goals are.
 
-Rest and Done on the lock screen
-The Live Activity gets buttons: start, extend or skip your rest, and Done
-ticks off the set up next without opening the app.
+Start from the icon
+With Shortcuts on, touch and hold Heart's icon to start a blank workout
+or one of your templates.
 
-Duplicate a template
-Duplicate on a template's ⋯ menu makes a copy beside the original. The
-examples can be copied too.
+Move an exercise's history
+Logged under the wrong exercise, or made your own before finding it in
+the library? Move history to... on the exercise's menu puts everything
+onto another exercise. Needs an account.
 
-Bring your Hevy history
-Import now takes Hevy's CSV export as well as Strong's. A Strong import
-asks which unit your export is in, so 100 lb stays 100 lb.
+Bring your Heart history back
+Import now reads Heart's own exports. The JSON file brings back
+everything: workouts, templates and folders, custom exercises and goals.
+The CSV brings workouts and their sets.
 
-One account, every sign-in
-Connect Apple, Google and a password to the same account in
-Settings › Account, and disconnect the ones you don't use.
-
-Developer API
-Create a read-only token in Settings › Developer API and read your own
-training log from a script, a spreadsheet or an AI assistant. Your Apple
-Health data is never part of it.
-
-Plus fixes throughout.
+Plus fixes, including a weight of 0 that now sticks, on the watch too.
 
 What to test
-- Turn on Shortcuts, then say each phrase with "in Heart": start a workout,
-  start a template by name, rest for 90 seconds, add 30 seconds to my rest,
-  skip rest, log a set, finish my workout. Do it once with the app on
-  screen (the rest countdown should appear) and once from the lock screen.
-- Ask "What's my Bench Press record", "When did I last do Squat", "How many
-  workouts this week". An answer that never comes, or Siri saying the app
-  isn't responding, is the failure.
-- Live Activity: start, extend and skip the rest from the lock screen; Done
-  ticks the next set and the app agrees when you open it.
-- Start a rest, swipe the app away, open it again: the rest is still
-  running.
-- Duplicate a template twice: "(copy)", then "(copy 2)", in the same folder.
-- Import a Hevy CSV; import a Strong CSV in lb and pick lb.
-- Settings › Account: connect Google to an Apple account, sign out, sign in
-  with Google, and you land in the same account. Disconnect it again.
-- Create a token, copy it, revoke it.
-- Account deletion on a Google account (only Apple and password were tried).
-- Update from the App Store build with history on the phone: everything is
-  still there, and the exercise list is complete.
+- Add each widget (Home Screen, small and medium, and the Lock Screen).
+  Edit the Training widget: switch between volume, workouts, time, sets
+  and reps, then try an Apple Health reading. Empty or stale numbers
+  are the failure.
+- Tap the Start widget from a cold start and with the app in the
+  background: the workout or template it names should open, started.
+- Touch and hold the app icon: start a blank workout and a template.
+  With Shortcuts off in Settings > Features, Heart's items are gone.
+- Move an exercise's history: the preview counts match, the move lands,
+  and the page becomes the target's. Not offered during a workout that
+  holds the exercise.
+- Export as JSON, erase or use another phone, import it: workouts,
+  templates, folders, custom exercises and goals all come back.
+- During a workout, set a weight to 0 (typed and from Previous). The
+  watch and the lock screen show 0, and Done on the watch keeps it.
+- Sign in with Apple: one sheet, straight in.

@@ -143,12 +143,24 @@
       "id": "shortcuts",
       "category": "everywhere",
       "title": "Heart, by voice",
-      "pitch": "Start a workout, run your rest and log a set with Siri and Shortcuts, or start one from the app icon on Android. Ask for a record or your week. Off until you turn it on.",
+      "pitch": "Start a workout, run your rest and log a set with Siri and Shortcuts, or start one from the app icon. Ask for a record or your week. Off until you turn it on.",
       "since": "1.13.0",
       "tier": "free",
       "platforms": [
         "ios",
         "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "home-screen-widgets",
+      "category": "everywhere",
+      "title": "Home Screen and Lock Screen widgets",
+      "pitch": "Your training over the last week or months, or an Apple Health reading, at a glance. Start a workout or a template in one tap, and see how far along your goals are.",
+      "since": "1.14.0",
+      "tier": "free",
+      "platforms": [
+        "ios"
       ],
       "highlight": false
     },
@@ -388,8 +400,8 @@
     {
       "id": "strong-import",
       "category": "data",
-      "title": "Bring your Strong or Hevy history",
-      "pitch": "Import the CSV from Strong's or Hevy's export and your workouts, sets and exercises come with you, warm-ups, RPE and notes included. Importing the same file twice never duplicates anything.",
+      "title": "Bring your history: Strong, Hevy or Heart",
+      "pitch": "Import Strong's or Hevy's CSV export, or Heart's own JSON or CSV, and your workouts and sets come with you. Importing the same file twice never duplicates anything.",
       "since": "1.5.0",
       "tier": "free",
       "platforms": [
@@ -397,6 +409,19 @@
         "android"
       ],
       "highlight": true
+    },
+    {
+      "id": "move-history",
+      "category": "data",
+      "title": "Move an exercise's history",
+      "pitch": "Logged under the wrong exercise, or made your own before finding the library one? Move everything onto another exercise, with a preview of what moves first. Needs an account.",
+      "since": "1.14.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
     },
     {
       "id": "tablets",
