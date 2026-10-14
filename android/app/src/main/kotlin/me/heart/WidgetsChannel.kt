@@ -17,6 +17,9 @@ object WidgetsChannel {
                     // widget draws empty rather than someone else's
                     if (TrainingSnapshot.write(TrainingSnapshot.prefs(app), call.arguments as? Map<*, *>)) {
                         TrainingWidget.updateAll(app)
+                        // the Start and Goals widgets draw in its accent
+                        StartWidget.updateAll(app)
+                        GoalsWidget.updateAll(app)
                     }
                     result.success(null)
                 }
