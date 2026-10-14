@@ -227,8 +227,9 @@ class _MenuRow extends StatelessWidget {
   }
 }
 
-/// Repeat, pause or resume, and back to an earlier week. Repeat sits first and
-/// looks like the others: running a week again is a choice, never a failure.
+/// Repeat, pause or resume, a lighter week, and back to an earlier week.
+/// Repeat sits first and looks like the others: running a week again is a
+/// choice, never a failure.
 ///
 /// One step at a time: while one is on its way the buttons rest, or a second
 /// tap of Repeat would record a second repeat — which reads as a week back.
@@ -283,6 +284,17 @@ class _SteersState extends State<_Steers> {
                 },
                 child: Text(position.paused ? copy.programResume : copy.programPause),
               ),
+            // a lighter cycle the user asks for (heart-api#229): this one, until
+            // it closes; one the program schedules says so on the sheet
+            if (!position.finished && !position.lighter)
+              PrimaryButton.shrunk(
+                backgroundColor: fill,
+                onPressed: switch (busy) {
+                  true => null,
+                  false => () => _steer(context, .lighter),
+                },
+                child: Text(copy.programLighter),
+              ),
             if (position.week > 1)
               PopupMenuButton<int>(
                 tooltip: copy.programReplayTitle,
@@ -327,6 +339,7 @@ class _SteersState extends State<_Steers> {
             .pause => copy.programPausedNotice,
             .resume => copy.programResumed,
             .replay => copy.programReplayed(week ?? 1),
+            .lighter => copy.programLighterNotice,
           }),
           action: SnackBarAction(label: copy.undo, onPressed: () => programs.undo(action)),
         ),
@@ -392,8 +405,9 @@ class _SessionTile extends StatelessWidget {
 }
 
 /// How each exercise grows (#350 sets the rules): its rule in a sentence, and
-/// where its base has been. Absent while no exercise has either, which is a
-/// program made from a folder until the user gives it rules.
+/// where its base has been, under the program's lighter weeks if it keeps
+/// any. Absent while it has none of these, which is a program made from a
+/// folder until the user gives it rules.
 class _Growth extends StatelessWidget {
   final Program program;
 
@@ -407,7 +421,10 @@ class _Growth extends StatelessWidget {
     final exercises = Exercises.of(context);
     final bases = programs.basesOf(program.id!);
     final ids = {...program.rules.keys, ...bases.map((base) => base.exerciseId)};
-    if (ids.isEmpty) return const SizedBox.shrink();
+    final deload = program.deload;
+    if (ids.isEmpty && deload == null) return const SizedBox.shrink();
+    final percent = NumberFormat.percentPattern(Localizations.localeOf(context).toString());
+    final style = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 
     return Padding(
       padding: const .only(top: 24),
@@ -416,6 +433,9 @@ class _Growth extends StatelessWidget {
         spacing: 12,
         children: [
           Text(copy.programGrowth, style: textTheme.titleSmall),
+          // the program's own lighter weeks, scheduled whatever the exercise
+          if (deload case Deload(:final every, :final load, :final volume))
+            Text(copy.programDeload(every, percent.format(load), percent.format(volume)), style: style),
           for (final id in ids)
             if (exercises.lookup(id) case final Exercise exercise)
               _GrowthRow(
@@ -425,7 +445,7 @@ class _Growth extends StatelessWidget {
                   for (final base in bases)
                     if (base.exerciseId == id) base.value,
                 ],
-                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                style: style,
               ),
         ],
       ),
@@ -444,7 +464,7 @@ class _GrowthRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final copy = L.of(context);
-    final measure = _Measure.of(context, exercise, rule);
+    final measure = GrowthMeasure.of(context, exercise, rule);
     final line = switch (rule) {
       null || NoGrowth() => copy.ruleAsWritten,
       AddWeight(:final step) => copy.ruleAddWeight(measure.format(step)),
@@ -454,84 +474,36 @@ class _GrowthRow extends StatelessWidget {
       ShareOfMax(:final step) => copy.ruleShareOfMax(measure.format(step)),
     };
 
+    final percent = NumberFormat.percentPattern(Localizations.localeOf(context).toString());
+    final misses = switch (rule) {
+      AddWeight(:final miss) ||
+      RangeThenWeight(:final miss) ||
+      ShareOfMax(:final miss) when miss.cut > 0 => copy.ruleMisses(miss.after, percent.format(miss.cut)),
+      _ => null,
+    };
+
     return Column(
       crossAxisAlignment: .start,
       spacing: 2,
       children: [
         Text(exercise.name, style: Theme.of(context).textTheme.titleSmall),
         Text(line, style: style),
+        if (rule?.amrap.isNotEmpty ?? false) Text(copy.ruleAmrap, style: style),
+        if (misses != null) Text(misses, style: style),
         if (history.isNotEmpty) Text(history.map(measure.format).join(' → '), style: style),
       ],
     );
   }
 }
 
-/// What a rule's numbers measure on [exercise], and how they read: a weight
-/// in the user's unit, a time in seconds, or a distance in theirs — a carry's
-/// in metres or yards, as its sets show it.
-class _Measure {
-  final String Function(num) format;
-
-  const new(this.format);
-
-  factory of(BuildContext context, Exercise exercise, GrowthRule? rule) {
-    final copy = L.of(context);
-    final preferences = Preferences.of(context);
-    final override = Exercises.of(context).unitFor(exercise.id);
-    final unit = override ?? preferences.weightUnit;
-
-    String weight(num value) {
-      final label = switch (unit) {
-        .imperial => copy.lbs,
-        .metric => copy.kg,
-      };
-      return '${preferences.weight(value, unit: unit)} $label';
-    }
-
-    String distance(num value) {
-      final label = switch (override ?? preferences.distanceUnit) {
-        .imperial => copy.milesPlural,
-        .metric => copy.km,
-      };
-      return '${preferences.distance(value, unit: override)} $label';
-    }
-
-    String carried(num value) {
-      final label = switch (override ?? preferences.distanceUnit) {
-        .imperial => copy.yardsShort,
-        .metric => copy.metresShort,
-      };
-      return '${preferences.shortDistance(value, unit: override)} $label';
-    }
-
-    String seconds(num value) => '${value.round()} ${copy.sec}';
-
-    return switch (rule) {
-      Longer() => switch (exercise.category) {
-        .cardio => _Measure(distance),
-        .weightedDistance => _Measure(carried),
-        .duration ||
-        .weightedDuration ||
-        .barbell ||
-        .dumbbell ||
-        .machine ||
-        .weightedBodyWeight ||
-        .assistedBodyWeight ||
-        .repsOnly => _Measure(seconds),
-      },
-      // a ladder keeps no base: there is nothing of its to measure
-      null || NoGrowth() || AddWeight() || RangeThenWeight() || ShareOfMax() || Ladder() => _Measure(weight),
-    };
-  }
-}
-
-/// What the page's steer buttons take. A lighter week and a ladder's advance
-/// are the program's own steps, never one of these.
+/// What the page's steer buttons take. A ladder's advance is the program's
+/// own step (#350), never one of these.
 enum _Steer {
   repeat(.repeat),
   pause(.pause),
   resume(.resume),
-  replay(.replay);
+  replay(.replay),
+  lighter(.lighter);
 
   final ProgramActionKind kind;
 

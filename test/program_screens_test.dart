@@ -242,6 +242,32 @@ void main() {
       verify(db.deleteProgramAction(action.id)).called(1);
     });
 
+    testWidgets('How it grows says when the program goes lighter', (tester) async {
+      final lighter = program.copyWith(deload: const Deload(every: 4));
+      answer(.on);
+      withProgram();
+      when(db.getPrograms(userId)).thenAnswer((_) async => [lighter]);
+      when(api.getPrograms()).thenAnswer((_) async => [lighter]);
+      await openWorkoutTab(tester);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+
+      expect(find.text('How it grows'), findsOneWidget);
+      expect(find.text('Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'), findsOneWidget);
+    });
+
+    testWidgets('a lighter week is asked for like any steer, and then not offered again (#350)', (tester) async {
+      await openPage(tester);
+
+      await tester.tap(find.text('Lighter week'));
+      await tester.pumpTimes();
+
+      final action = verify(db.storeProgramAction(captureAny)).captured.first as ProgramAction;
+      expect(action.kind, ProgramActionKind.lighter);
+      expect(find.text('This week goes lighter'), findsOneWidget);
+      expect(find.text('Lighter week'), findsNothing);
+    });
+
     testWidgets('one step at a time: a second tap while one is on its way records nothing', (tester) async {
       await openPage(tester);
       final reply = Completer<Replayed<ProgramAction>>();

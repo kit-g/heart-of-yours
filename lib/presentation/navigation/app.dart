@@ -161,6 +161,12 @@ class HeartApp extends StatelessWidget {
             templates: db,
             workouts: Workouts.of(context),
             onSessionsChanged: Templates.of(context).reread,
+            // a ladder's step (#350): the sessions are the template list's
+            onAdvance: (sessions, {required from, required to}) async {
+              if (Exercises.of(context).lookup(to) case final exercise?) {
+                await Templates.of(context).replaceExercise(sessions, from: from, to: exercise);
+              }
+            },
             remote: RemoteAccess.of(context),
             onError: reportToSentry,
           ),

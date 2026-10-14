@@ -465,6 +465,17 @@ Future<void> finishWorkout(BuildContext context, Workouts workouts, {DateTime? a
 
   final finishing = workouts.finishActiveWorkout(at: at);
 
+  // a program's growth rules run over the session once it is written (#350),
+  // here rather than on the Done page so a finish nobody watches still moves
+  // the program; Done reads the answer back. Off, the program stays as it was
+  if ((session, Preferences.of(context).isOn(.programs)) case (Workout(programId: String _) && final finished, true)) {
+    final template = switch (finished.templateId) {
+      final String id => Templates.of(context).lookup(id),
+      null => null,
+    };
+    Programs.of(context).grow(finished, session: template, after: finishing);
+  }
+
   // "last time" and the picker's recency both read the finished session out
   // of the mirror; until this they kept the launch's view all session long
   final previous = PreviousExercises.of(context);

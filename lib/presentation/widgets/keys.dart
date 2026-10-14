@@ -172,4 +172,7 @@ abstract final class AppKeys {
   /// One program's band on the Workout tab (#347), and its Start button.
   static Key programBand(String? programId) => Key('Programs.band.$programId');
   static Key programStart(String? programId) => Key('Programs.band.start.$programId');
+
+  /// The Done page's program block (#351): what the session moved.
+  static const doneProgram = Key('Done.program');
 }

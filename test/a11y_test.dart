@@ -84,6 +84,7 @@ enum _Screen {
   backfillRunning,
   backfillFailed,
   workoutDone,
+  programDone,
 }
 
 /// The exercise the rest-timers screen resolves one of its timers to.
@@ -298,7 +299,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programPage,
       guideline,
-      'the steers are PrimaryButton.shrunk (lib/presentation/routes/workout/program_page.dart:267, :276) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the steers are PrimaryButton.shrunk (lib/presentation/routes/workout/program_page.dart:270, :279, :290) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.newProgram,
@@ -326,6 +327,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Guideline.iosTapTarget,
     'the set-row weight/reps buttons and the set number share the 32pt row height (lib/presentation/widgets/workout/set_item.dart:337, set_type.dart:87) — visual-density change, out of scope',
   ),
+  // A program session's Done page (#351): what it moved, with its Keep
+  // (lib/presentation/routes/done/program.dart).
+  (_Screen.programDone, _Guideline.labeledTapTarget, null),
+  (_Screen.programDone, _Guideline.textContrastLight, null),
+  (_Screen.programDone, _Guideline.textContrastDark, null),
+  (_Screen.programDone, _Guideline.androidTapTarget, null),
+  (_Screen.programDone, _Guideline.iosTapTarget, null),
   (_Screen.setStopwatch, _Guideline.labeledTapTarget, null),
   (_Screen.setStopwatch, _Guideline.textContrastLight, null),
   (_Screen.setStopwatch, _Guideline.textContrastDark, null),
@@ -1005,6 +1013,29 @@ void main() {
         when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
         when(api.getProgramActions(any)).thenAnswer((_) async => []);
         when(api.getProgramBases(any)).thenAnswer((_) async => []);
+      case _Screen.programDone:
+        SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-programs': 'on'});
+        final growing = _program.copyWith(rules: {_bench.id: const AddWeight(step: 2.5)});
+        when(db.getPrograms(any)).thenAnswer((_) async => [growing]);
+        when(api.getPrograms()).thenAnswer((_) async => [growing]);
+        when(db.getProgramActions(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+        when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer(
+          (_) async => [
+            ProgramBase(id: 'b1', programId: 'p1', exerciseId: _bench.id, value: 95, at: DateTime.utc(2026, 10, 1)),
+          ],
+        );
+        when(db.getProgramMarks(any, any)).thenAnswer((_) async => []);
+        when(db.getProgramWorkouts(any, any)).thenAnswer((_) async => []);
+        when(db.storePrograms(any, any)).thenAnswer((_) async {});
+        when(db.storeProgramActions(any, any)).thenAnswer((_) async {});
+        when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
+        when(db.storeProgramBase(any)).thenAnswer((_) async {});
+        when(api.getProgramActions(any)).thenAnswer((_) async => []);
+        when(api.getProgramBases(any)).thenAnswer(
+          (_) async => [
+            ProgramBase(id: 'b1', programId: 'p1', exerciseId: _bench.id, value: 95, at: DateTime.utc(2026, 10, 1)),
+          ],
+        );
       case _Screen.workoutDone:
         // one exercise beat an earlier session, one was a first
         when(db.getRecord(any, _bench)).thenAnswer(
@@ -1256,6 +1287,23 @@ void main() {
         // the rows are only honest if the badges are what they checked
         expect(find.textContaining(RegExp(r'^was \d')), findsOneWidget);
         expect(find.text('first record'), findsOneWidget);
+      case _Screen.programDone:
+        final context = tester.element(find.byType(MaterialApp));
+        await Programs.of(context).init();
+        final bench = WorkoutExercise(starter: ExerciseSet(_bench, weight: 95, reps: 5)..isCompleted = true);
+        await Workouts.of(context).startWorkout(
+          source: .program,
+          template: Workout.fromExercises([bench], name: 'Day A', programId: 'p1'),
+        );
+        await tester.pumpTimes();
+        final workout = Workouts.of(context).activeWorkout!;
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/done?workoutId=${workout.id}');
+        await tester.pumpTimes();
+        unawaited(Programs.of(context).grow(workout));
+        await tester.pumpTimes();
+        // the row is only honest if it is the move it checked
+        expect(find.textContaining('next time'), findsOneWidget);
+        expect(find.textContaining('Keep'), findsOneWidget);
       case _Screen.calendar:
         final completed = Workout.fromJson(_unsynced().toMap());
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [completed]);
