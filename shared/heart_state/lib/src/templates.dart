@@ -425,6 +425,10 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
 
   bool get allowsNewTemplate => length < (maxTemplates ?? _maxTemplates);
 
+  /// Whether [count] more templates fit under the allowance: a ready-made
+  /// program's sessions all arrive at once (#352).
+  bool allowsNewTemplates(int count) => length + count <= (maxTemplates ?? _maxTemplates);
+
   /// The device locale changed. Sample templates carry localized names picked
   /// at fetch time, so the cached batch is stale in the new language —
   /// re-fetch, which repaints.

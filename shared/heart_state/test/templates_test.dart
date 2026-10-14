@@ -469,6 +469,19 @@ void main() {
         expect(templates.allowsNewTemplate, isFalse);
       });
 
+      test("allowsNewTemplates counts a ready-made program's sessions against the allowance (#352)", () async {
+        when(local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId'))).thenAnswer((inv) async {
+          return Template.empty(id: UniqueKey().toString(), order: 1);
+        });
+        when(remote.saveTemplate(any)).thenAnswer((inv) async => inv.positionalArguments.first as Template);
+        for (var i = 0; i < 4; i++) {
+          await templates.add(ex('Push Up'));
+          await templates.saveEditable();
+        }
+        expect(templates.allowsNewTemplates(2), isTrue);
+        expect(templates.allowsNewTemplates(3), isFalse);
+      });
+
       test('workoutToTemplate uses startTemplate for raw and creates editable from workout, notifying', () async {
         final workout = Workout(name: 'Morning')..append(WorkoutExercise(starter: ExerciseSet(ex('Push Up'))));
         when(
