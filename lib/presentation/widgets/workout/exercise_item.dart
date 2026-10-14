@@ -10,6 +10,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(WorkoutExercise, ExerciseSet)? onSetDone;
   final void Function(ExerciseSet, SetType)? onSetType;
   final void Function(ExerciseSet, double?)? onSetRpe;
+  final void Function(ExerciseSet, SetTarget?)? onSetTarget;
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final String firstColumnCopy;
@@ -30,6 +31,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     this.onSetDone,
     this.onSetType,
     this.onSetRpe,
+    this.onSetTarget,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.copy,
@@ -268,6 +270,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                             set: set.$2,
                             onSetType: onSetType,
                             onSetRpe: onSetRpe,
+                            onSetTarget: onSetTarget,
                             exercise: exercise,
                             onRemoveSet: onRemoveSet,
                             isLocked: !allowCompleting,
@@ -363,8 +366,15 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   /// unticks them all (#225). Through the same path a single tick takes, so a
   /// screen with its own ([onSetDone]: the History editor) keeps it; no rest
   /// timer starts — nobody rests after logging a whole exercise at once.
-  void _tickAll(BuildContext context) {
+  Future<void> _tickAll(BuildContext context) async {
     final untick = exercise.every((set) => set.isCompleted);
+    final workouts = Workouts.of(context);
+    if (!untick) {
+      // a ghost row's tick takes its target as the set (#173), as one row's does
+      for (final set in exercise.where((set) => !set.isCompleted).toList()) {
+        await workouts.acceptTarget(set);
+      }
+    }
     final targets = exercise.where(
       (set) => switch (untick) {
         true => true,
@@ -373,7 +383,6 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     );
     if (targets.isEmpty) return;
     buzz();
-    final workouts = Workouts.of(context);
     for (final set in targets.toList()) {
       switch ((onSetDone, untick)) {
         case (var toggle?, _):
@@ -392,34 +401,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     final l = L.of(context);
     final prefs = Preferences.watch(context);
     final override = Exercises.watch(context).unitFor(exercise.exercise.id);
-
-    String weightUnit() {
-      return switch (override ?? prefs.weightUnit) {
-        .metric => l.kg,
-        .imperial => l.lbs,
-      };
-    }
-
-    String distanceUnit() {
-      return switch ((exercise.exercise.category, override ?? prefs.distanceUnit)) {
-        // a carry is measured in metres or yards, not in fractions of a km
-        (.weightedDistance, .metric) => l.metresShort,
-        (.weightedDistance, .imperial) => l.yardsShort,
-        (_, .metric) => l.km,
-        (_, .imperial) => l.mile,
-      };
-    }
-
-    String label(SetColumn column) {
-      return switch ((column, exercise.exercise.category)) {
-        (.weight, .weightedBodyWeight) => '+${weightUnit()}',
-        (.weight, .assistedBodyWeight) => '-${weightUnit()}',
-        (.weight, _) => weightUnit(),
-        (.reps, _) => l.reps,
-        (.distance, _) => distanceUnit(),
-        (.duration, _) => l.time,
-      };
-    }
+    String label(SetColumn column) => _columnLabel(l, prefs, override, exercise.exercise.category, column);
 
     final columns = SetColumn.of(exercise.exercise.category);
     return [

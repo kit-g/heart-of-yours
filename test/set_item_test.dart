@@ -650,6 +650,75 @@ void main() {
     });
   });
 
+  group('targets (#173)', () {
+    Finder ghost(String text) => find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.hintText == text,
+    );
+
+    Workout aimed(Exercise exercise, {double? weight}) {
+      final workout = Workout(name: 'W')..add(exercise);
+      workout.first.first
+        ..setMeasurements(weight: weight)
+        ..target = SetTarget({.reps: const TargetRange(min: 6, max: 10)});
+      return workout;
+    }
+
+    testWidgets('an empty cell shows the target faintly; the sheet offers no way to change it', (tester) async {
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+      await startWorkoutOn(tester, aimed(exercise, weight: 60));
+
+      expect(ghost('6–10'), findsOneWidget);
+      expect(find.text('60'), findsOneWidget, reason: 'the load is prescribed, so its cell holds it');
+
+      await tester.tapByKey(WorkoutDetailKeys.setTypeFor(exercise.id, 1));
+      await tester.pumpTimes();
+      expect(find.byKey(WorkoutDetailKeys.setTarget), findsNothing, reason: 'a workout logs; a template plans');
+    });
+
+    testWidgets('a tick on a ghost row takes the bottom of the target as the set', (tester) async {
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+      final workout = aimed(exercise, weight: 60);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
+      await tester.pumpTimes();
+
+      expect(set.isCompleted, isTrue);
+      expect(set.reps, 6);
+      expect(set.weight, 60);
+      verify(db.markSetAsComplete(set)).called(1);
+    });
+
+    testWidgets('a typed value is the set, not the target', (tester) async {
+      final exercise = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
+      final workout = aimed(exercise, weight: 60);
+      final set = workout.first.first;
+      await startWorkoutOn(tester, workout);
+
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.repsFor(exercise.id, 1)), '9');
+      await tester.tapByKey(WorkoutDetailKeys.doneFor(exercise.id, 1));
+      await tester.pumpTimes();
+
+      expect(set.reps, 9);
+      expect(set.isCompleted, isTrue);
+    });
+
+    testWidgets('the ✓ header takes every ghost row\'s target too', (tester) async {
+      final exercise = Exercise(name: 'Push Up', category: .repsOnly, target: .chest);
+      final workout = aimed(exercise)..first.add(ExerciseSet(exercise));
+      final [aimedSet, bare] = workout.first.toList();
+      await startWorkoutOn(tester, workout);
+
+      await tester.tapByKey(WorkoutDetailKeys.tickAllFor(exercise.id));
+      await tester.pumpTimes();
+
+      expect(aimedSet.isCompleted, isTrue);
+      expect(aimedSet.reps, 6);
+      expect(bare.isCompleted, isFalse, reason: 'nothing typed and nothing aimed at');
+    });
+  });
+
   group('set types (#151)', () {
     String? numberShownBy(String exerciseId, int index) {
       final face = find.descendant(

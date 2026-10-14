@@ -13,6 +13,7 @@ import 'package:heart/presentation/routes/workout/workout.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -317,6 +318,101 @@ void main() {
       expect(find.byType(TemplateEditor), findsNothing);
       verify(db.updateTemplate(any)).called(1);
       verify(api.editTemplate(any)).called(1);
+    });
+
+    group('targets (#173)', () {
+      Future<void> openEditor(WidgetTester tester) async {
+        await openWorkoutTab(tester);
+        final card = find.ancestor(of: find.text('Push Day'), matching: find.byType(Card)).first;
+        await tester.tap(find.descendant(of: card, matching: find.byIcon(Icons.more_horiz)));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Edit'));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> openTarget(WidgetTester tester) async {
+        await tester.tapByKey(WorkoutDetailKeys.setTypeFor(bench.id, 1));
+        await tester.pumpAndSettle();
+        await tester.tapByKey(WorkoutDetailKeys.setTarget);
+        await tester.pumpAndSettle();
+      }
+
+      Finder field(String hint) => find.byWidgetPredicate(
+        (widget) => widget is TextField && widget.decoration?.hintText == hint,
+      );
+
+      testWidgets('a rep range set from the number popup is saved, and its empty cell shows it', (tester) async {
+        when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+        await openEditor(tester);
+
+        await openTarget(tester);
+        expect(find.text('Target for set 1'), findsOneWidget);
+        // the reps row is the second pair: weight comes first, as on the row
+        await tester.enterText(field('from').at(1), '6');
+        await tester.enterText(field('to').at(1), '10');
+        await tester.tap(find.text('Save').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Target for set 1'), findsNothing);
+        expect(field('6–10'), findsOneWidget, reason: 'the reps cell shows the range faintly');
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+        final saved = verify(db.updateTemplate(captureAny)).captured.single as Template;
+        expect(saved.first.first.target?[.reps], const TargetRange(min: 6, max: 10));
+        expect(saved.first.first.target?[.weight], isNull);
+      });
+
+      testWidgets('a range takes the place of the reps a set held, and the row shows it', (tester) async {
+        final fixed = template(id: 't1', order: 0, name: 'Push Day');
+        fixed.first.first.setMeasurements(weight: 60, reps: 5);
+        when(db.getTemplates(userId)).thenAnswer((_) async => [fixed]);
+        await openEditor(tester);
+        expect(find.text('5'), findsOneWidget);
+
+        await openTarget(tester);
+        await tester.enterText(field('from').at(1), '6');
+        await tester.enterText(field('to').at(1), '10');
+        await tester.tap(find.text('Save').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('5'), findsNothing);
+        expect(field('6–10'), findsOneWidget);
+        // 60 kg, in this test's pounds
+        expect(find.text('132.3'), findsOneWidget, reason: 'the load is not what the target names');
+      });
+
+      testWidgets('"to" left empty is as many as you can, and a "to" under its "from" is refused', (tester) async {
+        when(db.getTemplates(userId)).thenAnswer((_) async => [template(id: 't1', order: 0, name: 'Push Day')]);
+        await openEditor(tester);
+
+        await openTarget(tester);
+        await tester.enterText(field('from').at(1), '10');
+        await tester.enterText(field('to').at(1), '6');
+        await tester.tap(find.text('Save').last);
+        await tester.pumpAndSettle();
+        expect(find.text('Target for set 1'), findsOneWidget, reason: 'nothing can hold ten to six');
+
+        await tester.enterText(field('to').at(1), '');
+        await tester.tap(find.text('Save').last);
+        await tester.pumpAndSettle();
+        expect(field('10+'), findsOneWidget);
+      });
+
+      testWidgets('No target takes it away', (tester) async {
+        final ranged = template(id: 't1', order: 0, name: 'Push Day');
+        ranged.first.first.target = SetTarget({.reps: const TargetRange(min: 8)});
+        when(db.getTemplates(userId)).thenAnswer((_) async => [ranged]);
+        await openEditor(tester);
+        expect(field('8+'), findsOneWidget);
+
+        await openTarget(tester);
+        await tester.tap(find.text('No target'));
+        await tester.pumpAndSettle();
+
+        expect(field('8+'), findsNothing);
+        expect(ranged.first.first.target, isNull);
+      });
     });
 
     testWidgets('renaming through the field reaches the saved template', (tester) async {

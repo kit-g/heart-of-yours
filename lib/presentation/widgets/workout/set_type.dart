@@ -24,6 +24,10 @@ class _SetTypeButton extends StatefulWidget {
   /// popup carries the ratings under the types.
   final void Function(ExerciseSet, double?)? onSetRpe;
 
+  /// Sets what the set aims for (#173). With it, the popup ends on a row that
+  /// opens the target's dialog: a template's editor, not a workout.
+  final void Function(ExerciseSet, SetTarget?)? onSetTarget;
+
   const new({
     super.key,
     required this.set,
@@ -31,6 +35,7 @@ class _SetTypeButton extends StatefulWidget {
     required this.fill,
     this.onSetType,
     this.onSetRpe,
+    this.onSetTarget,
   });
 
   @override
@@ -133,6 +138,7 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       items: [
         ..._typed.map((type) => _item(type, selected: type == current)),
         if (onSetRpe != null) _RpeEntry(set: widget.set, explained: _rpeExplained),
+        if (widget.onSetTarget != null) _targetItem(),
       ],
     );
     _explained.value = null;
@@ -153,9 +159,75 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       case _RpeCleared():
         buzz();
         onSetRpe?.call(widget.set, null);
+      case _TargetChoice():
+        await _openTarget();
       case null:
         return;
     }
+  }
+
+  _Cells _cells() {
+    final ExerciseSet(:exercise, :category) = widget.set;
+    return _Cells(Preferences.of(context), Exercises.of(context).unitFor(exercise.id), category);
+  }
+
+  /// The popup's last row: what the set aims for, and the way to change it.
+  PopupMenuItem<_SetChoice> _targetItem() {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final l = L.of(context);
+    final summary = _cells().summary(widget.set);
+
+    return PopupMenuItem<_SetChoice>(
+      key: WorkoutDetailKeys.setTarget,
+      value: const _TargetChoice(),
+      padding: .zero,
+      child: Semantics(
+        label: switch (summary) {
+          final String summary => l.setTargetSummary(summary),
+          null => l.setTarget,
+        },
+        excludeSemantics: true,
+        child: Container(
+          width: _setTypeMenuWidth,
+          // the hairline that sets the plan apart from what the set is
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: colorScheme.outlineVariant, width: .5)),
+          ),
+          padding: const .symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            spacing: 12,
+            children: [
+              SizedBox(
+                width: 20,
+                child: Icon(Icons.track_changes_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+              ),
+              Expanded(child: Text(l.setTarget, style: textTheme.titleSmall)),
+              if (summary != null)
+                Text(summary, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openTarget() async {
+    final onSetTarget = widget.onSetTarget;
+    if (onSetTarget == null) return;
+    final l = L.of(context);
+    final prefs = Preferences.of(context);
+    final ExerciseSet(:exercise, :category) = widget.set;
+    final override = Exercises.of(context).unitFor(exercise.id);
+    final target = await _showTargetDialog(
+      context,
+      set: widget.set,
+      number: widget.number,
+      cells: _cells(),
+      label: (column) => _columnLabel(l, prefs, override, category, column),
+    );
+    if (target == null || !mounted) return;
+    buzz();
+    onSetTarget(widget.set, target);
   }
 
   PopupMenuItem<_SetChoice> _item(SetType type, {required bool selected}) {
