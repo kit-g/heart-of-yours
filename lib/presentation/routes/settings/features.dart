@@ -84,8 +84,6 @@ class _FeaturesPageState extends State<FeaturesPage> {
     return switch (feature) {
       // only where there is a watch with Heart on it
       .watchApp => const _WatchAppSwitch(),
-      // nothing to switch until the Workout tab carries a program (#347)
-      .programs => const SizedBox.shrink(),
       _ => _FeatureSwitch(feature),
     };
   }

@@ -5,10 +5,14 @@ part of 'workout.dart';
 class _TemplatesLayout extends StatefulWidget {
   final void Function({bool? newTemplate}) goToTemplateEditor;
   final VoidCallback onNewWorkout;
+  final void Function(Program) goToProgram;
+  final void Function(TemplateFolder) goToNewProgram;
 
   const new({
     required this.goToTemplateEditor,
     required this.onNewWorkout,
+    required this.goToProgram,
+    required this.goToNewProgram,
   });
 
   @override
@@ -52,6 +56,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
     final preferences = Preferences.watch(context);
     final isAnonymous = Auth.watch(context).isAnonymous;
     final unfiled = templates.templatesIn(null).toList();
+    final programFolders = templates.programFolders;
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -65,6 +70,11 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           ),
         ),
         NewWorkoutHeader(openWorkoutSheet: widget.onNewWorkout),
+        _ProgramsSection(
+          onOpen: widget.goToProgram,
+          onFromFolder: widget.goToNewProgram,
+          onStart: (session) => _startSession(context, session),
+        ),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -136,6 +146,10 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             onDelete: () => _showDeleteFolderDialog(context, folder),
             onDrop: (template) => _file(template, folder),
             card: (template) => _userCard(context, template),
+            onMakeProgram: switch (preferences.isOn(.programs) && programFolders.any((each) => each.id == folder.id)) {
+              true => () => widget.goToNewProgram(folder),
+              false => null,
+            },
           ),
         // unfiled templates flow right after the folders; the label only exists
         // to keep them from reading as part of the last section. It doubles as
@@ -194,8 +208,20 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             );
           },
         ),
+        const _ProgramsOfferSlot(),
       ],
     );
+  }
+
+  /// Starts a program's session: the usual sheet, holding it, and the
+  /// workout names the session and its program, which is what moves the
+  /// program on.
+  Future<void> _startSession(BuildContext context, Template session) async {
+    final started = await startWorkoutOverActive(
+      context,
+      () => Workouts.of(context).startWorkout(source: .program, template: session.toWorkout(), applyPinnedNotes: true),
+    );
+    if (started) widget.onNewWorkout();
   }
 
   Widget _userCard(BuildContext context, Template template) {
@@ -535,108 +561,132 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
     );
   }
 
-  Future<void> _showStartWorkoutDialog(BuildContext context, Template template, {allowsEditing = true}) {
-    final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
-    final L(:cancel, :startWorkout, :startNewWorkoutFromTemplate, :editTemplate) = L.of(context);
-    return showBrandedDialog(
+  Future<void> _showStartWorkoutDialog(BuildContext context, Template template, {bool allowsEditing = true}) {
+    return _showStartTemplateDialog(
       context,
-      title: Text(
-        startNewWorkoutFromTemplate,
-        textAlign: TextAlign.center,
-      ),
-      content: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Wrap(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-              child: Column(
-                spacing: 8,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...template.map(
-                    (exercise) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${exercise.length} x ${exercise.exercise.name}',
-                            style: textTheme.titleSmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            exercise.exercise.target.label(L.of(context)),
-                            style: textTheme.bodyMedium,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
+      template,
+      onEdit: switch (allowsEditing) {
+        true => () {
+          Templates.of(context).editable = template;
+          widget.goToTemplateEditor();
+        },
+        false => null,
+      },
+      onStart: () async {
+        // `allowsEditing` is false only for the sample grid — a sample is not
+        // the user's to edit — which makes it the one thing in scope that
+        // tells the two sources apart.
+        final started = await startWorkoutOverActive(
+          context,
+          () => Workouts.of(context).startWorkout(
+            source: allowsEditing ? .template : .sample,
+            template: template.toWorkout(),
+            applyPinnedNotes: true,
+          ),
+        );
+        if (started) widget.onNewWorkout();
+      },
+    );
+  }
+}
+
+/// [template]'s exercises, and the ways on from them: start it, edit it when
+/// [onEdit] is given, or leave. The Workout tab's cards and a program's
+/// sessions open the same one.
+Future<void> _showStartTemplateDialog(
+  BuildContext context,
+  Template template, {
+  required Future<void> Function() onStart,
+  VoidCallback? onEdit,
+}) {
+  final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
+  final L(:cancel, :startWorkout, :startNewWorkoutFromTemplate, :editTemplate) = L.of(context);
+  return showBrandedDialog(
+    context,
+    title: Text(
+      startNewWorkoutFromTemplate,
+      textAlign: TextAlign.center,
+    ),
+    content: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Wrap(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+            child: Column(
+              spacing: 8,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...template.map(
+                  (exercise) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${exercise.length} x ${exercise.exercise.name}',
+                          style: textTheme.titleSmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          exercise.exercise.target.label(L.of(context)),
+                          style: textTheme.bodyMedium,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      icon: Icon(
-        Icons.fitness_center_rounded,
-        color: colorScheme.onPrimaryContainer,
-      ),
-      actions: [
-        Column(
-          spacing: 8,
-          children: [
+    ),
+    icon: Icon(
+      Icons.fitness_center_rounded,
+      color: colorScheme.onPrimaryContainer,
+    ),
+    actions: [
+      Column(
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            child: Center(
+              child: Text(cancel),
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+          ),
+          if (onEdit case final VoidCallback edit)
             PrimaryButton.wide(
               backgroundColor: colorScheme.surfaceContainerHighest,
               child: Center(
-                child: Text(cancel),
+                child: Text(editTemplate),
               ),
               onPressed: () {
                 Navigator.of(context, rootNavigator: true).pop();
+                edit();
               },
             ),
-            if (allowsEditing)
-              PrimaryButton.wide(
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                child: Center(
-                  child: Text(editTemplate),
-                ),
-                onPressed: () {
-                  Templates.of(context).editable = template;
-                  Navigator.of(context, rootNavigator: true).pop();
-                  widget.goToTemplateEditor();
-                },
+          PrimaryButton.wide(
+            child: Center(
+              child: Text(
+                startWorkout,
               ),
-            PrimaryButton.wide(
-              child: Center(
-                child: Text(
-                  startWorkout,
-                ),
-              ),
-              onPressed: () async {
-                Navigator.of(context, rootNavigator: true).pop();
-                // `allowsEditing` is false only for the sample grid — a
-                // sample is not the user's to edit — which makes it the one
-                // thing in scope that tells the two sources apart.
-                final started = await startWorkoutOverActive(
-                  context,
-                  () => Workouts.of(context).startWorkout(
-                    source: allowsEditing ? .template : .sample,
-                    template: template.toWorkout(),
-                    applyPinnedNotes: true,
-                  ),
-                );
-                if (started) widget.onNewWorkout();
-              },
             ),
-          ],
-        ),
-      ],
-    );
-  }
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              onStart();
+            },
+          ),
+        ],
+      ),
+    ],
+  );
 }
 
 /// A folder and its templates as one collapsible section: an [ExpansionTile]
@@ -653,6 +703,10 @@ class _FolderSection extends StatelessWidget {
   final void Function(Template) onDrop;
   final Widget Function(Template) card;
 
+  /// Makes a program of this folder's templates (#348); null where Programs is
+  /// off or the folder cannot be one, and then the menu has no such entry.
+  final VoidCallback? onMakeProgram;
+
   const new({
     super.key,
     required this.folder,
@@ -663,6 +717,7 @@ class _FolderSection extends StatelessWidget {
     required this.onDelete,
     required this.onDrop,
     required this.card,
+    this.onMakeProgram,
   });
 
   @override
@@ -837,6 +892,17 @@ class _FolderSection extends StatelessWidget {
           onSelected: (action) => action(),
           itemBuilder: (_) {
             return [
+              if (onMakeProgram case final VoidCallback make)
+                PopupMenuItem<VoidCallback>(
+                  value: make,
+                  child: Row(
+                    spacing: 4,
+                    children: [
+                      const Icon(Icons.event_repeat_rounded, size: 16),
+                      Text(L.of(context).makeProgram, style: textTheme.titleSmall),
+                    ],
+                  ),
+                ),
               PopupMenuItem<VoidCallback>(
                 value: onRename,
                 child: Row(

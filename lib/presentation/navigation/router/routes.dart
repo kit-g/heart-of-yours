@@ -122,6 +122,8 @@ RouteBase _workoutRoute() {
           HapticFeedback.mediumImpact();
           context.goToActiveWorkout();
         },
+        goToProgram: (program) => context.goToProgram(program.id!),
+        goToNewProgram: (folder) => context.goToNewProgram(folder.id!),
       );
     },
     name: _workoutName,
@@ -134,6 +136,46 @@ RouteBase _workoutRoute() {
           );
         },
         name: _templateEditorName,
+      ),
+      // before ':programId', which would otherwise take "new" for an id
+      GoRoute(
+        path: 'programs/new/:folderId',
+        builder: (context, state) {
+          return ProgramFormPage.fromFolder(
+            folderId: state.pathParameters['folderId']!,
+            onDone: context.pop,
+          );
+        },
+        name: _newProgramName,
+      ),
+      GoRoute(
+        path: 'programs/:programId',
+        builder: (context, state) {
+          final programId = state.pathParameters['programId']!;
+          return ProgramPage(
+            programId: programId,
+            onEdit: () => context.goToEditProgram(programId),
+            onEditSession: context.pushTemplateEditor,
+            onOpenActiveWorkout: () {
+              HapticFeedback.mediumImpact();
+              context.goToActiveWorkout();
+            },
+            onGone: context.pop,
+          );
+        },
+        name: _programName,
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              return ProgramFormPage.edit(
+                programId: state.pathParameters['programId']!,
+                onDone: context.pop,
+              );
+            },
+            name: _editProgramName,
+          ),
+        ],
       ),
     ],
   );
