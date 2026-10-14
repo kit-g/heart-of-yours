@@ -7,8 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -127,9 +125,7 @@ class GoalsWidget : AppWidgetProvider() {
                         views.setTextViewText(row.status, goal.status)
                         // a sliver even at nothing, so the bar reads as a bar
                         views.setProgressBar(row.bar, 1000, maxOf(20, (goal.progress * 1000).toInt()), false)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            views.setColorStateList(row.bar, "setProgressTintList", ColorStateList.valueOf(accent))
-                        }
+                        accent.setList(views, row.bar, "setProgressTintList")
                     }
                 }
             }
@@ -137,7 +133,7 @@ class GoalsWidget : AppWidgetProvider() {
             val empty = if (goals.isEmpty()) View.VISIBLE else View.GONE
             views.setViewVisibility(R.id.widget_goals_empty, empty)
             views.setViewVisibility(R.id.widget_add_goal, empty)
-            views.setTextColor(R.id.widget_add_goal, accent)
+            accent.set(context, views, R.id.widget_add_goal, "setTextColor")
 
             val open = Intent(Intent.ACTION_VIEW, Uri.parse("heart:///profile"), context, MainActivity::class.java)
             views.setOnClickPendingIntent(
@@ -149,14 +145,7 @@ class GoalsWidget : AppWidgetProvider() {
 
         /// The theme's accent, as the training widget draws it; before the
         /// app has said, the ink.
-        private fun accent(context: Context): Int {
-            val snapshot = TrainingSnapshot.read(TrainingSnapshot.prefs(context))
-            val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-            return when {
-                snapshot == null -> context.getColor(R.color.widget_text)
-                night -> snapshot.accentDark
-                else -> snapshot.accent
-            }
-        }
+        private fun accent(context: Context) =
+            WidgetColor.accent(TrainingSnapshot.read(TrainingSnapshot.prefs(context)), R.color.widget_text)
     }
 }

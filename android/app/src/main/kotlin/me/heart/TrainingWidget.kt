@@ -7,9 +7,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.icu.text.MeasureFormat
@@ -153,12 +153,6 @@ class TrainingWidget : AppWidgetProvider() {
             val (bars, total) = snapshot.figures(metric, range, LocalDate.now())
             val averaged = metric.health?.averaged == true
             val locale = context.resources.configuration.locales[0]
-            val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-            val accent = when {
-                snapshot === TrainingSnapshot.EMPTY -> context.getColor(R.color.widget_secondary)
-                night -> snapshot.accentDark
-                else -> snapshot.accent
-            }
 
             views.setTextViewText(R.id.widget_title, context.getString(metricTitle(metric)))
             views.setTextViewText(R.id.widget_value, formatted(context, total, metric, snapshot.imperial, locale))
@@ -178,15 +172,16 @@ class TrainingWidget : AppWidgetProvider() {
             val chart = chart(
                 bars,
                 range,
-                accent,
-                context.getColor(R.color.widget_secondary),
                 locale,
                 (max(width, 60f) * density).roundToInt(),
                 (max(height, 40f) * density).roundToInt(),
                 density,
                 relative = averaged,
             )
-            views.setImageViewBitmap(R.id.widget_chart, chart)
+            views.setImageViewBitmap(R.id.widget_chart, chart.bars)
+            views.setImageViewBitmap(R.id.widget_chart_rest, chart.rest)
+            WidgetColor.accent(snapshot, R.color.widget_secondary).set(context, views, R.id.widget_chart, "setColorFilter")
+            WidgetColor.of(R.color.widget_secondary).set(context, views, R.id.widget_chart_rest, "setColorFilter")
 
             val open = Intent(Intent.ACTION_VIEW, Uri.parse("heart:///profile"), context, MainActivity::class.java)
             views.setOnClickPendingIntent(
@@ -259,14 +254,15 @@ class TrainingWidget : AppWidgetProvider() {
             }
         }
 
+        /// The chart in two layers, each in white for the view to tint (#382).
+        private class Chart(val bars: Bitmap, val rest: Bitmap)
+
         /// The bars and their labels, drawn: a weekday under each day, or a
         /// month's initial under the week it begins in. An empty window draws
         /// a flat baseline.
         private fun chart(
             bars: List<TrainingBar>,
             range: TrainingRange,
-            accent: Int,
-            secondary: Int,
             locale: Locale,
             width: Int,
             height: Int,
@@ -275,11 +271,15 @@ class TrainingWidget : AppWidgetProvider() {
             /// drawn from below the lowest, not from zero, where they'd all
             /// look the same height.
             relative: Boolean = false,
-        ): Bitmap {
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
+        ): Chart {
+            val chart = Chart(
+                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888),
+                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888),
+            )
+            val filled = Canvas(chart.bars)
+            val rest = Canvas(chart.rest)
             val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = secondary
+                color = Color.WHITE
                 textSize = 11 * density
                 textAlign = Paint.Align.CENTER
             }
@@ -299,11 +299,16 @@ class TrainingWidget : AppWidgetProvider() {
                     else -> 1.0
                 }
                 val top = height - labels - max(3 * density, (area * share).toFloat())
-                fill.color = if (bar.value > 0) accent else (secondary and 0x00FFFFFF) or 0x40000000
+                // an empty day is a quarter of the labels' colour
+                val (canvas, color) = when (bar.value > 0) {
+                    true -> filled to Color.WHITE
+                    false -> rest to 0x40FFFFFF
+                }
+                fill.color = color
                 canvas.drawRoundRect(RectF(left, top, left + slot, area), 3 * density, 3 * density, fill)
-                label(bar, range, locale)?.let { canvas.drawText(it, left + slot / 2, height - 3 * density, text) }
+                label(bar, range, locale)?.let { rest.drawText(it, left + slot / 2, height - 3 * density, text) }
             }
-            return bitmap
+            return chart
         }
 
         private fun label(bar: TrainingBar, range: TrainingRange, locale: Locale): String? = when (range) {

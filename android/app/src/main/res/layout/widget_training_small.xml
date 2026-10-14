@@ -54,12 +54,26 @@
         android:textColor="@color/widget_secondary"
         android:textSize="13sp" />
 
-    <ImageView
-        android:id="@+id/widget_chart"
+    <!-- two layers, each tinted in both modes (#382): what is not a bar
+         (the labels and the empty days), and the bars -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
-        android:layout_weight="1"
-        android:importantForAccessibility="no"
-        android:scaleType="fitCenter" />
+        android:layout_weight="1">
+
+        <ImageView
+            android:id="@+id/widget_chart_rest"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter" />
+
+        <ImageView
+            android:id="@+id/widget_chart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter" />
+    </FrameLayout>
 </LinearLayout>
