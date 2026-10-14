@@ -171,7 +171,7 @@ mixin _Programs on _LocalDatabase {
       '''
       SELECT a.* FROM $_programActions a
       JOIN $_programs p ON p.id = a.program_id
-      WHERE p.user_id = ? ${programId == null ? '' : 'AND a.program_id = ?'}
+      WHERE p.user_id = ? ${_ofProgram('a', programId)}
       ORDER BY a.at, a.id
       ''',
       [userId, ?programId],
@@ -225,7 +225,7 @@ mixin _Programs on _LocalDatabase {
       '''
       SELECT b.* FROM $_programBases b
       JOIN $_programs p ON p.id = b.program_id
-      WHERE p.user_id = ? ${programId == null ? '' : 'AND b.program_id = ?'}
+      WHERE p.user_id = ? ${_ofProgram('b', programId)}
       ORDER BY b.at, b.id
       ''',
       [userId, ?programId],
@@ -265,6 +265,14 @@ mixin _Programs on _LocalDatabase {
 
   Future<void> deleteProgramBase(String baseId) {
     return _db.delete(_programBases, where: 'id = ?', whereArgs: [baseId]);
+  }
+
+  /// The clause narrowing a history read to one program, or none for all.
+  static String _ofProgram(String alias, String? programId) {
+    return switch (programId) {
+      null => '',
+      String _ => 'AND $alias.program_id = ?',
+    };
   }
 
   /// Every program reference to the exercise [from] becomes one to [to]: the
