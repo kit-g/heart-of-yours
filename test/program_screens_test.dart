@@ -278,6 +278,26 @@ void main() {
       expect((saved.name, saved.archived), ('Split, again', true));
     });
 
+    testWidgets('an edit can take the weekly target and the fixed length away', (tester) async {
+      await openPage(tester);
+      await tester.tap(find.byTooltip('Edit program'));
+      await tester.pumpTimes();
+
+      for (var tap = 0; tap < 3; tap++) {
+        await tester.tap(find.byTooltip('Fewer').first);
+        await tester.pump();
+      }
+      expect(find.text('No target'), findsOneWidget);
+      await tester.tap(find.text('Ongoing'));
+      await tester.pumpTimes();
+      await tester.tap(find.text('Save'));
+      await tester.pumpTimes();
+
+      final saved = verify(db.storeProgram(captureAny, userId)).captured.last as Program;
+      expect((saved.perWeek, saved.weeks), (null, null));
+      verify(api.editProgram(argThat(predicate<Program>((p) => p.perWeek == null && p.weeks == null)))).called(1);
+    });
+
     testWidgets('an edit of a program that is gone is a bare page, never a new one', (tester) async {
       await openPage(tester);
       await tester.tap(find.byTooltip('Edit program'));

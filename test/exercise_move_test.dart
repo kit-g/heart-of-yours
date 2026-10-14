@@ -114,6 +114,13 @@ void main() {
             )..userId = 'u1',
           ),
           ChangeNotifierProvider<Timers>(create: (_) => Timers(service: timers)..userId = 'u1'),
+          ChangeNotifierProvider<Programs>(
+            create: (_) => Programs(
+              service: MockLocalProgramService(),
+              remoteService: MockRemoteProgramService(),
+              templates: templates,
+            ),
+          ),
           ChangeNotifierProvider<PreviousExercises>(
             create: (_) => PreviousExercises(service: previous)..userId = 'u1',
           ),
