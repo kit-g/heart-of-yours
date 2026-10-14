@@ -614,6 +614,42 @@ class Api
     if (code >= 400) throw _programError(json);
   }
 
+  /// Every skip the account holds ("Not today", #312), newest first: every
+  /// page of them, since a program's position reads them whole. Read whole or
+  /// not at all, as [getPrograms] is.
+  Future<List<TrainingSkip>> getSkips() async {
+    final skips = <TrainingSkip>[];
+    String? cursor;
+    do {
+      final (json, code) = await get(Router.skips, query: {'limit': '100', 'cursor': ?cursor});
+      switch ((code, json)) {
+        case (200, {'skips': final List l}):
+          skips.addAll(_readable(l, TrainingSkip.fromJson));
+          cursor = json['cursor'] as String?;
+        case _:
+          throw _programError(json);
+      }
+    } while (cursor != null);
+    return skips;
+  }
+
+  /// Records [skip]; safe to repeat on its id. A session or program it names
+  /// that the account doesn't hold reads as none, so a skip always lands.
+  Future<({TrainingSkip row, bool created})> replaySkip(TrainingSkip skip) async {
+    final (json, code) = await post(Router.skips, body: skip.toMap());
+    return switch ((code, json)) {
+      (201, Map json) => (row: TrainingSkip.fromJson(json), created: true),
+      (200, Map json) => (row: TrainingSkip.fromJson(json), created: false),
+      _ => throw _programError(json),
+    };
+  }
+
+  /// Takes a skip back. One that isn't there is not an error.
+  Future<void> deleteSkip(String skipId) async {
+    final (json, code) = await delete(Router.skip(skipId));
+    if (code >= 400) throw _programError(json);
+  }
+
   /// A refusal the program routes name, typed; anything else as it came, the
   /// way the rest of this class throws.
   static Object _programError(Object? body) {
@@ -1115,6 +1151,12 @@ abstract final class Router {
 
   static String programBase(String programId, String baseId) {
     return '$programs/$programId/bases/$baseId';
+  }
+
+  static const skips = 'v1/skips';
+
+  static String skip(String skipId) {
+    return '$skips/$skipId';
   }
 
   static String goal(String goalId) {
