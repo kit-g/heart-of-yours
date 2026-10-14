@@ -8,6 +8,18 @@ import 'remote.dart';
 import 'upsync.dart' show Replayed;
 import 'workouts.dart';
 
+/// A program's rows, as what [Programs] owes the server names them.
+enum ProgramRow { program, action, base }
+
+/// What was done to a row on this device.
+enum ProgramChange { created, edited, deleted, deletedKeepingTemplates }
+
+/// A write the server has not confirmed: its remote leg failed, or was never
+/// reached (a dead network, a killed app, a token still on its way). Kept in
+/// the mirror until [Programs.init] sends it again, as `synced` keeps a
+/// finished workout owed.
+typedef ProgramOwed = ({ProgramRow row, String id, String programId, ProgramChange change});
+
 /// The mirror's half of programs (#346): `LocalDatabase` behind an adapter in
 /// the app, as [LocalTemplateFolderService] is. Defined here rather than in
 /// heart_models because it is local bookkeeping the server has no notion of.
@@ -39,6 +51,15 @@ abstract interface class LocalProgramService {
   Future<void> storeProgramBase(ProgramBase base);
 
   Future<void> deleteProgramBase(String baseId);
+
+  /// What [userId]'s server has not confirmed, in the order it was written.
+  Future<List<ProgramOwed>> getProgramsOwed(String userId);
+
+  /// Records [owed], in place of whatever was owed for the same row.
+  Future<void> owePrograms(String userId, ProgramOwed owed);
+
+  /// The server confirmed [row] [id], or will never take it.
+  Future<void> settleProgram(ProgramRow row, String id);
 }
 
 /// The server's half: `Api` behind an adapter in the app. Each create is safe
@@ -65,13 +86,19 @@ abstract interface class RemoteProgramService {
   Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base);
 
   Future<void> deleteProgramBase(String programId, String baseId);
+
+  /// Files [template] under [programId] as a session, or takes it out of its
+  /// program when null.
+  Future<Template> setTemplateProgram(Template template, {required String? programId});
 }
 
 /// The user's programs (#346, `docs/2026-10-11.programs.md`): templates on a
 /// schedule, the steps the user took in them, and the bases their rules grow.
 ///
 /// Local-first, like [Templates]: every write lands in the mirror, then goes to
-/// the server while the remote leg is open, whose copy then replaces it.
+/// the server while the remote leg is open, whose copy then replaces it. A
+/// write the server did not confirm stays owed ([ProgramOwed]) and is sent
+/// again by the next [init], before the server's copy is read over it.
 ///
 /// Position is never held. [position] folds it on request from the program's
 /// finished workouts and its actions, with heart_models' `ProgramPosition.of`,
@@ -120,6 +147,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   final _actions = <String, List<ProgramAction>>{};
   final _bases = <String, List<ProgramBase>>{};
   final _marks = <String, List<ProgramMark>>{};
+  final _owed = <(ProgramRow, String), ProgramOwed>{};
 
   bool _loaded = false;
 
@@ -167,7 +195,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _actions.clear();
     _bases.clear();
     _marks.clear();
-    _heldHistory = null;
+    _owed.clear();
+    _heldRevision = null;
   }
 
   @override
@@ -176,9 +205,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     super.dispose();
   }
 
-  /// Reads the mirror, then, with the remote leg open, the server's programs
-  /// and each one's history, which replace the mirror's. Nobody awaits this,
-  /// so each step reports what it throws and the next still runs.
+  /// Reads the mirror, then, with the remote leg open, sends what the server
+  /// is still owed, and reads the server's programs and each followed one's
+  /// history over the mirror's: whole, but for what is still owed. Nobody
+  /// awaits this, so each step reports what it throws and the next still runs.
   Future<void> init() async {
     final id = userId;
     if (id == null) {
@@ -190,10 +220,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       final programs = await _service.getPrograms(id);
       final actions = await _service.getProgramActions(id);
       final bases = await _service.getProgramBases(id);
+      final owed = await _service.getProgramsOwed(id);
       if (userId != id) return;
       _replace(programs);
       _group(_actions, actions, (action) => action.programId);
       _group(_bases, bases, (base) => base.programId);
+      _owed
+        ..clear()
+        ..addEntries([for (final each in owed) MapEntry((each.row, each.id), each)]);
       await _readMarks(id);
       notifyListeners();
     });
@@ -201,29 +235,45 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
 
     if (!_remote.allowed) return;
 
+    await _step(() => _flush(id));
+
     await _step(() async {
-      final programs = await _remoteService.getPrograms();
+      final programs = _merged(await _remoteService.getPrograms());
       if (userId != id) return;
       await _service.storePrograms(programs, id);
       _replace(programs);
+      // one only the server had has marks in the mirror all the same: its
+      // workouts arrive with the history, not with it
+      await _readMarks(id);
       notifyListeners();
     });
 
-    for (final program in [..._programs.values]) {
-      final programId = program.id!;
-      await _step(() async {
-        final (actions, bases) = await (
-          _remoteService.getProgramActions(programId),
-          _remoteService.getProgramBases(programId),
-        ).wait;
-        if (userId != id) return;
-        await _service.storeProgramActions(programId, actions);
-        await _service.storeProgramBases(programId, bases);
-        _actions[programId] = [...actions]..sort((a, b) => a.at.compareTo(b.at));
-        _bases[programId] = [...bases]..sort((a, b) => a.at.compareTo(b.at));
-        notifyListeners();
-      });
-    }
+    // an archived program's history is read once; nothing moves it after
+    await Future.wait([
+      for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
+        if (!program.archived || !_actions.containsKey(programId)) _step(() => _pull(id, programId)),
+    ]);
+  }
+
+  /// Reads [programId]'s actions and bases from the server over the mirror's.
+  Future<void> _pull(String uid, String programId) async {
+    final (actions, bases) = await (
+      _remoteService.getProgramActions(programId),
+      _remoteService.getProgramBases(programId),
+    ).wait;
+    if (userId != uid) return;
+    final ownActions = _rowsOwed<ProgramAction>(
+      actions,
+      .action,
+      _actions[programId] ?? const [],
+      (action) => action.id,
+    );
+    final ownBases = _rowsOwed<ProgramBase>(bases, .base, _bases[programId] ?? const [], (base) => base.id);
+    await _service.storeProgramActions(programId, ownActions);
+    await _service.storeProgramBases(programId, ownBases);
+    _actions[programId] = ownActions..sort((a, b) => a.at.compareTo(b.at));
+    _bases[programId] = ownBases..sort((a, b) => a.at.compareTo(b.at));
+    notifyListeners();
   }
 
   /// Starts a program with [sessions] as its templates, in their order.
@@ -249,6 +299,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
 
     await _templates.storeTemplates(filed, userId: uid);
     await _service.storeProgram(local, uid);
+    await _owe(.program, id, .created, programId: id);
     _programs[id] = local;
     notifyListeners();
     await onSessionsChanged?.call();
@@ -256,12 +307,19 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     if (!_remote.allowed) return local;
 
     try {
-      final (:row, created: _) = await _remoteService.replayProgram(local, sessions: filed);
-      return await _keep(row, uid);
+      final row = await _push(local, uid, sessions: filed);
+      await _settle(.program, id);
+      return row;
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
       return local;
     }
+  }
+
+  /// Creates [program] on the server with [sessions], and keeps its copy.
+  Future<Program> _push(Program program, String uid, {required List<Template> sessions}) async {
+    final (:row, created: _) = await _remoteService.replayProgram(program, sessions: sessions);
+    return _keep(row, uid);
   }
 
   /// Saves [program]'s own fields and rules. Sessions change through their
@@ -272,13 +330,16 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     if (uid == null || id == null) return program;
 
     await _service.storeProgram(program, uid);
+    await _owe(.program, id, .edited, programId: id);
     _programs[id] = program;
     notifyListeners();
 
     if (!_remote.allowed) return program;
 
     try {
-      return await _keep(await _remoteService.editProgram(program), uid);
+      final row = await _keep(await _remoteService.editProgram(program), uid);
+      await _settle(.program, id);
+      return row;
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
       return program;
@@ -303,12 +364,26 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
 
     await _service.deleteProgram(id, keepTemplates: keepTemplates);
+    // its history goes with it on the server too; and one the server never
+    // had is owed nothing at all
+    final reached = _owed[(ProgramRow.program, id)]?.change != .created;
+    for (final owed in [..._owed.values.where((each) => each.programId == id)]) {
+      await _settle(owed.row, owed.id);
+    }
+    if (reached) {
+      final change = switch (keepTemplates) {
+        true => ProgramChange.deletedKeepingTemplates,
+        false => ProgramChange.deleted,
+      };
+      await _owe(.program, id, change, programId: id);
+    }
     await onSessionsChanged?.call();
 
     if (!_remote.allowed) return;
 
     try {
       await _remoteService.deleteProgram(id, keepTemplates: keepTemplates);
+      await _settle(.program, id);
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
@@ -329,11 +404,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     );
     return _record(
       action,
+      .action,
       into: _actions,
       idOf: (action) => action.id,
       store: _service.storeProgramAction,
-      forget: _service.deleteProgramAction,
-      replay: _remoteService.replayProgramAction,
+      confirm: _confirmAction,
       programId: action.programId,
     );
   }
@@ -349,10 +424,12 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
 
     await _service.deleteProgramAction(actionId);
+    await _unowe(.action, actionId, programId: programId);
     if (!_remote.allowed) return;
 
     try {
       await _remoteService.deleteProgramAction(programId, actionId);
+      await _settle(.action, actionId);
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
@@ -381,11 +458,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     );
     return _record(
       base,
+      .base,
       into: _bases,
       idOf: (base) => base.id,
       store: _service.storeProgramBase,
-      forget: _service.deleteProgramBase,
-      replay: _remoteService.replayProgramBase,
+      confirm: _confirmBase,
       programId: base.programId,
     );
   }
@@ -400,10 +477,12 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     notifyListeners();
 
     await _service.deleteProgramBase(baseId);
+    await _unowe(.base, baseId, programId: programId);
     if (!_remote.allowed) return;
 
     try {
       await _remoteService.deleteProgramBase(programId, baseId);
+      await _settle(.base, baseId);
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
@@ -420,24 +499,24 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     });
   }
 
-  /// How many finished workouts [_workouts] held when last looked at. A change
-  /// is a workout finished, deleted, or paged down: each may move a position.
-  int? _heldHistory;
+  /// [Workouts.historyRevision] when last looked at. A change is a workout
+  /// finished, edited, deleted or paged down, already in the mirror: each may
+  /// move a position.
+  int? _heldRevision;
 
   void _onWorkouts() {
-    final held = _workouts?.history.length;
-    if (held == _heldHistory) return;
-    _heldHistory = held;
+    final revision = _workouts?.historyRevision;
+    if (revision == _heldRevision) return;
+    _heldRevision = revision;
     if (_programs.isNotEmpty) refreshMarks();
   }
 
   Future<void> _readMarks(String uid) async {
-    final marks = {
-      for (final programId in [..._programs.keys]) programId: await _service.getProgramMarks(uid, programId),
-    };
+    final ids = [..._programs.keys];
+    final marks = await Future.wait(ids.map((programId) => _service.getProgramMarks(uid, programId)));
     _marks
       ..clear()
-      ..addAll(marks);
+      ..addAll(Map.fromIterables(ids, marks));
   }
 
   /// Keeps the server's [row] in place of the local copy.
@@ -449,39 +528,237 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Writes [row] locally and, with the remote leg open, to the server, whose
-  /// copy then replaces it. The server's can be another row: a bump a second
-  /// device already wrote for the same workout comes back as the first one,
-  /// and this device's copy goes ([forget]).
+  /// copy then replaces it ([confirm]).
   Future<T> _record<T>(
+    T row,
+    ProgramRow kind, {
+    required Map<String, List<T>> into,
+    required String? Function(T) idOf,
+    required Future<void> Function(T) store,
+    required Future<T> Function(T) confirm,
+    required String? programId,
+  }) async {
+    final id = idOf(row);
+    if (programId == null || id == null) throw ArgumentError.notNull('programId');
+    into.putIfAbsent(programId, () => []).add(row);
+    notifyListeners();
+    await store(row);
+    await _owe(kind, id, .created, programId: programId);
+
+    if (!_remote.allowed) return row;
+
+    try {
+      final saved = await confirm(row);
+      await _settle(kind, id);
+      return saved;
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+      return row;
+    }
+  }
+
+  Future<ProgramAction> _confirmAction(ProgramAction action) {
+    return _confirm(
+      action,
+      into: _actions,
+      idOf: (action) => action.id,
+      store: _service.storeProgramAction,
+      forget: _service.deleteProgramAction,
+      replay: _remoteService.replayProgramAction,
+    );
+  }
+
+  Future<ProgramBase> _confirmBase(ProgramBase base) {
+    return _confirm(
+      base,
+      into: _bases,
+      idOf: (base) => base.id,
+      store: _service.storeProgramBase,
+      forget: _service.deleteProgramBase,
+      replay: _remoteService.replayProgramBase,
+    );
+  }
+
+  /// Sends [row] to the server and keeps its copy. The server's can be another
+  /// row: a bump a second device already wrote for the same workout comes back
+  /// as the first one, and this device's copy goes ([forget]).
+  Future<T> _confirm<T>(
     T row, {
     required Map<String, List<T>> into,
     required String? Function(T) idOf,
     required Future<void> Function(T) store,
     required Future<void> Function(String id) forget,
     required Future<Replayed<T>> Function(T) replay,
-    required String? programId,
   }) async {
-    if (programId == null) throw ArgumentError.notNull('programId');
-    final rows = into.putIfAbsent(programId, () => [])..add(row);
-    notifyListeners();
-    await store(row);
-
-    if (!_remote.allowed) return row;
-
-    try {
-      final (row: saved, created: _) = await replay(row);
-      final (mine, theirs) = (idOf(row), idOf(saved));
-      if (mine != null && mine != theirs) await forget(mine);
-      await store(saved);
-      rows
-        ..removeWhere((each) => idOf(each) == mine || idOf(each) == theirs)
-        ..add(saved);
-      notifyListeners();
-      return saved;
-    } catch (e, s) {
-      onError?.call(e, stacktrace: s);
-      return row;
+    final (row: saved, created: _) = await replay(row);
+    final (mine, theirs) = (idOf(row), idOf(saved));
+    if (mine != null && mine != theirs) await forget(mine);
+    await store(saved);
+    for (final rows in into.values) {
+      if (rows.any((each) => idOf(each) == mine)) {
+        rows
+          ..removeWhere((each) => idOf(each) == mine || idOf(each) == theirs)
+          ..add(saved);
+      }
     }
+    notifyListeners();
+    return saved;
+  }
+
+  /// Records that the server has not confirmed [change] to [row] [id] yet.
+  /// Only with an account: an anonymous session's store goes up whole, with
+  /// the upsync, when one arrives.
+  Future<void> _owe(ProgramRow row, String id, ProgramChange change, {required String programId}) async {
+    final uid = userId;
+    if (uid == null || !_remote.account) return;
+    final key = (row, id);
+    final owed = (
+      row: row,
+      id: id,
+      programId: programId,
+      // an edit to a row the server has never had is still its create
+      change: switch ((_owed[key]?.change, change)) {
+        (.created, .edited) => ProgramChange.created,
+        _ => change,
+      },
+    );
+    _owed[key] = owed;
+    await _service.owePrograms(uid, owed);
+  }
+
+  /// Records a deletion: a row the server never had is owed nothing.
+  Future<void> _unowe(ProgramRow row, String id, {required String programId}) async {
+    switch (_owed[(row, id)]?.change) {
+      case .created:
+        await _settle(row, id);
+      case _:
+        await _owe(row, id, .deleted, programId: programId);
+    }
+  }
+
+  Future<void> _settle(ProgramRow row, String id) async {
+    if (_owed.remove((row, id)) == null) return;
+    await _service.settleProgram(row, id);
+  }
+
+  /// Sends what the server is owed: programs before what names them, and a
+  /// program's deletion after the rows it takes with it. Stops at the first
+  /// failure that is not a refusal: the network is down, and the rest would
+  /// only fail the same way.
+  Future<void> _flush(String uid) async {
+    final owed = [..._owed.values]..sort((a, b) => _turn(a).compareTo(_turn(b)));
+    for (final each in owed) {
+      if (userId != uid) return;
+      try {
+        await _send(each, uid);
+        await _settle(each.row, each.id);
+      } catch (e, s) {
+        onError?.call(e, stacktrace: s);
+        // asking again gets the same answer: the row stays as it is here,
+        // and the server's copy decides what the next read keeps
+        if (!_isRefusal(e)) return;
+        await _settle(each.row, each.id);
+      }
+    }
+  }
+
+  static int _turn(ProgramOwed owed) {
+    return switch (owed) {
+      (row: .program, change: .created || .edited, id: _, programId: _) => 0,
+      (row: .action || .base, change: .created || .edited, id: _, programId: _) => 1,
+      (row: .action || .base, change: _, id: _, programId: _) => 2,
+      (row: .program, change: _, id: _, programId: _) => 3,
+    };
+  }
+
+  Future<void> _send(ProgramOwed owed, String uid) async {
+    final (:row, :id, :programId, :change) = owed;
+    switch ((row, change)) {
+      case (.program, .created):
+        if (_programs[id] case final Program program) {
+          final sessions = [
+            for (final template in await _templates.getTemplates(uid))
+              if (template.programId == id) template,
+          ];
+          await _push(program, uid, sessions: sessions);
+        }
+      case (.program, .edited):
+        if (_programs[id] case final Program program) await _keep(await _remoteService.editProgram(program), uid);
+      case (.program, .deleted || .deletedKeepingTemplates):
+        await _remoteService.deleteProgram(id, keepTemplates: change == .deletedKeepingTemplates);
+      case (.action, .created || .edited):
+        if (_held(_actions, programId, id, (action) => action.id) case final ProgramAction action) {
+          await _confirmAction(action);
+        }
+      case (.action, _):
+        await _remoteService.deleteProgramAction(programId, id);
+      case (.base, .created || .edited):
+        if (_held(_bases, programId, id, (base) => base.id) case final ProgramBase base) await _confirmBase(base);
+      case (.base, _):
+        await _remoteService.deleteProgramBase(programId, id);
+    }
+  }
+
+  static T? _held<T>(Map<String, List<T>> rows, String programId, String id, String? Function(T) idOf) {
+    return rows[programId]?.where((each) => idOf(each) == id).firstOrNull;
+  }
+
+  /// The server's [programs], but for what this device still owes it: one it
+  /// has not had yet, or not this version of, is the mirror's, and one deleted
+  /// here stays deleted.
+  List<Program> _merged(List<Program> programs) {
+    final owed = {
+      for (final each in _owed.values)
+        if (each.row == .program) each.id: each.change,
+    };
+    return [
+      for (final program in programs)
+        if (!owed.containsKey(program.id)) program,
+      for (final MapEntry(key: id, value: change) in owed.entries)
+        if ((change == .created || change == .edited) && _programs[id] != null) _programs[id]!,
+    ]..sort(_byCreation);
+  }
+
+  static int _byCreation(Program a, Program b) {
+    return switch ((a.createdAt, b.createdAt)) {
+      (final DateTime x, final DateTime y) when x != y => x.compareTo(y),
+      _ => (a.id ?? '').compareTo(b.id ?? ''),
+    };
+  }
+
+  /// As [_merged], for one program's actions or bases.
+  List<T> _rowsOwed<T>(List<T> theirs, ProgramRow row, List<T> held, String? Function(T) idOf) {
+    final owed = {
+      for (final each in _owed.values)
+        if (each.row == row) each.id: each.change,
+    };
+    return [
+      for (final each in theirs)
+        if (!owed.containsKey(idOf(each))) each,
+      for (final each in held)
+        if (owed[idOf(each)] == .created) each,
+    ];
+  }
+
+  /// Answers the server gives that repeating would only repeat: a rule or key
+  /// it does not take, a cap reached, a row it does not have.
+  static const _refusals = {
+    'invalid_rule',
+    'invalid_key',
+    'program_limit',
+    'program_history_limit',
+    'program_not_found',
+    'unknown_program',
+    'unknown_exercise',
+    'unknown_workout',
+    'unknown_action',
+  };
+
+  static bool _isRefusal(Object error) {
+    return switch (error) {
+      {'code': final String code} => _refusals.contains(code),
+      _ => false,
+    };
   }
 
   void _replace(Iterable<Program> programs) {

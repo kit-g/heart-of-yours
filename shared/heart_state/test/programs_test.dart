@@ -31,6 +31,16 @@ void main() {
     );
   }
 
+  Programs relaunch() {
+    return Programs(
+      service: local,
+      remoteService: remote,
+      templates: templates,
+      remote: access,
+      onError: (error, {stacktrace}) => errors.add(error),
+    )..userId = uid;
+  }
+
   setUp(() {
     local = _Local();
     remote = _Remote();
@@ -86,6 +96,98 @@ void main() {
 
       expect(programs.all.map((each) => each.id), ['p1']);
       expect(errors, isNotEmpty);
+    });
+
+    test('a program only the server had has its position', () async {
+      remote.programs = [program()];
+      local.marks['p1'] = [ProgramMark(templateId: 's1', at: DateTime.utc(2026, 10, 6), isWorkout: true)];
+
+      await programs.init();
+
+      expect(programs.position(programs.lookup('p1')!, now: DateTime.utc(2026, 10, 7)).done, {'s1'});
+    });
+
+    test('an archived program\'s history is read once', () async {
+      remote.programs = [
+        Program.fromJson({...program().toMap(), 'archived': true}),
+      ];
+      remote.actions['p1'] = [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2))];
+
+      await programs.init();
+      await relaunch().init();
+
+      expect(remote.calls.where((each) => each.startsWith('getProgramActions')), hasLength(1));
+    });
+  });
+
+  group('what the server did not confirm', () {
+    test('a program it never got is kept, and sent at the next launch', () async {
+      when(templates.getTemplates(uid)).thenAnswer((_) async => []);
+      remote.failing = true;
+      final created = await programs.create(Program(name: 'Upper / Lower'), sessions: [session('s1')]);
+      expect(local.owed.single.change, ProgramChange.created);
+
+      remote.failing = false;
+      final next = relaunch();
+      await next.init();
+
+      expect(remote.calls, contains(startsWith('replayProgram ${created.id}')));
+      expect(next.lookup(created.id!), isNotNull);
+      expect(local.programs[uid]!.map((each) => each.id), [created.id]);
+      expect(local.owed, isEmpty);
+    });
+
+    test('a deletion it never got stays deleted', () async {
+      local.programs[uid] = [program()];
+      remote.programs = [program()];
+      await programs.init();
+      remote.failing = true;
+      await programs.delete(programs.lookup('p1')!, keepTemplates: false);
+
+      remote.failing = false;
+      final next = relaunch();
+      await next.init();
+
+      expect(remote.calls, contains('deleteProgram p1 false'));
+      expect(next.all, isEmpty);
+      expect(local.owed, isEmpty);
+    });
+
+    test('a step it never got survives its read, and goes up', () async {
+      local.programs[uid] = [program()];
+      remote.programs = [program()];
+      await programs.init();
+      remote.failing = true;
+      final pause = await programs.act(programs.lookup('p1')!, .pause);
+
+      remote.failing = false;
+      final next = relaunch();
+      await next.init();
+
+      expect(remote.calls, contains('replayProgramAction ${pause.id}'));
+      expect(next.actionsOf('p1').map((each) => each.id), [pause.id]);
+      expect(local.owed, isEmpty);
+    });
+
+    test('a step undone before it went up is owed nothing', () async {
+      local.programs[uid] = [program()];
+      remote.programs = [program()];
+      await programs.init();
+      remote.failing = true;
+      final pause = await programs.act(programs.lookup('p1')!, .pause);
+      await programs.undo(pause);
+
+      expect(local.owed, isEmpty);
+    });
+
+    test('a refusal is not asked again', () async {
+      local.programs[uid] = [program()];
+      local.owed.add((row: .program, id: 'p1', programId: 'p1', change: .edited));
+      remote.refusing = 'invalid_rule';
+
+      await programs.init();
+
+      expect(local.owed, isEmpty);
     });
   });
 
@@ -319,6 +421,23 @@ class _Local implements LocalProgramService {
 
   @override
   Future<void> deleteProgramBase(String baseId) async => bases.removeWhere((each) => each.id == baseId);
+
+  final owed = <ProgramOwed>[];
+
+  @override
+  Future<List<ProgramOwed>> getProgramsOwed(String userId) async => [...owed];
+
+  @override
+  Future<void> owePrograms(String userId, ProgramOwed owed) async {
+    this.owed
+      ..removeWhere((each) => (each.row, each.id) == (owed.row, owed.id))
+      ..add(owed);
+  }
+
+  @override
+  Future<void> settleProgram(ProgramRow row, String id) async {
+    owed.removeWhere((each) => (each.row, each.id) == (row, id));
+  }
 }
 
 class _Remote implements RemoteProgramService {
@@ -327,11 +446,15 @@ class _Remote implements RemoteProgramService {
   final actions = <String, List<ProgramAction>>{};
   final bases = <String, List<ProgramBase>>{};
   bool failing = false;
+
+  /// A code every call is refused with.
+  String? refusing;
   ProgramBase Function(ProgramBase)? baseAnswer;
 
   void _call(String call) {
     calls.add(call);
     if (failing) throw {'error': 'unavailable'};
+    if (refusing case final String code) throw {'code': code};
   }
 
   @override
@@ -343,6 +466,7 @@ class _Remote implements RemoteProgramService {
   @override
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) async {
     _call('replayProgram ${program.id} ${sessions.map((each) => each.id).join(',')}');
+    programs = [...programs.where((each) => each.id != program.id), program];
     return (row: program, created: true);
   }
 
@@ -355,6 +479,7 @@ class _Remote implements RemoteProgramService {
   @override
   Future<void> deleteProgram(String programId, {required bool keepTemplates}) async {
     _call('deleteProgram $programId $keepTemplates');
+    programs = [...programs.where((each) => each.id != programId)];
   }
 
   @override
@@ -366,6 +491,7 @@ class _Remote implements RemoteProgramService {
   @override
   Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action) async {
     _call('replayProgramAction ${action.id}');
+    actions.putIfAbsent(action.programId!, () => []).add(action);
     return (row: action, created: true);
   }
 
@@ -389,5 +515,11 @@ class _Remote implements RemoteProgramService {
   @override
   Future<void> deleteProgramBase(String programId, String baseId) async {
     _call('deleteProgramBase $programId $baseId');
+  }
+
+  @override
+  Future<Template> setTemplateProgram(Template template, {required String? programId}) async {
+    _call('setTemplateProgram ${template.id} $programId');
+    return Template.fromJson({...template.toMap(), 'programId': programId});
   }
 }
