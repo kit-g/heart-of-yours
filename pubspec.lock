@@ -755,8 +755,8 @@ packages:
     dependency: "direct main"
     description:
       path: "shared/heart_models"
-      ref: "feat/program-position"
-      resolved-ref: "869dab290e3ec50510eafa478362bc7e7f599b25"
+      ref: main
+      resolved-ref: d26ef5bbca11d0592423658751e65b6730acdb2e
       url: "https://github.com/kit-g/heart-api.git"
     source: git
     version: "2.23.0"
