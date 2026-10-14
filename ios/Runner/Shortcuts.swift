@@ -20,10 +20,16 @@ import os
 private let log = Logger(subsystem: "me.heart-of", category: "Shortcuts")
 
 /// The links an intent opens the app on. The verbs are Dart's (`ShortcutLink`).
+///
+/// On this build's own scheme, its bundle id (#388). `heart` is registered by
+/// the dev build and the prod build alike, and iOS hands a link on a scheme
+/// two apps claim to either of them: prod's icon menu was opening dev.
 enum ShortcutURL {
+    static let scheme = Bundle.main.bundleIdentifier ?? "heart"
+
     static func start(template: String? = nil) -> URL {
         var components = URLComponents()
-        components.scheme = "heart"
+        components.scheme = scheme
         components.host = "app"
         components.path = "/start"
         if let template {
@@ -32,7 +38,7 @@ enum ShortcutURL {
         return components.url!
     }
 
-    static let finish = URL(string: "heart://app/finish")!
+    static let finish = URL(string: "\(scheme)://app/finish")!
 }
 
 /// A template, as Dart last published it: the user's own and the samples.
