@@ -95,6 +95,9 @@ void main() {
       expect([for (final phase in read.phases) phase.toMap()], [for (final phase in program.phases) phase.toMap()]);
       expect(read.tests['t1']?.share, 0.9);
       expect(read.joined, {'t1': DateTime.utc(2026, 10, 1, 8)});
+      // and the session itself says so, for the sign-in replay to send
+      final held = {for (final template in await local.getTemplates(user)) template.id: template.joined};
+      expect(held, {'t1': DateTime.utc(2026, 10, 1, 8), 't2': null});
     });
 
     test('without them reads back without them', () async {

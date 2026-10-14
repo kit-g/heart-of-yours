@@ -245,6 +245,17 @@ void main() {
       expect(local.owed, isEmpty);
     });
 
+    test('each session joins when this device filed it, not when the server hears of it', () async {
+      final before = DateTime.timestamp();
+      await programs.create(Program(name: 'Split'), sessions: [session('s1'), session('s2', order: 1)]);
+
+      final [stored] = verify(templates.storeTemplates(captureAny, userId: uid)).captured;
+      for (final Template(:joined) in stored as List<Template>) {
+        expect(joined, isNotNull);
+        expect(joined!.isBefore(before), isFalse);
+      }
+    });
+
     test('offline it stays local, under its own id', () async {
       access.account = false;
 
@@ -321,6 +332,60 @@ void main() {
       expect(programs.basesOf('p1'), isEmpty);
       expect(local.actions, isEmpty);
       expect(remote.calls, contains('deleteProgramAction p1 ${replay.id}'));
+    });
+
+    test('a lighter cycle is a step like the others, and the position reads it', () async {
+      final p1 = programs.lookup('p1')!;
+      final lighter = await programs.act(p1, .lighter);
+
+      expect(remote.calls, contains('replayProgramAction ${lighter.id}'));
+      expect(programs.position(p1, now: DateTime.timestamp()).lighter, isTrue);
+    });
+
+    test("a ladder's advance names what it moved and why, and is owed like any step", () async {
+      remote.failing = true;
+      final advance = await programs.advance(programs.lookup('p1')!, from: bench, to: 'harder', workoutId: 'w1');
+
+      expect(
+        (advance.kind, advance.from, advance.to, advance.workoutId),
+        (ProgramActionKind.advance, bench, 'harder', 'w1'),
+      );
+      expect(local.actions.single.id, advance.id);
+      expect(local.owed.map((each) => (each.row, each.id)), [(ProgramRow.action, advance.id)]);
+    });
+
+    test('a base can belong to one occurrence of a lift', () async {
+      final base = await programs.setBase(programs.lookup('p1')!, exerciseId: bench, slot: 'te2', value: 80);
+
+      expect(base.slot, 'te2');
+      expect(programs.currentBasesOf('p1')['te2']?.value, 80);
+    });
+
+    test('a workout gone from the mirror takes its advance from the page too', () async {
+      final advance = await programs.advance(programs.lookup('p1')!, from: bench, to: 'harder', workoutId: 'w1');
+      // what deleteWorkout does in the mirror
+      local.actions.removeWhere((each) => each.workoutId == 'w1');
+
+      await programs.refreshMarks();
+
+      expect(programs.actionsOf('p1').map((each) => each.id), isNot(contains(advance.id)));
+    });
+
+    test('a re-read takes what a history move re-keyed in the mirror, and asks the server nothing', () async {
+      local.programs[uid] = [
+        Program.fromJson({
+          ...program().toMap(),
+          'rules': {
+            'moved': {'kind': 'addWeight', 'step': 2.5},
+          },
+        }),
+      ];
+      remote.calls.clear();
+
+      await programs.reread();
+
+      expect(programs.lookup('p1')!.rules.keys, ['moved']);
+      expect(remote.calls, isEmpty);
     });
 
     test('only a replay names a week', () async {
