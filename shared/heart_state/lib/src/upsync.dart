@@ -545,7 +545,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
         for (final template in await _templates.getTemplates(uid))
           // a draft the editor never finished is not a template the user has
           if (template.name != null && template.isNotEmpty && pending(template.id))
-            (resource: resource, id: template.id, replay: () => _replayTemplate(uid, template)),
+            (resource: resource, id: template.id, replay: () => _replayTemplate(uid, _unfiled(template, ledger))),
       ],
       .workout => [
         for (final workout in await _workouts.getWorkoutHistory(uid) ?? const <Workout>[])
@@ -628,6 +628,17 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     }
     await _templates.storeTemplates([row], userId: uid);
     return (row.id, _outcome(created));
+  }
+
+  /// [template] as the server can take it: a session of a program it
+  /// refused, or one this store does not hold, goes up as a plain template,
+  /// or the server would refuse it too and it would never be backed up.
+  static Template _unfiled(Template template, Map<UpsyncResource, Map<String, UpsyncOutcome>> ledger) {
+    return switch (ledger[UpsyncResource.program]?[template.programId]) {
+      _ when template.programId == null => template,
+      .created || .existing => template,
+      _ => Template.fromJson({...template.toMap(), 'programId': null}),
+    };
   }
 
   Future<(String, UpsyncOutcome)> _replayWorkout(String uid, Workout workout) async {

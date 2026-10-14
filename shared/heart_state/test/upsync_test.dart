@@ -106,9 +106,13 @@ class _Server extends Fake implements UpsyncService {
     };
   }
 
+  /// The program each template went up filed under.
+  final filedUnder = <String, String?>{};
+
   @override
   Future<Replayed<Template>> replayTemplate(Template template) async {
     _reach(.template, template.id);
+    filedUnder[template.id] = template.programId;
     return (row: template, created: !existing.contains(template.id));
   }
 
@@ -899,16 +903,17 @@ void main() {
       expect(errors, isEmpty);
     });
 
-    test('a program the server refuses is skipped, and so are the sessions that name it', () async {
+    test('a program the server refuses is skipped, and its sessions go up as plain templates', () async {
       server.refused['p1'] = {'code': 'program_limit'};
-      server.refused['s1'] = {'code': 'unknown_program'};
 
       await sut.claim(from: uid, to: uid);
       await sut.run(uid);
 
       expect(sut.status, UpsyncStatus.done);
       expect(ledger.entries[uid]![UpsyncResource.program], {'p1': UpsyncOutcome.skipped});
-      expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.skipped));
+      // backed up all the same, filed under nothing the server lacks
+      expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
+      expect(server.filedUnder, containsPair('s1', null));
     });
 
     test('what the account pull brought down is written off, not offered back', () async {
