@@ -55,6 +55,30 @@ class ExerciseNotes implements ExerciseNoteService {
   Future<void> sync(String exerciseId, String? note) => _api.setExerciseNote(exerciseId, note);
 }
 
+/// The account's move and the mirror's copy of it (#338), like [ExerciseNotes]:
+/// the server answers, and the device re-keys its rows the way the answer says.
+class ExerciseMoves implements ExerciseMoveService {
+  final LocalDatabase _db;
+  final Api _api;
+
+  const new(this._db, this._api);
+
+  @override
+  Future<ExerciseMoveReport> move(String sourceId, String targetId, {bool dryRun = false}) {
+    return _api.moveExerciseHistory(sourceId, targetId: targetId, dryRun: dryRun);
+  }
+
+  @override
+  Future<void> mirror(ExerciseMoveReport report, {required String userId}) {
+    return _db.moveExerciseHistory(
+      sourceId: report.sourceId,
+      targetId: report.targetId,
+      userId: userId,
+      deleteSource: report.sourceDeleted,
+    );
+  }
+}
+
 /// Presents [LocalDatabase] as the [LocalCatalogService] the [Exercises]
 /// notifier wants — the catalog rows travel as `ExerciseService`, which the
 /// database implements itself, and this carries the stamp that interface

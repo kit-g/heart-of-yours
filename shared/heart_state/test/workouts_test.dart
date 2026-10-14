@@ -1499,6 +1499,41 @@ void main() {
     });
   });
 
+  group('reread() (#338)', () {
+    setUp(() => clearInteractions(local));
+
+    test('reads again only the held workouts naming the moved exercise', () async {
+      final holding = Workout(name: 'holding')..add(bench);
+      final other = Workout(name: 'other')..add(squat);
+      final moved = Workout(name: 'holding')..add(press);
+      when(local.getWorkout('u1', any)).thenAnswer((inv) async => null);
+      when(local.getWorkout('u1', holding.id)).thenAnswer((_) async => holding);
+      when(local.getWorkout('u1', other.id)).thenAnswer((_) async => other);
+      await sut.fetchWorkout(holding.id);
+      await sut.fetchWorkout(other.id);
+
+      when(local.getWorkout('u1', holding.id)).thenAnswer((_) async => moved);
+      clearInteractions(local);
+      final probe = ListenerProbe()..attach(sut);
+      await sut.reread(bench.id);
+
+      verify(local.getWorkout('u1', holding.id)).called(1);
+      verifyNever(local.getWorkout('u1', other.id));
+      expect(sut.lookup(holding.id), same(moved));
+      expect(probe.notifications, 1);
+    });
+
+    test('leaves the workout in progress alone', () async {
+      await sut.startWorkout(source: .blank, name: 'Now');
+      sut.activeWorkout!.add(bench);
+      clearInteractions(local);
+
+      await sut.reread(bench.id);
+
+      verifyNever(local.getWorkout(any, any));
+    });
+  });
+
   group('misc', () {
     test('notifyOfActiveWorkout toggles flag and does NOT notify', () async {
       final probe = ListenerProbe()..attach(sut);

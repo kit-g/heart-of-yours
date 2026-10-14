@@ -1113,6 +1113,95 @@ void main() {
       expect(sut.patterns, ['horizontal_press']);
     });
   });
+
+  group('moveHistory() (#338)', () {
+    late _MoveFake moves;
+
+    Exercises withMoves() {
+      return Exercises(
+        remoteService: remote,
+        noteService: notes,
+        moveService: moves,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+      )..userId = 'u1';
+    }
+
+    setUp(() => moves = _MoveFake());
+
+    test('is offered only with a move service and an account', () {
+      expect(sut.canMoveHistory, isFalse);
+      expect(withMoves().canMoveHistory, isTrue);
+      access.account = false;
+      expect(withMoves().canMoveHistory, isFalse);
+    });
+
+    test('a preview writes nowhere, on the server or in the mirror', () async {
+      final custom = Exercise(name: 'My Bench', category: .barbell, target: .chest).copyWith(isMine: true);
+      final bench = ex('Bench Press');
+      final report = await withMoves().previewMove(custom, bench);
+
+      expect(report.dryRun, isTrue);
+      expect(moves.calls, [(custom.id, bench.id, true)]);
+      expect(moves.mirrored, isEmpty);
+    });
+
+    test('a move mirrors the server, drops a deleted custom and reads units and notes again', () async {
+      final custom = Exercise(name: 'My Bench', category: .barbell, target: .chest).copyWith(isMine: true);
+      final bench = ex('Bench Press');
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, <Exercise>[custom, bench]));
+      when(local.getExerciseUnits('u1')).thenAnswer((_) async => {bench.id: MeasurementUnit.imperial});
+
+      final sut = withMoves();
+      await sut.init();
+      expect(sut.lookup(custom.id), isNotNull);
+      // the source's pin, re-keyed by the mirror; init's own sync has run
+      notes.values[bench.id] = 'Pause';
+
+      final probe = ListenerProbe()..attach(sut);
+      final report = await sut.moveHistory(custom, bench);
+
+      expect(report.sourceDeleted, isTrue);
+      expect(moves.calls, [(custom.id, bench.id, false)]);
+      expect(moves.mirrored, [(report, 'u1')]);
+      expect(sut.lookup(custom.id), isNull);
+      expect(sut.unitFor(bench.id), MeasurementUnit.imperial);
+      expect(sut.noteFor(bench.id), 'Pause');
+      expect(probe.notifications, 1);
+    });
+
+    test('a mirror that fails to follow is reported; the move still stands', () async {
+      final errors = <Object>[];
+      moves.mirrorFails = true;
+      final sut = Exercises(
+        remoteService: remote,
+        moveService: moves,
+        remote: access,
+        service: local,
+        libraryService: library,
+        catalogService: catalog,
+        preferenceService: preferences,
+        onError: (e, {stacktrace}) => errors.add(e),
+      )..userId = 'u1';
+      when(local.getExerciseUnits('u1')).thenAnswer((_) async => {});
+
+      final report = await sut.moveHistory(ex('Squat'), ex('Bench Press'));
+
+      expect(report.dryRun, isFalse);
+      expect(errors, [isA<StateError>()]);
+    });
+
+    test('a refused move changes nothing here', () async {
+      moves.fails = true;
+      final bench = ex('Bench Press');
+      final sut = withMoves();
+      await expectLater(sut.moveHistory(ex('Squat'), bench), throwsStateError);
+      expect(moves.mirrored, isEmpty);
+    });
+  });
 }
 
 class SocketLikeFailure implements Exception {
@@ -1121,4 +1210,35 @@ class SocketLikeFailure implements Exception {
 
 extension on Map<String, DateTime> {
   DateTime? get(String id) => this[id];
+}
+
+class _MoveFake implements ExerciseMoveService {
+  final calls = <(String, String, bool)>[];
+  final mirrored = <(ExerciseMoveReport, String)>[];
+  bool fails = false;
+  bool mirrorFails = false;
+
+  @override
+  Future<ExerciseMoveReport> move(String sourceId, String targetId, {bool dryRun = false}) async {
+    if (fails) throw StateError('refused');
+    calls.add((sourceId, targetId, dryRun));
+    return ExerciseMoveReport(
+      sourceId: sourceId,
+      targetId: targetId,
+      dryRun: dryRun,
+      workoutExercises: 3,
+      templateExercises: 1,
+      preferences: 1,
+      preferencesDropped: 0,
+      chartPreferences: 0,
+      goals: 0,
+      sourceDeleted: true,
+    );
+  }
+
+  @override
+  Future<void> mirror(ExerciseMoveReport report, {required String userId}) async {
+    if (mirrorFails) throw StateError('locked');
+    mirrored.add((report, userId));
+  }
 }

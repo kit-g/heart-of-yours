@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:heart_api/src/api.dart';
 import 'package:heart_api/src/imports.dart';
+import 'package:heart_api/src/moves.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:http/http.dart' as http;
 import 'package:network_utils/network_utils.dart' show NetworkException;
@@ -1528,6 +1529,83 @@ void main() {
         body: {'error': 'not found', 'code': 'not_found', 'message': 'token #nope not found'},
       );
       expect(() => api.revokeApiToken('nope'), throwsA(isA<Map>().having((m) => m['code'], 'code', 'not_found')));
+    });
+  });
+
+  group('exercise history move', () {
+    const report = {
+      'sourceId': 'source',
+      'targetId': 'target',
+      'dryRun': true,
+      'workoutExercises': 12,
+      'templateExercises': 2,
+      'preferences': 1,
+      'preferencesDropped': 0,
+      'chartPreferences': 0,
+      'goals': 1,
+      'sourceDeleted': true,
+    };
+
+    void answer(Object body, int status) {
+      when(
+        client.post(any, headers: anyNamed('headers'), body: anyNamed('body'), encoding: anyNamed('encoding')),
+      ).thenAnswer(
+        (_) async => http.Response(
+          jsonEncode(body),
+          status,
+          request: http.Request('POST', Uri.https('api.example.com', Router.exerciseMoves('source'))),
+        ),
+      );
+    }
+
+    test('posts the target to the source\'s moves, with dryRun only on a preview', () async {
+      answer(report, 200);
+      final preview = await api.moveExerciseHistory('source', targetId: 'target', dryRun: true);
+      expect(preview.workoutExercises, 12);
+      expect(preview.sourceDeleted, isTrue);
+
+      final [uri as Uri, body as String] = verify(
+        client.post(
+          captureAny,
+          headers: anyNamed('headers'),
+          body: captureAnyNamed('body'),
+          encoding: anyNamed('encoding'),
+        ),
+      ).captured;
+      expect(uri.path, '/v1/exercises/source/moves');
+      expect(uri.queryParameters, {'dryRun': 'true'});
+      expect(jsonDecode(body), {'targetId': 'target'});
+
+      answer({...report, 'dryRun': false}, 200);
+      await api.moveExerciseHistory('source', targetId: 'target');
+      final real =
+          verify(
+                client.post(
+                  captureAny,
+                  headers: anyNamed('headers'),
+                  body: anyNamed('body'),
+                  encoding: anyNamed('encoding'),
+                ),
+              ).captured.single
+              as Uri;
+      expect(real.queryParameters, isEmpty);
+    });
+
+    test('the two named refusals are typed, anything else is a NetworkException', () async {
+      answer({'error': 'bad request', 'code': 'same_exercise', 'reason': 'same'}, 400);
+      await expectLater(
+        api.moveExerciseHistory('source', targetId: 'source'),
+        throwsA(isA<ExerciseMoveRefused>().having((e) => e.reason, 'reason', ExerciseMoveRefusal.sameExercise)),
+      );
+
+      answer({'error': 'not found', 'code': 'unknown_exercise', 'message': 'Exercise #x not found'}, 404);
+      await expectLater(
+        api.moveExerciseHistory('source', targetId: 'target'),
+        throwsA(isA<ExerciseMoveRefused>().having((e) => e.reason, 'reason', ExerciseMoveRefusal.unknownExercise)),
+      );
+
+      answer({'error': 'bad request', 'code': 'bad_request', 'reason': 'targetId missing'}, 400);
+      await expectLater(api.moveExerciseHistory('source', targetId: ''), throwsA(isA<NetworkException>()));
     });
   });
 }

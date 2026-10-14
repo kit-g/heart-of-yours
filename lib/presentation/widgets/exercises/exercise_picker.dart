@@ -19,6 +19,10 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   /// last either way.
   final bool showsRecent;
 
+  /// Why an exercise cannot answer the question, when only some can: those
+  /// stay in the list, greyed, and a tap says why. Null for one that can.
+  final String? Function(Exercise)? refuses;
+
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
 
@@ -32,6 +36,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     this.onExerciseSelected,
     this.highlightedName,
     this.showsRecent = true,
+    this.refuses,
   });
 
   @override
@@ -309,6 +314,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
                       onExerciseSelected: onExerciseSelected,
                       selected: this.exercises.hasSelected(exercise),
                       highlighted: exercise.id == highlightedName,
+                      refusal: refuses?.call(exercise),
                     );
                   },
                   separatorBuilder: (_, _) {

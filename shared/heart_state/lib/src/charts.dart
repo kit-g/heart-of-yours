@@ -48,6 +48,15 @@ class Charts with ChangeNotifier, Iterable<ChartPreference> implements SignOutSt
     };
   }
 
+  /// Reads the preferences again, past a completed [init]: the mirror changed
+  /// under them (an exercise's history moved, #338).
+  Future<void> reload() {
+    return switch (userId) {
+      String id => _loading ??= _load(id).whenComplete(() => _loading = null),
+      null => Future.value(),
+    };
+  }
+
   /// A failure is reported and leaves [initialized] false, so the next [init]
   /// tries again; nobody awaits it to the point of handling what it throws.
   Future<void> _load(String id) async {
