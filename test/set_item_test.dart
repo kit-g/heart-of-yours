@@ -459,6 +459,21 @@ void main() {
       expect(set.reps, 8);
       expect(set.weight, isNull);
     });
+    testWidgets('a typed 0 replaces a prescribed load, and the watch and lock screen hear it (#383)', (tester) async {
+      final exercise = Exercise(name: 'Chest Dip', category: .weightedBodyWeight, target: .chest);
+      final workout = Workout(name: 'W')..add(exercise);
+      final set = workout.first.first..setMeasurements(weight: 35, reps: 15);
+
+      final context = await startWorkoutOn(tester, workout);
+      var notified = 0;
+      Workouts.of(context).addListener(() => notified++);
+
+      await tester.enterTextAndWait(find.byKey(WorkoutDetailKeys.weightFor(exercise.id, 1)), '0');
+
+      expect(set.weight, 0.0);
+      expect(notified, greaterThan(0));
+      verify(db.storeMeasurements(set)).called(greaterThan(0));
+    });
   });
 
   group('reps-only category', () {
