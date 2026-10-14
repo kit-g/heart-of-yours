@@ -45,10 +45,10 @@ class _Cells {
     return switch (measure) {
       .reps => '${stored.round()}',
       .weight => prefs.weight(stored, unit: override),
-      .distance => switch (category) {
-        // a carry is written in metres or yards
-        .weightedDistance => prefs.shortDistance(stored, unit: override),
-        _ => prefs.distance(stored, unit: override),
+      // a carry is written in metres or yards
+      .distance => switch (category == .weightedDistance) {
+        true => prefs.shortDistance(stored, unit: override),
+        false => prefs.distance(stored, unit: override),
       },
       .duration => stored.round().toDuration(),
     };
@@ -71,10 +71,14 @@ class _Cells {
         _ => null,
       },
       .distance => switch (double.tryParse(typed)) {
-        final double distance when distance > 0 => switch ((category, override ?? prefs.distanceUnit)) {
-          (.weightedDistance, final unit) => prefs.shortDistanceStored(distance, unit: unit),
-          (_, .imperial) => distance.asKilometers,
-          (_, .metric) => distance,
+        // a carry is typed in metres or yards
+        final double distance when distance > 0 => switch ((
+          category == .weightedDistance,
+          override ?? prefs.distanceUnit,
+        )) {
+          (true, final unit) => prefs.shortDistanceStored(distance, unit: unit),
+          (false, .imperial) => distance.asKilometers,
+          (false, .metric) => distance,
         },
         _ => null,
       },
@@ -98,10 +102,7 @@ class _Cells {
   /// "60 · 6–10". Null when there is none this build can show.
   String? summary(ExerciseSet set) {
     final ghosts = SetColumn.of(category).map((column) => ghost(set, column.measure)).nonNulls;
-    return switch (ghosts.isEmpty) {
-      true => null,
-      false => ghosts.join(' · '),
-    };
+    return ghosts.isEmpty ? null : ghosts.join(' · ');
   }
 }
 
@@ -250,8 +251,8 @@ class _TargetFormState extends State<_TargetForm> {
           key: key,
           controller: controller,
           keyboardType: switch (row.column) {
-            .reps || .duration => TextInputType.number,
-            .weight || .distance => const TextInputType.numberWithOptions(decimal: true),
+            .reps || .duration => .number,
+            .weight || .distance => const .numberWithOptions(decimal: true),
           },
           inputFormatters: formatters,
           textAlign: .center,

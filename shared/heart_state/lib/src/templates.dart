@@ -253,10 +253,7 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
       final sets = exercise.toList();
       sets.forEach(exercise.remove);
       for (final each in sets) {
-        exercise.add(switch (identical(each, set)) {
-          true => rebuilt,
-          false => each,
-        });
+        exercise.add(identical(each, set) ? rebuilt : each);
       }
     }
     notifyListeners();

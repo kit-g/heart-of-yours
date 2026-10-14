@@ -426,12 +426,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.setTargetDialog,
     _Guideline.androidTapTarget,
-    'No target and Save are 32pt tall, the dialog actions\' density across the app (lib/presentation/widgets/workout/target.dart:220, :224; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    'No target and Save are 32pt tall, the dialog actions\' density across the app (lib/presentation/widgets/workout/target.dart:221, :225; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
   (
     _Screen.setTargetDialog,
     _Guideline.iosTapTarget,
-    'No target and Save are 32pt tall, the dialog actions\' density across the app (lib/presentation/widgets/workout/target.dart:220, :224; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    'No target and Save are 32pt tall, the dialog actions\' density across the app (lib/presentation/widgets/workout/target.dart:221, :225; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
   (_Screen.workout, _Guideline.textContrastLight, null),
   (_Screen.workout, _Guideline.textContrastDark, null),

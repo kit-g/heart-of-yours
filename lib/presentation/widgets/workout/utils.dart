@@ -33,23 +33,34 @@ String _columnLabel(L l, Preferences prefs, MeasurementUnit? override, Category 
     };
   }
 
+  // a carry is measured in metres or yards, not in fractions of a km
+  final carry = category == .weightedDistance;
+
   String distanceUnit() {
-    return switch ((category, override ?? prefs.distanceUnit)) {
-      // a carry is measured in metres or yards, not in fractions of a km
-      (.weightedDistance, .metric) => l.metresShort,
-      (.weightedDistance, .imperial) => l.yardsShort,
-      (_, .metric) => l.km,
-      (_, .imperial) => l.mile,
+    return switch ((carry, override ?? prefs.distanceUnit)) {
+      (true, .metric) => l.metresShort,
+      (true, .imperial) => l.yardsShort,
+      (false, .metric) => l.km,
+      (false, .imperial) => l.mile,
     };
   }
 
-  return switch ((column, category)) {
-    (.weight, .weightedBodyWeight) => '+${weightUnit()}',
-    (.weight, .assistedBodyWeight) => '-${weightUnit()}',
-    (.weight, _) => weightUnit(),
-    (.reps, _) => l.reps,
-    (.distance, _) => distanceUnit(),
-    (.duration, _) => l.time,
+  return switch (column) {
+    .weight => switch (category) {
+      .weightedBodyWeight => '+${weightUnit()}',
+      .assistedBodyWeight => '-${weightUnit()}',
+      .barbell ||
+      .dumbbell ||
+      .machine ||
+      .repsOnly ||
+      .cardio ||
+      .duration ||
+      .weightedDistance ||
+      .weightedDuration => weightUnit(),
+    },
+    .reps => l.reps,
+    .distance => distanceUnit(),
+    .duration => l.time,
   };
 }
 
