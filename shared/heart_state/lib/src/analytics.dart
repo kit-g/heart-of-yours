@@ -98,10 +98,11 @@ enum TemplateSource {
   new(this.id);
 }
 
-/// Where a program came from. Only `folder` exists yet (#348); the library
-/// (#352) adds its own.
+/// Where a program came from: a folder made into one (#348), or Heart's
+/// library (#352).
 enum ProgramSource {
-  folder('folder');
+  folder('folder'),
+  library('library');
 
   final String id;
 
@@ -253,6 +254,7 @@ const _action = 'action';
 const _keptTemplates = 'kept_templates';
 const _replaceScope = 'replace_scope';
 const _suggested = 'suggested';
+const _libraryProgram = 'library_program';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -478,9 +480,10 @@ class Analytics {
   }
 
   /// A program started (#348): where it came from and how many sessions it
-  /// runs on. Never its name.
-  void programCreated({required ProgramSource source, required int sessions}) {
-    _log(_programCreated, {_source: source.id, _sessions: sessions});
+  /// runs on. Never its name: from the library, [library] is which program
+  /// by its key, an identifier like an exercise's.
+  void programCreated({required ProgramSource source, required int sessions, String? library}) {
+    _log(_programCreated, {_source: source.id, _sessions: sessions, _libraryProgram: ?library});
   }
 
   /// The user steered a program: repeat, pause, resume or replay. Repeat is
