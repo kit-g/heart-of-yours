@@ -24,12 +24,18 @@ class const _MuscleMapSection({
 
     final Widget? child = switch (preferences) {
       _ when _parts.any(preferences.isOptionOn) => _MuscleMapCard(workouts: workouts),
-      _ when preferences.owesDeclineNotice(_feature) => _DeclinedNotice(
+      _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
         onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
       ),
       // Offered only once there is something to show: a map of nothing is no
       // way to decide whether you want one.
-      _ when preferences.shouldOffer(_feature) && workouts.isNotEmpty => _MuscleMapOffer(
+      _ when preferences.shouldOffer(_feature) && workouts.isNotEmpty => FeatureOffer(
+        key: AppKeys.muscleMapOffer,
+        acceptKey: AppKeys.muscleMapAccept,
+        declineKey: AppKeys.muscleMapDecline,
+        icon: Icons.accessibility_new_rounded,
+        title: L.of(context).muscleMapOfferTitle,
+        body: L.of(context).muscleMapOfferBody,
         onAnswer: (yes) => preferences.answerOffer(_feature, yes: yes),
         onShown: () => preferences.markOffered(_feature),
       ),
@@ -44,118 +50,6 @@ class const _MuscleMapSection({
         ),
         null => const SizedBox.shrink(),
       },
-    );
-  }
-}
-
-/// The one ask. Showing it is what spends it: an offer the user scrolls past
-/// and never answers is a no from the next launch on.
-class _MuscleMapOffer extends StatefulWidget {
-  final ValueChanged<bool> onAnswer;
-  final VoidCallback onShown;
-
-  const new({required this.onAnswer, required this.onShown});
-
-  @override
-  State<_MuscleMapOffer> createState() => _MuscleMapOfferState();
-}
-
-class _MuscleMapOfferState extends State<_MuscleMapOffer> {
-  @override
-  void initState() {
-    super.initState();
-    widget.onShown();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final L(:muscleMapOfferTitle, :muscleMapOfferBody, :noThanks, :turnOn) = L.of(context);
-    final ThemeData(:textTheme, :dividerColor) = Theme.of(context);
-
-    return Align(
-      alignment: .centerLeft,
-      child: ConstrainedBox(
-        // prose, so it gets a measure rather than an iPad's width
-        constraints: const BoxConstraints(maxWidth: readableWidth),
-        child: Container(
-          key: AppKeys.muscleMapOffer,
-          decoration: BoxDecoration(
-            border: .all(color: dividerColor, width: .5),
-            borderRadius: const .all(.circular(12)),
-          ),
-          padding: const .all(16),
-          child: Column(
-            crossAxisAlignment: .start,
-            spacing: 8,
-            children: [
-              Row(
-                spacing: 12,
-                children: [
-                  const Icon(Icons.accessibility_new_rounded),
-                  Expanded(child: Text(muscleMapOfferTitle, style: textTheme.titleMedium)),
-                ],
-              ),
-              Text(muscleMapOfferBody, style: textTheme.bodyMedium),
-              Row(
-                mainAxisAlignment: .end,
-                spacing: 8,
-                children: [
-                  TextButton(
-                    key: AppKeys.muscleMapDecline,
-                    onPressed: () => widget.onAnswer(false),
-                    child: Text(noThanks),
-                  ),
-                  PrimaryButton.shrunk(
-                    key: AppKeys.muscleMapAccept,
-                    onPressed: () => widget.onAnswer(true),
-                    child: Text(turnOn),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The single line a no earns: where the way back is. Gone once closed, and
-/// gone with the session either way — it is never shown again.
-class const _DeclinedNotice({
-  required final VoidCallback onDismiss,
-}) extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final L(:featureDeclinedNotice, :close) = L.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
-
-    return Align(
-      alignment: .centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: readableWidth),
-        child: Row(
-          key: AppKeys.featureDeclinedNotice,
-          spacing: 8,
-          children: [
-            Icon(Icons.settings_outlined, size: 18, color: colorScheme.onSurfaceVariant),
-            Expanded(
-              child: Text(
-                featureDeclinedNotice,
-                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-              ),
-            ),
-            // an IconButton for its 48pt target: the icon alone is 20
-            IconButton(
-              tooltip: close,
-              onPressed: onDismiss,
-              iconSize: 20,
-              color: colorScheme.onSurfaceVariant,
-              icon: const Icon(Icons.close_rounded),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
