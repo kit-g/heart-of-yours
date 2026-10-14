@@ -20,17 +20,29 @@ final class ShortcutsTests: XCTestCase {
     }
 
     func testStartLinksAreDartsVerbs() {
-        XCTAssertEqual(ShortcutURL.start().absoluteString, "heart://app/start")
+        XCTAssertEqual(ShortcutURL.start().absoluteString, "\(ShortcutURL.scheme)://app/start")
         XCTAssertEqual(
             ShortcutURL.start(template: "78d84f4d-abde-45bc-a592-b85006d33451").absoluteString,
-            "heart://app/start?template=78d84f4d-abde-45bc-a592-b85006d33451"
+            "\(ShortcutURL.scheme)://app/start?template=78d84f4d-abde-45bc-a592-b85006d33451"
         )
-        XCTAssertEqual(ShortcutURL.finish.absoluteString, "heart://app/finish")
+        XCTAssertEqual(ShortcutURL.finish.absoluteString, "\(ShortcutURL.scheme)://app/finish")
+    }
+
+    /// `heart` is the dev build's as much as prod's, so a link on it can open
+    /// the other one (#388). The scheme is the bundle id, registered by this
+    /// build alone.
+    func testLinksUseASchemeOnlyThisBuildRegisters() {
+        XCTAssertNotEqual(ShortcutURL.scheme, "heart")
+        XCTAssertEqual(ShortcutURL.scheme, Bundle.main.bundleIdentifier)
+        let types = Bundle.main.infoDictionary?["CFBundleURLTypes"] as? [[String: Any]] ?? []
+        let schemes = types.flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
+        XCTAssertTrue(schemes.contains(ShortcutURL.scheme), "\(schemes)")
+        XCTAssertTrue(schemes.contains("heart"), "links already out there still open the app")
     }
 
     func testTemplateIdsAreEscapedInTheLink() {
         let url = ShortcutURL.start(template: "a b&c")
-        XCTAssertEqual(url.scheme, "heart")
+        XCTAssertEqual(url.scheme, ShortcutURL.scheme)
         XCTAssertEqual(url.host, "app")
         XCTAssertEqual(url.path, "/start")
         let template = URLComponents(url: url, resolvingAgainstBaseURL: false)?
@@ -83,10 +95,10 @@ final class QuickActionsTests: XCTestCase {
         XCTAssertEqual(
             items.compactMap(QuickActions.link(of:)).map(\.absoluteString),
             [
-                "heart://app/start",
-                "heart://app/start?template=t1",
-                "heart://app/start?template=t2",
-                "heart://app/start?template=t3",
+                "\(ShortcutURL.scheme)://app/start",
+                "\(ShortcutURL.scheme)://app/start?template=t1",
+                "\(ShortcutURL.scheme)://app/start?template=t2",
+                "\(ShortcutURL.scheme)://app/start?template=t3",
             ]
         )
     }
