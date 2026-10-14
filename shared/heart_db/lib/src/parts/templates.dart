@@ -34,6 +34,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
               'template_id': template.id,
               'exercise_id': exercise.exercise.id,
               'description': jsonEncode(desc),
+              'plan': _Workouts._encodePlan(exercise),
             },
           );
         }
@@ -108,6 +109,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
               // a session names its program (#346); `toRow` predates both
               'program_id': template.programId,
               'note': template.note,
+              'joined': template.joined?.toUtc().toIso8601String(),
               // exercises this build could not read (#277)
               'unread': _Workouts._encodeUnread(template.unread),
             },
@@ -138,6 +140,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
                 'template_id': template.id,
                 'exercise_id': exercise.exercise.id,
                 'description': jsonEncode(desc),
+                'plan': _Workouts._encodePlan(exercise),
               },
             );
           }

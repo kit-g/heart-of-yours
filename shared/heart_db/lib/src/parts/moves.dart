@@ -67,6 +67,7 @@ mixin _Moves on _LocalDatabase {
         final batch = txn.batch();
         _Programs._rekeyExercise(batch, userId, from: sourceId, to: targetId);
         await batch.commit(noResult: true);
+        await _Programs._rekeyRules(txn, userId, from: sourceId, to: targetId);
 
         // a chart the target already has, of the same type, wins
         await txn.rawUpdate(

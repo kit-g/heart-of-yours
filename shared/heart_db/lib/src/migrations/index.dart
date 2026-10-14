@@ -144,4 +144,16 @@ const _migrations = <int, List<String>>{
     workoutsProgramIndex,
     createProgramsOwed,
   ],
+  22: [
+    addProgramDeload,
+    addProgramPhases,
+    addProgramTests,
+    addTemplateJoined,
+    addProgramActionFrom,
+    addProgramActionTo,
+    addProgramActionWorkout,
+    addProgramBaseSlot,
+    addTemplateExercisePlan,
+    addWorkoutExercisePlan,
+  ],
 };

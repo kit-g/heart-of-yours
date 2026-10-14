@@ -161,6 +161,7 @@ mixin _Upsync on _LocalDatabase {
         );
         batch.delete(_exercises, where: 'id = ? AND user_id = ?', whereArgs: [from, userId]);
         await batch.commit(noResult: true);
+        await _Programs._rekeyRules(txn, userId, from: from, to: to);
       },
     );
   }

@@ -64,6 +64,8 @@ SELECT
                 'order', _ex.exercise_order,
                 'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
+                -- what a template planned for it, spread back by toWorkout
+                'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
                 'sets', (
@@ -151,6 +153,8 @@ SELECT
                 'order', _ex.exercise_order,
                 'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
+                -- what a template planned for it, spread back by toWorkout
+                'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
                 'sets', (
@@ -236,6 +240,8 @@ SELECT
                 'order', _ex.exercise_order,
                 'note', _ex.note,
                 'exercise', json(_ex.exercise_json),
+                -- what a template planned for it, spread back by toWorkout
+                'plan', json(_ex.plan),
                 -- sets this build could not read, put back by toWorkout (#277)
                 'unread', json(_ex.unread),
                 'sets', (
@@ -338,12 +344,14 @@ SELECT
     _templates.unread,
     _templates.program_id AS programId,
     _templates.note,
+    _templates.joined,
     (
         SELECT json_group_array(
             json_object(
                 'id', _ex.id,
                 'sets', json(_ex.description),
-                'exercise', json(_ex.exercise_json)
+                'exercise', json(_ex.exercise_json),
+                'plan', json(_ex.plan)
             )
         )
         FROM _ex
@@ -417,7 +425,8 @@ SELECT
             json_object(
                 'id', _ex.id,
                 'sets', json(_ex.description),
-                'exercise', json(_ex.exercise_json)
+                'exercise', json(_ex.exercise_json),
+                'plan', json(_ex.plan)
             )
         )
         FROM _ex
