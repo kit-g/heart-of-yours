@@ -80,3 +80,18 @@ const addWorkoutTemplateId = 'ALTER TABLE workouts ADD COLUMN template_id TEXT';
 const addWorkoutProgramId = 'ALTER TABLE workouts ADD COLUMN program_id TEXT';
 
 const workoutsProgramIndex = 'CREATE INDEX IF NOT EXISTS workouts_program_idx ON workouts (program_id);';
+
+/// The program writes the server has not confirmed (heart-state's
+/// `ProgramOwed`): a failed or unreached remote leg, sent again on the next
+/// launch. No foreign key: a deletion is owed after its row is gone.
+const createProgramsOwed = '''
+CREATE TABLE IF NOT EXISTS programs_owed
+(
+    user_id    TEXT NOT NULL,
+    row_kind   TEXT NOT NULL,
+    id         TEXT NOT NULL,
+    program_id TEXT NOT NULL,
+    change     TEXT NOT NULL,
+    PRIMARY KEY (row_kind, id)
+);
+''';

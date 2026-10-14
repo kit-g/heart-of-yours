@@ -99,10 +99,21 @@ void main() {
 
       final [template] = (await local.getTemplates(userId)).toList();
       expect((template.programId, template.note), ('p1', 'chest first'));
+    });
 
-      await local.setTemplateProgram('t1', null);
-      final [detached] = (await local.getTemplates(userId)).toList();
-      expect(detached.programId, isNull);
+    test('what the server is owed is kept per row, in the order written', () async {
+      await local.owePrograms(userId, (row: 'program', id: 'p1', programId: 'p1', change: 'created'));
+      await local.owePrograms(userId, (row: 'action', id: 'a1', programId: 'p1', change: 'created'));
+      await local.owePrograms(userId, (row: 'action', id: 'a1', programId: 'p1', change: 'deleted'));
+      await local.owePrograms('someone else', (row: 'base', id: 'b1', programId: 'p9', change: 'created'));
+
+      expect(await local.getProgramsOwed(userId), [
+        (row: 'program', id: 'p1', programId: 'p1', change: 'created'),
+        (row: 'action', id: 'a1', programId: 'p1', change: 'deleted'),
+      ]);
+
+      await local.settleProgram('program', 'p1');
+      expect((await local.getProgramsOwed(userId)).map((each) => each.id), ['a1']);
     });
 
     test('a full read replaces the programs, and one the server lost takes its history along', () async {

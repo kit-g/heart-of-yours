@@ -159,6 +159,7 @@ void main() {
               'programs',
               'program_actions',
               'program_bases',
+              'programs_owed',
             },
           );
 
@@ -585,7 +586,7 @@ void main() {
     await LocalDatabase.init();
     db = await raw();
     expect(await userVersion(db), 21);
-    expect(await tables(db), containsAll(['programs', 'program_actions', 'program_bases']));
+    expect(await tables(db), containsAll(['programs', 'program_actions', 'program_bases', 'programs_owed']));
     expect(await columns(db, 'templates'), allOf(containsPair('program_id', 'TEXT'), containsPair('note', 'TEXT')));
     expect(
       await columns(db, 'workouts'),
@@ -597,6 +598,33 @@ void main() {
     final [template] = await db.query('templates');
     expect(template['program_id'], isNull);
     await db.close();
+  });
+
+  group("v21 sees to the column #173's v20 adds, whichever lands first", () {
+    test('missing: added', () async {
+      await LocalDatabase.init(version: 19);
+      await (await raw()).close();
+
+      await LocalDatabase.init();
+      final db = await raw();
+      expect(await columns(db, 'sets'), containsPair('target', 'TEXT'));
+      await db.close();
+    });
+
+    test('already there: left alone', () async {
+      await LocalDatabase.init(version: 19);
+      var db = await raw();
+      // what v20 does
+      await db.execute('ALTER TABLE sets ADD COLUMN target TEXT');
+      await db.setVersion(20);
+      await db.close();
+
+      await LocalDatabase.init();
+      db = await raw();
+      expect(await userVersion(db), 21);
+      expect(await columns(db, 'sets'), containsPair('target', 'TEXT'));
+      await db.close();
+    });
   });
 
   test('v13 upgrades through production init without losing replay confirmations', () async {

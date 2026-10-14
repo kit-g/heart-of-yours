@@ -141,12 +141,6 @@ mixin _Programs on _LocalDatabase {
     await txn.delete(_programs, where: 'id = ?', whereArgs: [programId]);
   }
 
-  /// Files [templateId] under [programId] as a session, or takes it out of its
-  /// program when null.
-  Future<void> setTemplateProgram(String templateId, String? programId) {
-    return _db.update(_templates, {'program_id': programId}, where: 'id = ?', whereArgs: [templateId]);
-  }
-
   /// [userId]'s finished workouts of [programId], as the marks its position is
   /// folded from. A workout still under way marks nothing yet.
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId) async {
@@ -265,6 +259,33 @@ mixin _Programs on _LocalDatabase {
 
   Future<void> deleteProgramBase(String baseId) {
     return _db.delete(_programBases, where: 'id = ?', whereArgs: [baseId]);
+  }
+
+  /// [userId]'s program writes the server has not confirmed, oldest first.
+  Future<List<({String row, String id, String programId, String change})>> getProgramsOwed(String userId) async {
+    final rows = await _db.query(_programsOwed, where: 'user_id = ?', whereArgs: [userId], orderBy: 'rowid');
+    return [
+      for (final row in rows)
+        (
+          row: row['row_kind'] as String,
+          id: row['id'] as String,
+          programId: row['program_id'] as String,
+          change: row['change'] as String,
+        ),
+    ];
+  }
+
+  /// Records an unconfirmed write, in place of what was owed for the same row.
+  Future<void> owePrograms(String userId, ({String row, String id, String programId, String change}) owed) {
+    return _db.insert(
+      _programsOwed,
+      {'user_id': userId, 'row_kind': owed.row, 'id': owed.id, 'program_id': owed.programId, 'change': owed.change},
+      conflictAlgorithm: .replace,
+    );
+  }
+
+  Future<void> settleProgram(String row, String id) {
+    return _db.delete(_programsOwed, where: 'row_kind = ? AND id = ?', whereArgs: [row, id]);
   }
 
   /// The clause narrowing a history read to one program, or none for all.

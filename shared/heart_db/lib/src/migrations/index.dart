@@ -140,5 +140,6 @@ const _migrations = <int, List<String>>{
     addWorkoutTemplateId,
     addWorkoutProgramId,
     workoutsProgramIndex,
+    createProgramsOwed,
   ],
 };

@@ -47,6 +47,7 @@ mixin _Upsync on _LocalDatabase {
           _templates,
           _templateFolders,
           _programs,
+          _programsOwed,
           _exerciseDetails,
           _exercises,
           _charts,

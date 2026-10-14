@@ -124,6 +124,7 @@ const _schema = [
   addWorkoutTemplateId,
   addWorkoutProgramId,
   workoutsProgramIndex,
+  createProgramsOwed,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
