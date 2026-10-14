@@ -463,7 +463,8 @@ class _GrowthRow extends StatelessWidget {
 }
 
 /// What a rule's numbers measure on [exercise], and how they read: a weight
-/// in the user's unit, a time in seconds, or a distance in theirs.
+/// in the user's unit, a time in seconds, or a distance in theirs — a carry's
+/// in metres or yards, as its sets show it.
 class _Measure {
   final String Function(num) format;
 
@@ -472,7 +473,8 @@ class _Measure {
   factory of(BuildContext context, Exercise exercise, GrowthRule? rule) {
     final copy = L.of(context);
     final preferences = Preferences.of(context);
-    final unit = Exercises.of(context).unitFor(exercise.id) ?? preferences.weightUnit;
+    final override = Exercises.of(context).unitFor(exercise.id);
+    final unit = override ?? preferences.weightUnit;
 
     String weight(num value) {
       final label = switch (unit) {
@@ -483,16 +485,27 @@ class _Measure {
     }
 
     String distance(num value) {
-      final label = switch (Exercises.of(context).unitFor(exercise.id) ?? preferences.distanceUnit) {
+      final label = switch (override ?? preferences.distanceUnit) {
         .imperial => copy.milesPlural,
         .metric => copy.km,
       };
-      return '${preferences.distance(value, unit: Exercises.of(context).unitFor(exercise.id))} $label';
+      return '${preferences.distance(value, unit: override)} $label';
     }
+
+    String carried(num value) {
+      final label = switch (override ?? preferences.distanceUnit) {
+        .imperial => copy.yardsShort,
+        .metric => copy.metresShort,
+      };
+      return '${preferences.shortDistance(value, unit: override)} $label';
+    }
+
+    String seconds(num value) => '${value.round()} ${copy.sec}';
 
     return switch (rule) {
       Longer() => switch (exercise.category) {
-        .cardio || .weightedDistance => _Measure(distance),
+        .cardio => _Measure(distance),
+        .weightedDistance => _Measure(carried),
         .duration ||
         .weightedDuration ||
         .barbell ||
@@ -500,9 +513,9 @@ class _Measure {
         .machine ||
         .weightedBodyWeight ||
         .assistedBodyWeight ||
-        .repsOnly => _Measure((value) => '${value.round()} ${copy.sec}'),
+        .repsOnly => _Measure(seconds),
       },
-      _ => _Measure(weight),
+      null || NoGrowth() || AddWeight() || RangeThenWeight() || ShareOfMax() => _Measure(weight),
     };
   }
 }
