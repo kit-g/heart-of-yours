@@ -13,6 +13,16 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(ExerciseSet, SetTarget?)? onSetTarget;
   final bool showsPlan;
   final void Function(WorkoutExercise, Exercise)? onReplaceExercise;
+  final void Function(WorkoutExercise exercise, WorkoutExercise neighbour)? onGroup;
+  final void Function(WorkoutExercise)? onLeaveGroup;
+
+  /// The superset [exercise] is in (#159), or [exercise] alone.
+  final List<WorkoutExercise> group;
+
+  /// The exercises either side of [exercise] on the sheet, its candidates for
+  /// a superset.
+  final WorkoutExercise? before;
+  final WorkoutExercise? after;
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final String firstColumnCopy;
@@ -36,6 +46,11 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     this.onSetTarget,
     this.showsPlan = false,
     this.onReplaceExercise,
+    this.onGroup,
+    this.onLeaveGroup,
+    this.group = const [],
+    this.before,
+    this.after,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.copy,
@@ -197,6 +212,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               onPressed: () => _replace(context, pattern, onReplace),
                               child: Text(L.of(context).swapExercise, style: textTheme.titleSmall),
                             ),
+                          ..._groupOptions(context, textTheme),
                           _exerciseOptionButton(context, .autoRestTimer, textTheme, colorScheme),
                           if (_showsUnitOption) _unitSubmenu(context, textTheme),
                           _exerciseOptionButton(context, .remove, textTheme, colorScheme),
@@ -468,6 +484,33 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
 
   /// Whether the per-exercise unit submenu applies (weight- or distance-based
   /// exercises only — duration/reps have no unit).
+  /// A superset with the exercise either side, unless it already shares this
+  /// one's (#159), and leaving the one this exercise is in.
+  List<Widget> _groupOptions(BuildContext context, TextTheme textTheme) {
+    final l = L.of(context);
+    return [
+      if (onGroup case final join?)
+        for (final neighbour in [?before, ?after])
+          if (!group.contains(neighbour))
+            MenuItemButton(
+              key: WorkoutDetailKeys.groupWith(exercise.exercise.id, neighbour.exercise.id),
+              leadingIcon: const Icon(Icons.link_rounded),
+              onPressed: () => join(exercise, neighbour),
+              child: Text(l.supersetWith(neighbour.exercise.name), style: textTheme.titleSmall),
+            ),
+      if ((onLeaveGroup, group.length) case (final leave?, > 1))
+        MenuItemButton(
+          key: WorkoutDetailKeys.leaveGroup(exercise.exercise.id),
+          leadingIcon: const Icon(Icons.link_off_rounded),
+          onPressed: () => leave(exercise),
+          child: Text(switch (group.length) {
+            2 => l.leaveSuperset,
+            _ => l.leaveCircuit,
+          }, style: textTheme.titleSmall),
+        ),
+    ];
+  }
+
   bool get _showsUnitOption {
     return switch (exercise.exercise.category) {
       .duration || .repsOnly => false,

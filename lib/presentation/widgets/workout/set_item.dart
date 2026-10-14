@@ -836,8 +836,18 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     }
   }
 
+  /// After a tick: the rest, and in a superset (#159) the member that comes
+  /// next brought into view — mid-round instead of a rest, since a superset
+  /// rests once, after the round; and with it, the next round's first.
   Future<void> _startTimer(BuildContext context) async {
-    final timer = restFor(context, exercise);
+    final workouts = Workouts.of(context);
+    final workout = workouts.activeWorkout;
+    if (workout?.nextInGroup(exercise) case (WorkoutExercise next, _) when next != exercise) {
+      workouts.pointAt(next.id);
+    }
+    if (workout?.restOfRound(exercise).isNotEmpty ?? false) return;
+
+    final timer = restAfter(context, exercise);
 
     if (timer == null) return;
 

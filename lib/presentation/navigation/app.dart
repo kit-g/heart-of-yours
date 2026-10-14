@@ -128,6 +128,7 @@ class HeartApp extends StatelessWidget {
             service: db,
             persistNote: db.setWorkoutExerciseNote,
             persistWorkoutNote: db.setWorkoutNote,
+            persistPlan: db.setWorkoutExercisePlan,
             persistPauses: db.setWorkoutPauses,
             pausedAtOf: db.getPausedAt,
             noteFor: Exercises.of(context).noteFor,

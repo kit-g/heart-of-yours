@@ -29,6 +29,14 @@ class WorkoutDetailKeys {
   /// The ⋯ menu's swap for an open slot (#349).
   static Key swapExerciseFor(String exerciseId) => Key('WorkoutDetail.swapExercise.$exerciseId');
 
+  /// The ⋯ menu's superset options (#159), by the exercise and its neighbour.
+  static Key groupWith(String exerciseId, String neighbourId) =>
+      Key('WorkoutDetail.groupWith.$exerciseId.$neighbourId');
+  static Key leaveGroup(String exerciseId) => Key('WorkoutDetail.leaveGroup.$exerciseId');
+
+  /// The rail beside a superset's members.
+  static Key groupRailFor(String exerciseId) => Key('WorkoutDetail.groupRail.$exerciseId');
+
   /// Per-set controls, scoped by exercise id and the set's position —
   /// the two coordinates a driver test can know up front.
   static Key doneFor(String exerciseId, int index) => Key('WorkoutDetail.done.$exerciseId.$index');

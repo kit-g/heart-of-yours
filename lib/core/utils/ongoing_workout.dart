@@ -1,4 +1,5 @@
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
 
 /// Where the user is in a workout: the exercise they are on and the set they
 /// are about to do, for surfaces that summarise a session at a glance (the
@@ -20,6 +21,10 @@ typedef UpNext = ({WorkoutExercise exercise, ExerciseSet? set, int number});
 /// - a later exercise contributes its first *open* set, not its first set;
 /// - when nothing is open after [after] it wraps to the first open set
 ///   anywhere — a set skipped earlier is still the next thing to do.
+///
+/// In a superset (#159) "forward" is the group's order: the next member's
+/// open set this round, then the next round's first, then what follows the
+/// group.
 ///
 /// Without [after] (nothing ticked yet, or a cold start: the anchor lives in
 /// memory, and a set's `completedAt` is never stamped by the app) it is the
@@ -44,6 +49,20 @@ UpNext? upNextIn(Workout workout, {(WorkoutExercise, ExerciseSet)? after}) {
   };
 
   final forward = switch (anchor) {
+    (WorkoutExercise exercise, ExerciseSet set) when exercises.groupOf(exercise).length > 1 => [
+      ...exercises.restOfRound(exercise).map(open).nonNulls,
+      // the next round: the anchor's own sets from after the one just done
+      ...exercises
+          .groupOf(exercise)
+          .map(
+            (each) => switch (each == exercise) {
+              true => open(each, from: each.toList().indexOf(set) + 1),
+              false => open(each),
+            },
+          )
+          .nonNulls,
+      ...exercises.skip(exercises.indexOf(exercises.groupOf(exercise).last) + 1).map(open).nonNulls,
+    ].firstOrNull,
     (WorkoutExercise exercise, ExerciseSet set) => [
       ?open(exercise, from: exercise.toList().indexOf(set) + 1),
       ...exercises.skip(exercises.indexOf(exercise) + 1).map(open).nonNulls,

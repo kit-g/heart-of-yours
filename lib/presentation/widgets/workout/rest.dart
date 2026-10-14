@@ -17,6 +17,21 @@ int? restFor(BuildContext context, WorkoutExercise exercise, {bool listen = fals
   return timers[exercise.exercise.id] ?? planned;
 }
 
+/// How long the rest after a set of [exercise] is, in seconds, in the active
+/// workout. In a superset (#159) there is none while the round goes on, and
+/// the round's rest is its last member's — where a plan puts it — or, without
+/// one there, [exercise]'s own. Otherwise [restFor].
+int? restAfter(BuildContext context, WorkoutExercise exercise) {
+  final workout = Workouts.of(context).activeWorkout;
+  return switch (workout) {
+    Workout workout when workout.contains(exercise) => switch (workout.restsAs(exercise)) {
+      WorkoutExercise last => restFor(context, last) ?? restFor(context, exercise),
+      null => null,
+    },
+    _ => restFor(context, exercise),
+  };
+}
+
 /// Schedules the "rest complete" notification for a rest that ends at [when],
 /// naming the set that comes next. [exercise] is the one just worked — the
 /// fallback when nothing is left to do.
@@ -86,7 +101,7 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
   );
 }
 
-/// Starts [exercise]'s rest, if it has a rest timer, the way ticking a set on
+/// Starts [exercise]'s rest, if it has one ([restAfter]), the way ticking a set on
 /// the phone does — minus the countdown dialog, for a tick that came from
 /// somewhere the dialog cannot be seen (the watch, #183).
 ///
@@ -98,7 +113,7 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
 /// a watch while the phone was out of reach (#206): only what is left of the
 /// rest runs, and a rest already over by now does not start at all.
 void startRest(BuildContext context, WorkoutExercise exercise, {DateTime? since}) {
-  final timer = restFor(context, exercise);
+  final timer = restAfter(context, exercise);
   if (timer == null) return;
   final total = switch (since) {
     DateTime since => timer - DateTime.now().difference(since).inSeconds.clamp(0, timer),

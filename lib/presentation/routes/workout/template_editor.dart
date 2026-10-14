@@ -98,6 +98,8 @@ class _TemplateEditorState extends State<TemplateEditor> {
             onSetTarget: templates.setSetTarget,
             onAddSet: templates.addSet,
             onRemoveExercise: templates.removeExercise,
+            onGroup: templates.group,
+            onLeaveGroup: templates.leaveGroup,
             needsCancelWorkoutButton: false,
             onAddExercises: (exercises) async {
               for (final each in exercises) {

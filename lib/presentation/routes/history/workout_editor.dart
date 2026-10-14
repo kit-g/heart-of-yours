@@ -204,6 +204,8 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
                   onSetType: _notifier.setSetType,
                   onSetRpe: _notifier.setRpe,
                   onRemoveExercise: _notifier.removeExercise,
+                  onGroup: _notifier.group,
+                  onLeaveGroup: _notifier.leaveGroup,
                   onSetDone: _notifier.markSet,
                   workoutImages: workout.images?.values,
                   onTapImage: widget.onTapImage,
@@ -469,7 +471,20 @@ class _WorkoutNotifier with ChangeNotifier {
   }
 
   void removeExercise(WorkoutExercise exercise) {
-    workout.remove(exercise);
+    workout
+      ..remove(exercise)
+      // a superset left with one member is no superset (#159)
+      ..settle();
+    notifyListeners();
+  }
+
+  void group(WorkoutExercise exercise, WorkoutExercise neighbour) {
+    workout.group(exercise, neighbour);
+    notifyListeners();
+  }
+
+  void leaveGroup(WorkoutExercise exercise) {
+    workout.leave(exercise);
     notifyListeners();
   }
 
@@ -488,12 +503,16 @@ class _WorkoutNotifier with ChangeNotifier {
   }
 
   void swap(WorkoutExercise one, WorkoutExercise two) {
-    workout.swap(one, two);
+    workout
+      ..swap(one, two)
+      ..settle(moved: one);
     notifyListeners();
   }
 
   void append(WorkoutExercise exercise) {
-    workout.append(exercise);
+    workout
+      ..append(exercise)
+      ..settle(moved: exercise);
     notifyListeners();
   }
 
