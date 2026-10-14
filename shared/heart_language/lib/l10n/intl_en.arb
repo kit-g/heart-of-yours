@@ -4532,5 +4532,9 @@
   "moveHistoryGone": "One of these exercises is no longer on your account.",
   "@moveHistoryGone": {"description": "Snack when a history move is refused because one of the two exercises is no longer on the account", "type": "text", "placeholders": {}},
   "moveHistoryIncompatible": "{target} logs its sets differently from {source}, so the history can't go there.",
-  "@moveHistoryIncompatible": {"description": "Tooltip on a greyed exercise in the history move picker: its sets have other columns, or an assisted weight, so the source's history cannot move onto it", "type": "text", "placeholders": {"target": {}, "source": {}}}
+  "@moveHistoryIncompatible": {"description": "Tooltip on a greyed exercise in the history move picker: its sets have other columns, or an assisted weight, so the source's history cannot move onto it", "type": "text", "placeholders": {"target": {}, "source": {}}},
+  "programs": "Programs",
+  "@programs": {"description": "Name of the Programs feature: its switch in Settings › Features", "type": "text", "placeholders": {}},
+  "programsSubtitle": "Templates on a schedule, with targets that grow as you do",
+  "@programsSubtitle": {"description": "Subtitle under the Programs switch in Settings › Features, saying what it does", "type": "text", "placeholders": {}}
 }
