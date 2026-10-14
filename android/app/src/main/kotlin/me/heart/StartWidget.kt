@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -117,22 +116,15 @@ class StartWidget : AppWidgetProvider() {
 
         /// The theme's accent, as the training widget draws it; before the
         /// app has said, the ink.
-        private fun accent(context: Context): Int {
-            val snapshot = TrainingSnapshot.read(TrainingSnapshot.prefs(context))
-            val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-            return when {
-                snapshot == null -> context.getColor(R.color.widget_text)
-                night -> snapshot.accentDark
-                else -> snapshot.accent
-            }
-        }
+        private fun accent(context: Context) =
+            WidgetColor.accent(TrainingSnapshot.read(TrainingSnapshot.prefs(context)), R.color.widget_text)
 
-        private fun small(context: Context, id: Int, template: Template?, enabled: Boolean, accent: Int): RemoteViews {
+        private fun small(context: Context, id: Int, template: Template?, enabled: Boolean, accent: WidgetColor): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_start_small)
             views.setTextViewText(R.id.widget_title, template?.name ?: context.getString(R.string.widget_start_workout))
             // a template's name says what; the caption says it starts
             views.setViewVisibility(R.id.widget_caption, if (template == null) View.GONE else View.VISIBLE)
-            badge(views, R.id.widget_badge, R.id.widget_icon, template != null, accent)
+            badge(context, views, R.id.widget_badge, R.id.widget_icon, template != null, accent)
             views.setOnClickPendingIntent(R.id.widget_root, tap(context, id * 8, link(enabled, template?.id)))
             return views
         }
@@ -148,7 +140,7 @@ class StartWidget : AppWidgetProvider() {
 
         /// "Start a workout" first, then the templates; fewer templates, fewer
         /// tiles, and an empty second row is gone.
-        private fun wide(context: Context, id: Int, templates: List<Template>, enabled: Boolean, accent: Int): RemoteViews {
+        private fun wide(context: Context, id: Int, templates: List<Template>, enabled: Boolean, accent: WidgetColor): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_start_wide)
             val entries = listOf<Template?>(null) + templates
             tiles.forEachIndexed { index, tile ->
@@ -158,7 +150,7 @@ class StartWidget : AppWidgetProvider() {
                     else -> {
                         views.setViewVisibility(tile.root, View.VISIBLE)
                         views.setTextViewText(tile.label, entry?.name ?: context.getString(R.string.widget_start_workout))
-                        badge(views, tile.badge, tile.icon, entry != null, accent)
+                        badge(context, views, tile.badge, tile.icon, entry != null, accent)
                         views.setOnClickPendingIntent(tile.root, tap(context, id * 8 + 1 + index, link(enabled, entry?.id)))
                     }
                 }
@@ -167,8 +159,8 @@ class StartWidget : AppWidgetProvider() {
             return views
         }
 
-        private fun badge(views: RemoteViews, badge: Int, icon: Int, template: Boolean, accent: Int) {
-            views.setInt(badge, "setColorFilter", accent)
+        private fun badge(context: Context, views: RemoteViews, badge: Int, icon: Int, template: Boolean, accent: WidgetColor) {
+            accent.set(context, views, badge, "setColorFilter")
             views.setImageViewResource(icon, if (template) R.drawable.widget_start_dumbbell else R.drawable.widget_start_plus)
         }
 
