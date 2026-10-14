@@ -1062,3 +1062,6 @@ leaveSuperset,Menu item on an exercise grouped with one other: takes it out of t
 leaveCircuit,Menu item on an exercise grouped with two or more others: takes it out of the circuit,Leave the circuit,Leave the circuit,Убрать из круга,Sacar del circuito,Retirer du circuit
 supersetLabel,Caption over two exercises done back to back in a workout or template,Superset,Superset,Суперсет,Superserie,Superset
 circuitLabel,"Caption over three or more exercises done back to back, in turn, in a workout or template",Circuit,Circuit,Круговая,Circuito,Circuit
+programSessionSkipped,Accessibility label of a session in a program's strip or list: set aside with Not today in this cycle,"{session}, skipped","{session}, skipped","{session}, пропущено","{session}, saltada","{session}, sauté"
+programNotToday,"Button beside a program's next session: skip it today, no questions asked; it counts as done in this cycle and nothing grows. Also the label of a skipped day in History",Not today,Not today,Не сегодня,Hoy no,Pas aujourd’hui
+programSkipped,"Snack bar after Not today, with Undo beside it: the session is set aside, warmly, no guilt",{session} sits this one out,{session} sits this one out,{session} в этот раз отдыхает,{session} se queda fuera esta vez,{session} passe son tour
