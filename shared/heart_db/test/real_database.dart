@@ -111,7 +111,9 @@ const _schema = [
   addWorkoutUnread,
   addWorkoutExerciseUnread,
   addTemplateUnread,
-  // v21 (#346; v20 is #173's)
+  // v20 (#173)
+  addSetTarget,
+  // v21 (#346)
   createPrograms,
   programsUserIndex,
   createProgramActions,

@@ -13,15 +13,25 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     return jsonEncode(pauses.map((pause) => pause.toMap()).toList());
   }
 
-  /// [set]'s row. `toRow` predates set types, RPE and the tick's time, and
-  /// leaves them out, so every write of a set goes through here to keep them
-  /// (#151, #134).
+  /// [set]'s row. `toRow` predates set types, RPE, the tick's time and
+  /// targets, and leaves them out, so every write of a set goes through here
+  /// to keep them (#151, #134, #173).
   static Map<String, Object?> _setRow(ExerciseSet set) {
     return {
       ...set.toRow(),
       'set_type': _setType(set),
       'rpe': set.rpe,
       'completed_at': set.completedAt?.toIso8601String(),
+      'target': _encodeTarget(set),
+    };
+  }
+
+  /// [set]'s target as stored: JSON, null for none (#173). What a newer build
+  /// wrote and this one can't read is in `toMap` too, so it is kept.
+  static String? _encodeTarget(ExerciseSet set) {
+    return switch (set.target) {
+      final SetTarget target => jsonEncode(target.toMap()),
+      null => null,
     };
   }
 

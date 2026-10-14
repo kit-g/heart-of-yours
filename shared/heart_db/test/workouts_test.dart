@@ -524,9 +524,10 @@ void main() {
           verify(
             db.update(
               'sets',
-              // the type, RPE and tick time ride along: a row without them
-              // reads back as a plain, unrated set (#151), ticked at no time (#134)
-              {...testSet.toRow(), 'set_type': null, 'rpe': null, 'completed_at': null},
+              // the type, RPE, tick time and target ride along: a row without
+              // them reads back as a plain, unrated set (#151), ticked at no
+              // time (#134), aiming at nothing (#173)
+              {...testSet.toRow(), 'set_type': null, 'rpe': null, 'completed_at': null, 'target': null},
               where: 'id = ?',
               whereArgs: [testSet.id],
             ),
