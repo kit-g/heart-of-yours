@@ -104,20 +104,17 @@ class _ProgramsSection extends StatelessWidget {
             // one across 1100pt
             LayoutBuilder(
               builder: (context, constraints) {
-                const gap = 8.0;
                 final width = constraints.maxWidth;
-                final columns = columnsFor(width, maxExtent: _bandMaxWidth);
-                final band = (width - gap * (columns - 1)) / columns;
                 return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
+                  spacing: _bandGap,
+                  runSpacing: _bandGap,
                   children: [
                     for (final (program, position) in [
                       for (final program in following)
                         (program, programs.position(program, now: now, firstWeekday: firstWeekday)),
                     ])
                       SizedBox(
-                        width: band,
+                        width: _bandWidth(width),
                         child: _ProgramBand(
                           program: program,
                           position: position,
@@ -172,22 +169,32 @@ class _LibraryEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    // a band's width, under the first band: across a tablet's pane a row
+    // this short reads as a strip with its chevron a room away
     return Padding(
       padding: const .only(top: 8),
-      child: Material(
-        color: colorScheme.secondaryContainer.withValues(alpha: .5),
-        borderRadius: const .all(.circular(12)),
-        clipBehavior: .antiAlias,
-        child: ListTile(
-          key: AppKeys.libraryEntry,
-          onTap: onTap,
-          leading: Icon(Icons.auto_stories_outlined, color: colorScheme.onSecondaryContainer),
-          title: Text(copy.programLibrary, style: textTheme.titleSmall),
-          subtitle: Text(
-            copy.programLibraryLine,
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Align(
+          alignment: AlignmentDirectional.topStart,
+          child: SizedBox(
+            width: _bandWidth(constraints.maxWidth),
+            child: Material(
+              color: colorScheme.secondaryContainer.withValues(alpha: .5),
+              borderRadius: const .all(.circular(12)),
+              clipBehavior: .antiAlias,
+              child: ListTile(
+                key: AppKeys.libraryEntry,
+                onTap: onTap,
+                leading: Icon(Icons.auto_stories_outlined, color: colorScheme.onSecondaryContainer),
+                title: Text(copy.programLibrary, style: textTheme.titleSmall),
+                subtitle: Text(
+                  copy.programLibraryLine,
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+                trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.outline),
+              ),
+            ),
           ),
-          trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.outline),
         ),
       ),
     );
@@ -196,6 +203,15 @@ class _LibraryEntry extends StatelessWidget {
 
 /// The widest a band gets before the section adds a column beside it.
 const _bandMaxWidth = 520.0;
+
+const _bandGap = 8.0;
+
+/// A band's width in [width]: as many columns as fit [_bandMaxWidth], and
+/// the room shared between them.
+double _bandWidth(double width) {
+  final columns = columnsFor(width, maxExtent: _bandMaxWidth);
+  return (width - _bandGap * (columns - 1)) / columns;
+}
 
 /// "From a folder": the folders a program can be made from, as a menu.
 class _FromFolderButton extends StatelessWidget {
