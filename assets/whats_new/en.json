@@ -1,7 +1,40 @@
 [
   {
-    "version": "1.13.0",
+    "version": "1.14.0",
     "date": null,
+    "items": [
+      {
+        "id": "home-screen-widgets",
+        "title": "Heart on your Home Screen",
+        "body": "Three widgets in the widget gallery: **Training** shows your volume, workouts, time, sets or reps, or an Apple Health reading, and fits the Lock Screen too. **Start** starts a workout or a template in one tap. **Goals** shows how far along your goals are.",
+        "platforms": [
+          "ios"
+        ]
+      },
+      {
+        "id": "icon-menu",
+        "title": "Start from the icon",
+        "body": "Touch and hold Heart's icon to start a blank workout or one of your templates.",
+        "platforms": [
+          "ios"
+        ],
+        "feature": "shortcuts"
+      },
+      {
+        "id": "move-history",
+        "title": "Move an exercise's history",
+        "body": "Logged under the wrong exercise? **Move history to…** on the exercise's menu puts everything onto another one. A preview says what moves first. Needs an account."
+      },
+      {
+        "id": "heart-import",
+        "title": "Bring your Heart history back",
+        "body": "**Settings → Your data → Import workout history** now reads Heart's own exports. The JSON file brings back everything: workouts, templates and folders, custom exercises and goals."
+      }
+    ]
+  },
+  {
+    "version": "1.13.0",
+    "date": "2026-10-10",
     "items": [
       {
         "id": "shortcuts",
