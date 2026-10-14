@@ -809,10 +809,14 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   }
 
   /// Parses the weight input from `_weightController` and updates the set's weight measurement.
+  ///
+  /// 0 is a weight (#383): a dip without the belt, a template's load skipped
+  /// today. Refusing it here left the set on its old load, which the watch
+  /// and the lock screen then showed and a tick from the watch logged.
   void _weightListener() {
     if (!context.mounted) return;
     bool hasChanged = false;
-    if (double.tryParse(_weightController.text) case double weight when weight > 0) {
+    if (double.tryParse(_weightController.text) case double weight when weight >= 0) {
       _setMeasurements(weight: weight);
       hasChanged = true;
     }
