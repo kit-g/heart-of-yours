@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'program_plan.dart';
 import 'remote.dart';
 import 'upsync.dart' show Replayed;
 import 'workouts.dart';
@@ -186,6 +187,30 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       actions: _actions[id] ?? const [],
       now: now,
       firstWeekday: firstWeekday,
+    );
+  }
+
+  /// [session] as the workout to start (#349): [planSession] with its
+  /// program's bases and whether this cycle is a lighter one. A template no
+  /// followed program holds starts as [Template.toWorkout] does.
+  Workout plan(
+    Template session, {
+    required DateTime now,
+    int firstWeekday = DateTime.monday,
+    required RoundWeight round,
+  }) {
+    final id = session.programId;
+    final program = switch (id) {
+      final String id => _programs[id],
+      null => null,
+    };
+    if (id == null || program == null || program.archived) return session.toWorkout();
+    return planSession(
+      session,
+      program: program,
+      bases: currentBasesOf(id),
+      lighter: position(program, now: now, firstWeekday: firstWeekday).lighter,
+      round: round,
     );
   }
 
