@@ -4636,5 +4636,21 @@
   "programMore": "More",
   "@programMore": {"description": "Tooltip of the plus button on a program number field", "type": "text", "placeholders": {}},
   "programSessionOptions": "Session options",
-  "@programSessionOptions": {"description": "Tooltip of the button opening a program session's options", "type": "text", "placeholders": {}}
+  "@programSessionOptions": {"description": "Tooltip of the button opening a program session's options", "type": "text", "placeholders": {}},
+  "setTarget": "Target",
+  "@setTarget": {"description": "Row in a template set's number popup that opens what the set aims for, such as 6 to 10 reps", "type": "text", "placeholders": {}},
+  "setTargetSummary": "Target: {value}",
+  "@setTargetSummary": {"description": "The popup row read by screen readers when the set has a target; value is the target as the row shows it, such as '60 · 6–10'", "type": "text", "placeholders": {"value": {}}},
+  "setTargetTitle": "Target for set {number}",
+  "@setTargetTitle": {"description": "Title of the dialog that sets what one template set aims for", "type": "text", "placeholders": {"number": {"type": "int"}}},
+  "setTargetFrom": "from",
+  "@setTargetFrom": {"description": "Hint in the first field of a target's range, the lowest it aims for", "type": "text", "placeholders": {}},
+  "setTargetTo": "to",
+  "@setTargetTo": {"description": "Hint in the second field of a target's range, the highest it aims for", "type": "text", "placeholders": {}},
+  "setTargetOpenTop": "Leave “to” empty for as many as you can, shown as 8+. The same number in both is exact.",
+  "@setTargetOpenTop": {"description": "Line under the target fields explaining the open top and an exact target", "type": "text", "placeholders": {}},
+  "setTargetClear": "No target",
+  "@setTargetClear": {"description": "Button in the target dialog that takes the set's target away", "type": "text", "placeholders": {}},
+  "setTargetCell": "aiming for {value}",
+  "@setTargetCell": {"description": "Read by screen readers after a value cell's name when the cell is empty and shows the set's target faintly, such as 'Reps, aiming for 6–10'", "type": "text", "placeholders": {"value": {}}}
 }

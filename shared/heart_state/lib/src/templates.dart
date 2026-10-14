@@ -236,6 +236,29 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     notifyListeners();
   }
 
+  /// Aims [set] in the template being edited at [target], or at nothing when
+  /// it is null (#173); saved with the rest of it. A set added after it copies
+  /// it, as it copies the values.
+  ///
+  /// A measure the target now aims at gives up the fixed value it held: a cell
+  /// shows one or the other, and "5 reps" left under "6–10" would be the one
+  /// the sheet prefills. The set is rebuilt in its place, under its id.
+  void setSetTarget(ExerciseSet set, SetTarget? target) {
+    set.target = target ?? SetTarget.none;
+    final aimed = {...?set.target?.ranges.keys.map((measure) => measure.value)};
+    final map = set.toMap();
+    final exercise = editable?.where((each) => each.contains(set)).firstOrNull;
+    if (exercise != null && aimed.any((key) => map[key] != null)) {
+      final rebuilt = ExerciseSet.fromJson(exercise.exercise, {...map}..removeWhere((key, _) => aimed.contains(key)));
+      final sets = exercise.toList();
+      sets.forEach(exercise.remove);
+      for (final each in sets) {
+        exercise.add(identical(each, set) ? rebuilt : each);
+      }
+    }
+    notifyListeners();
+  }
+
   void removeExercise(WorkoutExercise exercise) {
     editable?.remove(exercise);
     notifyListeners();

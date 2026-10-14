@@ -46,6 +46,14 @@ class WorkoutDetailKeys {
   /// The button that takes a set's rating away, in its open popup (#234).
   static const clearRpe = Key('WorkoutDetail.clearRpe');
 
+  /// The set-number popup's row that opens the set's target (#173).
+  static const setTarget = Key('WorkoutDetail.setTarget');
+
+  /// The target dialog's from and to fields for [column] (#173).
+  static Key targetFrom(SetColumn column) => Key('WorkoutDetail.targetFrom.${column.key}');
+
+  static Key targetTo(SetColumn column) => Key('WorkoutDetail.targetTo.${column.key}');
+
   /// A rating in the open set-number popup (#234).
   static Key rpeValue(double value) => Key('WorkoutDetail.rpeValue.$value');
 

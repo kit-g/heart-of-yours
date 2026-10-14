@@ -126,7 +126,9 @@ const _migrations = <int, List<String>>{
     addWorkoutExerciseUnread,
     addTemplateUnread,
   ],
-  // 20 is #173's
+  20: [
+    addSetTarget,
+  ],
   21: [
     createPrograms,
     programsUserIndex,

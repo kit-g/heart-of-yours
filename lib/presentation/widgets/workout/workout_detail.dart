@@ -47,6 +47,7 @@ part 'set_item.dart';
 part 'set_stopwatch.dart';
 part 'rpe.dart';
 part 'set_type.dart';
+part 'target.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
 part 'workout_note.dart';
@@ -76,6 +77,10 @@ class WorkoutDetail extends StatefulWidget {
   /// Rates a set, or clears its rating (#234), from the set-number popup.
   /// Without it, as in a template, sets carry no RPE and the popup no ratings.
   final void Function(ExerciseSet, double?)? onSetRpe;
+
+  /// Sets what a set aims for (#173), from the set-number popup. Only a
+  /// template's editor plans sets; without it the popup has no target row.
+  final void Function(ExerciseSet, SetTarget?)? onSetTarget;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
@@ -99,6 +104,7 @@ class WorkoutDetail extends StatefulWidget {
     this.onSetDone,
     this.onSetType,
     this.onSetRpe,
+    this.onSetTarget,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.onAddExercises,
@@ -366,6 +372,7 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             onSetDone: widget.onSetDone,
                             onSetType: widget.onSetType,
                             onSetRpe: widget.onSetRpe,
+                            onSetTarget: widget.onSetTarget,
                             onRemoveExercise: widget.onRemoveExercise,
                             onSwapExercise: _onDrop,
                             onDragStarted: () {

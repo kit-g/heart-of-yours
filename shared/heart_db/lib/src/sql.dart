@@ -77,7 +77,8 @@ SELECT
                             'completed', _sets.completed,
                             'set_type', _sets.set_type,
                             'rpe', _sets.rpe,
-                            'completed_at', _sets.completed_at
+                            'completed_at', _sets.completed_at,
+                            'target', json(_sets.target)
                         )
                     )
                     FROM _sets
@@ -163,7 +164,8 @@ SELECT
                             'completed', _sets.completed,
                             'set_type', _sets.set_type,
                             'rpe', _sets.rpe,
-                            'completed_at', _sets.completed_at
+                            'completed_at', _sets.completed_at,
+                            'target', json(_sets.target)
                         )
                     )
                     FROM _sets
@@ -247,7 +249,8 @@ SELECT
                             'completed', _sets.completed,
                             'set_type', _sets.set_type,
                             'rpe', _sets.rpe,
-                            'completed_at', _sets.completed_at
+                            'completed_at', _sets.completed_at,
+                            'target', json(_sets.target)
                         )
                     )
                     FROM _sets

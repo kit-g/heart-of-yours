@@ -1020,3 +1020,11 @@ programStartIt,Button on the new-program screen: makes the program and starts fo
 programFewer,Tooltip of the minus button on a program number field,Fewer,Fewer,Меньше,Menos,Moins
 programMore,Tooltip of the plus button on a program number field,More,More,Больше,Más,Plus
 programSessionOptions,Tooltip of the button opening a program session's options,Session options,Session options,Действия с тренировкой,Opciones de la sesión,Options de la séance
+setTarget,"Row in a template set's number popup that opens what the set aims for, such as 6 to 10 reps",Target,Target,Цель,Objetivo,Objectif
+setTargetSummary,"The popup row read by screen readers when the set has a target; value is the target as the row shows it, such as '60 · 6–10'",Target: {value},Target: {value},Цель: {value},Objetivo: {value},Objectif : {value}
+setTargetTitle,Title of the dialog that sets what one template set aims for,Target for set {number},Target for set {number},Цель для подхода {number},Objetivo de la serie {number},Objectif de la série {number}
+setTargetFrom,"Hint in the first field of a target's range, the lowest it aims for",from,from,от,desde,de
+setTargetTo,"Hint in the second field of a target's range, the highest it aims for",to,to,до,hasta,à
+setTargetOpenTop,Line under the target fields explaining the open top and an exact target,"Leave “to” empty for as many as you can, shown as 8+. The same number in both is exact.","Leave “to” empty for as many as you can, shown as 8+. The same number in both is exact.","Оставьте «до» пустым — сколько сможете, как 8+. Одно число в обоих полях — точная цель.","Deja «hasta» vacío para tantas como puedas, como 8+. El mismo número en ambos es exacto.","Laissez « à » vide pour autant que possible, affiché 8+. Le même nombre dans les deux est exact."
+setTargetClear,Button in the target dialog that takes the set's target away,No target,No target,Без цели,Sin objetivo,Sans objectif
+setTargetCell,"Read by screen readers after a value cell's name when the cell is empty and shows the set's target faintly, such as 'Reps, aiming for 6–10'",aiming for {value},aiming for {value},цель {value},objetivo {value},objectif {value}

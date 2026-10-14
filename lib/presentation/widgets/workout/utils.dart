@@ -23,6 +23,47 @@ final _integerFormatters = <TextInputFormatter>[
   LengthLimitingTextInputFormatter(4),
 ];
 
+/// [column]'s header for an exercise of [category]: its unit, or what it
+/// counts. [override] is the exercise's own unit, when it has one.
+String _columnLabel(L l, Preferences prefs, MeasurementUnit? override, Category category, SetColumn column) {
+  String weightUnit() {
+    return switch (override ?? prefs.weightUnit) {
+      .metric => l.kg,
+      .imperial => l.lbs,
+    };
+  }
+
+  // a carry is measured in metres or yards, not in fractions of a km
+  final carry = category == .weightedDistance;
+
+  String distanceUnit() {
+    return switch ((carry, override ?? prefs.distanceUnit)) {
+      (true, .metric) => l.metresShort,
+      (true, .imperial) => l.yardsShort,
+      (false, .metric) => l.km,
+      (false, .imperial) => l.mile,
+    };
+  }
+
+  return switch (column) {
+    .weight => switch (category) {
+      .weightedBodyWeight => '+${weightUnit()}',
+      .assistedBodyWeight => '-${weightUnit()}',
+      .barbell ||
+      .dumbbell ||
+      .machine ||
+      .repsOnly ||
+      .cardio ||
+      .duration ||
+      .weightedDistance ||
+      .weightedDuration => weightUnit(),
+    },
+    .reps => l.reps,
+    .distance => distanceUnit(),
+    .duration => l.time,
+  };
+}
+
 extension on TextEditingController {
   void selectAllText() {
     selection = TextSelection(

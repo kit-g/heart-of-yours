@@ -14,6 +14,10 @@ class _TextFieldButton extends StatelessWidget {
   /// the label.
   final String? badge;
 
+  /// What the set aims for here, shown faint while the cell is empty (#173):
+  /// "6–10", "8+". A tick takes it as the set.
+  final String? ghost;
+
   /// The seconds of a set's stopwatch while it runs (#171). The cell shows
   /// them ticking, in the accent, in place of the field.
   final ValueNotifier<int>? running;
@@ -34,6 +38,7 @@ class _TextFieldButton extends StatelessWidget {
     this.formatters,
     required this.semanticLabel,
     this.badge,
+    this.ghost,
     this.running,
     this.paused = false,
     this.onRunning,
@@ -115,10 +120,13 @@ class _TextFieldButton extends StatelessWidget {
                           },
                         ),
                         null => Semantics(
-                          label: switch (badge) {
-                            String badge => '$semanticLabel, $badge',
-                            null => semanticLabel,
-                          },
+                          label: [
+                            semanticLabel,
+                            ?badge,
+                            // the hint is gone once the cell holds a value
+                            if (ghost case final String ghost when controller.text.isEmpty)
+                              L.of(context).setTargetCell(ghost),
+                          ].join(', '),
                           textField: true,
                           child: TextField(
                             selectionControls: context.platformSpecificSelectionControls(),
@@ -127,7 +135,7 @@ class _TextFieldButton extends StatelessWidget {
                             focusNode: focusNode,
                             controller: controller,
                             inputFormatters: formatters,
-                            decoration: const InputDecoration.collapsed(hintText: _emptyValue),
+                            decoration: InputDecoration.collapsed(hintText: ghost ?? _emptyValue),
                             style: switch (hasError) {
                               true => textTheme.bodyMedium?.copyWith(color: colorScheme.onError),
                               false => textTheme.bodyMedium,

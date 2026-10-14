@@ -22,12 +22,17 @@ class _ExerciseSetItem extends StatefulWidget {
   /// rated.
   final void Function(ExerciseSet, double?)? onSetRpe;
 
+  /// Sets what the set aims for (#173), from its number's popup; only in a
+  /// template's editor, where sets are planned rather than logged.
+  final void Function(ExerciseSet, SetTarget?)? onSetTarget;
+
   const new({
     required this.set,
     required this.index,
     required this.number,
     this.onSetType,
     this.onSetRpe,
+    this.onSetTarget,
     required this.exercise,
     required this.onRemoveSet,
     this.onSetDone,
@@ -88,6 +93,11 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     };
   }
 
+  /// The set's target for [measure], as its empty cell shows it faintly (#173).
+  String? _ghost(TargetMeasure measure) {
+    return _Cells(Preferences.of(context), _unitOverride, set.category).ghost(set, measure);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -122,7 +132,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     _syncField(_repsController, _repsFocus, _repsListener, set.reps?.toString());
     // and a column filled from its header (#225), cardio's included
     _syncField(_distanceController, _distanceFocus, _distanceListener, switch (set.distance) {
-      double distance => prefs.distance(distance, unit: _unitOverride),
+      double distance => _shownDistance(prefs, distance),
       null => null,
     });
     _syncField(_durationController, _durationFocus, _durationListener, set.duration?.toDuration());
@@ -251,6 +261,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                   fill: fill,
                   onSetType: widget.onSetType,
                   onSetRpe: widget.onSetRpe,
+                  onSetTarget: widget.onSetTarget,
                 ),
                 Expanded(
                   flex: 3,
@@ -423,6 +434,31 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     _initTextControllers(context);
   }
 
+  @override
+  void didUpdateWidget(_ExerciseSetItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // the set was rebuilt under this row, under its id: a template's target
+    // took the place of a value it held (#173), so the fields read it again
+    // silently: this is a build, and the set already holds what they show
+    if (!identical(oldWidget.set, set)) {
+      final fields = [
+        (_weightController, _weightListener),
+        (_repsController, _repsListener),
+        (_distanceController, _distanceListener),
+        (_durationController, _durationListener),
+      ];
+      for (final (field, listener) in fields) {
+        field
+          ..removeListener(listener)
+          ..clear();
+      }
+      _initTextControllers(context);
+      for (final (field, listener) in fields) {
+        field.addListener(listener);
+      }
+    }
+  }
+
   List<Widget> _buttons(Color color) {
     switch (set.category) {
       case .weightedBodyWeight:
@@ -446,6 +482,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               formatters: _integerFormatters,
               semanticLabel: L.of(context).reps,
               badge: _rpeBadge(context),
+              ghost: _ghost(.reps),
             ),
           ),
         ];
@@ -462,6 +499,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
               formatters: _integerFormatters,
               semanticLabel: L.of(context).reps,
               badge: _rpeBadge(context),
+              ghost: _ghost(.reps),
             ),
           ),
         ];
@@ -512,6 +550,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
       errorState: _hasWeightError,
       formatters: _floatingPointFormatters,
       semanticLabel: L.of(context).weightUnit,
+      ghost: _ghost(.weight),
     );
   }
 
@@ -543,6 +582,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
           formatters: _floatingPointFormatters,
           semanticLabel: L.of(context).distanceUnit,
           badge: badge,
+          ghost: _ghost(.distance),
         );
       },
     );
@@ -579,6 +619,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
         formatters: [TimeFormatter()],
         semanticLabel: L.of(context).duration,
         badge: _rpeBadge(context),
+        ghost: _ghost(.duration),
         running: switch (_timing) {
           true => workouts.stopwatch.seconds,
           false => null,
@@ -673,6 +714,30 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     final workouts = Workouts.of(context);
     if (set.isCompleted) {
       return workouts.markSetAsIncomplete(exercise, set);
+    }
+
+    // a tick on a ghost row takes its target as the set (#173); the fields
+    // follow the set, and a focused one would be left out
+    if (set.target != null) {
+      _repsFocus.unfocus();
+      _weightFocus.unfocus();
+      _distanceFocus.unfocus();
+      _durationFocus.unfocus();
+      await workouts.acceptTarget(set);
+      if (!context.mounted) return;
+      // the set now holds the target as stored; reading it back out of the
+      // fields would put it through display rounding, and a carry's 40 m
+      // through a field that shows 0.04 km as "0"
+      if (set.canBeCompleted) {
+        _hasWeightError.value = false;
+        _hasRepsError.value = false;
+        _hasDistanceError.value = false;
+        _hasDurationError.value = false;
+        workouts.markEdited(set);
+        workouts.markSetAsComplete(exercise, set);
+        _startTimer(context);
+        return;
+      }
     }
 
     try {

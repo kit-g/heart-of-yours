@@ -443,6 +443,40 @@ void main() {
       expect(set.reps, 8);
     });
 
+    test('acceptTarget fills what is empty from the bottom of the target, and leaves the rest (#173)', () async {
+      await sut.startWorkout(source: .blank, name: 'Chest');
+      await sut.startExercise(bench);
+      final set = sut.activeWorkout!.first.first
+        ..setMeasurements(weight: 60)
+        ..target = SetTarget({
+          .reps: const TargetRange(min: 6, max: 10),
+          .weight: const TargetRange(min: 70),
+        });
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.acceptTarget(set);
+
+      expect(set.reps, 6, reason: 'no more than the least it asked for');
+      expect(set.weight, 60, reason: 'the prescribed load stays');
+      expect(probe.notifications, 1);
+      verify(local.storeMeasurements(set)).called(1);
+
+      await sut.acceptTarget(set);
+      expect(probe.notifications, 1, reason: 'nothing left to fill is no edit');
+    });
+
+    test('acceptTarget leaves a set without a target alone (#173)', () async {
+      await sut.startWorkout(source: .blank, name: 'Chest');
+      await sut.startExercise(bench);
+      final set = sut.activeWorkout!.first.first;
+
+      final probe = ListenerProbe()..attach(sut);
+      await sut.acceptTarget(set);
+
+      expect(set.reps, isNull);
+      expect(probe.notifications, 0);
+    });
+
     test('setSetType retypes a set, stores it, and says so (#151)', () async {
       await sut.startWorkout(source: .blank, name: 'Chest');
       await sut.startExercise(bench);

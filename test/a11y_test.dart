@@ -56,6 +56,7 @@ enum _Screen {
   pausedWorkout,
   finishAtLastSet,
   setTypeMenu,
+  setTargetDialog,
   rpePicker,
   setStopwatch,
   history,
@@ -416,6 +417,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.setTypeMenu,
     _Guideline.iosTapTarget,
     'the set number and the set-row buttons share the 32pt row height (lib/presentation/widgets/workout/set_item.dart), and the menu\'s help buttons are compact (set_type.dart) — visual-density change, out of scope',
+  ),
+  // A template set's target dialog over the template's editor, the reps
+  // aimed at 6 to 10 (lib/presentation/widgets/workout/target.dart).
+  (_Screen.setTargetDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.setTargetDialog, _Guideline.textContrastLight, null),
+  (_Screen.setTargetDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.setTargetDialog,
+    _Guideline.androidTapTarget,
+    'No target and Save are 32pt tall, the dialog actions\' density across the app (lib/presentation/widgets/workout/target.dart:221, :225; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.setTargetDialog,
+    _Guideline.iosTapTarget,
+    'No target and Save are 32pt tall, the dialog actions\' density across the app (lib/presentation/widgets/workout/target.dart:221, :225; lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
   (_Screen.workout, _Guideline.textContrastLight, null),
   (_Screen.workout, _Guideline.textContrastDark, null),
@@ -1102,6 +1118,17 @@ void main() {
         await tester.tapByKey(WorkoutDetailKeys.setTypeFor(_bench.id, 1));
         await tester.pumpTimes();
         await tester.tap(find.byTooltip('About Warm up'));
+      case _Screen.setTargetDialog:
+        final template = Template.empty(id: 'template-aimed', order: 0)
+          ..name = 'Aimed'
+          ..add(_bench);
+        template.first.first.target = SetTarget({.reps: const TargetRange(min: 6, max: 10)});
+        Templates.of(tester.element(find.byType(MaterialApp))).editable = template;
+        GoRouter.of(tester.element(find.byType(Navigator).first)).go('/workout/templates');
+        await tester.pumpTimes();
+        await tester.tapByKey(WorkoutDetailKeys.setTypeFor(_bench.id, 1));
+        await tester.pumpTimes();
+        await tester.tapByKey(WorkoutDetailKeys.setTarget);
       case _Screen.setStopwatch:
         final timed = Exercise(name: 'Plank', category: .duration, target: .core);
         final workout = Workout(name: 'Timed')..add(timed);

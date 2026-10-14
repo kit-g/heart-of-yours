@@ -556,6 +556,24 @@ void main() {
     },
   );
 
+  test('v20 adds the set target, empty on rows from before (#173)', () async {
+    await LocalDatabase.init(version: 19);
+    var db = await raw();
+    // a bare set row: its parents are beside the point here
+    await db.execute('PRAGMA foreign_keys = OFF');
+    await db.insert('sets', {'id': 's1', 'exercise_id': 'we1', 'completed': 0});
+    expect(await columns(db, 'sets'), isNot(contains('target')));
+    await db.close();
+
+    await LocalDatabase.init(version: 20);
+    db = await raw();
+    expect(await userVersion(db), 20);
+    expect(await columns(db, 'sets'), containsPair('target', 'TEXT'));
+    final [row] = await db.query('sets');
+    expect(row['target'], isNull);
+    await db.close();
+  });
+
   test('v19 adds the columns that keep what this build could not read (#277)', () async {
     await LocalDatabase.init(version: 18);
     var db = await raw();
