@@ -247,6 +247,7 @@ void main() {
   late MockLocalTemplateFolderService folders;
   late MockExerciseService exercises;
   late MockGoalService goals;
+  late MockLocalProgramService programs;
   late DataExport export;
 
   setUp(() {
@@ -255,12 +256,35 @@ void main() {
     folders = MockLocalTemplateFolderService();
     exercises = MockExerciseService();
     goals = MockGoalService();
+    programs = MockLocalProgramService();
     export = DataExport(
       workouts: workouts,
       templates: templates,
       folders: folders,
       exercises: exercises,
       goals: goals,
+      programs: programs,
+    );
+
+    final at = DateTime.utc(2026, 9, 1, 7);
+    when(programs.getPrograms(_user)).thenAnswer(
+      (_) async => [
+        Program(
+          id: 'p1',
+          name: 'Upper / Lower',
+          perWeek: 4,
+          weeks: 12,
+          rules: {'ex-bench': const RangeThenWeight(step: 2.5)},
+          sessions: const ['t2'],
+          createdAt: at,
+        ),
+      ],
+    );
+    when(programs.getProgramActions(_user)).thenAnswer(
+      (_) async => [ProgramAction(id: 'a1', programId: 'p1', kind: .repeat, at: at.add(const Duration(days: 7)))],
+    );
+    when(programs.getProgramBases(_user)).thenAnswer(
+      (_) async => [ProgramBase(id: 'b1', programId: 'p1', exerciseId: 'ex-bench', value: 60, at: at)],
     );
 
     when(workouts.getWorkoutHistory(_user)).thenAnswer((_) async => _workouts());
@@ -353,6 +377,9 @@ void main() {
       when(
         goals.getTargetUserGoals(requesterId: _user, targetUserId: _user, archived: true),
       ).thenAnswer((_) async => const []);
+      when(programs.getPrograms(_user)).thenAnswer((_) async => const []);
+      when(programs.getProgramActions(_user)).thenAnswer((_) async => const []);
+      when(programs.getProgramBases(_user)).thenAnswer((_) async => const []);
 
       final snapshot = await read();
       final envelope = jsonDecode(snapshot.toJson(exportedAt: DateTime.utc(2026, 9, 6, 12))) as Map;
@@ -366,8 +393,20 @@ void main() {
         'folders',
         'exercises',
         'goals',
+        'programs',
+        'programActions',
+        'programBases',
       ]);
-      for (final key in ['workouts', 'templates', 'folders', 'exercises', 'goals']) {
+      for (final key in [
+        'workouts',
+        'templates',
+        'folders',
+        'exercises',
+        'goals',
+        'programs',
+        'programActions',
+        'programBases',
+      ]) {
         expect(envelope[key], isEmpty);
       }
     });
@@ -418,9 +457,10 @@ void main() {
     test('the schema version says the shape changed', () async {
       final json = await envelope();
 
-      // a reader written against v1 would find a string where an object was
-      expect(json['schemaVersion'], 2);
-      expect(exportSchemaVersion, 2);
+      // a reader written against v1 would find a string where an object was;
+      // v3 added the programs (#346)
+      expect(json['schemaVersion'], 3);
+      expect(exportSchemaVersion, 3);
     });
   });
 

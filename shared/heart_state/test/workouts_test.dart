@@ -329,10 +329,13 @@ void main() {
       reset(local);
       reset(remote);
 
+      final revision = sut.historyRevision;
       await sut.deleteWorkout(id);
 
       expect(sut.lookup(id), isNull);
       expect(probe.notifications, 1);
+      // after the row is gone from the mirror: what a program's marks read
+      expect(sut.historyRevision, revision + 1);
       verify(local.deleteWorkout(id)).called(1);
       verify(remote.deleteWorkout(id)).called(1);
     });
@@ -780,6 +783,8 @@ void main() {
 
         expect(finished?.id, localId);
         expect(finished?.synced, isTrue);
+        // the finish, then the server's copy: each written before it is said
+        expect(sut.historyRevision, 2);
         expect(await sut.finishing, isNotNull);
         verifyNever(local.deleteWorkout(any));
       });

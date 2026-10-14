@@ -3,11 +3,15 @@ part of 'workout.dart';
 class WorkoutPage extends StatefulWidget {
   final void Function({bool? newTemplate}) goToTemplateEditor;
   final VoidCallback onOpenActiveWorkout;
+  final void Function(Program) goToProgram;
+  final void Function(TemplateFolder) goToNewProgram;
 
   const new({
     super.key,
     required this.goToTemplateEditor,
     required this.onOpenActiveWorkout,
+    required this.goToProgram,
+    required this.goToNewProgram,
   });
 
   @override
@@ -22,6 +26,8 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
         body: _TemplatesLayout(
           goToTemplateEditor: widget.goToTemplateEditor,
           onNewWorkout: widget.onOpenActiveWorkout,
+          goToProgram: widget.goToProgram,
+          goToNewProgram: widget.goToNewProgram,
         ),
         floatingActionButton: WorkoutTimerFloatingButton(onPressed: widget.onOpenActiveWorkout),
       ),

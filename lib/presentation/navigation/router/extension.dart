@@ -35,6 +35,24 @@ extension on BuildContext {
     return goNamed(_templateEditorName, queryParameters: {'newTemplate': newTemplate.toString()});
   }
 
+  /// The editor over a program's page: pushed, so saving or leaving it comes
+  /// back to the program rather than to the Workout tab.
+  void pushTemplateEditor() {
+    pushNamed(_templateEditorName, queryParameters: {'newTemplate': 'false'});
+  }
+
+  void goToProgram(String programId) {
+    return goNamed(_programName, pathParameters: {'programId': programId});
+  }
+
+  void goToNewProgram(String folderId) {
+    return goNamed(_newProgramName, pathParameters: {'folderId': folderId});
+  }
+
+  void goToEditProgram(String programId) {
+    return goNamed(_editProgramName, pathParameters: {'programId': programId});
+  }
+
   void goToAccountManagement() {
     return goNamed(_accountManagementName);
   }

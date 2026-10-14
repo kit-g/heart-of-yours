@@ -423,4 +423,99 @@ void main() {
       });
     }
   });
+
+  group('a program in the file', () {
+    final at = DateTime.utc(2026, 3, 1);
+
+    String file() {
+      final snapshot = _snapshot();
+      return ExportSnapshot(
+        workouts: [
+          for (final workout in snapshot.workouts)
+            Workout.fromJson({...workout.toMap(), if (workout.id == 'w1') 'programId': 'p1'}),
+        ],
+        templates: [
+          for (final template in snapshot.templates) Template.fromJson({...template.toMap(), 'programId': 'p1'}),
+        ],
+        folders: snapshot.folders,
+        exercises: snapshot.exercises,
+        weightUnit: .metric,
+        distanceUnit: .metric,
+        exerciseUnits: snapshot.exerciseUnits,
+        goals: snapshot.goals,
+        programs: [
+          Program(id: 'p1', name: 'Upper / Lower', sessions: const ['t1'], createdAt: at),
+        ],
+        programActions: [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: at)],
+        programBases: [ProgramBase(id: 'b1', programId: 'p1', exerciseId: _custom.id, value: 40, at: at)],
+      ).toJson(exportedAt: DateTime.utc(2026, 3, 2));
+    }
+
+    test('comes over with its history, and what names it still does', () async {
+      final store = wire(_Store(catalog: [_bench, _run]));
+      final programs = _Programs();
+      final sut = DataImport(
+        workouts: workouts,
+        templates: templates,
+        folders: folders,
+        exercises: exercises,
+        goals: goals,
+        programs: programs,
+      );
+
+      await sut.import(file(), _user);
+
+      expect(programs.writes, ['program p1', 'action a1', 'base b1']);
+      expect(store.templates['t1']?.programId, 'p1');
+      expect(store.workouts['w1']?.programId, 'p1');
+
+      // and a second time, nothing
+      await sut.import(file(), _user);
+      expect(programs.writes, hasLength(3));
+    });
+
+    test('with nowhere to keep it, what names it is filed under nothing', () async {
+      final store = wire(_Store(catalog: [_bench, _run]));
+
+      await sut.import(file(), _user);
+
+      expect(store.templates['t1']?.programId, isNull);
+      expect(store.workouts['w1']?.programId, isNull);
+    });
+  });
+}
+
+/// Programs, in memory: what [DataImport] reads and writes of them.
+class _Programs extends Fake implements LocalProgramService {
+  final programs = <Program>[];
+  final actions = <ProgramAction>[];
+  final bases = <ProgramBase>[];
+  final writes = <String>[];
+
+  @override
+  Future<List<Program>> getPrograms(String userId) async => [...programs];
+
+  @override
+  Future<void> storeProgram(Program program, String userId) async {
+    programs.add(program);
+    writes.add('program ${program.id}');
+  }
+
+  @override
+  Future<List<ProgramAction>> getProgramActions(String userId, {String? programId}) async => [...actions];
+
+  @override
+  Future<void> storeProgramAction(ProgramAction action) async {
+    actions.add(action);
+    writes.add('action ${action.id}');
+  }
+
+  @override
+  Future<List<ProgramBase>> getProgramBases(String userId, {String? programId}) async => [...bases];
+
+  @override
+  Future<void> storeProgramBase(ProgramBase base) async {
+    bases.add(base);
+    writes.add('base ${base.id}');
+  }
 }

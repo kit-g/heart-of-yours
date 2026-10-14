@@ -756,10 +756,10 @@ packages:
     description:
       path: "shared/heart_models"
       ref: main
-      resolved-ref: "039d6d97badd7797a348d0b7b157b371ed50bd3b"
+      resolved-ref: d26ef5bbca11d0592423658751e65b6730acdb2e
       url: "https://github.com/kit-g/heart-api.git"
     source: git
-    version: "2.15.0"
+    version: "2.23.0"
   highlight:
     dependency: transitive
     description:

@@ -86,4 +86,29 @@ class RemoteUpsync implements UpsyncService {
 
   @override
   Future<Replayed<Goal>> replayGoal(Goal goal) => _api.replayGoal(goal);
+
+  @override
+  Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) {
+    return _refusedAsBody(() => _api.replayProgram(program, sessions: sessions));
+  }
+
+  @override
+  Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action) {
+    return _refusedAsBody(() => _api.replayProgramAction(action));
+  }
+
+  @override
+  Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base) {
+    return _refusedAsBody(() => _api.replayProgramBase(base));
+  }
+
+  /// The replay reads a refusal's `code` off the body the server sent, as
+  /// every other create throws it; the program routes throw it typed.
+  static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
+    try {
+      return await call();
+    } on ProgramRefused catch (refused) {
+      throw {'code': refused.reason.code};
+    }
+  }
 }

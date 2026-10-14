@@ -1,4 +1,4 @@
-import 'package:heart_models/heart_models.dart' show ApiTokenExpiry, ApiTokenPurpose, SetType;
+import 'package:heart_models/heart_models.dart' show ApiTokenExpiry, ApiTokenPurpose, ProgramActionKind, SetType;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -74,7 +74,10 @@ enum WorkoutSource {
   sample('sample'),
 
   /// Started from a workout already in the history — "do this one again".
-  repeat('repeat');
+  repeat('repeat'),
+
+  /// A program's session, started from its band or its page (#347).
+  program('program');
 
   final String id;
 
@@ -89,6 +92,16 @@ enum TemplateSource {
   editor('editor'),
   fromWorkout('from_workout'),
   duplicate('duplicate');
+
+  final String id;
+
+  new(this.id);
+}
+
+/// Where a program came from. Only `folder` exists yet (#348); the library
+/// (#352) adds its own.
+enum ProgramSource {
+  folder('folder');
 
   final String id;
 
@@ -175,6 +188,9 @@ const _templateFolderCreated = 'template_folder_created';
 const _templateMoved = 'template_moved';
 const _exerciseCreated = 'exercise_created';
 const _exerciseHistoryMoved = 'exercise_history_moved';
+const _programCreated = 'program_created';
+const _programSteered = 'program_steered';
+const _programDeleted = 'program_deleted';
 const _historyBackfilled = 'history_backfilled';
 
 const _dataExported = 'data_exported';
@@ -213,6 +229,9 @@ const _expiry = 'expiry';
 const _fromCustom = 'from_custom';
 const _toCustom = 'to_custom';
 const _workoutExercises = 'workout_exercises';
+const _sessions = 'sessions';
+const _action = 'action';
+const _keptTemplates = 'kept_templates';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -428,6 +447,23 @@ class Analytics {
       _toCustom: _flag(toCustom),
       _workoutExercises: workoutExercises,
     });
+  }
+
+  /// A program started (#348): where it came from and how many sessions it
+  /// runs on. Never its name.
+  void programCreated({required ProgramSource source, required int sessions}) {
+    _log(_programCreated, {_source: source.id, _sessions: sessions});
+  }
+
+  /// The user steered a program: repeat, pause, resume or replay. Repeat is
+  /// the one to watch, an honest "not ready" the design wants to feel normal.
+  void programSteered({required ProgramActionKind action}) {
+    _log(_programSteered, {_action: action.value});
+  }
+
+  /// A program deleted, and whether its sessions stayed as templates.
+  void programDeleted({required bool keptTemplates}) {
+    _log(_programDeleted, {_keptTemplates: _flag(keptTemplates)});
   }
 
   void historyBackfilled({required int pages}) {

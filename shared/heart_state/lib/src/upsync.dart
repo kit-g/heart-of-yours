@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'goals.dart';
+import 'programs.dart';
 import 'exercises.dart';
 import 'analytics.dart';
 import 'remote.dart';
@@ -29,6 +30,13 @@ abstract interface class UpsyncService {
   Future<Replayed<Workout>> replayWorkout(Workout workout);
 
   Future<Replayed<Goal>> replayGoal(Goal goal);
+
+  /// The program with its sessions, in one create (heart-api#214).
+  Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions});
+
+  Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action);
+
+  Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base);
 }
 
 /// The store's half: the uid move, the debt, the ledger, and the reference
@@ -66,7 +74,12 @@ abstract interface class LocalUpsyncService {
 /// The kinds of row the replay carries, in the order it carries them. Later
 /// resources reference earlier ones, and a name-merge changes the id they
 /// must reference — so the order is the contract, not a preference.
-enum UpsyncResource { exercise, unit, note, folder, template, workout, goal }
+///
+/// A program goes with its sessions, ahead of the templates, which may name
+/// it; its actions and bases after the workouts, which a base may name
+/// (heart-api `docs/2026-09-05.upsync-replay.md`). The ledger keys on the
+/// name, so a value inserted here leaves every older ledger readable.
+enum UpsyncResource { exercise, unit, note, folder, program, template, workout, programAction, programBase, goal }
 
 /// What the server said about one step.
 enum UpsyncOutcome {
@@ -121,6 +134,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   final TemplateService _templates;
   final WorkoutService _workouts;
   final LocalGoalService _goals;
+  final LocalProgramService? _programs;
   final RemoteAccess _access;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
@@ -136,6 +150,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     required this._templates,
     required this._workouts,
     required this._goals,
+    this._programs,
     RemoteAccess? access,
     this.analytics,
     this.onError,
@@ -238,7 +253,10 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     UpsyncResource.exercise,
     UpsyncResource.unit,
     UpsyncResource.folder,
+    UpsyncResource.program,
     UpsyncResource.template,
+    UpsyncResource.programAction,
+    UpsyncResource.programBase,
   };
 
   /// Writes down what the account's pull has just put in the store, so the next
@@ -449,7 +467,23 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// is what makes skipping it and carrying on the right answer — before that
   /// mapping the same cases arrived as `500`s, and a single bad row stopped a
   /// backup of 358 with 332 never attempted (heart-of-yours#113).
-  static const _refusals = {'id_taken', 'unknown_exercise', 'unknown_folder', 'invalid_reference', 'duplicate'};
+  static const _refusals = {
+    'id_taken',
+    'unknown_exercise',
+    'unknown_folder',
+    'invalid_reference',
+    'duplicate',
+    // the program routes' (heart-api#86): a rule or key this server does not
+    // take, a cap reached, or a reference to a row the account does not have
+    'invalid_rule',
+    'invalid_key',
+    'program_limit',
+    'program_history_limit',
+    'program_not_found',
+    'unknown_program',
+    'unknown_workout',
+    'unknown_action',
+  };
 
   static bool _isRefusal(Object? error) {
     return switch (error) {
@@ -511,12 +545,27 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
         for (final template in await _templates.getTemplates(uid))
           // a draft the editor never finished is not a template the user has
           if (template.name != null && template.isNotEmpty && pending(template.id))
-            (resource: resource, id: template.id, replay: () => _replayTemplate(uid, template)),
+            (resource: resource, id: template.id, replay: () => _replayTemplate(uid, _unfiled(template, ledger))),
       ],
       .workout => [
         for (final workout in await _workouts.getWorkoutHistory(uid) ?? const <Workout>[])
           if (workout.isCompleted && !workout.synced && pending(workout.id))
             (resource: resource, id: workout.id, replay: () => _replayWorkout(uid, workout)),
+      ],
+      .program => [
+        for (final program in await _programs?.getPrograms(uid) ?? const <Program>[])
+          if (program.id case final String id when pending(id))
+            (resource: resource, id: id, replay: () => _replayProgram(uid, program, ledger)),
+      ],
+      .programAction => [
+        for (final action in await _programs?.getProgramActions(uid) ?? const <ProgramAction>[])
+          if (action.id case final String id when pending(id))
+            (resource: resource, id: id, replay: () => _replayProgramAction(action)),
+      ],
+      .programBase => [
+        for (final base in await _programs?.getProgramBases(uid) ?? const <ProgramBase>[])
+          if (base.id case final String id when pending(id))
+            (resource: resource, id: id, replay: () => _replayProgramBase(base)),
       ],
       .goal => [
         for (final goal in await _goals.unsyncedGoals(uid))
@@ -581,11 +630,58 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     return (row.id, _outcome(created));
   }
 
+  /// [template] as the server can take it: a session of a program it
+  /// refused, or one this store does not hold, goes up as a plain template,
+  /// or the server would refuse it too and it would never be backed up.
+  static Template _unfiled(Template template, Map<UpsyncResource, Map<String, UpsyncOutcome>> ledger) {
+    return switch (ledger[UpsyncResource.program]?[template.programId]) {
+      _ when template.programId == null => template,
+      .created || .existing => template,
+      _ => Template.fromJson({...template.toMap(), 'programId': null}),
+    };
+  }
+
   Future<(String, UpsyncOutcome)> _replayWorkout(String uid, Workout workout) async {
     final (:row, :created) = await _remote.replayWorkout(workout);
     // marks the row synced; a shallow echo keeps the exercises the mirror holds
     await _workouts.storeWorkoutHistory([row], uid);
     return (row.id, _outcome(created));
+  }
+
+  /// The program goes with its sessions, so they are answered here too: the
+  /// template step that follows finds them in the ledger and leaves them.
+  Future<(String, UpsyncOutcome)> _replayProgram(
+    String uid,
+    Program program,
+    Map<UpsyncResource, Map<String, UpsyncOutcome>> ledger,
+  ) async {
+    final sessions = [
+      for (final template in await _templates.getTemplates(uid))
+        if (template.programId == program.id) template,
+    ];
+    final (:row, :created) = await _remote.replayProgram(program, sessions: sessions);
+    await _programs?.storeProgram(row, uid);
+    final outcome = _outcome(created);
+    for (final session in sessions) {
+      await _local.record(uid, .template, session.id, outcome);
+      ledger.putIfAbsent(.template, () => {})[session.id] = outcome;
+    }
+    return (row.id!, outcome);
+  }
+
+  Future<(String, UpsyncOutcome)> _replayProgramAction(ProgramAction action) async {
+    final (:row, :created) = await _remote.replayProgramAction(action);
+    await _programs?.storeProgramAction(row);
+    return (row.id!, _outcome(created));
+  }
+
+  /// A bump another device already wrote for the same workout comes back as
+  /// that one, and replaces this device's copy.
+  Future<(String, UpsyncOutcome)> _replayProgramBase(ProgramBase base) async {
+    final (:row, :created) = await _remote.replayProgramBase(base);
+    if (row.id != base.id) await _programs?.deleteProgramBase(base.id!);
+    await _programs?.storeProgramBase(row);
+    return (row.id!, _outcome(created));
   }
 
   Future<(String, UpsyncOutcome)> _replayGoal(String uid, Goal goal) async {

@@ -22,6 +22,7 @@ import 'package:heart/core/utils/api_tokens.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/programs.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
 import 'package:heart/core/utils/upsync.dart';
@@ -150,6 +151,20 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // After `Workouts`, whose finished history moves a program's
+        // position, and `Templates`, which re-reads the sessions a program
+        // writes (#346). Data whatever the feature switch says: off only hides.
+        ChangeNotifierProvider<Programs>(
+          create: (context) => Programs(
+            service: LocalPrograms(db),
+            remoteService: RemotePrograms(api),
+            templates: db,
+            workouts: Workouts.of(context),
+            onSessionsChanged: Templates.of(context).reread,
+            remote: RemoteAccess.of(context),
+            onError: reportToSentry,
+          ),
+        ),
         ChangeNotifierProvider<PreviousExercises>(
           create: (_) => PreviousExercises(service: db, readBefore: db.getPreviousSetsBefore),
         ),
@@ -261,6 +276,7 @@ class HeartApp extends StatelessWidget {
               templates: db,
               workouts: db,
               goals: LocalGoals(db),
+              programs: LocalPrograms(db),
               access: RemoteAccess.of(context),
               analytics: analytics,
               onError: reportToSentry,
@@ -333,6 +349,7 @@ class HeartApp extends StatelessWidget {
                 PreviousExercises.of(context).userId = user?.id;
                 Stats.of(context).userId = user?.id;
                 Templates.of(context).userId = user?.id;
+                Programs.of(context).userId = user?.id;
                 Timers.of(context).userId = user?.id;
                 Workouts.of(context).userId = user?.id;
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));
@@ -363,6 +380,7 @@ class HeartApp extends StatelessWidget {
             folders: LocalTemplateFolders(db),
             exercises: db,
             goals: LocalGoals(db),
+            programs: LocalPrograms(db),
           ),
         ),
         // its other half (#329): Heart's own JSON export read back into the
@@ -374,6 +392,7 @@ class HeartApp extends StatelessWidget {
             folders: LocalTemplateFolders(db),
             exercises: db,
             goals: LocalGoals(db),
+            programs: LocalPrograms(db),
           ),
         ),
       ],
@@ -790,6 +809,7 @@ Future<void> _initApp(
     final Exercises(:isInitialized, :init) = Exercises.of(context);
 
     final templates = Templates.of(context);
+    final programs = Programs.of(context);
     final prefs = Preferences.of(context);
     final theme = AppTheme.of(context);
     final timers = Timers.of(context);
@@ -865,6 +885,7 @@ Future<void> _initApp(
                 previous: previous,
                 stats: stats,
                 templates: templates,
+                programs: programs,
                 backfill: backfill,
                 upsync: upsync,
               );
@@ -957,10 +978,12 @@ Future<void> _initTrainingData({
   required PreviousExercises previous,
   required Stats stats,
   required Templates templates,
+  required Programs programs,
   required Backfill backfill,
   required Upsync upsync,
 }) {
   templates.init();
+  programs.init();
   // Pulls what other devices logged into the local mirror, and heals anything
   // stranded here by a failed save. Until this ran at startup the only thing
   // that ran it was opening the History screen — so a workout from the phone
@@ -1005,6 +1028,7 @@ void _resync(BuildContext context, Upsync upsync) {
   final previous = PreviousExercises.of(context);
   final stats = Stats.of(context);
   final templates = Templates.of(context);
+  final programs = Programs.of(context);
   final backfill = Backfill.of(context);
   Goals.of(context).init();
   exercises.init(locale: languageTag()).then<void>(
@@ -1015,6 +1039,7 @@ void _resync(BuildContext context, Upsync upsync) {
         previous: previous,
         stats: stats,
         templates: templates,
+        programs: programs,
         backfill: backfill,
         upsync: upsync,
       );

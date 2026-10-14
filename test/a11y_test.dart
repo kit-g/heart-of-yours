@@ -47,6 +47,10 @@ enum _Screen {
   muscleMap,
   noAccountDialog,
   workout,
+  programsOffer,
+  programs,
+  programPage,
+  newProgram,
   exerciseNoteEditor,
   workoutNote,
   pausedWorkout,
@@ -102,6 +106,27 @@ final _pastToken = ApiToken(
 final _bench = Exercise(name: 'Bench Press', category: .barbell, target: .chest);
 
 final _squat = Exercise(name: 'Squat', category: .barbell, target: .legs);
+
+/// A folder of two templates and a program running on them (#345, #347,
+/// #348): enough for the offer, the band, the program page and the
+/// new-program screen.
+final _split = TemplateFolder(id: 'f1', name: 'Split');
+
+Template _session(String id, int order, String name, {String? programId}) {
+  final draft = Template.empty(id: id, order: order, folder: _split)
+    ..name = name
+    ..add(_bench);
+  return Template.fromJson({...draft.toMap(), 'programId': ?programId});
+}
+
+final _program = Program(
+  id: 'p1',
+  name: 'Split',
+  perWeek: 3,
+  weeks: 8,
+  sessions: const ['t1', 't2'],
+  createdAt: DateTime.utc(2026, 10, 1),
+);
 
 /// The session the workout-done screen celebrates.
 final _done = Workout(name: 'Records')
@@ -249,6 +274,36 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
+  // Programs on the Workout tab (#345, #347, #348): the offer under the
+  // examples, the band, the program page and the new-program screen
+  // (lib/presentation/routes/workout/{programs,program_page,program_form}.dart).
+  for (final screen in [_Screen.programsOffer, _Screen.programs, _Screen.programPage, _Screen.newProgram]) ...[
+    (screen, _Guideline.labeledTapTarget, null),
+    (screen, _Guideline.textContrastLight, null),
+    (screen, _Guideline.textContrastDark, null),
+  ],
+  for (final guideline in [_Guideline.androidTapTarget, _Guideline.iosTapTarget]) ...[
+    (
+      _Screen.programsOffer,
+      guideline,
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99) and folder header (templates.dart:696), and the offer\'s two buttons (lib/presentation/widgets/feature_offer.dart:74, :79) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    ),
+    (
+      _Screen.programs,
+      guideline,
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99) and the band\'s Start (lib/presentation/routes/workout/programs.dart:279) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    ),
+    (
+      _Screen.programPage,
+      guideline,
+      'the steers are PrimaryButton.shrunk (lib/presentation/routes/workout/program_page.dart:267, :276) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    ),
+    (
+      _Screen.newProgram,
+      guideline,
+      'Start program is PrimaryButton.wide (lib/presentation/routes/workout/program_form.dart:212) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    ),
+  ],
   (_Screen.setStopwatch, _Guideline.labeledTapTarget, null),
   (_Screen.setStopwatch, _Guideline.textContrastLight, null),
   (_Screen.setStopwatch, _Guideline.textContrastDark, null),
@@ -863,6 +918,41 @@ void main() {
             seconds: anyNamed('seconds'),
           ),
         ).thenAnswer((_) async {});
+      case _Screen.programsOffer || _Screen.programs || _Screen.programPage || _Screen.newProgram:
+        final running = screen != _Screen.programsOffer;
+        SharedPreferences.setMockInitialValues({
+          ...pastOnboarding(),
+          if (running) 'feature-programs': 'on',
+        });
+        when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+        when(db.getTemplates(any)).thenAnswer(
+          (_) async => switch (screen) {
+            _Screen.programs || _Screen.programPage => [
+              _session('t1', 0, 'Push', programId: 'p1'),
+              _session('t2', 1, 'Pull', programId: 'p1'),
+            ],
+            _ => [_session('t1', 0, 'Push'), _session('t2', 1, 'Pull')],
+          },
+        );
+        when(api.getTemplates()).thenAnswer((_) async => null);
+        when(db.getTemplateFolders(any)).thenAnswer((_) async => [_split]);
+        when(api.getFolders(userId: anyNamed('userId'))).thenAnswer((_) async => [_split]);
+        when(db.storeTemplateFolders(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+        when(db.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+        final programs = switch (screen) {
+          _Screen.programs || _Screen.programPage => [_program],
+          _ => <Program>[],
+        };
+        when(db.getPrograms(any)).thenAnswer((_) async => programs);
+        when(api.getPrograms()).thenAnswer((_) async => programs);
+        when(db.getProgramActions(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+        when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+        when(db.getProgramMarks(any, any)).thenAnswer((_) async => []);
+        when(db.storePrograms(any, any)).thenAnswer((_) async {});
+        when(db.storeProgramActions(any, any)).thenAnswer((_) async {});
+        when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
+        when(api.getProgramActions(any)).thenAnswer((_) async => []);
+        when(api.getProgramBases(any)).thenAnswer((_) async => []);
       case _Screen.workoutDone:
         // one exercise beat an earlier session, one was a first
         when(db.getRecord(any, _bench)).thenAnswer(
@@ -1043,6 +1133,33 @@ void main() {
         await tester.tap(find.byTooltip('About RPE'));
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
+      case _Screen.programsOffer || _Screen.programs || _Screen.programPage || _Screen.newProgram:
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        // read here for the reason the upsync run is started here: `_initApp`
+        // never gets this far in a widget test
+        final context = tester.element(find.byType(MaterialApp));
+        final templates = Templates.of(context);
+        await templates.init();
+        templates.notifyListeners();
+        await Programs.of(context).init();
+        await tester.pumpTimes();
+        switch (screen) {
+          case _Screen.programsOffer:
+            await tester.scrollUntilVisible(
+              find.byKey(AppKeys.programsOffer),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
+          case _Screen.programPage:
+            await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+          case _Screen.newProgram:
+            await tester.tapByKey(AppKeys.programsFromFolder);
+            await tester.pumpTimes();
+            await tester.tap(find.text('Split').last);
+          default:
+            break;
+        }
       case _Screen.workoutDone:
         final context = tester.element(find.byType(MaterialApp));
         await Workouts.of(context).startWorkout(source: .template, template: _done);

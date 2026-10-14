@@ -54,6 +54,8 @@ SELECT
     _workout.synced,
     _workout.note,
     _workout.pauses,
+    _workout.template_id AS templateId,
+    _workout.program_id AS programId,
     _workout.unread,
     (
         SELECT json_group_array(
@@ -138,6 +140,8 @@ SELECT
     _workout.synced,
     _workout.note,
     _workout.pauses,
+    _workout.template_id AS templateId,
+    _workout.program_id AS programId,
     _workout.unread,
     (
         SELECT json_group_array(
@@ -220,6 +224,8 @@ SELECT
     _workouts.synced,
     _workouts.note,
     _workouts.pauses,
+    _workouts.template_id AS templateId,
+    _workouts.program_id AS programId,
     _workouts.unread,
     (
         SELECT json_group_array(
@@ -271,8 +277,8 @@ WHERE completed = 0
 /// foreign keys on, REPLACE is a delete + insert, and the delete cascades
 /// through `workout_exercises` into `sets` (heart-of-yours#85).
 const upsertWorkout = '''
-INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses, unread)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO workouts (id, start, user_id, name, "end", images, synced, note, pauses, template_id, program_id, unread)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
     start   = EXCLUDED.start,
     user_id = EXCLUDED.user_id,
@@ -282,6 +288,11 @@ ON CONFLICT(id) DO UPDATE SET
     synced  = EXCLUDED.synced,
     note    = EXCLUDED.note,
     pauses  = EXCLUDED.pauses,
+    -- links, never requirements (#346): a shallow payload (a list page) that
+    -- leaves them out leaves the stored ones; one authoritative for the
+    -- workout (the arguments before the last) may also let them go
+    template_id = CASE WHEN ? THEN EXCLUDED.template_id ELSE coalesce(EXCLUDED.template_id, workouts.template_id) END,
+    program_id  = CASE WHEN ? THEN EXCLUDED.program_id ELSE coalesce(EXCLUDED.program_id, workouts.program_id) END,
     -- the exercises this build could not read belong with the children: only
     -- a payload authoritative for them (the last argument) replaces them
     unread  = CASE WHEN ? THEN EXCLUDED.unread ELSE workouts.unread END;
@@ -322,6 +333,8 @@ SELECT
     _templates.name,
     _templates.order_in_parent AS "order",
     _templates.unread,
+    _templates.program_id AS programId,
+    _templates.note,
     (
         SELECT json_group_array(
             json_object(

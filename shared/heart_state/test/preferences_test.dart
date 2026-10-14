@@ -370,6 +370,7 @@ void main() {
         'setStopwatch',
         'pauseWorkout',
         'shortcuts',
+        'programs',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

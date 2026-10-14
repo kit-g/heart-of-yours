@@ -214,6 +214,19 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   Iterable<Workout> get history => _workouts.values.where((workout) => workout.isCompleted);
 
+  /// Moves each time a finished workout is written to the store or deleted
+  /// from it, after the write: what a reader of the stored history (a
+  /// program's position, #346) compares, rather than rescanning [history] on
+  /// every notification — the set stopwatch alone notifies every second.
+  int get historyRevision => _historyRevision;
+  int _historyRevision = 0;
+
+  /// The store's history changed: [historyRevision] moves, and listeners hear.
+  void _historyWritten() {
+    _historyRevision++;
+    notifyListeners();
+  }
+
   Map<String, List<Workout>> get byMonth {
     final result = SplayTreeMap<String, List<Workout>>((a, b) => b.compareTo(a));
     return history.fold<Map<String, List<Workout>>>(
@@ -340,6 +353,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         // their aggregation and every goal measured against it
         if ((ownerId ?? id) == id) {
           await _localService.storeWorkoutHistory([remote], id);
+          _historyRevision++;
         }
         return adopt(remote);
       } catch (error, stacktrace) {
@@ -550,7 +564,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     await _localService.finishWorkout(active, uid);
 
     _workouts[active.id] = active;
-    notifyListeners();
+    _historyWritten();
 
     if (!_remote.allowed) return active;
 
@@ -560,7 +574,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (userId case String id) {
         await _localService.storeWorkoutHistory([saved], id);
       }
-      notifyListeners();
+      _historyWritten();
       return saved;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
@@ -591,7 +605,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           onError?.call(error, stacktrace: stacktrace);
         }
       }
-      if (pending.isNotEmpty) notifyListeners();
+      if (pending.isNotEmpty) _historyWritten();
     }
   }
 
@@ -626,7 +640,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (edited.id != workout.id) {
       _workouts.remove(workout.id);
     }
-    notifyListeners();
+    _historyWritten();
   }
 
   /// Writes an edit to a finished workout that the server has not seen.
@@ -639,7 +653,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     if (userId case String id) {
       await _localService.finishWorkout(workout, id);
     }
-    notifyListeners();
+    _historyWritten();
   }
 
   /// Updates a finished workout's [start] and/or [end] through the dedicated
@@ -669,7 +683,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       if (userId case String id) {
         await _localService.storeWorkoutHistory([patched], id);
       }
-      notifyListeners();
+      _historyWritten();
       return patched;
     } catch (error, stacktrace) {
       onError?.call(error, stacktrace: stacktrace);
@@ -705,11 +719,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     await _remoteService.deleteWorkout(workoutId);
   }
 
-  Future<void> deleteWorkout(String workoutId) {
+  Future<void> deleteWorkout(String workoutId) async {
     _workouts.remove(workoutId);
     _progress.removeWhere((image) => image.workoutId == workoutId);
-    notifyListeners();
-    _localService.deleteWorkout(workoutId);
+    await _localService.deleteWorkout(workoutId);
+    _historyWritten();
     return _deleteWorkout(workoutId);
   }
 
@@ -1011,6 +1025,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
           _absorb(workouts);
           await _dropDeletedElsewhere(workouts);
           _advanceHistory(workouts);
+          _historyRevision++;
         }
       });
 
@@ -1182,7 +1197,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       await _localService.deleteWorkout(workout.id);
     }
 
-    if (stale.isNotEmpty) notifyListeners();
+    if (stale.isNotEmpty) _historyWritten();
   }
 
   /// Fetches the next, older page of workouts, keyed off [_historyCursor]. The
@@ -1202,6 +1217,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
         await _localService.storeWorkoutHistory(workouts, id);
         _absorb(workouts);
         _advanceHistory(workouts);
+        _historyRevision++;
       } else {
         _historyPageError = true;
       }
@@ -1232,7 +1248,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
       await _localService.storeWorkoutHistory(page, id);
       _absorb(page);
       _advanceHistory(page);
-      notifyListeners();
+      _historyWritten();
       return (stored: page.length, more: _hasMoreHistory);
     }
 

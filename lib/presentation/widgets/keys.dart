@@ -160,4 +160,16 @@ abstract final class AppKeys {
   static Key signInRow(String provider) => Key('SignIns.row.$provider');
   static Key connectSignIn(String provider) => Key('SignIns.connect.$provider');
   static Key disconnectSignIn(String provider) => Key('SignIns.disconnect.$provider');
+
+  /// The Programs offer on the Workout tab (#345), and its two answers.
+  static const programsOffer = Key('Programs.offer');
+  static const programsAccept = Key('Programs.offer.accept');
+  static const programsDecline = Key('Programs.offer.decline');
+
+  /// "From a folder" on the Workout tab's Programs header (#348).
+  static const programsFromFolder = Key('Programs.fromFolder');
+
+  /// One program's band on the Workout tab (#347), and its Start button.
+  static Key programBand(String? programId) => Key('Programs.band.$programId');
+  static Key programStart(String? programId) => Key('Programs.band.start.$programId');
 }

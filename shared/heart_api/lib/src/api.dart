@@ -7,6 +7,7 @@ import 'package:network_utils/network_utils.dart';
 
 import 'imports.dart';
 import 'moves.dart';
+import 'programs.dart';
 
 class Api
     with Requests
@@ -500,6 +501,128 @@ class Api
     };
   }
 
+  /// The account's programs, archived ones included, each naming its session
+  /// templates in order. Read whole or not at all: the caller replaces its
+  /// programs with these, and one skipped would delete its local copy.
+  Future<List<Program>> getPrograms() async {
+    final (json, code) = await get(Router.programs);
+    return switch ((code, json)) {
+      (200, {'programs': List l}) => [for (final each in l) Program.fromJson(each as Map)],
+      _ => throw _programError(json),
+    };
+  }
+
+  /// Creates [program] with [sessions] as its templates, in one call (heart-api
+  /// #214). Safe to repeat on the program's id, like every replayed create:
+  /// `created` says whether this call made it. Starting a library program is
+  /// this call too, with `source` set; the server never reads the library.
+  Future<({Program row, bool created})> replayProgram(Program program, {required Iterable<Template> sessions}) async {
+    final body = {
+      ...program.toMap()..removeWhere((key, _) => const {'sessions', 'archived', 'createdAt'}.contains(key)),
+      'sessions': [
+        for (final session in sessions) _withClientId({...session.toMap(), 'folderId': ?session.folderId}),
+      ],
+    };
+    final response = await post(Router.programs, body: body);
+    final (json, created) = switch (response) {
+      (Map json, 201) => (json, true),
+      (Map json, 200) => (json, false),
+      (final json, _) => throw _programError(json),
+    };
+    return (row: Program.fromJson(json), created: created);
+  }
+
+  /// A full replace of [program]'s own fields and rules. Sessions change
+  /// through their templates; `source` never changes.
+  Future<Program> editProgram(Program program) async {
+    final (json, code) = await put(Router.program(program.id!), body: program.toMap());
+    return switch ((code, json)) {
+      (200, Map json) => Program.fromJson(json),
+      _ => throw _programError(json),
+    };
+  }
+
+  /// Deletes the program and its history. Its sessions go with it, or with
+  /// [keepTemplates] stay as plain templates.
+  Future<void> deleteProgram(String programId, {required bool keepTemplates}) async {
+    final (json, code) = await delete(
+      Router.program(programId),
+      query: {if (keepTemplates) 'keepTemplates': 'true'},
+    );
+    if (code >= 400) throw _programError(json);
+  }
+
+  /// Files [template] under [programId] as a session, or takes it out of its
+  /// program when null. A template `PUT` with the key spelled out: without
+  /// it the server keeps the template where it is, the way a 1.13 save does.
+  Future<Template> setTemplateProgram(Template template, {required String? programId}) async {
+    final (json, code) = await put(
+      Router.template(template.id),
+      body: {...template.toMap(), 'programId': programId},
+    );
+    return switch ((code, json)) {
+      (200, Map json) => Template.fromJson(json),
+      _ => throw _programError(json),
+    };
+  }
+
+  Future<List<ProgramAction>> getProgramActions(String programId) async {
+    final (json, code) = await get(Router.programActions(programId));
+    return switch ((code, json)) {
+      (200, {'actions': List l}) => _readable(l, ProgramAction.fromJson),
+      _ => throw _programError(json),
+    };
+  }
+
+  /// Records [action]; safe to repeat on its id.
+  Future<({ProgramAction row, bool created})> replayProgramAction(ProgramAction action) async {
+    final (json, code) = await post(Router.programActions(action.programId!), body: action.toMap());
+    return switch ((code, json)) {
+      (201, Map json) => (row: ProgramAction.fromJson(json), created: true),
+      (200, Map json) => (row: ProgramAction.fromJson(json), created: false),
+      _ => throw _programError(json),
+    };
+  }
+
+  /// Undoes an action, and the bases it moved with it.
+  Future<void> deleteProgramAction(String programId, String actionId) async {
+    final (json, code) = await delete(Router.programAction(programId, actionId));
+    if (code >= 400) throw _programError(json);
+  }
+
+  Future<List<ProgramBase>> getProgramBases(String programId) async {
+    final (json, code) = await get(Router.programBases(programId));
+    return switch ((code, json)) {
+      (200, {'bases': List l}) => _readable(l, ProgramBase.fromJson),
+      _ => throw _programError(json),
+    };
+  }
+
+  /// Records [base]; safe to repeat on its id, and on its exercise and
+  /// workout: a second device writing the same bump gets the first one back.
+  Future<({ProgramBase row, bool created})> replayProgramBase(ProgramBase base) async {
+    final (json, code) = await post(Router.programBases(base.programId!), body: base.toMap());
+    return switch ((code, json)) {
+      (201, Map json) => (row: ProgramBase.fromJson(json), created: true),
+      (200, Map json) => (row: ProgramBase.fromJson(json), created: false),
+      _ => throw _programError(json),
+    };
+  }
+
+  Future<void> deleteProgramBase(String programId, String baseId) async {
+    final (json, code) = await delete(Router.programBase(programId, baseId));
+    if (code >= 400) throw _programError(json);
+  }
+
+  /// A refusal the program routes name, typed; anything else as it came, the
+  /// way the rest of this class throws.
+  static Object _programError(Object? body) {
+    return switch (ProgramRefusal.of(body)) {
+      final ProgramRefusal reason => ProgramRefused(reason),
+      null => body ?? const FormatException('empty response'),
+    };
+  }
+
   /// Every preference the account holds, on a library exercise as much as on
   /// one of its own: since the catalog moved to the CDN no list the app reads
   /// carries them, so they are asked for on their own (heart-api#73).
@@ -972,6 +1095,27 @@ abstract final class Router {
   static const workouts = 'v1/workouts';
   static const workoutImports = '$workouts/imports';
   static const accountTokens = '$accounts/tokens';
+  static const programs = 'v1/programs';
+
+  static String program(String programId) {
+    return '$programs/$programId';
+  }
+
+  static String programActions(String programId) {
+    return '$programs/$programId/actions';
+  }
+
+  static String programAction(String programId, String actionId) {
+    return '$programs/$programId/actions/$actionId';
+  }
+
+  static String programBases(String programId) {
+    return '$programs/$programId/bases';
+  }
+
+  static String programBase(String programId, String baseId) {
+    return '$programs/$programId/bases/$baseId';
+  }
 
   static String goal(String goalId) {
     return '$goals/$goalId';

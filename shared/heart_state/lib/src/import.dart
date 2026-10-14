@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'export.dart';
 import 'goals.dart';
+import 'programs.dart';
 import 'templates.dart';
 
 /// Why a file is not one this build can import.
@@ -88,6 +89,7 @@ class DataImport {
   final LocalTemplateFolderService _folders;
   final ExerciseService _exercises;
   final LocalGoalService _goals;
+  final LocalProgramService? _programs;
 
   const new({
     required this._workouts,
@@ -95,6 +97,7 @@ class DataImport {
     required this._folders,
     required this._exercises,
     required this._goals,
+    this._programs,
   });
 
   static DataImport of(BuildContext context) {
@@ -123,8 +126,8 @@ class DataImport {
   /// server's import: null brings every one over as a custom exercise, a list
   /// exactly those, and the sets on a name left out stay behind, counted.
   ///
-  /// Order is the references': exercises, folders, templates, workouts, unit
-  /// preferences, goals. Not one transaction — the services are separate
+  /// Order is the references': exercises, folders, programs, templates,
+  /// workouts, the programs' history, unit preferences, goals. Not one transaction — the services are separate
   /// stores — but every write is keyed on an id the store did not hold, so an
   /// import cut short is finished by importing the same file again.
   Future<LocalImportReport> import(String file, String userId, {List<String>? createCustom}) async {
@@ -134,11 +137,20 @@ class DataImport {
     for (final folder in plan.folders) {
       await _folders.storeFolder(folder, userId);
     }
+    for (final program in plan.programs) {
+      await _programs?.storeProgram(program, userId);
+    }
     if (plan.templates.isNotEmpty) await _templates.storeTemplates(plan.templates, userId: userId);
     // unsynced, as a workout finished offline is: the upsync, or the sweep
     // behind it, is what takes it to an account
     for (final workout in plan.workouts) {
       await _workouts.finishWorkout(workout, userId);
+    }
+    for (final action in plan.programActions) {
+      await _programs?.storeProgramAction(action);
+    }
+    for (final base in plan.programBases) {
+      await _programs?.storeProgramBase(base);
     }
     for (final MapEntry(key: exerciseId, value: unit) in plan.units.entries) {
       await _exercises.setExerciseUnit(exerciseName: exerciseId, userId: userId, unit: unit);
@@ -220,6 +232,49 @@ class DataImport {
       if (folders.adopt(folder)) plan.folders.add(folder);
     }
 
+    // a program comes over whole, its history with it; without a store to
+    // hold programs, what names one is filed under nothing
+    final programs = _programs;
+    final heldPrograms = {
+      for (final each in await programs?.getPrograms(userId) ?? const <Program>[]) ?each.id,
+    };
+    if (programs != null) {
+      for (final Map raw in _list(envelope['programs'])) {
+        if (heldPrograms.contains(raw['id']?.toString())) continue;
+        final program = plan.read(() => Program.fromJson(raw));
+        if (program?.id case final String id) {
+          plan.programs.add(program!);
+          heldPrograms.add(id);
+        }
+      }
+      final imported = {for (final each in plan.programs) each.id};
+      final heldActions = {for (final each in await programs.getProgramActions(userId)) each.id};
+      for (final Map raw in _list(envelope['programActions'])) {
+        if (heldActions.contains(raw['id']?.toString())) continue;
+        final action = plan.read(() => ProgramAction.fromJson(raw));
+        if (action != null && imported.contains(action.programId)) plan.programActions.add(action);
+      }
+      final heldBases = {for (final each in await programs.getProgramBases(userId)) each.id};
+      for (final Map raw in _list(envelope['programBases'])) {
+        if (heldBases.contains(raw['id']?.toString())) continue;
+        final base = plan.read(() => ProgramBase.fromJson(raw));
+        if (base == null || !imported.contains(base.programId)) continue;
+        // the exercise it grows, as it is called here, or nothing to grow
+        switch (resolver.byFileId(base.exerciseId)) {
+          case final Exercise exercise:
+            plan.programBases.add(ProgramBase.fromJson({...raw, 'exerciseId': exercise.id}));
+          case null:
+            plan.rowsSkipped++;
+        }
+      }
+    }
+    String? programOf(Map raw) {
+      return switch (raw['programId']) {
+        final String id when heldPrograms.contains(id) => id,
+        _ => null,
+      };
+    }
+
     final storedTemplates = {for (final each in await _templates.getTemplates(userId)) each.id};
     for (final Map raw in templates) {
       if (storedTemplates.contains(raw['id']?.toString())) continue;
@@ -236,6 +291,7 @@ class DataImport {
           for (final MapEntry(:key, :value) in raw.entries)
             if (key != 'folder') key: value,
           'folder': ?folder?.toMap(),
+          'programId': programOf(raw),
           'exercises': entries,
         }),
       );
@@ -258,7 +314,7 @@ class DataImport {
       // photos stay behind: they live in the account that took them, and a
       // link into it means nothing here
       final workout = plan.read(
-        () => Workout.fromJson({...raw, 'exercises': entries}..remove('images')),
+        () => Workout.fromJson({...raw, 'exercises': entries, 'programId': programOf(raw)}..remove('images')),
       );
       if (workout == null) {
         // counted as found but neither created nor here: one that could not
@@ -375,6 +431,9 @@ class _Plan {
   final workouts = <Workout>[];
   final units = <String, MeasurementUnit>{};
   final goals = <Goal>[];
+  final programs = <Program>[];
+  final programActions = <ProgramAction>[];
+  final programBases = <ProgramBase>[];
   List<({String name, int sets})> unmatched = const [];
   int workoutsFound = 0;
 

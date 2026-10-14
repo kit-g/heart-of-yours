@@ -74,6 +74,7 @@ class LocalDatabase extends _LocalDatabase
         _Health,
         _Mirror,
         _Moves,
+        _Programs,
         _Stats,
         _TemplateFolders,
         _Templates,
@@ -98,7 +99,7 @@ class LocalDatabase extends _LocalDatabase
 
   new _(this._db);
 
-  static Future<LocalDatabase> init({int version = 19, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 21, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';
@@ -171,6 +172,15 @@ class LocalDatabase extends _LocalDatabase
         try {
           for (final sql in migrations) {
             await txn.execute(sql);
+          }
+          // #173's version 20 can reach a device after 21 has, and the runner
+          // never goes back for a version below the one stored: 21 sees to
+          // its column, which then is there whichever of the two ran first
+          if (oldVersion < 21 && newVersion >= 21) {
+            final columns = await txn.rawQuery('PRAGMA table_info($_sets)');
+            if (!columns.any((column) => column['name'] == 'target')) {
+              await txn.execute('ALTER TABLE $_sets ADD COLUMN target TEXT');
+            }
           }
         } catch (error, stacktrace) {
           // the error as the record's, not in the message: its text is the

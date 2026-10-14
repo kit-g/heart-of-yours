@@ -106,9 +106,13 @@ class _Server extends Fake implements UpsyncService {
     };
   }
 
+  /// The program each template went up filed under.
+  final filedUnder = <String, String?>{};
+
   @override
   Future<Replayed<Template>> replayTemplate(Template template) async {
     _reach(.template, template.id);
+    filedUnder[template.id] = template.programId;
     return (row: template, created: !existing.contains(template.id));
   }
 
@@ -123,6 +127,58 @@ class _Server extends Fake implements UpsyncService {
     _reach(.goal, goal.id!);
     return (row: goal, created: !existing.contains(goal.id));
   }
+
+  /// What each program create carried as its sessions.
+  final sessionsSent = <String, List<String>>{};
+
+  @override
+  Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) async {
+    _reach(.program, program.id!);
+    sessionsSent[program.id!] = [for (final session in sessions) session.id];
+    return (row: program, created: !existing.contains(program.id));
+  }
+
+  @override
+  Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action) async {
+    _reach(.programAction, action.id!);
+    return (row: action, created: !existing.contains(action.id));
+  }
+
+  @override
+  Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base) async {
+    _reach(.programBase, base.id!);
+    return (row: base, created: !existing.contains(base.id));
+  }
+}
+
+/// Programs held in memory (#346): what the replay reads, and what it writes
+/// back from the server.
+class _Programs extends Fake implements LocalProgramService {
+  final programs = <Program>[];
+  final actions = <ProgramAction>[];
+  final bases = <ProgramBase>[];
+  final stored = <String>[];
+
+  @override
+  Future<List<Program>> getPrograms(String userId) async => [...programs];
+
+  @override
+  Future<List<ProgramAction>> getProgramActions(String userId, {String? programId}) async => [...actions];
+
+  @override
+  Future<List<ProgramBase>> getProgramBases(String userId, {String? programId}) async => [...bases];
+
+  @override
+  Future<void> storeProgram(Program program, String userId) async => stored.add(program.id!);
+
+  @override
+  Future<void> storeProgramAction(ProgramAction action) async => stored.add(action.id!);
+
+  @override
+  Future<void> storeProgramBase(ProgramBase base) async => stored.add(base.id!);
+
+  @override
+  Future<void> deleteProgramBase(String baseId) async => bases.removeWhere((each) => each.id == baseId);
 }
 
 class SocketException implements Exception {
@@ -781,6 +837,94 @@ void main() {
       expect(sut.status, UpsyncStatus.done);
       sut.dismiss();
       expect(sut.status, UpsyncStatus.idle);
+    });
+  });
+
+  group('programs (#346)', () {
+    late _Programs programs;
+    final at = DateTime.utc(2026, 10, 14);
+
+    setUp(() {
+      programs = _Programs();
+      sut = Upsync(
+        local: ledger,
+        notes: notes,
+        remote: server,
+        exercises: exercises,
+        folders: folders,
+        templates: templates,
+        workouts: workouts,
+        goals: goals,
+        programs: programs,
+        access: access,
+        onError: (error, {stacktrace}) => errors.add(error),
+        onComplete: () => completions++,
+      );
+      seedStore();
+      final session = Template.fromJson({
+        ...tmpl(id: 's1', name: 'Day A', exercises: [wEx(custom)]).toMap(),
+        'programId': 'p1',
+      });
+      when(templates.getTemplates(uid)).thenAnswer(
+        (_) async => [
+          tmpl(id: 't1', name: 'Push day', exercises: [wEx(custom)]),
+          session,
+        ],
+      );
+      programs
+        ..programs.add(Program(id: 'p1', name: 'Upper / Lower', sessions: const ['s1'], createdAt: at))
+        ..actions.add(ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: at))
+        ..bases.add(ProgramBase(id: 'b1', programId: 'p1', exerciseId: custom.id, value: 40, at: at));
+    });
+
+    test('a program goes with its sessions before the templates; its history after the workouts', () async {
+      await sut.claim(from: uid, to: uid);
+      await sut.run(uid);
+
+      expect(server.calls.map((each) => each.$1), [
+        UpsyncResource.exercise,
+        UpsyncResource.unit,
+        UpsyncResource.folder,
+        UpsyncResource.program,
+        UpsyncResource.template,
+        UpsyncResource.workout,
+        UpsyncResource.workout,
+        UpsyncResource.programAction,
+        UpsyncResource.programBase,
+        UpsyncResource.goal,
+      ]);
+      expect(server.sessionsSent, {
+        'p1': ['s1'],
+      });
+      // the session went with its program, and is not posted twice
+      expect(server.calls.where((each) => each.$1 == UpsyncResource.template).map((each) => each.$2), ['t1']);
+      expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
+      expect(programs.stored, ['p1', 'a1', 'b1']);
+      expect(errors, isEmpty);
+    });
+
+    test('a program the server refuses is skipped, and its sessions go up as plain templates', () async {
+      server.refused['p1'] = {'code': 'program_limit'};
+
+      await sut.claim(from: uid, to: uid);
+      await sut.run(uid);
+
+      expect(sut.status, UpsyncStatus.done);
+      expect(ledger.entries[uid]![UpsyncResource.program], {'p1': UpsyncOutcome.skipped});
+      // backed up all the same, filed under nothing the server lacks
+      expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
+      expect(server.filedUnder, containsPair('s1', null));
+    });
+
+    test('what the account pull brought down is written off, not offered back', () async {
+      access.account = true;
+
+      await sut.adopt(uid);
+
+      final entries = ledger.entries[uid]!;
+      expect(entries[UpsyncResource.program], {'p1': UpsyncOutcome.existing});
+      expect(entries[UpsyncResource.programAction], {'a1': UpsyncOutcome.existing});
+      expect(entries[UpsyncResource.programBase], {'b1': UpsyncOutcome.existing});
     });
   });
 }
