@@ -125,7 +125,10 @@ void main() {
       when(templates.getTemplates(uid)).thenAnswer((_) async => []);
       remote.failing = true;
       final created = await programs.create(Program(name: 'Upper / Lower'), sessions: [session('s1')]);
-      expect(local.owed.single.change, ProgramChange.created);
+      expect(local.owed.map((each) => (each.row, each.change)), [
+        (ProgramRow.program, ProgramChange.created),
+        (ProgramRow.session, ProgramChange.edited),
+      ]);
 
       remote.failing = false;
       final next = relaunch();
@@ -205,6 +208,41 @@ void main() {
       expect(local.programs[uid]!.single.id, created.id);
       expect(remote.calls, ['replayProgram ${created.id} s1,s2']);
       expect(sessionsChanged, 1);
+    });
+
+    test('a template the account already holds joins through its own filing', () async {
+      // the server made the program and filed none of them: they were not new
+      remote.programAnswer = (program) => Program.fromJson({...program.toMap(), 'sessions': <String>[]});
+
+      final created = await programs.create(
+        Program(name: 'Split'),
+        sessions: [session('s1'), session('s2', order: 1)],
+      );
+
+      expect(remote.calls.skip(1), ['setTemplateProgram s1 ${created.id}', 'setTemplateProgram s2 ${created.id}']);
+      expect(created.sessions, ['s1', 's2']);
+      expect(local.owed, isEmpty);
+    });
+
+    test('a filing that fails is owed, and the next launch files it', () async {
+      when(templates.getTemplates(uid)).thenAnswer((_) async => [session('s1'), session('s2', order: 1)]);
+      remote.programAnswer = (program) => Program.fromJson({...program.toMap(), 'sessions': <String>[]});
+      remote.failingFilings.add('s2');
+
+      final created = await programs.create(
+        Program(name: 'Split'),
+        sessions: [session('s1'), session('s2', order: 1)],
+      );
+      expect(local.owed.map((each) => (each.row, each.id)), [(ProgramRow.session, 's2')]);
+
+      remote
+        ..failingFilings.clear()
+        ..calls.clear();
+      await relaunch().init();
+
+      expect(remote.calls, contains('setTemplateProgram s2 ${created.id}'));
+      expect(remote.calls, isNot(contains(startsWith('replayProgram'))));
+      expect(local.owed, isEmpty);
     });
 
     test('offline it stays local, under its own id', () async {
@@ -451,6 +489,12 @@ class _Remote implements RemoteProgramService {
   String? refusing;
   ProgramBase Function(ProgramBase)? baseAnswer;
 
+  /// What the server's create answers with; the program as sent by default.
+  Program Function(Program)? programAnswer;
+
+  /// Templates whose filing under a program fails.
+  final failingFilings = <String>{};
+
   void _call(String call) {
     calls.add(call);
     if (failing) throw {'error': 'unavailable'};
@@ -466,8 +510,9 @@ class _Remote implements RemoteProgramService {
   @override
   Future<Replayed<Program>> replayProgram(Program program, {required Iterable<Template> sessions}) async {
     _call('replayProgram ${program.id} ${sessions.map((each) => each.id).join(',')}');
-    programs = [...programs.where((each) => each.id != program.id), program];
-    return (row: program, created: true);
+    final row = programAnswer?.call(program) ?? program;
+    programs = [...programs.where((each) => each.id != program.id), row];
+    return (row: row, created: true);
   }
 
   @override
@@ -520,6 +565,7 @@ class _Remote implements RemoteProgramService {
   @override
   Future<Template> setTemplateProgram(Template template, {required String? programId}) async {
     _call('setTemplateProgram ${template.id} $programId');
+    if (failingFilings.contains(template.id)) throw {'error': 'unavailable'};
     return Template.fromJson({...template.toMap(), 'programId': programId});
   }
 }

@@ -8,8 +8,10 @@ import 'remote.dart';
 import 'upsync.dart' show Replayed;
 import 'workouts.dart';
 
-/// A program's rows, as what [Programs] owes the server names them.
-enum ProgramRow { program, action, base }
+/// A program's rows, as what [Programs] owes the server names them. A
+/// session is a template the account already held, filed under a program by
+/// its own edit (#348).
+enum ProgramRow { program, action, base, session }
 
 /// What was done to a row on this device.
 enum ProgramChange { created, edited, deleted, deletedKeepingTemplates }
@@ -300,6 +302,12 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     await _templates.storeTemplates(filed, userId: uid);
     await _service.storeProgram(local, uid);
     await _owe(.program, id, .created, programId: id);
+    // each session owed its filing until the server has it under the program:
+    // the server's copy of a template read over the mirror's would otherwise
+    // take it back out
+    for (final Template(id: sessionId) in filed) {
+      await _owe(.session, sessionId, .edited, programId: id);
+    }
     _programs[id] = local;
     notifyListeners();
     await onSessionsChanged?.call();
@@ -317,9 +325,33 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Creates [program] on the server with [sessions], and keeps its copy.
+  ///
+  /// The server's create files only the templates it makes. One the account
+  /// already holds, a folder made into a program (#348), comes back left out
+  /// and joins through its own filing, all of them at once. One that fails
+  /// stays owed, and the next [init] files it.
   Future<Program> _push(Program program, String uid, {required List<Template> sessions}) async {
     final (:row, created: _) = await _remoteService.replayProgram(program, sessions: sessions);
-    return _keep(row, uid);
+    for (final Template(:id) in sessions.where((session) => row.sessions.contains(session.id))) {
+      await _settle(.session, id);
+    }
+    final left = [
+      for (final session in sessions)
+        if (!row.sessions.contains(session.id)) session,
+    ];
+    if (left.isEmpty) return _keep(row, uid);
+
+    final programId = row.id ?? program.id;
+    if (programId == null) return _keep(row, uid);
+    await Future.wait(left.map((session) => _step(() => _file(session, programId, uid))));
+    return _keep(Program.fromJson({...row.toMap(), 'sessions': program.sessions}), uid);
+  }
+
+  /// Files [session] under [programId] on the server, and keeps its copy.
+  Future<void> _file(Template session, String programId, String uid) async {
+    final filed = await _remoteService.setTemplateProgram(session, programId: programId);
+    await _templates.storeTemplates([filed], userId: uid);
+    await _settle(.session, session.id);
   }
 
   /// Saves [program]'s own fields and rules. Sessions change through their
@@ -649,6 +681,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     final owed = [..._owed.values]..sort((a, b) => _turn(a).compareTo(_turn(b)));
     for (final each in owed) {
       if (userId != uid) return;
+      // settled on the way: a program's create files its sessions
+      if (!_owed.containsKey((each.row, each.id))) continue;
       try {
         await _send(each, uid);
         await _settle(each.row, each.id);
@@ -665,8 +699,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   static int _turn(ProgramOwed owed) {
     return switch (owed) {
       (row: .program, change: .created || .edited, id: _, programId: _) => 0,
-      (row: .action || .base, change: .created || .edited, id: _, programId: _) => 1,
-      (row: .action || .base, change: _, id: _, programId: _) => 2,
+      (row: .action || .base || .session, change: .created || .edited, id: _, programId: _) => 1,
+      (row: .action || .base || .session, change: _, id: _, programId: _) => 2,
       (row: .program, change: _, id: _, programId: _) => 3,
     };
   }
@@ -696,6 +730,12 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         if (_held(_bases, programId, id, (base) => base.id) case final ProgramBase base) await _confirmBase(base);
       case (.base, _):
         await _remoteService.deleteProgramBase(programId, id);
+      case (.session, _):
+        final held = await _templates.getTemplates(uid);
+        if (held.where((template) => template.id == id).firstOrNull case final Template session) {
+          await _file(session, programId, uid);
+          await onSessionsChanged?.call();
+        }
     }
   }
 
