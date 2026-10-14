@@ -392,6 +392,7 @@ class HeartApp extends StatelessWidget {
             folders: LocalTemplateFolders(db),
             exercises: db,
             goals: LocalGoals(db),
+            programs: LocalPrograms(db),
           ),
         ),
       ],
