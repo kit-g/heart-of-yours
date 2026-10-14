@@ -950,6 +950,34 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.storeMeasurements(set);
   }
 
+  /// Fills each measure [set] holds no value for from its target, at the
+  /// target's lowest (#173): a tick on a ghost row takes the target as the set,
+  /// and claims no more than the least it asked for. A value already there,
+  /// typed or prescribed, stays; with nothing to fill this is no edit.
+  Future<void> acceptTarget(ExerciseSet set) async {
+    final target = set.target;
+    if (target == null) return;
+    num? missing(TargetMeasure measure, num? value) {
+      return switch (value) {
+        null => target[measure]?.min,
+        _ => null,
+      };
+    }
+
+    final weight = missing(.weight, set.weight);
+    final reps = missing(.reps, set.reps);
+    final duration = missing(.duration, set.duration);
+    final distance = missing(.distance, set.distance);
+    if ([weight, reps, duration, distance].every((each) => each == null)) return;
+    await editSet(
+      set,
+      weight: weight?.toDouble(),
+      reps: reps?.toInt(),
+      duration: duration?.toInt(),
+      distance: distance?.toDouble(),
+    );
+  }
+
   /// Places [toInsert] before [before]. The caller decides what "before" means
   /// for a given drop — see `WorkoutDetail._onDrop`, which resolves drag
   /// direction into this and [append].

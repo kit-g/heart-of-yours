@@ -262,6 +262,71 @@ void main() {
         );
       });
 
+      test('setSetTarget aims a set, clears it on the wire, and a new set copies it (#173)', () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        await templates.add(ex('Push Up'));
+        final exercise = templates.editable!.first;
+        final set = exercise.first;
+        probe.notifications = 0;
+
+        final range = SetTarget({.reps: const TargetRange(min: 6, max: 10)});
+        templates.setSetTarget(set, range);
+        expect(set.target?[.reps], const TargetRange(min: 6, max: 10));
+        expect(probe.notifications, 1);
+
+        templates.addSet(exercise);
+        expect(exercise.last.target?[.reps], const TargetRange(min: 6, max: 10), reason: 'the next set aims the same');
+
+        templates.setSetTarget(set, null);
+        expect(set.target, isNull);
+        expect(
+          set.toMap(),
+          containsPair('target', null),
+          reason: 'a cleared target says so, or the server keeps the old one',
+        );
+      });
+
+      test('a target takes the place of the fixed value it aims at, under the same id (#173)', () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        await templates.add(Exercise(name: 'Bench', category: .barbell, target: .chest));
+        final exercise = templates.editable!.first;
+        templates.addSet(exercise);
+        final [first, second] = exercise.toList();
+        first.setMeasurements(weight: 60, reps: 5);
+
+        templates.setSetTarget(first, SetTarget({.reps: const TargetRange(min: 6, max: 10)}));
+
+        final [rebuilt, kept] = exercise.toList();
+        expect(rebuilt.id, first.id);
+        expect(rebuilt.reps, isNull, reason: 'the range is what the sheet shows now');
+        expect(rebuilt.weight, 60, reason: 'a measure the target does not name keeps its value');
+        expect(rebuilt.target?[.reps], const TargetRange(min: 6, max: 10));
+        expect(kept, same(second), reason: 'the rest stay, in order');
+      });
+
+      test("a range set beside a program's share keeps the share (#173)", () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        await templates.add(Exercise(name: 'Bench', category: .barbell, target: .chest));
+        final set = templates.editable!.first.first..target = SetTarget(const {}, share: .85);
+
+        // what the target dialog hands back: the set's own target, one range changed
+        templates.setSetTarget(set, set.target!.withRange(.reps, const TargetRange(min: 5)));
+
+        final aimed = templates.editable!.first.first;
+        expect(aimed.target?.share, .85, reason: 'this build neither shows nor edits a share');
+        expect(aimed.target?[.reps], const TargetRange(min: 5));
+        expect(aimed.toMap()['target'], {
+          'reps': {'min': 5},
+          'share': .85,
+        });
+      });
+
       test('removeExercise notifies', () async {
         when(
           local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
