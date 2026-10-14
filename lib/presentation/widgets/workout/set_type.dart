@@ -201,9 +201,21 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
                 width: 20,
                 child: Icon(Icons.track_changes_rounded, size: 18, color: colorScheme.onSurfaceVariant),
               ),
-              Expanded(child: Text(l.setTarget, style: textTheme.titleSmall)),
-              if (summary != null)
-                Text(summary, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+              Text(l.setTarget, style: textTheme.titleSmall),
+              // a load and a range ("132.3 · 6–10") outgrow the popup's width;
+              // the dialog behind the row has the whole of it
+              Expanded(
+                child: switch (summary) {
+                  final String summary => Text(
+                    summary,
+                    textAlign: .end,
+                    maxLines: 1,
+                    overflow: .ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                  null => const SizedBox.shrink(),
+                },
+              ),
             ],
           ),
         ),

@@ -143,13 +143,21 @@ class _TargetRow {
   final TextEditingController from;
   final TextEditingController to;
 
+  /// What the column aimed for when the dialog opened, and the text each field
+  /// began with: a bound left as it was keeps its stored value, since reading
+  /// it back from display rounding would move it (60 kg shown as 132.3 lb
+  /// comes back 60.01).
+  final TargetRange? kept;
+  final String shownFrom;
+  final String shownTo;
+
   /// The pair says nothing a target can hold: a "to" under its "from", or a
   /// "to" with no "from".
   final error = ValueNotifier(false);
 
-  new(this.column, {required String from, required String to})
-    : from = TextEditingController(text: from),
-      to = TextEditingController(text: to);
+  new(this.column, {this.kept, this.shownFrom = '', this.shownTo = ''})
+    : from = TextEditingController(text: shownFrom),
+      to = TextEditingController(text: shownTo);
 
   void dispose() {
     from.dispose();
@@ -177,15 +185,16 @@ class _TargetFormState extends State<_TargetForm> {
   _TargetRow _row(SetColumn column) {
     String shown(num value) => widget.cells.shown(column.measure, value);
     return switch (widget.set.target?[column.measure]) {
-      TargetRange(:final min, :final max) => _TargetRow(
+      final TargetRange range => _TargetRow(
         column,
-        from: shown(min),
-        to: switch (max) {
+        kept: range,
+        shownFrom: shown(range.min),
+        shownTo: switch (range.max) {
           final num max => shown(max),
           null => '',
         },
       ),
-      null => _TargetRow(column, from: '', to: ''),
+      null => _TargetRow(column),
     };
   }
 
@@ -300,7 +309,17 @@ class _TargetFormState extends State<_TargetForm> {
       final measure = row.column.measure;
       final from = row.from.text.trim();
       final to = row.to.text.trim();
-      final (ok, range) = switch ((from, widget.cells.stored(measure, from), to, widget.cells.stored(measure, to))) {
+      // a bound as it was keeps what is stored; only an edited one is read
+      num? bound(String typed, String shown, num? kept) {
+        return switch (typed == shown) {
+          true => kept,
+          false => widget.cells.stored(measure, typed),
+        };
+      }
+
+      final min = bound(from, row.shownFrom, row.kept?.min);
+      final max = bound(to, row.shownTo, row.kept?.max);
+      final (ok, range) = switch ((from, min, to, max)) {
         // nothing in either: this column aims at nothing
         ('', _, '', _) => (true, null),
         (_, final num min?, '', _) => (true, TargetRange(min: min)),

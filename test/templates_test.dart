@@ -399,6 +399,28 @@ void main() {
         expect(field('10+'), findsOneWidget);
       });
 
+      testWidgets('a row left as it was keeps its stored target, with no drift through pounds', (tester) async {
+        final ranged = template(id: 't1', order: 0, name: 'Push Day');
+        ranged.first.first.target = SetTarget({
+          .weight: const TargetRange(min: 60),
+          .reps: const TargetRange(min: 6, max: 10),
+        });
+        when(db.getTemplates(userId)).thenAnswer((_) async => [ranged]);
+        await openEditor(tester);
+
+        await openTarget(tester);
+        await tester.tap(find.text('Save').last);
+        await tester.pumpAndSettle();
+        expect(ranged.first.first.target?[.weight], const TargetRange(min: 60), reason: 'not 132.3 lb back as 60.01');
+
+        await openTarget(tester);
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetFrom(.reps)), '8');
+        await tester.tap(find.text('Save').last);
+        await tester.pumpAndSettle();
+        expect(ranged.first.first.target?[.weight], const TargetRange(min: 60));
+        expect(ranged.first.first.target?[.reps], const TargetRange(min: 8, max: 10));
+      });
+
       testWidgets('No target takes it away', (tester) async {
         final ranged = template(id: 't1', order: 0, name: 'Push Day');
         ranged.first.first.target = SetTarget({.reps: const TargetRange(min: 8)});
