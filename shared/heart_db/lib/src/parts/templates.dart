@@ -43,9 +43,16 @@ mixin _Templates on _LocalDatabase implements TemplateService {
     );
   }
 
+  /// A workout started from the template keeps no link to it, as on the
+  /// server (heart-api#215).
   @override
   Future<void> deleteTemplate(String templateId) {
-    return _db.delete(_templates, where: 'id = ?', whereArgs: [templateId]);
+    return _db.transaction(
+      (txn) async {
+        await txn.update(_workouts, {'template_id': null}, where: 'template_id = ?', whereArgs: [templateId]);
+        await txn.delete(_templates, where: 'id = ?', whereArgs: [templateId]);
+      },
+    );
   }
 
   @override
@@ -98,6 +105,9 @@ mixin _Templates on _LocalDatabase implements TemplateService {
               ...template.toRow(),
               'user_id': userId,
               'folder_id': template.folderId,
+              // a session names its program (#346); `toRow` predates both
+              'program_id': template.programId,
+              'note': template.note,
               // exercises this build could not read (#277)
               'unread': _Workouts._encodeUnread(template.unread),
             },

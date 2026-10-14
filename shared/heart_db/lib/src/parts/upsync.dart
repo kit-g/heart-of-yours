@@ -46,6 +46,7 @@ mixin _Upsync on _LocalDatabase {
           _workouts,
           _templates,
           _templateFolders,
+          _programs,
           _exerciseDetails,
           _exercises,
           _charts,
@@ -150,6 +151,7 @@ mixin _Upsync on _LocalDatabase {
           'UPDATE $_goals SET exercise_id = ? WHERE exercise_id = ? AND user_id = ?',
           [to, from, userId],
         );
+        _Programs._rekeyExercise(batch, userId, from: from, to: to);
         // a chart preference keeps its exercise inside a JSON blob; the id is
         // a quoted string value there and nowhere else in the blob
         batch.rawUpdate(

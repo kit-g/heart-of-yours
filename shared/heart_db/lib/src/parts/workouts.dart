@@ -75,7 +75,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     required bool synced,
     required bool replaceExercises,
   }) {
-    final Workout(id: workoutId, :start, :name, :end, :images, :note, :pauses) = workout;
+    final Workout(id: workoutId, :start, :name, :end, :images, :note, :pauses, :templateId, :programId) = workout;
     // every column, nulls included, so the row ends up exactly as REPLACE
     // used to leave it — only without the delete underneath
     batch.rawInsert(sql.upsertWorkout, [
@@ -88,9 +88,13 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
       synced ? 1 : 0,
       note,
       _encodePauses(pauses),
+      templateId,
+      programId,
       // only a payload authoritative for the children speaks for what it
       // could not read; a shallow one leaves the stored list alone
       replaceExercises ? _encodeUnread(workout.unread) : null,
+      replaceExercises ? 1 : 0,
+      replaceExercises ? 1 : 0,
       replaceExercises ? 1 : 0,
     ]);
 
@@ -147,9 +151,16 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     );
   }
 
+  /// The program bases the workout moved go with it, as on the server: their
+  /// cause is gone (#346).
   @override
   Future<void> deleteWorkout(String workoutId) {
-    return _db.delete(_workouts, where: 'id = ?', whereArgs: [workoutId]);
+    return _db.transaction(
+      (txn) async {
+        await txn.delete(_programBases, where: 'workout_id = ?', whereArgs: [workoutId]);
+        await txn.delete(_workouts, where: 'id = ?', whereArgs: [workoutId]);
+      },
+    );
   }
 
   @override

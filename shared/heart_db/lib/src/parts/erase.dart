@@ -45,6 +45,13 @@ mixin _Erase on _LocalDatabase {
           [userId],
         );
         batch.delete(_templates, where: 'user_id = ?', whereArgs: [userId]);
+        for (final table in [_programBases, _programActions]) {
+          batch.rawDelete(
+            'DELETE FROM $table WHERE program_id IN (SELECT id FROM $_programs WHERE user_id = ?)',
+            [userId],
+          );
+        }
+        batch.delete(_programs, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_templateFolders, where: 'user_id = ?', whereArgs: [userId]);
         // per-exercise rest timers and unit overrides
         batch.delete(_exerciseDetails, where: 'user_id = ?', whereArgs: [userId]);

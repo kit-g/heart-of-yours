@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 19);
+          expect(await userVersion(db), 21);
           expect(
             await tables(db),
             {
@@ -156,6 +156,9 @@ void main() {
               'goals',
               'health_samples',
               'upsync',
+              'programs',
+              'program_actions',
+              'program_bases',
             },
           );
 
@@ -512,7 +515,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 19);
+          expect(await userVersion(db), 21);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -559,7 +562,7 @@ void main() {
     expect(await columns(db, 'workouts'), isNot(contains('unread')));
     await db.close();
 
-    await LocalDatabase.init();
+    await LocalDatabase.init(version: 19);
     db = await raw();
     expect(await userVersion(db), 19);
     expect(await columns(db, 'workouts'), containsPair('unread', 'TEXT'));
@@ -568,6 +571,31 @@ void main() {
     // rows from before have nothing set aside
     final [row] = await db.query('workouts');
     expect(row['unread'], isNull);
+    await db.close();
+  });
+
+  test('v21 adds programs, and the links templates and workouts make to them (#346)', () async {
+    await LocalDatabase.init(version: 19);
+    var db = await raw();
+    await db.insert('workouts', {'id': 'w1', 'start': '2026-10-14T08:00:00.000Z', 'user_id': 'u1'});
+    await db.insert('templates', {'id': 't1', 'name': 'Push', 'user_id': 'u1'});
+    await db.close();
+
+    // straight past 20, which is #173's
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 21);
+    expect(await tables(db), containsAll(['programs', 'program_actions', 'program_bases']));
+    expect(await columns(db, 'templates'), allOf(containsPair('program_id', 'TEXT'), containsPair('note', 'TEXT')));
+    expect(
+      await columns(db, 'workouts'),
+      allOf(containsPair('template_id', 'TEXT'), containsPair('program_id', 'TEXT')),
+    );
+    // rows from before name nothing
+    final [workout] = await db.query('workouts');
+    expect((workout['template_id'], workout['program_id']), (null, null));
+    final [template] = await db.query('templates');
+    expect(template['program_id'], isNull);
     await db.close();
   });
 
@@ -581,7 +609,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 19);
+    expect(await userVersion(db), 21);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -635,7 +663,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 19);
+          expect(await userVersion(db), 21);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');

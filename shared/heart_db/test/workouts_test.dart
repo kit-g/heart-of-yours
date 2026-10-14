@@ -141,7 +141,7 @@ void main() {
           const workoutId = 'workout-123';
 
           when(
-            db.delete(
+            txn.delete(
               'workouts',
               where: anyNamed('where'),
               whereArgs: anyNamed('whereArgs'),
@@ -151,9 +151,17 @@ void main() {
           await local.deleteWorkout(workoutId);
 
           verify(
-            db.delete(
+            txn.delete(
               'workouts',
               where: 'id = ?',
+              whereArgs: [workoutId],
+            ),
+          ).called(1);
+          // and the program bumps it caused (#346)
+          verify(
+            txn.delete(
+              'program_bases',
+              where: 'workout_id = ?',
               whereArgs: [workoutId],
             ),
           ).called(1);
@@ -166,7 +174,7 @@ void main() {
           const workoutId = 'nonexistent-id';
 
           when(
-            db.delete(
+            txn.delete(
               any,
               where: anyNamed('where'),
               whereArgs: anyNamed('whereArgs'),
@@ -176,7 +184,7 @@ void main() {
           await local.deleteWorkout(workoutId);
 
           verify(
-            db.delete(
+            txn.delete(
               'workouts',
               where: 'id = ?',
               whereArgs: [workoutId],
@@ -191,7 +199,7 @@ void main() {
           const workoutId = 'faulty-id';
 
           when(
-            db.delete(any, where: anyNamed('where'), whereArgs: anyNamed('whereArgs')),
+            txn.delete(any, where: anyNamed('where'), whereArgs: anyNamed('whereArgs')),
           ).thenThrow(MockDatabaseException());
 
           expect(

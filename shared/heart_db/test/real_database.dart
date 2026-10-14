@@ -111,6 +111,19 @@ const _schema = [
   addWorkoutUnread,
   addWorkoutExerciseUnread,
   addTemplateUnread,
+  // v21 (#346; v20 is #173's)
+  createPrograms,
+  programsUserIndex,
+  createProgramActions,
+  programActionsIndex,
+  createProgramBases,
+  programBasesIndex,
+  addTemplateProgramId,
+  addTemplateNote,
+  templatesProgramIndex,
+  addWorkoutTemplateId,
+  addWorkoutProgramId,
+  workoutsProgramIndex,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -120,7 +133,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 19,
+      version: 21,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
