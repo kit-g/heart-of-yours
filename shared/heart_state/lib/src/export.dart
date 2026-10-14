@@ -18,7 +18,10 @@ import 'templates.dart';
 /// `3`: `programs`, `programActions` and `programBases` (#346), and the
 /// `templateId` / `programId` a workout carries and the `programId` / `note` a
 /// template does, in the models' own shapes.
-const exportSchemaVersion = 3;
+///
+/// `4`: `skips`, the days set aside with "Not today" (#312). Never the health
+/// snapshot recorded beside one.
+const exportSchemaVersion = 4;
 
 /// What the local store holds for one user, read once and written as many
 /// times as asked.
@@ -61,6 +64,9 @@ class ExportSnapshot {
 
   final List<ProgramBase> programBases;
 
+  /// "Not today" (#312), oldest first.
+  final List<TrainingSkip> skips;
+
   new({
     required Iterable<Workout> workouts,
     required Iterable<Template> templates,
@@ -73,7 +79,9 @@ class ExportSnapshot {
     Iterable<Program> programs = const [],
     Iterable<ProgramAction> programActions = const [],
     Iterable<ProgramBase> programBases = const [],
+    Iterable<TrainingSkip> skips = const [],
   }) : programs = programs.toList(),
+       skips = skips.toList(),
        programActions = programActions.toList(),
        programBases = programBases.toList(),
        workouts = workouts.where((each) => each.isCompleted).toList()..sort(_byStart),
@@ -104,6 +112,7 @@ class ExportSnapshot {
       'programs': programs.map((each) => each.toMap()).toList(),
       'programActions': programActions.map((each) => each.toMap()).toList(),
       'programBases': programBases.map((each) => each.toMap()).toList(),
+      'skips': skips.map((each) => each.toMap()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(envelope);
   }
@@ -218,6 +227,7 @@ class DataExport {
       programs: await _programs?.getPrograms(userId) ?? const [],
       programActions: await _programs?.getProgramActions(userId) ?? const [],
       programBases: await _programs?.getProgramBases(userId) ?? const [],
+      skips: await _programs?.getSkips(userId) ?? const [],
     );
   }
 }

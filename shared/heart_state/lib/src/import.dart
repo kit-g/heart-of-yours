@@ -152,6 +152,9 @@ class DataImport {
     for (final base in plan.programBases) {
       await _programs?.storeProgramBase(base);
     }
+    for (final skip in plan.skips) {
+      await _programs?.storeSkip(skip, userId);
+    }
     for (final MapEntry(key: exerciseId, value: unit) in plan.units.entries) {
       await _exercises.setExerciseUnit(exerciseName: exerciseId, userId: userId, unit: unit);
     }
@@ -286,6 +289,18 @@ class DataImport {
         final String id when heldPrograms.contains(id) => id,
         _ => null,
       };
+    }
+
+    if (programs != null) {
+      final heldSkips = {for (final each in await programs.getSkips(userId)) each.id};
+      for (final Map raw in _list(envelope['skips'])) {
+        if (heldSkips.contains(raw['id']?.toString())) continue;
+        // its program is a link: one this store has none of reads as none
+        if (plan.read(() => TrainingSkip.fromJson({...raw, 'programId': programOf(raw)}))
+            case final TrainingSkip skip) {
+          plan.skips.add(skip);
+        }
+      }
     }
 
     final storedTemplates = {for (final each in await _templates.getTemplates(userId)) each.id};
@@ -447,6 +462,7 @@ class _Plan {
   final programs = <Program>[];
   final programActions = <ProgramAction>[];
   final programBases = <ProgramBase>[];
+  final skips = <TrainingSkip>[];
   List<({String name, int sets})> unmatched = const [];
   int workoutsFound = 0;
 

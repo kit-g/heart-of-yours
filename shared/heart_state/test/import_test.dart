@@ -471,6 +471,11 @@ void main() {
         programBases: [
           ProgramBase(id: 'b1', programId: 'p1', exerciseId: _custom.id, slot: 'te1', value: 40, at: at),
         ],
+        skips: [
+          TrainingSkip(id: 'k1', at: at, reason: 'sore', templateId: 't1', programId: 'p1'),
+          // a program the file doesn't carry: the skip comes, naming none
+          TrainingSkip(id: 'k2', at: at, templateId: 't9', programId: 'p9'),
+        ],
       ).toJson(exportedAt: DateTime.utc(2026, 3, 2));
     }
 
@@ -488,7 +493,11 @@ void main() {
 
       await sut.import(file(), _user);
 
-      expect(programs.writes, ['program p1', 'action a1', 'action a2', 'base b1']);
+      expect(programs.writes, ['program p1', 'action a1', 'action a2', 'base b1', 'skip k1', 'skip k2']);
+      expect(programs.skips.map((each) => (each.id, each.reason, each.programId)), [
+        ('k1', 'sore', 'p1'),
+        ('k2', null, null),
+      ]);
       expect(store.templates['t1']?.programId, 'p1');
       expect(store.workouts['w1']?.programId, 'p1');
 
@@ -503,7 +512,7 @@ void main() {
 
       // and a second time, nothing
       await sut.import(file(), _user);
-      expect(programs.writes, hasLength(4));
+      expect(programs.writes, hasLength(6));
     });
 
     test('with nowhere to keep it, what names it is filed under nothing', () async {
@@ -549,5 +558,16 @@ class _Programs extends Fake implements LocalProgramService {
   Future<void> storeProgramBase(ProgramBase base) async {
     bases.add(base);
     writes.add('base ${base.id}');
+  }
+
+  final skips = <TrainingSkip>[];
+
+  @override
+  Future<List<TrainingSkip>> getSkips(String userId) async => [...skips];
+
+  @override
+  Future<void> storeSkip(TrainingSkip skip, String userId) async {
+    skips.add(skip);
+    writes.add('skip ${skip.id}');
   }
 }

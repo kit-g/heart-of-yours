@@ -149,6 +149,12 @@ class _Server extends Fake implements UpsyncService {
     _reach(.programBase, base.id!);
     return (row: base, created: !existing.contains(base.id));
   }
+
+  @override
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) async {
+    _reach(.skip, skip.id!);
+    return (row: skip, created: !existing.contains(skip.id));
+  }
 }
 
 /// Programs held in memory (#346): what the replay reads, and what it writes
@@ -157,7 +163,14 @@ class _Programs extends Fake implements LocalProgramService {
   final programs = <Program>[];
   final actions = <ProgramAction>[];
   final bases = <ProgramBase>[];
+  final skips = <TrainingSkip>[];
   final stored = <String>[];
+
+  @override
+  Future<List<TrainingSkip>> getSkips(String userId) async => [...skips];
+
+  @override
+  Future<void> storeSkip(TrainingSkip skip, String userId) async => stored.add(skip.id!);
 
   @override
   Future<List<Program>> getPrograms(String userId) async => [...programs];
@@ -874,10 +887,11 @@ void main() {
       programs
         ..programs.add(Program(id: 'p1', name: 'Upper / Lower', sessions: const ['s1'], createdAt: at))
         ..actions.add(ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: at))
-        ..bases.add(ProgramBase(id: 'b1', programId: 'p1', exerciseId: custom.id, value: 40, at: at));
+        ..bases.add(ProgramBase(id: 'b1', programId: 'p1', exerciseId: custom.id, value: 40, at: at))
+        ..skips.add(TrainingSkip(id: 'k1', at: at, templateId: 's1', programId: 'p1'));
     });
 
-    test('a program goes with its sessions before the templates; its history after the workouts', () async {
+    test('a program goes with its sessions before the templates; its history and skips after the workouts', () async {
       await sut.claim(from: uid, to: uid);
       await sut.run(uid);
 
@@ -891,6 +905,7 @@ void main() {
         UpsyncResource.workout,
         UpsyncResource.programAction,
         UpsyncResource.programBase,
+        UpsyncResource.skip,
         UpsyncResource.goal,
       ]);
       expect(server.sessionsSent, {
@@ -899,7 +914,7 @@ void main() {
       // the session went with its program, and is not posted twice
       expect(server.calls.where((each) => each.$1 == UpsyncResource.template).map((each) => each.$2), ['t1']);
       expect(ledger.entries[uid]![UpsyncResource.template], containsPair('s1', UpsyncOutcome.created));
-      expect(programs.stored, ['p1', 'a1', 'b1']);
+      expect(programs.stored, ['p1', 'a1', 'b1', 'k1']);
       expect(errors, isEmpty);
     });
 

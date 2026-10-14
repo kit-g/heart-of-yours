@@ -869,6 +869,84 @@ void main() {
     });
   });
 
+  group('not today (#312)', () {
+    final now = DateTime.utc(2026, 10, 7, 12);
+
+    Future<Program> following() async {
+      local.programs[uid] = [program()];
+      remote.programs = [program()];
+      await programs.init();
+      return programs.lookup('p1')!;
+    }
+
+    test('a skip sets the session aside: done in the cycle, the next one up, and sent', () async {
+      final followed = await following();
+
+      final skip = await programs.skip(followed, session: 's1', at: DateTime.utc(2026, 10, 7, 8));
+
+      final position = programs.position(followed, now: now);
+      expect(position.done, {'s1'});
+      expect((position.next, position.thisWeek), ('s2', 0));
+      expect(programs.skipsOf('p1').map((each) => each.id), [skip.id]);
+      expect(local.skips.single.templateId, 's1');
+      expect(remote.calls, contains('replaySkip ${skip.id}'));
+      expect(local.owed, isEmpty);
+    });
+
+    test('a skip the server never heard of is owed, and the next launch sends it', () async {
+      final followed = await following();
+      remote.failing = true;
+
+      final skip = await programs.skip(followed, session: 's1');
+      expect(local.owed.map((each) => (each.row, each.id)), [(ProgramRow.skip, skip.id)]);
+
+      remote.failing = false;
+      final next = relaunch();
+      await next.init();
+
+      expect(remote.skips.map((each) => each.id), [skip.id]);
+      expect(local.owed, isEmpty);
+      expect(next.position(next.lookup('p1')!, now: now).done, {'s1'});
+    });
+
+    test('taking it back makes the session due again, there and here', () async {
+      final followed = await following();
+      final skip = await programs.skip(followed, session: 's1');
+
+      await programs.unskip(skip);
+
+      expect(programs.position(followed, now: now).next, 's1');
+      expect(local.skips, isEmpty);
+      expect(programs.skipsOf('p1'), isEmpty);
+      expect(remote.calls, contains('deleteSkip ${skip.id}'));
+    });
+
+    test("the server's skips replace the mirror's, but for one still owed", () async {
+      local.skips.add(TrainingSkip(id: 'gone', at: DateTime.utc(2026, 10, 2), templateId: 's2', programId: 'p1'));
+      remote.skips = [TrainingSkip(id: 'theirs', at: DateTime.utc(2026, 10, 3), templateId: 's2', programId: 'p1')];
+      final followed = await following();
+      remote.failing = true;
+      final mine = await programs.skip(followed, session: 's1');
+
+      remote.failing = false;
+      final next = relaunch();
+      remote.failing = true;
+      await next.init();
+      expect(local.skips.map((each) => each.id), containsAll(['theirs', mine.id]));
+      expect(local.skips.map((each) => each.id), isNot(contains('gone')));
+    });
+
+    test('deleting the program leaves a skip it never sent still owed', () async {
+      final followed = await following();
+      remote.failing = true;
+      final skip = await programs.skip(followed, session: 's1');
+
+      await programs.delete(followed, keepTemplates: true);
+
+      expect(local.owed.map((each) => (each.row, each.id)), contains((ProgramRow.skip, skip.id)));
+    });
+  });
+
   test('signing out forgets every program', () async {
     local.programs[uid] = [program()];
     await programs.init();
@@ -914,8 +992,34 @@ class _Local implements LocalProgramService {
   @override
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId) async {
     if (marksFail case final Object error) throw error;
-    return [...?marks[programId]];
+    return [
+      ...?marks[programId],
+      for (final skip in skips)
+        if (skip.programId == programId) ProgramMark.skip(skip),
+    ];
   }
+
+  final skips = <TrainingSkip>[];
+
+  @override
+  Future<List<TrainingSkip>> getSkips(String userId) async => [...skips];
+
+  @override
+  Future<void> storeSkips(Iterable<TrainingSkip> skips, String userId) async {
+    this.skips
+      ..clear()
+      ..addAll(skips);
+  }
+
+  @override
+  Future<void> storeSkip(TrainingSkip skip, String userId) async {
+    skips
+      ..removeWhere((each) => each.id == skip.id)
+      ..add(skip);
+  }
+
+  @override
+  Future<void> deleteSkip(String skipId) async => skips.removeWhere((each) => each.id == skipId);
 
   final workouts = <String, List<Workout>>{};
 
@@ -1075,6 +1179,27 @@ class _Remote implements RemoteProgramService {
   @override
   Future<void> deleteProgramBase(String programId, String baseId) async {
     _call('deleteProgramBase $programId $baseId');
+  }
+
+  var skips = <TrainingSkip>[];
+
+  @override
+  Future<List<TrainingSkip>> getSkips() async {
+    _call('getSkips');
+    return [...skips];
+  }
+
+  @override
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) async {
+    _call('replaySkip ${skip.id}');
+    skips = [...skips.where((each) => each.id != skip.id), skip];
+    return (row: skip, created: true);
+  }
+
+  @override
+  Future<void> deleteSkip(String skipId) async {
+    _call('deleteSkip $skipId');
+    skips = [...skips.where((each) => each.id != skipId)];
   }
 
   @override

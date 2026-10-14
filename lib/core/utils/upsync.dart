@@ -102,6 +102,9 @@ class RemoteUpsync implements UpsyncService {
     return _refusedAsBody(() => _api.replayProgramBase(base));
   }
 
+  @override
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) => _refusedAsBody(() => _api.replaySkip(skip));
+
   /// The replay reads a refusal's `code` off the body the server sent, as
   /// every other create throws it; the program routes throw it typed.
   static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
