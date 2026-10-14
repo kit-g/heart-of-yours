@@ -15,15 +15,18 @@ mixin _Programs on _LocalDatabase {
     final rows = await _db.query(_programs, where: 'user_id = ?', whereArgs: [userId], orderBy: 'created_at, id');
     final sessions = await _db.query(
       _templates,
-      columns: ['id', 'program_id'],
+      columns: ['id', 'program_id', 'joined'],
       where: 'user_id = ? AND program_id IS NOT NULL',
       whereArgs: [userId],
       orderBy: 'order_in_parent, id',
     );
 
     final byProgram = <String, List<String>>{};
+    final joined = <String, Map<String, String>>{};
     for (final row in sessions) {
-      byProgram.putIfAbsent(row['program_id'] as String, () => []).add(row['id'] as String);
+      final (programId, id) = (row['program_id'] as String, row['id'] as String);
+      byProgram.putIfAbsent(programId, () => []).add(id);
+      if (row['joined'] case final String at) joined.putIfAbsent(programId, () => {})[id] = at;
     }
 
     return _readable(
@@ -54,6 +57,11 @@ mixin _Programs on _LocalDatabase {
             ...held.where((each) => !stored.contains(each)),
           ],
           'createdAt': row['created_at'],
+          'deload': row['deload'],
+          'phases': row['phases'],
+          'tests': row['tests'],
+          // as its sessions are: off the templates that name it
+          'joined': ?joined[id],
         });
       },
       what: 'program',
@@ -87,6 +95,14 @@ mixin _Programs on _LocalDatabase {
     // `toMap` writes back the rules this build could not read, beside its own
     final Program(:id, :name, :note, :source, :perWeek, :weeks, :constraint, :archived, :sessions, :createdAt) =
         program;
+    final map = program.toMap();
+    String? encoded(String key) {
+      return switch (map[key]) {
+        null => null,
+        final value => jsonEncode(value),
+      };
+    }
+
     await db.insert(
       _programs,
       {
@@ -98,11 +114,14 @@ mixin _Programs on _LocalDatabase {
         'per_week': perWeek,
         'days': days.isEmpty ? null : jsonEncode(days),
         'weeks': weeks,
-        'rules': jsonEncode(program.toMap()['rules']),
+        'rules': jsonEncode(map['rules']),
         'constraint_key': constraint,
         'archived': archived ? 1 : 0,
         'sessions': jsonEncode(sessions),
         'created_at': createdAt?.toUtc().toIso8601String(),
+        'deload': encoded('deload'),
+        'phases': encoded('phases'),
+        'tests': encoded('tests'),
       },
       conflictAlgorithm: .replace,
     );
@@ -196,6 +215,9 @@ mixin _Programs on _LocalDatabase {
         'program_id': programId,
         'kind': action.kind.value,
         'week': action.week,
+        'from_exercise': action.from,
+        'to_exercise': action.to,
+        'workout_id': action.workoutId,
         'at': action.at.toUtc().toIso8601String(),
       },
       conflictAlgorithm: .replace,
@@ -249,6 +271,7 @@ mixin _Programs on _LocalDatabase {
         'program_id': programId,
         'exercise_id': base.exerciseId,
         'value': base.value,
+        'slot': base.slot,
         'workout_id': base.workoutId,
         'action_id': base.actionId,
         'at': base.at.toUtc().toIso8601String(),
@@ -296,29 +319,88 @@ mixin _Programs on _LocalDatabase {
     };
   }
 
-  /// Every program reference to the exercise [from] becomes one to [to]: the
-  /// bases, and the rule keyed by it, where the target has none of its own.
-  /// For a history move and a replay's name-merge.
+  /// Every program reference to the exercise [from] becomes one to [to], as
+  /// the server's history move re-keys them (heart-api#226): the bases, a
+  /// ladder's advances and the share targets that name it (`of`). The rules
+  /// are [_rekeyRules]'. For a history move and a replay's name-merge.
   static void _rekeyExercise(Batch batch, String userId, {required String from, required String to}) {
+    const ofUser = 'program_id IN (SELECT id FROM $_programs WHERE user_id = ?)';
     batch
+      ..rawUpdate('UPDATE $_programBases SET exercise_id = ? WHERE exercise_id = ? AND $ofUser', [to, from, userId])
+      ..rawUpdate('UPDATE $_programActions SET from_exercise = ? WHERE from_exercise = ? AND $ofUser', [
+        to,
+        from,
+        userId,
+      ])
+      ..rawUpdate('UPDATE $_programActions SET to_exercise = ? WHERE to_exercise = ? AND $ofUser', [to, from, userId])
+      // a target is stored as `jsonEncode` writes it, without spaces, and an
+      // exercise id is a quoted string nowhere else after `"of":`
       ..rawUpdate(
-        'UPDATE $_programBases SET exercise_id = ? '
-        'WHERE exercise_id = ? AND program_id IN (SELECT id FROM $_programs WHERE user_id = ?)',
-        [to, from, userId],
+        'UPDATE $_templatesExercises SET description = replace(description, ?, ?) '
+        'WHERE description LIKE ? AND template_id IN (SELECT id FROM $_templates WHERE user_id = ?)',
+        ['"of":"$from"', '"of":"$to"', '%"of":"$from"%', userId],
       )
-      // rules are a JSON object keyed by exercise id; the target's own rule
-      // wins, as its preference row does in a move
       ..rawUpdate(
-        '''
-        UPDATE $_programs
-        SET rules = CASE
-            WHEN json_type(rules, '\$."' || ? || '"') IS NULL
-                THEN json_remove(json_set(rules, '\$."' || ? || '"', json(json_extract(rules, '\$."' || ? || '"'))), '\$."' || ? || '"')
-            ELSE json_remove(rules, '\$."' || ? || '"')
-        END
-        WHERE user_id = ? AND json_type(rules, '\$."' || ? || '"') IS NOT NULL
-        ''',
-        [to, to, from, from, from, userId, from],
+        'UPDATE $_sets SET target = replace(target, ?, ?) '
+        'WHERE target LIKE ? AND exercise_id IN ('
+        'SELECT we.id FROM $_workoutExercises we JOIN $_workouts w ON w.id = we.workout_id WHERE w.user_id = ?)',
+        ['"of":"$from"', '"of":"$to"', '%"of":"$from"%', userId],
       );
   }
+
+  /// [userId]'s program rules after [from] became [to]: the rule keyed by
+  /// [from] moves to [to] unless [to] has its own, which wins, as its
+  /// preference row does in a move; a ladder's rungs follow, and a ladder left
+  /// with one rung is dropped, as on the server.
+  static Future<void> _rekeyRules(
+    DatabaseExecutor txn,
+    String userId, {
+    required String from,
+    required String to,
+  }) async {
+    final rows = await txn.query(
+      _programs,
+      columns: ['id', 'rules'],
+      where: 'user_id = ? AND rules LIKE ?',
+      whereArgs: [userId, '%"$from"%'],
+    );
+    for (final row in rows) {
+      if (row['rules'] case final String json) {
+        if (jsonDecode(json) case final Map rules) {
+          await txn.update(
+            _programs,
+            {'rules': jsonEncode(_rulesRekeyed(rules, from: from, to: to))},
+            where: 'id = ?',
+            whereArgs: [row['id']],
+          );
+        }
+      }
+    }
+  }
+}
+
+/// [rules], by exercise id as on the wire, with [from] re-keyed to [to]; see
+/// `_Programs._rekeyRules`.
+Map<String, dynamic> _rulesRekeyed(Map rules, {required String from, required String to}) {
+  return {
+    for (final MapEntry(:key, :value) in rules.entries)
+      // the target's own rule wins
+      if (!(key == from && rules.containsKey(to)))
+        if (_rekeyedRule(value, from: from, to: to) case final Object rule) (key == from ? to : '$key'): rule,
+  };
+}
+
+/// [rule] with its ladder's rungs re-keyed, or null for a ladder that is left
+/// with a single rung.
+Object? _rekeyedRule(Object? rule, {required String from, required String to}) {
+  if (rule case {'rungs': final List rungs}) {
+    final moved = <Object?>[];
+    for (final rung in rungs) {
+      final each = rung == from ? to : rung;
+      if (!moved.contains(each)) moved.add(each);
+    }
+    if (moved.length < 2) return null;
+    return {...rule, 'rungs': moved};
+  }
+  return rule;
 }

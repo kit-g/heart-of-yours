@@ -4593,6 +4593,8 @@
   "@ruleLonger": {"description": "Growth rule: the time or distance goes up by a step after every completed week; step includes its unit", "type": "text", "placeholders": {"step": {}}},
   "ruleShareOfMax": "A share of your max, up {step} when the last set is made",
   "@ruleShareOfMax": {"description": "Growth rule: sets are shares of a training max, which goes up by a step when the last set is made; step includes its unit", "type": "text", "placeholders": {"step": {}}},
+  "ruleLadder": "A harder version once every set reaches {top}",
+  "@ruleLadder": {"description": "Growth rule: the exercise moves to the next, harder variation once every working set reaches a rep count; top is that count of reps", "type": "text", "placeholders": {"top": {"type": "int"}}},
   "programStopFollowing": "Stop following",
   "@programStopFollowing": {"description": "Program menu: archive it; history is kept", "type": "text", "placeholders": {}},
   "programFollowAgain": "Follow again",

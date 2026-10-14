@@ -68,6 +68,7 @@ Future<void> _onMoveHistory(
   final goals = Goals.of(context);
   final charts = Charts.of(context);
   final previous = PreviousExercises.of(context);
+  final programs = Programs.of(context);
 
   try {
     await exercises.moveHistory(source, target);
@@ -91,6 +92,8 @@ Future<void> _onMoveHistory(
   unawaited(goals.init());
   unawaited(charts.reload());
   unawaited(previous.init());
+  // rules, ladders, advances, bases and share targets (heart-api#226)
+  unawaited(programs.reread());
 }
 
 /// Why the server refused to move [source]'s history onto [target]. The app

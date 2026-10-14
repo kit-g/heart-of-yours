@@ -85,6 +85,12 @@ extension on Map {
         };
       },
     );
+    for (final exercise in switch (template['exercises']) {
+      List exercises => exercises.whereType<Map>(),
+      _ => const <Map>[],
+    }) {
+      exercise._restorePlan();
+    }
     return template.._restoreUnread();
   }
 
@@ -104,9 +110,23 @@ extension on Map {
       List exercises => exercises.whereType<Map>(),
       _ => const <Map>[],
     }) {
-      exercise._restoreUnread(into: 'sets');
+      exercise
+        .._restoreUnread(into: 'sets')
+        .._restorePlan();
     }
     return workout.._restoreUnread();
+  }
+
+  /// Spreads the stored `plan` column, a JSON object of the keys a template
+  /// exercise spoke about (#346), back into the exercise, nulls included:
+  /// `fromJson` then knows which of them to send again.
+  void _restorePlan() {
+    final plan = switch (remove('plan')) {
+      final String json => jsonDecode(json),
+      final Map map => map,
+      _ => null,
+    };
+    if (plan case final Map keys) addAll(keys);
   }
 
   /// Puts back what this build could not read (#277): the stored `unread`

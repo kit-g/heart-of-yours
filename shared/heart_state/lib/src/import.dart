@@ -252,7 +252,20 @@ class DataImport {
       for (final Map raw in _list(envelope['programActions'])) {
         if (heldActions.contains(raw['id']?.toString())) continue;
         final action = plan.read(() => ProgramAction.fromJson(raw));
-        if (action != null && imported.contains(action.programId)) plan.programActions.add(action);
+        if (action == null || !imported.contains(action.programId)) continue;
+        // a ladder's advance names its two exercises as they are called here,
+        // as a base does, or there is nothing it moved between
+        switch (action) {
+          case ProgramAction(kind: .advance, :final from?, :final to?):
+            switch ((resolver.byFileId(from), resolver.byFileId(to))) {
+              case (final Exercise from, final Exercise to):
+                plan.programActions.add(ProgramAction.fromJson({...raw, 'from': from.id, 'to': to.id}));
+              case _:
+                plan.rowsSkipped++;
+            }
+          case _:
+            plan.programActions.add(action);
+        }
       }
       final heldBases = {for (final each in await programs.getProgramBases(userId)) each.id};
       for (final Map raw in _list(envelope['programBases'])) {

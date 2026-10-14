@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 21);
+          expect(await userVersion(db), 22);
           expect(
             await tables(db),
             {
@@ -516,7 +516,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 21);
+          expect(await userVersion(db), 22);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -601,7 +601,7 @@ void main() {
     await db.close();
 
     // straight past 20, which is #173's
-    await LocalDatabase.init();
+    await LocalDatabase.init(version: 21);
     db = await raw();
     expect(await userVersion(db), 21);
     expect(await tables(db), containsAll(['programs', 'program_actions', 'program_bases', 'programs_owed']));
@@ -637,12 +637,45 @@ void main() {
       await db.setVersion(20);
       await db.close();
 
-      await LocalDatabase.init();
+      await LocalDatabase.init(version: 21);
       db = await raw();
       expect(await userVersion(db), 21);
       expect(await columns(db, 'sets'), containsPair('target', 'TEXT'));
       await db.close();
     });
+  });
+
+  test("v22 keeps the second round's program fields, and rows from before carry none (#346)", () async {
+    await LocalDatabase.init(version: 21);
+    var db = await raw();
+    await db.insert('programs', {'id': 'p1', 'user_id': 'u1', 'name': 'Waves'});
+    await db.insert('templates', {'id': 't1', 'name': 'Push', 'user_id': 'u1', 'program_id': 'p1'});
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 22);
+    expect(
+      await columns(db, 'programs'),
+      allOf(containsPair('deload', 'TEXT'), containsPair('phases', 'TEXT'), containsPair('tests', 'TEXT')),
+    );
+    expect(await columns(db, 'templates'), containsPair('joined', 'TEXT'));
+    expect(
+      await columns(db, 'program_actions'),
+      allOf(
+        containsPair('from_exercise', 'TEXT'),
+        containsPair('to_exercise', 'TEXT'),
+        containsPair('workout_id', 'TEXT'),
+      ),
+    );
+    expect(await columns(db, 'program_bases'), containsPair('slot', 'TEXT'));
+    expect(await columns(db, 'template_exercises'), containsPair('plan', 'TEXT'));
+    expect(await columns(db, 'workout_exercises'), containsPair('plan', 'TEXT'));
+    final [program] = await db.query('programs');
+    expect((program['deload'], program['phases'], program['tests']), (null, null, null));
+    final [template] = await db.query('templates');
+    expect(template['joined'], isNull);
+    await db.close();
   });
 
   test('v13 upgrades through production init without losing replay confirmations', () async {
@@ -655,7 +688,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 21);
+    expect(await userVersion(db), 22);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -709,7 +742,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 21);
+          expect(await userVersion(db), 22);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');

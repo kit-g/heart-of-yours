@@ -247,18 +247,18 @@ class _ProgramFormState extends State<_ProgramForm> {
           // opened: a read from the server since may have moved its rules
           final program = programs.lookup(id);
           if (program == null) break;
-          // through the map rather than copyWith, which cannot clear a field:
-          // taking the weekly target away, or a fixed length, is a real edit
-          final fields = program.toMap()
-            ..['name'] = name
-            ..['days'] = (_days.value.toList()..sort())
-            ..remove('perWeek')
-            ..remove('weeks');
+          // taking the weekly target away, or a fixed length, is a real edit,
+          // which copyWith cannot make: a null there keeps the value
+          final edited = program.copyWith(
+            name: name,
+            days: _days.value,
+            perWeek: perWeek > 0 ? perWeek : null,
+            weeks: weeks,
+          );
           await programs.update(
-            Program.fromJson({
-              ...fields,
-              if (perWeek > 0) 'perWeek': perWeek,
-              'weeks': ?weeks,
+            edited.without({
+              if (perWeek == 0) .perWeek,
+              if (weeks == null) .weeks,
             }),
           );
         case null:

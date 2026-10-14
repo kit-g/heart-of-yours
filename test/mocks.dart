@@ -16,6 +16,8 @@ import 'package:heart_models/heart_models.dart';
     MockSpec<RemoteWorkoutService>(),
     MockSpec<TemplateService>(),
     MockSpec<RemoteTemplateService>(),
+    MockSpec<LocalProgramService>(),
+    MockSpec<RemoteProgramService>(),
     MockSpec<RemoteConfigService>(),
     MockSpec<StatsService>(),
     MockSpec<LocalStatsService>(),

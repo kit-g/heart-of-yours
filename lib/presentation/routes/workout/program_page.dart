@@ -306,11 +306,12 @@ class _SteersState extends State<_Steers> {
     );
   }
 
-  Future<void> _steer(BuildContext context, ProgramActionKind kind, {int? week}) async {
+  Future<void> _steer(BuildContext context, _Steer steer, {int? week}) async {
     if (_busy.value) return;
     final copy = L.of(context);
     final programs = Programs.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final _Steer(:kind) = steer;
     Analytics.of(context).programSteered(action: kind);
 
     _busy.value = true;
@@ -319,7 +320,7 @@ class _SteersState extends State<_Steers> {
       messenger.clearSnackBars();
       messenger.showSnackBar(
         SnackBar(
-          content: Text(switch (kind) {
+          content: Text(switch (steer) {
             .repeat => copy.programRepeated,
             .pause => copy.programPausedNotice,
             .resume => copy.programResumed,
@@ -445,6 +446,7 @@ class _GrowthRow extends StatelessWidget {
     final line = switch (rule) {
       null || NoGrowth() => copy.ruleAsWritten,
       AddWeight(:final step) => copy.ruleAddWeight(measure.format(step)),
+      Ladder(:final top) => copy.ruleLadder(top),
       RangeThenWeight(:final step) => copy.ruleRangeThenWeight(measure.format(step)),
       Longer(:final step) => copy.ruleLonger(measure.format(step)),
       ShareOfMax(:final step) => copy.ruleShareOfMax(measure.format(step)),
@@ -515,7 +517,21 @@ class _Measure {
         .assistedBodyWeight ||
         .repsOnly => _Measure(seconds),
       },
-      null || NoGrowth() || AddWeight() || RangeThenWeight() || ShareOfMax() => _Measure(weight),
+      // a ladder keeps no base: there is nothing of its to measure
+      null || NoGrowth() || AddWeight() || RangeThenWeight() || ShareOfMax() || Ladder() => _Measure(weight),
     };
   }
+}
+
+/// What the page's steer buttons take. A lighter week and a ladder's advance
+/// are the program's own steps, never one of these.
+enum _Steer {
+  repeat(.repeat),
+  pause(.pause),
+  resume(.resume),
+  replay(.replay);
+
+  final ProgramActionKind kind;
+
+  new(this.kind);
 }

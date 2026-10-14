@@ -218,21 +218,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       return;
     }
 
-    await _step(() async {
-      final programs = await _service.getPrograms(id);
-      final actions = await _service.getProgramActions(id);
-      final bases = await _service.getProgramBases(id);
-      final owed = await _service.getProgramsOwed(id);
-      if (userId != id) return;
-      _replace(programs);
-      _group(_actions, actions, (action) => action.programId);
-      _group(_bases, bases, (base) => base.programId);
-      _owed
-        ..clear()
-        ..addEntries([for (final each in owed) MapEntry((each.row, each.id), each)]);
-      await _readMarks(id);
-      notifyListeners();
-    });
+    await _step(() => _readMirror(id));
     _loaded = true;
 
     if (!_remote.allowed) return;
@@ -255,6 +241,28 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
         if (!program.archived || !_actions.containsKey(programId)) _step(() => _pull(id, programId)),
     ]);
+  }
+
+  /// Reads the mirror again, and nothing else: it was re-keyed under the
+  /// programs, by a history move (#338) that re-keyed the server's the same.
+  Future<void> reread() async {
+    if (userId case final String id) await _step(() => _readMirror(id));
+  }
+
+  Future<void> _readMirror(String id) async {
+    final programs = await _service.getPrograms(id);
+    final actions = await _service.getProgramActions(id);
+    final bases = await _service.getProgramBases(id);
+    final owed = await _service.getProgramsOwed(id);
+    if (userId != id) return;
+    _replace(programs);
+    _group(_actions, actions, (action) => action.programId);
+    _group(_bases, bases, (base) => base.programId);
+    _owed
+      ..clear()
+      ..addEntries([for (final each in owed) MapEntry((each.row, each.id), each)]);
+    await _readMarks(id);
+    notifyListeners();
   }
 
   /// Reads [programId]'s actions and bases from the server over the mirror's.
@@ -289,8 +297,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     if (uid == null) throw StateError('a program belongs to an account or a session');
 
     final id = program.id ?? uuidV7();
+    // when each joined, as this device saw it: one filed offline joins the
+    // program then, not when it syncs (heart-api#227)
+    final joined = DateTime.timestamp().toIso8601String();
     final filed = [
-      for (final session in sessions) Template.fromJson({...session.toMap(), 'programId': id}),
+      for (final session in sessions) Template.fromJson({...session.toMap(), 'programId': id, 'joined': joined}),
     ];
     final local = Program.fromJson({
       ...program.toMap(),
@@ -421,8 +432,9 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  /// Takes a step in [program]: repeat, pause, resume, or replay from [week].
-  /// History, not state: undoing it is [undo].
+  /// Takes a step in [program]: repeat, pause, resume, replay from [week], or
+  /// a lighter cycle now. History, not state: undoing it is [undo]. A ladder's
+  /// advance is [advance].
   Future<ProgramAction> act(Program program, ProgramActionKind kind, {int? week, DateTime? at}) {
     final action = ProgramAction(
       id: uuidV7(),
@@ -432,6 +444,37 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         .replay => week,
         _ => null,
       },
+      at: at ?? DateTime.timestamp(),
+    );
+    return _record(
+      action,
+      .action,
+      into: _actions,
+      idOf: (action) => action.id,
+      store: _service.storeProgramAction,
+      confirm: _confirmAction,
+      programId: action.programId,
+    );
+  }
+
+  /// Records that [program]'s ladder moved an exercise [from] one rung [to]
+  /// the next, caused by [workoutId] (heart-api#231): deleting that workout
+  /// takes it back, as [undo] does. The session template and the rule's key
+  /// are the caller's to move.
+  Future<ProgramAction> advance(
+    Program program, {
+    required String from,
+    required String to,
+    required String workoutId,
+    DateTime? at,
+  }) {
+    final action = ProgramAction(
+      id: uuidV7(),
+      programId: program.id,
+      kind: .advance,
+      from: from,
+      to: to,
+      workoutId: workoutId,
       at: at ?? DateTime.timestamp(),
     );
     return _record(
@@ -470,10 +513,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Sets [exerciseId]'s base in [program] to [value], with its cause: the
   /// workout that moved it, the action that did, or neither when the user set
   /// it ("Keep 57.5 kg").
+  ///
+  /// [slot] is the template exercise the base belongs to, when the program
+  /// keeps one per occurrence of a lift used twice (heart-api#232).
   Future<ProgramBase> setBase(
     Program program, {
     required String exerciseId,
     required num value,
+    String? slot,
     String? workoutId,
     String? actionId,
     DateTime? at,
@@ -483,6 +530,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       id: uuidV7(),
       programId: program.id,
       exerciseId: exerciseId,
+      slot: slot,
       value: value,
       workoutId: workoutId,
       actionId: actionId,
@@ -521,13 +569,18 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// Reads every program's marks from the mirror again: a workout of one was
-  /// finished, deleted, or arrived from another device.
+  /// finished, deleted, or arrived from another device. Its steps and bases
+  /// too: a deleted workout takes the bases and the advance it caused.
   Future<void> refreshMarks() async {
     final id = userId;
     if (id == null) return;
     await _step(() async {
+      final (actions, bases) = await (_service.getProgramActions(id), _service.getProgramBases(id)).wait;
       await _readMarks(id);
-      if (userId == id) notifyListeners();
+      if (userId != id) return;
+      _group(_actions, actions, (action) => action.programId);
+      _group(_bases, bases, (base) => base.programId);
+      notifyListeners();
     });
   }
 
@@ -785,6 +838,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   static const _refusals = {
     'invalid_rule',
     'invalid_key',
+    'invalid_deload',
+    'invalid_phase',
+    'invalid_test',
+    'invalid_target',
     'program_limit',
     'program_history_limit',
     'program_not_found',

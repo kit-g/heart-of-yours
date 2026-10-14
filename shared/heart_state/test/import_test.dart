@@ -444,10 +444,33 @@ void main() {
         exerciseUnits: snapshot.exerciseUnits,
         goals: snapshot.goals,
         programs: [
-          Program(id: 'p1', name: 'Upper / Lower', sessions: const ['t1'], createdAt: at),
+          Program(
+            id: 'p1',
+            name: 'Upper / Lower',
+            sessions: const ['t1'],
+            createdAt: at,
+            deload: const Deload(every: 4),
+            phases: const [
+              ProgramPhase(name: 'Base', sessions: ['t1']),
+            ],
+            tests: const {'t1': ProgramTest(share: 0.9)},
+          ),
         ],
-        programActions: [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: at)],
-        programBases: [ProgramBase(id: 'b1', programId: 'p1', exerciseId: _custom.id, value: 40, at: at)],
+        programActions: [
+          ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: at),
+          ProgramAction(
+            id: 'a2',
+            programId: 'p1',
+            kind: .advance,
+            from: _custom.id,
+            to: _bench.id,
+            workoutId: 'w1',
+            at: at,
+          ),
+        ],
+        programBases: [
+          ProgramBase(id: 'b1', programId: 'p1', exerciseId: _custom.id, slot: 'te1', value: 40, at: at),
+        ],
       ).toJson(exportedAt: DateTime.utc(2026, 3, 2));
     }
 
@@ -465,13 +488,22 @@ void main() {
 
       await sut.import(file(), _user);
 
-      expect(programs.writes, ['program p1', 'action a1', 'base b1']);
+      expect(programs.writes, ['program p1', 'action a1', 'action a2', 'base b1']);
       expect(store.templates['t1']?.programId, 'p1');
       expect(store.workouts['w1']?.programId, 'p1');
 
+      // the second round's fields come with it (#346)
+      final [program] = programs.programs;
+      expect((program.deload?.every, program.phases.single.name, program.tests['t1']?.share), (4, 'Base', 0.9));
+      final [base] = programs.bases;
+      expect(base.slot, 'te1');
+      final advance = programs.actions.last;
+      // the advance's exercises, as they are called here, like the base's
+      expect((advance.from, advance.to, advance.workoutId), (base.exerciseId, _bench.id, 'w1'));
+
       // and a second time, nothing
       await sut.import(file(), _user);
-      expect(programs.writes, hasLength(3));
+      expect(programs.writes, hasLength(4));
     });
 
     test('with nowhere to keep it, what names it is filed under nothing', () async {

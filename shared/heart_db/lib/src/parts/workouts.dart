@@ -46,6 +46,23 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     };
   }
 
+  /// The keys of a template exercise's plan (heart-api#230, #232, #234): rest,
+  /// superset, an open slot's pattern, a rep total.
+  static const _planKeys = ['rest', 'superset', 'pattern', 'totalReps'];
+
+  /// What [exercise] plans beyond its sets, as stored: JSON of the keys it
+  /// speaks about, a null among them included, so the read gives heart_models
+  /// back exactly what it had to send; null when it speaks about none (#346).
+  static String? _encodePlan(WorkoutExercise exercise) {
+    final map = exercise.toMap();
+    final plan = {
+      for (final key in _planKeys)
+        if (map.containsKey(key)) key: map[key],
+    };
+    if (plan.isEmpty) return null;
+    return jsonEncode(plan);
+  }
+
   /// What this build could not read, as stored: JSON, null for nothing (#277).
   static String? _encodeUnread(List<Map> unread) {
     if (unread.isEmpty) return null;
@@ -123,6 +140,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
         'exercise_order': order,
         'id': exercise.id,
         'unread': _encodeUnread(exercise.unread),
+        'plan': _encodePlan(exercise),
       };
 
       batch.insert(_workoutExercises, exerciseRow, conflictAlgorithm: .replace);
@@ -161,13 +179,15 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     );
   }
 
-  /// The program bases the workout moved go with it, as on the server: their
-  /// cause is gone (#346).
+  /// The program bases and advances the workout moved go with it, as on the
+  /// server: their cause is gone (#346).
   @override
   Future<void> deleteWorkout(String workoutId) {
     return _db.transaction(
       (txn) async {
         await txn.delete(_programBases, where: 'workout_id = ?', whereArgs: [workoutId]);
+        // and a ladder's advance it caused (heart-api#231)
+        await txn.delete(_programActions, where: 'workout_id = ?', whereArgs: [workoutId]);
         await txn.delete(_workouts, where: 'id = ?', whereArgs: [workoutId]);
       },
     );
@@ -204,6 +224,7 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
           'exercise_id': exercise.exercise.id,
           'note': ?exercise.note,
           'id': exercise.id,
+          'plan': ?_encodePlan(exercise),
           // a freshly started exercise lands at the end of the workout
           'exercise_order': await _nextExerciseOrder(txn, workoutId),
         };
