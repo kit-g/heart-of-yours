@@ -51,6 +51,7 @@ mixin _Templates on _LocalDatabase implements TemplateService {
     return _db.transaction(
       (txn) async {
         await txn.update(_workouts, {'template_id': null}, where: 'template_id = ?', whereArgs: [templateId]);
+        await txn.update(_skips, {'template_id': null}, where: 'template_id = ?', whereArgs: [templateId]);
         await txn.delete(_templates, where: 'id = ?', whereArgs: [templateId]);
       },
     );

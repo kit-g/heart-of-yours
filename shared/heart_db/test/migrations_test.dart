@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 22);
+          expect(await userVersion(db), 23);
           expect(
             await tables(db),
             {
@@ -160,6 +160,7 @@ void main() {
               'program_actions',
               'program_bases',
               'programs_owed',
+              'skips',
             },
           );
 
@@ -516,7 +517,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 22);
+          expect(await userVersion(db), 23);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -652,7 +653,7 @@ void main() {
     await db.insert('templates', {'id': 't1', 'name': 'Push', 'user_id': 'u1', 'program_id': 'p1'});
     await db.close();
 
-    await LocalDatabase.init();
+    await LocalDatabase.init(version: 22);
     db = await raw();
     expect(await userVersion(db), 22);
     expect(
@@ -678,6 +679,30 @@ void main() {
     await db.close();
   });
 
+  test('v23 keeps "Not today", a table of its own (#312)', () async {
+    await LocalDatabase.init(version: 22);
+    var db = await raw();
+    expect(await tables(db), isNot(contains('skips')));
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 23);
+    expect(
+      await columns(db, 'skips'),
+      {
+        'id': 'TEXT',
+        'user_id': 'TEXT',
+        'at': 'TEXT',
+        'reason': 'TEXT',
+        'weather': 'TEXT',
+        'template_id': 'TEXT',
+        'program_id': 'TEXT',
+      },
+    );
+    await db.close();
+  });
+
   test('v13 upgrades through production init without losing replay confirmations', () async {
     await LocalDatabase.init(version: 13);
     var db = await raw();
@@ -688,7 +713,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 22);
+    expect(await userVersion(db), 23);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -742,7 +767,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 22);
+          expect(await userVersion(db), 23);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');

@@ -142,6 +142,10 @@ mixin _Programs on _LocalDatabase {
             'UPDATE $_workouts SET template_id = NULL WHERE template_id IN (SELECT id FROM $_templates WHERE program_id = ?)',
             [programId],
           );
+          await txn.rawUpdate(
+            'UPDATE $_skips SET template_id = NULL WHERE template_id IN (SELECT id FROM $_templates WHERE program_id = ?)',
+            [programId],
+          );
           await txn.rawDelete(
             'DELETE FROM $_templatesExercises WHERE template_id IN (SELECT id FROM $_templates WHERE program_id = ?)',
             [programId],
@@ -155,25 +159,32 @@ mixin _Programs on _LocalDatabase {
 
   Future<void> _deleteProgramRow(DatabaseExecutor txn, String programId) async {
     await txn.update(_workouts, {'program_id': null}, where: 'program_id = ?', whereArgs: [programId]);
+    // a skip outlives its program, as a workout does: a day off is still one
+    await txn.update(_skips, {'program_id': null}, where: 'program_id = ?', whereArgs: [programId]);
     await txn.delete(_programBases, where: 'program_id = ?', whereArgs: [programId]);
     await txn.delete(_programActions, where: 'program_id = ?', whereArgs: [programId]);
     await txn.delete(_programs, where: 'id = ?', whereArgs: [programId]);
   }
 
-  /// [userId]'s finished workouts of [programId], as the marks its position is
-  /// folded from. A workout still under way marks nothing yet.
+  /// [userId]'s finished workouts and skips of [programId] (#312), as the
+  /// marks its position is folded from. A workout still under way marks
+  /// nothing yet.
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId) async {
-    final rows = await _db.query(
-      _workouts,
-      columns: ['template_id', 'start'],
-      where: 'user_id = ? AND program_id = ? AND "end" IS NOT NULL',
-      whereArgs: [userId, programId],
-      orderBy: 'start',
+    final rows = await _db.rawQuery(
+      '''
+      SELECT template_id, start AS at, 1 AS is_workout FROM $_workouts
+      WHERE user_id = ? AND program_id = ? AND "end" IS NOT NULL
+      UNION ALL
+      SELECT template_id, at, 0 AS is_workout FROM $_skips
+      WHERE user_id = ? AND program_id = ?
+      ORDER BY at
+      ''',
+      [userId, programId, userId, programId],
     );
     return [
       for (final row in rows)
-        if (DateTime.tryParse(row['start'] as String? ?? '') case final DateTime at)
-          ProgramMark(templateId: row['template_id'] as String?, at: at, isWorkout: true),
+        if (DateTime.tryParse(row['at'] as String? ?? '') case final DateTime at)
+          ProgramMark(templateId: row['template_id'] as String?, at: at, isWorkout: row['is_workout'] == 1),
     ];
   }
 
