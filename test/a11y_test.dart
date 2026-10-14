@@ -311,11 +311,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   // A program's session on the sheet (#349): the plan's line under each
   // exercise, a supplemental set's mark, and a lighter week's note
   // (lib/presentation/widgets/workout/plan.dart).
-  (
-    _Screen.programWorkout,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:977) and the set rows\' ✓ (lib/presentation/widgets/workout/set_item.dart:340) are icon-only with no label, as on every active workout; the plan\'s line, the supplemental set and the lighter week\'s note pass',
-  ),
+  (_Screen.programWorkout, _Guideline.labeledTapTarget, null),
   (_Screen.programWorkout, _Guideline.textContrastLight, null),
   (_Screen.programWorkout, _Guideline.textContrastDark, null),
   (
@@ -355,11 +351,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   // An active workout carrying its own note under the title (#235); the
   // editor it opens is the exercise note's (exerciseNoteEditor).
-  (
-    _Screen.workoutNote,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:914) and a control in the exercise row are icon-only with no label; the note and its × pass',
-  ),
+  (_Screen.workoutNote, _Guideline.labeledTapTarget, null),
   (_Screen.workoutNote, _Guideline.textContrastLight, null),
   (_Screen.workoutNote, _Guideline.textContrastDark, null),
   (
@@ -374,11 +366,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   // A paused workout (#134): Resume beside the stopped clock
   // (lib/presentation/widgets/workout/workout_detail.dart).
-  (
-    _Screen.pausedWorkout,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:922) and a control in the exercise row are icon-only with no label; Resume passes',
-  ),
+  (_Screen.pausedWorkout, _Guideline.labeledTapTarget, null),
   (_Screen.pausedWorkout, _Guideline.textContrastLight, null),
   (_Screen.pausedWorkout, _Guideline.textContrastDark, null),
   (
@@ -408,11 +396,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   // The set type menu over a workout whose first set is a warm-up, with one
   // type's explanation open (lib/presentation/widgets/workout/set_type.dart).
-  (
-    _Screen.setTypeMenu,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:907) and each set\'s ✓ (lib/presentation/widgets/workout/set_item.dart:298) are icon-only with no label; the menu itself passes',
-  ),
+  (_Screen.setTypeMenu, _Guideline.labeledTapTarget, null),
   (
     _Screen.setTypeMenu,
     _Guideline.textContrastLight,
@@ -421,11 +405,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.setTypeMenu, _Guideline.textContrastDark, null),
   // The set-number popup with its ratings, the scale unfolded, the first set
   // rated (lib/presentation/widgets/workout/rpe.dart).
-  (
-    _Screen.rpePicker,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:907) and each set\'s ✓ (lib/presentation/widgets/workout/set_item.dart:298) are icon-only with no label; the popup itself passes',
-  ),
+  (_Screen.rpePicker, _Guideline.labeledTapTarget, null),
   (_Screen.rpePicker, _Guideline.textContrastLight, null),
   (_Screen.rpePicker, _Guideline.textContrastDark, null),
   (

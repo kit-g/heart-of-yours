@@ -4726,5 +4726,11 @@
   "supersetLabel": "Superset",
   "@supersetLabel": {"description": "Caption over two exercises done back to back in a workout or template", "type": "text", "placeholders": {}},
   "circuitLabel": "Circuit",
-  "@circuitLabel": {"description": "Caption over three or more exercises done back to back, in turn, in a workout or template", "type": "text", "placeholders": {}}
+  "@circuitLabel": {"description": "Caption over three or more exercises done back to back, in turn, in a workout or template", "type": "text", "placeholders": {}},
+  "tickSet": "Mark set done",
+  "@tickSet": {"description": "Read by screen readers on the ✓ in a set row that is not done yet: it marks the set done", "type": "text", "placeholders": {}},
+  "untickSet": "Mark set not done",
+  "@untickSet": {"description": "Read by screen readers on the ✓ in a set row that is done: it marks the set not done again", "type": "text", "placeholders": {}},
+  "workoutOptions": "Workout options",
+  "@workoutOptions": {"description": "Read by screen readers on the ⋯ beside the clock of the workout in progress: it opens the workout's menu", "type": "text", "placeholders": {}}
 }

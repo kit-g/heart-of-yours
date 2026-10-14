@@ -1015,6 +1015,7 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                                       .iOS || .macOS => Icons.more_horiz_rounded,
                                       _ => Icons.more_vert_rounded,
                                     },
+                                    semanticLabel: L.of(context).workoutOptions,
                                   ),
                                   onPressed: () {
                                     showMenu<_WorkoutOption>(
