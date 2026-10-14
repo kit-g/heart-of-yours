@@ -227,75 +227,110 @@ class _MenuRow extends StatelessWidget {
 
 /// Repeat, pause or resume, and back to an earlier week. Repeat sits first and
 /// looks like the others: running a week again is a choice, never a failure.
-class _Steers extends StatelessWidget {
+///
+/// One step at a time: while one is on its way the buttons rest, or a second
+/// tap of Repeat would record a second repeat — which reads as a week back.
+class _Steers extends StatefulWidget {
   final Program program;
   final ProgramPosition position;
 
   const new({required this.program, required this.position});
 
   @override
+  State<_Steers> createState() => _SteersState();
+}
+
+class _SteersState extends State<_Steers> {
+  final _busy = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _busy.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final copy = L.of(context);
     final ThemeData(:colorScheme) = Theme.of(context);
     final fill = colorScheme.surfaceContainerHighest;
+    final position = widget.position;
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: .center,
-      children: [
-        PrimaryButton.shrunk(
-          backgroundColor: fill,
-          onPressed: () => _steer(context, .repeat),
-          child: Text(copy.programRepeat),
-        ),
-        if (!position.finished)
-          PrimaryButton.shrunk(
-            backgroundColor: fill,
-            onPressed: () => _steer(context, position.paused ? .resume : .pause),
-            child: Text(position.paused ? copy.programResume : copy.programPause),
-          ),
-        if (position.week > 1)
-          PopupMenuButton<int>(
-            tooltip: copy.programReplayTitle,
-            constraints: const BoxConstraints.tightFor(width: 168),
-            onSelected: (week) => _steer(context, .replay, week: week),
-            itemBuilder: (_) {
-              return [
-                for (final week in List.generate(position.week - 1, (index) => index + 1))
-                  PopupMenuItem<int>(value: week, child: Text(copy.programWeek(week))),
-              ];
-            },
-            child: Container(
-              margin: const .symmetric(vertical: 6),
-              padding: const .symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: fill, borderRadius: const .all(.circular(8))),
-              child: Text(copy.programReplay),
+    return ValueListenableBuilder<bool>(
+      valueListenable: _busy,
+      builder: (context, busy, _) {
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: .center,
+          children: [
+            PrimaryButton.shrunk(
+              backgroundColor: fill,
+              onPressed: switch (busy) {
+                true => null,
+                false => () => _steer(context, .repeat),
+              },
+              child: Text(copy.programRepeat),
             ),
-          ),
-      ],
+            if (!position.finished)
+              PrimaryButton.shrunk(
+                backgroundColor: fill,
+                onPressed: switch (busy) {
+                  true => null,
+                  false => () => _steer(context, position.paused ? .resume : .pause),
+                },
+                child: Text(position.paused ? copy.programResume : copy.programPause),
+              ),
+            if (position.week > 1)
+              PopupMenuButton<int>(
+                tooltip: copy.programReplayTitle,
+                enabled: !busy,
+                constraints: const BoxConstraints.tightFor(width: 168),
+                onSelected: (week) => _steer(context, .replay, week: week),
+                itemBuilder: (_) {
+                  return [
+                    for (final week in List.generate(position.week - 1, (index) => index + 1))
+                      PopupMenuItem<int>(value: week, child: Text(copy.programWeek(week))),
+                  ];
+                },
+                child: Container(
+                  margin: const .symmetric(vertical: 6),
+                  padding: const .symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: fill, borderRadius: const .all(.circular(8))),
+                  child: Text(copy.programReplay),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
   Future<void> _steer(BuildContext context, ProgramActionKind kind, {int? week}) async {
+    if (_busy.value) return;
     final copy = L.of(context);
     final programs = Programs.of(context);
     final messenger = ScaffoldMessenger.of(context);
     Analytics.of(context).programSteered(action: kind);
 
-    final action = await programs.act(program, kind, week: week);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(switch (kind) {
-          .repeat => copy.programRepeated,
-          .pause => copy.programPausedNotice,
-          .resume => copy.programResumed,
-          .replay => copy.programReplayed(week ?? 1),
-        }),
-        action: SnackBarAction(label: copy.undo, onPressed: () => programs.undo(action)),
-      ),
-    );
+    _busy.value = true;
+    try {
+      final action = await programs.act(widget.program, kind, week: week);
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(switch (kind) {
+            .repeat => copy.programRepeated,
+            .pause => copy.programPausedNotice,
+            .resume => copy.programResumed,
+            .replay => copy.programReplayed(week ?? 1),
+          }),
+          action: SnackBarAction(label: copy.undo, onPressed: () => programs.undo(action)),
+        ),
+      );
+    } finally {
+      if (mounted) _busy.value = false;
+    }
   }
 }
 

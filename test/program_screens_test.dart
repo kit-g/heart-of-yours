@@ -2,6 +2,8 @@
 // the band, the program page and making one from a folder. The tab's pieces
 // are private to the `workout.dart` library, so these drive the real app
 // through the router, as `templates_test.dart` does.
+import 'dart:async';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/presentation/widgets/keys.dart';
@@ -89,6 +91,7 @@ void main() {
       (i) async => (row: i.positionalArguments.single as ProgramAction, created: true),
     );
     when(api.deleteProgramAction(any, any)).thenAnswer((_) async {});
+    when(api.editProgram(any)).thenAnswer((i) async => i.positionalArguments.single as Program);
     when(api.deleteProgram(any, keepTemplates: anyNamed('keepTemplates'))).thenAnswer((_) async {});
   });
 
@@ -237,6 +240,56 @@ void main() {
       await tester.tap(find.text('Undo'));
       await tester.pumpTimes();
       verify(db.deleteProgramAction(action.id)).called(1);
+    });
+
+    testWidgets('one step at a time: a second tap while one is on its way records nothing', (tester) async {
+      await openPage(tester);
+      final reply = Completer<Replayed<ProgramAction>>();
+      when(api.replayProgramAction(any)).thenAnswer((_) => reply.future);
+
+      await tester.tap(find.text('Repeat this week'));
+      await tester.pump();
+      await tester.tap(find.text('Repeat this week'));
+      await tester.pump();
+      verify(db.storeProgramAction(any)).called(1);
+
+      final action = verify(api.replayProgramAction(captureAny)).captured.single as ProgramAction;
+      reply.complete((row: action, created: true));
+      await tester.pumpTimes();
+      expect(find.text('This week runs again'), findsOneWidget);
+    });
+
+    testWidgets('an edit saves onto the program as it is by then', (tester) async {
+      await openPage(tester);
+      await tester.tap(find.byTooltip('Edit program'));
+      await tester.pumpTimes();
+      expect(find.text('Edit program'), findsWidgets);
+
+      // a read from elsewhere archives it while the form is open
+      final programs = Programs.of(tester.element(find.byType(MaterialApp)));
+      await programs.update(programs.lookup('p1')!.copyWith(archived: true));
+      await tester.pumpTimes();
+
+      await tester.enterText(find.byType(TextField), 'Split, again');
+      await tester.tap(find.text('Save'));
+      await tester.pumpTimes();
+
+      final saved = verify(db.storeProgram(captureAny, userId)).captured.last as Program;
+      expect((saved.name, saved.archived), ('Split, again', true));
+    });
+
+    testWidgets('an edit of a program that is gone is a bare page, never a new one', (tester) async {
+      await openPage(tester);
+      await tester.tap(find.byTooltip('Edit program'));
+      await tester.pumpTimes();
+
+      final programs = Programs.of(tester.element(find.byType(MaterialApp)));
+      await programs.delete(programs.lookup('p1')!, keepTemplates: true);
+      await tester.pumpTimes();
+
+      expect(find.text('New program'), findsNothing);
+      expect(find.text('Start program'), findsNothing);
+      expect(find.text('Save'), findsNothing);
     });
 
     testWidgets('switched off under it, the page leaves for the tab', (tester) async {

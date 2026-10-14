@@ -8,7 +8,11 @@ part of 'workout.dart';
 /// their order. They stay where they are, in the folder, as they were: a
 /// session is a template carrying the program's id, so nothing is copied and
 /// nothing counts against the template allowance twice.
-class ProgramFormPage extends StatefulWidget {
+///
+/// New or an edit is the route's to say, never what has loaded: a program or
+/// folder not there yet, or not anymore, is a bare page, as [ProgramPage] is,
+/// and nothing on it can make a program.
+class ProgramFormPage extends StatelessWidget {
   /// The folder a new program is made from.
   final String? folderId;
 
@@ -23,12 +27,37 @@ class ProgramFormPage extends StatefulWidget {
   const new edit({super.key, required String this.programId, required this.onDone}) : folderId = null;
 
   @override
-  State<ProgramFormPage> createState() => _ProgramFormPageState();
+  Widget build(BuildContext context) {
+    final form = switch ((programId, folderId)) {
+      (final String id, _) => switch (Programs.watch(context).lookup(id)) {
+        final Program program => _ProgramForm(key: ValueKey(id), program: program, onDone: onDone),
+        null => null,
+      },
+      (null, final String id) => switch (Templates.watch(context).folders.where((each) => each.id == id).firstOrNull) {
+        final TemplateFolder folder => _ProgramForm(key: ValueKey(id), folder: folder, onDone: onDone),
+        null => null,
+      },
+      (null, null) => null,
+    };
+    return form ?? Scaffold(appBar: AppBar());
+  }
 }
 
-class _ProgramFormPageState extends State<ProgramFormPage> {
-  late final TemplateFolder? _folder;
-  late final Program? _program;
+/// The form itself, for [program] or a new one from [folder]: its fields
+/// start from what they were when it opened, and a save puts them on the
+/// program as it is by then.
+class _ProgramForm extends StatefulWidget {
+  final Program? program;
+  final TemplateFolder? folder;
+  final VoidCallback onDone;
+
+  const new({super.key, this.program, this.folder, required this.onDone});
+
+  @override
+  State<_ProgramForm> createState() => _ProgramFormState();
+}
+
+class _ProgramFormState extends State<_ProgramForm> {
   late final TextEditingController _name;
 
   /// 0 is no target.
@@ -43,21 +72,16 @@ class _ProgramFormPageState extends State<ProgramFormPage> {
   @override
   void initState() {
     super.initState();
-    final templates = Templates.of(context);
-    _folder = templates.folders.where((folder) => folder.id == widget.folderId).firstOrNull;
-    _program = switch (widget.programId) {
-      final String id => Programs.of(context).lookup(id),
-      null => null,
-    };
-    final sessions = switch (_folder) {
-      final TemplateFolder folder => templates.templatesIn(folder).length,
+    final _ProgramForm(:program, :folder) = widget;
+    final sessions = switch (folder) {
+      final TemplateFolder folder => Templates.of(context).templatesIn(folder).length,
       null => 0,
     };
 
-    _name = TextEditingController(text: _program?.name ?? _folder?.name ?? '');
-    _days = ValueNotifier({...?_program?.days});
-    _weeks = ValueNotifier(_program?.weeks ?? _defaultWeeks);
-    switch (_program) {
+    _name = TextEditingController(text: program?.name ?? folder?.name ?? '');
+    _days = ValueNotifier({...?program?.days});
+    _weeks = ValueNotifier(program?.weeks ?? _defaultWeeks);
+    switch (program) {
       case final Program program:
         _perWeek = ValueNotifier(program.perWeek ?? 0);
         _fixed = ValueNotifier(program.weeks != null);
@@ -85,8 +109,8 @@ class _ProgramFormPageState extends State<ProgramFormPage> {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final label = textTheme.titleSmall;
-    final isNew = _program == null;
-    final sessions = switch (_folder) {
+    final isNew = widget.program == null;
+    final sessions = switch (widget.folder) {
       final TemplateFolder folder => Templates.watch(context).templatesIn(folder).toList(),
       null => const <Template>[],
     };
@@ -217,8 +241,12 @@ class _ProgramFormPageState extends State<ProgramFormPage> {
     final weeks = _fixed.value ? _weeks.value : null;
 
     try {
-      switch (_program) {
-        case final Program program:
+      switch (widget.program?.id) {
+        case final String id:
+          // onto the program as it stands now, not as it was when the form
+          // opened: a read from the server since may have moved its rules
+          final program = programs.lookup(id);
+          if (program == null) break;
           // through the map rather than copyWith, which cannot clear a field:
           // taking the weekly target away, or a fixed length, is a real edit
           final fields = program.toMap()
