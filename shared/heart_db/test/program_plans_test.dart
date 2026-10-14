@@ -212,6 +212,31 @@ void main() {
       final started = active!.first;
       expect((started.rest, started.superset), (60, 2));
     });
+
+    test('a superset joined or left mid-workout stays as it was left (#159)', () async {
+      final template = session(
+        't1',
+        exercises: [
+          planned('te1', row, {'rest': 60}),
+          planned('te2', squat, {}),
+        ],
+      );
+      await local.startWorkout(template.toWorkout(), user);
+      final [first, second] = (await local.getActiveWorkout(user))!.toList();
+
+      first.superset = 3;
+      second.superset = 3;
+      await local.setWorkoutExercisePlan(first);
+      await local.setWorkoutExercisePlan(second);
+      var [a, b] = (await local.getActiveWorkout(user))!.toList();
+      expect((a.superset, a.rest, b.superset), (3, 60, 3));
+
+      first.superset = null;
+      await local.setWorkoutExercisePlan(first);
+      [a, b] = (await local.getActiveWorkout(user))!.toList();
+      expect((a.superset, a.rest), (null, 60));
+      expect(a.toMap(), containsPair('superset', null), reason: 'a save clears it on the server too');
+    });
   });
 
   group('a history move', () {
