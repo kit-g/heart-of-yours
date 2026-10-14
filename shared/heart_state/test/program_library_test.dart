@@ -8,8 +8,16 @@ import 'package:heart_state/heart_state.dart';
 /// Heart's ready-made programs (#352). The fixture is three programs of the
 /// real file, rendered by heart-api's `scripts/programs_content.py` and
 /// trimmed to `en` and `es`.
+File _fixture() {
+  // `make test-heart_state` runs from the repo root, an IDE from the package
+  for (final root in [Directory.current.path, '${Directory.current.path}/shared/heart_state']) {
+    if (File('$root/test/fixtures/programs.json') case File file when file.existsSync()) return file;
+  }
+  throw StateError('Cannot find the programs fixture');
+}
+
 void main() {
-  final fixture = File('test/fixtures/programs.json').readAsStringSync();
+  final fixture = _fixture().readAsStringSync();
   final content = LibraryContent.read(jsonDecode(fixture))!;
   LibraryProgram fromFile(String key) => content.programs.firstWhere((each) => each.key == key);
 
