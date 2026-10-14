@@ -286,22 +286,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programsOffer,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart) and folder header, and the offer\'s two buttons at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99) and folder header (templates.dart:696), and the offer\'s two buttons (lib/presentation/widgets/feature_offer.dart:74, :79) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart) and the band\'s Start at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99) and the band\'s Start (lib/presentation/routes/workout/programs.dart:279) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,
       guideline,
-      'the steers are PrimaryButton.shrunk at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart) — visual-density change, out of scope',
+      'the steers are PrimaryButton.shrunk (lib/presentation/routes/workout/program_page.dart:267, :276) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.newProgram,
       guideline,
-      'Start program is PrimaryButton.wide at the house 32pt (primaryButtonMinHeight, lib/presentation/widgets/buttons.dart) — visual-density change, out of scope',
+      'Start program is PrimaryButton.wide (lib/presentation/routes/workout/program_form.dart:212) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
   ],
   (_Screen.setStopwatch, _Guideline.labeledTapTarget, null),
