@@ -27,6 +27,7 @@ export 'src/programs.dart';
 export 'src/remote.dart';
 export 'src/stats.dart';
 export 'src/set_stopwatch.dart';
+export 'src/supersets.dart';
 export 'src/templates.dart';
 export 'src/timers.dart';
 export 'src/upsync.dart';

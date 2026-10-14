@@ -10,6 +10,7 @@ import 'analytics.dart';
 import 'backfill.dart';
 import 'remote.dart';
 import 'set_stopwatch.dart';
+import 'supersets.dart';
 
 typedef WorkoutId = String;
 
@@ -21,6 +22,11 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   final RemoteAccess _remote;
   final Future<void> Function(String id, String? note)? _persistNote;
   final Future<void> Function(String workoutId, String? note)? _persistWorkoutNote;
+
+  /// Stores what an exercise of the active workout plans beyond its sets —
+  /// its superset (#159) — apart from [WorkoutService], which writes it only
+  /// with the whole exercise.
+  final Future<void> Function(WorkoutExercise exercise)? _persistPlan;
 
   /// Stores the active workout's pauses, closed and open (#134), and reads the
   /// open one back. Apart from [WorkoutService], which has no word for a pause
@@ -48,6 +54,7 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     this.onError,
     this._persistNote,
     this._persistWorkoutNote,
+    this._persistPlan,
     this._persistPauses,
     this._pausedAtOf,
     this._noteFor,
@@ -262,8 +269,21 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
 
   (WorkoutExercise, ExerciseSet)? get nextIncomplete {
     return switch (_latestMarkedSet) {
-      (WorkoutExercise exercise, ExerciseSet set) => activeWorkout?.nextIncomplete(exercise, set),
+      (WorkoutExercise exercise, ExerciseSet set) => switch (activeWorkout) {
+        Workout workout => _nextIncomplete(workout, exercise, set),
+        null => null,
+      },
       null => null,
+    };
+  }
+
+  /// What follows [set] of [exercise]: by its group's order in a superset
+  /// (#159), then whatever follows the group.
+  static (WorkoutExercise, ExerciseSet)? _nextIncomplete(Workout workout, WorkoutExercise exercise, ExerciseSet set) {
+    if (workout.nextInGroup(exercise) case final next?) return next;
+    return switch (workout.groupOf(exercise).last) {
+      WorkoutExercise last when last != exercise && last.isNotEmpty => workout.nextIncomplete(last, last.last),
+      _ => workout.nextIncomplete(exercise, set),
     };
   }
 
@@ -829,12 +849,39 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     return _localService.removeSet(set);
   }
 
-  Future<void>? removeExercise(WorkoutExercise exercise) {
+  Future<void> removeExercise(WorkoutExercise exercise) async {
     if (exercise.any(stopwatch.isTiming)) stopwatch.clear();
-    activeWorkout?.remove(exercise);
+    final workout = activeWorkout;
+    workout?.remove(exercise);
+    // a superset left with one member is no superset
+    final regrouped = workout?.settle() ?? const {};
     notifyListeners();
 
-    return _localService.removeExercise(exercise);
+    await _localService.removeExercise(exercise);
+    await _storePlans(regrouped);
+  }
+
+  /// Joins [exercise] and [neighbour] of the active workout in a superset
+  /// (#159), or [exercise] into the one [neighbour] is in.
+  Future<void> group(WorkoutExercise exercise, WorkoutExercise neighbour) async {
+    final workout = activeWorkout;
+    if (workout == null || !workout.contains(exercise) || !workout.contains(neighbour)) return;
+    final changed = workout.group(exercise, neighbour);
+    notifyListeners();
+    await _storePlans(changed);
+  }
+
+  /// Takes [exercise] of the active workout out of its superset (#159).
+  Future<void> leaveGroup(WorkoutExercise exercise) async {
+    final workout = activeWorkout;
+    if (workout == null || !workout.contains(exercise)) return;
+    final changed = workout.leave(exercise);
+    notifyListeners();
+    await _storePlans(changed);
+  }
+
+  Future<void> _storePlans(Iterable<WorkoutExercise> exercises) async {
+    if (_persistPlan case final persist?) await Future.wait(exercises.map(persist));
   }
 
   /// Ticks [set] [at] — now, unless it was ticked earlier than it arrived (a
@@ -1017,16 +1064,20 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
   Future<void> swap(WorkoutExercise toInsert, WorkoutExercise before) async {
     if (activeWorkout case Workout workout) {
       workout.swap(toInsert, before);
+      final regrouped = workout.settle(moved: toInsert);
       notifyListeners();
       await _saveExerciseOrder(workout);
+      await _storePlans(regrouped);
     }
   }
 
   Future<void> append(WorkoutExercise exercise) async {
     if (activeWorkout case Workout workout) {
       workout.append(exercise);
+      final regrouped = workout.settle(moved: exercise);
       notifyListeners();
       await _saveExerciseOrder(workout);
+      await _storePlans(regrouped);
     }
   }
 

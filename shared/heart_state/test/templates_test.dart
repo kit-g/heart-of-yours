@@ -340,6 +340,25 @@ void main() {
         expect(probe.notifications, 1);
       });
 
+      test('a superset is made and left in the editor, and goes out with the save (#159)', () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        await templates.add(ex('Push Up'));
+        await templates.add(ex('Row'));
+        probe.notifications = 0;
+
+        final [push, row] = templates.editable!.toList();
+        templates.group(push, row);
+        expect((push.superset, row.superset), (1, 1));
+        expect(row.toMap()['superset'], 1);
+
+        templates.leaveGroup(push);
+        expect((push.superset, row.superset), (null, null));
+        expect(row.toMap(), containsPair('superset', null), reason: 'a save clears it on the server');
+        expect(probe.notifications, 2);
+      });
+
       test('swap and append notify', () async {
         when(
           local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),

@@ -1679,4 +1679,76 @@ void main() {
       expect(reported.parametersOf('workout_cancelled')['exercise_count'], 1);
     });
   });
+
+  group('supersets (#159)', () {
+    late Map<String, int?> stored;
+    late Workouts state;
+
+    setUp(() {
+      stored = {};
+      state = Workouts(
+        service: local,
+        remoteService: remote,
+        persistPlan: (exercise) async => stored[exercise.id] = exercise.superset,
+      )..userId = 'anon';
+    });
+
+    Future<List<WorkoutExercise>> three() async {
+      await state.startWorkout(source: .blank, name: 'Pull');
+      for (final each in [bench, squat, press]) {
+        await state.startExercise(each);
+      }
+      final exercises = state.activeWorkout!.toList();
+      for (final each in exercises) {
+        await state.addSet(each);
+      }
+      return exercises;
+    }
+
+    test('grouping stores what it changed, and the next set follows the round', () async {
+      final [a, b, _] = await three();
+
+      await state.group(a, b);
+      expect(stored, {a.id: 1, b.id: 1});
+
+      await state.markSetAsComplete(a, a.first);
+      expect(state.nextIncomplete, (b, b.first));
+      await state.markSetAsComplete(b, b.first);
+      expect(state.nextIncomplete, (a, a.last), reason: 'the next round starts with the first member');
+
+      await state.leaveGroup(a);
+      expect(stored, {a.id: null, b.id: null});
+    });
+
+    test('a finished group hands over to what follows it', () async {
+      final [a, b, c] = await three();
+      await state.group(a, b);
+      for (final (exercise, set) in [(a, a.first), (b, b.first), (a, a.last)]) {
+        await state.markSetAsComplete(exercise, set);
+      }
+      await state.markSetAsComplete(b, b.last);
+      expect(state.nextIncomplete, (c, c.first));
+    });
+
+    test('removing one of a pair leaves the other on its own', () async {
+      final [a, b, _] = await three();
+      await state.group(a, b);
+
+      await state.removeExercise(a);
+
+      expect(b.superset, isNull);
+      expect(stored[b.id], isNull);
+    });
+
+    test('a move out of the group takes the exercise out of it', () async {
+      final [a, b, c] = await three();
+      await state.group(a, b);
+
+      await state.append(a);
+
+      expect([for (final each in state.activeWorkout!) each.superset], [null, null, null]);
+      expect(stored.keys, containsAll([a.id, b.id]));
+      expect(c.superset, isNull);
+    });
+  });
 }

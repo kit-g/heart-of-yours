@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'analytics.dart';
 import 'remote.dart';
+import 'supersets.dart';
 
 /// Local persistence of the user's template folders.
 ///
@@ -260,17 +261,37 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   void removeExercise(WorkoutExercise exercise) {
-    editable?.remove(exercise);
+    editable
+      ?..remove(exercise)
+      // a superset left with one member is no superset (#159)
+      ..settle();
     notifyListeners();
   }
 
   void swap(WorkoutExercise toInsert, WorkoutExercise before) {
-    editable?.swap(toInsert, before);
+    editable
+      ?..swap(toInsert, before)
+      ..settle(moved: toInsert);
     notifyListeners();
   }
 
   void append(WorkoutExercise exercise) {
-    editable?.append(exercise);
+    editable
+      ?..append(exercise)
+      ..settle(moved: exercise);
+    notifyListeners();
+  }
+
+  /// Joins [exercise] and [neighbour] of the template being edited in a
+  /// superset (#159), or [exercise] into the one [neighbour] is in.
+  void group(WorkoutExercise exercise, WorkoutExercise neighbour) {
+    editable?.group(exercise, neighbour);
+    notifyListeners();
+  }
+
+  /// Takes [exercise] of the template being edited out of its superset.
+  void leaveGroup(WorkoutExercise exercise) {
+    editable?.leave(exercise);
     notifyListeners();
   }
 
