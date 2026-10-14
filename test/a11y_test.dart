@@ -61,6 +61,7 @@ enum _Screen {
   rpePicker,
   setStopwatch,
   history,
+  historyNotToday,
   calendar,
   exercises,
   settings,
@@ -294,12 +295,12 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     (
       _Screen.programs,
       guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99) and the band\'s Start (lib/presentation/routes/workout/programs.dart:279) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99), the band\'s Not today (40pt TextButton, lib/presentation/routes/workout/programs.dart:279) and its Start (programs.dart:288) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programPage,
       guideline,
-      'the steers are PrimaryButton.shrunk (lib/presentation/routes/workout/program_page.dart:270, :279, :290) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+      'the steers are PrimaryButton.shrunk (lib/presentation/routes/workout/program_page.dart:282, :288, :297, :308) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.newProgram,
@@ -491,6 +492,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   (
     _Screen.history,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // A day set aside with "Not today" among the workouts (#312,
+  // lib/presentation/routes/history/skip_item.dart).
+  (_Screen.historyNotToday, _Guideline.labeledTapTarget, null),
+  (_Screen.historyNotToday, _Guideline.textContrastLight, null),
+  (_Screen.historyNotToday, _Guideline.textContrastDark, null),
+  (
+    _Screen.historyNotToday,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.historyNotToday,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
@@ -963,7 +980,11 @@ void main() {
             seconds: anyNamed('seconds'),
           ),
         ).thenAnswer((_) async {});
-      case _Screen.programsOffer || _Screen.programs || _Screen.programPage || _Screen.newProgram:
+      case _Screen.programsOffer ||
+          _Screen.programs ||
+          _Screen.programPage ||
+          _Screen.newProgram ||
+          _Screen.historyNotToday:
         final running = screen != _Screen.programsOffer;
         SharedPreferences.setMockInitialValues({
           ...pastOnboarding(),
@@ -972,7 +993,7 @@ void main() {
         when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
         when(db.getTemplates(any)).thenAnswer(
           (_) async => switch (screen) {
-            _Screen.programs || _Screen.programPage => [
+            _Screen.programs || _Screen.programPage || _Screen.historyNotToday => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
             ],
@@ -985,9 +1006,18 @@ void main() {
         when(db.storeTemplateFolders(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         when(db.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         final programs = switch (screen) {
-          _Screen.programs || _Screen.programPage => [_program],
+          _Screen.programs || _Screen.programPage || _Screen.historyNotToday => [_program],
           _ => <Program>[],
         };
+        final skips = switch (screen) {
+          _Screen.historyNotToday => [
+            TrainingSkip(id: 'k1', at: DateTime.now(), templateId: 't1', programId: 'p1'),
+          ],
+          _ => <TrainingSkip>[],
+        };
+        when(db.getSkips(any)).thenAnswer((_) async => skips);
+        when(api.getSkips()).thenAnswer((_) async => skips);
+        when(db.storeSkips(any, any)).thenAnswer((_) async {});
         when(db.getPrograms(any)).thenAnswer((_) async => programs);
         when(api.getPrograms()).thenAnswer((_) async => programs);
         when(db.getProgramActions(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
@@ -1250,7 +1280,11 @@ void main() {
         await tester.tap(find.byTooltip('About RPE'));
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
-      case _Screen.programsOffer || _Screen.programs || _Screen.programPage || _Screen.newProgram:
+      case _Screen.programsOffer ||
+          _Screen.programs ||
+          _Screen.programPage ||
+          _Screen.newProgram ||
+          _Screen.historyNotToday:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
@@ -1274,6 +1308,11 @@ void main() {
             await tester.tapByKey(AppKeys.programsFromFolder);
             await tester.pumpTimes();
             await tester.tap(find.text('Split').last);
+          case _Screen.historyNotToday:
+            await tester.tapByKey(AppKeys.historyStack);
+            await tester.pumpTimes();
+            // the screen is only honest if the day set aside is on it
+            expect(find.byKey(AppKeys.historySkip('k1')), findsOneWidget);
           default:
             break;
         }

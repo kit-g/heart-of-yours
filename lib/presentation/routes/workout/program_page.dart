@@ -40,6 +40,7 @@ class ProgramPage extends StatelessWidget {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final sessions = Templates.watch(context).sessionsOf(program);
     final position = programs.position(program, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
+    final skipped = programs.skippedIn(program, position);
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 
     return Scaffold(
@@ -87,7 +88,11 @@ class ProgramPage extends StatelessWidget {
                     ],
                     if (!program.archived) ...[
                       const SizedBox(height: 12),
-                      _Steers(program: program, position: position),
+                      _Steers(
+                        program: program,
+                        position: position,
+                        upNext: sessions.where((session) => session.id == position.next).firstOrNull,
+                      ),
                     ],
                     const SizedBox(height: 24),
                     Text(copy.programSessions, style: textTheme.titleSmall),
@@ -96,6 +101,7 @@ class ProgramPage extends StatelessWidget {
                       _SessionTile(
                         session: session,
                         state: switch (session.id) {
+                          final id when skipped.contains(id) => .skipped,
                           final id when position.done.contains(id) => .done,
                           final id when id == position.next => .next,
                           _ => .ahead,
@@ -237,7 +243,10 @@ class _Steers extends StatefulWidget {
   final Program program;
   final ProgramPosition position;
 
-  const new({required this.program, required this.position});
+  /// The session "Not today" (#312) sets aside; none once finished.
+  final Template? upNext;
+
+  const new({required this.program, required this.position, required this.upNext});
 
   @override
   State<_Steers> createState() => _SteersState();
@@ -267,6 +276,15 @@ class _SteersState extends State<_Steers> {
           runSpacing: 8,
           crossAxisAlignment: .center,
           children: [
+            // the steer a day asks for most: first, and only while something
+            // is due
+            if ((widget.upNext, position.paused, position.finished) case (final Template session, false, false))
+              PrimaryButton.shrunk(
+                key: AppKeys.programNotToday(widget.program.id),
+                backgroundColor: fill,
+                onPressed: () => _notToday(context, widget.program, session, fromBand: false),
+                child: Text(copy.programNotToday),
+              ),
             PrimaryButton.shrunk(
               backgroundColor: fill,
               onPressed: switch (busy) {
@@ -369,6 +387,7 @@ class _SessionTile extends StatelessWidget {
     return Semantics(
       label: switch (state) {
         .done => copy.programSessionDone(name),
+        .skipped => copy.programSessionSkipped(name),
         .next => copy.programSessionNext(name),
         .ahead => name,
       },
@@ -380,11 +399,12 @@ class _SessionTile extends StatelessWidget {
         leading: Icon(
           switch (state) {
             .done => Icons.check_circle_rounded,
+            .skipped => Icons.redo_rounded,
             .next => Icons.play_circle_outline_rounded,
             .ahead => Icons.circle_outlined,
           },
           color: switch (state) {
-            .done => colorScheme.outline,
+            .done || .skipped => colorScheme.outline,
             .next => colorScheme.primary,
             .ahead => colorScheme.outlineVariant,
           },

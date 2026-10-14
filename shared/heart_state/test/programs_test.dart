@@ -891,6 +891,20 @@ void main() {
       expect(local.skips.single.templateId, 's1');
       expect(remote.calls, contains('replaySkip ${skip.id}'));
       expect(local.owed, isEmpty);
+      expect(programs.skippedIn(followed, position), {'s1'});
+      expect(programs.skips.map((each) => each.id), [skip.id]);
+    });
+
+    test('a session done after a skip of it is done, not skipped', () async {
+      final followed = await following();
+      await programs.skip(followed, session: 's1', at: DateTime.utc(2026, 10, 6, 8));
+      local.marks['p1'] = [ProgramMark(templateId: 's1', at: DateTime.utc(2026, 10, 7, 8), isWorkout: true)];
+      await programs.refreshMarks();
+
+      final position = programs.position(followed, now: now);
+
+      expect(position.done, {'s1'});
+      expect(programs.skippedIn(followed, position), isEmpty);
     });
 
     test('a skip the server never heard of is owed, and the next launch sends it', () async {

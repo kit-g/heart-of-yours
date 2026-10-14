@@ -203,6 +203,25 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// oldest first.
   List<TrainingSkip> skipsOf(String programId) => UnmodifiableListView(_skips[programId] ?? const []);
 
+  /// Every program's skips, oldest first: what History lists beside the
+  /// workouts.
+  List<TrainingSkip> get skips {
+    return [for (final skips in _skips.values) ...skips]..sort((a, b) => a.at.compareTo(b.at));
+  }
+
+  /// The sessions [position]'s open cycle counts done by a skip rather than
+  /// a workout: the last thing each one had was "Not today".
+  Set<String> skippedIn(Program program, ProgramPosition position) {
+    final last = <String, ProgramMark>{};
+    for (final mark in [...?_marks[program.id]]..sort((a, b) => a.at.compareTo(b.at))) {
+      if (mark.templateId case final String id) last[id] = mark;
+    }
+    return {
+      for (final id in position.done)
+        if (last[id] case ProgramMark(isWorkout: false)) id,
+    };
+  }
+
   /// Every value [programId]'s rules have given its exercises, oldest first:
   /// the "100 → 102.5 → 105" view.
   List<ProgramBase> basesOf(String programId) => UnmodifiableListView(_bases[programId] ?? const []);

@@ -100,13 +100,17 @@ class _ProgramsSection extends StatelessWidget {
                     spacing: gap,
                     runSpacing: gap,
                     children: [
-                      for (final program in following)
+                      for (final (program, position) in [
+                        for (final program in following)
+                          (program, programs.position(program, now: now, firstWeekday: firstWeekday)),
+                      ])
                         SizedBox(
                           width: band,
                           child: _ProgramBand(
                             program: program,
-                            position: programs.position(program, now: now, firstWeekday: firstWeekday),
+                            position: position,
                             sessions: templates.sessionsOf(program),
+                            skipped: programs.skippedIn(program, position),
                             onOpen: () => onOpen(program),
                             onStart: onStart,
                           ),
@@ -195,6 +199,9 @@ class _ProgramBand extends StatelessWidget {
   final Program program;
   final ProgramPosition position;
   final List<Template> sessions;
+
+  /// The sessions this cycle counts done by "Not today" (#312).
+  final Set<String> skipped;
   final VoidCallback onOpen;
   final void Function(Template) onStart;
 
@@ -202,6 +209,7 @@ class _ProgramBand extends StatelessWidget {
     required this.program,
     required this.position,
     required this.sessions,
+    required this.skipped,
     required this.onOpen,
     required this.onStart,
   });
@@ -248,6 +256,7 @@ class _ProgramBand extends StatelessWidget {
                       _SessionChip(
                         name: _sessionName(copy, session),
                         state: switch (session.id) {
+                          final id when skipped.contains(id) => .skipped,
                           final id when done.contains(id) => .done,
                           final id when id == next => .next,
                           _ => .ahead,
@@ -265,6 +274,13 @@ class _ProgramBand extends StatelessWidget {
                         _ => const SizedBox.shrink(),
                       },
                     ),
+                    // nothing is due while paused, so there is nothing to set aside
+                    if ((upNext, paused) case (final Template session, false))
+                      TextButton(
+                        key: AppKeys.programNotToday(program.id),
+                        onPressed: () => _notToday(context, program, session, fromBand: true),
+                        child: Text(copy.programNotToday),
+                      ),
                     // a paused program can still be started: a program workout
                     // resumes it, so the button is never a dead end
                     if (upNext case final Template session)
@@ -299,12 +315,42 @@ String _status(L copy, Program program, ProgramPosition position) {
   };
 }
 
-enum _SessionState { done, next, ahead }
+/// "Not today" (#312): sets [session] aside at once, with an Undo beside it.
+/// One tap and done: no question, no reason asked for, nothing about a streak.
+Future<void> _notToday(BuildContext context, Program program, Template session, {required bool fromBand}) async {
+  final copy = L.of(context);
+  final programs = Programs.of(context);
+  final analytics = Analytics.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+
+  analytics.programSkipped(fromBand: fromBand);
+  final skip = await programs.skip(program, session: session.id);
+  messenger
+    ..clearSnackBars()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(copy.programSkipped(_sessionName(copy, session))),
+        action: SnackBarAction(
+          label: copy.undo,
+          onPressed: () {
+            analytics.programUnskipped();
+            programs.unskip(skip);
+          },
+        ),
+      ),
+    );
+}
+
+enum _SessionState { done, skipped, next, ahead }
 
 /// A session in a band's strip: done in this cycle, up next, or still ahead.
 class _SessionChip extends StatelessWidget {
   final String name;
   final _SessionState state;
+
+  /// What a session the cycle is past wears: a tick, or the arrow of one
+  /// stepped over.
+  static const _marks = {_SessionState.done: Icons.check_rounded, _SessionState.skipped: Icons.redo_rounded};
 
   const new({required this.name, required this.state});
 
@@ -315,7 +361,7 @@ class _SessionChip extends StatelessWidget {
     final style = textTheme.labelMedium;
 
     final (Color? fill, BorderSide side, Color ink) = switch (state) {
-      .done => (colorScheme.surfaceContainerHighest, BorderSide.none, colorScheme.onSurfaceVariant),
+      .done || .skipped => (colorScheme.surfaceContainerHighest, BorderSide.none, colorScheme.onSurfaceVariant),
       .next => (null, BorderSide(color: colorScheme.primary, width: 1.5), colorScheme.onSurface),
       .ahead => (null, BorderSide(color: colorScheme.outlineVariant), colorScheme.onSurfaceVariant),
     };
@@ -323,6 +369,7 @@ class _SessionChip extends StatelessWidget {
     return Semantics(
       label: switch (state) {
         .done => copy.programSessionDone(name),
+        .skipped => copy.programSessionSkipped(name),
         .next => copy.programSessionNext(name),
         .ahead => name,
       },
@@ -340,7 +387,7 @@ class _SessionChip extends StatelessWidget {
               mainAxisSize: .min,
               spacing: 4,
               children: [
-                if (state == .done) Icon(Icons.check_rounded, size: 14, color: ink),
+                if (_SessionChip._marks[state] case final IconData icon) Icon(icon, size: 14, color: ink),
                 Flexible(
                   child: Text(
                     name,

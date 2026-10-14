@@ -173,6 +173,12 @@ abstract final class AppKeys {
   static Key programBand(String? programId) => Key('Programs.band.$programId');
   static Key programStart(String? programId) => Key('Programs.band.start.$programId');
 
+  /// "Not today" (#312), on a program's band or its page.
+  static Key programNotToday(String? programId) => Key('Programs.notToday.$programId');
+
+  /// A day set aside with "Not today" (#312), in History.
+  static Key historySkip(String? skipId) => Key('History.skip.$skipId');
+
   /// The Done page's program block (#351): what the session moved.
   static const doneProgram = Key('Done.program');
 }

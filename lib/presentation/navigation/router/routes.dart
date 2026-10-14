@@ -290,6 +290,9 @@ RouteBase _historyRoute() {
           onDeleteWorkout: (_) {
             context.goToHistory();
           },
+          onTapSkip: (skip) {
+            if (skip.programId case final String id) context.goToProgram(id);
+          },
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
@@ -318,6 +321,9 @@ RouteBase _historyRoute() {
               },
               onTapWorkout: (workout) {
                 context.goToWorkoutEditor(workout.id);
+              },
+              onTapSkip: (skip) {
+                if (skip.programId case final String id) context.goToProgram(id);
               },
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
