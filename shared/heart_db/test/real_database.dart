@@ -141,6 +141,8 @@ const _schema = [
   // v23 (#312)
   createSkips,
   skipsProgramIndex,
+  // v24 (#352)
+  createContent,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -150,7 +152,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 23,
+      version: 24,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);

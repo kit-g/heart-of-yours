@@ -68,6 +68,7 @@ abstract class _LocalDatabase {
 class LocalDatabase extends _LocalDatabase
     with
         _Charts,
+        _Content,
         _Erase,
         _Exercises,
         _Goals,
@@ -100,7 +101,7 @@ class LocalDatabase extends _LocalDatabase
 
   new _(this._db);
 
-  static Future<LocalDatabase> init({int version = 23, Database? other, bool isWeb = false}) async {
+  static Future<LocalDatabase> init({int version = 24, Database? other, bool isWeb = false}) async {
     if (other != null) return LocalDatabase._(other);
 
     const name = 'heart.db';
