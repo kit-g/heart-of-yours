@@ -9,6 +9,9 @@ class ProgramPage extends StatelessWidget {
   final String programId;
   final VoidCallback onEdit;
 
+  /// Opens the library program [Program.source] names, with its research.
+  final void Function(String key) onAbout;
+
   /// Opens the template editor on the session [Templates.editable] holds.
   final VoidCallback onEditSession;
   final VoidCallback onOpenActiveWorkout;
@@ -20,6 +23,7 @@ class ProgramPage extends StatelessWidget {
     super.key,
     required this.programId,
     required this.onEdit,
+    required this.onAbout,
     required this.onEditSession,
     required this.onOpenActiveWorkout,
     required this.onGone,
@@ -117,6 +121,29 @@ class ProgramPage extends StatelessWidget {
                         ),
                       ),
                     _Growth(program: program),
+                    // a copy of one of Heart's programs keeps its way back to
+                    // the research, which stays in the library, never the copy
+                    if (program.source case final String key)
+                      _LibraryReader(
+                        child: Builder(
+                          builder: (context) {
+                            return switch (ProgramLibrary.watch(context).lookup(key)) {
+                              null => const SizedBox.shrink(),
+                              LibraryProgram() => Padding(
+                                padding: const .only(top: 16),
+                                child: ListTile(
+                                  key: AppKeys.programAbout,
+                                  contentPadding: .zero,
+                                  leading: const Icon(Icons.auto_stories_outlined),
+                                  title: Text(copy.programAboutLibrary),
+                                  trailing: const Icon(Icons.chevron_right_rounded),
+                                  onTap: () => onAbout(key),
+                                ),
+                              ),
+                            };
+                          },
+                        ),
+                      ),
                   ],
                 ),
               ),

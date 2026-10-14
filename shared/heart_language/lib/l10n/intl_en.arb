@@ -4826,5 +4826,7 @@
   "libraryStartFailed": "Couldn't start it. Nothing changed.",
   "@libraryStartFailed": {"description": "Snack when starting a ready-made program failed and nothing was made", "type": "text", "placeholders": {}},
   "programAboutLibrary": "About this program",
-  "@programAboutLibrary": {"description": "Row on a program's page that was started from Heart's ready-made programs: opens that program's page there, with its research", "type": "text", "placeholders": {}}
+  "@programAboutLibrary": {"description": "Row on a program's page that was started from Heart's ready-made programs: opens that program's page there, with its research", "type": "text", "placeholders": {}},
+  "libraryTotalReps": "{reps} reps in all",
+  "@libraryTotalReps": {"description": "A ready-made program's rep total for an exercise across all its sets, such as '50–100 reps in all'", "type": "text", "placeholders": {"reps": {}}}
 }

@@ -172,6 +172,16 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // Heart's ready-made programs (#352): content, read when a Programs
+        // surface first asks for it, and kept on the device between launches
+        ChangeNotifierProvider<ProgramLibrary>(
+          create: (_) => ProgramLibrary(
+            fetch: cdn.getProgramLibrary,
+            read: db.getContent,
+            store: db.storeContent,
+            onError: reportToSentry,
+          ),
+        ),
         ChangeNotifierProvider<PreviousExercises>(
           create: (_) => PreviousExercises(
             service: db,

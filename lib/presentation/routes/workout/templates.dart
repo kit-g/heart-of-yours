@@ -7,12 +7,14 @@ class _TemplatesLayout extends StatefulWidget {
   final VoidCallback onNewWorkout;
   final void Function(Program) goToProgram;
   final void Function(TemplateFolder) goToNewProgram;
+  final VoidCallback goToLibrary;
 
   const new({
     required this.goToTemplateEditor,
     required this.onNewWorkout,
     required this.goToProgram,
     required this.goToNewProgram,
+    required this.goToLibrary,
   });
 
   @override
@@ -74,6 +76,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           onOpen: widget.goToProgram,
           onFromFolder: widget.goToNewProgram,
           onStart: (session) => _startSession(context, session),
+          onLibrary: widget.goToLibrary,
         ),
         SliverToBoxAdapter(
           child: Padding(

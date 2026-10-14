@@ -39,89 +39,155 @@ class _ProgramsSection extends StatelessWidget {
   final void Function(Program) onOpen;
   final void Function(TemplateFolder) onFromFolder;
   final void Function(Template) onStart;
+  final VoidCallback onLibrary;
 
   const new({
     required this.onOpen,
     required this.onFromFolder,
     required this.onStart,
+    required this.onLibrary,
   });
 
   @override
   Widget build(BuildContext context) {
     if (!Preferences.watch(context).isOn(.programs)) return const SliverToBoxAdapter();
 
+    return SliverToBoxAdapter(
+      child: _LibraryReader(child: Builder(builder: _section)),
+    );
+  }
+
+  Widget _section(BuildContext context) {
     final programs = Programs.watch(context);
     final templates = Templates.watch(context);
+    final library = ProgramLibrary.watch(context);
     final following = programs.following.toList();
     final stopped = programs.all.where((program) => program.archived).toList();
     final folders = templates.programFolders;
-    if (following.isEmpty && stopped.isEmpty && folders.isEmpty) return const SliverToBoxAdapter();
+    if (following.isEmpty && stopped.isEmpty && folders.isEmpty && !library.available) {
+      return const SizedBox.shrink();
+    }
 
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final now = DateTime.now();
     final firstWeekday = firstWeekdayOf(context);
 
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const .symmetric(horizontal: 8),
-        child: Column(
-          crossAxisAlignment: .stretch,
-          children: [
+    return Padding(
+      padding: const .symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: .stretch,
+        children: [
+          Padding(
+            padding: const .symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: .spaceBetween,
+              children: [
+                Text(copy.programs, style: textTheme.headlineSmall),
+                if (folders.isNotEmpty) _FromFolderButton(folders: folders, onPick: onFromFolder),
+              ],
+            ),
+          ),
+          // a folder is what it points at: with none, the library row below
+          // says what there is to start from
+          if (following.isEmpty && stopped.isEmpty && folders.isNotEmpty)
             Padding(
-              padding: const .symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: .spaceBetween,
-                children: [
-                  Text(copy.programs, style: textTheme.headlineSmall),
-                  if (folders.isNotEmpty) _FromFolderButton(folders: folders, onPick: onFromFolder),
-                ],
+              padding: const .only(bottom: 8),
+              child: Text(
+                copy.programsEmpty,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
             ),
-            if (following.isEmpty && stopped.isEmpty)
-              Padding(
-                padding: const .only(bottom: 8),
-                child: Text(
-                  copy.programsEmpty,
-                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                ),
-              ),
-            if (following.isNotEmpty)
-              // The bands measure the room this section got: a phone stacks
-              // them, a tablet sets them side by side rather than stretching
-              // one across 1100pt
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  const gap = 8.0;
-                  final width = constraints.maxWidth;
-                  final columns = columnsFor(width, maxExtent: _bandMaxWidth);
-                  final band = (width - gap * (columns - 1)) / columns;
-                  return Wrap(
-                    spacing: gap,
-                    runSpacing: gap,
-                    children: [
-                      for (final (program, position) in [
-                        for (final program in following)
-                          (program, programs.position(program, now: now, firstWeekday: firstWeekday)),
-                      ])
-                        SizedBox(
-                          width: band,
-                          child: _ProgramBand(
-                            program: program,
-                            position: position,
-                            sessions: templates.sessionsOf(program),
-                            skipped: programs.skippedIn(program, position),
-                            onOpen: () => onOpen(program),
-                            onStart: onStart,
-                          ),
+          if (following.isNotEmpty)
+            // The bands measure the room this section got: a phone stacks
+            // them, a tablet sets them side by side rather than stretching
+            // one across 1100pt
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const gap = 8.0;
+                final width = constraints.maxWidth;
+                final columns = columnsFor(width, maxExtent: _bandMaxWidth);
+                final band = (width - gap * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    for (final (program, position) in [
+                      for (final program in following)
+                        (program, programs.position(program, now: now, firstWeekday: firstWeekday)),
+                    ])
+                      SizedBox(
+                        width: band,
+                        child: _ProgramBand(
+                          program: program,
+                          position: position,
+                          sessions: templates.sessionsOf(program),
+                          skipped: programs.skippedIn(program, position),
+                          onOpen: () => onOpen(program),
+                          onStart: onStart,
                         ),
-                    ],
-                  );
-                },
-              ),
-            for (final program in stopped) _StoppedProgram(program: program, onOpen: () => onOpen(program)),
-            const SizedBox(height: 8),
-          ],
+                      ),
+                  ],
+                );
+              },
+            ),
+          for (final program in stopped) _StoppedProgram(program: program, onOpen: () => onOpen(program)),
+          if (library.available) _LibraryEntry(onTap: onLibrary),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+/// Reads Heart's program library when something that shows it is on screen:
+/// the Programs section, or the offer. Declined, Programs never downloads it.
+class _LibraryReader extends StatefulWidget {
+  final Widget child;
+
+  const new({required this.child});
+
+  @override
+  State<_LibraryReader> createState() => _LibraryReaderState();
+}
+
+class _LibraryReaderState extends State<_LibraryReader> {
+  @override
+  void initState() {
+    super.initState();
+    ProgramLibrary.of(context).ensure();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// The way into Heart's ready-made programs, under the user's own (#352).
+class _LibraryEntry extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const new({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return Padding(
+      padding: const .only(top: 8),
+      child: Material(
+        color: colorScheme.secondaryContainer.withValues(alpha: .5),
+        borderRadius: const .all(.circular(12)),
+        clipBehavior: .antiAlias,
+        child: ListTile(
+          key: AppKeys.libraryEntry,
+          onTap: onTap,
+          leading: Icon(Icons.auto_stories_outlined, color: colorScheme.onSecondaryContainer),
+          title: Text(copy.programLibrary, style: textTheme.titleSmall),
+          subtitle: Text(
+            copy.programLibraryLine,
+            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+          trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.outline),
         ),
       ),
     );
@@ -441,8 +507,8 @@ class _StoppedProgram extends StatelessWidget {
 /// the one notice after a no, or nothing.
 ///
 /// Offered only where saying yes leads somewhere: a folder of templates a
-/// program can be made from. A yes with nothing to make a program of would be a
-/// switch with nothing behind it.
+/// program can be made from, or Heart's ready-made programs (#352). A yes with
+/// nothing to make a program of would be a switch with nothing behind it.
 class _ProgramsOfferSlot extends StatelessWidget {
   static const _feature = Feature.programs;
 
@@ -451,37 +517,52 @@ class _ProgramsOfferSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final preferences = Preferences.watch(context);
-    final templates = Templates.watch(context);
-    final copy = L.of(context);
 
-    final Widget? child = switch (preferences) {
-      _ when preferences.isOn(_feature) => null,
-      _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
-        onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
-      ),
-      _ when preferences.shouldOffer(_feature) && templates.programFolders.isNotEmpty => FeatureOffer(
+    return SliverToBoxAdapter(
+      child: switch (preferences) {
+        _ when preferences.isOn(_feature) => const SizedBox.shrink(),
+        _ when preferences.owesDeclineNotice(_feature) => _OfferPadding(
+          child: FeatureDeclinedNotice(onDismiss: () => preferences.acknowledgeDeclineNotice(_feature)),
+        ),
+        // the library is part of what there is to offer, so it is read for it
+        _ when preferences.shouldOffer(_feature) => _LibraryReader(child: Builder(builder: _offer)),
+        _ => const SizedBox.shrink(),
+      },
+    );
+  }
+
+  Widget _offer(BuildContext context) {
+    final preferences = Preferences.of(context);
+    final copy = L.of(context);
+    final folders = Templates.watch(context).programFolders.isNotEmpty;
+    final library = ProgramLibrary.watch(context).available;
+    if (!folders && !library) return const SizedBox.shrink();
+
+    return _OfferPadding(
+      child: FeatureOffer(
         key: AppKeys.programsOffer,
         acceptKey: AppKeys.programsAccept,
         declineKey: AppKeys.programsDecline,
         icon: Icons.event_repeat_rounded,
         title: copy.programs,
-        body: copy.programsOfferBody,
+        body: switch (library) {
+          true => copy.programsOfferBodyLibrary,
+          false => copy.programsOfferBody,
+        },
         onAnswer: (yes) => preferences.answerOffer(_feature, yes: yes),
         onShown: () => preferences.markOffered(_feature),
       ),
-      _ => null,
-    };
-
-    return SliverToBoxAdapter(
-      child: switch (child) {
-        Widget child => Padding(
-          padding: const .fromLTRB(8, 8, 8, 16),
-          child: child,
-        ),
-        null => const SizedBox.shrink(),
-      },
     );
   }
+}
+
+class _OfferPadding extends StatelessWidget {
+  final Widget child;
+
+  const new({required this.child});
+
+  @override
+  Widget build(BuildContext context) => Padding(padding: const .fromLTRB(8, 8, 8, 16), child: child);
 }
 
 /// A Programs page with the switch turned off under it (#345). Off is the app

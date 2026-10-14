@@ -62,7 +62,7 @@ void main() {
       expect(parametersOf('exercise_replaced'), {'replace_scope': 'program', 'suggested': 'true'});
     });
 
-    test("a program from the library names which one by its key, and one from a folder names none (#352)", () {
+    test('a program from the library names which one by its key, and one from a folder names none (#352)', () {
       sut.programCreated(source: .library, sessions: 6, library: 'strength_waves');
       expect(parametersOf('program_created'), {
         'source': 'library',

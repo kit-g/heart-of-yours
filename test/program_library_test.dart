@@ -1,0 +1,244 @@
+// Heart's ready-made programs (#352, #162): the way in from the Workout tab,
+// the library, a program's page with its research, and starting one. Driven
+// through the real app, as program_screens_test.dart is.
+import 'dart:io';
+
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/heart_state.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:mockito/mockito.dart';
+
+import 'mocks.mocks.dart';
+import 'support/harness.dart';
+
+void main() {
+  const userId = 'u1';
+  // three programs of the real file, rendered by heart-api and trimmed
+  final file = File('shared/heart_state/test/fixtures/programs.json').readAsStringSync();
+
+  /// Every exercise the fixture names, as the catalog would hold it: a session
+  /// key or two come along, which nothing looks up.
+  final catalog = [
+    for (final key in RegExp(
+      r'"key": "([a-z0-9-]+)"|"([a-z0-9]+(?:-[a-z0-9]+)+)"',
+    ).allMatches(file).map((match) => match.group(1) ?? match.group(2)!).toSet())
+      Exercise.fromJson({
+        'id': 'id-$key',
+        'key': key,
+        'own': false,
+        'name': key,
+        'category': 'Barbell',
+        'target': 'Chest',
+        'archived': false,
+        'validated': false,
+      }),
+  ];
+
+  late MockLocalDatabase db;
+  late MockApi api;
+  late MockCdn cdn;
+
+  void answer(FeatureAnswer answer) {
+    SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-programs': answer.name});
+  }
+
+  setUp(() {
+    db = MockLocalDatabase();
+    api = MockApi();
+    cdn = MockCdn();
+    stubStartup(db, api);
+    when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, catalog));
+
+    when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+    when(cdn.getProgramLibrary(etag: anyNamed('etag'))).thenAnswer((_) async => (body: file, etag: '"v1"'));
+    when(db.getContent(any)).thenAnswer((_) async => null);
+    when(db.storeContent(any, body: anyNamed('body'), etag: anyNamed('etag'))).thenAnswer((_) async {});
+
+    when(db.getTemplates(any)).thenAnswer((_) async => <Template>[]);
+    when(api.getTemplates()).thenAnswer((_) async => null);
+    when(db.getTemplateFolders(userId)).thenAnswer((_) async => <TemplateFolder>[]);
+    when(api.getFolders(userId: anyNamed('userId'))).thenAnswer((_) async => <TemplateFolder>[]);
+    when(db.storeTemplateFolders(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+    when(db.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
+    when(api.createFolder(userId: anyNamed('userId'), folder: anyNamed('folder'))).thenAnswer(
+      (i) async => TemplateFolder.fromJson({...(i.namedArguments[#folder] as TemplateFolder).toMap(), 'id': 'f1'}),
+    );
+
+    when(db.getPrograms(userId)).thenAnswer((_) async => <Program>[]);
+    when(db.getProgramActions(userId, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+    when(db.getProgramBases(userId, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+    when(db.getProgramMarks(userId, any)).thenAnswer((_) async => []);
+    when(db.storePrograms(any, any)).thenAnswer((_) async {});
+    when(db.storeProgram(any, any)).thenAnswer((_) async {});
+    when(db.storeProgramActions(any, any)).thenAnswer((_) async {});
+    when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
+    when(api.getPrograms()).thenAnswer((_) async => <Program>[]);
+    when(api.getProgramActions(any)).thenAnswer((_) async => []);
+    when(api.getProgramBases(any)).thenAnswer((_) async => []);
+    when(api.replayProgram(any, sessions: anyNamed('sessions'))).thenAnswer(
+      (i) async => (row: i.positionalArguments.single as Program, created: true),
+    );
+  });
+
+  Future<void> openWorkoutTab(WidgetTester tester) async {
+    await const TestAppHarness().pumpHeartApp(
+      tester,
+      db: db,
+      api: api,
+      cdn: cdn,
+      firebaseAuth: MockFirebaseAuth(
+        mockUser: MockUser(uid: userId, email: '$userId@test'),
+        signedIn: true,
+      ),
+      hasLocalNotifications: false,
+      settle: false,
+    );
+    await tester.tapByKey(AppKeys.workoutStack);
+    await tester.pumpTimes();
+    final context = tester.element(find.byType(MaterialApp));
+    await Exercises.of(context).init();
+    final templates = Templates.of(context);
+    await templates.init();
+    templates.notifyListeners();
+    await Programs.of(context).init();
+    await ProgramLibrary.of(context).ensure();
+    await tester.pumpTimes();
+  }
+
+  Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(finder, 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpTimes();
+  }
+
+  Future<void> openLibrary(WidgetTester tester) async {
+    await openWorkoutTab(tester);
+    await tester.tapByKey(AppKeys.libraryEntry);
+    await tester.pumpTimes();
+  }
+
+  Future<void> openFirstSteps(WidgetTester tester) async {
+    await openLibrary(tester);
+    await tester.tapByKey(AppKeys.libraryProgram('first_steps'));
+    await tester.pumpTimes();
+  }
+
+  group('the way in', () {
+    testWidgets('on, with no program and no folder, the library is what there is to start from', (tester) async {
+      answer(.on);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.libraryEntry), findsOneWidget);
+      expect(find.text('Any folder of templates can become one.'), findsNothing);
+    });
+
+    testWidgets('not published yet, there is no library and nothing in its place', (tester) async {
+      answer(.on);
+      when(cdn.getProgramLibrary(etag: anyNamed('etag'))).thenAnswer((_) async => throw Exception('403'));
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.libraryEntry), findsNothing);
+      expect(find.text('Programs'), findsNothing);
+    });
+
+    testWidgets('unasked, the library alone earns the offer, which says so', (tester) async {
+      answer(.unasked);
+      await openWorkoutTab(tester);
+      await scrollTo(tester, find.byKey(AppKeys.programsOffer));
+
+      expect(find.byKey(AppKeys.programsOffer), findsOneWidget);
+      expect(find.textContaining("Start one of Heart's ready-made plans"), findsOneWidget);
+    });
+
+    testWidgets('off, there is no way in and no offer', (tester) async {
+      answer(.off);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.libraryEntry), findsNothing);
+      expect(find.byKey(AppKeys.programsOffer), findsNothing);
+    });
+  });
+
+  group('the library', () {
+    testWidgets('groups programs by who they are for, and filters by what they need', (tester) async {
+      answer(.on);
+      await openLibrary(tester);
+
+      expect(find.text('Ready-made programs'), findsOneWidget);
+      expect(find.text('Starting out'), findsOneWidget);
+      expect(find.text('Getting stronger'), findsOneWidget);
+      expect(find.byKey(AppKeys.libraryProgram('first_steps')), findsOneWidget);
+      expect(find.byKey(AppKeys.libraryProgram('strength_waves')), findsOneWidget);
+      expect(find.text('2× a week · About 30 min · 8 weeks'), findsOneWidget);
+
+      await tester.tap(find.text('Gym'));
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.libraryProgram('first_steps')), findsNothing);
+      expect(find.byKey(AppKeys.libraryProgram('strength_waves')), findsOneWidget);
+      expect(find.text('Starting out'), findsNothing);
+    });
+  });
+
+  group("a program's page", () {
+    testWidgets('shows the plan with its research beside it and the safety notes once', (tester) async {
+      answer(.on);
+      await openFirstSteps(tester);
+
+      expect(find.text('First steps'), findsOneWidget);
+      await scrollTo(tester, find.text('Before you start'));
+      expect(find.text('Before you start'), findsOneWidget);
+      expect(find.textContaining('Stop and rest if you feel chest pain'), findsOneWidget);
+      await scrollTo(tester, find.text('Who it\'s for'));
+      expect(find.text('Who it\'s for'), findsOneWidget);
+      await scrollTo(tester, find.textContaining('Climbing to harder versions of an exercise'));
+      // a claim about the rule, under how it grows, with its source beside it
+      expect(find.textContaining('Climbing to harder versions of an exercise'), findsOneWidget);
+      expect(find.text('Kotarsky et al., 2018'), findsWidgets);
+
+      await scrollTo(tester, find.text('Sources'));
+      expect(find.byKey(AppKeys.librarySource('kotarsky_2018')), findsOneWidget);
+      // nothing is copied by looking
+      verifyNever(db.storeProgram(any, any));
+    });
+
+    testWidgets('starting it makes the program and its sessions the user\'s own, filed in a folder of its name', (
+      tester,
+    ) async {
+      answer(.on);
+      await openFirstSteps(tester);
+      await tester.tapByKey(AppKeys.libraryStart);
+      await tester.pumpTimes();
+
+      final folder = verify(api.createFolder(userId: userId, folder: captureAnyNamed('folder'))).captured.single;
+      expect((folder as TemplateFolder).name, 'First steps');
+      final program = verify(db.storeProgram(captureAny, userId)).captured.last as Program;
+      expect(program.source, 'first_steps');
+      expect(program.rules['id-wall-push-up'], isA<Ladder>());
+      final sessions = verify(db.storeTemplates(captureAny, userId: userId)).captured.last as Iterable<Template>;
+      expect(sessions, hasLength(2));
+      expect(sessions.map((session) => session.folderId).toSet(), {'f1'});
+      expect(sessions.map((session) => session.programId).toSet(), {program.id});
+
+      // on the program's own page, which leads back to the research
+      await scrollTo(tester, find.byKey(AppKeys.programAbout));
+      expect(find.byKey(AppKeys.programAbout), findsOneWidget);
+    });
+
+    testWidgets('a program whose sessions do not fit says why, in place of the button', (tester) async {
+      answer(.on);
+      when(db.getTemplates(userId)).thenAnswer(
+        (_) async => [
+          for (var i = 0; i < 3; i++) Template.empty(id: 't$i', order: i)..name = 'Mine $i',
+        ],
+      );
+      await openLibrary(tester);
+      await tester.tapByKey(AppKeys.libraryProgram('strength_waves'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.libraryStart), findsNothing);
+      expect(find.text('It needs room for 3 more templates.'), findsOneWidget);
+    });
+  });
+}
