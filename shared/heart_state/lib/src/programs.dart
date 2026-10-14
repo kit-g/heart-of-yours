@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'program_growth.dart';
 import 'program_plan.dart';
 import 'remote.dart';
 import 'upsync.dart' show Replayed;
@@ -38,6 +39,10 @@ abstract interface class LocalProgramService {
 
   /// The program's finished workouts, as what its position is folded from.
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId);
+
+  /// The program's finished workouts, whole and oldest first: what a growth
+  /// rule's miss streak is read from (#350).
+  Future<List<Workout>> getProgramWorkouts(String userId, String programId);
 
   Future<List<ProgramAction>> getProgramActions(String userId, {String? programId});
 
@@ -128,12 +133,17 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Listened to for finished and deleted workouts, which move a position.
   final Workouts? _workouts;
 
+  /// Swaps [from] for [to] in the [sessions] that hold it: a ladder's advance
+  /// (#350), or its "Keep". Templates are the template list's to edit.
+  final Future<void> Function(Iterable<String> sessions, {required String from, required String to})? onAdvance;
+
   new({
     required this._service,
     required this._remoteService,
     required this._templates,
     this.onError,
     this.onSessionsChanged,
+    this.onAdvance,
     this._workouts,
     RemoteAccess? remote,
   }) : _remote = remote ?? RemoteAccess() {
@@ -223,6 +233,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _bases.clear();
     _marks.clear();
     _owed.clear();
+    _grown.clear();
     _heldRevision = null;
   }
 
@@ -591,6 +602,139 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
+  }
+
+  /// What finished workouts did to their programs, by workout id: written
+  /// once per workout, and read back by the Done page (#351).
+  final _grown = <String, Future<List<GrowthMove>>>{};
+
+  /// Runs [workout]'s program's growth rules over it (#350) and writes what
+  /// they say: a base grown or cut, a ladder's advance with its session
+  /// swapped and its rule moved along, a test session's training maxes.
+  /// Once per workout: a second call has the first's answer, and a workout
+  /// something was already written for (a finish another device ran) moves
+  /// nothing again.
+  ///
+  /// [session] is the template it was started from, which tells apart the
+  /// two occurrences of a lift the program keeps a base for each of. [after]
+  /// is the finish still writing it: the rules read the program's history
+  /// from the mirror, so they wait for it, and a caller can ask the moment
+  /// the finish starts.
+  ///
+  /// Editing the workout later runs nothing again: what moved stays moved,
+  /// and the program page's bases are where it is changed by hand.
+  Future<List<GrowthMove>> grow(Workout workout, {Template? session, Future<void>? after}) {
+    return _grown[workout.id] ??= _grow(workout, session: session, after: after);
+  }
+
+  /// What [grow] answered for [workoutId], while it is remembered; null when
+  /// it never ran on this launch.
+  Future<List<GrowthMove>>? grownBy(String workoutId) => _grown[workoutId];
+
+  Future<List<GrowthMove>> _grow(Workout workout, {Template? session, Future<void>? after}) async {
+    try {
+      await after;
+    } catch (_) {
+      // the finish reports its own failure; the workout is in the mirror
+      // whatever the server said
+    }
+    final uid = userId;
+    final program = switch (workout.programId) {
+      final String id => _programs[id],
+      null => null,
+    };
+    final id = program?.id;
+    if (uid == null || program == null || id == null || program.archived) return const [];
+    bool causedBy(String? cause) => cause == workout.id;
+    if (basesOf(id).any((base) => causedBy(base.workoutId))) return const [];
+    if (actionsOf(id).any((action) => causedBy(action.workoutId))) return const [];
+
+    try {
+      final (marks, workouts) = await (
+        _service.getProgramMarks(uid, id),
+        _service.getProgramWorkouts(uid, id),
+      ).wait;
+      final start = workout.start;
+
+      // the position as it stood at [moment], and with [plus] marked in it
+      ProgramPosition at(DateTime moment, {ProgramMark? plus}) {
+        return ProgramPosition.of(
+          program,
+          marks: [...marks.where((mark) => mark.at.isBefore(moment)), ?plus],
+          actions: actionsOf(id).where((action) => action.at.isBefore(moment)),
+          now: moment,
+        );
+      }
+
+      final before = at(start);
+      final after = at(start, plus: ProgramMark.workout(workout));
+      final moves = growthOf(
+        program,
+        workout,
+        bases: currentBasesOf(id),
+        earlier: [
+          for (final each in workouts)
+            if (each.id != workout.id && each.start.isBefore(start)) (workout: each, lighter: at(each.start).lighter),
+        ],
+        before: before,
+        closesCycle: after.week > before.week,
+        session: session,
+      );
+
+      return [for (final move in moves) await _write(move, programId: id, workoutId: workout.id)];
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+      return const [];
+    }
+  }
+
+  Future<GrowthMove> _write(GrowthMove move, {required String programId, required String workoutId}) async {
+    final program = _programs[programId];
+    if (program == null) return move;
+    switch (move.step) {
+      case Grow(:final value) || Cut(:final value):
+        final base = await setBase(
+          program,
+          exerciseId: move.exerciseId,
+          value: value,
+          slot: move.slot,
+          workoutId: workoutId,
+        );
+        return move.written(base: base);
+      case Advance(:final to):
+        final action = await advance(program, from: move.exerciseId, to: to, workoutId: workoutId);
+        await _climb(program, from: move.exerciseId, to: to);
+        return move.written(action: action);
+      case Hold() || Missed():
+        return move;
+    }
+  }
+
+  /// "Keep" (#351): takes back what [move] wrote, and nothing else. A base
+  /// goes back to the one before it; an advance goes back down its ladder,
+  /// sessions and rule with it.
+  Future<void> keep(GrowthMove move) async {
+    if (move.base case final ProgramBase base) await deleteBase(base);
+    if (move.action case final ProgramAction action) {
+      await undo(action);
+      final (program, from, to) = (lookup(action.programId ?? ''), action.from, action.to);
+      if (program != null && from != null && to != null) await _climb(program, from: to, to: from);
+    }
+  }
+
+  /// Moves [program]'s ladder rule from [from] to [to], and its sessions'
+  /// [from] to [to] with it (heart-api#231): the rule is keyed by the rung the
+  /// sessions hold.
+  Future<void> _climb(Program program, {required String from, required String to}) async {
+    final current = _programs[program.id] ?? program;
+    await update(
+      current.copyWith(
+        rules: {
+          for (final MapEntry(:key, :value) in current.rules.entries) key == from ? to : key: value,
+        },
+      ),
+    );
+    await onAdvance?.call(current.sessions, from: from, to: to);
   }
 
   /// Reads every program's marks from the mirror again: a workout of one was

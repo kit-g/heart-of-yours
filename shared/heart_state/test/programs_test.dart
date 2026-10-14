@@ -429,6 +429,301 @@ void main() {
     });
   });
 
+  group('growth (#350)', () {
+    const squat = {'id': 'squat', 'name': 'Squat', 'category': 'Barbell', 'target': 'Legs'};
+    const wall = {'id': 'wall', 'name': 'Wall push-up', 'category': 'Reps Only', 'target': 'Chest'};
+    var ids = 0;
+
+    // a set as logged: ticked unless said otherwise, against [target]
+    Map logged({int? reps, num? weight, Map? target, bool done = true}) => {
+      'id': 'set-${ids++}',
+      'set_type': 'normal',
+      'completed': done,
+      'reps': ?reps,
+      'weight': ?weight,
+      'target': ?target,
+    };
+
+    const fives = {
+      'reps': {'min': 5, 'max': 5},
+    };
+
+    Workout done(
+      String id, {
+      required DateTime start,
+      String templateId = 's1',
+      List<Map> exercises = const [],
+    }) {
+      return Workout.fromJson({
+        'id': id,
+        'start': start.toIso8601String(),
+        'end': start.add(const Duration(hours: 1)).toIso8601String(),
+        'templateId': templateId,
+        'programId': 'p1',
+        'exercises': exercises,
+      });
+    }
+
+    Map squats(List<int> reps, {num weight = 100, String id = 'we'}) => {
+      'id': '$id-${ids++}',
+      'exercise': squat,
+      'sets': [for (final each in reps) logged(reps: each, weight: weight, target: fives)],
+    };
+
+    Future<void> follow(Program program, {List<ProgramBase> bases = const []}) async {
+      local.programs[uid] = [program];
+      local.bases.addAll(bases);
+      access.account = false;
+      await programs.init();
+      access.account = true;
+    }
+
+    ProgramBase base(num value, {String exerciseId = 'squat', String? slot, DateTime? at}) => ProgramBase(
+      id: 'b-$value-${slot ?? exerciseId}',
+      programId: 'p1',
+      exerciseId: exerciseId,
+      slot: slot,
+      value: value,
+      at: at ?? DateTime.utc(2026, 10, 1),
+    );
+
+    Program growing(Map<String, GrowthRule> rules, {Map<String, ProgramTest> tests = const {}}) {
+      return Program(
+        id: 'p1',
+        name: 'Getting stronger',
+        perWeek: 3,
+        sessions: const ['s1'],
+        rules: rules,
+        tests: tests,
+        createdAt: DateTime.utc(2026, 10, 1),
+      );
+    }
+
+    test('a session that makes every set grows the base, caused by the workout', () async {
+      await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
+      final workout = done(
+        'w1',
+        start: DateTime.utc(2026, 10, 5),
+        exercises: [
+          squats([5, 5]),
+        ],
+      );
+
+      final [move] = await programs.grow(workout);
+
+      expect((move.step, move.before), (const Grow(102.5), 100));
+      expect((move.base?.value, move.base?.workoutId), (102.5, 'w1'));
+      expect(programs.currentBasesOf('p1')['squat']?.value, 102.5);
+    });
+
+    test('a third miss in a row cuts; the streak is read from the sessions since the base', () async {
+      await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
+      local.workouts['p1'] = [
+        // before the base: judged against another, so it counts for nothing
+        done(
+          'w0',
+          start: DateTime.utc(2026, 9, 28),
+          exercises: [
+            squats([3, 3]),
+          ],
+        ),
+        done(
+          'w1',
+          start: DateTime.utc(2026, 10, 2),
+          exercises: [
+            squats([5, 3]),
+          ],
+        ),
+        done(
+          'w2',
+          start: DateTime.utc(2026, 10, 4),
+          exercises: [
+            squats([5, 4]),
+          ],
+        ),
+      ];
+
+      final [move] = await programs.grow(
+        done(
+          'w3',
+          start: DateTime.utc(2026, 10, 6),
+          exercises: [
+            squats([5, 2]),
+          ],
+        ),
+      );
+
+      expect(move.step, const Cut(90));
+      expect(programs.currentBasesOf('p1')['squat']?.value, 90);
+    });
+
+    test('a miss short of a cut is said, and writes nothing', () async {
+      await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
+
+      final [move] = await programs.grow(
+        done(
+          'w1',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            squats([5, 3]),
+          ],
+        ),
+      );
+
+      expect((move.step, move.cutAfter, move.base), (const Missed(1), 3, null));
+      expect(programs.basesOf('p1'), hasLength(1));
+    });
+
+    test('in a lighter cycle nothing moves', () async {
+      await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
+      await programs.act(programs.lookup('p1')!, .lighter, at: DateTime.utc(2026, 10, 3));
+
+      final moves = await programs.grow(
+        done(
+          'w1',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            squats([5, 5]),
+          ],
+        ),
+      );
+
+      expect(moves, isEmpty);
+    });
+
+    test('once per workout, and never for one something was already written for', () async {
+      await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
+      final workout = done(
+        'w1',
+        start: DateTime.utc(2026, 10, 5),
+        exercises: [
+          squats([5, 5]),
+        ],
+      );
+
+      await programs.grow(workout);
+      await programs.grow(workout);
+      expect(programs.basesOf('p1'), hasLength(2));
+
+      // the same finish, replayed on a relaunch
+      final again = relaunch();
+      local.programs[uid] = [programs.lookup('p1')!];
+      await again.init();
+      expect(await again.grow(workout), isEmpty);
+      expect(local.bases, hasLength(2));
+    });
+
+    test("a ladder climbs: the advance, the rule's key and the sessions move; Keep takes all three back", () async {
+      final swaps = <(String, String, String)>[];
+      programs = Programs(
+        service: local,
+        remoteService: remote,
+        templates: templates,
+        remote: access,
+        onError: (error, {stacktrace}) => errors.add(error),
+        onAdvance: (sessions, {required from, required to}) async => swaps.add((sessions.join(','), from, to)),
+      )..userId = uid;
+      await follow(
+        growing({
+          'wall': const Ladder(rungs: ['wall', 'incline'], top: 12, bottom: 8),
+        }),
+      );
+
+      final moves = await programs.grow(
+        done(
+          'w1',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            {
+              'id': 'we1',
+              'exercise': wall,
+              'sets': [logged(reps: 12), logged(reps: 12)],
+            },
+          ],
+        ),
+      );
+
+      expect(errors, isEmpty);
+      final [move] = moves;
+      expect(move.step, const Advance('incline'));
+      expect((move.action?.from, move.action?.to, move.action?.workoutId), ('wall', 'incline', 'w1'));
+      expect(programs.lookup('p1')!.rules.keys, ['incline']);
+      expect(swaps.single, ('s1', 'wall', 'incline'));
+
+      await programs.keep(move);
+
+      expect(programs.actionsOf('p1'), isEmpty);
+      expect(programs.lookup('p1')!.rules.keys, ['wall']);
+      expect(swaps.last, ('s1', 'incline', 'wall'));
+    });
+
+    test('a test session sets training maxes, judged against no rule, and Keep takes one back', () async {
+      await follow(growing({'squat': const AddWeight(step: 5)}, tests: {'s1': const ProgramTest()}));
+
+      // 100 × 5: an estimated 112.5, 90% of it 101.25, down to 100 on 5s
+      final [move] = await programs.grow(
+        done(
+          'w1',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            squats([5]),
+          ],
+        ),
+      );
+
+      expect((move.isTest, move.step), (true, const Grow(100)));
+      expect(programs.currentBasesOf('p1')['squat']?.value, 100);
+
+      await programs.keep(move);
+
+      expect(programs.basesOf('p1'), isEmpty);
+    });
+
+    test('a lift the program keeps two bases for grows each by its own occurrence', () async {
+      await follow(
+        growing({'squat': const AddWeight(step: 2.5)}),
+        bases: [
+          base(100, slot: 'heavy'),
+          base(70, slot: 'light'),
+        ],
+      );
+      final session = Template.fromJson({
+        'id': 's1',
+        'name': 'Squat twice',
+        'order': 0,
+        'programId': 'p1',
+        'exercises': [
+          {
+            'id': 'heavy',
+            'exercise': squat,
+            'sets': [logged(done: false, target: fives)],
+          },
+          {
+            'id': 'light',
+            'exercise': squat,
+            'sets': [logged(done: false, target: fives)],
+          },
+        ],
+      });
+
+      final moves = await programs.grow(
+        done(
+          'w1',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            squats([5, 5]),
+            squats([5, 3], weight: 70),
+          ],
+        ),
+        session: session,
+      );
+
+      expect(moves.map((move) => (move.slot, move.step)), [('heavy', const Grow(102.5)), ('light', const Missed(1))]);
+      expect(programs.currentBasesOf('p1')['heavy']?.value, 102.5);
+      expect(programs.currentBasesOf('p1')['light']?.value, 70);
+    });
+  });
+
   test('signing out forgets every program', () async {
     local.programs[uid] = [program()];
     await programs.init();
@@ -471,6 +766,11 @@ class _Local implements LocalProgramService {
 
   @override
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId) async => [...?marks[programId]];
+
+  final workouts = <String, List<Workout>>{};
+
+  @override
+  Future<List<Workout>> getProgramWorkouts(String userId, String programId) async => [...?workouts[programId]];
 
   @override
   Future<List<ProgramAction>> getProgramActions(String userId, {String? programId}) async {

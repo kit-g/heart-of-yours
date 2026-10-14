@@ -29,6 +29,11 @@ class LocalPrograms implements LocalProgramService {
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId) => _db.getProgramMarks(userId, programId);
 
   @override
+  Future<List<Workout>> getProgramWorkouts(String userId, String programId) {
+    return _db.getProgramWorkouts(userId, programId);
+  }
+
+  @override
   Future<List<ProgramAction>> getProgramActions(String userId, {String? programId}) {
     return _db.getProgramActions(userId, programId: programId);
   }

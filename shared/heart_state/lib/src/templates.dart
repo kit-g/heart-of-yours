@@ -528,6 +528,46 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
     }
   }
 
+  /// Swaps [from] for [to] in each of the user's templates among [ids] that
+  /// holds it: a ladder's step up, or back down (#350). Each set keeps its
+  /// type, target and values, and the exercise its rest, group and totals,
+  /// as an open slot's swap on the sheet keeps them.
+  Future<void> replaceExercise(Iterable<String> ids, {required String from, required Exercise to}) async {
+    final wanted = ids.toSet();
+    final changed = <Template>[];
+    for (final template in _templates.where((template) => wanted.contains(template.id)).toList()) {
+      final held = template.where((exercise) => exercise.exercise.id == from && exercise.isNotEmpty).toList();
+      for (final exercise in held) {
+        final sets = [
+          for (final set in exercise)
+            ExerciseSet(to, setType: set.setType, target: set.target)..setMeasurements(
+              weight: set.weight,
+              reps: set.reps,
+              duration: set.duration,
+              distance: set.distance,
+            ),
+        ];
+        final replacement = WorkoutExercise(starter: sets.first)
+          ..rest = exercise.rest
+          ..superset = exercise.superset
+          ..pattern = exercise.pattern
+          ..totalReps = exercise.totalReps;
+        for (final set in sets.skip(1)) {
+          replacement.add(set);
+        }
+        template
+          ..append(replacement)
+          ..swap(replacement, exercise)
+          ..remove(exercise);
+      }
+      if (held.isNotEmpty) changed.add(template);
+    }
+    if (changed.isEmpty) return;
+    notifyListeners();
+    await Future.wait(changed.map(_save));
+    notifyListeners();
+  }
+
   /// Replaces the in-memory copy keyed like [template] — same id, same slot in
   /// the ordered set — with [replacement].
   void _swap(Template template, Template replacement) {
