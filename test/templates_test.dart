@@ -348,8 +348,8 @@ void main() {
         await openTarget(tester);
         expect(find.text('Target for set 1'), findsOneWidget);
         // the reps row is the second pair: weight comes first, as on the row
-        await tester.enterText(field('from').at(1), '6');
-        await tester.enterText(field('to').at(1), '10');
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetFrom(.reps)), '6');
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetTo(.reps)), '10');
         await tester.tap(find.text('Save').last);
         await tester.pumpAndSettle();
 
@@ -371,8 +371,8 @@ void main() {
         expect(find.text('5'), findsOneWidget);
 
         await openTarget(tester);
-        await tester.enterText(field('from').at(1), '6');
-        await tester.enterText(field('to').at(1), '10');
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetFrom(.reps)), '6');
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetTo(.reps)), '10');
         await tester.tap(find.text('Save').last);
         await tester.pumpAndSettle();
 
@@ -387,13 +387,13 @@ void main() {
         await openEditor(tester);
 
         await openTarget(tester);
-        await tester.enterText(field('from').at(1), '10');
-        await tester.enterText(field('to').at(1), '6');
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetFrom(.reps)), '10');
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetTo(.reps)), '6');
         await tester.tap(find.text('Save').last);
         await tester.pumpAndSettle();
         expect(find.text('Target for set 1'), findsOneWidget, reason: 'nothing can hold ten to six');
 
-        await tester.enterText(field('to').at(1), '');
+        await tester.enterText(find.byKey(WorkoutDetailKeys.targetTo(.reps)), '');
         await tester.tap(find.text('Save').last);
         await tester.pumpAndSettle();
         expect(field('10+'), findsOneWidget);

@@ -243,10 +243,11 @@ class _TargetFormState extends State<_TargetForm> {
       .weight || .distance => _floatingPointFormatters,
     };
 
-    Widget field(TextEditingController controller, String hint, {required bool hasError}) {
+    Widget field(Key key, TextEditingController controller, String hint, {required bool hasError}) {
       return SizedBox(
         width: 72,
         child: TextField(
+          key: key,
           controller: controller,
           keyboardType: switch (row.column) {
             .reps || .duration => TextInputType.number,
@@ -278,12 +279,12 @@ class _TargetFormState extends State<_TargetForm> {
             // the row's word goes with each field: "Reps, from"
             Semantics(
               label: label,
-              child: field(row.from, l.setTargetFrom, hasError: hasError),
+              child: field(WorkoutDetailKeys.targetFrom(row.column), row.from, l.setTargetFrom, hasError: hasError),
             ),
             const Text('–'),
             Semantics(
               label: label,
-              child: field(row.to, l.setTargetTo, hasError: hasError),
+              child: field(WorkoutDetailKeys.targetTo(row.column), row.to, l.setTargetTo, hasError: hasError),
             ),
           ],
         );
