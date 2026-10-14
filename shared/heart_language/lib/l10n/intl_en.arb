@@ -4682,5 +4682,7 @@
   "untickedPlanBody": "Only ticked sets are saved:",
   "@untickedPlanBody": {"description": "Finish dialog of a program workout, before the list of sets left unticked", "type": "text", "placeholders": {}},
   "untickedSetsOf": "{exercise}: {count, plural, =1{set {numbers}} other{sets {numbers}}}",
-  "@untickedSetsOf": {"description": "One line of the finish dialog of a program workout: an exercise and the numbers of its sets left unticked, such as 'Squat (Barbell): sets 4, 5'", "type": "text", "placeholders": {"exercise": {}, "count": {"type": "int"}, "numbers": {}}}
+  "@untickedSetsOf": {"description": "One line of the finish dialog of a program workout: an exercise and the numbers of its sets left unticked, such as 'Squat (Barbell): sets 4, 5'", "type": "text", "placeholders": {"exercise": {}, "count": {"type": "int"}, "numbers": {}}},
+  "swapOutsidePattern": "This slot takes any {pattern} exercise, and {exercise} isn't one.",
+  "@swapOutsidePattern": {"description": "Tooltip on a greyed exercise when picking a replacement for an open slot in a program workout: the slot takes only exercises of one movement pattern, such as 'This slot takes any Horizontal Row exercise, and Bench Press (Barbell) isn't one.'", "type": "text", "placeholders": {"pattern": {}, "exercise": {}}}
 }

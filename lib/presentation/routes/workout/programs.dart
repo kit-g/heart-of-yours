@@ -1,12 +1,5 @@
 part of 'workout.dart';
 
-/// The user's first day of the week, ISO (1 Monday … 7 Sunday), from the
-/// locale until #339 gives it a setting of its own.
-int _firstWeekday(BuildContext context) {
-  final index = MaterialLocalizations.of(context).firstDayOfWeekIndex;
-  return index == 0 ? DateTime.sunday : index;
-}
-
 /// What a session is called on screen: its template's name, or the word for a
 /// template while it has none.
 String _sessionName(L copy, Template template) {
@@ -67,7 +60,7 @@ class _ProgramsSection extends StatelessWidget {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final now = DateTime.now();
-    final firstWeekday = _firstWeekday(context);
+    final firstWeekday = firstWeekdayOf(context);
 
     return SliverToBoxAdapter(
       child: Padding(

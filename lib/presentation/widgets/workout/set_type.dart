@@ -62,12 +62,19 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData(:textTheme, :brightness) = Theme.of(context);
+    final ThemeData(:textTheme, :brightness, :colorScheme) = Theme.of(context);
     final l = L.of(context);
     final ExerciseSet(:setType) = widget.set;
+    // a program's supplemental set (#349): after the main ones, never judged
+    final supplemental =
+        setType == .normal && (widget.set.target?.supplemental ?? false) && Preferences.watch(context).isOn(.programs);
 
-    final label = switch (setType) {
-      .normal => Text('${widget.number}'),
+    final label = switch ((setType, supplemental)) {
+      (.normal, true) => Text(
+        l.supplementalSetLetter,
+        style: textTheme.titleSmall?.copyWith(color: colorScheme.tertiary, fontWeight: .w700),
+      ),
+      (.normal, false) => Text('${widget.number}'),
       _ => Text(
         setType.letter(l),
         style: textTheme.titleSmall?.copyWith(
@@ -86,8 +93,9 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
     final onSetType = widget.onSetType;
     if (onSetType == null) {
       return Semantics(
-        value: switch (setType) {
-          .normal => null,
+        value: switch ((setType, supplemental)) {
+          (.normal, true) => l.supplementalSet,
+          (.normal, false) => null,
           _ => setType.copy(l),
         },
         child: DecoratedBox(
@@ -106,8 +114,9 @@ class _SetTypeButtonState extends State<_SetTypeButton> with HasHaptic<_SetTypeB
       container: true,
       button: true,
       excludeSemantics: true,
-      label: switch (setType) {
-        .normal => '${l.setType} ${widget.number}',
+      label: switch ((setType, supplemental)) {
+        (.normal, true) => '${l.setType} ${widget.number}: ${l.supplementalSet}',
+        (.normal, false) => '${l.setType} ${widget.number}',
         _ => '${l.setType}: ${setType.copy(l)}',
       },
       onTap: open,

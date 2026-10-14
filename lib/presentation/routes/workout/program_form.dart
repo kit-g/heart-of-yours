@@ -329,7 +329,7 @@ class _DayToggles extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final locale = L.of(context).localeName;
-    final first = _firstWeekday(context);
+    final first = firstWeekdayOf(context);
     return Wrap(
       spacing: 8,
       runSpacing: 8,

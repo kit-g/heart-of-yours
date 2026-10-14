@@ -195,7 +195,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
                   context,
                   () => Workouts.of(
                     context,
-                  ).startWorkout(source: .sample, template: template.toWorkout(), applyPinnedNotes: true),
+                  ).startWorkout(source: .sample, template: startingWorkout(context, template), applyPinnedNotes: true),
                 );
                 if (started) widget.onNewWorkout();
               },
@@ -219,7 +219,9 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
   Future<void> _startSession(BuildContext context, Template session) async {
     final started = await startWorkoutOverActive(
       context,
-      () => Workouts.of(context).startWorkout(source: .program, template: session.toWorkout(), applyPinnedNotes: true),
+      () =>
+          Workouts.of(context)
+              .startWorkout(source: .program, template: startingWorkout(context, session), applyPinnedNotes: true),
     );
     if (started) widget.onNewWorkout();
   }
@@ -254,7 +256,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           context,
           () => Workouts.of(
             context,
-          ).startWorkout(source: .template, template: template.toWorkout(), applyPinnedNotes: true),
+          ).startWorkout(source: .template, template: startingWorkout(context, template), applyPinnedNotes: true),
         );
         if (started) widget.onNewWorkout();
       },
@@ -580,7 +582,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           context,
           () => Workouts.of(context).startWorkout(
             source: allowsEditing ? .template : .sample,
-            template: template.toWorkout(),
+            template: startingWorkout(context, template),
             applyPinnedNotes: true,
           ),
         );

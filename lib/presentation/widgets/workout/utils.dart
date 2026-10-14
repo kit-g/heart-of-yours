@@ -116,6 +116,7 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
     :untickedSetsBody,
     :saveUntickedSets,
     :discardUntickedSets,
+    :untickedPlanBody,
   ) = L.of(
     context,
   );
@@ -164,6 +165,69 @@ Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {V
         textAlign: .center,
       ),
       actions: actions,
+    );
+  }
+
+  // A program's session names what is left unticked (#349): a target never
+  // saves itself, and a set left on its ghost is the easiest one to forget.
+  // What was typed can still be kept, when that is all the list holds.
+  // Nothing done at all is no finish to name sets for: that is a cancel.
+  final unticked = _untickedInPlan(context, activeWorkout);
+  if (unticked.isNotEmpty && workouts.activeWorkoutHasContent) {
+    final typed =
+        workouts.hasTypedButUntickedSets && unticked.every((each) => each.$2.every((set) => set.canBeCompleted));
+    return showBrandedDialog(
+      context,
+      title: Text(untickedSetsTitle),
+      titleTextStyle: textTheme.titleMedium,
+      icon: Icon(Icons.checklist_rounded, color: colorScheme.error),
+      content: Column(
+        mainAxisSize: .min,
+        crossAxisAlignment: .start,
+        spacing: 4,
+        children: [
+          Text(untickedPlanBody),
+          for (final (exercise, sets) in unticked)
+            Text(
+              L
+                  .of(context)
+                  .untickedSetsOf(
+                    exercise.exercise.name,
+                    sets.length,
+                    sets.map((set) => _setLabel(L.of(context), exercise, set)).join(', '),
+                  ),
+              style: textTheme.bodyMedium?.copyWith(fontWeight: .w600),
+            ),
+        ],
+      ),
+      actions: [
+        Column(
+          spacing: 8,
+          children: [
+            PrimaryButton.wide(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+              child: Center(child: Text(notReadyToFinish)),
+            ),
+            PrimaryButton.wide(
+              backgroundColor: switch (typed) {
+                true => colorScheme.surfaceContainerHighest,
+                false => null,
+              },
+              onPressed: finishNow,
+              child: Center(child: Text(discardUntickedSets)),
+            ),
+            if (typed)
+              PrimaryButton.wide(
+                child: Center(child: Text(saveUntickedSets)),
+                onPressed: () {
+                  workouts.completeTypedSets();
+                  finishNow();
+                },
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -555,4 +619,53 @@ Future<void> showDeleteImageDialog(
       ),
     ],
   );
+}
+
+/// The user's first day of the week, ISO (1 Monday … 7 Sunday), from the
+/// locale until #339 gives it a setting of its own.
+int firstWeekdayOf(BuildContext context) {
+  final index = MaterialLocalizations.of(context).firstDayOfWeekIndex;
+  return index == 0 ? DateTime.sunday : index;
+}
+
+/// [template] as the workout it starts. A program's session, while Programs
+/// is on, comes with its targets as the program has them this time (#349):
+/// a share of a base as a weight on the user's plates, a lighter cycle
+/// lighter. Anything else starts as it was written.
+Workout startingWorkout(BuildContext context, Template template) {
+  final preferences = Preferences.of(context);
+  if (template.programId == null || !preferences.isOn(.programs)) return template.toWorkout();
+  final exercises = Exercises.of(context);
+  return Programs.of(context).plan(
+    template,
+    now: DateTime.now(),
+    firstWeekday: firstWeekdayOf(context),
+    // the nearest weight the plates make: 2.5 kg, or 5 lb
+    round: (exercise, kilograms) => switch (exercises.unitFor(exercise.id) ?? preferences.weightUnit) {
+      .metric => (kilograms / 2.5).round() * 2.5,
+      .imperial => ((kilograms.asPounds / 5).round() * 5).asKilograms,
+    },
+  );
+}
+
+/// The sets a program's session leaves unticked, by exercise (#349): those
+/// that aim for something or hold something typed. Empty for any other
+/// workout, and while Programs is off.
+List<(WorkoutExercise, List<ExerciseSet>)> _untickedInPlan(BuildContext context, Workout workout) {
+  if (workout.programId == null || !Preferences.of(context).isOn(.programs)) return const [];
+  return [
+    for (final exercise in workout)
+      if (exercise.where((set) => !set.isCompleted && (set.target != null || set.canBeCompleted)).toList()
+          case final List<ExerciseSet> sets when sets.isNotEmpty)
+        (exercise, sets),
+  ];
+}
+
+/// [set] as its row names it: its number among [exercise]'s plain sets, or
+/// its type's letter.
+String _setLabel(L l, WorkoutExercise exercise, ExerciseSet set) {
+  return switch (set.setType) {
+    .normal => '${exercise.takeWhile((each) => each != set).where((each) => each.setType == .normal).length + 1}',
+    final type => type.letter(l),
+  };
 }

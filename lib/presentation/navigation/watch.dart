@@ -6,6 +6,7 @@ import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/commands.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
+import 'package:heart/presentation/widgets/workout/rest.dart' show restFor;
 import 'package:heart/presentation/widgets/workout/workout_detail.dart' show SetTypeCopy;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
@@ -251,7 +252,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
           step: _step(exercise),
           weighted: _measures(exercise).$1,
           counted: _measures(exercise).$2,
-          rest: Timers.of(context)[exercise.exercise.id],
+          rest: restFor(context, exercise),
           sets: [
             for (final (index, set) in exercise.indexed)
               (

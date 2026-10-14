@@ -91,7 +91,7 @@ CommandOutcome applyWorkoutCommand(BuildContext context, WatchCommand command) {
       // last one once every set is done
       final exercise = upNextIn(workout, after: workouts.latestMarkedSet)?.exercise ?? workout.lastOrNull;
       if (exercise == null) return .stale;
-      final length = seconds ?? Timers.of(context)[exercise.exercise.id];
+      final length = seconds ?? restFor(context, exercise);
       if (length == null) return .stale;
       // placed when it was asked for, which a queue may have held a while;
       // one that would already be over does not start at all
