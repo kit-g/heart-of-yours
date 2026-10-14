@@ -71,8 +71,8 @@ Future<void> _onMoveHistory(
 
   try {
     await exercises.moveHistory(source, target);
-  } on ExerciseMoveRefused {
-    messenger.snack(copy.moveHistoryGone);
+  } on ExerciseMoveRefused catch (refused) {
+    messenger.snack(_refusal(copy, refused.reason, source: source, target: target));
     return;
   } catch (e, s) {
     reportToSentry(e, stacktrace: s);
@@ -91,6 +91,18 @@ Future<void> _onMoveHistory(
   unawaited(goals.init());
   unawaited(charts.reload());
   unawaited(previous.init());
+}
+
+/// Why the server refused to move [source]'s history onto [target]. The app
+/// never asks for the same exercise twice, so that refusal, like an unknown
+/// one, means an exercise has gone from the account since the page read it.
+/// An incompatible one means the two have drifted apart since: a category
+/// changed on another device.
+String _refusal(L copy, ExerciseMoveRefusal reason, {required Exercise source, required Exercise target}) {
+  return switch (reason) {
+    .sameExercise || .unknownExercise => copy.moveHistoryGone,
+    .incompatibleExercise => copy.moveHistoryIncompatible(target.name, source.name),
+  };
 }
 
 /// What the move would do, as the server's dry run counts it, and the Move
@@ -117,7 +129,9 @@ class _MovePreview extends StatelessWidget {
             if (data.sourceDeleted) copy.moveHistorySourceDeleted(source.name),
             copy.moveHistoryFinal,
           ],
-          AsyncSnapshot(error: ExerciseMoveRefused()) => [copy.moveHistoryGone],
+          AsyncSnapshot(error: ExerciseMoveRefused(:final reason)) => [
+            _refusal(copy, reason, source: source, target: target),
+          ],
           AsyncSnapshot(hasError: true) => [copy.moveHistoryFailed],
           _ => null,
         };
