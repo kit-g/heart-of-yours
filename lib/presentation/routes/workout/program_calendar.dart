@@ -80,13 +80,13 @@ class _ProgramCalendarRow extends StatelessWidget {
 String _calendarTime(BuildContext context, int? time) {
   final copy = L.of(context);
   return switch (time) {
-    final int minutes => copy.programCalendarAt(_clock(context, minutes)),
+    final int minutes => copy.programCalendarAt(_timeOfDay(context, minutes)),
     null => copy.programCalendarAllDay,
   };
 }
 
 /// [minutes] after midnight on the device's own clock: "18:00" or "6:00 PM".
-String _clock(BuildContext context, int minutes) {
+String _timeOfDay(BuildContext context, int minutes) {
   return MaterialLocalizations.of(context).formatTimeOfDay(
     TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
@@ -269,7 +269,7 @@ class _CalendarSetupState extends State<_CalendarSetup> {
               ListTile(
                 contentPadding: .zero,
                 title: Text(copy.time),
-                trailing: Text(_clock(context, time), style: textTheme.bodyLarge),
+                trailing: Text(_timeOfDay(context, time), style: textTheme.bodyLarge),
                 onTap: () => _pickTime(context, time),
               ),
             const SizedBox(height: 8),
