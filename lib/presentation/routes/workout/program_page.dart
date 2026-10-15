@@ -59,6 +59,13 @@ class ProgramPage extends StatelessWidget {
             onSelected: (action) => action(),
             itemBuilder: (_) {
               return [
+                // the user's list, not this program's: reachable from any
+                // program while the map is published (#396)
+                if (GoEasy.of(context).content?.title case final ContentText title)
+                  PopupMenuItem<VoidCallback>(
+                    value: () => showGoEasySheet(context),
+                    child: _MenuRow(icon: Icons.spa_outlined, label: title.of(languageTag())),
+                  ),
                 PopupMenuItem<VoidCallback>(
                   value: () => programs.archive(program, archived: !program.archived),
                   child: _MenuRow(
@@ -410,8 +417,13 @@ class _SessionTile extends StatelessWidget {
     final ThemeData(:colorScheme, :textTheme) = Theme.of(context);
     final name = _sessionName(copy, session);
     final exercises = session.map((exercise) => exercise.exercise.name).join(', ');
+    // what in it is harder on something the user goes easy on (#396)
+    final marked = [
+      for (final exercise in session)
+        if (goEasyMarks(context, exercise.exercise).isNotEmpty) exercise.exercise,
+    ];
 
-    return Semantics(
+    final tile = Semantics(
       label: switch (state) {
         .done => copy.programSessionDone(name),
         .skipped => copy.programSessionSkipped(name),
@@ -448,6 +460,23 @@ class _SessionTile extends StatelessWidget {
         },
       ),
     );
+
+    // beside the tile, not in it: the tile reads as one button, and this one
+    // has its own say
+    return switch (marked) {
+      [] => tile,
+      _ => Row(
+        children: [
+          Expanded(child: tile),
+          IconButton(
+            key: AppKeys.goEasySessionMark,
+            tooltip: copy.goEasySessionMarked(marked.length),
+            icon: Icon(Icons.spa_outlined, color: colorScheme.onSurfaceVariant),
+            onPressed: () => showKinderSwaps(context, marked, candidates: Exercises.of(context)),
+          ),
+        ],
+      ),
+    };
   }
 }
 

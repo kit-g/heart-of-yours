@@ -153,6 +153,7 @@ class _LibraryReaderState extends State<_LibraryReader> {
   void initState() {
     super.initState();
     ProgramLibrary.of(context).ensure();
+    GoEasy.of(context).ensure();
   }
 
   @override
@@ -601,6 +602,8 @@ class _ProgramsOnlyState extends State<_ProgramsOnly> {
   void initState() {
     super.initState();
     _preferences = Preferences.of(context)..addListener(_onPreferences);
+    // what the user goes easy on is marked on every Programs page (#396)
+    GoEasy.of(context).ensure();
   }
 
   @override

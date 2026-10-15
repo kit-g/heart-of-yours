@@ -192,4 +192,7 @@ abstract final class AppKeys {
   static const libraryStart = Key('Programs.library.start');
   static const libraryOpenYours = Key('Programs.library.openYours');
   static const programAbout = Key('Programs.about');
+  static const goEasyRow = Key('Programs.goEasy');
+  static Key goEasy(String key) => Key('Programs.goEasy.$key');
+  static const goEasySessionMark = Key('Programs.goEasy.session');
 }

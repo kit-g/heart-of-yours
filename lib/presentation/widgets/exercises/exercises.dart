@@ -1,5 +1,6 @@
 library;
 
+import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
@@ -18,4 +19,5 @@ import 'package:material_ui/material_ui.dart';
 part 'badge.dart';
 part 'exercise_item.dart';
 part 'exercise_picker.dart';
+part 'go_easy.dart';
 part 'movement_filter_sheet.dart';

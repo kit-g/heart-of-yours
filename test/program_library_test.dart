@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -252,6 +253,97 @@ void main() {
 
       expect(find.byKey(AppKeys.libraryStart), findsNothing);
       expect(find.text('It needs room for 3 more templates.'), findsOneWidget);
+    });
+  });
+
+  group('things to go easy on (#396)', () {
+    final map = File('shared/heart_state/test/fixtures/go_easy.json').readAsStringSync();
+
+    /// The catalog, with movement data where the marks need it: a step-up
+    /// is a lunge, harder on a knee; a bridge is kinder to one.
+    void withMovement() {
+      final moved = [
+        for (final exercise in catalog)
+          switch (exercise.id) {
+            'id-step-up-bodyweight' || 'id-glute-bridge' => Exercise.fromJson({
+              ...exercise.toMap(),
+              'id': exercise.id,
+              'key': exercise.id.substring(3),
+              'name': exercise.name,
+              'own': false,
+              'category': 'Reps Only',
+              'target': 'Legs',
+              'archived': false,
+              'validated': false,
+              'movement': {
+                'groups': [exercise.id == 'id-glute-bridge' ? 'hip_extension_bridge' : 'lunge_split'],
+                'axialLoad': 'none',
+                'stability': 'free',
+                'unilateral': false,
+                'impact': 'none',
+                'skill': 'low',
+              },
+            }),
+            _ => exercise,
+          },
+      ];
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, moved));
+    }
+
+    Future<void> openWith(WidgetTester tester, {Set<String> listed = const {}, bool published = true}) async {
+      answer(.on);
+      withMovement();
+      when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer(
+        (_) async => switch (published) {
+          true => (body: map, etag: '"g1"'),
+          false => throw Exception('403'),
+        },
+      );
+      when(db.getGoEasy(userId)).thenAnswer((_) async => listed);
+      when(db.storeGoEasy(any, any)).thenAnswer((_) async {});
+      await openFirstSteps(tester);
+      final context = tester.element(find.byType(MaterialApp));
+      await GoEasy.of(context).ensure();
+      await tester.pumpTimes();
+    }
+
+    testWidgets('not published yet, nothing is asked and nothing marked', (tester) async {
+      await openWith(tester, listed: {'knee'}, published: false);
+      expect(find.byKey(AppKeys.goEasyRow), findsNothing);
+      expect(find.byIcon(Icons.spa_outlined), findsNothing);
+    });
+
+    testWidgets('asked on the page, kept on this phone only', (tester) async {
+      await openWith(tester);
+      expect(find.byKey(AppKeys.goEasyRow), findsOneWidget);
+      expect(find.text('Nothing yet'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.goEasyRow);
+      await tester.pumpTimes();
+      expect(find.text('Things to go easy on'), findsWidgets);
+      await tester.tapByKey(AppKeys.goEasy('knee'));
+      await tester.pumpTimes();
+
+      verify(db.storeGoEasy(userId, {'knee'})).called(1);
+    });
+
+    testWidgets('an exercise harder on the list is marked, and the mark offers kinder swaps', (tester) async {
+      await openWith(tester, listed: {'knee'});
+      expect(find.descendant(of: find.byKey(AppKeys.goEasyRow), matching: find.text('Knee')), findsOneWidget);
+
+      final semantics = tester.ensureSemantics();
+      await scrollTo(tester, find.text('step-up-bodyweight'));
+      final mark = find.byType(GoEasyMarker);
+      expect(mark, findsOneWidget);
+      expect(find.bySemanticsLabel('Harder on what you go easy on: Knee'), findsOneWidget);
+      semantics.dispose();
+
+      await tester.tap(mark);
+      await tester.pumpTimes();
+      expect(find.text('Easier on your knee'), findsOneWidget);
+      // a bridge works the legs too, and the map calls it kinder to a knee
+      expect(find.text('glute-bridge'), findsWidgets);
+      expect(find.text("Suggestions only: a session's exercises change in its template."), findsOneWidget);
     });
   });
 }

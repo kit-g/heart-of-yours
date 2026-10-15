@@ -307,6 +307,10 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                       const SizedBox(height: 8),
                       Text(note.of(tag), style: textTheme.bodyLarge),
                     ],
+                    // asked before the program is started: what it marks
+                    // below is what is harder on the list (#396)
+                    const SizedBox(height: 8),
+                    const GoEasyRow(),
                     if (program.claimsAbout('program') case final about when about.isNotEmpty) ...[
                       heading(copy.libraryWhy),
                       claims(about),
@@ -621,6 +625,8 @@ class _LibrarySessionCard extends StatelessWidget {
                   ],
                 ),
                 Text(_setsLine(copy, exercise), style: muted),
+                if (goEasyMarks(context, exercise.exercise) case final marks when marks.isNotEmpty)
+                  GoEasyMarker(marks: marks, exercise: exercise.exercise, candidates: Exercises.of(context)),
                 if (exercise.pattern case final String pattern)
                   Text(copy.libraryOrAny(PatternFilter(pattern).label(copy)), style: muted),
                 _Claims(claims: exerciseClaims(exercise.id).toList(), tag: tag),

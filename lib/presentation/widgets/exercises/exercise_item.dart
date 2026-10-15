@@ -33,6 +33,7 @@ class ExerciseItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final style = textTheme.bodySmall;
+    final marks = goEasyMarks(context, exercise);
     TapDownDetails? details;
 
     final row = TweenAnimationBuilder<Color?>(
@@ -85,6 +86,24 @@ class ExerciseItem extends StatelessWidget {
                               exercise.category.label(L.of(context)),
                               style: style,
                             ),
+                            // harder on something the user goes easy on
+                            // (#396): said, never refused
+                            if (marks.isNotEmpty)
+                              Semantics(
+                                label: L.of(context).goEasyHarderOn(_names(marks)),
+                                excludeSemantics: true,
+                                child: Row(
+                                  spacing: 4,
+                                  children: [
+                                    Text('  ·  ', style: style),
+                                    Icon(Icons.spa_outlined, size: 14, color: colorScheme.onSurfaceVariant),
+                                    Text(
+                                      _names(marks),
+                                      style: style?.copyWith(color: colorScheme.onSurfaceVariant),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                       ],

@@ -55,6 +55,7 @@ enum _Screen {
   replaceScopeDialog,
   programLibrary,
   libraryProgram,
+  goEasy,
   exerciseNoteEditor,
   workoutNote,
   pausedWorkout,
@@ -129,6 +130,7 @@ Template _session(String id, int order, String name, {String? programId}) {
 /// Heart's ready-made programs (#352): three programs of the real file,
 /// rendered by heart-api and trimmed.
 final _library = File('shared/heart_state/test/fixtures/programs.json').readAsStringSync();
+final _goEasy = File('shared/heart_state/test/fixtures/go_easy.json').readAsStringSync();
 
 /// The catalog exercises [_library] names, by their library keys.
 List<Exercise> _libraryCatalog() {
@@ -316,6 +318,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.newProgram,
     _Screen.programLibrary,
     _Screen.libraryProgram,
+    _Screen.goEasy,
   ]) ...[
     (screen, _Guideline.labeledTapTarget, null),
     (screen, _Guideline.textContrastLight, null),
@@ -323,6 +326,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ],
   for (final guideline in [_Guideline.androidTapTarget, _Guideline.iosTapTarget]) ...[
     (_Screen.programLibrary, guideline, null),
+    (_Screen.goEasy, guideline, null),
     (
       _Screen.libraryProgram,
       guideline,
@@ -1022,8 +1026,12 @@ void main() {
           _Screen.newProgram ||
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
-          _Screen.libraryProgram:
+          _Screen.libraryProgram ||
+          _Screen.goEasy:
         final running = screen != _Screen.programsOffer;
+        // things to go easy on (#396): the whole map, a knee listed
+        when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
+        when(db.getGoEasy(any)).thenAnswer((_) async => {'knee'});
         // Heart's ready-made programs (#352): three of the real file, and the
         // catalog exercises they name
         when(cdn.getProgramLibrary(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _library, etag: null));
@@ -1354,7 +1362,8 @@ void main() {
           _Screen.newProgram ||
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
-          _Screen.libraryProgram:
+          _Screen.libraryProgram ||
+          _Screen.goEasy:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
@@ -1366,6 +1375,7 @@ void main() {
         templates.notifyListeners();
         await Programs.of(context).init();
         await ProgramLibrary.of(context).ensure();
+        await GoEasy.of(context).ensure();
         await tester.pumpTimes();
         switch (screen) {
           case _Screen.programsOffer:
@@ -1385,16 +1395,20 @@ void main() {
             await tester.pumpTimes();
             // the screen is only honest if the day set aside is on it
             expect(find.byKey(AppKeys.historySkip('k1')), findsOneWidget);
-          case _Screen.programLibrary || _Screen.libraryProgram:
+          case _Screen.programLibrary || _Screen.libraryProgram || _Screen.goEasy:
             await tester.scrollUntilVisible(
               find.byKey(AppKeys.libraryEntry),
               200,
               scrollable: find.byType(Scrollable).first,
             );
             await tester.tapByKey(AppKeys.libraryEntry);
-            if (screen == _Screen.libraryProgram) {
+            if (screen != _Screen.programLibrary) {
               await tester.pumpTimes();
               await tester.tapByKey(AppKeys.libraryProgram('first_steps'));
+            }
+            if (screen == _Screen.goEasy) {
+              await tester.pumpTimes();
+              await tester.tapByKey(AppKeys.goEasyRow);
             }
           default:
             break;
