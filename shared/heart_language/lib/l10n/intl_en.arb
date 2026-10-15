@@ -4828,5 +4828,15 @@
   "programAboutLibrary": "About this program",
   "@programAboutLibrary": {"description": "Row on a program's page that was started from Heart's ready-made programs: opens that program's page there, with its research", "type": "text", "placeholders": {}},
   "libraryTotalReps": "{reps} reps in all",
-  "@libraryTotalReps": {"description": "A ready-made program's rep total for an exercise across all its sets, such as '50–100 reps in all'", "type": "text", "placeholders": {"reps": {}}}
+  "@libraryTotalReps": {"description": "A ready-made program's rep total for an exercise across all its sets, such as '50–100 reps in all'", "type": "text", "placeholders": {"reps": {}}},
+  "goEasyHarderOn": "Harder on what you go easy on: {names}",
+  "@goEasyHarderOn": {"description": "Screen reader label of the mark on an exercise harder on something the user listed to go easy on; names are the listed body areas or movements, such as 'Knee, Wrist'", "type": "text", "placeholders": {"names": {}}},
+  "goEasyNothing": "Nothing yet",
+  "@goEasyNothing": {"description": "Under 'Things to go easy on' while the user has listed nothing", "type": "text", "placeholders": {}},
+  "goEasyNoSwaps": "Nothing in the library is kinder for this one.",
+  "@goEasyNoSwaps": {"description": "In the kinder-swaps sheet when no exercise is a kinder swap for this one", "type": "text", "placeholders": {}},
+  "goEasySwapsNote": "Suggestions only: a session's exercises change in its template.",
+  "@goEasySwapsNote": {"description": "Foot of the kinder-swaps sheet: the sheet changes nothing, the user edits the session's template to swap", "type": "text", "placeholders": {}},
+  "goEasySessionMarked": "{count, plural, =1{1 exercise harder on what you go easy on} other{{count} exercises harder on what you go easy on}}",
+  "@goEasySessionMarked": {"description": "Tooltip of the mark beside a program session holding exercises harder on what the user listed to go easy on; opens kinder swaps", "type": "text", "placeholders": {"count": {}}}
 }
