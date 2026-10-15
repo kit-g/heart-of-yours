@@ -6,6 +6,9 @@ import 'dart:async';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/env/calendar.dart';
+import 'package:heart/core/utils/program_calendar.dart';
+import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -106,9 +109,10 @@ void main() {
   /// Signs in and lands on the Workout tab with templates and programs read.
   /// Both notifiers are initialised directly: the app's own startup chain runs
   /// in the root zone, which a widget test never pumps (see templates_test).
-  Future<void> openWorkoutTab(WidgetTester tester) async {
+  Future<void> openWorkoutTab(WidgetTester tester, {DeviceCalendar? calendar}) async {
     await const TestAppHarness().pumpHeartApp(
       tester,
+      calendar: calendar,
       db: db,
       api: api,
       cdn: cdn,
@@ -324,6 +328,8 @@ void main() {
       await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
       await tester.pumpTimes();
 
+      // under the sessions and the calendar's ask (#391)
+      await scrollTo(tester, find.text('How it grows'));
       expect(find.text('How it grows'), findsOneWidget);
       expect(find.text('Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'), findsOneWidget);
     });
@@ -466,4 +472,153 @@ void main() {
       expect(find.byKey(AppKeys.programBand(saved.id)), findsOneWidget);
     });
   });
+
+  group('in the calendar (#391)', () {
+    Future<void> openPage(
+      WidgetTester tester, {
+      required DeviceCalendar calendar,
+      String calendarAnswer = 'unasked',
+    }) async {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': 'on',
+        'feature-programCalendar': calendarAnswer,
+      });
+      withProgram();
+      await openWorkoutTab(tester, calendar: calendar);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('asked on the page; yes, a calendar and days put the sessions in it, titled one plain word', (
+      tester,
+    ) async {
+      final calendar = _Calendar();
+      await openPage(tester, calendar: calendar);
+      await scrollTo(tester, find.byKey(AppKeys.programCalendarAccept));
+      // nothing asks the OS before the yes in the app
+      expect(calendar.listed, 0);
+
+      await tester.tapByKey(AppKeys.programCalendarAccept);
+      await tester.pumpTimes();
+      expect(calendar.listed, 1);
+
+      // every day, so the next session falls today
+      for (final day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
+        final toggle = find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == day);
+        await tester.ensureVisible(toggle);
+        await tester.tap(toggle);
+      }
+      await tester.ensureVisible(find.byKey(AppKeys.programCalendarChoice('c1')));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programCalendarChoice('c1'));
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programCalendarSave);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.programCalendarSave), findsNothing, reason: 'saved and closed');
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpTimes();
+
+      final edited = verify(api.editProgram(captureAny)).captured.last as Program;
+      expect(edited.days, {1, 2, 3, 4, 5, 6, 7});
+      expect(calendar.events, isNotEmpty);
+      final (calendarId, first) = calendar.events.values.first;
+      expect(calendarId, 'c1');
+      // the same neutral word on every event, whatever the program is called
+      expect(calendar.events.values.map((event) => event.$2.title).toSet(), {'Training'});
+      expect(first.description, contains('Split · Push'));
+      expect(first.url, endsWith('/workout/programs/p1/sessions/t1?week=1'));
+      expect(first.time, isNull);
+      expect(find.byKey(AppKeys.programCalendarRow), findsOneWidget);
+    });
+
+    testWidgets('turned off, its events go and the setting stays', (tester) async {
+      final calendar = _Calendar();
+      await openPage(tester, calendar: calendar, calendarAnswer: 'on');
+      final context = tester.element(find.byType(Scaffold).last);
+      final programs = Programs.of(context);
+      await programs.update(programs.lookup('p1')!.copyWith(days: {1, 2, 3, 4, 5, 6, 7}));
+      await ProgramCalendars.of(context).set('p1', (calendarId: 'c1', calendar: 'Home', time: 18 * 60));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpTimes();
+      expect(calendar.events, isNotEmpty);
+      expect(calendar.events.values.first.$2.time, 18 * 60);
+
+      Preferences.of(context).setFeature(.programCalendar, on: false);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpTimes();
+
+      expect(calendar.events, isEmpty);
+      expect(ProgramCalendars.of(context).settingOf('p1'), isNotNull);
+      expect(find.byKey(AppKeys.programCalendarRow), findsNothing);
+    });
+
+    group('its links', () {
+      Future<HeartRouter> follow(WidgetTester tester, String link) async {
+        answer(.on);
+        withProgram();
+        await openWorkoutTab(tester);
+        final router = HeartRouter.of(tester.element(find.byType(MaterialApp)));
+        router.config.go(link);
+        // the link's bounded wait for the active workout, which a widget
+        // test's startup never resolves
+        await tester.pump(const Duration(seconds: 11));
+        await tester.pumpTimes();
+        return router;
+      }
+
+      String location(HeartRouter router) => router.config.routerDelegate.currentConfiguration.uri.path;
+
+      testWidgets('one still ahead starts its session', (tester) async {
+        when(db.getProgramWorkouts(userId, 'p1')).thenAnswer((_) async => <Workout>[]);
+        await follow(tester, '/workout/programs/p1/sessions/t2?week=1');
+
+        final context = tester.element(find.byType(MaterialApp));
+        expect(Workouts.of(context).activeWorkout?.name, 'Pull');
+      });
+
+      testWidgets('one set aside opens its skip in History, and starts nothing', (tester) async {
+        final skip = TrainingSkip(id: 'k1', at: DateTime.utc(2026, 10, 6, 8), templateId: 't1', programId: 'p1');
+        when(db.getSkips(userId)).thenAnswer((_) async => [skip]);
+        when(api.getSkips()).thenAnswer((_) async => [skip]);
+        when(db.getProgramWorkouts(userId, 'p1')).thenAnswer((_) async => <Workout>[]);
+        final router = await follow(tester, '/workout/programs/p1/sessions/t1?week=1');
+
+        expect(location(router), '/history/skips/k1');
+        expect(find.byKey(AppKeys.skipPage), findsOneWidget);
+        expect(Workouts.of(tester.element(find.byType(MaterialApp))).activeWorkout, isNull);
+      });
+
+      testWidgets('a session no longer in the program opens the program', (tester) async {
+        when(db.getProgramWorkouts(userId, 'p1')).thenAnswer((_) async => <Workout>[]);
+        final router = await follow(tester, '/workout/programs/p1/sessions/gone?week=1');
+
+        expect(location(router), '/workout/programs/p1');
+      });
+    });
+  });
+}
+
+/// The device's calendars, as far as a test needs them: one to pick, and the
+/// events written to it, by id.
+class _Calendar implements DeviceCalendar {
+  final events = <String, (String, CalendarEventDraft)>{};
+  var listed = 0;
+  var _next = 0;
+
+  @override
+  Future<List<CalendarChoice>> calendars() async {
+    listed++;
+    return [(id: 'c1', title: 'Home', account: 'iCloud', color: const Color(0xFF3366FF))];
+  }
+
+  @override
+  Future<String> create(String calendarId, CalendarEventDraft event) async {
+    final id = 'e${_next++}';
+    events[id] = (calendarId, event);
+    return id;
+  }
+
+  @override
+  Future<void> delete(String eventId) async => events.remove(eventId);
 }

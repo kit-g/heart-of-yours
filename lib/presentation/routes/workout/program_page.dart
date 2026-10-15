@@ -127,6 +127,7 @@ class ProgramPage extends StatelessWidget {
                           onStart: () => _start(context, session),
                         ),
                       ),
+                    if (!program.archived) _ProgramCalendarSlot(program: program),
                     _Growth(program: program),
                     // a copy of one of Heart's programs keeps its way back to
                     // the research, which stays in the library, never the copy

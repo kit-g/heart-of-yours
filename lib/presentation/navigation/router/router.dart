@@ -10,8 +10,10 @@ import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/env/shortcuts.dart';
 import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/records.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/presentation/navigation/program_link.dart';
 import 'package:heart/presentation/navigation/shortcuts.dart';
 import 'package:heart/presentation/routes/done/done.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
@@ -254,6 +256,10 @@ final class HeartRouter {
     // the tab for itself and lose the link.
     if (_shortcut(context, state.uri) case String path) return path;
 
+    // A calendar event's link (#391): like a command, it lands on the workouts
+    // tab and does its work over it.
+    if (_programSessionLink(context, state.uri) case String path) return path;
+
     // deep link carried through the login flow
     if (state.uri.queryParameters case {'from': String from}) {
       final carried = Uri.tryParse(Uri.decodeComponent(from));
@@ -262,6 +268,7 @@ final class HeartRouter {
       // would die as "no route". So a carried command is applied from here.
       if (carried case Uri uri) {
         if (_shortcut(context, uri) case String path) return path;
+        if (_programSessionLink(context, uri) case String path) return path;
       }
       return switch (carried) {
         Uri(hasQuery: true, :final path, :final query) => '$path?$query',
@@ -270,6 +277,27 @@ final class HeartRouter {
       };
     }
 
+    return null;
+  }
+
+  /// Where a [ProgramSessionLink] in [uri] sends the app, having set it going
+  /// — or null: not one. With Programs off there is no program to open, and
+  /// the link is only the workouts tab.
+  static String? _programSessionLink(BuildContext context, Uri uri) {
+    if (ProgramSessionLink.parse(uri) case ProgramSessionLink link) {
+      if (Preferences.of(context).isOn(.programs)) {
+        unawaited(
+          runProgramSessionLink(
+            link,
+            programs: Programs.of(context),
+            templates: Templates.of(context),
+            workouts: Workouts.of(context),
+            navigator: _rootNavigatorKey,
+          ),
+        );
+      }
+      return _workoutPath;
+    }
     return null;
   }
 
@@ -356,5 +384,15 @@ final class HeartRouter {
   /// workout that met it.
   void goToWorkoutEditor(String workoutId) {
     return config.go('$_historyPath/$workoutId');
+  }
+
+  /// A program's page, from outside it: a calendar event's link (#391).
+  void goToProgram(String programId) {
+    return config.goNamed(_programName, pathParameters: {'programId': programId});
+  }
+
+  /// A day set aside with "Not today" (#312), in History.
+  void goToSkip(String skipId) {
+    return config.goNamed(_historySkipName, pathParameters: {'skipId': skipId});
   }
 }

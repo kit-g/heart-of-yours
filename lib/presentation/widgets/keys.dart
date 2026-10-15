@@ -186,6 +186,19 @@ abstract final class AppKeys {
 
   /// A day set aside with "Not today" (#312), in History.
   static Key historySkip(String? skipId) => Key('History.skip.$skipId');
+  static const skipPage = Key('History.skipPage');
+  static const skipOpenProgram = Key('History.skipOpenProgram');
+
+  /// A program in the device calendar (#391): the ask, the row on a program's
+  /// page, and its dialog.
+  static const programCalendarOffer = Key('Programs.calendar.offer');
+  static const programCalendarAccept = Key('Programs.calendar.accept');
+  static const programCalendarDecline = Key('Programs.calendar.decline');
+  static const programCalendarRow = Key('Programs.calendar.row');
+  static const programCalendarAllDay = Key('Programs.calendar.allDay');
+  static const programCalendarSave = Key('Programs.calendar.save');
+  static const programCalendarRemove = Key('Programs.calendar.remove');
+  static Key programCalendarChoice(String id) => Key('Programs.calendar.choice.$id');
 
   /// The Done page's program block (#351): what the session moved.
   static const doneProgram = Key('Done.program');

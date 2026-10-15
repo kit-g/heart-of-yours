@@ -115,6 +115,11 @@ extension on BuildContext {
     return go('$_historyPath/$workoutId');
   }
 
+  /// A day set aside with "Not today" (#312), in History.
+  void goToSkip(String skipId) {
+    return goNamed(_historySkipName, pathParameters: {'skipId': skipId});
+  }
+
   /// Pushes on a phone, replaces on a tablet.
   ///
   /// Compact puts the detail on top of the list as its own screen, so pushing

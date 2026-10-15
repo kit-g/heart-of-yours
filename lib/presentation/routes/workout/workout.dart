@@ -2,10 +2,14 @@ library;
 
 import 'dart:math';
 
+import 'package:app_settings/app_settings.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/headers.dart';
 import 'package:heart/core/utils/misc.dart';
+import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
@@ -32,6 +36,7 @@ import 'package:url_launcher/url_launcher.dart';
 part 'card.dart';
 part 'gallery.dart';
 part 'page.dart';
+part 'program_calendar.dart';
 part 'program_form.dart';
 part 'program_library.dart';
 part 'program_page.dart';

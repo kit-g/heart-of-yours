@@ -68,6 +68,7 @@ enum _Screen {
   setStopwatch,
   history,
   historyNotToday,
+  skipPage,
   calendar,
   exercises,
   settings,
@@ -584,6 +585,23 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.historyNotToday,
     _Guideline.iosTapTarget,
     'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+
+  // A day set aside, on its own page (#391,
+  // lib/presentation/routes/history/skip_page.dart): what a calendar event's
+  // link opens.
+  (_Screen.skipPage, _Guideline.labeledTapTarget, null),
+  (_Screen.skipPage, _Guideline.textContrastLight, null),
+  (_Screen.skipPage, _Guideline.textContrastDark, null),
+  (
+    _Screen.skipPage,
+    _Guideline.androidTapTarget,
+    'Open the program is PrimaryButton.shrunk (lib/presentation/routes/history/skip_page.dart:79) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.skipPage,
+    _Guideline.iosTapTarget,
+    'Open the program is PrimaryButton.shrunk (lib/presentation/routes/history/skip_page.dart:79) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
 
   (_Screen.exercises, _Guideline.labeledTapTarget, null),
@@ -1115,7 +1133,8 @@ void main() {
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
           _Screen.libraryProgram ||
-          _Screen.goEasy:
+          _Screen.goEasy ||
+          _Screen.skipPage:
         final running = screen != _Screen.programsOffer;
         // things to go easy on (#396): the whole map, a knee listed
         when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
@@ -1131,7 +1150,7 @@ void main() {
         when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
         when(db.getTemplates(any)).thenAnswer(
           (_) async => switch (screen) {
-            _Screen.programs || _Screen.programPage || _Screen.historyNotToday => [
+            _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [
               _session('t1', 0, 'Push', programId: 'p1'),
               _session('t2', 1, 'Pull', programId: 'p1'),
             ],
@@ -1144,11 +1163,11 @@ void main() {
         when(db.storeTemplateFolders(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         when(db.storeTemplates(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
         final programs = switch (screen) {
-          _Screen.programs || _Screen.programPage || _Screen.historyNotToday => [_program],
+          _Screen.programs || _Screen.programPage || _Screen.historyNotToday || _Screen.skipPage => [_program],
           _ => <Program>[],
         };
         final skips = switch (screen) {
-          _Screen.historyNotToday => [
+          _Screen.historyNotToday || _Screen.skipPage => [
             TrainingSkip(id: 'k1', at: DateTime.now(), templateId: 't1', programId: 'p1'),
           ],
           _ => <TrainingSkip>[],
@@ -1457,7 +1476,8 @@ void main() {
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
           _Screen.libraryProgram ||
-          _Screen.goEasy:
+          _Screen.goEasy ||
+          _Screen.skipPage:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
@@ -1504,6 +1524,12 @@ void main() {
               await tester.pumpTimes();
               await tester.tapByKey(AppKeys.goEasyRow);
             }
+          case _Screen.skipPage:
+            await tester.tapByKey(AppKeys.historyStack);
+            await tester.pumpTimes();
+            await tester.tapByKey(AppKeys.historySkip('k1'));
+            await tester.pumpTimes();
+            expect(find.byKey(AppKeys.skipPage), findsOneWidget);
           default:
             break;
         }
