@@ -3,6 +3,7 @@ import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
+import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -155,6 +156,34 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsNothing);
       expect(find.text('Workouts'), findsOneWidget);
       expect(local.goals, isEmpty);
+    });
+  });
+
+  group('a goal on a muscle (#344)', () {
+    testWidgets('picks the group, counts sessions, and starts weekly', (tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(const Key('open-new')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(AppKeys.newGoalByMuscle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Legs'));
+      await tester.pumpAndSettle();
+
+      // sets is the default; this goal is "legs twice a week"
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.goalCountedMetric), matching: find.text('Sessions')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '2');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(PrimaryButton, 'Add goal'));
+      await tester.pumpAndSettle();
+
+      final saved = local.goals.single;
+      expect(saved.metric, GoalMetric.sessions);
+      expect(saved.subject, const GoalSubject.muscle('legs'));
+      expect(saved.exerciseId, isNull);
+      expect(saved.cadence, GoalCadence.week);
+      expect(saved.stages.single.target, 2);
     });
   });
 

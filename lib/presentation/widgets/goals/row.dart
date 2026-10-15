@@ -136,6 +136,7 @@ class _GoalRowState extends State<GoalRow> {
       widget.goal,
       exercises: exercises,
       workoutCount: workoutCounter(Stats.of(context)),
+      lensSets: Stats.of(context).getLensSets,
     );
   }
 }

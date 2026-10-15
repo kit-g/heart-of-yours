@@ -1,3 +1,5 @@
+import 'package:flutter_body_atlas/flutter_body_atlas.dart';
+import 'package:heart/core/utils/muscle_volume.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart_db/heart_db.dart';
 import 'package:heart_models/heart_models.dart';
@@ -86,11 +88,14 @@ class LocalGoals implements LocalGoalService {
 ///   ratchet, so a lighter session does not undo one;
 /// - a per-exercise goal with a cadence is its sessions inside the current
 ///   period, folded the way that dimension folds — see
-///   [ChartDimension.periodAggregate].
+///   [ChartDimension.periodAggregate];
+/// - a sets or sessions goal (#344) is what [lensSets] counted toward its
+///   subject over the goal's period, by the pattern lens's own rules (#341).
 Future<num?> currentGoalValue(
   Goal goal, {
   required Exercises exercises,
   Future<int> Function(GoalCadence? period)? workoutCount,
+  Future<List<LensSets>> Function(DateTime from, DateTime to)? lensSets,
   DateTime? asOf,
   DateTime? without,
 }) async {
@@ -99,6 +104,7 @@ Future<num?> currentGoalValue(
   // and month cases and answer null, which drew an empty bar and, because
   // observeProgress skips a goal it cannot measure, never announced the 8th.
   if (goal.metric.isWholeWorkout) return await workoutCount?.call(goal.cadence);
+  if (goal.metric.countsSubject) return _subjectValue(goal, lensSets, asOf: asOf, without: without);
 
   final metric = goal.metric.chart;
   final exercise = goalExercise(goal, exercises);
@@ -145,7 +151,55 @@ Future<num?> currentGoalValue(
   );
 }
 
-//   git diff -- lib/core/utils/goals.dart shared/heart_state/lib/src/goals.dart test/goal_period_test.dart shared/heart_state/test/goals_test.dart
+/// A sets or sessions goal's reading: its subject's count over the goal's
+/// period, or over all time for a milestone. Null when there is nothing to
+/// read with, or the subject is one this build cannot place — a muscle key
+/// that is no atlas group, written by a newer client.
+Future<num?> _subjectValue(
+  Goal goal,
+  Future<List<LensSets>> Function(DateTime from, DateTime to)? lensSets, {
+  DateTime? asOf,
+  DateTime? without,
+}) async {
+  final share = subjectShare(goal.subject);
+  if (lensSets == null || share == null) return null;
+
+  final (from, to) = switch (goal.cadence) {
+    final GoalCadence cadence => goalPeriod(cadence, asOf ?? DateTime.now()),
+    null => (DateTime.utc(1970), DateTime.utc(3000)),
+  };
+  final rows = (await lensSets(from, to)).where((row) => without == null || !row.start.isAtSameMomentAs(without));
+  // one period, the goal's own, and one key, the subject
+  final counted = countByPeriod(
+    rows,
+    periods: [from],
+    periodOf: (_) => from,
+    keysOf: (row) => {goal.subject: share(row)},
+  )[from]?[goal.subject];
+
+  return switch ((goal.metric, counted)) {
+    (_, null) => 0,
+    (.sessions, (:final sessions, sets: _)?) => sessions,
+    (_, (:final sets, sessions: _)?) => sets,
+  };
+}
+
+/// How much of one row's sets count toward [subject]: all of them for its own
+/// exercise, all of them for each pattern the exercise trains, and a muscle
+/// group's share of them — the pattern lens's keys (#341), so a goal and the
+/// weekly card never disagree. Null for a subject this build cannot place.
+double Function(LensSets row)? subjectShare(GoalSubject? subject) {
+  return switch (subject) {
+    ExerciseSubject(:final id) => (row) => row.exerciseId == id ? 1 : 0,
+    PatternSubject(:final key) => (row) => patternsOf(row)[key] ?? 0,
+    MuscleSubject(:final key) => switch (MuscleGroup.tryFromString(key)) {
+      final MuscleGroup group => (row) => muscleGroupsOf(row)[group] ?? 0,
+      null => null,
+    },
+    null => null,
+  };
+}
+
 /// How many sessions of one exercise to pull when folding a period.
 ///
 /// The queries are ordered newest first and bounded by count, not by date, so

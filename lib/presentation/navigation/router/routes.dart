@@ -742,7 +742,12 @@ RouteBase _workoutDoneRoute() {
             await stats.init();
 
             final stamped = await goals.observeProgress(
-              (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
+              (goal) => currentGoalValue(
+                goal,
+                exercises: exercises,
+                workoutCount: workoutCounter(stats),
+                lensSets: stats.getLensSets,
+              ),
               // this screen is the one place that knows which session earned it
               achievedBy: finished?.id ?? workout.id,
             );
@@ -751,11 +756,17 @@ RouteBase _workoutDoneRoute() {
             // uncelebrated the week it is met — announced here when this
             // session is what carried the period over.
             final carried = await goals.observePeriodWins(
-              valueOf: (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
+              valueOf: (goal) => currentGoalValue(
+                goal,
+                exercises: exercises,
+                workoutCount: workoutCounter(stats),
+                lensSets: stats.getLensSets,
+              ),
               valueBefore: (goal) => currentGoalValue(
                 goal,
                 exercises: exercises,
                 workoutCount: workoutCounter(stats),
+                lensSets: stats.getLensSets,
                 without: workout.start,
               ),
             );

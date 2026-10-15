@@ -55,6 +55,7 @@ class _GoalDetailState extends State<GoalDetail> {
         goal,
         exercises: exercises,
         workoutCount: workoutCounter(Stats.of(context)),
+        lensSets: Stats.of(context).getLensSets,
       );
     }
 

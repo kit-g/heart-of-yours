@@ -299,7 +299,12 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
 
     await goals.init();
     await goals.observeProgress(
-      (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
+      (goal) => currentGoalValue(
+        goal,
+        exercises: exercises,
+        workoutCount: workoutCounter(stats),
+        lensSets: stats.getLensSets,
+      ),
     );
   }
 

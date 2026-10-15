@@ -39,6 +39,14 @@ abstract final class AppKeys {
   /// apart — swiping one away is how a rung is removed.
   static Key ladderRung(String? stageId) => Key('Goals.ladder.rung.$stageId');
 
+  /// The new-goal dialog's way to a goal on a movement pattern, and on a
+  /// muscle (#344).
+  static const newGoalByPattern = Key('Goals.new.byPattern');
+  static const newGoalByMuscle = Key('Goals.new.byMuscle');
+
+  /// Sets or sessions, on the target form of a pattern or muscle goal.
+  static const goalCountedMetric = Key('Goals.target.counted');
+
   /// Stands in for the add-goal button once the server would refuse another.
   static const goalsAtCapacity = Key('Goals.atCapacity');
 
