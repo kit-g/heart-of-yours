@@ -482,8 +482,6 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     };
   }
 
-  /// Whether the per-exercise unit submenu applies (weight- or distance-based
-  /// exercises only — duration/reps have no unit).
   /// A superset with the exercise either side, unless it already shares this
   /// one's (#159), and leaving the one this exercise is in.
   List<Widget> _groupOptions(BuildContext context, TextTheme textTheme) {
@@ -511,6 +509,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     ];
   }
 
+  /// Whether the per-exercise unit submenu applies (weight- or distance-based
+  /// exercises only — duration/reps have no unit).
   bool get _showsUnitOption {
     return switch (exercise.exercise.category) {
       .duration || .repsOnly => false,
