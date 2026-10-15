@@ -23,6 +23,11 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
   /// stay in the list, greyed, and a tap says why. Null for one that can.
   final String? Function(Exercise)? refuses;
 
+  /// Exercises offered above the rest, before any typing: the replacements
+  /// for an exercise on the sheet (#354). Typing searches the whole library,
+  /// as ever.
+  final List<Exercise> suggested;
+
   final _categoryKey = GlobalKey();
   final _targetKey = GlobalKey();
 
@@ -37,6 +42,7 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
     this.highlightedName,
     this.showsRecent = true,
     this.refuses,
+    this.suggested = const [],
   });
 
   @override
@@ -296,6 +302,10 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
               final recent = showsRecent && !searching
                   ? exercises.recent(previous.lastDone, filters: true, isMine: mine)
                   : const <Exercise>[];
+              final suggestions = switch (searching) {
+                true => const <Exercise>[],
+                false => suggested,
+              };
               final found = exercises.search(
                 value.text,
                 filters: true,
@@ -329,11 +339,16 @@ class ExercisePicker extends StatelessWidget with HasHaptic<ExercisePicker> {
 
               return SliverMainAxisGroup(
                 slivers: [
+                  if (suggestions.isNotEmpty) ...[
+                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerSuggested)),
+                    list(suggestions),
+                  ],
                   if (recent.isNotEmpty) ...[
                     SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerRecent)),
                     list(recent),
-                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
                   ],
+                  if (suggestions.isNotEmpty || recent.isNotEmpty)
+                    SliverToBoxAdapter(child: _SectionHeader(L.of(context).pickerAllExercises)),
                   list(found),
                 ],
               );

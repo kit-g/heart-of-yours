@@ -10,6 +10,7 @@ import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/assets.dart';
 import 'package:heart/core/utils/column_fill.dart';
+import 'package:heart/core/utils/replacements.dart';
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
@@ -58,6 +59,10 @@ part 'text_field_button.dart';
 part 'utils.dart';
 part 'workout_note.dart';
 
+/// Puts [picked] in [slot]'s place on the sheet (#349, #354). [suggested] is
+/// whether the picker offered it.
+typedef ReplaceExercise = Future<void> Function(WorkoutExercise slot, Exercise picked, {required bool suggested});
+
 enum _WorkoutOption { editImage, editName, editNote, pause }
 
 class WorkoutDetail extends StatefulWidget {
@@ -92,9 +97,10 @@ class WorkoutDetail extends StatefulWidget {
   /// (#349): a program's workout while Programs is on.
   final bool showsPlan;
 
-  /// Puts another exercise in an open slot's place (#349). Without it, or on
-  /// an exercise that is no open slot, there is nothing to swap.
-  final void Function(WorkoutExercise, Exercise)? onReplaceExercise;
+  /// Puts another exercise in one's place, before any of its sets is ticked:
+  /// an open slot's swap within its pattern (#349), and any other exercise's
+  /// replace, with suggestions (#354). Without it, nothing is replaced.
+  final ReplaceExercise? onReplaceExercise;
 
   /// Joins an exercise and its neighbour in a superset (#159), and takes one
   /// out of its own. Without them the sheet still shows its groups, and
@@ -868,6 +874,49 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     super.dispose();
   }
 
+  /// Puts [picked] in [slot]'s place (#349, #354). In a program's workout, a
+  /// replace — not an open slot's swap, which is the slot's to vary — asks
+  /// whether it reaches the program's sessions, when one of them holds the
+  /// exercise; the rule that grows it moves with it.
+  Future<void> _replace(WorkoutExercise slot, Exercise picked, {required bool suggested, Program? program}) async {
+    final analytics = Analytics.of(context);
+    final templates = Templates.of(context);
+    final programs = Programs.of(context);
+    final from = slot.exercise;
+    await widget.workouts.replaceExercise(slot, picked);
+
+    if (slot.pattern != null) {
+      analytics.exerciseReplaced(scope: .slot, suggested: suggested);
+      return;
+    }
+    final held = switch (program) {
+      final Program program =>
+        program.sessions
+            .map(templates.lookup)
+            .nonNulls
+            .any((session) => session.any((each) => each.exercise.id == from.id)),
+      null => false,
+    };
+    if (program != null && held && !mounted) return;
+    final inProgram = switch ((program, held)) {
+      (final Program program, true) => await askReplaceInProgram(
+        context,
+        program: program.name,
+        from: from.name,
+        to: picked.name,
+      ),
+      _ => false,
+    };
+    if (inProgram && program != null) await programs.replaceExercise(program, from: from.id, to: picked.id);
+    analytics.exerciseReplaced(
+      scope: switch (inProgram) {
+        true => .program,
+        false => .today,
+      },
+      suggested: suggested,
+    );
+  }
+
   void _onSheetChanged() {
     // when dragged to minimum size, dismiss the route
     if (_sheetController.size <= widget.closingThreshold && !_isClosing) {
@@ -948,9 +997,8 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                 onGroup: workouts.group,
                 onLeaveGroup: workouts.leaveGroup,
                 showsPlan: planned,
-                onReplaceExercise: switch (planned) {
-                  true => workouts.replaceExercise,
-                  false => null,
+                onReplaceExercise: (slot, picked, {required suggested}) {
+                  return _replace(slot, picked, suggested: suggested, program: program);
                 },
                 slivers: [
                   if (lighter) SliverToBoxAdapter(child: LighterWeekNote(deload: program?.deload)),

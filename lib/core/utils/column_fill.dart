@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:heart_models/heart_models.dart';
 
 /// A value column of the set table, whose header fills it (#225).
@@ -34,6 +35,16 @@ enum SetColumn {
       .duration => set.duration,
     };
   }
+}
+
+/// Whether [target]'s sets can hold [source]'s, as logged or as planned: the
+/// same value columns, so an ab wheel's reps never land on a ride's distance
+/// and time, and an assisted weight only where weight means assistance, never
+/// added load. A history move (#338) and a replace on the sheet (#354) both
+/// ask it.
+bool logsAlike(Exercise target, Exercise source) {
+  return listEquals(SetColumn.of(target.category), SetColumn.of(source.category)) &&
+      (target.category == .assistedBodyWeight) == (source.category == .assistedBodyWeight);
 }
 
 /// What tapping [column]'s header writes, set by set, into [exercise]: every

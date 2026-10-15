@@ -12,7 +12,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(ExerciseSet, double?)? onSetRpe;
   final void Function(ExerciseSet, SetTarget?)? onSetTarget;
   final bool showsPlan;
-  final void Function(WorkoutExercise, Exercise)? onReplaceExercise;
+  final ReplaceExercise? onReplaceExercise;
   final void Function(WorkoutExercise exercise, WorkoutExercise neighbour)? onGroup;
   final void Function(WorkoutExercise)? onLeaveGroup;
 
@@ -212,6 +212,17 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               onPressed: () => _replace(context, pattern, onReplace),
                               child: Text(L.of(context).swapExercise, style: textTheme.titleSmall),
                             ),
+                          if ((onReplaceExercise, exercise.pattern, exercise.isStarted) case (
+                            final onReplace?,
+                            null,
+                            false,
+                          ))
+                            MenuItemButton(
+                              key: WorkoutDetailKeys.replaceExerciseFor(exercise.exercise.id),
+                              leadingIcon: const Icon(Icons.find_replace_rounded),
+                              onPressed: () => _replaceAny(context, onReplace),
+                              child: Text(L.of(context).replaceExercise, style: textTheme.titleSmall),
+                            ),
                           ..._groupOptions(context, textTheme),
                           _exerciseOptionButton(context, .autoRestTimer, textTheme, colorScheme),
                           if (_showsUnitOption) _unitSubmenu(context, textTheme),
@@ -354,11 +365,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
 
   /// Fills the open slot with another exercise of its [pattern] (#349): the
   /// picker greys the rest, and says why when one is tapped.
-  Future<void> _replace(
-    BuildContext context,
-    String pattern,
-    void Function(WorkoutExercise, Exercise) onReplace,
-  ) async {
+  Future<void> _replace(BuildContext context, String pattern, ReplaceExercise onReplace) async {
     final l = L.of(context);
     final takes = PatternFilter(pattern).label(l);
     final picked = await showSingleExercisePicker(
@@ -369,7 +376,26 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         false => l.swapOutsidePattern(takes, candidate.name),
       },
     );
-    if (picked != null) onReplace(exercise, picked);
+    if (picked != null) await onReplace(exercise, picked, suggested: false);
+  }
+
+  /// Puts another exercise in this one's place (#354): the same movement
+  /// pattern suggested first, nearest in load after, and only exercises whose
+  /// sets can take these offered — the rest greyed, saying why when tapped.
+  Future<void> _replaceAny(BuildContext context, ReplaceExercise onReplace) async {
+    final l = L.of(context);
+    final source = exercise.exercise;
+    final suggested = replacementsFor(Exercises.of(context), source);
+    final picked = await showSingleExercisePicker(
+      context,
+      except: source.id,
+      suggested: suggested,
+      refuses: (candidate) => switch (logsAlike(candidate, source)) {
+        true => null,
+        false => l.replaceIncompatible(candidate.name, source.name),
+      },
+    );
+    if (picked != null) await onReplace(exercise, picked, suggested: suggested.contains(picked));
   }
 
   Future<void> _unpinNote(BuildContext context) async {

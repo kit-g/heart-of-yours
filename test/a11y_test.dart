@@ -52,6 +52,7 @@ enum _Screen {
   programPage,
   newProgram,
   programWorkout,
+  replaceScopeDialog,
   exerciseNoteEditor,
   workoutNote,
   pausedWorkout,
@@ -323,6 +324,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.programWorkout,
     _Guideline.iosTapTarget,
     'the set-row weight/reps buttons and the set number share the 32pt row height (lib/presentation/widgets/workout/set_item.dart:337, set_type.dart:87) — visual-density change, out of scope',
+  ),
+  // After a replace in a program's workout (#354): whether it reaches the
+  // program (lib/presentation/widgets/workout/utils.dart, askReplaceInProgram).
+  (_Screen.replaceScopeDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.replaceScopeDialog, _Guideline.textContrastLight, null),
+  (_Screen.replaceScopeDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.replaceScopeDialog,
+    _Guideline.androidTapTarget,
+    'dialog actions use the shared 32pt button height (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), below 48pt',
+  ),
+  (
+    _Screen.replaceScopeDialog,
+    _Guideline.iosTapTarget,
+    'dialog actions use the shared 32pt button height (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), below 44pt',
   ),
   // A program session's Done page (#351): what it moved, with its Keep
   // (lib/presentation/routes/done/program.dart).
@@ -1008,7 +1024,7 @@ void main() {
         when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
         when(api.getProgramActions(any)).thenAnswer((_) async => []);
         when(api.getProgramBases(any)).thenAnswer((_) async => []);
-      case _Screen.programWorkout:
+      case _Screen.programWorkout || _Screen.replaceScopeDialog:
         SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-programs': 'on'});
         when(db.getPrograms(any)).thenAnswer((_) async => [_program]);
         when(api.getPrograms()).thenAnswer((_) async => [_program]);
@@ -1203,6 +1219,32 @@ void main() {
         await tester.pumpTimes();
         expect(find.textContaining('A lighter week'), findsOneWidget);
         expect(find.textContaining('of your max'), findsOneWidget);
+      case _Screen.replaceScopeDialog:
+        // over a program's workout, as the sheet asks it after a replace
+        final context = tester.element(find.byType(MaterialApp));
+        await Programs.of(context).init();
+        await Workouts.of(context).startWorkout(
+          source: .program,
+          template: Workout.fromExercises(
+            [WorkoutExercise(starter: ExerciseSet(_squat))],
+            name: 'Day A',
+            programId: 'p1',
+          ),
+        );
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        unawaited(
+          askReplaceInProgram(
+            tester.element(find.byType(WorkoutDetail)),
+            program: 'Waves',
+            from: _squat.name,
+            to: _bench.name,
+          ),
+        );
       case _Screen.setTypeMenu:
         final workout = Workout(name: 'Types')..add(_bench);
         workout.first

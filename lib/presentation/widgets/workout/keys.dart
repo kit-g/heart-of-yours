@@ -29,6 +29,14 @@ class WorkoutDetailKeys {
   /// The ⋯ menu's swap for an open slot (#349).
   static Key swapExerciseFor(String exerciseId) => Key('WorkoutDetail.swapExercise.$exerciseId');
 
+  /// The ⋯ menu's replace, with suggestions (#354).
+  static Key replaceExerciseFor(String exerciseId) => Key('WorkoutDetail.replaceExercise.$exerciseId');
+
+  /// The answers to whether a replace in a program's workout reaches the
+  /// program (#354).
+  static const replaceInProgram = Key('WorkoutDetail.replaceInProgram');
+  static const replaceJustToday = Key('WorkoutDetail.replaceJustToday');
+
   /// The ⋯ menu's superset options (#159), by the exercise and its neighbour.
   static Key groupWith(String exerciseId, String neighbourId) =>
       Key('WorkoutDetail.groupWith.$exerciseId.$neighbourId');
