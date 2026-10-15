@@ -95,7 +95,7 @@ Future<num?> currentGoalValue(
   Goal goal, {
   required Exercises exercises,
   Future<int> Function(GoalCadence? period)? workoutCount,
-  Future<List<LensSets>> Function(DateTime from, DateTime to)? lensSets,
+  LensSetsReader? lensSets,
   DateTime? asOf,
   DateTime? without,
 }) async {
@@ -157,7 +157,7 @@ Future<num?> currentGoalValue(
 /// that is no atlas group, written by a newer client.
 Future<num?> _subjectValue(
   Goal goal,
-  Future<List<LensSets>> Function(DateTime from, DateTime to)? lensSets, {
+  LensSetsReader? lensSets, {
   DateTime? asOf,
   DateTime? without,
 }) async {
@@ -182,6 +182,18 @@ Future<num?> _subjectValue(
     (.sessions, (:final sessions, sets: _)?) => sessions,
     (_, (:final sets, sessions: _)?) => sets,
   };
+}
+
+/// The sets the pattern lens reads between two times (#341).
+typedef LensSetsReader = Future<List<LensSets>> Function(DateTime from, DateTime to);
+
+/// [read], each window read once. Goals measured together ask for the same few
+/// windows (all time for a milestone, this week, this month), and every
+/// pattern or muscle goal among them would otherwise read the same rows again.
+/// Share one across a single refresh, never longer: it holds what it read.
+LensSetsReader sharedLensSets(LensSetsReader read) {
+  final windows = <(DateTime, DateTime), Future<List<LensSets>>>{};
+  return (from, to) => windows[(from, to)] ??= read(from, to);
 }
 
 /// How much of one row's sets count toward [subject]: all of them for its own

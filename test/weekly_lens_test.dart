@@ -125,8 +125,10 @@ void main() {
     await tester.pumpTimes();
 
     expect(inCard('3 sets in 1 session this week'), findsOneWidget);
-    // 1.5 sets of arms rounds to 2: no decimal reaches the screen
-    expect(inCard('2 sets in 1 session this week'), findsNWidgets(2));
+    // 1.5 sets of arms reads 1, rounded down as a goal reads it (#344): no
+    // decimal reaches the screen, and never a set more than was done
+    expect(inCard('2 sets in 1 session this week'), findsOneWidget);
+    expect(inCard('1 set in 1 session this week'), findsOneWidget);
     expect(find.descendant(of: card(), matching: find.textContaining('.5', skipOffstage: false)), findsNothing);
   });
 

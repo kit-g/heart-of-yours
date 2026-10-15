@@ -94,6 +94,34 @@ void main() {
     expect(await read(goal(muscle: 'pectoralis_major')), isNull);
   });
 
+  test('goals measured together read each window once', () async {
+    final windows = <(DateTime, DateTime)>[];
+    final shared = sharedLensSets((from, to) {
+      windows.add((from, to));
+      return lensSets(from, to);
+    });
+    final goals = [
+      goal(pattern: 'horizontal_press', cadence: null),
+      goal(muscle: 'chest', cadence: null),
+      goal(pattern: 'horizontal_press'),
+      goal(metric: .sessions, pattern: 'horizontal_press'),
+    ];
+
+    final readings = [
+      for (final each in goals) await currentGoalValue(each, exercises: exercises, lensSets: shared, asOf: now),
+    ];
+
+    expect(readings, [12, 14, 7, 2]);
+    // all time once, this week once
+    expect(windows, hasLength(2));
+  });
+
+  test("the sets a goal shows are the weekly card's, rounded down", () {
+    expect(wholeSets(9.6), 9);
+    expect(wholeSets(10), 10);
+    expect(wholeSets(0.5), 0);
+  });
+
   test('a goal on one exercise counts only its sets', () async {
     final onBench = Goal(metric: .sets, exerciseId: 'bench', cadence: .week, stages: [GoalStage(target: 10)]);
     expect(await read(onBench), 7);

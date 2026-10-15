@@ -26,6 +26,18 @@ class GoalsCard extends StatefulWidget {
 }
 
 class _GoalsCardState extends State<GoalsCard> {
+  ({int workouts, LensSetsReader read})? _lens;
+
+  /// One reader for every row, renewed when the rows re-read — on the same
+  /// signal [GoalRow] re-reads on, the workout count.
+  LensSetsReader _lensSets() {
+    final workouts = widget.workouts.workoutCount;
+    if (_lens case (workouts: final shared, :final read) when shared == workouts) return read;
+    final read = sharedLensSets(Stats.of(context).getLensSets);
+    _lens = (workouts: workouts, read: read);
+    return read;
+  }
+
   /// Owned here rather than per-dialog. Disposing them when a dialog's future
   /// completes would pull them out from under a field still animating away.
   final _searchController = TextEditingController();
@@ -220,11 +232,13 @@ class _GoalsCardState extends State<GoalsCard> {
 
   /// The same rows either way; only who owns the scrolling changes.
   Widget _rows(List<Goal> goals) {
+    final lensSets = _lensSets();
     final rows = goals.map(
       (goal) => GoalRow(
         key: AppKeys.goalRow(goal.id),
         goal: goal,
         workouts: widget.workouts,
+        lensSets: lensSets,
         onEdit: () => _openGoal(goal),
         onDelete: () => Goals.of(context).remove(goal),
       ),

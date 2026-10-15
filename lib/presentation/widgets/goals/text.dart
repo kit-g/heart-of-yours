@@ -101,10 +101,9 @@ extension GoalUnits on Goal {
   /// [goalScale]); counts and durations are the same either way.
   ///
   /// A muscle's sets are counted in fractions and read whole (the pattern
-  /// lens's rule 8), rounded down: rounding 9.6 up would print "10 / 10"
-  /// beside a rung that is still open.
+  /// lens's rule 8) through [wholeSets], as the weekly card reads them.
   double convert(Preferences settings, ChartScale scale, num value) {
-    if (metric == .sets) return value.floorToDouble();
+    if (metric == .sets) return wholeSets(value).toDouble();
     final (:unit, :category) = scale;
     return metric.chart?.converter(settings, unit: unit, category: category)(value) ?? value.toDouble();
   }

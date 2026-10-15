@@ -20,8 +20,14 @@ typedef LensSets = ({
 
 /// What one key gathered over one period: [sets], fractional underneath, and
 /// the [sessions] that touched it at all, whole. Rule 8: counted in fractions,
-/// shown in whole numbers — rounding is the screen's.
+/// shown in whole numbers, through [wholeSets].
 typedef LensCount = ({double sets, int sessions});
+
+/// [sets] as a screen shows them: whole, rounded down. One rounding for every
+/// reader, so the weekly card and a goal on the same key never disagree, and
+/// down so a muscle's 9.6 never reads "10" beside a target of 10 it has not
+/// met.
+int wholeSets(num sets) => sets.floor();
 
 /// What [row]'s sets count toward under the pattern key: every pattern the
 /// exercise trains, in full. A thruster is a squat and an overhead press, and
