@@ -208,7 +208,6 @@ abstract final class AppKeys {
   static const lensCard = ValueKey('lensCard');
   static const lensShowAll = ValueKey('lensShowAll');
 
-
   /// The new-exercise dialog's movement pattern (#343), and each of its menu's
   /// choices.
   static const newExercisePattern = Key('NewExercise.pattern');

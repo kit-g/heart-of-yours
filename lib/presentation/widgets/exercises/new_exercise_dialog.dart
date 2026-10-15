@@ -75,12 +75,7 @@ Future<void> showNewExerciseDialog(BuildContext context, {Exercise? editable}) {
                                 t != null && c != null && (e.category != c || e.movement.groups.firstOrNull != p),
                               null => t != null && c != null && n.text.isNotEmpty,
                             };
-                            final movement = switch (p) {
-                              String key => Movement.fromJson({
-                                'groups': [key],
-                              }),
-                              null => Movement.empty(),
-                            };
+                            final movement = _withPattern(editable?.movement ?? Movement.empty(), p);
                             return PrimaryButton.shrunk(
                               onPressed: switch ((enough, l)) {
                                 (_, true) => null,
@@ -277,4 +272,17 @@ Future<void> _pickPattern(BuildContext context, GlobalKey key, ValueNotifier<Str
         ),
     ],
   );
+}
+
+/// [movement] with [pattern] as its first group, the one this dialog asks
+/// about: the same movement when the answer didn't change, and otherwise
+/// only that group swapped — the other groups and the load attributes are
+/// facts the dialog never showed, so it keeps them.
+Movement _withPattern(Movement movement, String? pattern) {
+  if (movement.groups.firstOrNull == pattern) return movement;
+  final rest = movement.groups.skip(1).where((group) => group != pattern);
+  return Movement.fromJson({
+    ...movement.toMap(),
+    'groups': [?pattern, ...rest],
+  });
 }

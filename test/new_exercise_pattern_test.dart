@@ -130,4 +130,39 @@ void main() {
 
     expect(exercises.lookup('mine')?.movement.isEmpty, isTrue);
   });
+
+  testWidgets('an edit keeps what the dialog never showed: the other groups and the load', (tester) async {
+    final mine = Exercise.fromJson({
+      'id': 'mine',
+      'name': 'Landmine Press',
+      'category': 'Machine',
+      'target': 'Chest',
+      'own': true,
+      'movement': {
+        'groups': ['horizontal_press', 'vertical_press'],
+        'axialLoad': 'moderate',
+        'unilateral': true,
+      },
+    });
+    await pumpDialog(tester, [fly, press, mine], editable: mine);
+
+    // the category alone: the movement goes back as it came
+    await tester.ensureVisible(find.widgetWithText(InputChip, 'Dumbbell'));
+    await tester.tap(find.widgetWithText(InputChip, 'Dumbbell'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(exercises.lookup('mine')?.category, Category.dumbbell);
+    expect(exercises.lookup('mine')?.movement.toMap(), mine.movement.toMap());
+
+    // a new pattern swaps the first group and nothing else
+    await pumpDialog(tester, [fly, press, exercises.lookup('mine')!], editable: exercises.lookup('mine'));
+    await pick(tester, 'chest_fly');
+    await tester.tap(find.widgetWithText(PrimaryButton, 'Save'));
+    await tester.pumpAndSettle();
+    final movement = exercises.lookup('mine')!.movement;
+    expect(movement.groups, ['chest_fly', 'vertical_press']);
+    expect(movement.axialLoad, AxialLoad.moderate);
+    expect(movement.unilateral, isTrue);
+  });
 }
