@@ -5,10 +5,12 @@ import 'package:heart_models/heart_models.dart';
 /// `docs/2026-10-11.pattern-lens.md`).
 ///
 /// [workoutId] says which session the sets belong to, so a key can count the
-/// sessions that touched it as well as the sets. [target] is where an
-/// exercise nobody tagged still belongs (rule 7).
+/// sessions that touched it as well as the sets. [exerciseId] is the key of a
+/// goal about one exercise (#344). [target] is where an exercise nobody tagged
+/// still belongs (rule 7).
 typedef LensSets = ({
   String workoutId,
+  String exerciseId,
   DateTime start,
   Movement movement,
   MuscleTagging muscles,

@@ -167,6 +167,8 @@ extension on Goal {
       'user_id': userId,
       'metric': metric.value,
       'exercise_id': exerciseId,
+      'pattern': pattern,
+      'muscle': muscle,
       'cadence': cadence?.value,
       'stages': jsonEncode(stages.map((stage) => stage.toMap()).toList()),
       'archived': archived ? 1 : 0,

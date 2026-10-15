@@ -52,6 +52,9 @@ void main() {
     // sailing past a hand-written copy of the schema.
     await db.execute(goals);
     await db.execute(goalsIndex);
+    // v23 (#344)
+    await db.execute(addGoalPattern);
+    await db.execute(addGoalMuscle);
     local = await LocalDatabase.init(other: db);
   });
 
@@ -123,6 +126,29 @@ void main() {
       expect(read.metric, GoalMetric.workouts);
       expect(read.exerciseId, isNull);
       expect(read.cadence, GoalCadence.week);
+    });
+
+    test('round-trips what a sets or sessions goal is about: a pattern, a muscle (#344)', () async {
+      await local.createGoal(
+        Goal(
+          id: 'goal-1',
+          metric: .sets,
+          pattern: 'horizontal_press',
+          cadence: .week,
+          stages: [GoalStage(target: 10)],
+        ),
+        userId,
+      );
+      await local.createGoal(
+        Goal(id: 'goal-2', metric: .sessions, muscle: 'chest', cadence: .week, stages: [GoalStage(target: 2)]),
+        userId,
+      );
+
+      final [press, chest] = (await goalsOf(userId)).toList();
+
+      expect(press.subject, const GoalSubject.pattern('horizontal_press'));
+      expect(chest.subject, const GoalSubject.muscle('chest'));
+      expect(chest.metric, GoalMetric.sessions);
     });
 
     test('a new goal is not yet synced', () async {

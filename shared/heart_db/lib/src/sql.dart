@@ -633,6 +633,7 @@ GROUP BY w.id, we.exercise_id
 const lensSets = '''
 SELECT
     w.id AS workout_id,
+    we.exercise_id AS exercise_id,
     w.start AS start,
     e.muscles AS muscles,
     e.movement AS movement,

@@ -170,7 +170,19 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// and the target where an exercise nobody tagged still belongs. Warm-ups
   /// are left out, as they are from the map. Bucketing is the caller's, in
   /// the user's own week.
-  Future<List<({String workoutId, DateTime start, Movement movement, MuscleTagging muscles, Target target, int sets})>>
+  Future<
+    List<
+      ({
+        String workoutId,
+        String exerciseId,
+        DateTime start,
+        Movement movement,
+        MuscleTagging muscles,
+        Target target,
+        int sets,
+      })
+    >
+  >
   getLensSets(DateTime from, DateTime to, {String? userId}) {
     if (userId == null) return Future.value(const []);
     return _db
@@ -183,6 +195,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
             (row) {
               return (
                 workoutId: row['workout_id'] as String,
+                exerciseId: row['exercise_id'] as String,
                 start: DateTime.parse(row['start'] as String).toLocal(),
                 movement: switch (_blob(row['movement'])) {
                   Map<String, dynamic> m => Movement.fromJson(m),

@@ -145,6 +145,9 @@ const _schema = [
   createContent,
   // v25 (#396)
   createGoEasy,
+  // v26 (#344)
+  addGoalPattern,
+  addGoalMuscle,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -154,7 +157,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 25,
+      version: 26,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);
