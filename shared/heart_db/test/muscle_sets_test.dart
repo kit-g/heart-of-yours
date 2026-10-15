@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_db/heart_db.dart';
+import 'package:heart_models/heart_models.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'real_database.dart';
@@ -25,6 +26,9 @@ void main() {
       'name': 'Bench Press',
       'category': 'Barbell',
       'target': 'Chest',
+      'movement': jsonEncode({
+        'groups': ['horizontal_press'],
+      }),
       'muscles': jsonEncode({
         'primary': {
           'ids': ['pectoralis_major_l', 'pectoralis_major_r'],
@@ -135,5 +139,41 @@ void main() {
   test('no user matches nothing', () async {
     await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 2, 10));
     expect(await local.getMuscleSets(from, to), isEmpty);
+  });
+
+  group('the pattern lens\'s read (#341)', () {
+    test('carries the workout, the movement and the target with each count', () async {
+      final monday = DateTime.utc(2026, 9, 2, 10);
+      await seed(exercise: 'bench', start: monday, completed: 3, skipped: 1);
+
+      final [row] = await local.getLensSets(from, to, userId: userId);
+
+      expect(row.workoutId, 'w${sequence - 1}');
+      expect(row.start, monday.toLocal());
+      expect(row.sets, 3);
+      expect(row.movement.groups, ['horizontal_press']);
+      expect(row.target, Target.chest);
+      expect(row.muscles.primary.ids, ['pectoralis_major_l', 'pectoralis_major_r']);
+    });
+
+    test('an untagged custom exercise keeps its target, with no movement and no muscles', () async {
+      await seed(exercise: 'mine', start: DateTime.utc(2026, 9, 2, 10), completed: 2);
+
+      final [row] = await local.getLensSets(from, to, userId: userId);
+
+      expect(row.sets, 2);
+      expect(row.target, Target.other);
+      expect(row.movement.isEmpty, isTrue);
+      expect(row.muscles.isEmpty, isTrue);
+    });
+
+    test('leaves out warm-ups, unfinished workouts, other users and no user at all', () async {
+      await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 2, 10), completed: 2, warmups: 2);
+      await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 3, 10), finished: false);
+      await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 3, 10), user: 'user-2');
+
+      expect(await local.getLensSets(from, to, userId: userId), isEmpty);
+      expect(await local.getLensSets(from, to), isEmpty);
+    });
   });
 }
