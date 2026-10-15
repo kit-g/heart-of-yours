@@ -14,6 +14,7 @@ export 'src/exercises.dart';
 export 'src/export.dart';
 export 'src/feature_sync.dart';
 export 'src/features.dart';
+export 'src/go_easy.dart';
 export 'src/goals.dart';
 export 'src/health.dart';
 export 'src/import.dart';
