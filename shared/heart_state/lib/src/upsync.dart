@@ -599,8 +599,13 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   Future<(String, UpsyncOutcome)> _replayExercise(String uid, Exercise exercise) async {
     final (:row, :created) = await _remote.replayExercise(exercise);
     // the server's copy is the account's own row now, whatever `own` it
-    // arrived with
-    await _exercises.storeExercises([row.copyWith(isMine: true)], userId: uid);
+    // arrived with; it keeps no movement on a custom, so the pattern given
+    // here stays (#343)
+    final kept = switch (row.movement.isEmpty) {
+      true => row.copyWith(isMine: true, movement: exercise.movement),
+      false => row.copyWith(isMine: true),
+    };
+    await _exercises.storeExercises([kept], userId: uid);
     if (row.id != exercise.id) {
       await _local.mergeExercise(uid, from: exercise.id, to: row.id);
     }
