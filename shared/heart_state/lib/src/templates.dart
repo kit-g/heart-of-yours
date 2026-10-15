@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'analytics.dart';
 import 'remote.dart';
+import 'supersets.dart';
 
 /// Local persistence of the user's template folders.
 ///
@@ -260,17 +261,37 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   void removeExercise(WorkoutExercise exercise) {
-    editable?.remove(exercise);
+    editable
+      ?..remove(exercise)
+      // a superset left with one member is no superset (#159)
+      ..settle();
     notifyListeners();
   }
 
   void swap(WorkoutExercise toInsert, WorkoutExercise before) {
-    editable?.swap(toInsert, before);
+    editable
+      ?..swap(toInsert, before)
+      ..settle(moved: toInsert);
     notifyListeners();
   }
 
   void append(WorkoutExercise exercise) {
-    editable?.append(exercise);
+    editable
+      ?..append(exercise)
+      ..settle(moved: exercise);
+    notifyListeners();
+  }
+
+  /// Joins [exercise] and [neighbour] of the template being edited in a
+  /// superset (#159), or [exercise] into the one [neighbour] is in.
+  void group(WorkoutExercise exercise, WorkoutExercise neighbour) {
+    editable?.group(exercise, neighbour);
+    notifyListeners();
+  }
+
+  /// Takes [exercise] of the template being edited out of its superset.
+  void leaveGroup(WorkoutExercise exercise) {
+    editable?.leave(exercise);
     notifyListeners();
   }
 
@@ -526,6 +547,46 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
       notifyListeners();
       onError?.call(e, stacktrace: s);
     }
+  }
+
+  /// Swaps [from] for [to] in each of the user's templates among [ids] that
+  /// holds it: a ladder's step up, or back down (#350). Each set keeps its
+  /// type, target and values, and the exercise its rest, group and totals,
+  /// as an open slot's swap on the sheet keeps them.
+  Future<void> replaceExercise(Iterable<String> ids, {required String from, required Exercise to}) async {
+    final wanted = ids.toSet();
+    final changed = <Template>[];
+    for (final template in _templates.where((template) => wanted.contains(template.id)).toList()) {
+      final held = template.where((exercise) => exercise.exercise.id == from && exercise.isNotEmpty).toList();
+      for (final exercise in held) {
+        final sets = [
+          for (final set in exercise)
+            ExerciseSet(to, setType: set.setType, target: set.target)..setMeasurements(
+              weight: set.weight,
+              reps: set.reps,
+              duration: set.duration,
+              distance: set.distance,
+            ),
+        ];
+        final replacement = WorkoutExercise(starter: sets.first)
+          ..rest = exercise.rest
+          ..superset = exercise.superset
+          ..pattern = exercise.pattern
+          ..totalReps = exercise.totalReps;
+        for (final set in sets.skip(1)) {
+          replacement.add(set);
+        }
+        template
+          ..append(replacement)
+          ..swap(replacement, exercise)
+          ..remove(exercise);
+      }
+      if (held.isNotEmpty) changed.add(template);
+    }
+    if (changed.isEmpty) return;
+    notifyListeners();
+    await Future.wait(changed.map(_save));
+    notifyListeners();
   }
 
   /// Replaces the in-memory copy keyed like [template] — same id, same slot in

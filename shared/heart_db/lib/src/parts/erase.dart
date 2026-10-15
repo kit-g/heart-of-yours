@@ -53,6 +53,7 @@ mixin _Erase on _LocalDatabase {
         }
         batch.delete(_programs, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_programsOwed, where: 'user_id = ?', whereArgs: [userId]);
+        batch.delete(_skips, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_templateFolders, where: 'user_id = ?', whereArgs: [userId]);
         // per-exercise rest timers and unit overrides
         batch.delete(_exerciseDetails, where: 'user_id = ?', whereArgs: [userId]);

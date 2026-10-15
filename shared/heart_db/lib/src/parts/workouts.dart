@@ -254,6 +254,12 @@ mixin _Workouts on _LocalDatabase implements GalleryService, WorkoutService {
     await _db.update(_workoutExercises, {'note': note}, where: 'id = ?', whereArgs: [id]);
   }
 
+  /// What [exercise] plans beyond its sets, as it now stands: a superset it
+  /// joined or left mid-workout (#159).
+  Future<void> setWorkoutExercisePlan(WorkoutExercise exercise) async {
+    await _db.update(_workoutExercises, {'plan': _encodePlan(exercise)}, where: 'id = ?', whereArgs: [exercise.id]);
+  }
+
   /// The note on the whole session (#235), apart from [updateWorkout], which
   /// writes every column it names and would clear this one on a rename.
   Future<void> setWorkoutNote(String workoutId, String? note) async {

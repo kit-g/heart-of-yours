@@ -156,4 +156,8 @@ const _migrations = <int, List<String>>{
     addTemplateExercisePlan,
     addWorkoutExercisePlan,
   ],
+  23: [
+    createSkips,
+    skipsProgramIndex,
+  ],
 };

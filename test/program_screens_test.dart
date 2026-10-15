@@ -93,6 +93,14 @@ void main() {
     when(api.deleteProgramAction(any, any)).thenAnswer((_) async {});
     when(api.editProgram(any)).thenAnswer((i) async => i.positionalArguments.single as Program);
     when(api.deleteProgram(any, keepTemplates: anyNamed('keepTemplates'))).thenAnswer((_) async {});
+    when(db.getSkips(userId)).thenAnswer((_) async => <TrainingSkip>[]);
+    when(db.storeSkips(any, any)).thenAnswer((_) async {});
+    when(db.storeSkip(any, any)).thenAnswer((_) async {});
+    when(db.deleteSkip(any)).thenAnswer((_) async {});
+    when(api.getSkips()).thenAnswer((_) async => <TrainingSkip>[]);
+    when(api.replaySkip(any))
+        .thenAnswer((i) async => (row: i.positionalArguments.single as TrainingSkip, created: true));
+    when(api.deleteSkip(any)).thenAnswer((_) async {});
   });
 
   /// Signs in and lands on the Workout tab with templates and programs read.
@@ -218,6 +226,70 @@ void main() {
     });
   });
 
+  group('not today (#312)', () {
+    testWidgets('one tap sets the next session aside, the band moves on, and Undo takes it back', (tester) async {
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programNotToday('p1'));
+      await tester.pumpTimes();
+
+      final skip = verify(db.storeSkip(captureAny, userId)).captured.first as TrainingSkip;
+      expect((skip.templateId, skip.programId), ('t1', 'p1'));
+      verify(api.replaySkip(any)).called(1);
+      expect(find.text('Push sits this one out'), findsOneWidget);
+      // done in the cycle, by a skip: the strip says which, and Pull is next
+      expect(
+        find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == 'Push, skipped'),
+        findsOneWidget,
+      );
+      expect(find.text('Start Pull'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpTimes();
+
+      verify(db.deleteSkip(skip.id)).called(1);
+      verify(api.deleteSkip(skip.id)).called(1);
+      expect(find.text('Start Push'), findsOneWidget);
+    });
+
+    testWidgets('a skipped day is in History, and gone from it with Programs off', (tester) async {
+      answer(.on);
+      withProgram();
+      await openWorkoutTab(tester);
+      await tester.tapByKey(AppKeys.programNotToday('p1'));
+      await tester.pumpTimes();
+      final skip = verify(db.storeSkip(captureAny, userId)).captured.first as TrainingSkip;
+
+      await tester.tapByKey(AppKeys.historyStack);
+      await tester.pumpTimes();
+
+      final row = find.byKey(AppKeys.historySkip(skip.id));
+      expect(row, findsOneWidget);
+      expect(find.descendant(of: row, matching: find.text('Push')), findsOneWidget);
+
+      Preferences.of(tester.element(row)).setFeature(.programs, on: false);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.historySkip(skip.id)), findsNothing);
+    });
+
+    testWidgets('a paused program has nothing due, so nothing to set aside', (tester) async {
+      answer(.on);
+      withProgram();
+      when(db.getProgramActions(userId, programId: anyNamed('programId'))).thenAnswer(
+        (_) async => [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2))],
+      );
+      when(api.getProgramActions(any)).thenAnswer(
+        (_) async => [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime.utc(2026, 10, 2))],
+      );
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.programNotToday('p1')), findsNothing);
+      expect(find.byKey(AppKeys.programStart('p1')), findsOneWidget);
+    });
+  });
+
   group('the program page (#347)', () {
     Future<void> openPage(WidgetTester tester) async {
       answer(.on);
@@ -240,6 +312,32 @@ void main() {
       await tester.tap(find.text('Undo'));
       await tester.pumpTimes();
       verify(db.deleteProgramAction(action.id)).called(1);
+    });
+
+    testWidgets('How it grows says when the program goes lighter', (tester) async {
+      final lighter = program.copyWith(deload: const Deload(every: 4));
+      answer(.on);
+      withProgram();
+      when(db.getPrograms(userId)).thenAnswer((_) async => [lighter]);
+      when(api.getPrograms()).thenAnswer((_) async => [lighter]);
+      await openWorkoutTab(tester);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+
+      expect(find.text('How it grows'), findsOneWidget);
+      expect(find.text('Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'), findsOneWidget);
+    });
+
+    testWidgets('a lighter week is asked for like any steer, and then not offered again (#350)', (tester) async {
+      await openPage(tester);
+
+      await tester.tap(find.text('Lighter week'));
+      await tester.pumpTimes();
+
+      final action = verify(db.storeProgramAction(captureAny)).captured.first as ProgramAction;
+      expect(action.kind, ProgramActionKind.lighter);
+      expect(find.text('This week goes lighter'), findsOneWidget);
+      expect(find.text('Lighter week'), findsNothing);
     });
 
     testWidgets('one step at a time: a second tap while one is on its way records nothing', (tester) async {

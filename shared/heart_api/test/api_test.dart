@@ -1708,6 +1708,55 @@ void main() {
     });
   });
 
+  group('skips', () {
+    Map<String, dynamic> skip(String id) {
+      return {'id': id, 'at': '2026-10-03T07:00:00.000Z', 'templateId': 't2', 'programId': 'p1'};
+    }
+
+    test('a read follows every page, and a skip goes up safe to repeat (#312)', () async {
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.skips,
+        query: {'limit': 100},
+        statusCode: 200,
+        body: {
+          'skips': [skip('s2')],
+          'cursor': 's2',
+        },
+      );
+      _response(
+        client: client,
+        method: 'GET',
+        path: Router.skips,
+        query: {'limit': 100, 'cursor': 's2'},
+        statusCode: 200,
+        body: {
+          'skips': [skip('s1')],
+          'cursor': null,
+        },
+      );
+
+      final skips = await api.getSkips();
+      expect(skips.map((each) => (each.id, each.templateId, each.programId)), [
+        ('s2', 't2', 'p1'),
+        ('s1', 't2', 'p1'),
+      ]);
+
+      _response(client: client, method: 'POST', path: Router.skips, statusCode: 200, body: skip('s1'));
+      final (:row, :created) = await api.replaySkip(TrainingSkip.fromJson(skip('s1')));
+      expect((row.id, created), ('s1', false));
+    });
+
+    test('the cap is a typed refusal', () async {
+      _response(client: client, method: 'POST', path: Router.skips, statusCode: 400, body: {'code': 'skip_limit'});
+      await expectLater(
+        api.replaySkip(TrainingSkip.fromJson(skip('s1'))),
+        throwsA(isA<ProgramRefused>().having((e) => e.reason, 'reason', ProgramRefusal.skipLimit)),
+      );
+    });
+  });
+
   group('exercise history move', () {
     const report = {
       'sourceId': 'source',

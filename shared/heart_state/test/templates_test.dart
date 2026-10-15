@@ -340,6 +340,25 @@ void main() {
         expect(probe.notifications, 1);
       });
 
+      test('a superset is made and left in the editor, and goes out with the save (#159)', () async {
+        when(
+          local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => Template.empty(id: 'e1', order: 1));
+        await templates.add(ex('Push Up'));
+        await templates.add(ex('Row'));
+        probe.notifications = 0;
+
+        final [push, row] = templates.editable!.toList();
+        templates.group(push, row);
+        expect((push.superset, row.superset), (1, 1));
+        expect(row.toMap()['superset'], 1);
+
+        templates.leaveGroup(push);
+        expect((push.superset, row.superset), (null, null));
+        expect(row.toMap(), containsPair('superset', null), reason: 'a save clears it on the server');
+        expect(probe.notifications, 2);
+      });
+
       test('swap and append notify', () async {
         when(
           local.startTemplate(order: anyNamed('order'), userId: anyNamed('userId')),
@@ -462,6 +481,54 @@ void main() {
         expect(templates.editable!.name, 'Morning');
         expect(probe.notifications, 1);
       });
+    });
+
+    test("a ladder's step swaps the exercise in the sessions holding it, plan and sets kept (#350)", () async {
+      templates.userId = 'u1';
+      const wall = {'id': 'wall', 'name': 'Wall push-up', 'category': 'Reps Only', 'target': 'Chest'};
+      final session = Template.fromJson({
+        'id': 'climb',
+        'name': 'Day A',
+        'order': 0,
+        'exercises': [
+          {
+            'id': 'te1',
+            'exercise': wall,
+            'rest': 90,
+            'sets': [
+              {
+                'id': 'x1',
+                'set_type': 'normal',
+                'target': {
+                  'reps': {'min': 8, 'max': 12},
+                },
+              },
+            ],
+          },
+        ],
+      });
+      when(local.getTemplates('u1')).thenAnswer((_) async => [session]);
+      when(local.getTemplates(null)).thenAnswer((_) async => <Template>[]);
+      when(config.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
+      when(remote.getTemplates()).thenAnswer((_) async => null);
+      when(local.updateTemplate(any)).thenAnswer((_) async {});
+      when(remote.editTemplate(any)).thenAnswer((invocation) async => invocation.positionalArguments.first as Template);
+      await templates.init();
+      await pumpEventQueue();
+
+      final incline = Exercise.fromJson(const {
+        'id': 'incline',
+        'name': 'Incline push-up',
+        'category': 'Reps Only',
+        'target': 'Chest',
+      });
+      await templates.replaceExercise(['climb', 'elsewhere'], from: 'wall', to: incline);
+
+      final [exercise] = templates.lookup('climb')!.toList();
+      expect(exercise.exercise.id, 'incline');
+      expect(exercise.rest, 90);
+      expect(exercise.single.target?[.reps], const TargetRange(min: 8, max: 12));
+      verify(local.updateTemplate(argThat(predicate<Template>((each) => each.id == 'climb')))).called(1);
     });
 
     group('duplicate (#262)', () {

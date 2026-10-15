@@ -126,4 +126,45 @@ void main() {
   test('a workout with no exercises has nothing next', () {
     expect(upNextIn(Workout(name: 'Empty')), isNull);
   });
+
+  group('in a superset (#159)', () {
+    late WorkoutExercise row;
+    late WorkoutExercise curl;
+    late WorkoutExercise press;
+
+    setUp(() {
+      row = block('Row', 2)..superset = 1;
+      curl = block('Curl', 2)..superset = 1;
+      press = block('Press', 1);
+      workout = Workout.fromExercises([row, curl, press], name: 'Pull');
+    });
+
+    test('a set of one member is followed by the next member', () {
+      final next = upNextIn(workout, after: tick(row, 1));
+      expect((next?.exercise, next?.number), (curl, 1));
+    });
+
+    test("the round's last is followed by the next round's first", () {
+      tick(row, 1);
+      final next = upNextIn(workout, after: tick(curl, 1));
+      expect((next?.exercise, next?.number), (row, 2));
+    });
+
+    test('before its tick, a set is never followed by itself', () {
+      // the lock screen asks what follows a set it has not ticked yet
+      for (final set in curl) {
+        set.isCompleted = true;
+      }
+      final next = upNextIn(workout, after: (row, row.first));
+      expect((next?.exercise, next?.number), (row, 2));
+    });
+
+    test('a finished group is followed by what comes after it', () {
+      tick(row, 1);
+      tick(curl, 1);
+      tick(row, 2);
+      final next = upNextIn(workout, after: tick(curl, 2));
+      expect((next?.exercise, next?.number), (press, 1));
+    });
+  });
 }

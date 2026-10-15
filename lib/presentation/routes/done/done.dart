@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/records.dart';
+import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
@@ -11,6 +12,7 @@ import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/logo.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
+import 'package:heart/presentation/widgets/workout/growth_measure.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -20,6 +22,7 @@ part 'confetti.dart';
 part 'counter.dart';
 part 'heart.dart';
 part 'muscles.dart';
+part 'program.dart';
 part 'achievements.dart';
 part 'records.dart';
 
@@ -37,12 +40,17 @@ class WorkoutDone extends StatelessWidget {
   /// [achievementsCallback]: resolved late, against the written workout.
   final Future<List<AchievedRecord>> Function() recordsCallback;
 
+  /// What the session moved in its program (#350, #351), under the same
+  /// contract: resolved once the finish has written it.
+  final Future<List<GrowthMove>> Function() growthCallback;
+
   const new({
     super.key,
     required this.workout,
     required this.workoutsThisWeekCallback,
     required this.achievementsCallback,
     required this.recordsCallback,
+    required this.growthCallback,
     required this.onQuit,
   });
 
@@ -133,6 +141,8 @@ class WorkoutDone extends StatelessWidget {
                           ),
                           _Achievements(callback: achievementsCallback),
                           _Records(callback: recordsCallback),
+                          if (workout case Workout(programId: String _) && final workout)
+                            _ProgramBlock(workout: workout, callback: growthCallback),
                           const SizedBox(height: 72),
                           if (workout case Workout workout)
                             WorkoutItem(

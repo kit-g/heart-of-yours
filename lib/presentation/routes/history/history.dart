@@ -1,5 +1,7 @@
 library;
 
+import 'dart:collection';
+
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
@@ -24,6 +26,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'page.dart';
+part 'skip_item.dart';
 part 'calendar.dart';
 part 'utils.dart';
 part 'workout_editor.dart';

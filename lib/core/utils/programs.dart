@@ -29,6 +29,11 @@ class LocalPrograms implements LocalProgramService {
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId) => _db.getProgramMarks(userId, programId);
 
   @override
+  Future<List<Workout>> getProgramWorkouts(String userId, String programId) {
+    return _db.getProgramWorkouts(userId, programId);
+  }
+
+  @override
   Future<List<ProgramAction>> getProgramActions(String userId, {String? programId}) {
     return _db.getProgramActions(userId, programId: programId);
   }
@@ -80,6 +85,18 @@ class LocalPrograms implements LocalProgramService {
 
   @override
   Future<void> settleProgram(ProgramRow row, String id) => _db.settleProgram(row.name, id);
+
+  @override
+  Future<List<TrainingSkip>> getSkips(String userId) => _db.getSkips(userId);
+
+  @override
+  Future<void> storeSkips(Iterable<TrainingSkip> skips, String userId) => _db.storeSkips(skips, userId);
+
+  @override
+  Future<void> storeSkip(TrainingSkip skip, String userId) => _db.storeSkip(skip, userId);
+
+  @override
+  Future<void> deleteSkip(String skipId) => _db.deleteSkip(skipId);
 }
 
 /// Presents [Api] as the [RemoteProgramService] the [Programs] notifier wants.
@@ -140,6 +157,15 @@ class RemotePrograms implements RemoteProgramService {
   Future<Template> setTemplateProgram(Template template, {required String? programId}) {
     return _refusedAsBody(() => _api.setTemplateProgram(template, programId: programId));
   }
+
+  @override
+  Future<List<TrainingSkip>> getSkips() => _refusedAsBody(_api.getSkips);
+
+  @override
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip) => _refusedAsBody(() => _api.replaySkip(skip));
+
+  @override
+  Future<void> deleteSkip(String skipId) => _refusedAsBody(() => _api.deleteSkip(skipId));
 
   static Future<T> _refusedAsBody<T>(Future<T> Function() call) async {
     try {

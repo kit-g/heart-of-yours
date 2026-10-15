@@ -33,7 +33,11 @@ enum ProgramRefusal {
   unknownWorkout('unknown_workout'),
 
   /// `404 unknown_action`: a base names an action the account does not own.
-  unknownAction('unknown_action');
+  unknownAction('unknown_action'),
+
+  /// `400 skip_limit`: the account holds as many skips ("Not today", #312) as
+  /// it may.
+  skipLimit('skip_limit');
 
   /// The `code` on the wire.
   final String code;

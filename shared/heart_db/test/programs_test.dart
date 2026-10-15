@@ -160,6 +160,18 @@ void main() {
       ]);
     });
 
+    test("a program's workouts are its finished ones, oldest first (#350)", () async {
+      await local.storeProgram(program(), userId);
+      await workout('w2', templateId: 't1', start: DateTime.utc(2026, 10, 4));
+      await workout('w1', templateId: 't1', start: DateTime.utc(2026, 10, 2));
+      await workout('w3', templateId: 't2', start: DateTime.utc(2026, 10, 6), done: false);
+      await workout('w4', templateId: 't3', programId: 'p9');
+
+      final workouts = await local.getProgramWorkouts(userId, 'p1');
+
+      expect(workouts.map((workout) => workout.id), ['w1', 'w2']);
+    });
+
     test('a shallow copy keeps the links, a whole one may let them go', () async {
       await workout('w1', templateId: 't1');
 

@@ -290,6 +290,9 @@ RouteBase _historyRoute() {
           onDeleteWorkout: (_) {
             context.goToHistory();
           },
+          onTapSkip: (skip) {
+            if (skip.programId case final String id) context.goToProgram(id);
+          },
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
             context.goToActiveWorkout();
@@ -318,6 +321,9 @@ RouteBase _historyRoute() {
               },
               onTapWorkout: (workout) {
                 context.goToWorkoutEditor(workout.id);
+              },
+              onTapSkip: (skip) {
+                if (skip.programId case final String id) context.goToProgram(id);
               },
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
@@ -746,6 +752,9 @@ RouteBase _workoutDoneRoute() {
             final finished = await workouts.finishing ?? workout;
             return recordsSetBy(finished.id, finished, lookup: exercises.getExerciseRecords);
           },
+          // the finish started the rules running (#350); this is their answer,
+          // and nothing for a session they never ran on
+          growthCallback: () => Programs.of(context).grownBy(workout.id) ?? Future.value(const []),
         );
       } catch (e) {
         throw GoException('$e');

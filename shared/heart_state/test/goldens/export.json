@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "exportedAt": "2026-09-06T12:00:00.000Z",
   "units": {
     "weight": "imperial",
@@ -237,6 +237,15 @@
       "exerciseId": "ex-bench",
       "value": 60,
       "at": "2026-09-01T07:00:00.000Z"
+    }
+  ],
+  "skips": [
+    {
+      "id": "k1",
+      "at": "2026-09-03T07:00:00.000Z",
+      "reason": "tired",
+      "templateId": "t2",
+      "programId": "p1"
     }
   ]
 }

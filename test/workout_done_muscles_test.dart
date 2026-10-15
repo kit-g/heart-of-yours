@@ -74,6 +74,7 @@ void main() {
             workoutsThisWeekCallback: () async => 0,
             achievementsCallback: () async => const [],
             recordsCallback: () async => const [],
+            growthCallback: () async => const [],
           ),
         ),
       ),

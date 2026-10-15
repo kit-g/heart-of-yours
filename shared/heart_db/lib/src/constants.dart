@@ -13,6 +13,7 @@ const _programs = 'programs';
 const _programActions = 'program_actions';
 const _programBases = 'program_bases';
 const _programsOwed = 'programs_owed';
+const _skips = 'skips';
 const _charts = 'charts';
 const _goals = 'goals';
 const _healthSamples = 'health_samples';

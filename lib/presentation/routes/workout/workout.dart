@@ -16,6 +16,7 @@ import 'package:heart/presentation/widgets/image.dart';
 import 'package:heart/presentation/widgets/responsive/columns.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/setting_picker.dart';
+import 'package:heart/presentation/widgets/workout/growth_measure.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';

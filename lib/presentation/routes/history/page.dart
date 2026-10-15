@@ -6,6 +6,9 @@ class HistoryPage extends StatefulWidget {
   final void Function(Workout)? onEditWorkout;
   final void Function(Workout)? onTapWorkout;
   final void Function(Workout)? onDeleteWorkout;
+
+  /// A day set aside with "Not today" (#312): opens its program.
+  final void Function(TrainingSkip)? onTapSkip;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
@@ -21,6 +24,7 @@ class HistoryPage extends StatefulWidget {
     required this.onEditWorkout,
     this.onTapWorkout,
     this.onDeleteWorkout,
+    this.onTapSkip,
     required this.onOpenActiveWorkout,
     this.detail,
     this.onTapImage,
@@ -43,7 +47,12 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
     final L(:myProgression) = L.of(context);
     final workouts = Workouts.watch(context);
     final byMonth = workouts.byMonth;
-    final items = byMonth.entries.expand((entry) => [entry.key, ...entry.value]).toList();
+    // the days set aside, while Programs is on: off, History is as it was
+    final skips = switch (Preferences.watch(context).isOn(.programs)) {
+      true => Programs.watch(context).skips,
+      false => const <TrainingSkip>[],
+    };
+    final items = _historyRows(byMonth, skips, partial: workouts.hasMoreHistory);
     final images = workouts.images;
     final layout = LayoutProvider.of(context);
     final listview = CustomScrollView(
@@ -120,7 +129,7 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
               ],
             ),
           ),
-        if (byMonth.isEmpty)
+        if (items.isEmpty)
           const SliverFillRemaining(
             child: _EmptyState(),
           )
@@ -153,11 +162,12 @@ class _HistoryPageState extends State<HistoryPage> with AfterLayoutMixin<History
                   onTapImageIcon: widget.onTapImage,
                   highlighted: workout.id == widget.selectedId,
                 ),
+                TrainingSkip skip => _SkipItem(skip: skip, onTap: widget.onTapSkip),
                 _ => const SizedBox.shrink(),
               };
             },
           ),
-        if (byMonth.isNotEmpty)
+        if (items.isNotEmpty)
           SliverToBoxAdapter(
             child: _HistoryTail(
               loading: workouts.loadingMoreHistory,

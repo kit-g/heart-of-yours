@@ -37,6 +37,9 @@ abstract interface class UpsyncService {
   Future<Replayed<ProgramAction>> replayProgramAction(ProgramAction action);
 
   Future<Replayed<ProgramBase>> replayProgramBase(ProgramBase base);
+
+  /// "Not today" (#312): after the workouts and the programs it may name.
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip);
 }
 
 /// The store's half: the uid move, the debt, the ledger, and the reference
@@ -79,7 +82,7 @@ abstract interface class LocalUpsyncService {
 /// it; its actions and bases after the workouts, which a base may name
 /// (heart-api `docs/2026-09-05.upsync-replay.md`). The ledger keys on the
 /// name, so a value inserted here leaves every older ledger readable.
-enum UpsyncResource { exercise, unit, note, folder, program, template, workout, programAction, programBase, goal }
+enum UpsyncResource { exercise, unit, note, folder, program, template, workout, programAction, programBase, skip, goal }
 
 /// What the server said about one step.
 enum UpsyncOutcome {
@@ -246,8 +249,8 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
   /// The four resources that can arrive on this device by *download*.
   ///
   /// Workouts and goals carry a `synced` flag of their own, so the plan can
-  /// tell a local one from the server's. These four cannot: an exercise, a unit
-  /// preference, a folder and a template look identical whether the user
+  /// tell a local one from the server's. These cannot: an exercise, a unit
+  /// preference, a folder, a template, a program's rows and a skip look identical whether the user
   /// authored them offline or the account's own pull just put them there.
   static const _downloaded = {
     UpsyncResource.exercise,
@@ -257,6 +260,7 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     UpsyncResource.template,
     UpsyncResource.programAction,
     UpsyncResource.programBase,
+    UpsyncResource.skip,
   };
 
   /// Writes down what the account's pull has just put in the store, so the next
@@ -567,6 +571,11 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
           if (base.id case final String id when pending(id))
             (resource: resource, id: id, replay: () => _replayProgramBase(base)),
       ],
+      .skip => [
+        for (final skip in await _programs?.getSkips(uid) ?? const <TrainingSkip>[])
+          if (skip.id case final String id when pending(id))
+            (resource: resource, id: id, replay: () => _replaySkip(uid, skip)),
+      ],
       .goal => [
         for (final goal in await _goals.unsyncedGoals(uid))
           if (goal.id case String id when pending(id))
@@ -681,6 +690,12 @@ class Upsync with ChangeNotifier implements SignOutStateSentry {
     final (:row, :created) = await _remote.replayProgramBase(base);
     if (row.id != base.id) await _programs?.deleteProgramBase(base.id!);
     await _programs?.storeProgramBase(row);
+    return (row.id!, _outcome(created));
+  }
+
+  Future<(String, UpsyncOutcome)> _replaySkip(String uid, TrainingSkip skip) async {
+    final (:row, :created) = await _remote.replaySkip(skip);
+    await _programs?.storeSkip(row, uid);
     return (row.id!, _outcome(created));
   }
 

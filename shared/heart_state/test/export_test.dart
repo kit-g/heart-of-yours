@@ -286,6 +286,11 @@ void main() {
     when(programs.getProgramBases(_user)).thenAnswer(
       (_) async => [ProgramBase(id: 'b1', programId: 'p1', exerciseId: 'ex-bench', value: 60, at: at)],
     );
+    when(programs.getSkips(_user)).thenAnswer(
+      (_) async => [
+        TrainingSkip(id: 'k1', at: at.add(const Duration(days: 2)), reason: 'tired', templateId: 't2', programId: 'p1'),
+      ],
+    );
 
     when(workouts.getWorkoutHistory(_user)).thenAnswer((_) async => _workouts());
     when(templates.getTemplates(_user)).thenAnswer((_) async => _templates());
@@ -380,6 +385,7 @@ void main() {
       when(programs.getPrograms(_user)).thenAnswer((_) async => const []);
       when(programs.getProgramActions(_user)).thenAnswer((_) async => const []);
       when(programs.getProgramBases(_user)).thenAnswer((_) async => const []);
+      when(programs.getSkips(_user)).thenAnswer((_) async => const []);
 
       final snapshot = await read();
       final envelope = jsonDecode(snapshot.toJson(exportedAt: DateTime.utc(2026, 9, 6, 12))) as Map;
@@ -396,6 +402,7 @@ void main() {
         'programs',
         'programActions',
         'programBases',
+        'skips',
       ]);
       for (final key in [
         'workouts',
@@ -406,6 +413,7 @@ void main() {
         'programs',
         'programActions',
         'programBases',
+        'skips',
       ]) {
         expect(envelope[key], isEmpty);
       }
@@ -458,9 +466,9 @@ void main() {
       final json = await envelope();
 
       // a reader written against v1 would find a string where an object was;
-      // v3 added the programs (#346)
-      expect(json['schemaVersion'], 3);
-      expect(exportSchemaVersion, 3);
+      // v3 added the programs (#346), v4 the skips (#312)
+      expect(json['schemaVersion'], 4);
+      expect(exportSchemaVersion, 4);
     });
   });
 

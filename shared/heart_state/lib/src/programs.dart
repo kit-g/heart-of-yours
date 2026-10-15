@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'program_growth.dart';
 import 'program_plan.dart';
 import 'remote.dart';
 import 'upsync.dart' show Replayed;
@@ -11,8 +12,9 @@ import 'workouts.dart';
 
 /// A program's rows, as what [Programs] owes the server names them. A
 /// session is a template the account already held, filed under a program by
-/// its own edit (#348).
-enum ProgramRow { program, action, base, session }
+/// its own edit (#348). A skip is "Not today" (#312): it names its program,
+/// and outlives it.
+enum ProgramRow { program, action, base, session, skip }
 
 /// What was done to a row on this device.
 enum ProgramChange { created, edited, deleted, deletedKeepingTemplates }
@@ -39,6 +41,10 @@ abstract interface class LocalProgramService {
   /// The program's finished workouts, as what its position is folded from.
   Future<List<ProgramMark>> getProgramMarks(String userId, String programId);
 
+  /// The program's finished workouts, whole and oldest first: what a growth
+  /// rule's miss streak is read from (#350).
+  Future<List<Workout>> getProgramWorkouts(String userId, String programId);
+
   Future<List<ProgramAction>> getProgramActions(String userId, {String? programId});
 
   Future<void> storeProgramActions(String programId, Iterable<ProgramAction> actions);
@@ -63,6 +69,17 @@ abstract interface class LocalProgramService {
 
   /// The server confirmed [row] [id], or will never take it.
   Future<void> settleProgram(ProgramRow row, String id);
+
+  /// [userId]'s skips ("Not today", #312), of every program and of none,
+  /// oldest first.
+  Future<List<TrainingSkip>> getSkips(String userId);
+
+  /// Replaces [userId]'s skips wholesale: the write of a full read.
+  Future<void> storeSkips(Iterable<TrainingSkip> skips, String userId);
+
+  Future<void> storeSkip(TrainingSkip skip, String userId);
+
+  Future<void> deleteSkip(String skipId);
 }
 
 /// The server's half: `Api` behind an adapter in the app. Each create is safe
@@ -93,6 +110,13 @@ abstract interface class RemoteProgramService {
   /// Files [template] under [programId] as a session, or takes it out of its
   /// program when null.
   Future<Template> setTemplateProgram(Template template, {required String? programId});
+
+  /// Every skip the account holds, whole or not at all.
+  Future<List<TrainingSkip>> getSkips();
+
+  Future<Replayed<TrainingSkip>> replaySkip(TrainingSkip skip);
+
+  Future<void> deleteSkip(String skipId);
 }
 
 /// The user's programs (#346, `docs/2026-10-11.programs.md`): templates on a
@@ -128,12 +152,17 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Listened to for finished and deleted workouts, which move a position.
   final Workouts? _workouts;
 
+  /// Swaps [from] for [to] in the [sessions] that hold it: a ladder's advance
+  /// (#350), or its "Keep". Templates are the template list's to edit.
+  final Future<void> Function(Iterable<String> sessions, {required String from, required String to})? onAdvance;
+
   new({
     required this._service,
     required this._remoteService,
     required this._templates,
     this.onError,
     this.onSessionsChanged,
+    this.onAdvance,
     this._workouts,
     RemoteAccess? remote,
   }) : _remote = remote ?? RemoteAccess() {
@@ -150,6 +179,9 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   final _actions = <String, List<ProgramAction>>{};
   final _bases = <String, List<ProgramBase>>{};
   final _marks = <String, List<ProgramMark>>{};
+  final _skips = <String, List<TrainingSkip>>{};
+  // the skips whose program was deleted: they outlive it, as on the server
+  final _orphanSkips = <TrainingSkip>[];
   final _owed = <(ProgramRow, String), ProgramOwed>{};
 
   bool _loaded = false;
@@ -168,6 +200,32 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   Program? lookup(String programId) => _programs[programId];
 
   List<ProgramAction> actionsOf(String programId) => UnmodifiableListView(_actions[programId] ?? const []);
+
+  /// The sessions of [programId] the user set aside ("Not today", #312),
+  /// oldest first.
+  List<TrainingSkip> skipsOf(String programId) => UnmodifiableListView(_skips[programId] ?? const []);
+
+  /// Every program's skips, oldest first: what History lists beside the
+  /// workouts.
+  List<TrainingSkip> get skips {
+    return [
+      for (final skips in _skips.values) ...skips,
+      ..._orphanSkips,
+    ]..sort((a, b) => a.at.compareTo(b.at));
+  }
+
+  /// The sessions [position]'s open cycle counts done by a skip rather than
+  /// a workout: the last thing each one had was "Not today".
+  Set<String> skippedIn(Program program, ProgramPosition position) {
+    final last = <String, ProgramMark>{};
+    for (final mark in [...?_marks[program.id]]..sort((a, b) => a.at.compareTo(b.at))) {
+      if (mark.templateId case final String id) last[id] = mark;
+    }
+    return {
+      for (final id in position.done)
+        if (last[id] case ProgramMark(isWorkout: false)) id,
+    };
+  }
 
   /// Every value [programId]'s rules have given its exercises, oldest first:
   /// the "100 → 102.5 → 105" view.
@@ -222,7 +280,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _actions.clear();
     _bases.clear();
     _marks.clear();
+    _skips.clear();
+    _orphanSkips.clear();
     _owed.clear();
+    _grown.clear();
     _heldRevision = null;
   }
 
@@ -261,6 +322,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       notifyListeners();
     });
 
+    await _step(() => _pullSkips(id));
+
     // an archived program's history is read once; nothing moves it after
     await Future.wait([
       for (final MapEntry<String, Program>(key: programId, value: program) in [..._programs.entries])
@@ -279,10 +342,12 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     final actions = await _service.getProgramActions(id);
     final bases = await _service.getProgramBases(id);
     final owed = await _service.getProgramsOwed(id);
+    final skips = await _service.getSkips(id);
     if (userId != id) return;
     _replace(programs);
     _group(_actions, actions, (action) => action.programId);
     _group(_bases, bases, (base) => base.programId);
+    _groupSkips(skips);
     _owed
       ..clear()
       ..addEntries([for (final each in owed) MapEntry((each.row, each.id), each)]);
@@ -308,6 +373,20 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     await _service.storeProgramBases(programId, ownBases);
     _actions[programId] = ownActions..sort((a, b) => a.at.compareTo(b.at));
     _bases[programId] = ownBases..sort((a, b) => a.at.compareTo(b.at));
+    notifyListeners();
+  }
+
+  /// Reads the account's skips from the server over the mirror's, but for
+  /// what this device still owes it. They are read whole: a program's
+  /// position folds every one of them.
+  Future<void> _pullSkips(String uid) async {
+    final theirs = await _remoteService.getSkips();
+    if (userId != uid) return;
+    final skips = _rowsOwed<TrainingSkip>(theirs, .skip, await _service.getSkips(uid), (skip) => skip.id)
+      ..sort((a, b) => a.at.compareTo(b.at));
+    await _service.storeSkips(skips, uid);
+    _groupSkips(skips);
+    await _readMarks(uid);
     notifyListeners();
   }
 
@@ -429,13 +508,19 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _actions.remove(id);
     _bases.remove(id);
     _marks.remove(id);
+    // its skips stay in History, as the mirror keeps their rows
+    _orphanSkips.addAll([
+      for (final skip in _skips.remove(id) ?? const <TrainingSkip>[])
+        TrainingSkip(id: skip.id, at: skip.at, reason: skip.reason, weather: skip.weather, templateId: skip.templateId),
+    ]);
     notifyListeners();
 
     await _service.deleteProgram(id, keepTemplates: keepTemplates);
     // its history goes with it on the server too; and one the server never
     // had is owed nothing at all
     final reached = _owed[(ProgramRow.program, id)]?.change != .created;
-    for (final owed in [..._owed.values.where((each) => each.programId == id)]) {
+    // a skip outlives its program, as on the server: it still goes up
+    for (final owed in [..._owed.values.where((each) => each.programId == id && each.row != .skip)]) {
       await _settle(owed.row, owed.id);
     }
     if (reached) {
@@ -535,6 +620,55 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// "Not today" (#312): sets [session] of [program] aside. The session counts
+  /// as done in the open cycle and nothing grows
+  /// (`docs/2026-10-11.programs.md`): the position moves on, and a growth
+  /// rule never reads a skip. History, not state: taking it back is [unskip].
+  Future<TrainingSkip> skip(Program program, {required String session, DateTime? at}) {
+    final uid = userId;
+    if (uid == null) throw StateError('a skip belongs to an account or a session');
+    final skip = TrainingSkip(
+      id: uuidV7(),
+      at: at ?? DateTime.timestamp(),
+      templateId: session,
+      programId: program.id,
+    );
+    if (program.id case final String id) _marks.putIfAbsent(id, () => []).add(ProgramMark.skip(skip));
+    return _record(
+      skip,
+      .skip,
+      into: _skips,
+      idOf: (skip) => skip.id,
+      store: (skip) => _service.storeSkip(skip, uid),
+      confirm: _confirmSkip,
+      programId: skip.programId,
+    );
+  }
+
+  /// Takes [skip] back: its session is due again.
+  Future<void> unskip(TrainingSkip skip) async {
+    final programId = skip.programId;
+    final skipId = skip.id;
+    if (programId == null || skipId == null) return;
+
+    _skips[programId]?.removeWhere((each) => each.id == skipId);
+    _marks[programId]?.removeWhere(
+      (mark) => !mark.isWorkout && mark.templateId == skip.templateId && mark.at.isAtSameMomentAs(skip.at),
+    );
+    notifyListeners();
+
+    await _service.deleteSkip(skipId);
+    await _unowe(.skip, skipId, programId: programId);
+    if (!_remote.allowed) return;
+
+    try {
+      await _remoteService.deleteSkip(skipId);
+      await _settle(.skip, skipId);
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+    }
+  }
+
   /// Sets [exerciseId]'s base in [program] to [value], with its cause: the
   /// workout that moved it, the action that did, or neither when the user set
   /// it ("Keep 57.5 kg").
@@ -591,6 +725,172 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
     }
+  }
+
+  /// What finished workouts did to their programs, by workout id: written
+  /// once per workout, and read back by the Done page (#351).
+  final _grown = <String, Future<List<GrowthMove>>>{};
+
+  /// Runs [workout]'s program's growth rules over it (#350) and writes what
+  /// they say: a base grown or cut, a ladder's advance with its session
+  /// swapped and its rule moved along, a test session's training maxes.
+  /// Once per workout: a second call has the first's answer, and a workout
+  /// something was already written for (a finish another device ran) moves
+  /// nothing again.
+  ///
+  /// [session] is the template it was started from, which tells apart the
+  /// two occurrences of a lift the program keeps a base for each of. [after]
+  /// is the finish still writing it: the rules read the program's history
+  /// from the mirror, so they wait for it, and a caller can ask the moment
+  /// the finish starts.
+  ///
+  /// Editing the workout later runs nothing again: what moved stays moved,
+  /// and the program page's bases are where it is changed by hand.
+  ///
+  /// [slots] are [slotsOf] the workout as it stood before the finish dropped
+  /// the exercises nobody ticked.
+  Future<List<GrowthMove>> grow(
+    Workout workout, {
+    Template? session,
+    Map<String, String>? slots,
+    Future<void>? after,
+  }) {
+    return _grown[workout.id] ??= _grow(workout, session: session, slots: slots, after: after);
+  }
+
+  /// What [grow] answered for [workoutId], while it is remembered; null when
+  /// it never ran on this launch.
+  Future<List<GrowthMove>>? grownBy(String workoutId) => _grown[workoutId];
+
+  Future<List<GrowthMove>> _grow(
+    Workout workout, {
+    Template? session,
+    Map<String, String>? slots,
+    Future<void>? after,
+  }) async {
+    try {
+      await after;
+    } catch (_) {
+      // the finish reports its own failure; the workout is in the mirror
+      // whatever the server said
+    }
+    final uid = userId;
+    final program = switch (workout.programId) {
+      final String id => _programs[id],
+      null => null,
+    };
+    final id = program?.id;
+    if (uid == null || program == null || id == null || program.archived) return const [];
+    bool causedBy(String? cause) => cause == workout.id;
+    if (basesOf(id).any((base) => causedBy(base.workoutId))) return const [];
+    if (actionsOf(id).any((action) => causedBy(action.workoutId))) return const [];
+
+    try {
+      final (marks, workouts) = await (
+        _service.getProgramMarks(uid, id),
+        _service.getProgramWorkouts(uid, id),
+      ).wait;
+      final start = workout.start;
+
+      // the position as it stood at [moment], and with [plus] marked in it
+      ProgramPosition at(DateTime moment, {ProgramMark? plus}) {
+        return ProgramPosition.of(
+          program,
+          marks: [...marks.where((mark) => mark.at.isBefore(moment)), ?plus],
+          actions: actionsOf(id).where((action) => action.at.isBefore(moment)),
+          now: moment,
+        );
+      }
+
+      final before = at(start);
+      final after = at(start, plus: ProgramMark.workout(workout));
+      final moves = growthOf(
+        program,
+        workout,
+        bases: currentBasesOf(id),
+        earlier: [
+          for (final each in workouts)
+            if (each.id != workout.id && each.start.isBefore(start)) (workout: each, lighter: at(each.start).lighter),
+        ],
+        before: before,
+        closesCycle: after.week > before.week,
+        session: session,
+        slots: slots,
+      );
+
+      // each move on its own: one that fails is reported and left out, and
+      // the ones written before and after it still reach Done with their Keep
+      final written = <GrowthMove>[];
+      for (final move in moves) {
+        try {
+          written.add(await _write(move, programId: id, workoutId: workout.id));
+        } catch (e, s) {
+          onError?.call(e, stacktrace: s);
+        }
+      }
+      return written;
+    } catch (e, s) {
+      onError?.call(e, stacktrace: s);
+      // nothing was written: forget the answer, so asking again runs it again
+      _grown.remove(workout.id);
+      return const [];
+    }
+  }
+
+  Future<GrowthMove> _write(GrowthMove move, {required String programId, required String workoutId}) async {
+    final program = _programs[programId];
+    if (program == null) return move;
+    switch (move.step) {
+      case Grow(:final value) || Cut(:final value):
+        final base = await setBase(
+          program,
+          exerciseId: move.exerciseId,
+          value: value,
+          slot: move.slot,
+          workoutId: workoutId,
+        );
+        return move.written(base: base);
+      case Advance(:final to):
+        final action = await advance(program, from: move.exerciseId, to: to, workoutId: workoutId);
+        await _climb(program, from: move.exerciseId, to: to);
+        return move.written(action: action);
+      case Hold() || Missed():
+        return move;
+    }
+  }
+
+  /// "Keep" (#351): takes back what [move] wrote, and nothing else. A base
+  /// goes back to the one before it; an advance goes back down its ladder,
+  /// sessions and rule with it.
+  Future<void> keep(GrowthMove move) async {
+    if (move.base case final ProgramBase base) await deleteBase(base);
+    if (move.action case final ProgramAction action) {
+      await undo(action);
+      final (program, from, to) = (lookup(action.programId ?? ''), action.from, action.to);
+      if (program != null && from != null && to != null) await _climb(program, from: to, to: from);
+    }
+  }
+
+  /// Moves [program]'s ladder rule from [from] to [to], and its sessions'
+  /// [from] to [to] with it (heart-api#231): the rule is keyed by the rung the
+  /// sessions hold.
+  ///
+  /// When [to] already has a rule of its own, the rules stay as they are: [to]
+  /// keeps its own, which its other sessions grow by, and the moved one stays
+  /// under [from], where moving back finds it again. Re-keying would put two
+  /// rules on one key and silently lose one of them.
+  Future<void> _climb(Program program, {required String from, required String to}) async {
+    final current = _programs[program.id] ?? program;
+    if (!current.rules.containsKey(to)) {
+      await update(
+        current.copyWith(
+          rules: {
+            for (final MapEntry(:key, :value) in current.rules.entries) key == from ? to : key: value,
+          },
+        ),
+      );
+    }
+    await onAdvance?.call(current.sessions, from: from, to: to);
   }
 
   /// Reads every program's marks from the mirror again: a workout of one was
@@ -675,6 +975,19 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       store: _service.storeProgramAction,
       forget: _service.deleteProgramAction,
       replay: _remoteService.replayProgramAction,
+    );
+  }
+
+  Future<TrainingSkip> _confirmSkip(TrainingSkip skip) {
+    return _confirm(
+      skip,
+      into: _skips,
+      idOf: (skip) => skip.id,
+      store: (skip) async {
+        if (userId case final String uid) await _service.storeSkip(skip, uid);
+      },
+      forget: _service.deleteSkip,
+      replay: _remoteService.replaySkip,
     );
   }
 
@@ -777,8 +1090,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   static int _turn(ProgramOwed owed) {
     return switch (owed) {
       (row: .program, change: .created || .edited, id: _, programId: _) => 0,
-      (row: .action || .base || .session, change: .created || .edited, id: _, programId: _) => 1,
-      (row: .action || .base || .session, change: _, id: _, programId: _) => 2,
+      (row: .action || .base || .session || .skip, change: .created || .edited, id: _, programId: _) => 1,
+      (row: .action || .base || .session || .skip, change: _, id: _, programId: _) => 2,
       (row: .program, change: _, id: _, programId: _) => 3,
     };
   }
@@ -808,6 +1121,13 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         if (_held(_bases, programId, id, (base) => base.id) case final ProgramBase base) await _confirmBase(base);
       case (.base, _):
         await _remoteService.deleteProgramBase(programId, id);
+      case (.skip, .created || .edited):
+        // read from the mirror, not the program's list: one whose program
+        // was deleted since is owed all the same
+        final held = await _service.getSkips(uid);
+        if (held.where((skip) => skip.id == id).firstOrNull case final TrainingSkip skip) await _confirmSkip(skip);
+      case (.skip, _):
+        await _remoteService.deleteSkip(id);
       case (.session, _):
         final held = await _templates.getTemplates(uid);
         if (held.where((template) => template.id == id).firstOrNull case final Template session) {
@@ -874,6 +1194,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     'unknown_exercise',
     'unknown_workout',
     'unknown_action',
+    'skip_limit',
   };
 
   static bool _isRefusal(Object error) {
@@ -890,6 +1211,13 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         for (final program in programs)
           if (program.id case final String id) MapEntry(id, program),
       ]);
+  }
+
+  void _groupSkips(Iterable<TrainingSkip> skips) {
+    _group(_skips, skips, (skip) => skip.programId);
+    _orphanSkips
+      ..clear()
+      ..addAll(skips.where((skip) => skip.programId == null));
   }
 
   static void _group<T>(Map<String, List<T>> into, Iterable<T> rows, String? Function(T) programOf) {
