@@ -4732,5 +4732,17 @@
   "untickSet": "Mark set not done",
   "@untickSet": {"description": "Read by screen readers on the ✓ in a set row that is done: it marks the set not done again", "type": "text", "placeholders": {}},
   "workoutOptions": "Workout options",
-  "@workoutOptions": {"description": "Read by screen readers on the ⋯ beside the clock of the workout in progress: it opens the workout's menu", "type": "text", "placeholders": {}}
+  "@workoutOptions": {"description": "Read by screen readers on the ⋯ beside the clock of the workout in progress: it opens the workout's menu", "type": "text", "placeholders": {}},
+  "previousInTemplate": "Last time in this template",
+  "@previousInTemplate": {
+    "description": "Title of the opt-in feature in Settings › Features: in a workout started from a template, the Previous column shows the last time that template was run",
+    "type": "text",
+    "placeholders": {}
+  },
+  "previousInTemplateSubtitle": "In a workout from a template, Previous shows the last time you ran that template",
+  "@previousInTemplateSubtitle": {
+    "description": "Subtitle of the 'Last time in this template' feature switch in Settings › Features",
+    "type": "text",
+    "placeholders": {}
+  }
 }
