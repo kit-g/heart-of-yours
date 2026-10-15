@@ -267,3 +267,21 @@ extension SectionHeaderStyle on ThemeData {
     );
   }
 }
+
+/// Where a menu opens off a trailing value: under it, its right edge on the
+/// value's. `Position.position()` hangs a menu off a widget's *left* edge,
+/// which is right for a leading button and wrong for a trailing value, where
+/// the menu then runs past the column.
+///
+/// Measured against the navigator's overlay, not the window: `showMenu` lays
+/// the menu out in that overlay, and inside the two-pane shell the overlay
+/// starts after the rail, so a window offset lands the menu a rail's width to
+/// the right of the value.
+RelativeRect menuUnderValue(BuildContext context, GlobalKey key, {required double width}) {
+  final box = key.currentContext?.findRenderObject();
+  final overlay = Navigator.of(context).overlay?.context.findRenderObject();
+  if (box is! RenderBox || overlay is! RenderBox) return RelativeRect.fill;
+  final Offset(:dx, :dy) = box.localToGlobal(Offset.zero, ancestor: overlay);
+  final Size(width: w, height: h) = box.size;
+  return RelativeRect.fromLTRB(dx + w - width, dy + h, overlay.size.width - (dx + w), dy + h);
+}
