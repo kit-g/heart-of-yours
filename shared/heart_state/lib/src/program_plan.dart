@@ -91,8 +91,12 @@ void _planSet(
 /// supplemental ones go first, then the last of the rest. Warm-ups stay.
 void _lighten(WorkoutExercise exercise, num volume) {
   final working = exercise.where((set) => set.setType != .warmup).toList();
+  // warm-ups only: nothing to lighten
+  if (working.isEmpty) return;
+  // at least one, and never more than there are: a volume above 1 adds none
   final keep = switch ((working.length * volume).round()) {
     < 1 => 1,
+    final count when count > working.length => working.length,
     final count => count,
   };
   final dropped = [

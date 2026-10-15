@@ -157,4 +157,33 @@ void main() {
     // one set is one set, at 90%
     expect(frontDay.single.weight, 55);
   });
+
+  test('a lighter cycle leaves warm-ups alone and never adds sets', () {
+    final workout = plan(
+      session([
+        {
+          'id': 'te1',
+          'exercise': squat,
+          'sets': [
+            set({}, type: 'warmup'),
+          ],
+        },
+        {
+          'id': 'te2',
+          'exercise': front,
+          'sets': [
+            set({}, weight: 60),
+            set({}, weight: 60),
+          ],
+        },
+      ]),
+      lighter: true,
+      // more than all of them: keeps what there is
+      deload: const Deload(every: 4, load: 0.9, volume: 1.5),
+    );
+
+    final [warmups, frontDay] = workout.toList();
+    expect(warmups.map((set) => set.setType), [SetType.warmup]);
+    expect(frontDay, hasLength(2));
+  });
 }
