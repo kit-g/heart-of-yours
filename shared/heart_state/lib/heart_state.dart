@@ -18,6 +18,7 @@ export 'src/go_easy.dart';
 export 'src/goals.dart';
 export 'src/health.dart';
 export 'src/import.dart';
+export 'src/lens.dart';
 export 'src/package.dart';
 export 'src/password.dart';
 export 'src/preferences.dart';
