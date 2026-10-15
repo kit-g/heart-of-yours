@@ -477,7 +477,7 @@ WHERE workouts.user_id = ?
   AND we.exercise_id = ?
   AND sets.completed
   AND sets.set_type IS NOT 'warmup'
-ORDER BY workouts.start;
+ORDER BY workouts.start, workouts.id;
 ''';
 
 const getWeightHistory = '''

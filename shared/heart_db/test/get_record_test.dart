@@ -60,7 +60,8 @@ void main() {
         'reps': 3,
         'workoutId': 'w1',
         'at': '2026-01-01T10:00:00Z',
-        'previous': {'weight': 90.0, 'reps': 10, 'workoutId': 'w2', 'at': '2026-02-01T10:00:00Z'},
+        // the first session: nothing came before it to beat, and a later
+        // lighter set is not what it beat (#291)
       });
       expect(records['bestVolume'], {
         'value': 900.0,
@@ -68,9 +69,9 @@ void main() {
         'reps': 10,
         'workoutId': 'w2',
         'at': '2026-02-01T10:00:00Z',
-        // 60×15 equals it, but later: the tie stays with w2, and w3 is what
-        // w2 is measured against once it is left out
-        'previous': {'value': 900.0, 'weight': 60.0, 'reps': 15, 'workoutId': 'w3', 'at': '2026-03-01T10:00:00Z'},
+        // 60×15 equals it, but later: the tie stays with w2, and what it beat
+        // is the session before it, never the one after (#291)
+        'previous': {'value': 300.0, 'weight': 100.0, 'reps': 3, 'workoutId': 'w1', 'at': '2026-01-01T10:00:00Z'},
       });
 
       final oneRepMax = records['oneRepMax'] as Map;
@@ -98,6 +99,16 @@ void main() {
         {'reps': 3, 'weight': 110.0, 'workoutId': 'w2', 'at': '2026-02-01T10:00:00Z'},
         {'reps': 5, 'weight': 100.0, 'workoutId': 'w1', 'at': '2026-01-01T10:00:00Z'},
       ]);
+    });
+
+    test('volume counts every set with weight and reps, rep maxes or not (#291)', () async {
+      final ex = exercise(name: 'Bench', category: 'Barbell');
+      // twelves set no rep max, which stop at ten
+      stub(ex.id, [row(weight: 50, reps: 12), row(weight: 50, reps: 12)]);
+
+      final records = (await local.getRecord('user-1', ex))!;
+      expect(records.containsKey('repMaxes'), isFalse);
+      expect(records['totalVolume'], 1200.0);
     });
 
     test('a heaviest set with null reps still counts, without inventing reps', () async {
@@ -201,7 +212,6 @@ void main() {
         'distance': 0.02,
         'workoutId': 'w1',
         'at': '2026-01-01T10:00:00Z',
-        'previous': {'weight': 30.0, 'distance': 0.08, 'workoutId': 'w2', 'at': '2026-02-01T10:00:00Z'},
       });
       expect((records['longestDistance'] as Map)['distance'], 0.08);
       expect((records['longestDistance'] as Map)['weight'], 30.0);
@@ -228,7 +238,7 @@ void main() {
   });
 
   group('previous', () {
-    test('is the record with its own session left out', () async {
+    test('is the record over the sessions before its own', () async {
       final ex = exercise(name: 'Bench', category: 'Barbell');
       stub(ex.id, [
         row(weight: 80, reps: 5, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
@@ -246,6 +256,19 @@ void main() {
       expect((heaviest['previous'] as Map).containsKey('previous'), isFalse);
       // rep maxes are a table, not a headline, and carry none
       expect((records['repMaxes'] as List).every((each) => !(each as Map).containsKey('previous')), isTrue);
+    });
+
+    test('never comes from a later session (#291)', () async {
+      final ex = exercise(name: 'Bench', category: 'Barbell');
+      stub(ex.id, [
+        row(weight: 100, reps: 3, workoutId: 'w1', start: '2026-01-01T10:00:00Z'),
+        // lighter, and after: the record did not beat it
+        row(weight: 90, reps: 3, workoutId: 'w2', start: '2026-02-01T10:00:00Z'),
+      ]);
+
+      final records = (await local.getRecord('user-1', ex))!;
+      expect((records['heaviest'] as Map)['workoutId'], 'w1');
+      expect((records['heaviest'] as Map).containsKey('previous'), isFalse);
     });
 
     test('is absent when only one session has the exercise', () async {
