@@ -110,16 +110,23 @@ class _GoalsWidgetPresenterState extends State<GoalsWidgetPresenter> {
       workouts.history.length,
       preferences.weightUnit,
       preferences.distanceUnit,
+      preferences.firstWeekday,
     );
     if (measured == _measured) return;
     _measured = measured;
 
     final stats = Stats.of(context);
-    final counter = workoutCounter(stats);
+    final counter = workoutCounter(stats, firstWeekday: preferences.firstWeekday);
     final lensSets = sharedLensSets(stats.getLensSets);
     final readings = await Future.wait([
       for (final goal in goals.all)
-        currentGoalValue(goal, exercises: exercises, workoutCount: counter, lensSets: lensSets),
+        currentGoalValue(
+          goal,
+          exercises: exercises,
+          firstWeekday: preferences.firstWeekday,
+          workoutCount: counter,
+          lensSets: lensSets,
+        ),
     ]);
     if (!mounted || measured != _measured) return;
 

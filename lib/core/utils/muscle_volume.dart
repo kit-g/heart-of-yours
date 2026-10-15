@@ -77,7 +77,7 @@ Iterable<MuscleSets> lastDays(Iterable<MuscleSets> rows, int days, {required Dat
 /// The first days of the [weeks] weeks ending with [now]'s, oldest first, for
 /// weeks that start on [firstWeekday] — the user's (#339).
 List<DateTime> lastWeeks(int weeks, {required DateTime now, required int firstWeekday}) {
-  final start = weekStart(now, firstWeekday);
+  final start = weekOf(now, firstWeekday: firstWeekday);
   return [
     for (final back in Iterable<int>.generate(weeks, (index) => weeks - 1 - index))
       DateTime(start.year, start.month, start.day - 7 * back),
@@ -101,7 +101,7 @@ Map<DateTime, MuscleVolume> weeklyMuscleVolume(
   List<DateTime> weeks, {
   required int firstWeekday,
 }) {
-  return _bucketed(rows, weeks, (start) => weekStart(start, firstWeekday));
+  return _bucketed(rows, weeks, (start) => weekOf(start, firstWeekday: firstWeekday));
 }
 
 /// [rows] counted into [months] (their first days, as [lastMonths] gives

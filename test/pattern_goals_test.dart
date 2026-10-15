@@ -61,12 +61,29 @@ void main() {
     );
   }
 
-  Future<num?> read(Goal goal, {DateTime? without}) {
-    return currentGoalValue(goal, exercises: exercises, lensSets: lensSets, asOf: now, without: without);
+  Future<num?> read(Goal goal, {DateTime? without, DateTime? asOf, int firstWeekday = DateTime.monday}) {
+    return currentGoalValue(
+      goal,
+      exercises: exercises,
+      firstWeekday: firstWeekday,
+      lensSets: lensSets,
+      asOf: asOf ?? now,
+      without: without,
+    );
   }
 
   test("a pattern's sets this week leave last week's out", () async {
     expect(await read(goal(pattern: 'horizontal_press')), 7);
+  });
+
+  test("the goal's week starts on the user's first day (#339)", () async {
+    final sunday = DateTime(2026, 8, 9, 9);
+    final press = goal(pattern: 'horizontal_press');
+
+    // still the week of the 3rd for a Monday user; a new week for the others
+    expect(await read(press, asOf: sunday), 7);
+    expect(await read(press, asOf: sunday, firstWeekday: DateTime.sunday), 0);
+    expect(await read(press, asOf: sunday, firstWeekday: DateTime.saturday), 0);
   });
 
   test('sessions count each workout that trained the pattern once', () async {
@@ -108,7 +125,8 @@ void main() {
     ];
 
     final readings = [
-      for (final each in goals) await currentGoalValue(each, exercises: exercises, lensSets: shared, asOf: now),
+      for (final each in goals)
+        await currentGoalValue(each, exercises: exercises, firstWeekday: DateTime.monday, lensSets: shared, asOf: now),
     ];
 
     expect(readings, [12, 14, 7, 2]);

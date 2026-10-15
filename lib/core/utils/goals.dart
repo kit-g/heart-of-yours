@@ -105,7 +105,9 @@ Future<num?> currentGoalValue(
   // and month cases and answer null, which drew an empty bar and, because
   // observeProgress skips a goal it cannot measure, never announced the 8th.
   if (goal.metric.isWholeWorkout) return await workoutCount?.call(goal.cadence);
-  if (goal.metric.countsSubject) return _subjectValue(goal, lensSets, asOf: asOf, without: without);
+  if (goal.metric.countsSubject) {
+    return _subjectValue(goal, lensSets, firstWeekday: firstWeekday, asOf: asOf, without: without);
+  }
 
   final metric = goal.metric.chart;
   final exercise = goalExercise(goal, exercises);
@@ -159,6 +161,7 @@ Future<num?> currentGoalValue(
 Future<num?> _subjectValue(
   Goal goal,
   LensSetsReader? lensSets, {
+  required int firstWeekday,
   DateTime? asOf,
   DateTime? without,
 }) async {
@@ -166,7 +169,7 @@ Future<num?> _subjectValue(
   if (lensSets == null || share == null) return null;
 
   final (from, to) = switch (goal.cadence) {
-    final GoalCadence cadence => goalPeriod(cadence, asOf ?? DateTime.now()),
+    final GoalCadence cadence => goalPeriod(cadence, asOf ?? DateTime.now(), firstWeekday: firstWeekday),
     null => (DateTime.utc(1970), DateTime.utc(3000)),
   };
   final rows = (await lensSets(from, to)).where((row) => without == null || !row.start.isAtSameMomentAs(without));
@@ -248,7 +251,7 @@ Future<int> Function(GoalCadence?) workoutCounter(Stats stats, {required int fir
 /// living in, and that week starts on the day they chose (#339).
 (DateTime, DateTime) goalPeriod(GoalCadence cadence, DateTime now, {required int firstWeekday}) {
   return switch (cadence) {
-    .week => weekOf(now, firstWeekday),
+    .week => weekRange(now, firstWeekday: firstWeekday),
     .month => (DateTime(now.year, now.month), DateTime(now.year, now.month + 1)),
   };
 }

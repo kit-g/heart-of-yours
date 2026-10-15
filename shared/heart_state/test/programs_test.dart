@@ -104,7 +104,10 @@ void main() {
 
       await programs.init();
 
-      expect(programs.position(programs.lookup('p1')!, now: DateTime.utc(2026, 10, 7)).done, {'s1'});
+      expect(
+        programs.position(programs.lookup('p1')!, now: DateTime.utc(2026, 10, 7), firstWeekday: DateTime.monday).done,
+        {'s1'},
+      );
     });
 
     test('an archived program\'s history is read once', () async {
@@ -279,12 +282,12 @@ void main() {
       final now = DateTime.utc(2026, 10, 9);
 
       final p1 = programs.lookup('p1')!;
-      expect(programs.position(p1, now: now).week, 2);
-      expect(programs.position(p1, now: now).thisWeek, 2);
+      expect(programs.position(p1, now: now, firstWeekday: DateTime.monday).week, 2);
+      expect(programs.position(p1, now: now, firstWeekday: DateTime.monday).thisWeek, 2);
 
       await programs.act(p1, .repeat, at: DateTime.utc(2026, 10, 9, 9));
 
-      final again = programs.position(p1, now: now);
+      final again = programs.position(p1, now: now, firstWeekday: DateTime.monday);
       expect((again.week, again.next), (1, 's1'));
     });
 
@@ -297,7 +300,7 @@ void main() {
       final monday = DateTime.utc(2026, 10, 12, 12);
       final p1 = programs.lookup('p1')!;
 
-      expect(programs.position(p1, now: monday).thisWeek, 0);
+      expect(programs.position(p1, now: monday, firstWeekday: DateTime.monday).thisWeek, 0);
       expect(programs.position(p1, now: monday, firstWeekday: DateTime.sunday).thisWeek, 1);
     });
 
@@ -309,7 +312,10 @@ void main() {
 
       await programs.refreshMarks();
 
-      expect(programs.position(programs.lookup('p1')!, now: DateTime.utc(2026, 10, 7)).done, {'s1'});
+      expect(
+        programs.position(programs.lookup('p1')!, now: DateTime.utc(2026, 10, 7), firstWeekday: DateTime.monday).done,
+        {'s1'},
+      );
     });
   });
 
@@ -339,7 +345,7 @@ void main() {
       final lighter = await programs.act(p1, .lighter);
 
       expect(remote.calls, contains('replayProgramAction ${lighter.id}'));
-      expect(programs.position(p1, now: DateTime.timestamp()).lighter, isTrue);
+      expect(programs.position(p1, now: DateTime.timestamp(), firstWeekday: DateTime.monday).lighter, isTrue);
     });
 
     test("a ladder's advance names what it moved and why, and is owed like any step", () async {
@@ -904,7 +910,7 @@ void main() {
 
       final skip = await programs.skip(followed, session: 's1', at: DateTime.utc(2026, 10, 7, 8));
 
-      final position = programs.position(followed, now: now);
+      final position = programs.position(followed, now: now, firstWeekday: DateTime.monday);
       expect(position.done, {'s1'});
       expect((position.next, position.thisWeek), ('s2', 0));
       expect(programs.skipsOf('p1').map((each) => each.id), [skip.id]);
@@ -921,7 +927,7 @@ void main() {
       local.marks['p1'] = [ProgramMark(templateId: 's1', at: DateTime.utc(2026, 10, 7, 8), isWorkout: true)];
       await programs.refreshMarks();
 
-      final position = programs.position(followed, now: now);
+      final position = programs.position(followed, now: now, firstWeekday: DateTime.monday);
 
       expect(position.done, {'s1'});
       expect(programs.skippedIn(followed, position), isEmpty);
@@ -940,7 +946,7 @@ void main() {
 
       expect(remote.skips.map((each) => each.id), [skip.id]);
       expect(local.owed, isEmpty);
-      expect(next.position(next.lookup('p1')!, now: now).done, {'s1'});
+      expect(next.position(next.lookup('p1')!, now: now, firstWeekday: DateTime.monday).done, {'s1'});
     });
 
     test('taking it back makes the session due again, there and here', () async {
@@ -949,7 +955,7 @@ void main() {
 
       await programs.unskip(skip);
 
-      expect(programs.position(followed, now: now).next, 's1');
+      expect(programs.position(followed, now: now, firstWeekday: DateTime.monday).next, 's1');
       expect(local.skips, isEmpty);
       expect(programs.skipsOf('p1'), isEmpty);
       expect(remote.calls, contains('deleteSkip ${skip.id}'));

@@ -27,7 +27,7 @@ void main() {
     final wednesday = DateTime(2026, 9, 16, 18, 30);
 
     test('goes back to the first day the user chose, at midnight', () {
-      expect(weekOf(wednesday), DateTime(2026, 9, 14));
+      expect(weekOf(wednesday, firstWeekday: DateTime.monday), DateTime(2026, 9, 14));
       expect(weekOf(wednesday, firstWeekday: DateTime.sunday), DateTime(2026, 9, 13));
       expect(weekOf(wednesday, firstWeekday: DateTime.saturday), DateTime(2026, 9, 12));
     });
@@ -58,6 +58,7 @@ void main() {
         ],
         weeks: 2,
         now: now,
+        firstWeekday: DateTime.monday,
         keysOf: patternsOf,
       );
 
@@ -73,7 +74,7 @@ void main() {
       // a Sunday: last week's for a Monday week, this week's for a Sunday one
       final sunday = row(workout: 'w1', start: DateTime(2026, 9, 13, 9), patterns: ['hip_hinge']);
 
-      final monday = countByWeek([sunday], weeks: 1, now: now, keysOf: patternsOf);
+      final monday = countByWeek([sunday], weeks: 1, now: now, keysOf: patternsOf, firstWeekday: DateTime.monday);
       final ownWeek = countByWeek([sunday], weeks: 1, now: now, keysOf: patternsOf, firstWeekday: DateTime.sunday);
 
       expect(monday.values.single, isEmpty);
@@ -88,6 +89,7 @@ void main() {
         ],
         weeks: 1,
         now: now,
+        firstWeekday: DateTime.monday,
         keysOf: (row) => switch (row.workoutId) {
           'w1' => {'triceps': .5, 'chest': 1.0},
           _ => {'triceps': .0},
@@ -105,6 +107,7 @@ void main() {
         [row(workout: 'w1', start: DateTime(2026, 9, 14, 9))],
         weeks: 1,
         now: now,
+        firstWeekday: DateTime.monday,
         keysOf: patternsOf,
       );
 

@@ -18,9 +18,14 @@ void main() {
   }
 
   final now = DateTime(2026, 9, 16, 12);
-  final weeks = lastWeeksOf(4, now: now);
+  final weeks = lastWeeksOf(4, now: now, firstWeekday: DateTime.monday);
   BalanceCount count(String key, List<LensSets> rows) {
-    return countBalance(rows, pairs: balancePairs, weeks: weeks, weekOfStart: weekOf).firstWhere(
+    return countBalance(
+      rows,
+      pairs: balancePairs,
+      weeks: weeks,
+      weekOfStart: (start) => weekOf(start, firstWeekday: DateTime.monday),
+    ).firstWhere(
       (count) => count.pair.key == key,
     );
   }

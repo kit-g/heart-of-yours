@@ -79,7 +79,7 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   /// Finished workouts in [d]'s week, which starts on [firstWeekday] — the
   /// user's choice, from [Preferences.firstWeekday].
   Future<int> getWeeklyWorkoutCount(DateTime d, {required int firstWeekday}) {
-    final (from, to) = weekOf(d, firstWeekday);
+    final (from, to) = weekRange(d, firstWeekday: firstWeekday);
     return _service.getWorkoutCountBetween(from, to, userId: userId);
   }
 

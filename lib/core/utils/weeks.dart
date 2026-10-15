@@ -1,11 +1,15 @@
+import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The user's first day of the week, ISO (1 Monday … 7 Sunday), from the
-/// locale until #339 gives it a setting of its own. Everything that counts a
-/// week reads it here, so the setting lands in one place.
-int firstWeekdayOf(BuildContext context) {
-  return switch (MaterialLocalizations.of(context).firstDayOfWeekIndex) {
-    0 => DateTime.sunday,
-    final index => index,
+/// The user's first day of the week, ISO (1 Monday … 7 Sunday): their choice
+/// in Settings, the locale's first day until they make one (#339). Everything
+/// that counts a week reads it here.
+///
+/// [listen] as in `Provider.of`: true from a build that shows something
+/// weekly, so the page follows a change made in Settings.
+int firstWeekdayOf(BuildContext context, {bool listen = false}) {
+  return switch (listen) {
+    true => Preferences.watch(context).firstWeekday,
+    false => Preferences.of(context).firstWeekday,
   };
 }

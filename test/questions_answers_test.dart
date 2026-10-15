@@ -146,7 +146,7 @@ void main() {
 
   group('this week', () {
     test('counts the week the Done page and the goals count', () async {
-      final (from, to) = weekOf(now, prefs.firstWeekday);
+      final (from, to) = weekRange(now, firstWeekday: prefs.firstWeekday);
       when(db.getWorkoutCountBetween(from, to, userId: user)).thenAnswer((_) async => 3);
       expect(await answers().weekly(user), '3 workouts this week');
 

@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:heart/presentation/widgets/setting_picker.dart';
 import 'package:heart_charts/heart_charts.dart';
 import 'package:heart_language/heart_language.dart';
-import 'package:heart_state/heart_state.dart' show weekStart;
+import 'package:heart_state/heart_state.dart' show weekOf;
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -351,7 +351,7 @@ class _TimelineChartState extends State<TimelineChart> {
   DateTime _key(DateTime at, TimelineGrain grain, {required int firstWeekday}) {
     return switch (grain) {
       .day => DateTime(at.year, at.month, at.day),
-      .week => weekStart(at, firstWeekday),
+      .week => weekOf(at, firstWeekday: firstWeekday),
       .month => DateTime(at.year, at.month),
       .year => DateTime(at.year),
     };

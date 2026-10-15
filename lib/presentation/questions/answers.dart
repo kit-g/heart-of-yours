@@ -79,7 +79,7 @@ class Answers {
   /// "3 workouts this week".
   Future<String> weekly(String? userId) async {
     if (userId == null) return l.askNoWorkouts;
-    final (from, to) = weekOf(now(), prefs.firstWeekday);
+    final (from, to) = weekRange(now(), firstWeekday: prefs.firstWeekday);
     final count = await db.getWorkoutCountBetween(from, to, userId: userId);
     return l.askWeekly(count);
   }

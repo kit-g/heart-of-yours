@@ -252,7 +252,7 @@ void main() {
         )
         .first;
     final row = tester.getRect(chestRow);
-    final thisWeek = DateFormat.Md('en').format(weekStart(now, preferences.firstWeekday));
+    final thisWeek = DateFormat.Md('en').format(weekOf(now, firstWeekday: preferences.firstWeekday));
     final caption = byKey(AppKeys.muscleMapCellCaption);
 
     await tester.tapAt(Offset(row.right - 4, row.center.dy));

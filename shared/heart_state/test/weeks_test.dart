@@ -7,29 +7,29 @@ void main() {
 
   group('weekStart', () {
     test('goes back to the chosen first day, at midnight', () {
-      expect(weekStart(wednesday, DateTime.monday), DateTime(2026, 10, 12));
-      expect(weekStart(wednesday, DateTime.sunday), DateTime(2026, 10, 11));
-      expect(weekStart(wednesday, DateTime.saturday), DateTime(2026, 10, 10));
+      expect(weekOf(wednesday, firstWeekday: DateTime.monday), DateTime(2026, 10, 12));
+      expect(weekOf(wednesday, firstWeekday: DateTime.sunday), DateTime(2026, 10, 11));
+      expect(weekOf(wednesday, firstWeekday: DateTime.saturday), DateTime(2026, 10, 10));
     });
 
     test('the first day itself starts its own week', () {
-      expect(weekStart(DateTime(2026, 10, 11, 23, 59), DateTime.sunday), DateTime(2026, 10, 11));
-      expect(weekStart(DateTime(2026, 10, 11, 23, 59), DateTime.monday), DateTime(2026, 10, 5));
+      expect(weekOf(DateTime(2026, 10, 11, 23, 59), firstWeekday: DateTime.sunday), DateTime(2026, 10, 11));
+      expect(weekOf(DateTime(2026, 10, 11, 23, 59), firstWeekday: DateTime.monday), DateTime(2026, 10, 5));
     });
 
     test('crosses a month and a year', () {
-      expect(weekStart(DateTime(2027, 1, 1), DateTime.monday), DateTime(2026, 12, 28));
+      expect(weekOf(DateTime(2027, 1, 1), firstWeekday: DateTime.monday), DateTime(2026, 12, 28));
     });
   });
 
   group('weekOf', () {
     test('is seven calendar days, half open', () {
-      expect(weekOf(wednesday, DateTime.sunday), (DateTime(2026, 10, 11), DateTime(2026, 10, 18)));
+      expect(weekRange(wednesday, firstWeekday: DateTime.sunday), (DateTime(2026, 10, 11), DateTime(2026, 10, 18)));
     });
 
     test('ends at midnight across a DST change', () {
       // Europe and North America leave summer time in the week of 2026-11-01
-      final (_, end) = weekOf(DateTime(2026, 10, 28), DateTime.monday);
+      final (_, end) = weekRange(DateTime(2026, 10, 28), firstWeekday: DateTime.monday);
       expect((end.hour, end.minute), (0, 0));
       expect(end, DateTime(2026, 11, 2));
     });

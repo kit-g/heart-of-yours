@@ -3,6 +3,7 @@
 // tap is the preference every weekly count reads.
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/routes/profile/profile.dart';
 import 'package:heart/presentation/routes/settings/settings.dart';
 import 'package:heart_language/heart_language.dart';
@@ -56,6 +57,8 @@ void main() {
 
     // the test window's locale is en_US, where weeks start on Sunday
     expect(preferences.firstWeekday, DateTime.sunday);
+    // and it is what everything weekly reads: programs, the lens, goals
+    expect(firstWeekdayOf(tester.element(find.byType(SettingsPage))), DateTime.sunday);
     for (final day in ['Saturday', 'Sunday', 'Monday']) {
       expect(
         find.descendant(of: row, matching: find.bySemanticsLabel(day)),
@@ -67,6 +70,7 @@ void main() {
     await tester.tap(find.descendant(of: row, matching: find.text('Mon')));
     await tester.pumpTimes();
     expect(preferences.firstWeekday, DateTime.monday);
+    expect(firstWeekdayOf(tester.element(find.byType(SettingsPage))), DateTime.monday);
     semantics.dispose();
   });
 }
