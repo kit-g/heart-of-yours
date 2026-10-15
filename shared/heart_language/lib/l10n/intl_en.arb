@@ -620,11 +620,7 @@
     "placeholders": {}
   },
   "replaceExercise": "Replace exercise",
-  "@replaceExercise": {
-    "description": "Exercise set option",
-    "type": "text",
-    "placeholders": {}
-  },
+  "@replaceExercise": {"description": "Menu item on an exercise in the active workout, before any of its sets is ticked: puts another exercise in its place, with suggestions", "type": "text", "placeholders": {}},
   "weightUnit": "Weight",
   "@weightUnit": {
     "description": "Exercise set option, \"choose weight unit for this set\"",
@@ -4726,5 +4722,35 @@
   "supersetLabel": "Superset",
   "@supersetLabel": {"description": "Caption over two exercises done back to back in a workout or template", "type": "text", "placeholders": {}},
   "circuitLabel": "Circuit",
-  "@circuitLabel": {"description": "Caption over three or more exercises done back to back, in turn, in a workout or template", "type": "text", "placeholders": {}}
+  "@circuitLabel": {"description": "Caption over three or more exercises done back to back, in turn, in a workout or template", "type": "text", "placeholders": {}},
+  "tickSet": "Mark set done",
+  "@tickSet": {"description": "Read by screen readers on the ✓ in a set row that is not done yet: it marks the set done", "type": "text", "placeholders": {}},
+  "untickSet": "Mark set not done",
+  "@untickSet": {"description": "Read by screen readers on the ✓ in a set row that is done: it marks the set not done again", "type": "text", "placeholders": {}},
+  "workoutOptions": "Workout options",
+  "@workoutOptions": {"description": "Read by screen readers on the ⋯ beside the clock of the workout in progress: it opens the workout's menu", "type": "text", "placeholders": {}},
+  "previousInTemplate": "Last time in this template",
+  "@previousInTemplate": {
+    "description": "Title of the opt-in feature in Settings › Features: in a workout started from a template, the Previous column shows the last time that template was run",
+    "type": "text",
+    "placeholders": {}
+  },
+  "previousInTemplateSubtitle": "In a workout from a template, Previous shows the last time you ran that template",
+  "@previousInTemplateSubtitle": {
+    "description": "Subtitle of the 'Last time in this template' feature switch in Settings › Features",
+    "type": "text",
+    "placeholders": {}
+  },
+  "pickerSuggested": "Suggested",
+  "@pickerSuggested": {"description": "Exercise picker section header, when replacing an exercise in a workout: exercises of the same movement pattern, nearest in load first", "type": "text", "placeholders": {}},
+  "replaceIncompatible": "{target} logs its sets differently from {source}, so the sets can't carry over.",
+  "@replaceIncompatible": {"description": "Tooltip on a greyed exercise when picking a replacement in a workout: its sets have other columns, or an assisted weight, so the replaced exercise's sets and targets cannot move onto it", "type": "text", "placeholders": {"target": {}, "source": {}}},
+  "replaceScopeTitle": "Just today, or in {program} too?",
+  "@replaceScopeTitle": {"description": "Title of the question after replacing an exercise in a program's workout: whether the replacement is for this workout only or for the program's sessions as well", "type": "text", "placeholders": {"program": {}}},
+  "replaceScopeBody": "{to} is in this workout now. It can also take {from}'s place in every session of the program, and the way it grows with it.",
+  "@replaceScopeBody": {"description": "Body of the question after replacing an exercise in a program's workout", "type": "text", "placeholders": {"to": {}, "from": {}}},
+  "replaceJustToday": "Just today",
+  "@replaceJustToday": {"description": "Answer to the replace question in a program's workout: the replacement is for this workout only", "type": "text", "placeholders": {}},
+  "replaceInProgram": "In the program",
+  "@replaceInProgram": {"description": "Answer to the replace question in a program's workout: the replacement also goes into the program's sessions", "type": "text", "placeholders": {}}
 }

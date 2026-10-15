@@ -10,6 +10,7 @@ import 'package:heart/core/env/notifications.dart';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/assets.dart';
 import 'package:heart/core/utils/column_fill.dart';
+import 'package:heart/core/utils/replacements.dart';
 import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
@@ -32,6 +33,7 @@ import 'package:heart/presentation/widgets/menu.dart';
 import 'package:heart/presentation/widgets/popping_text.dart';
 import 'package:heart/presentation/widgets/selection_controls.dart';
 import 'package:heart/presentation/widgets/vector.dart';
+import 'package:heart/presentation/widgets/workout/previous_scope.dart';
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
@@ -56,6 +58,10 @@ part 'target.dart';
 part 'text_field_button.dart';
 part 'utils.dart';
 part 'workout_note.dart';
+
+/// Puts [picked] in [slot]'s place on the sheet (#349, #354). [suggested] is
+/// whether the picker offered it.
+typedef ReplaceExercise = Future<void> Function(WorkoutExercise slot, Exercise picked, {required bool suggested});
 
 enum _WorkoutOption { editImage, editName, editNote, pause }
 
@@ -91,9 +97,10 @@ class WorkoutDetail extends StatefulWidget {
   /// (#349): a program's workout while Programs is on.
   final bool showsPlan;
 
-  /// Puts another exercise in an open slot's place (#349). Without it, or on
-  /// an exercise that is no open slot, there is nothing to swap.
-  final void Function(WorkoutExercise, Exercise)? onReplaceExercise;
+  /// Puts another exercise in one's place, before any of its sets is ticked:
+  /// an open slot's swap within its pattern (#349), and any other exercise's
+  /// replace, with suggestions (#354). Without it, nothing is replaced.
+  final ReplaceExercise? onReplaceExercise;
 
   /// Joins an exercise and its neighbour in a superset (#159), and takes one
   /// out of its own. Without them the sheet still shows its groups, and
@@ -867,6 +874,49 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     super.dispose();
   }
 
+  /// Puts [picked] in [slot]'s place (#349, #354). In a program's workout, a
+  /// replace — not an open slot's swap, which is the slot's to vary — asks
+  /// whether it reaches the program's sessions, when one of them holds the
+  /// exercise; the rule that grows it moves with it.
+  Future<void> _replace(WorkoutExercise slot, Exercise picked, {required bool suggested, Program? program}) async {
+    final analytics = Analytics.of(context);
+    final templates = Templates.of(context);
+    final programs = Programs.of(context);
+    final from = slot.exercise;
+    await widget.workouts.replaceExercise(slot, picked);
+
+    if (slot.pattern != null) {
+      analytics.exerciseReplaced(scope: .slot, suggested: suggested);
+      return;
+    }
+    final held = switch (program) {
+      final Program program =>
+        program.sessions
+            .map(templates.lookup)
+            .nonNulls
+            .any((session) => session.any((each) => each.exercise.id == from.id)),
+      null => false,
+    };
+    if (program != null && held && !mounted) return;
+    final inProgram = switch ((program, held)) {
+      (final Program program, true) => await askReplaceInProgram(
+        context,
+        program: program.name,
+        from: from.name,
+        to: picked.name,
+      ),
+      _ => false,
+    };
+    if (inProgram && program != null) await programs.replaceExercise(program, from: from.id, to: picked.id);
+    analytics.exerciseReplaced(
+      scope: switch (inProgram) {
+        true => .program,
+        false => .today,
+      },
+      suggested: suggested,
+    );
+  }
+
   void _onSheetChanged() {
     // when dragged to minimum size, dismiss the route
     if (_sheetController.size <= widget.closingThreshold && !_isClosing) {
@@ -927,185 +977,188 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
           // through them
           child: ClipRRect(
             borderRadius: const .vertical(top: .circular(12)),
-            child: WorkoutDetail(
-              controller: scrollController,
-              exercises: active,
-              workoutImages: active.images?.values,
-              onTapImage: widget.onTapImage,
-              workoutId: active.id,
-              onDragExercise: workouts.append,
-              onSwapExercise: workouts.swap,
-              allowsCompletingSet: true,
-              onAddSet: workouts.addSet,
-              onNoteChanged: workouts.setNote,
-              onRemoveSet: workouts.removeSet,
-              onSetType: workouts.setSetType,
-              onSetRpe: workouts.setRpe,
-              onRemoveExercise: workouts.removeExercise,
-              onGroup: workouts.group,
-              onLeaveGroup: workouts.leaveGroup,
-              showsPlan: planned,
-              onReplaceExercise: switch (planned) {
-                true => workouts.replaceExercise,
-                false => null,
-              },
-              slivers: [
-                if (lighter) SliverToBoxAdapter(child: LighterWeekNote(deload: program?.deload)),
-                if (active.note case String note)
-                  SliverToBoxAdapter(
-                    child: WorkoutNote(note: note, onChanged: workouts.setWorkoutNote),
-                  ),
-              ],
-              onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
-              onAddExercises: (exercises) async {
-                final workouts = Workouts.of(context);
-                for (final each in exercises.toList()) {
-                  await Future.delayed(
-                    const Duration(milliseconds: 2),
-                    () => workouts.startExercise(each),
+            child: PreviousScope(
+              templateId: active.templateId,
+              child: WorkoutDetail(
+                controller: scrollController,
+                exercises: active,
+                workoutImages: active.images?.values,
+                onTapImage: widget.onTapImage,
+                workoutId: active.id,
+                onDragExercise: workouts.append,
+                onSwapExercise: workouts.swap,
+                allowsCompletingSet: true,
+                onAddSet: workouts.addSet,
+                onNoteChanged: workouts.setNote,
+                onRemoveSet: workouts.removeSet,
+                onSetType: workouts.setSetType,
+                onSetRpe: workouts.setRpe,
+                onRemoveExercise: workouts.removeExercise,
+                onGroup: workouts.group,
+                onLeaveGroup: workouts.leaveGroup,
+                showsPlan: planned,
+                onReplaceExercise: (slot, picked, {required suggested}) {
+                  return _replace(slot, picked, suggested: suggested, program: program);
+                },
+                slivers: [
+                  if (lighter) SliverToBoxAdapter(child: LighterWeekNote(deload: program?.deload)),
+                  if (active.note case String note)
+                    SliverToBoxAdapter(
+                      child: WorkoutNote(note: note, onChanged: workouts.setWorkoutNote),
+                    ),
+                ],
+                onTapExercise: (exercise) => showExerciseDetailDialog(context, exercise),
+                onAddExercises: (exercises) async {
+                  final workouts = Workouts.of(context);
+                  for (final each in exercises.toList()) {
+                    await Future.delayed(
+                      const Duration(milliseconds: 2),
+                      () => workouts.startExercise(each),
+                    );
+                  }
+                },
+                onDeleteImage: (image) {
+                  return showDeleteImageDialog(
+                    context,
+                    active,
+                    image,
+                    onDeleted: (context) async {
+                      Navigator.of(context, rootNavigator: true).pop();
+                      await Workouts.of(context).detachImageFromActiveWorkout(image);
+                    },
                   );
-                }
-              },
-              onDeleteImage: (image) {
-                return showDeleteImageDialog(
-                  context,
-                  active,
-                  image,
-                  onDeleted: (context) async {
-                    Navigator.of(context, rootNavigator: true).pop();
-                    await Workouts.of(context).detachImageFromActiveWorkout(image);
-                  },
-                );
-              },
-              appBar: SliverPersistentHeader(
-                pinned: true,
-                delegate: FixedHeightHeaderDelegate(
-                  height: 40,
-                  backgroundColor: scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    topLeft: Radius.circular(12),
-                  ),
-                  // One row, not a stack. The name used to be a fixed 180pt box
-                  // centred over the whole bar, which held until the elapsed
-                  // clock gained an hour field: `01:12:30` grew right, the
-                  // centred box did not move, and the two met with no gap at all
-                  // — `01:12:30mar, sept 15, de madrugac`. Laying the three out
-                  // in sequence means the name takes what is left and can never
-                  // be reached, and it gains the width a wide screen offers
-                  // instead of staying at 180.
-                  child: SizedBox(
+                },
+                appBar: SliverPersistentHeader(
+                  pinned: true,
+                  delegate: FixedHeightHeaderDelegate(
                     height: 40,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      spacing: 8,
-                      children: [
-                        if (workouts.activeWorkout?.start case DateTime start)
-                          Row(
-                            spacing: 4,
-                            children: [
-                              Container(
-                                key: _optionsButtonKey,
-                                child: PrimaryButton.shrunk(
-                                  key: WorkoutDetailKeys.options,
-                                  // quiet: the accent fill belongs to Finish,
-                                  // the one primary action on this bar
-                                  child: Icon(
-                                    switch (platform) {
-                                      .iOS || .macOS => Icons.more_horiz_rounded,
-                                      _ => Icons.more_vert_rounded,
+                    backgroundColor: scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(12),
+                      topLeft: Radius.circular(12),
+                    ),
+                    // One row, not a stack. The name used to be a fixed 180pt box
+                    // centred over the whole bar, which held until the elapsed
+                    // clock gained an hour field: `01:12:30` grew right, the
+                    // centred box did not move, and the two met with no gap at all
+                    // — `01:12:30mar, sept 15, de madrugac`. Laying the three out
+                    // in sequence means the name takes what is left and can never
+                    // be reached, and it gains the width a wide screen offers
+                    // instead of staying at 180.
+                    child: SizedBox(
+                      height: 40,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        spacing: 8,
+                        children: [
+                          if (workouts.activeWorkout?.start case DateTime start)
+                            Row(
+                              spacing: 4,
+                              children: [
+                                Container(
+                                  key: _optionsButtonKey,
+                                  child: PrimaryButton.shrunk(
+                                    key: WorkoutDetailKeys.options,
+                                    // quiet: the accent fill belongs to Finish,
+                                    // the one primary action on this bar
+                                    child: Icon(
+                                      switch (platform) {
+                                        .iOS || .macOS => Icons.more_horiz_rounded,
+                                        _ => Icons.more_vert_rounded,
+                                      },
+                                      semanticLabel: L.of(context).workoutOptions,
+                                    ),
+                                    onPressed: () {
+                                      showMenu<_WorkoutOption>(
+                                        context: context,
+                                        position: _optionsButtonKey.position(),
+                                        items: _options(context).map(
+                                          (option) {
+                                            return PopupMenuItem<_WorkoutOption>(
+                                              value: option,
+                                              onTap: _workoutOptionCallback(context, option),
+                                              child: Row(
+                                                spacing: 6,
+                                                children: [
+                                                  Icon(_workoutOptionIcon(option)),
+                                                  Text(_workoutOptionCopy(l, option, active)),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ).toList(),
+                                      );
                                     },
                                   ),
-                                  onPressed: () {
-                                    showMenu<_WorkoutOption>(
-                                      context: context,
-                                      position: _optionsButtonKey.position(),
-                                      items: _options(context).map(
-                                        (option) {
-                                          return PopupMenuItem<_WorkoutOption>(
-                                            value: option,
-                                            onTap: _workoutOptionCallback(context, option),
-                                            child: Row(
-                                              spacing: 6,
-                                              children: [
-                                                Icon(_workoutOptionIcon(option)),
-                                                Text(_workoutOptionCopy(l, option, active)),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ).toList(),
-                                    );
-                                  },
                                 ),
-                              ),
-                              // paused (#134): the way back sits beside the
-                              // stopped clock, where the eye goes to check it
-                              if (workouts.isPaused)
-                                Tooltip(
-                                  message: l.resumePausedWorkout,
-                                  child: PrimaryButton.shrunk(
-                                    key: WorkoutDetailKeys.resume,
-                                    onPressed: workouts.resume,
-                                    child: const Icon(Icons.play_arrow_rounded),
+                                // paused (#134): the way back sits beside the
+                                // stopped clock, where the eye goes to check it
+                                if (workouts.isPaused)
+                                  Tooltip(
+                                    message: l.resumePausedWorkout,
+                                    child: PrimaryButton.shrunk(
+                                      key: WorkoutDetailKeys.resume,
+                                      onPressed: workouts.resume,
+                                      child: const Icon(Icons.play_arrow_rounded),
+                                    ),
+                                  ),
+                                WorkoutTimer(
+                                  key: WorkoutDetailKeys.timer,
+                                  start: workouts.clockStart ?? start,
+                                  pausedAt: workouts.pausedAt,
+                                  style: textTheme.titleSmall?.copyWith(
+                                    // stopped, it steps back from the accent
+                                    color: workouts.isPaused ? colorScheme.onSurfaceVariant : colorScheme.tertiary,
+                                    // the preset's display face carries the
+                                    // numbers worth a shout
+                                    fontFamily: textTheme.headlineMedium?.fontFamily,
+                                    // ticks every second; keep the digits from
+                                    // jostling the row as they change
+                                    fontFeatures: const [FontFeature.tabularFigures()],
                                   ),
                                 ),
-                              WorkoutTimer(
-                                key: WorkoutDetailKeys.timer,
-                                start: workouts.clockStart ?? start,
-                                pausedAt: workouts.pausedAt,
-                                style: textTheme.titleSmall?.copyWith(
-                                  // stopped, it steps back from the accent
-                                  color: workouts.isPaused ? colorScheme.onSurfaceVariant : colorScheme.tertiary,
-                                  // the preset's display face carries the
-                                  // numbers worth a shout
-                                  fontFamily: textTheme.headlineMedium?.fontFamily,
-                                  // ticks every second; keep the digits from
-                                  // jostling the row as they change
-                                  fontFeatures: const [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                            ],
-                          ),
-                        Expanded(
-                          child: Semantics(
-                            label: L.of(context).workoutName,
-                            textField: true,
-                            child: TextField(
-                              inputFormatters: [
-                                LengthLimitingTextInputFormatter(18),
                               ],
-                              selectionControls: context.platformSpecificSelectionControls(),
-                              focusNode: _workoutNameFocusNode,
-                              textCapitalization: TextCapitalization.words,
-                              textAlign: TextAlign.center,
-                              controller: _workoutNameController,
-                              style: textTheme.titleSmall,
-                              decoration: const InputDecoration.collapsed(hintText: ''),
-                              onEditingComplete: () {
-                                final text = _workoutNameController.text.trim();
-                                final name = switch (text.isEmpty) {
-                                  true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
-                                  false => text.trim(),
-                                };
-                                workouts.renameWorkout(name);
-                                _workoutNameFocusNode.unfocus();
-                              },
-                              onTapOutside: (_) {
-                                _workoutNameFocusNode.unfocus();
-                              },
+                            ),
+                          Expanded(
+                            child: Semantics(
+                              label: L.of(context).workoutName,
+                              textField: true,
+                              child: TextField(
+                                inputFormatters: [
+                                  LengthLimitingTextInputFormatter(18),
+                                ],
+                                selectionControls: context.platformSpecificSelectionControls(),
+                                focusNode: _workoutNameFocusNode,
+                                textCapitalization: TextCapitalization.words,
+                                textAlign: TextAlign.center,
+                                controller: _workoutNameController,
+                                style: textTheme.titleSmall,
+                                decoration: const InputDecoration.collapsed(hintText: ''),
+                                onEditingComplete: () {
+                                  final text = _workoutNameController.text.trim();
+                                  final name = switch (text.isEmpty) {
+                                    true => workouts.activeWorkout?.name?.trim() ?? L.of(context).defaultWorkoutName(),
+                                    false => text.trim(),
+                                  };
+                                  workouts.renameWorkout(name);
+                                  _workoutNameFocusNode.unfocus();
+                                },
+                                onTapOutside: (_) {
+                                  _workoutNameFocusNode.unfocus();
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                        if (workouts.hasActiveWorkout)
-                          PrimaryButton.shrunk(
-                            key: WorkoutDetailKeys.finishWorkout,
-                            onPressed: () {
-                              showFinishWorkoutDialog(context, workouts);
-                            },
-                            child: Text(L.of(context).finish),
-                          ),
-                      ],
+                          if (workouts.hasActiveWorkout)
+                            PrimaryButton.shrunk(
+                              key: WorkoutDetailKeys.finishWorkout,
+                              onPressed: () {
+                                showFinishWorkoutDialog(context, workouts);
+                              },
+                              child: Text(L.of(context).finish),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

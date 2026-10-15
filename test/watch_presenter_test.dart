@@ -391,6 +391,48 @@ void main() {
       expect(sent.controls?.idle, 'Start a workout on your iPhone');
     });
 
+    testWidgets(
+      "with last time in this template on, the watch reads the template's last run, as the sheet does (#172)",
+      (
+        tester,
+      ) async {
+        final service = MockPreviousExerciseService();
+        when(service.getPreviousSets('u1')).thenAnswer(
+          (_) async => {
+            'id-bench': [
+              {'set_type': 'normal', 'weight': 70, 'reps': 8},
+            ],
+          },
+        );
+        previous = PreviousExercises(
+          service: service,
+          readInTemplate: (user, template, {before}) async => {
+            'id-bench': [
+              {'set_type': 'normal', 'weight': 105, 'reps': 5},
+            ],
+          },
+        )..userId = 'u1';
+        await previous.init();
+        preferences.setFeature(.previousInTemplate, on: true);
+
+        preferences.setFeature(.watchApp, on: true);
+        final block = WorkoutExercise(starter: ExerciseSet(bench, weight: 60, reps: 5));
+        workout = Workout.fromExercises([block], name: 'Heavy', templateId: 'heavy');
+        when(local.getActiveWorkout('u1')).thenAnswer((_) async => workout);
+        await pump(tester);
+        await workouts.init();
+        await tester.pumpAndSettle();
+
+        final set = (link.sent.last as WatchWorkout).exercises.single.sets.single;
+        expect(set.previous, contains('105'), reason: "the Heavy template's last run, not last time anywhere");
+
+        preferences.setFeature(.previousInTemplate, on: false);
+        await tester.pumpAndSettle();
+        final anywhere = (link.sent.last as WatchWorkout).exercises.single.sets.single;
+        expect(anywhere.previous, contains('70'), reason: 'off, last time anywhere, as the sheet reads it');
+      },
+    );
+
     testWidgets('a warm-up reads as one on the watch, and only plain sets are numbered', (tester) async {
       await running(tester, prepare: (workout) => workout.first.first.setType = .warmup);
 

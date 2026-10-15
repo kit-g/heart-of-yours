@@ -169,8 +169,9 @@ class _WorkoutEditorState extends State<WorkoutEditor> with HasHaptic<WorkoutEdi
             body: SafeArea(
               // "last time" as this workout saw it: the session before it,
               // never itself — the newest one would otherwise be its own
-              child: ChangeNotifierProvider<PreviousExercises>(
-                create: (context) => PreviousExercises.of(context).before(workout.start)..init(),
+              child: PreviousScope(
+                before: workout.start,
+                templateId: workout.templateId,
                 child: WorkoutDetail(
                   exercises: workout,
                   needsCancelWorkoutButton: false,

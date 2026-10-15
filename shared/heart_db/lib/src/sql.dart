@@ -555,6 +555,15 @@ final getPreviousExercises = _previousExercises('');
 /// where the newest session would otherwise be the one being edited.
 final getPreviousExercisesBefore = _previousExercises('AND julianday(w.start) < julianday(?)');
 
+/// [getPreviousExercises] within one template (#172): last time this
+/// template, or a program session, was run — the template's id second.
+final getPreviousExercisesInTemplate = _previousExercises('AND w.template_id = ?');
+
+/// [getPreviousExercisesInTemplate] as of a moment, for a past workout.
+final getPreviousExercisesInTemplateBefore = _previousExercises(
+  'AND w.template_id = ? AND julianday(w.start) < julianday(?)',
+);
+
 String _previousExercises(String before) =>
     """
 WITH _recent AS (

@@ -99,6 +99,50 @@ int? dropIndex(List<WorkoutExercise> items, WorkoutExercise? dragged, WorkoutExe
   };
 }
 
+/// After a replace in a program's workout (#354): whether [to] takes [from]'s
+/// place in the program's sessions too. Just today is the answer that keeps
+/// things as they were, and the one a dismissal gives.
+Future<bool> askReplaceInProgram(
+  BuildContext context, {
+  required String program,
+  required String from,
+  required String to,
+}) async {
+  final ThemeData(:colorScheme) = Theme.of(context);
+  final l = L.of(context);
+  final inProgram = await showBrandedDialog<bool>(
+    context,
+    title: Text(l.replaceScopeTitle(program), textAlign: .center),
+    content: Text(l.replaceScopeBody(to, from), textAlign: .center),
+    actions: [
+      Builder(
+        builder: (context) {
+          void answer({required bool inProgram}) => Navigator.of(context, rootNavigator: true).pop(inProgram);
+          return Column(
+            spacing: 8,
+            children: [
+              PrimaryButton.wide(
+                key: WorkoutDetailKeys.replaceInProgram,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                onPressed: () => answer(inProgram: true),
+                child: Center(
+                  child: Text(l.replaceInProgram, style: TextStyle(color: colorScheme.onSurface)),
+                ),
+              ),
+              PrimaryButton.wide(
+                key: WorkoutDetailKeys.replaceJustToday,
+                onPressed: () => answer(inProgram: false),
+                child: Center(child: Text(l.replaceJustToday)),
+              ),
+            ],
+          );
+        },
+      ),
+    ],
+  );
+  return inProgram ?? false;
+}
+
 Future<void> showFinishWorkoutDialog(BuildContext context, Workouts workouts, {VoidCallback? onFinish}) async {
   final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
   final Workouts(:activeWorkout) = workouts;

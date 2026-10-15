@@ -379,13 +379,19 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
                                   label: L.of(context).timeSet,
                                   child: Icon(Icons.play_arrow_rounded, size: 18, color: onSurfaceVariant),
                                 ),
-                                _ => Icon(
-                                  Icons.done,
-                                  size: 18,
-                                  color: switch (set.isCompleted) {
-                                    true => onTertiaryContainer,
-                                    false => onSurfaceVariant,
+                                _ => Semantics(
+                                  label: switch (set.isCompleted) {
+                                    true => L.of(context).untickSet,
+                                    false => L.of(context).tickSet,
                                   },
+                                  child: Icon(
+                                    Icons.done,
+                                    size: 18,
+                                    color: switch (set.isCompleted) {
+                                      true => onTertiaryContainer,
+                                      false => onSurfaceVariant,
+                                    },
+                                  ),
                                 ),
                               };
                             },

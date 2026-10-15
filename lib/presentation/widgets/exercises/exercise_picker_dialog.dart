@@ -54,25 +54,28 @@ Future<(Exercise, ChartPreferenceType)?> showExercisePicker(
 ///
 /// [except] is shown highlighted, as the one the question is about, and a tap
 /// on it is not an answer. An exercise [refuses] gives a reason for stays
-/// listed but greyed, and a tap on it shows the reason. The search field's controller and focus belong to
-/// the dialog, so they go when its route does, never under a field still
-/// animating away.
+/// listed but greyed, and a tap on it shows the reason. [suggested] sit above
+/// the rest until the user types. The search field's controller and focus
+/// belong to the dialog, so they go when its route does, never under a field
+/// still animating away.
 Future<Exercise?> showSingleExercisePicker(
   BuildContext context, {
   ExerciseId? except,
   String? Function(Exercise)? refuses,
+  List<Exercise> suggested = const [],
 }) {
   return showDialog<Exercise?>(
     context: context,
-    builder: (_) => _SingleExercisePicker(except: except, refuses: refuses),
+    builder: (_) => _SingleExercisePicker(except: except, refuses: refuses, suggested: suggested),
   );
 }
 
 class _SingleExercisePicker extends StatefulWidget {
   final ExerciseId? except;
   final String? Function(Exercise)? refuses;
+  final List<Exercise> suggested;
 
-  const new({this.except, this.refuses});
+  const new({this.except, this.refuses, this.suggested = const []});
 
   @override
   State<_SingleExercisePicker> createState() => _SingleExercisePickerState();
@@ -96,6 +99,7 @@ class _SingleExercisePickerState extends State<_SingleExercisePicker> {
       focus: _focus,
       highlighted: widget.except,
       refuses: widget.refuses,
+      suggested: widget.suggested,
       onExerciseSelected: (exercise, _) {
         if (exercise.id != widget.except) Navigator.of(context).pop(exercise);
       },
@@ -110,6 +114,7 @@ class _PickerCard extends StatelessWidget {
   final void Function(Exercise, TapDownDetails?) onExerciseSelected;
   final ExerciseId? highlighted;
   final String? Function(Exercise)? refuses;
+  final List<Exercise> suggested;
 
   const new({
     required this.controller,
@@ -117,6 +122,7 @@ class _PickerCard extends StatelessWidget {
     required this.onExerciseSelected,
     this.highlighted,
     this.refuses,
+    this.suggested = const [],
   });
 
   @override
@@ -158,6 +164,7 @@ class _PickerCard extends StatelessWidget {
             focusNode: focus,
             highlightedName: highlighted,
             refuses: refuses,
+            suggested: suggested,
             onExerciseSelected: onExerciseSelected,
           ),
         ),

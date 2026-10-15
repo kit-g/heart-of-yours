@@ -3,7 +3,6 @@ library;
 import 'dart:async';
 
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_body_atlas/flutter_body_atlas.dart';
 import 'package:heart/core/env/sentry.dart';
 import 'package:heart/core/utils/column_fill.dart';

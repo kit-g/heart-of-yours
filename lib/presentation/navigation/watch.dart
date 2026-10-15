@@ -70,6 +70,11 @@ class _WatchPresenterState extends State<WatchPresenter> {
   Timer? _settle;
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _catchingUp;
 
+  /// "Last time in this template" (#172) for the active workout, read as the
+  /// phone's [PreviousScope] reads it, and for which workout and template.
+  PreviousExercises? _inTemplate;
+  (String, String)? _inTemplateOf;
+
   @override
   void initState() {
     super.initState();
@@ -116,6 +121,9 @@ class _WatchPresenterState extends State<WatchPresenter> {
     _workouts?.removeListener(_sync);
     _alarms?.removeListener(_sync);
     _settle?.cancel();
+    _inTemplate
+      ?..removeListener(_sync)
+      ..dispose();
     super.dispose();
   }
 
@@ -407,7 +415,7 @@ class _WatchPresenterState extends State<WatchPresenter> {
   /// was no last time.
   String? _lastTime(WorkoutExercise exercise, int index, {required bool weighted, required String unit, required L l}) {
     final prefs = Preferences.of(context);
-    final value = PreviousExercises.of(context).matching(exercise, index);
+    final value = _previous().matching(exercise, index);
     return switch ((weighted, value)) {
       (true, {'reps': int reps, 'weight': num weight}) => l.watchLastTime(
         '${prefs.weight(weight, unit: _unit(exercise))} $unit × $reps',
@@ -415,6 +423,32 @@ class _WatchPresenterState extends State<WatchPresenter> {
       (false, {'reps': int reps}) => l.watchLastTime('$reps ${l.reps}'),
       _ => null,
     };
+  }
+
+  /// What the phone's Previous column reads for the active workout: the last
+  /// run of its template while "Last time in this template" is on (#172),
+  /// last time anywhere otherwise.
+  PreviousExercises _previous() {
+    final workout = Workouts.of(context).activeWorkout;
+    final of = switch ((Preferences.of(context).isOn(.previousInTemplate), workout?.id, workout?.templateId)) {
+      (true, String workout, String template) => (workout, template),
+      _ => null,
+    };
+    if (of != _inTemplateOf) {
+      _inTemplate
+        ?..removeListener(_sync)
+        ..dispose();
+      _inTemplateOf = of;
+      // read once per workout: the watch hears again when it lands
+      _inTemplate = switch (of) {
+        (_, String template) =>
+          PreviousExercises.of(context).inTemplate(template)
+            ..addListener(_sync)
+            ..init(),
+        null => null,
+      };
+    }
+    return _inTemplate ?? PreviousExercises.of(context);
   }
 
   WatchControls _controls(L l) {

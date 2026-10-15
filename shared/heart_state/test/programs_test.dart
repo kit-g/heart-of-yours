@@ -657,6 +657,26 @@ void main() {
       expect(swaps.last, ('s1', 'incline', 'wall'));
     });
 
+    test('a replace in the program moves the rule and the sessions, and leaves the bases (#354)', () async {
+      final swaps = <(String, String, String)>[];
+      programs = Programs(
+        service: local,
+        remoteService: remote,
+        templates: templates,
+        remote: access,
+        onError: (error, {stacktrace}) => errors.add(error),
+        onAdvance: (sessions, {required from, required to}) async => swaps.add((sessions.join(','), from, to)),
+      )..userId = uid;
+      await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
+
+      await programs.replaceExercise(programs.lookup('p1')!, from: 'squat', to: 'front-squat');
+
+      expect(errors, isEmpty);
+      expect(programs.lookup('p1')!.rules.keys, ['front-squat']);
+      expect(swaps.single, ('s1', 'squat', 'front-squat'));
+      expect(programs.currentBasesOf('p1').keys, ['squat']);
+    });
+
     test('a test session sets training maxes, judged against no rule, and Keep takes one back', () async {
       await follow(growing({'squat': const AddWeight(step: 5)}, tests: {'s1': const ProgramTest()}));
 

@@ -44,7 +44,13 @@ enum Feature {
   /// Templates on a schedule, with targets that grow as you do (#340). The
   /// ask in context and the surfaces are #345 and #347; the programs the
   /// account holds sync and stay whole whatever the answer (#346).
-  programs('programs');
+  programs('programs'),
+
+  /// The Previous column of a workout started from a template, or a program's
+  /// session, reads the last time that template was run rather than the last
+  /// time anywhere (#172). Settings-only, like keep-awake: the switch is the
+  /// choice. Reads only what the workouts already carry.
+  previousInTemplate('previousInTemplate');
 
   final String value;
 

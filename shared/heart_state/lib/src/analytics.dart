@@ -108,6 +108,22 @@ enum ProgramSource {
   new(this.id);
 }
 
+/// How far an exercise replaced on the sheet reaches (#354).
+enum ReplaceScope {
+  /// This workout alone.
+  today('today'),
+
+  /// Its program's sessions too, and the growth rule with them.
+  program('program'),
+
+  /// An open slot filled with another exercise of its pattern (#349).
+  slot('slot');
+
+  final String id;
+
+  new(this.id);
+}
+
 /// Which part of a logged workout was changed after the fact.
 enum WorkoutEditField {
   times('times'),
@@ -188,6 +204,7 @@ const _templateFolderCreated = 'template_folder_created';
 const _templateMoved = 'template_moved';
 const _exerciseCreated = 'exercise_created';
 const _exerciseHistoryMoved = 'exercise_history_moved';
+const _exerciseReplaced = 'exercise_replaced';
 const _programCreated = 'program_created';
 const _programSteered = 'program_steered';
 const _programDeleted = 'program_deleted';
@@ -234,6 +251,8 @@ const _workoutExercises = 'workout_exercises';
 const _sessions = 'sessions';
 const _action = 'action';
 const _keptTemplates = 'kept_templates';
+const _replaceScope = 'replace_scope';
+const _suggested = 'suggested';
 
 const _accountStateProperty = 'account_state';
 const _authProviderProperty = 'auth_provider';
@@ -449,6 +468,13 @@ class Analytics {
       _toCustom: _flag(toCustom),
       _workoutExercises: workoutExercises,
     });
+  }
+
+  /// An exercise on the sheet replaced before any of its sets was ticked
+  /// (#354): how far the replacement reaches, and whether the pick was one the
+  /// picker suggested. Never which exercises.
+  void exerciseReplaced({required ReplaceScope scope, required bool suggested}) {
+    _log(_exerciseReplaced, {_replaceScope: scope.id, _suggested: _flag(suggested)});
   }
 
   /// A program started (#348): where it came from and how many sessions it

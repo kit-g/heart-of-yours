@@ -97,6 +97,8 @@ EVENT_DIMENSIONS = {
     'to_custom': 'Onto a custom exercise',
     'action': 'Program action',
     'kept_templates': 'Kept the templates',
+    'replace_scope': 'Replace scope',
+    'suggested': 'Picked a suggestion',
 }
 
 # User properties are user-scoped dimensions; GA4 draws no other distinction.

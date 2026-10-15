@@ -52,6 +52,7 @@ enum _Screen {
   programPage,
   newProgram,
   programWorkout,
+  replaceScopeDialog,
   exerciseNoteEditor,
   workoutNote,
   pausedWorkout,
@@ -311,11 +312,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   // A program's session on the sheet (#349): the plan's line under each
   // exercise, a supplemental set's mark, and a lighter week's note
   // (lib/presentation/widgets/workout/plan.dart).
-  (
-    _Screen.programWorkout,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:977) and the set rows\' ✓ (lib/presentation/widgets/workout/set_item.dart:340) are icon-only with no label, as on every active workout; the plan\'s line, the supplemental set and the lighter week\'s note pass',
-  ),
+  (_Screen.programWorkout, _Guideline.labeledTapTarget, null),
   (_Screen.programWorkout, _Guideline.textContrastLight, null),
   (_Screen.programWorkout, _Guideline.textContrastDark, null),
   (
@@ -327,6 +324,21 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.programWorkout,
     _Guideline.iosTapTarget,
     'the set-row weight/reps buttons and the set number share the 32pt row height (lib/presentation/widgets/workout/set_item.dart:337, set_type.dart:87) — visual-density change, out of scope',
+  ),
+  // After a replace in a program's workout (#354): whether it reaches the
+  // program (lib/presentation/widgets/workout/utils.dart, askReplaceInProgram).
+  (_Screen.replaceScopeDialog, _Guideline.labeledTapTarget, null),
+  (_Screen.replaceScopeDialog, _Guideline.textContrastLight, null),
+  (_Screen.replaceScopeDialog, _Guideline.textContrastDark, null),
+  (
+    _Screen.replaceScopeDialog,
+    _Guideline.androidTapTarget,
+    'dialog actions use the shared 32pt button height (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), below 48pt',
+  ),
+  (
+    _Screen.replaceScopeDialog,
+    _Guideline.iosTapTarget,
+    'dialog actions use the shared 32pt button height (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), below 44pt',
   ),
   // A program session's Done page (#351): what it moved, with its Keep
   // (lib/presentation/routes/done/program.dart).
@@ -355,11 +367,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   // An active workout carrying its own note under the title (#235); the
   // editor it opens is the exercise note's (exerciseNoteEditor).
-  (
-    _Screen.workoutNote,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:914) and a control in the exercise row are icon-only with no label; the note and its × pass',
-  ),
+  (_Screen.workoutNote, _Guideline.labeledTapTarget, null),
   (_Screen.workoutNote, _Guideline.textContrastLight, null),
   (_Screen.workoutNote, _Guideline.textContrastDark, null),
   (
@@ -374,11 +382,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   // A paused workout (#134): Resume beside the stopped clock
   // (lib/presentation/widgets/workout/workout_detail.dart).
-  (
-    _Screen.pausedWorkout,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:922) and a control in the exercise row are icon-only with no label; Resume passes',
-  ),
+  (_Screen.pausedWorkout, _Guideline.labeledTapTarget, null),
   (_Screen.pausedWorkout, _Guideline.textContrastLight, null),
   (_Screen.pausedWorkout, _Guideline.textContrastDark, null),
   (
@@ -408,11 +412,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
   // The set type menu over a workout whose first set is a warm-up, with one
   // type's explanation open (lib/presentation/widgets/workout/set_type.dart).
-  (
-    _Screen.setTypeMenu,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:907) and each set\'s ✓ (lib/presentation/widgets/workout/set_item.dart:298) are icon-only with no label; the menu itself passes',
-  ),
+  (_Screen.setTypeMenu, _Guideline.labeledTapTarget, null),
   (
     _Screen.setTypeMenu,
     _Guideline.textContrastLight,
@@ -421,11 +421,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (_Screen.setTypeMenu, _Guideline.textContrastDark, null),
   // The set-number popup with its ratings, the scale unfolded, the first set
   // rated (lib/presentation/widgets/workout/rpe.dart).
-  (
-    _Screen.rpePicker,
-    _Guideline.labeledTapTarget,
-    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:907) and each set\'s ✓ (lib/presentation/widgets/workout/set_item.dart:298) are icon-only with no label; the popup itself passes',
-  ),
+  (_Screen.rpePicker, _Guideline.labeledTapTarget, null),
   (_Screen.rpePicker, _Guideline.textContrastLight, null),
   (_Screen.rpePicker, _Guideline.textContrastDark, null),
   (
@@ -1028,7 +1024,7 @@ void main() {
         when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
         when(api.getProgramActions(any)).thenAnswer((_) async => []);
         when(api.getProgramBases(any)).thenAnswer((_) async => []);
-      case _Screen.programWorkout:
+      case _Screen.programWorkout || _Screen.replaceScopeDialog:
         SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-programs': 'on'});
         when(db.getPrograms(any)).thenAnswer((_) async => [_program]);
         when(api.getPrograms()).thenAnswer((_) async => [_program]);
@@ -1223,6 +1219,32 @@ void main() {
         await tester.pumpTimes();
         expect(find.textContaining('A lighter week'), findsOneWidget);
         expect(find.textContaining('of your max'), findsOneWidget);
+      case _Screen.replaceScopeDialog:
+        // over a program's workout, as the sheet asks it after a replace
+        final context = tester.element(find.byType(MaterialApp));
+        await Programs.of(context).init();
+        await Workouts.of(context).startWorkout(
+          source: .program,
+          template: Workout.fromExercises(
+            [WorkoutExercise(starter: ExerciseSet(_squat))],
+            name: 'Day A',
+            programId: 'p1',
+          ),
+        );
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        unawaited(
+          askReplaceInProgram(
+            tester.element(find.byType(WorkoutDetail)),
+            program: 'Waves',
+            from: _squat.name,
+            to: _bench.name,
+          ),
+        );
       case _Screen.setTypeMenu:
         final workout = Workout(name: 'Types')..add(_bench);
         workout.first

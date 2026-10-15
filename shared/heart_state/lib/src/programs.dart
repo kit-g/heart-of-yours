@@ -871,6 +871,14 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// "In the program" on a replace from the sheet (#354): [to] takes [from]'s
+  /// place in every session of [program] that holds it, and [from]'s growth
+  /// rule moves across with it. Bases stay with [from]: a different exercise's
+  /// load is its own to find, and a replace taken back finds them again.
+  Future<void> replaceExercise(Program program, {required String from, required String to}) {
+    return _climb(program, from: from, to: to);
+  }
+
   /// Moves [program]'s ladder rule from [from] to [to], and its sessions'
   /// [from] to [to] with it (heart-api#231): the rule is keyed by the rung the
   /// sessions hold.
