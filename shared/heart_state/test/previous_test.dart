@@ -327,4 +327,63 @@ void main() {
       await expectLater(reading, completes);
     });
   });
+
+  group('PreviousExercises in a template (#172)', () {
+    final anywhere = {
+      'bench': [
+        {'set_id': 'free', 'weight': 80},
+      ],
+      'row': [
+        {'set_id': 'row', 'weight': 60},
+      ],
+    };
+    final heavy = {
+      'bench': [
+        {'set_id': 'heavy', 'weight': 105},
+      ],
+    };
+
+    test("reads the template's last run first, and last time anywhere for what it never had", () async {
+      final reads = <(String, String, DateTime?)>[];
+      final sut = PreviousExercises(
+        service: _FakePreviousService(response: anywhere),
+        readInTemplate: (user, template, {before}) async {
+          reads.add((user, template, before));
+          return heavy;
+        },
+      )..userId = 'user-1';
+
+      final scoped = sut.inTemplate('heavy');
+      await scoped.init();
+
+      expect(reads, [('user-1', 'heavy', null)]);
+      expect(scoped.at('bench', 0)?['set_id'], 'heavy');
+      expect(scoped.last('row')?['set_id'], 'row');
+      // the app's own copy is untouched
+      expect(sut.at('bench', 0), isNull);
+    });
+
+    test('as of a past workout, both reads stop at it', () async {
+      final start = DateTime.utc(2026, 9, 26, 8);
+      DateTime? templateBefore;
+      DateTime? anywhereBefore;
+      final sut = PreviousExercises(
+        service: _FakePreviousService(),
+        readBefore: (user, before) async {
+          anywhereBefore = before;
+          return anywhere;
+        },
+        readInTemplate: (user, template, {before}) async {
+          templateBefore = before;
+          return heavy;
+        },
+      )..userId = 'user-1';
+
+      final scoped = sut.before(start).inTemplate('heavy');
+      await scoped.init();
+
+      expect((anywhereBefore, templateBefore), (start, start));
+      expect(scoped.at('bench', 0)?['set_id'], 'heavy');
+    });
+  });
 }
