@@ -62,6 +62,7 @@ mixin _Erase on _LocalDatabase {
         batch.delete(_charts, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_goals, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_healthSamples, where: 'user_id = ?', whereArgs: [userId]);
+        batch.delete(_goEasy, where: 'user_id = ?', whereArgs: [userId]);
         batch.delete(_syncs, where: 'table_name LIKE ?', whereArgs: ['health_backfill:$userId:%']);
         // a replay owed to the uid, and how far it got — nothing left to replay
         batch.delete(_upsync, where: 'user_id = ?', whereArgs: [userId]);

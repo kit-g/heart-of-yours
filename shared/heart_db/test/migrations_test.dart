@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 24);
+          expect(await userVersion(db), 25);
           expect(
             await tables(db),
             {
@@ -162,6 +162,7 @@ void main() {
               'programs_owed',
               'skips',
               'content',
+              'go_easy',
             },
           );
 
@@ -518,7 +519,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 24);
+          expect(await userVersion(db), 25);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -714,7 +715,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 24);
+    expect(await userVersion(db), 25);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -768,7 +769,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 24);
+          expect(await userVersion(db), 25);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
@@ -786,13 +787,26 @@ void main() {
     expect(await tables(db), isNot(contains('content')));
     await db.close();
 
-    await LocalDatabase.init();
+    await LocalDatabase.init(version: 24);
     db = await raw();
     expect(await userVersion(db), 24);
     expect(
       await columns(db, 'content'),
       {'key': 'TEXT', 'etag': 'TEXT', 'body': 'TEXT', 'stored_at': 'TEXT'},
     );
+    await db.close();
+  });
+
+  test('v25 keeps what a user goes easy on, by uid (#396)', () async {
+    await LocalDatabase.init(version: 24);
+    var db = await raw();
+    expect(await tables(db), isNot(contains('go_easy')));
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 25);
+    expect(await columns(db, 'go_easy'), {'user_id': 'TEXT', 'key': 'TEXT'});
     await db.close();
   });
 }

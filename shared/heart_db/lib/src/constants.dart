@@ -17,5 +17,6 @@ const _skips = 'skips';
 const _charts = 'charts';
 const _content = 'content';
 const _goals = 'goals';
+const _goEasy = 'go_easy';
 const _healthSamples = 'health_samples';
 const _upsync = 'upsync';
