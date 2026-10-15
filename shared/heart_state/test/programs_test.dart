@@ -959,6 +959,26 @@ void main() {
 
       expect(local.owed.map((each) => (each.row, each.id)), contains((ProgramRow.skip, skip.id)));
     });
+
+    test('a skip outlives its deleted program: History still lists it, program-less', () async {
+      final followed = await following();
+      final skip = await programs.skip(followed, session: 's1');
+
+      await programs.delete(followed, keepTemplates: true);
+
+      expect(programs.skipsOf('p1'), isEmpty);
+      final [kept] = programs.skips;
+      expect((kept.id, kept.templateId, kept.programId), (skip.id, 's1', null));
+    });
+
+    test("a program-less skip, the mirror's and the server's, is listed", () async {
+      final orphan = TrainingSkip(id: 'orphan', at: DateTime.utc(2026, 10, 2), templateId: 's2');
+      local.skips.add(orphan);
+      remote.skips = [orphan];
+      await following();
+
+      expect(programs.skips.map((each) => each.id), contains('orphan'));
+    });
   });
 
   test('signing out forgets every program', () async {

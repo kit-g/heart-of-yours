@@ -180,6 +180,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   final _bases = <String, List<ProgramBase>>{};
   final _marks = <String, List<ProgramMark>>{};
   final _skips = <String, List<TrainingSkip>>{};
+  // the skips whose program was deleted: they outlive it, as on the server
+  final _orphanSkips = <TrainingSkip>[];
   final _owed = <(ProgramRow, String), ProgramOwed>{};
 
   bool _loaded = false;
@@ -206,7 +208,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Every program's skips, oldest first: what History lists beside the
   /// workouts.
   List<TrainingSkip> get skips {
-    return [for (final skips in _skips.values) ...skips]..sort((a, b) => a.at.compareTo(b.at));
+    return [
+      for (final skips in _skips.values) ...skips,
+      ..._orphanSkips,
+    ]..sort((a, b) => a.at.compareTo(b.at));
   }
 
   /// The sessions [position]'s open cycle counts done by a skip rather than
@@ -276,6 +281,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _bases.clear();
     _marks.clear();
     _skips.clear();
+    _orphanSkips.clear();
     _owed.clear();
     _grown.clear();
     _heldRevision = null;
@@ -341,7 +347,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _replace(programs);
     _group(_actions, actions, (action) => action.programId);
     _group(_bases, bases, (base) => base.programId);
-    _group(_skips, skips, (skip) => skip.programId);
+    _groupSkips(skips);
     _owed
       ..clear()
       ..addEntries([for (final each in owed) MapEntry((each.row, each.id), each)]);
@@ -379,7 +385,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     final skips = _rowsOwed<TrainingSkip>(theirs, .skip, await _service.getSkips(uid), (skip) => skip.id)
       ..sort((a, b) => a.at.compareTo(b.at));
     await _service.storeSkips(skips, uid);
-    _group(_skips, skips, (skip) => skip.programId);
+    _groupSkips(skips);
     await _readMarks(uid);
     notifyListeners();
   }
@@ -502,7 +508,11 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     _actions.remove(id);
     _bases.remove(id);
     _marks.remove(id);
-    _skips.remove(id);
+    // its skips stay in History, as the mirror keeps their rows
+    _orphanSkips.addAll([
+      for (final skip in _skips.remove(id) ?? const <TrainingSkip>[])
+        TrainingSkip(id: skip.id, at: skip.at, reason: skip.reason, weather: skip.weather, templateId: skip.templateId),
+    ]);
     notifyListeners();
 
     await _service.deleteProgram(id, keepTemplates: keepTemplates);
@@ -1201,6 +1211,13 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         for (final program in programs)
           if (program.id case final String id) MapEntry(id, program),
       ]);
+  }
+
+  void _groupSkips(Iterable<TrainingSkip> skips) {
+    _group(_skips, skips, (skip) => skip.programId);
+    _orphanSkips
+      ..clear()
+      ..addAll(skips.where((skip) => skip.programId == null));
   }
 
   static void _group<T>(Map<String, List<T>> into, Iterable<T> rows, String? Function(T) programOf) {
