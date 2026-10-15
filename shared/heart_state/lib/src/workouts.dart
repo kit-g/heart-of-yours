@@ -735,6 +735,39 @@ class Workouts with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
+  /// Puts [exercise] in [slot]'s place (#349): an open slot takes any exercise
+  /// of its pattern. The plan moves across, set by set (types, targets) with
+  /// the slot's rest, group and totals; what was typed stays behind, being of
+  /// the other exercise. Only before a set of [slot] is ticked: after that the
+  /// slot holds what was done.
+  Future<void> replaceExercise(WorkoutExercise slot, Exercise exercise) async {
+    final workout = activeWorkout;
+    if (workout == null || !workout.contains(slot) || slot.isStarted) return;
+    final sets = [
+      for (final set in slot) ExerciseSet(exercise, setType: set.setType, target: set.target),
+    ];
+    final replacement = WorkoutExercise(starter: sets.first)
+      ..note = _noteFor?.call(exercise.id)
+      ..rest = slot.rest
+      ..superset = slot.superset
+      ..pattern = slot.pattern
+      ..totalReps = slot.totalReps;
+    for (final set in sets.skip(1)) {
+      replacement.add(set);
+    }
+    if (slot.any(stopwatch.isTiming)) stopwatch.clear();
+    workout
+      ..append(replacement)
+      ..swap(replacement, slot)
+      ..remove(slot);
+    notifyListeners();
+    await _localService.removeExercise(slot);
+    await _localService.startExercise(workout.id, replacement);
+    // the targets, which a started exercise's rows do not take
+    await Future.wait(replacement.map(_localService.storeMeasurements));
+    await _saveExerciseOrder(workout);
+  }
+
   /// The user typed a measurement into [set]. See [_edited].
   void markEdited(ExerciseSet set) => _edited.add(set.id);
 

@@ -279,7 +279,7 @@ OngoingDone _doneOf(BuildContext context, Workout workout, WorkoutExercise exerc
       (set: null, number: _, exercise: _) => l.ongoingWorkoutAllDone,
       null => '',
     },
-    restSeconds: Timers.of(context)[exercise.exercise.id],
+    restSeconds: restFor(context, exercise),
     restLabel: l.ongoingWorkoutRest,
     restOver: l.restComplete,
     restMinus: l.subtractSeconds,

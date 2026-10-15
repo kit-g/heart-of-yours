@@ -11,6 +11,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   final void Function(ExerciseSet, SetType)? onSetType;
   final void Function(ExerciseSet, double?)? onSetRpe;
   final void Function(ExerciseSet, SetTarget?)? onSetTarget;
+  final bool showsPlan;
+  final void Function(WorkoutExercise, Exercise)? onReplaceExercise;
   final void Function(WorkoutExercise) onRemoveExercise;
   final void Function(WorkoutExercise dragged, WorkoutExercise current) onSwapExercise;
   final String firstColumnCopy;
@@ -32,6 +34,8 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
     this.onSetType,
     this.onSetRpe,
     this.onSetTarget,
+    this.showsPlan = false,
+    this.onReplaceExercise,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.copy,
@@ -82,9 +86,9 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                   ),
                   Row(
                     children: [
-                      Selector<Timers, int?>(
-                        selector: (_, provider) => provider[exercise.exercise.id],
-                        builder: (_, timer, _) {
+                      Builder(
+                        builder: (context) {
+                          final timer = restFor(context, exercise, listen: true);
                           return Selector<Alarms, (ValueNotifier<int>?, num?, String?)>(
                             selector: (_, provider) => (
                               provider.remainsInActiveExercise,
@@ -182,6 +186,17 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                                 null => L.of(context).addExerciseNote,
                               }, style: textTheme.titleSmall),
                             ),
+                          if ((onReplaceExercise, exercise.pattern, exercise.isStarted) case (
+                            final onReplace?,
+                            final String pattern,
+                            false,
+                          ))
+                            MenuItemButton(
+                              key: WorkoutDetailKeys.swapExerciseFor(exercise.exercise.id),
+                              leadingIcon: const Icon(Icons.swap_horiz_rounded),
+                              onPressed: () => _replace(context, pattern, onReplace),
+                              child: Text(L.of(context).swapExercise, style: textTheme.titleSmall),
+                            ),
                           _exerciseOptionButton(context, .autoRestTimer, textTheme, colorScheme),
                           if (_showsUnitOption) _unitSubmenu(context, textTheme),
                           _exerciseOptionButton(context, .remove, textTheme, colorScheme),
@@ -225,6 +240,10 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                         maxSimultaneousDrags: 1,
                         child: header,
                       ),
+                      if (showsPlan)
+                        if (planLine(context, exercise, nameOf: (id) => exercises.lookup(id)?.name ?? '')
+                            case final String line)
+                          _PlanLine(line),
                       if (exercise.note case String note when note.isNotEmpty)
                         _ExerciseNote(
                           exercise: exercise,
@@ -315,6 +334,26 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
         );
       },
     );
+  }
+
+  /// Fills the open slot with another exercise of its [pattern] (#349): the
+  /// picker greys the rest, and says why when one is tapped.
+  Future<void> _replace(
+    BuildContext context,
+    String pattern,
+    void Function(WorkoutExercise, Exercise) onReplace,
+  ) async {
+    final l = L.of(context);
+    final takes = PatternFilter(pattern).label(l);
+    final picked = await showSingleExercisePicker(
+      context,
+      except: exercise.exercise.id,
+      refuses: (candidate) => switch (candidate.movement.groups.contains(pattern)) {
+        true => null,
+        false => l.swapOutsidePattern(takes, candidate.name),
+      },
+    );
+    if (picked != null) onReplace(exercise, picked);
   }
 
   Future<void> _unpinNote(BuildContext context) async {
@@ -523,7 +562,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       case .autoRestTimer:
         return _selectRestTime(
           context,
-          initialValue: Timers.of(context)[exercise.exercise.id],
+          initialValue: restFor(context, exercise),
         );
       case .inspectExercise:
         return onTapExercise(exercise.exercise);

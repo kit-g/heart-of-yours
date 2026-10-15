@@ -837,8 +837,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   }
 
   Future<void> _startTimer(BuildContext context) async {
-    final timers = Timers.of(context);
-    final timer = timers[exercise.exercise.id];
+    final timer = restFor(context, exercise);
 
     if (timer == null) return;
 

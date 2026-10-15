@@ -5,6 +5,18 @@ import 'package:heart_models/heart_models.dart' hide Health;
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// How long [exercise] rests after a set, in seconds: the user's own timer for
+/// it, and otherwise what its program session plans (#349) while Programs is
+/// on. The user's word wins: a timer they set is a choice, a plan a default.
+int? restFor(BuildContext context, WorkoutExercise exercise, {bool listen = false}) {
+  final timers = Provider.of<Timers>(context, listen: listen);
+  final planned = switch (Provider.of<Preferences>(context, listen: listen).isOn(.programs)) {
+    true => exercise.rest,
+    false => null,
+  };
+  return timers[exercise.exercise.id] ?? planned;
+}
+
 /// Schedules the "rest complete" notification for a rest that ends at [when],
 /// naming the set that comes next. [exercise] is the one just worked — the
 /// fallback when nothing is left to do.
@@ -86,7 +98,7 @@ Future<void> scheduleRestNotification(BuildContext context, WorkoutExercise exer
 /// a watch while the phone was out of reach (#206): only what is left of the
 /// rest runs, and a rest already over by now does not start at all.
 void startRest(BuildContext context, WorkoutExercise exercise, {DateTime? since}) {
-  final timer = Timers.of(context)[exercise.exercise.id];
+  final timer = restFor(context, exercise);
   if (timer == null) return;
   final total = switch (since) {
     DateTime since => timer - DateTime.now().difference(since).inSeconds.clamp(0, timer),

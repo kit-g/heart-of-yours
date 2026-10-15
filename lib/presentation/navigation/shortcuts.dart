@@ -96,7 +96,7 @@ Future<void> _apply(
         () => switch (template) {
           Template template => workouts.startWorkout(
             source: templates.samples.contains(template) ? .sample : .template,
-            template: template.toWorkout(),
+            template: startingWorkout(context, template),
             applyPinnedNotes: true,
           ),
           null => workouts.startWorkout(source: .blank, name: L.of(context).defaultWorkoutName()),

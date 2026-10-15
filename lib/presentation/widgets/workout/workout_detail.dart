@@ -14,6 +14,7 @@ import 'package:heart/core/utils/image_picker.dart';
 import 'package:heart/core/utils/misc.dart';
 import 'package:heart/core/utils/scrolls.dart';
 import 'package:heart/core/utils/visual.dart';
+import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
@@ -21,6 +22,8 @@ import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
+import 'package:heart/presentation/widgets/exercises/exercise_picker_dialog.dart' show showSingleExercisePicker;
+import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/formatters.dart';
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart' show PreviousSet;
 import 'package:heart/presentation/widgets/exercises/previous_exercise.dart';
@@ -43,6 +46,7 @@ part 'exercise_item.dart';
 part 'exercise_note.dart';
 part 'feedback.dart';
 part 'keys.dart';
+part 'plan.dart';
 part 'set_item.dart';
 part 'set_stopwatch.dart';
 part 'rpe.dart';
@@ -81,6 +85,14 @@ class WorkoutDetail extends StatefulWidget {
   /// Sets what a set aims for (#173), from the set-number popup. Only a
   /// template's editor plans sets; without it the popup has no target row.
   final void Function(ExerciseSet, SetTarget?)? onSetTarget;
+
+  /// Whether each exercise says its program's plan in a line under its name
+  /// (#349): a program's workout while Programs is on.
+  final bool showsPlan;
+
+  /// Puts another exercise in an open slot's place (#349). Without it, or on
+  /// an exercise that is no open slot, there is nothing to swap.
+  final void Function(WorkoutExercise, Exercise)? onReplaceExercise;
   final void Function(Iterable<Exercise>) onAddExercises;
   final bool needsCancelWorkoutButton;
   final bool allowsCompletingSet;
@@ -105,6 +117,8 @@ class WorkoutDetail extends StatefulWidget {
     this.onSetType,
     this.onSetRpe,
     this.onSetTarget,
+    this.showsPlan = false,
+    this.onReplaceExercise,
     required this.onRemoveExercise,
     required this.onSwapExercise,
     required this.onAddExercises,
@@ -373,6 +387,8 @@ class _WorkoutDetailState extends State<WorkoutDetail> with HasHaptic<WorkoutDet
                             onSetType: widget.onSetType,
                             onSetRpe: widget.onSetRpe,
                             onSetTarget: widget.onSetTarget,
+                            showsPlan: widget.showsPlan,
+                            onReplaceExercise: widget.onReplaceExercise,
                             onRemoveExercise: widget.onRemoveExercise,
                             onSwapExercise: _onDrop,
                             onDragStarted: () {
@@ -853,6 +869,19 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
     final l = L.of(context);
     final workouts = widget.workouts;
     final active = workouts.activeWorkout!;
+    // a program's session (#349): its plan under each exercise, and a lighter
+    // cycle said once at the top
+    final planned = Preferences.watch(context).isOn(.programs) && active.programId != null;
+    final programs = Programs.watch(context);
+    final program = switch ((planned, active.programId)) {
+      (true, final String id) => programs.lookup(id),
+      _ => null,
+    };
+    final lighter = switch (program) {
+      final Program program =>
+        programs.position(program, now: DateTime.now(), firstWeekday: firstWeekdayOf(context)).lighter,
+      null => false,
+    };
 
     return DraggableScrollableSheet(
       initialChildSize: 1.0,
@@ -883,7 +912,13 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
             onSetType: workouts.setSetType,
             onSetRpe: workouts.setRpe,
             onRemoveExercise: workouts.removeExercise,
+            showsPlan: planned,
+            onReplaceExercise: switch (planned) {
+              true => workouts.replaceExercise,
+              false => null,
+            },
             slivers: [
+              if (lighter) SliverToBoxAdapter(child: LighterWeekNote(deload: program?.deload)),
               if (active.note case String note)
                 SliverToBoxAdapter(
                   child: WorkoutNote(note: note, onChanged: workouts.setWorkoutNote),

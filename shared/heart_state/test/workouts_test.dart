@@ -82,6 +82,39 @@ void main() {
     await state.cancelActiveWorkout();
   });
 
+  test('an open slot takes another exercise in its place, with the plan and none of the typing (#349)', () async {
+    final state = Workouts(service: local, remoteService: remote)..userId = 'anon';
+    final target = SetTarget({.reps: const TargetRange(min: 10, max: 20)}, rir: 2);
+    final slot = WorkoutExercise(starter: ExerciseSet(squat, reps: 12, target: target))
+      ..rest = 90
+      ..superset = 1
+      ..pattern = 'squat'
+      ..totalReps = const TargetRange(min: 50);
+    slot.add(ExerciseSet(squat, setType: .warmup));
+    final after = WorkoutExercise(starter: ExerciseSet(press));
+    await state.startWorkout(source: .program, template: Workout.fromExercises([slot, after]));
+
+    await state.replaceExercise(slot, bench);
+
+    final [replacement, next] = state.activeWorkout!.toList();
+    expect(next, same(after), reason: 'it takes the slot, not the end');
+    expect(replacement.exercise, bench);
+    expect(replacement.map((set) => set.setType), [SetType.normal, SetType.warmup]);
+    expect(replacement.first.target!.toMap(), target.toMap());
+    expect(replacement.first.reps, isNull);
+    expect((replacement.rest, replacement.superset, replacement.pattern), (90, 1, 'squat'));
+    expect(replacement.totalReps, const TargetRange(min: 50));
+    verify(local.removeExercise(slot)).called(1);
+    verify(local.startExercise(state.activeWorkout!.id, replacement)).called(1);
+    verify(local.storeMeasurements(replacement.first)).called(1);
+
+    // a slot with a set done holds what was done
+    state.markSetAsComplete(replacement, replacement.first);
+    await state.replaceExercise(replacement, squat);
+    expect(state.activeWorkout!.first, same(replacement));
+    await state.cancelActiveWorkout();
+  });
+
   test('a workout cannot start over an active one (#228)', () async {
     final state = Workouts(service: local, remoteService: remote)..userId = 'anon';
     await state.startWorkout(source: .blank, name: 'Push');

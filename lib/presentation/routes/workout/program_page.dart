@@ -39,7 +39,7 @@ class ProgramPage extends StatelessWidget {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final sessions = Templates.watch(context).sessionsOf(program);
-    final position = programs.position(program, now: DateTime.now(), firstWeekday: _firstWeekday(context));
+    final position = programs.position(program, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 
     return Scaffold(
@@ -138,12 +138,14 @@ class ProgramPage extends StatelessWidget {
   }
 
   /// [day]'s place in the user's week, from their first day.
-  int _dayOrder(BuildContext context, int day) => (day - _firstWeekday(context)) % 7;
+  int _dayOrder(BuildContext context, int day) => (day - firstWeekdayOf(context)) % 7;
 
   Future<void> _start(BuildContext context, Template session) async {
     final started = await startWorkoutOverActive(
       context,
-      () => Workouts.of(context).startWorkout(source: .program, template: session.toWorkout(), applyPinnedNotes: true),
+      () =>
+          Workouts.of(context)
+              .startWorkout(source: .program, template: startingWorkout(context, session), applyPinnedNotes: true),
     );
     if (started) onOpenActiveWorkout();
   }

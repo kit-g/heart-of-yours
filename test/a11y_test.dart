@@ -51,6 +51,7 @@ enum _Screen {
   programs,
   programPage,
   newProgram,
+  programWorkout,
   exerciseNoteEditor,
   workoutNote,
   pausedWorkout,
@@ -305,6 +306,26 @@ final _matrix = <(_Screen, _Guideline, String?)>[
       'Start program is PrimaryButton.wide (lib/presentation/routes/workout/program_form.dart:212) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
   ],
+  // A program's session on the sheet (#349): the plan's line under each
+  // exercise, a supplemental set's mark, and a lighter week's note
+  // (lib/presentation/widgets/workout/plan.dart).
+  (
+    _Screen.programWorkout,
+    _Guideline.labeledTapTarget,
+    'the workout options button (lib/presentation/widgets/workout/workout_detail.dart:977) and the set rows\' ✓ (lib/presentation/widgets/workout/set_item.dart:340) are icon-only with no label, as on every active workout; the plan\'s line, the supplemental set and the lighter week\'s note pass',
+  ),
+  (_Screen.programWorkout, _Guideline.textContrastLight, null),
+  (_Screen.programWorkout, _Guideline.textContrastDark, null),
+  (
+    _Screen.programWorkout,
+    _Guideline.androidTapTarget,
+    'the set-row weight/reps buttons and the set number share the 32pt row height (lib/presentation/widgets/workout/set_item.dart:337, set_type.dart:87) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.programWorkout,
+    _Guideline.iosTapTarget,
+    'the set-row weight/reps buttons and the set number share the 32pt row height (lib/presentation/widgets/workout/set_item.dart:337, set_type.dart:87) — visual-density change, out of scope',
+  ),
   (_Screen.setStopwatch, _Guideline.labeledTapTarget, null),
   (_Screen.setStopwatch, _Guideline.textContrastLight, null),
   (_Screen.setStopwatch, _Guideline.textContrastDark, null),
@@ -969,6 +990,21 @@ void main() {
         when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
         when(api.getProgramActions(any)).thenAnswer((_) async => []);
         when(api.getProgramBases(any)).thenAnswer((_) async => []);
+      case _Screen.programWorkout:
+        SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-programs': 'on'});
+        when(db.getPrograms(any)).thenAnswer((_) async => [_program]);
+        when(api.getPrograms()).thenAnswer((_) async => [_program]);
+        // a lighter week, asked for: the note at the top
+        when(db.getProgramActions(any, programId: anyNamed('programId'))).thenAnswer(
+          (_) async => [ProgramAction(id: 'a1', programId: 'p1', kind: .lighter, at: DateTime.now())],
+        );
+        when(db.getProgramBases(any, programId: anyNamed('programId'))).thenAnswer((_) async => []);
+        when(db.getProgramMarks(any, any)).thenAnswer((_) async => []);
+        when(db.storePrograms(any, any)).thenAnswer((_) async {});
+        when(db.storeProgramActions(any, any)).thenAnswer((_) async {});
+        when(db.storeProgramBases(any, any)).thenAnswer((_) async {});
+        when(api.getProgramActions(any)).thenAnswer((_) async => []);
+        when(api.getProgramBases(any)).thenAnswer((_) async => []);
       case _Screen.workoutDone:
         // one exercise beat an earlier session, one was a first
         when(db.getRecord(any, _bench)).thenAnswer(
@@ -1103,6 +1139,29 @@ void main() {
           await tester.pumpTimes();
           expect(find.byKey(WorkoutDetailKeys.finishAtLastSet), findsOneWidget);
         }
+      case _Screen.programWorkout:
+        final context = tester.element(find.byType(MaterialApp));
+        await Programs.of(context).init();
+        final squats = WorkoutExercise(
+          starter: ExerciseSet(
+            _squat,
+            target: SetTarget({.reps: TargetRange.exactly(5), .weight: TargetRange.exactly(77.5)}, share: 0.65, rir: 2),
+          ),
+        )..add(ExerciseSet(_squat, target: SetTarget({.reps: TargetRange.exactly(5)}, share: 0.6, supplemental: true)));
+        await Workouts.of(
+          context,
+        ).startWorkout(
+          source: .program,
+          template: Workout.fromExercises([squats], name: 'Day A', programId: 'p1'),
+        );
+        await tester.tapByKey(AppKeys.workoutStack);
+        await tester.pumpTimes();
+        if (find.byType(WorkoutDetail).evaluate().isEmpty) {
+          await tester.tapByKey(WorkoutDetailKeys.startNewWorkout);
+        }
+        await tester.pumpTimes();
+        expect(find.textContaining('A lighter week'), findsOneWidget);
+        expect(find.textContaining('of your max'), findsOneWidget);
       case _Screen.setTypeMenu:
         final workout = Workout(name: 'Types')..add(_bench);
         workout.first

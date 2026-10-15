@@ -26,6 +26,9 @@ class WorkoutDetailKeys {
   /// localized display copy and change with the device language, ids don't.
   static Key exerciseOptionsFor(String exerciseId) => Key('WorkoutDetail.exerciseOptions.$exerciseId');
 
+  /// The ⋯ menu's swap for an open slot (#349).
+  static Key swapExerciseFor(String exerciseId) => Key('WorkoutDetail.swapExercise.$exerciseId');
+
   /// Per-set controls, scoped by exercise id and the set's position —
   /// the two coordinates a driver test can know up front.
   static Key doneFor(String exerciseId, int index) => Key('WorkoutDetail.done.$exerciseId.$index');
