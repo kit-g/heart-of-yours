@@ -57,6 +57,8 @@ void main() {
       expect(_strings(shipped), {
         'NSHealthShareUsageDescription': translations[language]!['iosHealthShareUsageDescription'],
         'NSHealthUpdateUsageDescription': translations[language]!['iosHealthUpdateUsageDescription'],
+        'NSCalendarsUsageDescription': translations[language]!['iosCalendarsUsageDescription'],
+        'NSCalendarsFullAccessUsageDescription': translations[language]!['iosCalendarsFullAccessUsageDescription'],
       });
     }
     expect(File('${runner.path}/Info.plist').readAsStringSync(), originalPlist, reason: 'English fallback is stale');
@@ -67,6 +69,7 @@ void main() {
     for (final file in Directory('${root.path}/lib/l10n').listSync().whereType<File>()) {
       if (file.path.endsWith('.arb') || file.path.endsWith('.dart')) {
         expect(file.readAsStringSync(), isNot(contains('iosHealth')), reason: file.path);
+        expect(file.readAsStringSync(), isNot(contains('iosCalendars')), reason: file.path);
       }
     }
   });

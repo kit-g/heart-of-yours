@@ -1,10 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// The phone app's permission sheets, as translation key => Info.plist key.
+/// The phone app's permission sheets, as translation key => Info.plist key:
+/// Health's, and the calendar's (#391) — one sentence under the key iOS 17
+/// reads and the one before it.
 const runnerHealthKeys = {
   'iosHealthShareUsageDescription': 'NSHealthShareUsageDescription',
   'iosHealthUpdateUsageDescription': 'NSHealthUpdateUsageDescription',
+  'iosCalendarsUsageDescription': 'NSCalendarsUsageDescription',
+  'iosCalendarsFullAccessUsageDescription': 'NSCalendarsFullAccessUsageDescription',
 };
 
 /// The watch app's (#184): the same two plist keys, its own words — it reads
