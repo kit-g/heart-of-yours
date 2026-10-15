@@ -17,6 +17,7 @@ import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/responsive/responsive_builder.dart';
 import 'package:heart/presentation/widgets/workout/adjust_times_dialog.dart';
+import 'package:heart/presentation/widgets/workout/previous_scope.dart';
 import 'package:heart/presentation/widgets/workout/timer.dart';
 import 'package:heart/presentation/widgets/workout/workout_detail.dart';
 import 'package:heart_language/heart_language.dart';

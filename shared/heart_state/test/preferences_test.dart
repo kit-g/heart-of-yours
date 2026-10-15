@@ -371,6 +371,7 @@ void main() {
         'pauseWorkout',
         'shortcuts',
         'programs',
+        'previousInTemplate',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });
