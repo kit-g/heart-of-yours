@@ -652,3 +652,23 @@ WHERE w.user_id = ?
 GROUP BY w.id, we.exercise_id
 ;
 ''';
+
+/// Finished workouts that started in a window: every period's count (#339).
+const workoutCountBetween = '''
+SELECT count(*) AS c
+FROM workouts
+WHERE start >= ?
+  AND start < ?
+  AND "end" IS NOT NULL
+  AND user_id = ?
+;
+''';
+
+/// Every finished workout there has been.
+const workoutCount = '''
+SELECT count(*) AS c
+FROM workouts
+WHERE "end" IS NOT NULL
+  AND user_id = ?
+;
+''';

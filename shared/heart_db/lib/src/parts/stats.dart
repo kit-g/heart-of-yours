@@ -35,7 +35,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
   Future<int> getTotalWorkoutCount({String? userId}) {
     return _db
         .rawQuery(
-          'SELECT count(*) AS c FROM workouts WHERE end IS NOT NULL AND user_id = ?',
+          sql.workoutCount,
           [userId],
         )
         .then(
@@ -72,8 +72,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
   Future<int> getWorkoutCountBetween(DateTime from, DateTime to, {String? userId}) {
     return _db
         .rawQuery(
-          'SELECT count(*) AS c FROM workouts '
-          'WHERE start >= ? AND start < ? AND end IS NOT NULL AND user_id = ?',
+          sql.workoutCountBetween,
           [from.toUtc().toIso8601String(), to.toUtc().toIso8601String(), userId],
         )
         .then(
