@@ -22,6 +22,8 @@ void main() {
   final today = DateTime(now.year, now.month, now.day, 7);
   // inside the eight weeks whatever the first day of the week is
   final weeksAgo = DateTime(now.year, now.month, now.day - 21, 7);
+  // inside the four weeks balance counts, and in an earlier week than today's
+  final lastWeek = DateTime(now.year, now.month, now.day - 8, 7);
 
   LensSets row(
     String workout,
@@ -194,5 +196,60 @@ void main() {
       findsOneWidget,
     );
     handle.dispose();
+  });
+
+  group('balance (#342)', () {
+    Future<void> showBalance(WidgetTester tester) async {
+      await tester.ensureVisible(inCard('Balance'));
+      await tester.tap(inCard('Balance'));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('sets each pair\'s sides against each other over four weeks', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpProfile(
+        tester,
+        rows: [
+          row('w1', today, patterns: ['horizontal_press'], sets: 6),
+          row('w0', lastWeek, patterns: ['vertical_press'], sets: 3),
+          row('w0', lastWeek, patterns: ['horizontal_row'], sets: 4),
+          // eight weeks back counts on the weekly card, not here
+          row('w9', DateTime(now.year, now.month, now.day - 45, 7), patterns: ['vertical_pull'], sets: 9),
+        ],
+      );
+      await showBalance(tester);
+
+      expect(inCard('Sets over the last four weeks, one side against the other.'), findsOneWidget);
+      expect(inCard('Push · Pull'), findsOneWidget);
+      expect(find.bySemanticsLabel('Push: 9 sets. Pull: 4 sets.'), findsOneWidget);
+      // a pair nobody trained is left out rather than drawn empty
+      expect(inCard('Hinge · Squat'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('a pair with too little behind it says so instead of drawing', (tester) async {
+      await pumpProfile(
+        tester,
+        rows: [
+          row('w1', today, patterns: ['squat_bilateral'], sets: 10),
+        ],
+      );
+      await showBalance(tester);
+
+      expect(inCard('Hinge · Squat'), findsOneWidget);
+      expect(inCard('Not enough logged yet to compare.'), findsOneWidget);
+    });
+
+    testWidgets('with nothing on either side of any pair, it says so', (tester) async {
+      await pumpProfile(
+        tester,
+        rows: [
+          row('w1', today, patterns: ['calf_raise']),
+        ],
+      );
+      await showBalance(tester);
+
+      expect(inCard('Nothing in the last four weeks falls on either side of a pair yet.'), findsOneWidget);
+    });
   });
 }

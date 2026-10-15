@@ -1,14 +1,19 @@
 part of 'profile.dart';
 
 /// What the weekly sets card groups by (#341): the two keys over the same sets
-/// (`docs/2026-10-11.pattern-lens.md`, rule 1).
-enum _LensKey { patterns, muscles }
+/// (`docs/2026-10-11.pattern-lens.md`, rule 1), and pairs of patterns set
+/// against each other (#342, rule 3).
+enum _LensKey { patterns, muscles, balance }
 
 /// The weeks the card reads: the eight of the workouts-per-week chart above.
 const _lensWeeks = 8;
 
 /// The lines shown before "Show all": the keys trained most this week.
 const _lensLines = 6;
+
+/// The weeks a balance pair counts: a window rather than one week, so a
+/// pull day that fell on a Monday does not tip the pair on its own.
+const _balanceWeeks = 4;
 
 /// The width of a line's eight bars.
 const _lensBarsWidth = 96.0;
@@ -92,22 +97,31 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(minHeight: _tileHeaderHeight),
-          child: Row(
+          // three choices beside the title outgrow a phone: the choices then
+          // take a line of their own under it
+          child: Wrap(
+            alignment: .spaceBetween,
+            crossAxisAlignment: .center,
             spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: Text(l.lensTitle, style: textTheme.titleLarge, maxLines: 2, overflow: .ellipsis),
-              ),
+              Text(l.lensTitle, style: textTheme.titleLarge, maxLines: 2, overflow: .ellipsis),
               ValueListenableBuilder<_LensKey>(
                 valueListenable: _key,
                 builder: (_, key, _) {
-                  return SettingSwitcher<_LensKey>(
-                    value: key,
-                    onValueChanged: (value) => _key.value = value ?? key,
-                    children: {
-                      .patterns: Text(l.lensPatterns),
-                      .muscles: Text(l.lensMuscles),
-                    },
+                  // on a line of its own it can still outgrow a narrow phone
+                  // at a large text size: it scrolls rather than overflows
+                  return SingleChildScrollView(
+                    scrollDirection: .horizontal,
+                    child: SettingSwitcher<_LensKey>(
+                      value: key,
+                      onValueChanged: (value) => _key.value = value ?? key,
+                      children: {
+                        .patterns: Text(l.lensPatterns),
+                        .muscles: Text(l.lensMuscles),
+                        .balance: Text(l.lensBalance),
+                      },
+                    ),
                   );
                 },
               ),
@@ -122,32 +136,48 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
               List<LensSets> rows => ListenableBuilder(
                 listenable: _choice,
                 builder: (context, _) {
-                  final key = _key.value;
-                  final lines = switch (key) {
-                    .patterns => _lines(
-                      countByWeek(rows, weeks: _lensWeeks, now: now, keysOf: patternsOf, firstWeekday: firstWeekday),
-                      (pattern) => patternLabel(pattern, l),
-                    ),
-                    .muscles => _lines(
-                      countByWeek(
-                        rows,
-                        weeks: _lensWeeks,
-                        now: now,
-                        keysOf: muscleGroupsOf,
-                        firstWeekday: firstWeekday,
+                  Widget lensBody(List<_LensLine> lines, String empty) {
+                    return _WeeklyLensBody(
+                      lines: lines,
+                      unfolded: _unfolded.value,
+                      onUnfold: (unfolded) => _unfolded.value = unfolded,
+                      empty: empty,
+                    );
+                  }
+
+                  return switch (_key.value) {
+                    .patterns => lensBody(
+                      _lines(
+                        countByWeek(rows, weeks: _lensWeeks, now: now, keysOf: patternsOf, firstWeekday: firstWeekday),
+                        (pattern) => patternLabel(pattern, l),
                       ),
-                      (group) => group.label(l),
+                      switch (rows.isEmpty) {
+                        true => l.lensNothingYet,
+                        false => l.lensNoPatternsYet,
+                      },
+                    ),
+                    .muscles => lensBody(
+                      _lines(
+                        countByWeek(
+                          rows,
+                          weeks: _lensWeeks,
+                          now: now,
+                          keysOf: muscleGroupsOf,
+                          firstWeekday: firstWeekday,
+                        ),
+                        (group) => group.label(l),
+                      ),
+                      l.lensNothingYet,
+                    ),
+                    .balance => _WeeklyBalanceBody(
+                      counts: countBalance(
+                        rows,
+                        pairs: balancePairs,
+                        weeks: lastWeeksOf(_balanceWeeks, now: now, firstWeekday: firstWeekday),
+                        weekOfStart: (start) => weekOf(start, firstWeekday: firstWeekday),
+                      ),
                     ),
                   };
-                  return _WeeklyLensBody(
-                    lines: lines,
-                    unfolded: _unfolded.value,
-                    onUnfold: (unfolded) => _unfolded.value = unfolded,
-                    empty: switch ((key, rows.isEmpty)) {
-                      (.patterns, false) => l.lensNoPatternsYet,
-                      _ => l.lensNothingYet,
-                    },
-                  );
                 },
               ),
               null => const SizedBox(
@@ -314,6 +344,159 @@ class const _LensLineTile({
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Balance (#342): pairs of patterns set against each other over the last
+/// four weeks, two bars a pair. Counts and nothing more: push against pull is
+/// coaching practice, not a finding, so the card says what was done and
+/// leaves the verdict to the user. A pair with too little behind it says so
+/// rather than drawing one good week as a lopsided habit.
+class const _WeeklyBalanceBody({
+  required final List<BalanceCount> counts,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, colorScheme: ColorScheme(:onSurfaceVariant)) = Theme.of(context);
+    final trained = counts.where((count) => (count.left + count.right).round() > 0).toList();
+
+    return Column(
+      crossAxisAlignment: .stretch,
+      spacing: 12,
+      children: [
+        Text(
+          switch (trained.isEmpty) {
+            true => l.balanceNothingYet,
+            false => l.balanceWindow,
+          },
+          style: textTheme.bodyMedium?.copyWith(color: onSurfaceVariant),
+        ),
+        if (trained.isNotEmpty)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 16.0;
+              final columns = columnsFor(constraints.maxWidth, maxExtent: _maxChartCardWidth);
+              final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+              return Wrap(
+                spacing: gap,
+                runSpacing: 16,
+                children: [
+                  for (final count in trained)
+                    SizedBox(
+                      width: width,
+                      child: _BalancePairTile(count: count),
+                    ),
+                ],
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+/// What a side of a pair is called: the four sides that span several
+/// patterns have words of their own, and a side of one pattern is that
+/// pattern. A side content adds later names itself through [patternLabel]'s
+/// fallback rather than shipping blank.
+String _sideLabel(BalanceSide side, L l) {
+  return switch (side.key) {
+    'push' => l.balancePush,
+    'pull' => l.balancePull,
+    'hinge' => l.balanceHinge,
+    'squat' => l.balanceSquat,
+    final key => patternLabel(key, l),
+  };
+}
+
+/// One pair: its name, then each side's sets as a bar against the larger
+/// side, in whole numbers.
+class const _BalancePairTile({
+  required final BalanceCount count,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    final ThemeData(:textTheme, colorScheme: ColorScheme(:onSurfaceVariant)) = Theme.of(context);
+    final BalanceCount(:pair, :left, :right) = count;
+    final (leftLabel, rightLabel) = (_sideLabel(pair.left, l), _sideLabel(pair.right, l));
+    final (leftSets, rightSets) = (left.round(), right.round());
+
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: switch (count.enough) {
+        true => l.balanceSides(leftLabel, l.lensSets(leftSets), rightLabel, l.lensSets(rightSets)),
+        false => '${l.balancePair(leftLabel, rightLabel)}. ${l.balanceNotEnough}',
+      },
+      child: Column(
+        crossAxisAlignment: .stretch,
+        spacing: 4,
+        children: [
+          Text(l.balancePair(leftLabel, rightLabel), style: textTheme.titleSmall, maxLines: 1, overflow: .ellipsis),
+          ...switch (count.enough) {
+            true => [
+              _BalanceSideBar(label: leftLabel, sets: leftSets, most: max(leftSets, rightSets)),
+              _BalanceSideBar(label: rightLabel, sets: rightSets, most: max(leftSets, rightSets)),
+            ],
+            false => [
+              Text(l.balanceNotEnough, style: textTheme.bodySmall?.copyWith(color: onSurfaceVariant)),
+            ],
+          },
+        ],
+      ),
+    );
+  }
+}
+
+/// A side's name, its bar, and its sets.
+class const _BalanceSideBar({
+  required final String label,
+  required final int sets,
+  required final int most,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData(:textTheme, colorScheme: ColorScheme(:primary, :surfaceContainerHighest, :onSurfaceVariant)) =
+        Theme.of(context);
+    final small = textTheme.bodySmall?.copyWith(color: onSurfaceVariant);
+
+    return Row(
+      spacing: 8,
+      children: [
+        SizedBox(
+          width: 88,
+          child: Text(label, style: small, maxLines: 1, overflow: .ellipsis),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: const .all(.circular(2)),
+            child: SizedBox(
+              height: 8,
+              child: ColoredBox(
+                color: surfaceContainerHighest,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: FractionallySizedBox(
+                    widthFactor: switch (most) {
+                      0 => 0,
+                      _ => sets / most,
+                    },
+                    heightFactor: 1,
+                    child: ColoredBox(color: primary),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 28,
+          child: Text('$sets', style: small, textAlign: .end),
+        ),
+      ],
     );
   }
 }
