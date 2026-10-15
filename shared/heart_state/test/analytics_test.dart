@@ -56,6 +56,12 @@ void main() {
       expect(parametersOf('api_token_created'), {'purpose': 'unset', 'expiry': 'year'});
     });
 
+    test('a replaced exercise says how far it reaches and whether it was suggested, never which (#354)', () {
+      sut.exerciseReplaced(scope: .program, suggested: true);
+
+      expect(parametersOf('exercise_replaced'), {'replace_scope': 'program', 'suggested': 'true'});
+    });
+
     test('a set type goes as its wire word (#151)', () {
       sut.setTypeChanged(type: .warmup);
 
