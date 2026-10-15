@@ -4882,5 +4882,9 @@
   "balanceNothingYet": "Nothing in the last four weeks falls on either side of a pair yet.",
   "@balanceNothingYet": {"description": "The weekly sets card's balance choice when no pair has any sets in the last four weeks", "type": "text", "placeholders": {}},
   "balanceSides": "{left}: {leftSets}. {right}: {rightSets}.",
-  "@balanceSides": {"description": "Read by screen readers for one balance pair, such as 'Push: 12 sets. Pull: 7 sets.'", "type": "text", "placeholders": {"left": {"type": "String"}, "leftSets": {"type": "String"}, "right": {"type": "String"}, "rightSets": {"type": "String"}}}
+  "@balanceSides": {"description": "Read by screen readers for one balance pair, such as 'Push: 12 sets. Pull: 7 sets.'", "type": "text", "placeholders": {"left": {"type": "String"}, "leftSets": {"type": "String"}, "right": {"type": "String"}, "rightSets": {"type": "String"}}},
+  "exercisePattern": "Movement pattern",
+  "@exercisePattern": {"description": "Heading in the new-exercise dialog over an optional choice of the library's movement patterns, e.g. Horizontal Press", "type": "text", "placeholders": {}},
+  "exercisePatternNone": "None",
+  "@exercisePatternNone": {"description": "In the new-exercise dialog: the exercise has no movement pattern; also the first choice of the pattern menu", "type": "text", "placeholders": {}}
 }
