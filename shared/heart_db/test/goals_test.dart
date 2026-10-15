@@ -52,7 +52,7 @@ void main() {
     // sailing past a hand-written copy of the schema.
     await db.execute(goals);
     await db.execute(goalsIndex);
-    // v23 (#344)
+    // v26 (#344)
     await db.execute(addGoalPattern);
     await db.execute(addGoalMuscle);
     local = await LocalDatabase.init(other: db);
