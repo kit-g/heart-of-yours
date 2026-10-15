@@ -54,10 +54,16 @@ void main() {
     };
   }
 
-  Workout server(String id, {String start = '2026-09-26T08:00:00.000Z', required List<Map<String, dynamic>> sets}) {
+  Workout server(
+    String id, {
+    String start = '2026-09-26T08:00:00.000Z',
+    required List<Map<String, dynamic>> sets,
+    String? templateId,
+  }) {
     return Workout.fromJson({
       'id': id,
       'name': 'Push',
+      'templateId': ?templateId,
       'start': start,
       'end': start.replaceFirst('08:', '09:'),
       'note': 'Felt strong',
@@ -209,6 +215,25 @@ void main() {
     expect(before[bench]?.map((each) => each['set_id']), ['before']);
     // nothing earlier than the first session
     expect(await local.getPreviousSetsBefore(user, DateTime.utc(2026, 9, 20, 8)), isEmpty);
+  });
+
+  test("last time in a template is that template's last run, wherever bench was since (#172)", () async {
+    await local.storeWorkoutHistory([
+      server('heavy-1', start: '2026-09-10T08:00:00.000Z', sets: [set('heavy-old', weight: 100)], templateId: 'heavy'),
+      server('heavy-2', start: '2026-09-20T08:00:00.000Z', sets: [set('heavy-last', weight: 105)], templateId: 'heavy'),
+      server('light', start: '2026-09-24T08:00:00.000Z', sets: [set('light', weight: 70)], templateId: 'light'),
+      server('free', start: '2026-09-26T08:00:00.000Z', sets: [set('free', weight: 80)]),
+    ], user);
+
+    final heavy = await local.getPreviousSetsInTemplate(user, 'heavy');
+    expect(heavy[bench]?.map((each) => each['set_id']), ['heavy-last']);
+    expect((await local.getPreviousSetsInTemplate(user, 'light'))[bench]?.map((each) => each['set_id']), ['light']);
+    // anywhere, the newest session still wins
+    expect((await local.getPreviousSets(user))[bench]?.map((each) => each['set_id']), ['free']);
+    // as of a past run of the template: the run before it
+    final before = await local.getPreviousSetsInTemplate(user, 'heavy', before: DateTime.utc(2026, 9, 20, 8));
+    expect(before[bench]?.map((each) => each['set_id']), ['heavy-old']);
+    expect(await local.getPreviousSetsInTemplate(user, 'never'), isEmpty);
   });
 
   group('warm-ups are no record', () {

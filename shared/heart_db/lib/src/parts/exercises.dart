@@ -339,6 +339,24 @@ mixin _Exercises on _LocalDatabase
         .then(_previousByExercise);
   }
 
+  /// [getPreviousSets] within one template (#172): each exercise's sets from
+  /// the last finished workout started from [templateId], and, with [before],
+  /// one that started earlier than it.
+  Future<Map<ExerciseId, List<Map<String, dynamic>>>> getPreviousSetsInTemplate(
+    String userId,
+    String templateId, {
+    DateTime? before,
+  }) {
+    final (query, arguments) = switch (before) {
+      DateTime before => (
+        sql.getPreviousExercisesInTemplateBefore,
+        [userId, templateId, before.toUtc().toIso8601String()],
+      ),
+      null => (sql.getPreviousExercisesInTemplate, [userId, templateId]),
+    };
+    return _db.rawQuery(query, arguments).then(_previousByExercise);
+  }
+
   static Map<ExerciseId, List<Map<String, dynamic>>> _previousByExercise(List<Map<String, Object?>> rows) {
     return Map.fromEntries(
       rows.map(
