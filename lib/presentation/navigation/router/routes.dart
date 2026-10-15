@@ -291,7 +291,8 @@ RouteBase _historyRoute() {
   return ShellRoute(
     navigatorKey: navigatorKey,
     builder: (context, state, child) {
-      final workoutId = state.pathParameters['workoutId'];
+      // a workout or a skip (#391) in the detail pane
+      final workoutId = state.pathParameters['workoutId'] ?? state.pathParameters['skipId'];
 
       return switch (LayoutProvider.of(context)) {
         LayoutSize.compact => child,
@@ -312,7 +313,7 @@ RouteBase _historyRoute() {
             context.goToHistory();
           },
           onTapSkip: (skip) {
-            if (skip.programId case final String id) context.goToProgram(id);
+            if (skip.id case final String id) context.goToSkip(id);
           },
           onOpenActiveWorkout: () {
             HapticFeedback.mediumImpact();
@@ -344,7 +345,7 @@ RouteBase _historyRoute() {
                 context.goToWorkoutEditor(workout.id);
               },
               onTapSkip: (skip) {
-                if (skip.programId case final String id) context.goToProgram(id);
+                if (skip.id case final String id) context.goToSkip(id);
               },
               onOpenActiveWorkout: () {
                 HapticFeedback.mediumImpact();
@@ -356,6 +357,20 @@ RouteBase _historyRoute() {
         },
         name: _historyName,
         routes: [
+          GoRoute(
+            path: 'skips/:skipId',
+            builder: (context, state) {
+              return SkipPage(
+                skipId: state.pathParameters['skipId']!,
+                onOpenProgram: context.goToProgram,
+                onClose: switch (LayoutProvider.of(context)) {
+                  .compact => null,
+                  .wide => context.goToHistory,
+                },
+              );
+            },
+            name: _historySkipName,
+          ),
           GoRoute(
             path: ':workoutId',
             builder: (context, state) {

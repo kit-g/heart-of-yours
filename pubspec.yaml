@@ -20,6 +20,7 @@ dependencies:
   app_settings: ^9.0.0
   cached_network_image: ^4.0.4
   cupertino_ui: ^1.1.2
+  eventide: ^2.4.1
   feedback: ^3.1.0
   file_selector: ^1.0.3
   firebase_analytics: 12.6.0

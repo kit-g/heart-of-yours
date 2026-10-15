@@ -4,6 +4,7 @@ import 'package:feedback/feedback.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/core/env/goals_widget.dart';
 import 'package:heart/core/env/home_widgets.dart';
@@ -22,6 +23,7 @@ import 'package:heart/core/utils/api_tokens.dart';
 import 'package:heart/core/utils/backfill.dart';
 import 'package:heart/core/utils/exercises.dart';
 import 'package:heart/core/utils/goals.dart';
+import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/core/utils/programs.dart';
 import 'package:heart/core/utils/stats.dart';
 import 'package:heart/core/utils/templates.dart';
@@ -33,6 +35,7 @@ import 'package:heart/presentation/navigation/home_widgets.dart';
 import 'package:heart/presentation/navigation/ongoing_workout.dart';
 import 'package:heart/presentation/navigation/keep_awake.dart';
 import 'package:heart/presentation/navigation/pause.dart';
+import 'package:heart/presentation/navigation/program_calendar.dart';
 import 'package:heart/presentation/navigation/system_shortcuts.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/navigation/watch.dart';
@@ -56,6 +59,10 @@ class HeartApp extends StatelessWidget {
   final bool? hasLocalNotifications;
   final FirebaseAuth? firebaseAuth;
 
+  /// The device's calendars (#391); by default the platform's, where there is
+  /// one. A test passes its own.
+  final DeviceCalendar? calendar;
+
   const new({
     super.key,
     required this.appConfig,
@@ -66,6 +73,7 @@ class HeartApp extends StatelessWidget {
     required this.analytics,
     this.hasLocalNotifications = true,
     this.firebaseAuth,
+    this.calendar,
   });
 
   @override
@@ -194,6 +202,18 @@ class HeartApp extends StatelessWidget {
             store: db.storeGoEasy,
             onError: reportHealthFailure,
           ),
+        ),
+        // the device's calendars (#391): native, so not in tests or on the web
+        ChangeNotifierProvider<ProgramCalendars>(
+          create: (_) => ProgramCalendars(
+            calendar:
+                calendar ??
+                switch ((kIsWeb, hasLocalNotifications)) {
+                  (false, true) => EventideCalendar(),
+                  _ => null,
+                },
+            onError: reportToSentry,
+          )..init(),
         ),
         ChangeNotifierProvider<PreviousExercises>(
           create: (_) => PreviousExercises(
@@ -578,7 +598,9 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
                         true => goalsWidget(Theme.of(context).platform),
                         false => null,
                       },
-                      child: PausePresenter(child: child ?? const SizedBox.shrink()),
+                      child: PausePresenter(
+                        child: ProgramCalendarPresenter(child: child ?? const SizedBox.shrink()),
+                      ),
                     ),
                   ),
                 ),

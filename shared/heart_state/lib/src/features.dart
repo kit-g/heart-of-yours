@@ -50,7 +50,14 @@ enum Feature {
   /// session, reads the last time that template was run rather than the last
   /// time anywhere (#172). Settings-only, like keep-awake: the switch is the
   /// choice. Reads only what the workouts already carry.
-  previousInTemplate('previousInTemplate');
+  previousInTemplate('previousInTemplate'),
+
+  /// A program's sessions in the device's own calendar, Google's included
+  /// (#391). Part of Programs, with its own ask on a program's page: it needs
+  /// the OS calendar permission, which Programs alone never asks for. Device
+  /// only — which calendar and which events stay on the phone — and with
+  /// Programs off it is as off as Programs is.
+  programCalendar('programCalendar');
 
   final String value;
 

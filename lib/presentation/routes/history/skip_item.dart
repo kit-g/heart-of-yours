@@ -30,7 +30,8 @@ List<Object> _historyRows(Map<String, List<Workout>> byMonth, Iterable<TrainingS
 }
 
 /// A day set aside with "Not today" (#312): the session, its program and the
-/// day, quieter than a workout's card. Tapped, it opens the program.
+/// day, quieter than a workout's card. Tapped, it opens on a page of its own
+/// (#391), with the way on to the program.
 class _SkipItem extends StatelessWidget {
   final TrainingSkip skip;
   final void Function(TrainingSkip)? onTap;
@@ -70,7 +71,7 @@ class _SkipItem extends StatelessWidget {
           style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         subtitle: Text(details, maxLines: 1, overflow: .ellipsis),
-        onTap: switch ((onTap, skip.programId)) {
+        onTap: switch ((onTap, skip.id)) {
           (final void Function(TrainingSkip) open, String _) => () => open(skip),
           _ => null,
         },

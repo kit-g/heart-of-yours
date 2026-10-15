@@ -372,6 +372,7 @@ void main() {
         'shortcuts',
         'programs',
         'previousInTemplate',
+        'programCalendar',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

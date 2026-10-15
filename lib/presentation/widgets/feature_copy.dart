@@ -16,6 +16,7 @@ extension FeatureCopy on Feature {
       .shortcuts => l.shortcuts,
       .programs => l.programs,
       .previousInTemplate => l.previousInTemplate,
+      .programCalendar => l.programCalendar,
     };
   }
 
@@ -35,6 +36,7 @@ extension FeatureCopy on Feature {
       },
       .programs => l.programsSubtitle,
       .previousInTemplate => l.previousInTemplateSubtitle,
+      .programCalendar => l.programCalendarSubtitle,
     };
   }
 
@@ -49,6 +51,7 @@ extension FeatureCopy on Feature {
       .shortcuts => Icons.bolt_rounded,
       .programs => Icons.event_repeat_rounded,
       .previousInTemplate => Icons.history_rounded,
+      .programCalendar => Icons.edit_calendar_rounded,
     };
   }
 
@@ -64,6 +67,7 @@ extension FeatureCopy on Feature {
       .shortcuts ||
       .programs ||
       .previousInTemplate => const [],
+      .programCalendar => const [],
       // where Apple keeps Always On: Heart has no switch of its own for it
       .watchApp => [l.watchAppAwayNote, l.watchAlwaysOnNote],
     };

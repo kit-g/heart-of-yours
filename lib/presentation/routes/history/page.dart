@@ -7,7 +7,7 @@ class HistoryPage extends StatefulWidget {
   final void Function(Workout)? onTapWorkout;
   final void Function(Workout)? onDeleteWorkout;
 
-  /// A day set aside with "Not today" (#312): opens its program.
+  /// A day set aside with "Not today" (#312): opens its page (#391).
   final void Function(TrainingSkip)? onTapSkip;
   final VoidCallback onOpenActiveWorkout;
   final Widget? detail;

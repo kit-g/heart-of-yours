@@ -28,6 +28,7 @@ import 'package:material_ui/material_ui.dart';
 
 part 'page.dart';
 part 'skip_item.dart';
+part 'skip_page.dart';
 part 'calendar.dart';
 part 'utils.dart';
 part 'workout_editor.dart';
