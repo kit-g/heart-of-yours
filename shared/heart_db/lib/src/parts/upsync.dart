@@ -54,6 +54,7 @@ mixin _Upsync on _LocalDatabase {
           _charts,
           _goals,
           _healthSamples,
+          _goEasy,
           _upsync,
         ]) {
           batch.rawUpdate('UPDATE OR REPLACE $table SET user_id = ? WHERE user_id = ?', [to, from]);

@@ -48,4 +48,13 @@ void main() {
     final cdn = serving(403);
     await expectLater(cdn.getProgramLibrary(), throwsA(isA<NetworkException>()));
   });
+
+  test('the go-easy map is read the same way, from its own path (#396)', () async {
+    final cdn = serving(200, body: '{"version": 1}', etag: '"g1"');
+    expect(await cdn.getGoEasy(), (body: '{"version": 1}', etag: '"g1"'));
+    expect(requests.single.url.path, '/static/go-easy');
+    // the same request for everyone: nothing of the user's goes with it
+    expect(requests.single.url.query, isEmpty);
+    expect(requests.single.body, isEmpty);
+  });
 }

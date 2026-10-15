@@ -32,4 +32,9 @@ class LocalStats implements LocalStatsService {
   Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to, {String? userId}) {
     return _db.getMuscleSets(from, to, userId: userId);
   }
+
+  @override
+  Future<List<LensSets>> getLensSets(DateTime from, DateTime to, {String? userId}) {
+    return _db.getLensSets(from, to, userId: userId);
+  }
 }

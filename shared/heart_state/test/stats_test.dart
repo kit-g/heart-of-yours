@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
+import 'package:heart_state/src/lens.dart';
 import 'package:heart_state/src/stats.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -46,6 +47,14 @@ class RecordingStatsService implements LocalStatsService {
   Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to, {String? userId}) async {
     muscleSetsCalls.add((from, to, userId));
     return muscleSetsToReturn;
+  }
+
+  final List<(DateTime, DateTime, String?)> lensSetsCalls = [];
+
+  @override
+  Future<List<LensSets>> getLensSets(DateTime from, DateTime to, {String? userId}) async {
+    lensSetsCalls.add((from, to, userId));
+    return const [];
   }
 }
 
@@ -132,6 +141,16 @@ void main() {
 
       expect(await stats.getMuscleSets(from, to), rows);
       expect(service.muscleSetsCalls, [(from, to, 'u1')]);
+      expect(notifications, 0);
+    });
+
+    test('getLensSets delegates with the user, and holds nothing or notifies', () async {
+      final from = DateTime(2026, 9, 1);
+      final to = DateTime(2026, 9, 8);
+      stats.userId = 'u1';
+
+      expect(await stats.getLensSets(from, to), isEmpty);
+      expect(service.lensSetsCalls, [(from, to, 'u1')]);
       expect(notifications, 0);
     });
   });

@@ -45,6 +45,7 @@ enum _Screen {
   profile,
   muscleMapOffer,
   muscleMap,
+  weeklyLens,
   noAccountDialog,
   workout,
   programsOffer,
@@ -55,6 +56,7 @@ enum _Screen {
   replaceScopeDialog,
   programLibrary,
   libraryProgram,
+  goEasy,
   exerciseNoteEditor,
   workoutNote,
   pausedWorkout,
@@ -129,6 +131,7 @@ Template _session(String id, int order, String name, {String? programId}) {
 /// Heart's ready-made programs (#352): three programs of the real file,
 /// rendered by heart-api and trimmed.
 final _library = File('shared/heart_state/test/fixtures/programs.json').readAsStringSync();
+final _goEasy = File('shared/heart_state/test/fixtures/go_easy.json').readAsStringSync();
 
 /// The catalog exercises [_library] names, by their library keys.
 List<Exercise> _libraryCatalog() {
@@ -289,6 +292,22 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     'bottom nav bar items, and the card\'s 7/30-day SettingSwitcher (lib/presentation/widgets/setting_picker.dart, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
 
+  // The weekly sets card (#341) on the profile, folded past its first lines
+  // (lib/presentation/routes/profile/weekly_lens.dart).
+  (_Screen.weeklyLens, _Guideline.labeledTapTarget, null),
+  (_Screen.weeklyLens, _Guideline.textContrastLight, null),
+  (_Screen.weeklyLens, _Guideline.textContrastDark, null),
+  (
+    _Screen.weeklyLens,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:104, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.weeklyLens,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:104, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
+  ),
+
   // The no-account dialog over the profile of an anonymous session
   // (lib/presentation/routes/profile/page.dart, _showNoAccountDialog).
   (_Screen.noAccountDialog, _Guideline.labeledTapTarget, null),
@@ -316,6 +335,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.newProgram,
     _Screen.programLibrary,
     _Screen.libraryProgram,
+    _Screen.goEasy,
   ]) ...[
     (screen, _Guideline.labeledTapTarget, null),
     (screen, _Guideline.textContrastLight, null),
@@ -323,6 +343,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ],
   for (final guideline in [_Guideline.androidTapTarget, _Guideline.iosTapTarget]) ...[
     (_Screen.programLibrary, guideline, null),
+    (_Screen.goEasy, guideline, null),
     (
       _Screen.libraryProgram,
       guideline,
@@ -954,6 +975,33 @@ void main() {
         if (screen == _Screen.muscleMap) {
           SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-muscleMap': 'on'});
         }
+      case _Screen.weeklyLens:
+        when(
+          db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => WorkoutAggregation.dummy());
+        when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer(
+          (_) async => [
+            for (final (index, pattern) in [
+              'calf_raise',
+              'chest_dip',
+              'chest_fly',
+              'core_bracing',
+              'forearm',
+              'front_raise',
+              'shrug',
+            ].indexed)
+              (
+                workoutId: 'w${index % 2}',
+                start: DateTime.now(),
+                movement: Movement.fromJson({
+                  'groups': [pattern],
+                }),
+                muscles: MuscleTagging.empty(),
+                target: Target.chest,
+                sets: 3 + index,
+              ),
+          ],
+        );
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         when(db.isUpsyncOwed(any)).thenAnswer((_) async => true);
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [_unsynced()]);
@@ -1022,8 +1070,12 @@ void main() {
           _Screen.newProgram ||
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
-          _Screen.libraryProgram:
+          _Screen.libraryProgram ||
+          _Screen.goEasy:
         final running = screen != _Screen.programsOffer;
+        // things to go easy on (#396): the whole map, a knee listed
+        when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
+        when(db.getGoEasy(any)).thenAnswer((_) async => {'knee'});
         // Heart's ready-made programs (#352): three of the real file, and the
         // catalog exercises they name
         when(cdn.getProgramLibrary(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _library, etag: null));
@@ -1166,6 +1218,8 @@ void main() {
         await tester.ensureVisible(find.byKey(AppKeys.muscleMapOffer));
       case _Screen.muscleMap:
         await tester.ensureVisible(find.byKey(AppKeys.muscleMapCard));
+      case _Screen.weeklyLens:
+        await tester.ensureVisible(find.byKey(AppKeys.lensShowAll));
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         unawaited(Upsync.of(tester.element(find.byType(MaterialApp))).run('u1'));
       case _Screen.backfillRunning || _Screen.backfillFailed:
@@ -1354,7 +1408,8 @@ void main() {
           _Screen.newProgram ||
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
-          _Screen.libraryProgram:
+          _Screen.libraryProgram ||
+          _Screen.goEasy:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
@@ -1366,6 +1421,7 @@ void main() {
         templates.notifyListeners();
         await Programs.of(context).init();
         await ProgramLibrary.of(context).ensure();
+        await GoEasy.of(context).ensure();
         await tester.pumpTimes();
         switch (screen) {
           case _Screen.programsOffer:
@@ -1385,16 +1441,20 @@ void main() {
             await tester.pumpTimes();
             // the screen is only honest if the day set aside is on it
             expect(find.byKey(AppKeys.historySkip('k1')), findsOneWidget);
-          case _Screen.programLibrary || _Screen.libraryProgram:
+          case _Screen.programLibrary || _Screen.libraryProgram || _Screen.goEasy:
             await tester.scrollUntilVisible(
               find.byKey(AppKeys.libraryEntry),
               200,
               scrollable: find.byType(Scrollable).first,
             );
             await tester.tapByKey(AppKeys.libraryEntry);
-            if (screen == _Screen.libraryProgram) {
+            if (screen != _Screen.programLibrary) {
               await tester.pumpTimes();
               await tester.tapByKey(AppKeys.libraryProgram('first_steps'));
+            }
+            if (screen == _Screen.goEasy) {
+              await tester.pumpTimes();
+              await tester.tapByKey(AppKeys.goEasyRow);
             }
           default:
             break;

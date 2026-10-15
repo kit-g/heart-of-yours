@@ -1,0 +1,375 @@
+{
+  "version": 1,
+  "copy": {
+    "title": {
+      "en": "Things to go easy on",
+      "es": "Con qué ir con cuidado"
+    },
+    "explainer": {
+      "en": "Heart uses this to suggest swaps. It stays on this phone and isn't medical advice.",
+      "es": "Heart lo usa para sugerirte cambios. Se queda en este teléfono y no es consejo médico."
+    },
+    "footer": {
+      "en": "Some discomfort can be normal while you train. If pain is sharp, builds through the session, or is worse the next morning, ease off and check with a professional.",
+      "es": "Cierta molestia puede ser normal al entrenar. Si el dolor es agudo, va a más durante la sesión o empeora a la mañana siguiente, baja el ritmo y consulta con un profesional."
+    }
+  },
+  "areas": {
+    "lower_back": {
+      "name": {
+        "en": "Lower back",
+        "es": "Zona lumbar"
+      },
+      "easierOn": {
+        "en": "Easier on your lower back",
+        "es": "Más suave para la zona lumbar"
+      },
+      "easier": [
+        {
+          "axialLoad": [
+            "high"
+          ]
+        },
+        {
+          "groups": [
+            "deadlift_floor",
+            "hip_hinge_stifflegged",
+            "trunk_flexion"
+          ]
+        },
+        {
+          "impact": [
+            "high"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "stability": [
+            "supported",
+            "machine"
+          ]
+        },
+        {
+          "axialLoad": [
+            "none",
+            "low"
+          ]
+        }
+      ]
+    },
+    "knee": {
+      "name": {
+        "en": "Knee",
+        "es": "Rodilla"
+      },
+      "easierOn": {
+        "en": "Easier on your knee",
+        "es": "Más suave para la rodilla"
+      },
+      "easier": [
+        {
+          "impact": [
+            "high"
+          ]
+        },
+        {
+          "groups": [
+            "plyometric_lower",
+            "lunge_split"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "groups": [
+            "hip_extension_bridge",
+            "hip_hinge_stifflegged"
+          ]
+        },
+        {
+          "stability": [
+            "machine"
+          ]
+        }
+      ]
+    },
+    "shoulder": {
+      "name": {
+        "en": "Shoulder",
+        "es": "Hombro"
+      },
+      "easierOn": {
+        "en": "Easier on your shoulder",
+        "es": "Más suave para el hombro"
+      },
+      "easier": [
+        {
+          "groups": [
+            "vertical_press",
+            "chest_dip",
+            "upright_row",
+            "pullover"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "stability": [
+            "supported",
+            "machine"
+          ]
+        },
+        {
+          "groups": [
+            "horizontal_row"
+          ]
+        }
+      ]
+    },
+    "wrist": {
+      "name": {
+        "en": "Wrist",
+        "es": "Muñeca"
+      },
+      "easierOn": {
+        "en": "Easier on your wrist",
+        "es": "Más suave para la muñeca"
+      },
+      "easier": [
+        {
+          "groups": [
+            "horizontal_press",
+            "incline_press",
+            "decline_press"
+          ],
+          "category": [
+            "Reps Only",
+            "Weighted Body Weight"
+          ]
+        },
+        {
+          "groups": [
+            "core_bracing"
+          ],
+          "category": [
+            "Duration"
+          ]
+        },
+        {
+          "groups": [
+            "olympic_lift"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "category": [
+            "Machine",
+            "Dumbbell"
+          ]
+        }
+      ]
+    },
+    "neck": {
+      "name": {
+        "en": "Neck",
+        "es": "Cuello"
+      },
+      "easierOn": {
+        "en": "Easier on your neck",
+        "es": "Más suave para el cuello"
+      },
+      "easier": [
+        {
+          "groups": [
+            "squat_bilateral",
+            "shrug"
+          ],
+          "axialLoad": [
+            "high"
+          ]
+        },
+        {
+          "groups": [
+            "trunk_flexion"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "axialLoad": [
+            "none",
+            "low"
+          ]
+        }
+      ]
+    },
+    "hip": {
+      "name": {
+        "en": "Hip",
+        "es": "Cadera"
+      },
+      "easierOn": {
+        "en": "Easier on your hip",
+        "es": "Más suave para la cadera"
+      },
+      "easier": [
+        {
+          "groups": [
+            "lunge_split",
+            "plyometric_lower",
+            "hip_adduction",
+            "hip_abduction"
+          ]
+        },
+        {
+          "impact": [
+            "high"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "stability": [
+            "supported",
+            "machine"
+          ]
+        }
+      ]
+    },
+    "ankle": {
+      "name": {
+        "en": "Ankle",
+        "es": "Tobillo"
+      },
+      "easierOn": {
+        "en": "Easier on your ankle",
+        "es": "Más suave para el tobillo"
+      },
+      "easier": [
+        {
+          "impact": [
+            "high"
+          ]
+        },
+        {
+          "groups": [
+            "plyometric_lower",
+            "calf_raise"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "stability": [
+            "supported",
+            "machine"
+          ]
+        }
+      ]
+    },
+    "elbow": {
+      "name": {
+        "en": "Elbow",
+        "es": "Codo"
+      },
+      "easierOn": {
+        "en": "Easier on your elbow",
+        "es": "Más suave para el codo"
+      },
+      "easier": [
+        {
+          "groups": [
+            "elbow_extension",
+            "elbow_flexion",
+            "chest_dip"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "stability": [
+            "machine"
+          ]
+        }
+      ]
+    }
+  },
+  "movements": {
+    "jumping": {
+      "name": {
+        "en": "Jumping and impact",
+        "es": "Saltos e impacto"
+      },
+      "easierOn": {
+        "en": "No jumping",
+        "es": "Sin saltos"
+      },
+      "easier": [
+        {
+          "impact": [
+            "high"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "impact": [
+            "none"
+          ]
+        }
+      ]
+    },
+    "spine_load": {
+      "name": {
+        "en": "Heavy weight on the spine",
+        "es": "Mucho peso sobre la columna"
+      },
+      "easierOn": {
+        "en": "Lighter on your spine",
+        "es": "Menos carga en la columna"
+      },
+      "easier": [
+        {
+          "axialLoad": [
+            "high"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "axialLoad": [
+            "none",
+            "low"
+          ]
+        }
+      ]
+    },
+    "overhead": {
+      "name": {
+        "en": "Pressing overhead",
+        "es": "Empujar por encima de la cabeza"
+      },
+      "easierOn": {
+        "en": "Without pressing overhead",
+        "es": "Sin empujar por encima de la cabeza"
+      },
+      "easier": [
+        {
+          "groups": [
+            "vertical_press"
+          ]
+        }
+      ],
+      "prefer": [
+        {
+          "groups": [
+            "incline_press",
+            "horizontal_press"
+          ]
+        }
+      ]
+    }
+  }
+}

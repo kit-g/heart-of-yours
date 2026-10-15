@@ -167,6 +167,12 @@ class _ProgramFormState extends State<_ProgramForm> {
                         valueListenable: _days,
                         builder: (_, days, _) => _DayToggles(days: days, onToggle: _toggleDay),
                       ),
+                      // asked where a program is set up: the list is the
+                      // user's, not this program's, and stays on this phone
+                      if (isNew) ...[
+                        const SizedBox(height: 8),
+                        const GoEasyRow(),
+                      ],
                       const SizedBox(height: 16),
                       ValueListenableBuilder(
                         valueListenable: _fixed,

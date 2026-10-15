@@ -137,14 +137,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          'SELECT w.start AS start, e.muscles AS muscles, count(*) AS sets '
-          'FROM workouts w '
-          'JOIN workout_exercises we ON we.workout_id = w.id '
-          'JOIN sets s ON s.exercise_id = we.id '
-          'LEFT JOIN exercises e ON e.id = we.exercise_id '
-          'WHERE w.user_id = ? AND w.end IS NOT NULL AND w.start >= ? AND w.start < ? AND s.completed = 1 '
-          "AND s.set_type IS NOT 'warmup' "
-          'GROUP BY w.id, we.exercise_id',
+          sql.muscleSets,
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -166,4 +159,56 @@ mixin _Stats on _LocalDatabase implements StatsService {
           ).toList(),
         );
   }
+
+  /// Completed working sets per exercise per finished workout started in
+  /// [from, to), each with the workout, its start and what the exercise is:
+  /// its movement, muscle tagging and target. The pattern lens's read (#341),
+  /// which counts sets and sessions per week by pattern or by muscle.
+  ///
+  /// The muscle map's read with the rest of the exercise: the workout says
+  /// which sessions touched a key, the movement which patterns a set trains,
+  /// and the target where an exercise nobody tagged still belongs. Warm-ups
+  /// are left out, as they are from the map. Bucketing is the caller's, in
+  /// the user's own week.
+  Future<List<({String workoutId, DateTime start, Movement movement, MuscleTagging muscles, Target target, int sets})>>
+  getLensSets(DateTime from, DateTime to, {String? userId}) {
+    if (userId == null) return Future.value(const []);
+    return _db
+        .rawQuery(
+          sql.lensSets,
+          [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
+        )
+        .then(
+          (rows) => rows.map(
+            (row) {
+              return (
+                workoutId: row['workout_id'] as String,
+                start: DateTime.parse(row['start'] as String).toLocal(),
+                movement: switch (_blob(row['movement'])) {
+                  Map<String, dynamic> m => Movement.fromJson(m),
+                  null => Movement.empty(),
+                },
+                muscles: switch (_blob(row['muscles'])) {
+                  Map<String, dynamic> m => MuscleTagging.fromJson(m),
+                  null => MuscleTagging.empty(),
+                },
+                // a word this build predates reads as nothing to place by
+                target: Target.values.firstWhere((each) => each.value == row['target'], orElse: () => .other),
+                sets: (row['sets'] as num).toInt(),
+              );
+            },
+          ).toList(),
+        );
+  }
+}
+
+/// A non-empty JSON object stored as text, or null.
+Map<String, dynamic>? _blob(Object? value) {
+  return switch (value) {
+    String s when s.isNotEmpty => switch (jsonDecode(s)) {
+      Map<String, dynamic> m when m.isNotEmpty => m,
+      _ => null,
+    },
+    _ => null,
+  };
 }

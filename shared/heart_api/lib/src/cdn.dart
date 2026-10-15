@@ -111,9 +111,18 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
   ///
   /// A file the CDN does not serve — before it is first uploaded — is a
   /// [NetworkException], like any other failed read.
-  Future<({String body, String? etag})?> getProgramLibrary({String? etag}) async {
+  Future<({String body, String? etag})?> getProgramLibrary({String? etag}) => _getContent(_programs, etag: etag);
+
+  /// What is harder on a body area or a movement, and what is kinder to it
+  /// (#396): the map behind "things to go easy on", as text, conditionally on
+  /// [etag] like [getProgramLibrary]. Only the map comes from here — the
+  /// user's own list never leaves the phone, and nothing about it is asked
+  /// for: the read is the same for everyone.
+  Future<({String body, String? etag})?> getGoEasy({String? etag}) => _getContent(_goEasy, etag: etag);
+
+  Future<({String body, String? etag})?> _getContent(String path, {String? etag}) async {
     final response = await (client?.get ?? http.get)(
-      Uri.https(gateway, _programs),
+      Uri.https(gateway, path),
       headers: {...?defaultHeaders, 'If-None-Match': ?etag},
     );
     return switch (response.statusCode) {
@@ -246,3 +255,4 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
 
 const _library = '/static/exercises';
 const _programs = '/static/programs';
+const _goEasy = '/static/go-easy';

@@ -606,3 +606,48 @@ WHERE s.completed = 1
 GROUP BY _recent.exercise_id, _recent.workout_exercise_id, _recent.last_workout_date
 ;
 """;
+
+/// Completed working sets per exercise per finished workout started in a
+/// window, with the exercise's muscle tagging: the muscle map's read.
+const muscleSets = '''
+SELECT
+    w.start AS start,
+    e.muscles AS muscles,
+    count(*) AS sets
+FROM workouts w
+INNER JOIN workout_exercises we ON we.workout_id = w.id
+INNER JOIN sets s ON s.exercise_id = we.id
+LEFT JOIN exercises e ON e.id = we.exercise_id
+WHERE w.user_id = ?
+  AND w."end" IS NOT NULL
+  AND w.start >= ?
+  AND w.start < ?
+  AND s.completed
+  AND s.set_type IS NOT 'warmup'
+GROUP BY w.id, we.exercise_id
+;
+''';
+
+/// The muscle map's read with the rest of the exercise, for the pattern lens
+/// (#341): the workout, the movement and the target beside the tagging.
+const lensSets = '''
+SELECT
+    w.id AS workout_id,
+    w.start AS start,
+    e.muscles AS muscles,
+    e.movement AS movement,
+    e.target AS target,
+    count(*) AS sets
+FROM workouts w
+INNER JOIN workout_exercises we ON we.workout_id = w.id
+INNER JOIN sets s ON s.exercise_id = we.id
+LEFT JOIN exercises e ON e.id = we.exercise_id
+WHERE w.user_id = ?
+  AND w."end" IS NOT NULL
+  AND w.start >= ?
+  AND w.start < ?
+  AND s.completed
+  AND s.set_type IS NOT 'warmup'
+GROUP BY w.id, we.exercise_id
+;
+''';

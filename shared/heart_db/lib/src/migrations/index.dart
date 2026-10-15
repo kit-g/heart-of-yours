@@ -163,4 +163,7 @@ const _migrations = <int, List<String>>{
   24: [
     createContent,
   ],
+  25: [
+    createGoEasy,
+  ],
 };

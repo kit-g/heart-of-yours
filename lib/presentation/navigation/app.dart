@@ -182,6 +182,19 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
+        // Things to go easy on (#396): the map is content, the list the
+        // user's own and health-shaped — on this phone only, and its errors
+        // go through the redacting reporter, as health's do
+        ChangeNotifierProvider<GoEasy>(
+          create: (_) => GoEasy(
+            fetch: cdn.getGoEasy,
+            readContent: db.getContent,
+            storeContent: db.storeContent,
+            read: db.getGoEasy,
+            store: db.storeGoEasy,
+            onError: reportHealthFailure,
+          ),
+        ),
         ChangeNotifierProvider<PreviousExercises>(
           create: (_) => PreviousExercises(
             service: db,
@@ -371,6 +384,7 @@ class HeartApp extends StatelessWidget {
                 Stats.of(context).userId = user?.id;
                 Templates.of(context).userId = user?.id;
                 Programs.of(context).userId = user?.id;
+                GoEasy.of(context).userId = user?.id;
                 Timers.of(context).userId = user?.id;
                 Workouts.of(context).userId = user?.id;
                 if (user?.id case String id) unawaited(_prepareOpening(context, id));

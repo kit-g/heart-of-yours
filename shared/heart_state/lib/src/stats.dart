@@ -2,6 +2,8 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'lens.dart';
+
 /// Completed sets of one exercise in one finished workout, with when the
 /// workout started and what the exercise trains — the muscle map's unit of
 /// data (#136).
@@ -28,6 +30,10 @@ abstract interface class LocalStatsService implements StatsService {
   /// Completed sets per exercise per finished workout started in [from, to)
   /// (#136).
   Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to, {String? userId});
+
+  /// Completed working sets per exercise per finished workout started in
+  /// [from, to), with the workout and what the exercise is (#341).
+  Future<List<LensSets>> getLensSets(DateTime from, DateTime to, {String? userId});
 }
 
 class Stats with ChangeNotifier implements SignOutStateSentry {
@@ -87,5 +93,12 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
   /// held here — nothing is computed or kept while the feature is off.
   Future<List<MuscleSets>> getMuscleSets(DateTime from, DateTime to) {
     return _service.getMuscleSets(from, to, userId: userId);
+  }
+
+  /// What the pattern lens (#341) is counted from: completed working sets per
+  /// exercise per workout in [from, to), with the workout and what the
+  /// exercise is. Read on demand, like [getMuscleSets]: nothing is kept here.
+  Future<List<LensSets>> getLensSets(DateTime from, DateTime to) {
+    return _service.getLensSets(from, to, userId: userId);
   }
 }

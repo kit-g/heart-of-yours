@@ -87,6 +87,10 @@ extension StabilityCopy on Stability {
   }
 }
 
+/// A movement pattern key (`horizontal_press`) as copy: the label the
+/// filters show, for anything else that names a pattern (#341).
+String patternLabel(String pattern, L l10n) => _patternLabel(pattern, l10n);
+
 /// The 40 patterns the library uses today get real copy; anything newer falls
 /// back to the humanized identifier (`hip_thrust` reads as `Hip Thrust`).
 /// Content owns the vocabulary and can add a pattern without an app release,

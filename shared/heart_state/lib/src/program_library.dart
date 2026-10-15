@@ -1,9 +1,10 @@
 import 'dart:collection';
-import 'dart:convert';
 
 import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
+import 'static_content.dart';
 
 /// Text the content CDN serves in several languages, by BCP-47 tag: what a
 /// program says about itself, its research and its safety notes. Content,
@@ -522,28 +523,30 @@ final class LibraryContent {
 /// sign-out. Until the file is first published every read fails, and the
 /// library is simply not [available] — no error, no empty page.
 class ProgramLibrary with ChangeNotifier {
-  /// The file's newer copy, asked for conditionally on [etag]: null when the
-  /// one kept is still current.
-  final Future<({String body, String? etag})?> Function({String? etag}) _fetch;
-  final Future<({String body, String? etag})?> Function(String key) _read;
-  final Future<void> Function(String key, {required String body, String? etag}) _store;
-  final void Function(dynamic error, {dynamic stacktrace})? onError;
+  late final StaticContent<LibraryContent> _file;
 
   new({
-    required this._fetch,
-    required this._read,
-    required this._store,
-    this.onError,
-  });
+    required Future<({String body, String? etag})?> Function({String? etag}) fetch,
+    required Future<({String body, String? etag})?> Function(String key) read,
+    required Future<void> Function(String key, {required String body, String? etag}) store,
+    void Function(dynamic error, {dynamic stacktrace})? onError,
+  }) {
+    _file = StaticContent(
+      key: 'static/programs',
+      fetch: fetch,
+      read: read,
+      store: store,
+      parse: LibraryContent.read,
+      onChanged: notifyListeners,
+      onError: onError,
+    );
+  }
 
   static ProgramLibrary of(BuildContext context) => Provider.of<ProgramLibrary>(context, listen: false);
 
   static ProgramLibrary watch(BuildContext context) => Provider.of<ProgramLibrary>(context, listen: true);
 
-  static const _key = 'static/programs';
-
-  LibraryContent? _content;
-  Future<void>? _loading;
+  LibraryContent? get _content => _file.value;
 
   /// Whether there is a library to show.
   bool get available => _content != null;
@@ -557,56 +560,9 @@ class ProgramLibrary with ChangeNotifier {
 
   LibrarySafety? safety(String key) => _content?.safety[key];
 
-  /// Reads the library once a launch, however many places ask: the copy
-  /// kept on the device first, then the CDN's, if it has a newer one. Nobody
-  /// needs to await it: whatever arrives notifies.
-  Future<void> ensure() => _loading ??= _load();
-
-  Future<void> _load() async {
-    String? etag;
-    try {
-      if (await _read(_key) case (:final body, etag: final kept)) {
-        if (_parse(body) case final LibraryContent content) {
-          _content = content;
-          etag = kept;
-          notifyListeners();
-        }
-      }
-    } catch (e, s) {
-      onError?.call(e, stacktrace: s);
-    }
-
-    final ({String body, String? etag})? fresh;
-    try {
-      fresh = await _fetch(etag: etag);
-    } catch (_) {
-      // offline, or not published yet: the copy kept, if any, stands — and a
-      // file that isn't there yet is no error to report on every launch
-      return;
-    }
-    if (fresh == null) return;
-
-    final content = _parse(fresh.body);
-    if (content == null) {
-      onError?.call(const FormatException('not a program library'));
-      return;
-    }
-    _content = content;
-    notifyListeners();
-    try {
-      await _store(_key, body: fresh.body, etag: fresh.etag);
-    } catch (e, s) {
-      onError?.call(e, stacktrace: s);
-    }
-  }
-
-  static LibraryContent? _parse(String body) {
-    try {
-      return LibraryContent.read(jsonDecode(body));
-    } on FormatException {
-      return null;
-    }
-  }
+  /// Reads the library once a launch, however many places ask: see
+  /// [StaticContent.ensure].
+  Future<void> ensure() => _file.ensure();
 }
 
 List<Object?> _list(Object? raw) => switch (raw) {
