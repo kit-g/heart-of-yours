@@ -1,5 +1,9 @@
 part of 'goals.dart';
 
+/// What a new goal measures, chosen before its target: an exercise's metric,
+/// whole workouts, or the sets on a pattern or a muscle (#344).
+typedef _Measured = ({Exercise? exercise, GoalMetric metric, GoalSubject? subject});
+
 /// Composes a goal in two steps: what to measure, then the target.
 ///
 /// Single-stage only. A ladder's later rungs are added by editing the goal —
@@ -10,9 +14,16 @@ Future<Goal?> showNewGoalDialog(
   TextEditingController controller,
   FocusNode focus,
 ) async {
-  final L(:newGoal, :workouts, :exercises) = L.of(context);
+  final L(:newGoal, :workouts, :exercises, :lensPatterns, :lensMuscles) = L.of(context);
 
-  final measured = await showBrandedDialog<(Exercise?, GoalMetric)?>(
+  Future<void> pickSubject(Future<GoalSubject?> Function() pick) async {
+    final subject = await pick();
+    if (subject != null && context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop((exercise: null, metric: GoalMetric.sets, subject: subject));
+    }
+  }
+
+  final measured = await showBrandedDialog<_Measured?>(
     context,
     title: Text(newGoal),
     padding: .zero,
@@ -23,7 +34,10 @@ Future<Goal?> showNewGoalDialog(
         children: [
           ListTile(
             title: Text(workouts),
-            onTap: () => Navigator.of(context, rootNavigator: true).pop((null, GoalMetric.workouts)),
+            onTap: () => Navigator.of(
+              context,
+              rootNavigator: true,
+            ).pop((exercise: null, metric: GoalMetric.workouts, subject: null)),
           ),
           ListTile(
             title: Text(exercises),
@@ -35,6 +49,20 @@ Future<Goal?> showNewGoalDialog(
               }
             },
           ),
+          // a goal on what was trained rather than on one lift: "10 sets of
+          // presses a week", "chest twice a week"
+          ListTile(
+            key: AppKeys.newGoalByPattern,
+            title: Text(lensPatterns),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => pickSubject(() => _pickPattern(context)),
+          ),
+          ListTile(
+            key: AppKeys.newGoalByMuscle,
+            title: Text(lensMuscles),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => pickSubject(() => _pickMuscle(context)),
+          ),
         ],
       ),
     ),
@@ -42,21 +70,73 @@ Future<Goal?> showNewGoalDialog(
 
   if (measured == null || !context.mounted) return null;
 
-  final (exercise, metric) = measured;
-  return showGoalTargetDialog(context, exercise: exercise, metric: metric);
+  final (:exercise, :metric, :subject) = measured;
+  return showGoalTargetDialog(context, exercise: exercise, metric: metric, subject: subject);
+}
+
+/// The library's patterns, the ones most exercises train first, as the
+/// filters list them.
+Future<GoalSubject?> _pickPattern(BuildContext context) {
+  final l = L.of(context);
+  return _pickFrom(
+    context,
+    title: l.lensPatterns,
+    choices: {for (final key in Exercises.of(context).patterns) GoalSubject.pattern(key): patternLabel(key, l)},
+  );
+}
+
+/// The muscle map's groups: the key the weekly card counts muscles by.
+Future<GoalSubject?> _pickMuscle(BuildContext context) {
+  final l = L.of(context);
+  return _pickFrom(
+    context,
+    title: l.lensMuscles,
+    choices: {for (final group in MuscleGroup.values) GoalSubject.muscle(group.id): group.label(l)},
+  );
+}
+
+Future<GoalSubject?> _pickFrom(
+  BuildContext context, {
+  required String title,
+  required Map<GoalSubject, String> choices,
+}) {
+  return showBrandedDialog<GoalSubject?>(
+    context,
+    title: Text(title),
+    padding: .zero,
+    content: SizedBox(
+      width: double.maxFinite,
+      // a list as long as the library's patterns scrolls inside the dialog
+      // rather than pushing it past the screen
+      height: min(choices.length * 56.0, 360),
+      child: ListView(
+        children: [
+          for (final MapEntry(key: subject, value: label) in choices.entries)
+            ListTile(
+              title: Text(label),
+              onTap: () => Navigator.of(context, rootNavigator: true).pop(subject),
+            ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Reuses the exercise picker the charts use, then maps the chosen chart
 /// dimension straight onto [GoalMetric] — the two vocabularies share their
 /// string values exactly, which is the whole point of `GoalMetric.chart`.
-Future<(Exercise, GoalMetric)?> _pickMeasuredExercise(
+Future<_Measured?> _pickMeasuredExercise(
   BuildContext context,
   TextEditingController controller,
   FocusNode focus,
 ) async {
   final picked = await showExercisePicker(context, controller: controller, focus: focus);
   return switch (picked) {
-    (final Exercise exercise, final ChartPreferenceType type) => (exercise, GoalMetric.fromString(type.value)),
+    (final Exercise exercise, final ChartPreferenceType type) => (
+      exercise: exercise,
+      metric: GoalMetric.fromString(type.value),
+      subject: null,
+    ),
     _ => null,
   };
 }
@@ -67,12 +147,13 @@ Future<Goal?> showGoalTargetDialog(
   BuildContext context, {
   required Exercise? exercise,
   required GoalMetric metric,
+  GoalSubject? subject,
   Goal? goal,
 }) {
   return showBrandedDialog<Goal?>(
     context,
     title: Text(L.of(context).goalTarget),
-    content: _GoalTargetForm(exercise: exercise, metric: metric, goal: goal),
+    content: _GoalTargetForm(exercise: exercise, metric: metric, subject: subject, goal: goal),
   );
 }
 
@@ -80,12 +161,16 @@ class _GoalTargetForm extends StatefulWidget {
   final Exercise? exercise;
   final GoalMetric metric;
 
+  /// A pattern or a muscle, for a goal counting the sets or sessions on it.
+  final GoalSubject? subject;
+
   /// The goal being edited, or null when composing a new one.
   final Goal? goal;
 
   const new({
     required this.exercise,
     required this.metric,
+    this.subject,
     this.goal,
   });
 
@@ -107,8 +192,13 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
 
   GoalCadence? _cadence = GoalCadence.week;
 
+  /// Sets or sessions, for a goal on a pattern or a muscle; [widget.metric]
+  /// for every other goal, and never changed.
+  late final _metric = ValueNotifier(widget.metric);
+
   @override
   void dispose() {
+    _metric.dispose();
     _input.dispose();
     super.dispose();
   }
@@ -126,7 +216,7 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
       // A whole-workout goal is a rate ("4 a week"); a lift is a milestone.
       // Both are changeable below — this only picks the likelier one.
       case null:
-        _cadence = widget.metric.isWholeWorkout ? .week : null;
+        _cadence = widget.metric.isWholeWorkout || widget.metric.countsSubject ? .week : null;
     }
   }
 
@@ -155,6 +245,21 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
           // the app looks like — see `SearchField`
           decoration: InputDecoration(suffixText: suffix),
         ),
+        if (widget.metric.countsSubject)
+          ValueListenableBuilder<GoalMetric>(
+            valueListenable: _metric,
+            builder: (_, metric, _) {
+              return SettingSwitcher<GoalMetric>(
+                key: AppKeys.goalCountedMetric,
+                value: metric,
+                children: {
+                  GoalMetric.sets: Text(l.sets),
+                  GoalMetric.sessions: Text(l.sessions),
+                },
+                onValueChanged: (picked) => _metric.value = picked ?? metric,
+              );
+            },
+          ),
         SegmentedButton<GoalCadence?>(
           showSelectedIcon: false,
           segments: [
@@ -216,8 +321,16 @@ class _GoalTargetFormState extends State<_GoalTargetForm> {
     Navigator.of(context, rootNavigator: true).pop(
       Goal(
         id: widget.goal?.id,
-        metric: widget.metric,
+        metric: _metric.value,
         exerciseId: widget.exercise?.id,
+        pattern: switch (widget.subject) {
+          PatternSubject(:final key) => key,
+          _ => null,
+        },
+        muscle: switch (widget.subject) {
+          MuscleSubject(:final key) => key,
+          _ => null,
+        },
         cadence: _cadence,
         stages: stages,
       ),

@@ -13,6 +13,7 @@ void main() {
   }) {
     return (
       workoutId: workout,
+      exerciseId: 'e1',
       start: start,
       movement: Movement.fromJson({'groups': patterns}),
       muscles: MuscleTagging.empty(),

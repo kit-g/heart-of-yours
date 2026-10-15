@@ -1,15 +1,36 @@
 part of 'goals.dart';
 
-/// "Workouts", or "Bench Press (Barbell) — Estimated 1RM".
+/// "Workouts", "Bench Press (Barbell) — Estimated 1RM", or "Horizontal
+/// press — Sets".
 String goalTitle(BuildContext context, Goal goal, Exercise? exercise) {
   final l = L.of(context);
   if (goal.metric.isWholeWorkout) return l.workouts;
+  if (goal.metric.countsSubject) {
+    final counted = switch (goal.metric) {
+      .sessions => l.sessions,
+      _ => l.sets,
+    };
+    return '${subjectLabel(l, goal.subject, exercise)} — $counted';
+  }
 
   final metric = goal.metric.chart?.label(context);
   return switch ((exercise?.name, metric)) {
     (final String name, final String metric) => '$name — $metric',
     (final String name, _) => name,
     _ => metric ?? '',
+  };
+}
+
+/// What a sets or sessions goal is about, as copy: its exercise's name, a
+/// pattern's label, a muscle group's. A muscle key that is no atlas group (a
+/// newer client's) and a missing exercise read as their identifiers rather
+/// than as nothing.
+String subjectLabel(L l, GoalSubject? subject, Exercise? exercise) {
+  return switch (subject) {
+    ExerciseSubject(:final id) => exercise?.name ?? id,
+    PatternSubject(:final key) => patternLabel(key, l),
+    MuscleSubject(:final key) => MuscleGroup.tryFromString(key)?.label(l) ?? key,
+    null => '',
   };
 }
 
@@ -78,7 +99,11 @@ extension GoalUnits on Goal {
   /// A stored value in the units the user reads. Weights and distances depend
   /// on their settings and on [scale], the goal's exercise's (see
   /// [goalScale]); counts and durations are the same either way.
+  ///
+  /// A muscle's sets are counted in fractions and read whole (the pattern
+  /// lens's rule 8) through [wholeSets], as the weekly card reads them.
   double convert(Preferences settings, ChartScale scale, num value) {
+    if (metric == .sets) return wholeSets(value).toDouble();
     final (:unit, :category) = scale;
     return metric.chart?.converter(settings, unit: unit, category: category)(value) ?? value.toDouble();
   }

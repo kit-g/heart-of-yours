@@ -992,6 +992,7 @@ void main() {
             ].indexed)
               (
                 workoutId: 'w${index % 2}',
+                exerciseId: 'e$index',
                 start: DateTime.now(),
                 movement: Movement.fromJson({
                   'groups': [pattern],

@@ -740,9 +740,17 @@ RouteBase _workoutDoneRoute() {
             // the aggregation is what whole-workout goals are judged against,
             // and it predates the workout that just landed
             await stats.init();
+            // the windows every goal below reads, each read once; `without`
+            // filters what was read, so the before reading shares them too
+            final lensSets = sharedLensSets(stats.getLensSets);
 
             final stamped = await goals.observeProgress(
-              (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
+              (goal) => currentGoalValue(
+                goal,
+                exercises: exercises,
+                workoutCount: workoutCounter(stats),
+                lensSets: lensSets,
+              ),
               // this screen is the one place that knows which session earned it
               achievedBy: finished?.id ?? workout.id,
             );
@@ -751,11 +759,17 @@ RouteBase _workoutDoneRoute() {
             // uncelebrated the week it is met — announced here when this
             // session is what carried the period over.
             final carried = await goals.observePeriodWins(
-              valueOf: (goal) => currentGoalValue(goal, exercises: exercises, workoutCount: workoutCounter(stats)),
+              valueOf: (goal) => currentGoalValue(
+                goal,
+                exercises: exercises,
+                workoutCount: workoutCounter(stats),
+                lensSets: lensSets,
+              ),
               valueBefore: (goal) => currentGoalValue(
                 goal,
                 exercises: exercises,
                 workoutCount: workoutCounter(stats),
+                lensSets: lensSets,
                 without: workout.start,
               ),
             );

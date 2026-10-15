@@ -114,9 +114,12 @@ class _GoalsWidgetPresenterState extends State<GoalsWidgetPresenter> {
     if (measured == _measured) return;
     _measured = measured;
 
-    final counter = workoutCounter(Stats.of(context));
+    final stats = Stats.of(context);
+    final counter = workoutCounter(stats);
+    final lensSets = sharedLensSets(stats.getLensSets);
     final readings = await Future.wait([
-      for (final goal in goals.all) currentGoalValue(goal, exercises: exercises, workoutCount: counter),
+      for (final goal in goals.all)
+        currentGoalValue(goal, exercises: exercises, workoutCount: counter, lensSets: lensSets),
     ]);
     if (!mounted || measured != _measured) return;
 

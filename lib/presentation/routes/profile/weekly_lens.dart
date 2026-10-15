@@ -169,7 +169,7 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
     double total(_LensLine line) => line.weeks.fold(.0, (sum, week) => sum + week.sets);
     return [
       for (final key in keys) (label: label(key), weeks: [for (final week in counts.values) week[key] ?? none]),
-    ].where((line) => total(line).round() > 0).toList()..sort(
+    ].where((line) => wholeSets(total(line)) > 0).toList()..sort(
       (a, b) => switch (b.weeks.last.sets.compareTo(a.weeks.last.sets)) {
         0 => switch (total(b).compareTo(total(a))) {
           0 => a.label.compareTo(b.label),
@@ -253,9 +253,9 @@ class const _LensLineTile({
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, colorScheme: ColorScheme(:primary, :onSurfaceVariant)) = Theme.of(context);
-    final weeks = [for (final week in line.weeks) week.sets.round()];
+    final weeks = [for (final week in line.weeks) wholeSets(week.sets)];
     final now = line.weeks.last;
-    final summary = switch (now.sets.round()) {
+    final summary = switch (wholeSets(now.sets)) {
       0 => l.lensNoneThisWeek,
       final sets => l.lensThisWeek(l.lensSets(sets), l.lensSessions(now.sessions)),
     };

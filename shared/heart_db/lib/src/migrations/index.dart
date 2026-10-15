@@ -166,4 +166,8 @@ const _migrations = <int, List<String>>{
   25: [
     createGoEasy,
   ],
+  26: [
+    addGoalPattern,
+    addGoalMuscle,
+  ],
 };

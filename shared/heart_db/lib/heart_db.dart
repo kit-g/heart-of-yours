@@ -42,6 +42,7 @@ part 'src/migrations/0022.dart';
 part 'src/migrations/0023.dart';
 part 'src/migrations/0024.dart';
 part 'src/migrations/0025.dart';
+part 'src/migrations/0026.dart';
 part 'src/migrations/index.dart';
 part 'src/parts/charts.dart';
 part 'src/parts/content.dart';
