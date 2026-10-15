@@ -46,6 +46,7 @@ enum _Screen {
   muscleMapOffer,
   muscleMap,
   weeklyLens,
+  weeklyBalance,
   noAccountDialog,
   workout,
   programsOffer,
@@ -300,12 +301,28 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.weeklyLens,
     _Guideline.androidTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:104, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
   ),
   (
     _Screen.weeklyLens,
     _Guideline.iosTapTarget,
-    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:104, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
+    'bottom nav bar items, and the card\'s Patterns/Muscles SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
+  ),
+
+  // The weekly sets card's balance pairs (#342): one drawn, one with too
+  // little behind it (lib/presentation/routes/profile/weekly_lens.dart).
+  (_Screen.weeklyBalance, _Guideline.labeledTapTarget, null),
+  (_Screen.weeklyBalance, _Guideline.textContrastLight, null),
+  (_Screen.weeklyBalance, _Guideline.textContrastDark, null),
+  (
+    _Screen.weeklyBalance,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 48x48 — visual-density change, out of scope',
+  ),
+  (
+    _Screen.weeklyBalance,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items, and the card\'s Patterns/Muscles/Balance SettingSwitcher (lib/presentation/routes/profile/weekly_lens.dart:116, 28pt as in Settings), are below 44x44 — visual-density change, out of scope',
   ),
 
   // The no-account dialog over the profile of an anonymous session
@@ -1003,6 +1020,32 @@ void main() {
               ),
           ],
         );
+      case _Screen.weeklyBalance:
+        when(
+          db.getWorkoutSummary(weeksBack: anyNamed('weeksBack'), userId: anyNamed('userId')),
+        ).thenAnswer((_) async => WorkoutAggregation.dummy());
+        final now = DateTime.now();
+        LensSets row(String workout, DateTime start, String pattern, int sets) {
+          return (
+            workoutId: workout,
+            exerciseId: pattern,
+            start: start,
+            movement: Movement.fromJson({
+              'groups': [pattern],
+            }),
+            muscles: MuscleTagging.empty(),
+            target: Target.chest,
+            sets: sets,
+          );
+        }
+
+        when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer(
+          (_) async => [
+            row('w1', now, 'horizontal_press', 6),
+            row('w0', now.subtract(const Duration(days: 8)), 'horizontal_row', 4),
+            row('w1', now, 'squat_bilateral', 3),
+          ],
+        );
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         when(db.isUpsyncOwed(any)).thenAnswer((_) async => true);
         when(db.getWorkoutHistory(any)).thenAnswer((_) async => [_unsynced()]);
@@ -1221,6 +1264,10 @@ void main() {
         await tester.ensureVisible(find.byKey(AppKeys.muscleMapCard));
       case _Screen.weeklyLens:
         await tester.ensureVisible(find.byKey(AppKeys.lensShowAll));
+      case _Screen.weeklyBalance:
+        await tester.ensureVisible(find.text('Balance'));
+        await tester.tap(find.text('Balance'));
+        await tester.pumpTimes();
       case _Screen.upsyncRunning || _Screen.upsyncFailed || _Screen.upsyncDone:
         unawaited(Upsync.of(tester.element(find.byType(MaterialApp))).run('u1'));
       case _Screen.backfillRunning || _Screen.backfillFailed:
