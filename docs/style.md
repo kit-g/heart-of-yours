@@ -111,6 +111,9 @@ final lifted = switch (exercise.category) {
   sites.
 - Identifiers name the *thing*: an exercise is its `id`, never its `name`
   (names are localized display copy — see "Copy").
+- **SQL is a constant in `heart_db`'s `sql.dart`**, written as a multi-line
+  string with one column or condition per line, and read as `sql.name`. Never
+  a query built from adjacent string fragments inside a method.
 
 ## State
 
