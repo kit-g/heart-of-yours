@@ -89,7 +89,7 @@ class _WeeklyLensCardState extends State<_WeeklyLensCard> {
     final l = L.of(context);
     final ThemeData(:textTheme) = Theme.of(context);
     final now = DateTime.now();
-    final firstWeekday = firstWeekdayOf(context);
+    final firstWeekday = firstWeekdayOf(context, listen: true);
 
     return Column(
       key: AppKeys.lensCard,

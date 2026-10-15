@@ -296,6 +296,7 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
     final goals = Goals.of(context);
     final exercises = Exercises.of(context);
     final stats = Stats.of(context);
+    final firstWeekday = Preferences.of(context).firstWeekday;
 
     await goals.init();
     final lensSets = sharedLensSets(stats.getLensSets);
@@ -303,7 +304,8 @@ class _ProfilePageState extends State<ProfilePage> with AfterLayoutMixin<Profile
       (goal) => currentGoalValue(
         goal,
         exercises: exercises,
-        workoutCount: workoutCounter(stats),
+        firstWeekday: firstWeekday,
+        workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
         lensSets: lensSets,
       ),
     );

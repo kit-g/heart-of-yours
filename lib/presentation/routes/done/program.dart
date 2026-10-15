@@ -40,7 +40,11 @@ class _ProgramBlockState extends State<_ProgramBlock> {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final quiet = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
-    final position = programs.position(program, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
+    final position = programs.position(
+      program,
+      now: DateTime.now(),
+      firstWeekday: firstWeekdayOf(context, listen: true),
+    );
     final next = switch (position.next) {
       final String id => Templates.of(context).lookup(id),
       null => null,

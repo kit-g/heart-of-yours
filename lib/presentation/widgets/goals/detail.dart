@@ -48,13 +48,15 @@ class _GoalDetailState extends State<GoalDetail> {
     final exercise = goalExercise(goal, exercises);
     final scale = goalScale(goal, exercises);
 
-    final key = (goal.id, exercise?.name, widget.workouts.workoutCount);
+    final firstWeekday = settings.firstWeekday;
+    final key = (goal.id, exercise?.name, widget.workouts.workoutCount, firstWeekday);
     if (key != _key) {
       _key = key;
       _reading = currentGoalValue(
         goal,
         exercises: exercises,
-        workoutCount: workoutCounter(Stats.of(context)),
+        firstWeekday: firstWeekday,
+        workoutCount: workoutCounter(Stats.of(context), firstWeekday: firstWeekday),
         lensSets: Stats.of(context).getLensSets,
       );
     }

@@ -736,7 +736,9 @@ RouteBase _workoutDoneRoute() {
         return WorkoutDone(
           workout: workout!,
           onQuit: context.goToWorkouts,
-          workoutsThisWeekCallback: () => Stats.of(context).getWeeklyWorkoutCount(workout.start),
+          workoutsThisWeekCallback: () => Stats.of(
+            context,
+          ).getWeeklyWorkoutCount(workout.start, firstWeekday: Preferences.of(context).firstWeekday),
           // This screen is pushed as finishing *starts*, so the sets that just
           // earned a rung may not be in the database yet — goal progress is read
           // back out of it. Waiting on the finish is what makes the answer real
@@ -746,6 +748,7 @@ RouteBase _workoutDoneRoute() {
             final goals = Goals.of(context);
             final exercises = Exercises.of(context);
             final stats = Stats.of(context);
+            final firstWeekday = Preferences.of(context).firstWeekday;
 
             // The id the server settled on, not the one this device saved
             // under: `saveWorkout` adopts the server's when they differ, and
@@ -763,7 +766,8 @@ RouteBase _workoutDoneRoute() {
               (goal) => currentGoalValue(
                 goal,
                 exercises: exercises,
-                workoutCount: workoutCounter(stats),
+                firstWeekday: firstWeekday,
+                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
                 lensSets: lensSets,
               ),
               // this screen is the one place that knows which session earned it
@@ -777,13 +781,15 @@ RouteBase _workoutDoneRoute() {
               valueOf: (goal) => currentGoalValue(
                 goal,
                 exercises: exercises,
-                workoutCount: workoutCounter(stats),
+                firstWeekday: firstWeekday,
+                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
                 lensSets: lensSets,
               ),
               valueBefore: (goal) => currentGoalValue(
                 goal,
                 exercises: exercises,
-                workoutCount: workoutCounter(stats),
+                firstWeekday: firstWeekday,
+                workoutCount: workoutCounter(stats, firstWeekday: firstWeekday),
                 lensSets: lensSets,
                 without: workout.start,
               ),

@@ -633,6 +633,12 @@
     "type": "text",
     "placeholders": {}
   },
+  "firstWeekday": "Week starts on",
+  "@firstWeekday": {
+    "description": "Settings row label: the day the user's week starts on, picked from short weekday names beside it",
+    "type": "text",
+    "placeholders": {}
+  },
   "duration": "Duration",
   "@duration": {
     "description": "Duration label",

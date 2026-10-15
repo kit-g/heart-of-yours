@@ -35,6 +35,7 @@ class SettingsPage extends StatelessWidget with HasHaptic {
       :accountControl,
       :appearance,
       :distanceUnit,
+      :firstWeekday,
       :imperial,
       :metric,
       :restTimers,
@@ -192,6 +193,35 @@ class SettingsPage extends StatelessWidget with HasHaptic {
                               children: {
                                 .imperial: Text(imperial),
                                 .metric: Text(metric),
+                              },
+                            ),
+                          };
+                        },
+                      ),
+                    ),
+                    // Not a unit, but the same kind of regional convention, and
+                    // the same rule: the locale's until the user picks (#339).
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Selector<Preferences, int?>(
+                        selector: (_, provider) => switch (provider.isInitialized) {
+                          true => provider.firstWeekday,
+                          false => null,
+                        },
+                        builder: (context, first, _) {
+                          return switch (first) {
+                            null => const SizedBox.shrink(),
+                            int value => FixedLengthSettingPicker<int>(
+                              title: firstWeekday,
+                              value: value,
+                              onValueChanged: (day) {
+                                buzz();
+                                if (day != null) {
+                                  Preferences.of(context).setFirstWeekday(day);
+                                }
+                              },
+                              children: {
+                                for (final day in _weekStarts(value)) day: _Weekday(day),
                               },
                             ),
                           };
@@ -631,6 +661,29 @@ class _Section extends StatelessWidget {
         const SizedBox(height: 8),
         ...children,
       ],
+    );
+  }
+}
+
+/// The days a week can start on, in calendar order from Saturday: the three
+/// the world actually uses, and [current] too when its locale starts
+/// elsewhere, so the control always shows what is in force.
+List<int> _weekStarts(int current) {
+  return {DateTime.saturday, DateTime.sunday, DateTime.monday, current}.toList()
+    ..sort((a, b) => (a - DateTime.saturday + 7) % 7 - (b - DateTime.saturday + 7) % 7);
+}
+
+/// A weekday as a segment: its short name on screen, the whole name read out.
+class const _Weekday(final int weekday) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final locale = L.of(context).localeName;
+    // any week will do: 1 January 2024 was a Monday, so its day is the weekday
+    final day = DateTime(2024, 1, weekday);
+    return Semantics(
+      label: DateFormat.EEEE(locale).format(day),
+      excludeSemantics: true,
+      child: Text(DateFormat.E(locale).format(day)),
     );
   }
 }

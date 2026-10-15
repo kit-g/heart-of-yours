@@ -34,6 +34,7 @@ Future<void> _pump(
           converter: (v) => v.toDouble(),
           label: 'Weight',
           timeline: timeline,
+          firstWeekday: timeline ? DateTime.monday : null,
           refreshKey: refreshKey,
         ),
       ),

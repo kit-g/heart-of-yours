@@ -1,5 +1,7 @@
 import 'package:heart_models/heart_models.dart';
 
+import 'weeks.dart';
+
 /// One exercise's completed working sets in one finished workout, with what
 /// the exercise is: the pattern lens's unit of data (#341,
 /// `docs/2026-10-11.pattern-lens.md`).
@@ -36,24 +38,6 @@ int wholeSets(num sets) => sets.floor();
 /// counts toward no pattern, and is seen by the muscle key alone.
 Map<String, double> patternsOf(LensSets row) {
   return {for (final pattern in row.movement.groups) pattern: 1.0};
-}
-
-/// The first day of [date]'s week, at midnight, for a week that starts on
-/// [firstWeekday] (ISO: 1 Monday … 7 Sunday). Calendar arithmetic rather than
-/// a [Duration], so a week across a DST change still starts at midnight.
-DateTime weekOf(DateTime date, {int firstWeekday = DateTime.monday}) {
-  final back = (date.weekday - firstWeekday) % 7;
-  return DateTime(date.year, date.month, date.day - back);
-}
-
-/// The first days of the [weeks] weeks ending with [now]'s, oldest first, for
-/// weeks that start on [firstWeekday].
-List<DateTime> lastWeeksOf(int weeks, {required DateTime now, int firstWeekday = DateTime.monday}) {
-  final current = weekOf(now, firstWeekday: firstWeekday);
-  return [
-    for (final back in Iterable<int>.generate(weeks, (index) => weeks - 1 - index))
-      DateTime(current.year, current.month, current.day - 7 * back),
-  ];
 }
 
 /// [rows] counted per key into [periods], one map of keys per period.
@@ -97,7 +81,7 @@ Map<DateTime, Map<K, LensCount>> countByWeek<K>(
   required int weeks,
   required DateTime now,
   required Map<K, double> Function(LensSets row) keysOf,
-  int firstWeekday = DateTime.monday,
+  required int firstWeekday,
 }) {
   return countByPeriod(
     rows,

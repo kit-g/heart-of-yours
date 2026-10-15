@@ -271,7 +271,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Where the user stands in [program]: computed, never stored. [now] sets the
   /// calendar week the weekly count reads, in its zone; [firstWeekday] is ISO,
   /// the user's own first day of the week.
-  ProgramPosition position(Program program, {required DateTime now, int firstWeekday = DateTime.monday}) {
+  ProgramPosition position(Program program, {required DateTime now, required int firstWeekday}) {
     final id = program.id;
     return ProgramPosition.of(
       program,
@@ -288,7 +288,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   Workout plan(
     Template session, {
     required DateTime now,
-    int firstWeekday = DateTime.monday,
+    required int firstWeekday,
     required RoundWeight round,
   }) {
     final id = session.programId;

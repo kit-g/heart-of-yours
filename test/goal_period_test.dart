@@ -64,19 +64,30 @@ void main() {
   });
 
   Future<num?> read(Goal g) {
-    return currentGoalValue(g, exercises: exercises, asOf: now);
+    return currentGoalValue(g, exercises: exercises, firstWeekday: DateTime.monday, asOf: now);
   }
 
   group('goalPeriod', () {
     test('a week runs Monday midnight to the next Monday', () {
-      final (from, to) = goalPeriod(.week, now);
+      final (from, to) = goalPeriod(.week, now, firstWeekday: DateTime.monday);
 
       expect(from, monday);
       expect(to, DateTime(2026, 8, 10));
     });
 
+    test("a week starts on the user's first day (#339)", () {
+      expect(
+        goalPeriod(.week, now, firstWeekday: DateTime.sunday),
+        (DateTime(2026, 8, 2), DateTime(2026, 8, 9)),
+      );
+      expect(
+        goalPeriod(.week, now, firstWeekday: DateTime.saturday),
+        (DateTime(2026, 8, 1), DateTime(2026, 8, 8)),
+      );
+    });
+
     test('a month runs the first to the first', () {
-      final (from, to) = goalPeriod(.month, now);
+      final (from, to) = goalPeriod(.month, now, firstWeekday: DateTime.monday);
 
       expect(from, DateTime(2026, 8));
       expect(to, DateTime(2026, 9));
@@ -84,7 +95,7 @@ void main() {
 
     test('a December month rolls into next January', () {
       // month + 1 is 13; DateTime normalises rather than overflowing
-      final (_, to) = goalPeriod(.month, DateTime(2026, 12, 20));
+      final (_, to) = goalPeriod(.month, DateTime(2026, 12, 20), firstWeekday: DateTime.monday);
 
       expect(to, DateTime(2027));
     });
@@ -163,7 +174,13 @@ void main() {
 
       expect(await read(goal()), 840);
       expect(
-        await currentGoalValue(goal(), exercises: exercises, asOf: now, without: session),
+        await currentGoalValue(
+          goal(),
+          exercises: exercises,
+          firstWeekday: DateTime.monday,
+          asOf: now,
+          without: session,
+        ),
         600,
       );
     });
@@ -246,7 +263,15 @@ void main() {
       // with null drew an empty bar and skipped the achievement
       final (asked, count) = counter(7);
 
-      expect(await currentGoalValue(workoutsGoal(), exercises: exercises, workoutCount: count), 7);
+      expect(
+        await currentGoalValue(
+          workoutsGoal(),
+          exercises: exercises,
+          firstWeekday: DateTime.monday,
+          workoutCount: count,
+        ),
+        7,
+      );
       expect(asked, [null]);
     });
 
@@ -257,6 +282,7 @@ void main() {
         await currentGoalValue(
           workoutsGoal(cadence: .week),
           exercises: exercises,
+          firstWeekday: DateTime.monday,
           workoutCount: count,
         ),
         3,
@@ -271,6 +297,7 @@ void main() {
         await currentGoalValue(
           workoutsGoal(cadence: .month),
           exercises: exercises,
+          firstWeekday: DateTime.monday,
           workoutCount: count,
         ),
         11,
@@ -279,7 +306,7 @@ void main() {
     });
 
     test('stays unanswered when nobody supplied a counter', () async {
-      expect(await currentGoalValue(workoutsGoal(), exercises: exercises), isNull);
+      expect(await currentGoalValue(workoutsGoal(), exercises: exercises, firstWeekday: DateTime.monday), isNull);
     });
   });
 

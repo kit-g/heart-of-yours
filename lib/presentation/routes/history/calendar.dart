@@ -84,7 +84,9 @@ class _HistoryCalendarState extends State<HistoryCalendar> {
     final oldest = dates.firstOrNull ?? newest;
     final count = (newest.year - oldest.year) * 12 + newest.month - oldest.month + 1;
     final locale = L.of(context).localeName;
-    final firstWeekday = MaterialLocalizations.of(context).firstDayOfWeekIndex;
+    // the user's first day (#339), counted the way Material's calendars do:
+    // 0 is Sunday, so a DateTime weekday maps over by its remainder
+    final firstWeekday = Preferences.watch(context).firstWeekday % 7;
     final theme = Theme.of(context);
 
     return Dialog(

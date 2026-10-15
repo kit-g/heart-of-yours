@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'lens.dart';
+import 'weeks.dart';
 
 /// Completed sets of one exercise in one finished workout, with when the
 /// workout started and what the exercise trains — the muscle map's unit of
@@ -26,6 +27,10 @@ abstract interface class LocalStatsService implements StatsService {
   /// parameters — so both counts are scoped the same way.
   @override
   Future<int> getWeeklyWorkoutCount(DateTime d, {String? userId});
+
+  /// Finished workouts that started in [from, to): the count every period is
+  /// built on, with the caller deciding where a week begins (#339).
+  Future<int> getWorkoutCountBetween(DateTime from, DateTime to, {String? userId});
 
   /// Completed sets per exercise per finished workout started in [from, to)
   /// (#136).
@@ -71,8 +76,11 @@ class Stats with ChangeNotifier implements SignOutStateSentry {
     }
   }
 
-  Future<int> getWeeklyWorkoutCount(DateTime d) {
-    return _service.getWeeklyWorkoutCount(d, userId: userId);
+  /// Finished workouts in [d]'s week, which starts on [firstWeekday] — the
+  /// user's choice, from [Preferences.firstWeekday].
+  Future<int> getWeeklyWorkoutCount(DateTime d, {required int firstWeekday}) {
+    final (from, to) = weekRange(d, firstWeekday: firstWeekday);
+    return _service.getWorkoutCountBetween(from, to, userId: userId);
   }
 
   /// Finished workouts so far in [d]'s calendar month.

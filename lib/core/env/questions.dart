@@ -32,7 +32,7 @@ Future<void> runQuestions() async {
     final started = DateTime.now();
     try {
       db ??= LocalDatabase.init();
-      prefs ??= _preferences();
+      prefs ??= _preferences(args['locale'] as String?);
       final locale = _locale(args['locale'] as String?);
       await initializeDateFormatting(locale.toString());
       final answers = Answers(db: await db!, l: lookupL(locale), prefs: await prefs!);
@@ -53,10 +53,20 @@ Future<void> runQuestions() async {
   });
 }
 
-Future<Preferences> _preferences() async {
+/// The store the app keeps, read with the device's own region: unset, the
+/// units and the first day of the week (#339) are the region's, as they are in
+/// the app — the language [_locale] settles on may have dropped the region.
+Future<Preferences> _preferences(String? tag) async {
   final prefs = Preferences();
-  await prefs.init();
+  await prefs.init(locale: _region(tag));
   return prefs;
+}
+
+/// [tag] ("en-US", "zh-Hans-CN") as a locale that keeps its region, if it has one.
+Locale? _region(String? tag) {
+  if (tag == null) return null;
+  final [language, ...rest] = tag.split(RegExp('[-_]'));
+  return Locale(language, rest.where((part) => part.length == 2).firstOrNull);
 }
 
 /// The device's locale, as the native side names it ("fr-CA", "ru"), in one

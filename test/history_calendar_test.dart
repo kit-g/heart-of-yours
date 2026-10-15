@@ -55,13 +55,20 @@ void main() {
     _Workouts workouts, {
     Size size = const Size(390, 844),
     Locale locale = const Locale('en'),
+    int? firstWeekday,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({'firstWeekday': ?firstWeekday});
+    final preferences = Preferences();
+    await tester.runAsync(() => preferences.init(locale: locale));
     await tester.pumpWidget(
-      ChangeNotifierProvider<Workouts>.value(
-        value: workouts,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<Workouts>.value(value: workouts),
+          ChangeNotifierProvider<Preferences>.value(value: preferences),
+        ],
         child: MaterialApp(
           locale: locale,
           localizationsDelegates: localizationsDelegates,
@@ -238,6 +245,17 @@ void main() {
       tester.getTopLeft(find.bySemanticsLabel('Sunday')).dx,
       lessThan(tester.getTopLeft(find.bySemanticsLabel('Monday')).dx),
     );
+    semantics.dispose();
+  });
+
+  testWidgets("the user's first day wins over the locale's (#339)", (tester) async {
+    final semantics = tester.ensureSemantics();
+
+    await pump(tester, _Workouts(), firstWeekday: DateTime.saturday);
+    final saturday = tester.getTopLeft(find.bySemanticsLabel('Saturday')).dx;
+    for (final day in ['Sunday', 'Monday', 'Friday']) {
+      expect(saturday, lessThan(tester.getTopLeft(find.bySemanticsLabel(day)).dx), reason: day);
+    }
     semantics.dispose();
   });
 }

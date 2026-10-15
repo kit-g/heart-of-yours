@@ -71,7 +71,7 @@ class _ProgramsSection extends StatelessWidget {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final now = DateTime.now();
-    final firstWeekday = firstWeekdayOf(context);
+    final firstWeekday = firstWeekdayOf(context, listen: true);
 
     return Padding(
       padding: const .symmetric(horizontal: 8),

@@ -52,6 +52,45 @@ void main() {
     });
   });
 
+  group('firstWeekday', () {
+    test("is the locale's first day until the user picks one", () async {
+      await sut.init(locale: const Locale('en', 'US'));
+      expect(sut.firstWeekday, DateTime.sunday);
+
+      final british = Preferences();
+      await british.init(locale: const Locale('en', 'GB'));
+      expect(british.firstWeekday, DateTime.monday);
+
+      final russian = Preferences();
+      await russian.init(locale: const Locale('ru'));
+      expect(russian.firstWeekday, DateTime.monday);
+    });
+
+    test('is Monday before init and without a locale', () async {
+      expect(sut.firstWeekday, DateTime.monday);
+      await sut.init();
+      expect(sut.firstWeekday, DateTime.monday);
+    });
+
+    test('an unknown locale falls back to its language, then to Monday', () {
+      expect(Preferences.localeFirstWeekday(const Locale('en', 'ZZ')), DateTime.sunday);
+      expect(Preferences.localeFirstWeekday(const Locale('xx')), DateTime.monday);
+    });
+
+    test('the choice persists over the locale and notifies', () async {
+      await sut.init(locale: const Locale('en', 'US'));
+      final probe = ListenerProbe()..attach(sut);
+
+      await sut.setFirstWeekday(DateTime.saturday);
+      expect(sut.firstWeekday, DateTime.saturday);
+      expect(probe.notifications, 1);
+
+      final reopened = Preferences();
+      await reopened.init(locale: const Locale('en', 'US'));
+      expect(reopened.firstWeekday, DateTime.saturday);
+    });
+  });
+
   group('init()', () {
     test('sets isInitialized true, selects units by locale, and notifies once', () async {
       final probe = ListenerProbe()..attach(sut);

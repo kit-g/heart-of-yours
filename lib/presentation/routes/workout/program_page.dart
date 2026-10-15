@@ -43,7 +43,11 @@ class ProgramPage extends StatelessWidget {
     final copy = L.of(context);
     final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
     final sessions = Templates.watch(context).sessionsOf(program);
-    final position = programs.position(program, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
+    final position = programs.position(
+      program,
+      now: DateTime.now(),
+      firstWeekday: firstWeekdayOf(context, listen: true),
+    );
     final skipped = programs.skippedIn(program, position);
     final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 

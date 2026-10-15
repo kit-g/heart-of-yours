@@ -289,6 +289,44 @@ void main() {
   );
 
   group(
+    'getWorkoutCountBetween',
+    () {
+      test(
+        'counts what started in [from, to), wherever the caller starts the week',
+        () async {
+          // a Sunday-first week (#339): Sunday through Saturday
+          final sunday = dayOf(daysFromMonday: -1, hour: 0);
+          await seedWorkout(start: dayOf(daysFromMonday: -1, hour: 10));
+          await seedWorkout(start: dayOf(daysFromMonday: 5, hour: 23));
+          // the next Sunday opens the next week
+          await seedWorkout(start: dayOf(daysFromMonday: 6, hour: 9));
+          await seedWorkout(start: dayOf(daysFromMonday: 2), user: strangerId);
+
+          final count = await local.getWorkoutCountBetween(
+            sunday,
+            sunday.add(const Duration(days: 7)),
+            userId: userId,
+          );
+          expect(count, 2);
+        },
+      );
+
+      test(
+        'excludes unfinished workouts and matches nothing without a user',
+        () async {
+          final from = dayOf(hour: 0);
+          final to = from.add(const Duration(days: 7));
+          await seedWorkout(start: dayOf(daysFromMonday: 1), finished: false);
+          await seedWorkout(start: dayOf(daysFromMonday: 2));
+
+          expect(await local.getWorkoutCountBetween(from, to, userId: userId), 1);
+          expect(await local.getWorkoutCountBetween(from, to), 0);
+        },
+      );
+    },
+  );
+
+  group(
     'getTotalWorkoutCount',
     () {
       test(
