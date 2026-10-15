@@ -589,6 +589,17 @@ void main() {
         expect(Workouts.of(tester.element(find.byType(MaterialApp))).activeWorkout, isNull);
       });
 
+      testWidgets('a skip whose program was deleted still opens, with no way on to it', (tester) async {
+        final skip = TrainingSkip(id: 'k2', at: DateTime.utc(2026, 10, 6, 8), templateId: 't1');
+        when(db.getSkips(userId)).thenAnswer((_) async => [skip]);
+        when(api.getSkips()).thenAnswer((_) async => [skip]);
+        when(db.getProgramWorkouts(userId, 'p1')).thenAnswer((_) async => <Workout>[]);
+        await follow(tester, '/history/skips/k2');
+
+        expect(find.byKey(AppKeys.skipPage), findsOneWidget);
+        expect(find.byKey(AppKeys.skipOpenProgram), findsNothing);
+      });
+
       testWidgets('a session no longer in the program opens the program', (tester) async {
         when(db.getProgramWorkouts(userId, 'p1')).thenAnswer((_) async => <Workout>[]);
         final router = await follow(tester, '/workout/programs/p1/sessions/gone?week=1');
