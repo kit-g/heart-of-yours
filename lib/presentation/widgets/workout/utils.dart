@@ -621,13 +621,6 @@ Future<void> showDeleteImageDialog(
   );
 }
 
-/// The user's first day of the week, ISO (1 Monday … 7 Sunday), from the
-/// locale until #339 gives it a setting of its own.
-int firstWeekdayOf(BuildContext context) {
-  final index = MaterialLocalizations.of(context).firstDayOfWeekIndex;
-  return index == 0 ? DateTime.sunday : index;
-}
-
 /// [template] as the workout it starts. A program's session, while Programs
 /// is on, comes with its targets as the program has them this time (#349):
 /// a share of a base as a weight on the user's plates, a lighter cycle
