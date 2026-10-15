@@ -117,6 +117,36 @@ Map<DateTime, MuscleVolume> _bucketed(
   return grouped.map((bucket, rows) => MapEntry(bucket, muscleVolume(rows)));
 }
 
+/// What [row]'s sets count toward under the muscle key (#341): the atlas
+/// groups its tagging reaches, primary ones at the content's primary share
+/// and the others at its secondary share (`docs/2026-10-11.pattern-lens.md`,
+/// rule 8). An exercise nobody tagged — one the user made — falls to the group
+/// its target names (rule 7); a target no group answers to (cardio, the whole
+/// body) places nothing.
+Map<MuscleGroup, double> muscleGroupsOf(LensSets row) {
+  final primary = _groupsOf(row.muscles.primary);
+  final secondary = _groupsOf(row.muscles.secondary).difference(primary);
+  if (primary.isEmpty && secondary.isEmpty) {
+    return {?_groupOfTarget(row.target): 1.0};
+  }
+  return {
+    for (final group in primary) group: row.muscles.primaryShare,
+    for (final group in secondary) group: row.muscles.secondaryShare,
+  };
+}
+
+MuscleGroup? _groupOfTarget(Target target) {
+  return switch (target) {
+    .core => .core,
+    .arms => .arms,
+    .back => .back,
+    .chest => .chest,
+    .legs => .legs,
+    .shoulder => .shoulders,
+    .other || .olympic || .fullBody || .cardio => null,
+  };
+}
+
 /// The atlas groups a tag reaches: the ones it names, and the groups of the
 /// muscles it names. Ids and names the atlas does not know are dropped.
 Set<MuscleGroup> _groupsOf(MuscleTag? tag) {

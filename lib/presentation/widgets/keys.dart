@@ -195,4 +195,8 @@ abstract final class AppKeys {
   static const goEasyRow = Key('Programs.goEasy');
   static Key goEasy(String key) => Key('Programs.goEasy.$key');
   static const goEasySessionMark = Key('Programs.goEasy.session');
+
+  /// The profile's weekly sets card (#341) and its fold.
+  static const lensCard = ValueKey('lensCard');
+  static const lensShowAll = ValueKey('lensShowAll');
 }
