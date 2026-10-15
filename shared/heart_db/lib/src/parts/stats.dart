@@ -137,14 +137,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          'SELECT w.start AS start, e.muscles AS muscles, count(*) AS sets '
-          'FROM workouts w '
-          'JOIN workout_exercises we ON we.workout_id = w.id '
-          'JOIN sets s ON s.exercise_id = we.id '
-          'LEFT JOIN exercises e ON e.id = we.exercise_id '
-          'WHERE w.user_id = ? AND w.end IS NOT NULL AND w.start >= ? AND w.start < ? AND s.completed = 1 '
-          "AND s.set_type IS NOT 'warmup' "
-          'GROUP BY w.id, we.exercise_id',
+          sql.muscleSets,
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
@@ -182,15 +175,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
     if (userId == null) return Future.value(const []);
     return _db
         .rawQuery(
-          'SELECT w.id AS workout_id, w.start AS start, e.muscles AS muscles, e.movement AS movement, '
-          'e.target AS target, count(*) AS sets '
-          'FROM workouts w '
-          'JOIN workout_exercises we ON we.workout_id = w.id '
-          'JOIN sets s ON s.exercise_id = we.id '
-          'LEFT JOIN exercises e ON e.id = we.exercise_id '
-          'WHERE w.user_id = ? AND w.end IS NOT NULL AND w.start >= ? AND w.start < ? AND s.completed = 1 '
-          "AND s.set_type IS NOT 'warmup' "
-          'GROUP BY w.id, we.exercise_id',
+          sql.lensSets,
           [userId, from.toUtc().toIso8601String(), to.toUtc().toIso8601String()],
         )
         .then(
