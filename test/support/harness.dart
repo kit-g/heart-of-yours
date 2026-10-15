@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/analytics.dart';
+import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/env/config.dart';
 import 'package:heart/presentation/navigation/app.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
@@ -97,6 +98,8 @@ class TestAppHarness {
     int pumps = 8,
     // the running build's version, as package info reports it
     String version = '0.0.0',
+    // the device's calendars (#391): none unless a test brings its own
+    DeviceCalendar? calendar,
   }) async {
     final cfg = appConfig ?? AppConfig.test(allowsFeedbackFeature: false);
 
@@ -120,6 +123,7 @@ class TestAppHarness {
         appConfig: cfg,
         firebaseAuth: firebaseAuth ?? MockFirebaseAuth(),
         router: router ?? HeartRouter(),
+        calendar: calendar,
       ),
     );
 

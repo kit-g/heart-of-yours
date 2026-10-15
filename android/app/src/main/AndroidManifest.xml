@@ -21,6 +21,12 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- A program's sessions in the device's calendars (#391): read to list the
+         calendars and find the events Heart made, written to add and remove
+         them. Asked only after the user says yes in the app. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+
     <!-- Both scheduled notifications — the rest timer and the idle-workout
          reminder — go through `AlarmManager.setExactAndAllowWhileIdle`
          (`androidScheduleMode: .exactAllowWhileIdle`, notifications.dart:236
