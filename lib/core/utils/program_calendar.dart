@@ -48,9 +48,10 @@ final class ProgramSessionLink {
 /// what time — [time] in minutes after midnight, null for all day.
 typedef ProgramCalendarSetting = ({String calendarId, String calendar, int? time});
 
-/// One event Heart wrote: its id in the calendar, the day it is on, and what it
-/// said, to tell whether it needs writing again.
-typedef _Written = ({String id, DateTime day, String fingerprint});
+/// One event Heart wrote: its id, the calendar it is in, the day it is on, and
+/// what it said, to tell whether it needs writing again. A [calendarId] of null
+/// is one written before it was kept, which the next sync writes again.
+typedef _Written = ({String id, String? calendarId, DateTime day, String fingerprint});
 
 /// The calendar export of each program, and the events it wrote (#391).
 ///
@@ -104,24 +105,39 @@ class ProgramCalendars with ChangeNotifier {
 
   /// Puts [programId] in a calendar, or moves it to another one or another
   /// time; [sync] writes the events.
-  Future<void> set(String programId, ProgramCalendarSetting setting) async {
-    final before = _settings[programId];
-    _settings[programId] = setting;
-    // another calendar: the events in the old one go, and the next sync writes
-    // them where they now belong
-    if (before != null && before.calendarId != setting.calendarId) await _clear(programId, all: true);
-    await _save();
-    notifyListeners();
+  Future<void> set(String programId, ProgramCalendarSetting setting) {
+    return _serially(() async {
+      final before = _settings[programId];
+      _settings[programId] = setting;
+      // another calendar: the events in the old one go, and the next sync
+      // writes them where they now belong
+      if (before != null && before.calendarId != setting.calendarId) await _clear(programId, all: true);
+      await _save();
+      notifyListeners();
+    });
   }
 
   /// Takes [programId] out of the calendar: its events from today on go, and
   /// the setting with them.
-  Future<void> remove(String programId) async {
-    await _clear(programId);
-    _settings.remove(programId);
-    _events.remove(programId);
-    await _save();
-    notifyListeners();
+  Future<void> remove(String programId) {
+    return _serially(() async {
+      await _clear(programId);
+      _settings.remove(programId);
+      _events.remove(programId);
+      await _save();
+      notifyListeners();
+    });
+  }
+
+  // what changes the settings or the events runs one at a time: a sync
+  // halfway through its loop would otherwise write into a calendar the user
+  // just left, or into a map no longer kept
+  Future<void> _last = Future.value();
+
+  Future<void> _serially(Future<void> Function() body) {
+    final next = _last.then((_) => body());
+    _last = next.catchError((_) {});
+    return next;
   }
 
   Future<void>? _running;
@@ -148,9 +164,9 @@ class ProgramCalendars with ChangeNotifier {
   Future<void> _drain() async {
     try {
       for (var wanted = _queued; wanted != null; wanted = _queued) {
-        final (today, trained) = (_queuedToday!, _queuedTrained);
+        final (asked, today, trained) = (wanted, _queuedToday!, _queuedTrained);
         _queued = null;
-        await _sync(wanted, today, trained);
+        await _serially(() => _sync(asked, today, trained));
       }
     } finally {
       _running = null;
@@ -189,13 +205,13 @@ class ProgramCalendars with ChangeNotifier {
 
         for (final MapEntry<String, CalendarEventDraft>(:key, value: event) in events.entries) {
           final held = written[key];
-          if (held?.fingerprint == event.fingerprint) continue;
+          if ((held?.fingerprint, held?.calendarId) == (event.fingerprint, setting.calendarId)) continue;
           if (held != null) await calendar.delete(held.id);
           written.remove(key);
           changed = true;
           try {
             final id = await calendar.create(setting.calendarId, event);
-            written[key] = (id: id, day: event.day, fingerprint: event.fingerprint);
+            written[key] = (id: id, calendarId: setting.calendarId, day: event.day, fingerprint: event.fingerprint);
           } on CalendarMissing {
             // the calendar went: nothing of this program's can be written
             // until the user picks another
@@ -242,7 +258,12 @@ class ProgramCalendars with ChangeNotifier {
             for (final MapEntry(key: occurrence, value: event) in events.entries)
               if (event case {'id': String id, 'day': String day, 'print': String print})
                 if (DateTime.tryParse(day) case final DateTime day)
-                  '$occurrence': (id: id, day: day, fingerprint: print),
+                  '$occurrence': (
+                    id: id,
+                    calendarId: event['calendar'] as String?,
+                    day: day,
+                    fingerprint: print,
+                  ),
         };
       }
     }
@@ -259,8 +280,9 @@ class ProgramCalendars with ChangeNotifier {
             'calendar': calendar,
             'time': time,
             'events': {
-              for (final MapEntry(:key, value: (:id, :day, :fingerprint)) in (_events[programId] ?? const {}).entries)
-                key: {'id': id, 'day': day.toIso8601String(), 'print': fingerprint},
+              for (final MapEntry(:key, value: (:id, :calendarId, :day, :fingerprint))
+                  in (_events[programId] ?? const {}).entries)
+                key: {'id': id, 'calendar': ?calendarId, 'day': day.toIso8601String(), 'print': fingerprint},
             },
           },
       }),

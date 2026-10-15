@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/utils/program_calendar.dart';
@@ -100,6 +102,34 @@ void main() {
       expect(again.settingOf('p1'), (calendarId: 'c1', calendar: 'Home', time: null));
     });
 
+    test('moving calendars while a sync is halfway leaves nothing in the old one', () async {
+      calendar.gate = Completer();
+      final syncing = calendars.sync({
+        'p1': [('t1@1', event(today)), ('t2@1', event(DateUtils.addDaysToDate(today, 2)))],
+      }, today: today);
+      final moving = calendars.set('p1', (calendarId: 'c2', calendar: 'Work', time: null));
+      calendar.gate!.complete();
+      await (syncing, moving).wait;
+
+      await calendars.sync({
+        'p1': [('t1@1', event(today)), ('t2@1', event(DateUtils.addDaysToDate(today, 2)))],
+      }, today: today);
+      expect(calendar.events.keys.map((id) => calendar.calendarOf[id]), ['c2', 'c2']);
+    });
+
+    test('taking a program out while a sync is halfway leaves none of its events', () async {
+      calendar.gate = Completer();
+      final syncing = calendars.sync({
+        'p1': [('t1@1', event(DateUtils.addDaysToDate(today, 1)))],
+      }, today: today);
+      final removing = calendars.remove('p1');
+      calendar.gate!.complete();
+      await (syncing, removing).wait;
+
+      expect(calendar.events, isEmpty);
+      expect(calendars.settingOf('p1'), isNull);
+    });
+
     test('a refused permission writes nothing and throws nothing', () async {
       calendar.denied = true;
       await calendars.sync({
@@ -112,8 +142,12 @@ void main() {
 
 class _Calendar implements DeviceCalendar {
   final events = <String, CalendarEventDraft>{};
+  final calendarOf = <String, String>{};
   var created = 0;
   var denied = false;
+
+  /// Holds every write until completed: a sync caught halfway.
+  Completer<void>? gate;
 
   @override
   Future<List<CalendarChoice>> calendars() async => const [];
@@ -121,8 +155,10 @@ class _Calendar implements DeviceCalendar {
   @override
   Future<String> create(String calendarId, CalendarEventDraft event) async {
     if (denied) throw const CalendarDenied();
+    await gate?.future;
     final id = 'e${created++}';
     events[id] = event;
+    calendarOf[id] = calendarId;
     return id;
   }
 
