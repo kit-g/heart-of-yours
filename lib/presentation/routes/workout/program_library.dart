@@ -410,20 +410,27 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
     final tag = languageTag();
 
     _starting.value = true;
+    // made only once the copy is known to resolve, and taken back if the
+    // program then fails: "nothing changed" leaves no empty folder behind
+    TemplateFolder? folder;
     try {
-      final folder = switch (remote.allowed) {
-        true => await templates.createFolder(_freeFolderName(templates, program.name.of(tag))),
-        false => null,
-      };
       final order = templates.fold(-1, (highest, template) => max(highest, template.order)) + 1;
-      final made = program.copy(resolve: resolve, tag: tag, folder: folder, order: order);
-      if (made == null) throw StateError('no session of ${program.key} resolves');
+      if (program.copy(resolve: resolve, tag: tag) == null) {
+        throw StateError('no session of ${program.key} resolves');
+      }
+      if (remote.allowed) {
+        folder = await templates.createFolder(_freeFolderName(templates, program.name.of(tag)));
+      }
+      final made = program.copy(resolve: resolve, tag: tag, folder: folder, order: order)!;
 
       final started = await programs.create(made.program, sessions: made.sessions);
       analytics.programCreated(source: .library, sessions: made.sessions.length, library: program.key);
       if (context.mounted) widget.onProgram(started);
     } catch (e, s) {
       reportToSentry(e, stacktrace: s);
+      if (folder case final TemplateFolder made) {
+        await templates.deleteFolder(made).catchError((Object e, StackTrace s) => reportToSentry(e, stacktrace: s));
+      }
       messenger.showSnackBar(SnackBar(content: Text(copy.libraryStartFailed)));
     } finally {
       _starting.value = false;

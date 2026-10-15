@@ -226,6 +226,19 @@ void main() {
       expect(find.byKey(AppKeys.programAbout), findsOneWidget);
     });
 
+    testWidgets('a start that fails takes its folder back, so nothing changed is true', (tester) async {
+      answer(.on);
+      when(db.storeProgram(any, any)).thenThrow(StateError('disk full'));
+      when(api.deleteFolder(userId: anyNamed('userId'), folderId: anyNamed('folderId'))).thenAnswer((_) async {});
+      await openFirstSteps(tester);
+      await tester.tapByKey(AppKeys.libraryStart);
+      await tester.pumpTimes();
+
+      verify(api.createFolder(userId: userId, folder: anyNamed('folder'))).called(1);
+      verify(api.deleteFolder(userId: userId, folderId: 'f1')).called(1);
+      expect(Templates.of(tester.element(find.byType(MaterialApp))).folders, isEmpty);
+    });
+
     testWidgets('a program whose sessions do not fit says why, in place of the button', (tester) async {
       answer(.on);
       when(db.getTemplates(userId)).thenAnswer(
