@@ -160,4 +160,7 @@ const _migrations = <int, List<String>>{
     createSkips,
     skipsProgramIndex,
   ],
+  24: [
+    createContent,
+  ],
 };

@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
@@ -424,6 +425,13 @@ class Templates with ChangeNotifier, Iterable<Template> implements SignOutStateS
   }
 
   bool get allowsNewTemplate => length < (maxTemplates ?? _maxTemplates);
+
+  /// Whether [count] more templates fit under the allowance: a ready-made
+  /// program's sessions all arrive at once (#352).
+  bool allowsNewTemplates(int count) => count <= templateRoom;
+
+  /// How many more templates fit under the allowance.
+  int get templateRoom => max(0, (maxTemplates ?? _maxTemplates) - length);
 
   /// The device locale changed. Sample templates carry localized names picked
   /// at fetch time, so the cached batch is stale in the new language —

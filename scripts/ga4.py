@@ -99,6 +99,7 @@ EVENT_DIMENSIONS = {
     'kept_templates': 'Kept the templates',
     'replace_scope': 'Replace scope',
     'suggested': 'Picked a suggestion',
+    'library_program': 'Library program',
 }
 
 # User properties are user-scoped dimensions; GA4 draws no other distinction.

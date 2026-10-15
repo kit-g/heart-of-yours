@@ -104,6 +104,26 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
     return i18n[tag] ?? i18n[canonical] ?? i18n[language] ?? raw['name'];
   }
 
+  /// Heart's ready-made programs (#352): one file of programs, the research
+  /// behind them and their safety notes, as text for the caller to keep and
+  /// read. Asked for conditionally on [etag], the ETag of the copy the caller
+  /// already holds: null when that copy is still the current one.
+  ///
+  /// A file the CDN does not serve — before it is first uploaded — is a
+  /// [NetworkException], like any other failed read.
+  Future<({String body, String? etag})?> getProgramLibrary({String? etag}) async {
+    final response = await (client?.get ?? http.get)(
+      Uri.https(gateway, _programs),
+      headers: {...?defaultHeaders, 'If-None-Match': ?etag},
+    );
+    return switch (response.statusCode) {
+      304 => null,
+      // UTF-8 by definition, with no charset for `response.body` to go by
+      200 => (body: utf8.decode(response.bodyBytes), etag: response.headers['etag']),
+      final code => throw NetworkException(statusCode: code),
+    };
+  }
+
   /// The exercise library as static content: a manifest naming the publishing
   /// run and the locales it wrote, and one file per locale carrying exactly
   /// the API's list body for an anonymous caller (`own: false`, no unit
@@ -225,3 +245,4 @@ class Cdn with Requests implements RemoteConfigService, HeaderAuthenticatedServi
 }
 
 const _library = '/static/exercises';
+const _programs = '/static/programs';

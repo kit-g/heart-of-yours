@@ -5,6 +5,7 @@ class WorkoutPage extends StatefulWidget {
   final VoidCallback onOpenActiveWorkout;
   final void Function(Program) goToProgram;
   final void Function(TemplateFolder) goToNewProgram;
+  final VoidCallback goToLibrary;
 
   const new({
     super.key,
@@ -12,6 +13,7 @@ class WorkoutPage extends StatefulWidget {
     required this.onOpenActiveWorkout,
     required this.goToProgram,
     required this.goToNewProgram,
+    required this.goToLibrary,
   });
 
   @override
@@ -28,6 +30,7 @@ class _WorkoutPageState extends State<WorkoutPage> with AfterLayoutMixin {
           onNewWorkout: widget.onOpenActiveWorkout,
           goToProgram: widget.goToProgram,
           goToNewProgram: widget.goToNewProgram,
+          goToLibrary: widget.goToLibrary,
         ),
         floatingActionButton: WorkoutTimerFloatingButton(onPressed: widget.onOpenActiveWorkout),
       ),

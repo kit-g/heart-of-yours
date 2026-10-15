@@ -53,6 +53,14 @@ extension on BuildContext {
     return goNamed(_editProgramName, pathParameters: {'programId': programId});
   }
 
+  void goToProgramLibrary() {
+    return goNamed(_programLibraryName);
+  }
+
+  void goToLibraryProgram(String key) {
+    return goNamed(_libraryProgramName, pathParameters: {'key': key});
+  }
+
   void goToAccountManagement() {
     return goNamed(_accountManagementName);
   }

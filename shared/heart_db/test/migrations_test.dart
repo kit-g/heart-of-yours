@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 23);
+          expect(await userVersion(db), 24);
           expect(
             await tables(db),
             {
@@ -161,6 +161,7 @@ void main() {
               'program_bases',
               'programs_owed',
               'skips',
+              'content',
             },
           );
 
@@ -517,7 +518,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 23);
+          expect(await userVersion(db), 24);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -685,7 +686,7 @@ void main() {
     expect(await tables(db), isNot(contains('skips')));
     await db.close();
 
-    await LocalDatabase.init();
+    await LocalDatabase.init(version: 23);
     db = await raw();
     expect(await userVersion(db), 23);
     expect(
@@ -713,7 +714,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 23);
+    expect(await userVersion(db), 24);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -767,7 +768,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 23);
+          expect(await userVersion(db), 24);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
@@ -778,4 +779,20 @@ void main() {
       );
     },
   );
+
+  test('v24 keeps static content between launches (#352)', () async {
+    await LocalDatabase.init(version: 23);
+    var db = await raw();
+    expect(await tables(db), isNot(contains('content')));
+    await db.close();
+
+    await LocalDatabase.init();
+    db = await raw();
+    expect(await userVersion(db), 24);
+    expect(
+      await columns(db, 'content'),
+      {'key': 'TEXT', 'etag': 'TEXT', 'body': 'TEXT', 'stored_at': 'TEXT'},
+    );
+    await db.close();
+  });
 }

@@ -124,6 +124,7 @@ RouteBase _workoutRoute() {
         },
         goToProgram: (program) => context.goToProgram(program.id!),
         goToNewProgram: (folder) => context.goToNewProgram(folder.id!),
+        goToLibrary: context.goToProgramLibrary,
       );
     },
     name: _workoutName,
@@ -136,6 +137,25 @@ RouteBase _workoutRoute() {
           );
         },
         name: _templateEditorName,
+      ),
+      // before ':programId', which would otherwise take "library" for an id
+      GoRoute(
+        path: 'programs/library',
+        builder: (context, _) => ProgramLibraryPage(onOpen: (program) => context.goToLibraryProgram(program.key)),
+        name: _programLibraryName,
+        routes: [
+          GoRoute(
+            path: ':key',
+            builder: (context, state) {
+              return LibraryProgramPage(
+                programKey: state.pathParameters['key']!,
+                onProgram: (program) => context.goToProgram(program.id!),
+                onLibraryProgram: context.goToLibraryProgram,
+              );
+            },
+            name: _libraryProgramName,
+          ),
+        ],
       ),
       // before ':programId', which would otherwise take "new" for an id
       GoRoute(
@@ -155,6 +175,7 @@ RouteBase _workoutRoute() {
           return ProgramPage(
             programId: programId,
             onEdit: () => context.goToEditProgram(programId),
+            onAbout: context.goToLibraryProgram,
             onEditSession: context.pushTemplateEditor,
             onOpenActiveWorkout: () {
               HapticFeedback.mediumImpact();

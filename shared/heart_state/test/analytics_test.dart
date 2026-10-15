@@ -62,6 +62,18 @@ void main() {
       expect(parametersOf('exercise_replaced'), {'replace_scope': 'program', 'suggested': 'true'});
     });
 
+    test('a program from the library names which one by its key, and one from a folder names none (#352)', () {
+      sut.programCreated(source: .library, sessions: 6, library: 'strength_waves');
+      expect(parametersOf('program_created'), {
+        'source': 'library',
+        'sessions': 6,
+        'library_program': 'strength_waves',
+      });
+
+      sut.programCreated(source: .folder, sessions: 3);
+      expect(parametersOf('program_created'), {'source': 'folder', 'sessions': 3});
+    });
+
     test('a set type goes as its wire word (#151)', () {
       sut.setTypeChanged(type: .warmup);
 

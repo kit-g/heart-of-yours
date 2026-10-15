@@ -181,4 +181,15 @@ abstract final class AppKeys {
 
   /// The Done page's program block (#351): what the session moved.
   static const doneProgram = Key('Done.program');
+
+  /// Heart's ready-made programs (#352): the row on the Workout tab that opens
+  /// them, the library's filter and cards, and a program's page.
+  static const libraryEntry = Key('Programs.library');
+  static const libraryEquipment = Key('Programs.library.equipment');
+  static Key libraryProgram(String key) => Key('Programs.library.program.$key');
+  static Key libraryNext(String key) => Key('Programs.library.next.$key');
+  static Key librarySource(String key) => Key('Programs.library.source.$key');
+  static const libraryStart = Key('Programs.library.start');
+  static const libraryOpenYours = Key('Programs.library.openYours');
+  static const programAbout = Key('Programs.about');
 }

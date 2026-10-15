@@ -53,6 +53,8 @@ enum _Screen {
   newProgram,
   programWorkout,
   replaceScopeDialog,
+  programLibrary,
+  libraryProgram,
   exerciseNoteEditor,
   workoutNote,
   pausedWorkout,
@@ -122,6 +124,31 @@ Template _session(String id, int order, String name, {String? programId}) {
     ..name = name
     ..add(_bench);
   return Template.fromJson({...draft.toMap(), 'programId': ?programId});
+}
+
+/// Heart's ready-made programs (#352): three programs of the real file,
+/// rendered by heart-api and trimmed.
+final _library = File('shared/heart_state/test/fixtures/programs.json').readAsStringSync();
+
+/// The catalog exercises [_library] names, by their library keys.
+List<Exercise> _libraryCatalog() {
+  final keys = RegExp(r'"key": "([a-z0-9-]+)"|"([a-z0-9]+(?:-[a-z0-9]+)+)"')
+      .allMatches(_library)
+      .map((match) => match.group(1) ?? match.group(2)!)
+      .toSet();
+  return [
+    for (final key in keys)
+      Exercise.fromJson({
+        'id': 'id-$key',
+        'key': key,
+        'own': false,
+        'name': key,
+        'category': 'Barbell',
+        'target': 'Chest',
+        'archived': false,
+        'validated': false,
+      }),
+  ];
 }
 
 final _program = Program(
@@ -282,12 +309,25 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   // Programs on the Workout tab (#345, #347, #348): the offer under the
   // examples, the band, the program page and the new-program screen
   // (lib/presentation/routes/workout/{programs,program_page,program_form}.dart).
-  for (final screen in [_Screen.programsOffer, _Screen.programs, _Screen.programPage, _Screen.newProgram]) ...[
+  for (final screen in [
+    _Screen.programsOffer,
+    _Screen.programs,
+    _Screen.programPage,
+    _Screen.newProgram,
+    _Screen.programLibrary,
+    _Screen.libraryProgram,
+  ]) ...[
     (screen, _Guideline.labeledTapTarget, null),
     (screen, _Guideline.textContrastLight, null),
     (screen, _Guideline.textContrastDark, null),
   ],
   for (final guideline in [_Guideline.androidTapTarget, _Guideline.iosTapTarget]) ...[
+    (_Screen.programLibrary, guideline, null),
+    (
+      _Screen.libraryProgram,
+      guideline,
+      'Start program is PrimaryButton.wide (lib/presentation/routes/workout/program_library.dart:484) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), and a claim\'s source links (program_library.dart:756) are a line of small text — visual-density change, out of scope',
+    ),
     (
       _Screen.programsOffer,
       guideline,
@@ -980,8 +1020,14 @@ void main() {
           _Screen.programs ||
           _Screen.programPage ||
           _Screen.newProgram ||
-          _Screen.historyNotToday:
+          _Screen.historyNotToday ||
+          _Screen.programLibrary ||
+          _Screen.libraryProgram:
         final running = screen != _Screen.programsOffer;
+        // Heart's ready-made programs (#352): three of the real file, and the
+        // catalog exercises they name
+        when(cdn.getProgramLibrary(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _library, etag: null));
+        when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, _libraryCatalog()));
         SharedPreferences.setMockInitialValues({
           ...pastOnboarding(),
           if (running) 'feature-programs': 'on',
@@ -1306,16 +1352,20 @@ void main() {
           _Screen.programs ||
           _Screen.programPage ||
           _Screen.newProgram ||
-          _Screen.historyNotToday:
+          _Screen.historyNotToday ||
+          _Screen.programLibrary ||
+          _Screen.libraryProgram:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
         // never gets this far in a widget test
         final context = tester.element(find.byType(MaterialApp));
         final templates = Templates.of(context);
+        await Exercises.of(context).init();
         await templates.init();
         templates.notifyListeners();
         await Programs.of(context).init();
+        await ProgramLibrary.of(context).ensure();
         await tester.pumpTimes();
         switch (screen) {
           case _Screen.programsOffer:
@@ -1335,6 +1385,17 @@ void main() {
             await tester.pumpTimes();
             // the screen is only honest if the day set aside is on it
             expect(find.byKey(AppKeys.historySkip('k1')), findsOneWidget);
+          case _Screen.programLibrary || _Screen.libraryProgram:
+            await tester.scrollUntilVisible(
+              find.byKey(AppKeys.libraryEntry),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await tester.tapByKey(AppKeys.libraryEntry);
+            if (screen == _Screen.libraryProgram) {
+              await tester.pumpTimes();
+              await tester.tapByKey(AppKeys.libraryProgram('first_steps'));
+            }
           default:
             break;
         }
