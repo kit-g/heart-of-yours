@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:heart/core/utils/goals.dart';
 import 'package:heart/core/utils/records.dart';
+import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/routes/history/history.dart';
 import 'package:heart/presentation/widgets/chart_dimension.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart';
@@ -12,7 +13,6 @@ import 'package:heart/presentation/widgets/logo.dart';
 import 'package:heart/presentation/widgets/muscle_figures.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/workout/growth_measure.dart';
-import 'package:heart/presentation/widgets/workout/workout_detail.dart' show firstWeekdayOf;
 import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
