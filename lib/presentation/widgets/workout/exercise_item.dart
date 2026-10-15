@@ -201,7 +201,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                                 null => L.of(context).addExerciseNote,
                               }, style: textTheme.titleSmall),
                             ),
-                          if ((onReplaceExercise, exercise.pattern, exercise.isStarted) case (
+                          if ((onReplaceExercise, _slot, exercise.isStarted) case (
                             final onReplace?,
                             final String pattern,
                             false,
@@ -212,7 +212,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
                               onPressed: () => _replace(context, pattern, onReplace),
                               child: Text(L.of(context).swapExercise, style: textTheme.titleSmall),
                             ),
-                          if ((onReplaceExercise, exercise.pattern, exercise.isStarted) case (
+                          if ((onReplaceExercise, _slot, exercise.isStarted) case (
                             final onReplace?,
                             null,
                             false,
@@ -505,6 +505,15 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
       .autoRestTimer => L.of(context).restTimer,
       .remove => L.of(context).removeExercise,
       .inspectExercise => L.of(context).aboutExercise,
+    };
+  }
+
+  /// The open slot's pattern (#349), a Programs thing: with the plan not
+  /// shown, an exercise that came with one is replaced like any other.
+  String? get _slot {
+    return switch (showsPlan) {
+      true => exercise.pattern,
+      false => null,
     };
   }
 

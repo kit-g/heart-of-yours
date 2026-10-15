@@ -161,6 +161,30 @@ void main() {
     expect(find.byKey(WorkoutDetailKeys.replaceExerciseFor(squat.id)), findsNothing);
   });
 
+  testWidgets("with Programs off, a session's open slot is replaced like any exercise, never swapped", (tester) async {
+    SharedPreferences.setMockInitialValues({
+      ...pastOnboarding(),
+      'weightUnit': 'metric',
+      'distanceUnit': 'metric',
+      'feature-programs': FeatureAnswer.off.name,
+    });
+    final workout = Workout.fromExercises(
+      [WorkoutExercise(starter: ExerciseSet(squat))..pattern = 'squat_bilateral'],
+      name: 'Squats',
+      programId: 'p1',
+    );
+    await start(tester, workout);
+
+    await tester.tapByKey(WorkoutDetailKeys.exerciseOptionsFor(squat.id));
+    await tester.pumpTimes();
+    expect(find.byKey(WorkoutDetailKeys.replaceExerciseFor(squat.id)), findsOneWidget);
+    expect(
+      find.byKey(WorkoutDetailKeys.swapExerciseFor(squat.id)),
+      findsNothing,
+      reason: 'the open slot is a Programs thing: off, it was never built',
+    );
+  });
+
   testWidgets('the same pattern is suggested first, and what cannot take the sets is greyed', (tester) async {
     final context = await start(tester, squats());
     final l = L.of(tester.element(find.byType(WorkoutDetail)));
