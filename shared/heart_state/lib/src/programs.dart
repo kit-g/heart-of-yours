@@ -4,6 +4,7 @@ import 'package:heart_models/heart_models.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import 'program_calendar.dart';
 import 'program_growth.dart';
 import 'program_plan.dart';
 import 'remote.dart';
@@ -227,6 +228,39 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     };
   }
 
+  /// Whether [programId] had a workout or a skip on [day]'s calendar day, in
+  /// [day]'s zone: a day whose session is behind it (#391).
+  bool markedOn(String programId, DateTime day) {
+    return (_marks[programId] ?? const <ProgramMark>[]).any((mark) {
+      final at = day.isUtc ? mark.at.toUtc() : mark.at.toLocal();
+      return at.year == day.year && at.month == day.month && at.day == day.day;
+    });
+  }
+
+  /// What became of [session] in [program]'s week [week] (#391): the workout or
+  /// the skip that did it, still ahead, or passed with nothing to show for it.
+  /// Read from the mirror, whose workouts carry their ids where marks do not.
+  Future<OccurrenceState> occurrence(
+    Program program, {
+    required String session,
+    required int week,
+    required DateTime now,
+    int firstWeekday = DateTime.monday,
+  }) async {
+    final (uid, id) = (userId, program.id);
+    if (uid == null || id == null) return const OccurrencePassed();
+    return occurrenceOf(
+      program,
+      session: session,
+      week: week,
+      workouts: await _service.getProgramWorkouts(uid, id),
+      skips: skipsOf(id),
+      actions: actionsOf(id),
+      now: now,
+      firstWeekday: firstWeekday,
+    );
+  }
+
   /// Every value [programId]'s rules have given its exercises, oldest first:
   /// the "100 → 102.5 → 105" view.
   List<ProgramBase> basesOf(String programId) => UnmodifiableListView(_bases[programId] ?? const []);
@@ -306,6 +340,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
 
     await _step(() => _readMirror(id));
     _loaded = true;
+    // for whoever waits on it: a link from a calendar (#391)
+    notifyListeners();
 
     if (!_remote.allowed) return;
 

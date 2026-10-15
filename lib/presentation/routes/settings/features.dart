@@ -84,6 +84,8 @@ class _FeaturesPageState extends State<FeaturesPage> {
     return switch (feature) {
       // only where there is a watch with Heart on it
       .watchApp => const _WatchAppSwitch(),
+      // part of Programs: with Programs off there is no calendar to fill
+      .programCalendar => const _ProgramCalendarSwitch(),
       _ => _FeatureSwitch(feature),
     };
   }
@@ -228,6 +230,19 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
         ),
       ],
     );
+  }
+}
+
+/// The calendar's switch (#391), there while Programs is on.
+class _ProgramCalendarSwitch extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (Preferences.watch(context).isOn(.programs)) {
+      true => const _FeatureSwitch(.programCalendar),
+      false => const SizedBox.shrink(),
+    };
   }
 }
 
