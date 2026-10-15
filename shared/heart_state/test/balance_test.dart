@@ -8,6 +8,7 @@ void main() {
   LensSets row({required DateTime start, List<String> patterns = const [], int sets = 3}) {
     return (
       workoutId: 'w${start.day}',
+      exerciseId: patterns.join('+'),
       start: start,
       movement: Movement.fromJson({'groups': patterns}),
       muscles: MuscleTagging.empty(),

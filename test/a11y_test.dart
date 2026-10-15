@@ -1028,6 +1028,7 @@ void main() {
         LensSets row(String workout, DateTime start, String pattern, int sets) {
           return (
             workoutId: workout,
+            exerciseId: pattern,
             start: start,
             movement: Movement.fromJson({
               'groups': [pattern],

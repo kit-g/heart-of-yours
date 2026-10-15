@@ -360,7 +360,7 @@ class const _WeeklyBalanceBody({
   Widget build(BuildContext context) {
     final l = L.of(context);
     final ThemeData(:textTheme, colorScheme: ColorScheme(:onSurfaceVariant)) = Theme.of(context);
-    final trained = counts.where((count) => (count.left + count.right).round() > 0).toList();
+    final trained = counts.where((count) => wholeSets(count.left + count.right) > 0).toList();
 
     return Column(
       crossAxisAlignment: .stretch,
@@ -422,7 +422,7 @@ class const _BalancePairTile({
     final ThemeData(:textTheme, colorScheme: ColorScheme(:onSurfaceVariant)) = Theme.of(context);
     final BalanceCount(:pair, :left, :right) = count;
     final (leftLabel, rightLabel) = (_sideLabel(pair.left, l), _sideLabel(pair.right, l));
-    final (leftSets, rightSets) = (left.round(), right.round());
+    final (leftSets, rightSets) = (wholeSets(left), wholeSets(right));
 
     return Semantics(
       container: true,
