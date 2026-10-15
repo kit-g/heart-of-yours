@@ -333,7 +333,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
   /// The user's own exercises, which the CDN cannot know: the authenticated
   /// list, with the unit preferences the server joins onto them.
   Future<void> _syncOwn() async {
-    final own = (await _remoteService.getOwnExercises()).toList()..sort();
+    final own = (await _remoteService.getOwnExercises()).map(_withPattern).toList()..sort();
     _exercises.addAll(own.byId);
     await _service.storeExercises(own, userId: userId);
 
@@ -655,6 +655,17 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     return null;
   }
 
+  /// [exercise] as the server has it, with the movement pattern the user gave
+  /// it on this device (#343). The server keeps no movement on a custom
+  /// exercise, so an empty one from there is silence, never a clearing: the
+  /// mirror's copy stands until the server has one of its own.
+  Exercise _withPattern(Exercise exercise) {
+    return switch ((exercise.movement.isEmpty, _exercises[exercise.id]?.movement)) {
+      (true, Movement local) when !local.isEmpty => exercise.copyWith(movement: local),
+      _ => exercise,
+    };
+  }
+
   Future<void> _storeLocalExercise(Exercise exercise) {
     return _service.storeExercises([exercise.copyWith(isMine: true)], userId: userId);
   }
@@ -689,7 +700,7 @@ class Exercises with ChangeNotifier, Iterable<Exercise> implements SignOutStateS
     final edited = exercise.copyWith(isArchived: archived);
     _exercises[exercise.id] = edited;
     final saved = switch (_remote.allowed) {
-      true => await _remoteService.editExercise(edited),
+      true => _withPattern(await _remoteService.editExercise(edited)),
       false => edited,
     };
     _service.storeExercises([saved], userId: userId);

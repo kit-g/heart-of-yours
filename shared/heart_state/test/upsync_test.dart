@@ -85,12 +85,19 @@ class _Server extends Fake implements UpsyncService {
     if (unreadable.contains(id)) throw ArgumentError('Invalid value for GoalMetric: aMetricFromTheFuture');
   }
 
+  /// The server keeps no movement on a custom exercise (#343).
+  bool dropsMovement = false;
+
   @override
   Future<Replayed<Exercise>> replayExercise(Exercise exercise) async {
     _reach(.exercise, exercise.id);
+    final row = switch (dropsMovement) {
+      true => Exercise.fromJson({...exercise.toMap()..remove('movement')}),
+      false => exercise,
+    };
     return switch (merged[exercise.id]) {
-      String theirs => (row: Exercise.fromJson({...exercise.toMap(), 'id': theirs}), created: false),
-      null => (row: exercise, created: !existing.contains(exercise.id)),
+      String theirs => (row: Exercise.fromJson({...row.toMap(), 'id': theirs}), created: false),
+      null => (row: row, created: !existing.contains(exercise.id)),
     };
   }
 
@@ -409,6 +416,24 @@ void main() {
       verifyNever(templates.deleteTemplate(any));
       verify(workouts.storeWorkoutHistory(any, uid)).called(2);
       verify(goals.reconcileGoalId('g1', any, uid)).called(1);
+    });
+
+    test("a custom's movement pattern stays when the server's copy has none (#343)", () async {
+      seedStore();
+      final patterned = Exercise.fromJson({
+        ...custom.toMap(),
+        'movement': {
+          'groups': ['chest_fly'],
+        },
+      });
+      when(exercises.getExercises(userId: uid)).thenAnswer((_) async => (null, [bench, patterned]));
+      server.dropsMovement = true;
+      await sut.claim(from: uid, to: uid);
+
+      await sut.run(uid);
+
+      final stored = verify(exercises.storeExercises(captureAny, userId: uid)).captured.single as Iterable<Exercise>;
+      expect(stored.single.movement.groups, ['chest_fly']);
     });
 
     test('into an account with history: 200s are counted as already there', () async {

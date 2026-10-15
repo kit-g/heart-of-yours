@@ -210,6 +210,53 @@ void main() {
       verify(local.storeExercises([curl], userId: 'u1')).called(1);
     });
 
+    // the server keeps no movement on a custom exercise (#343): its empty one
+    // is silence, and the pattern the user gave it on this device stays
+    test("a custom's pattern survives the server's copy, which has none", () async {
+      Exercise curl(List<String> groups) => Exercise.fromJson({
+        'id': 'id-curl',
+        'name': 'My Curl',
+        'category': 'Dumbbell',
+        'target': 'Arms',
+        'own': true,
+        if (groups.isNotEmpty) 'movement': {'groups': groups},
+      });
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer(
+        (_) async => (
+          null,
+          [
+            curl(['elbow_flexion']),
+          ],
+        ),
+      );
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl([])]);
+
+      await sut.init();
+
+      expect(sut.lookup('id-curl')?.movement.groups, ['elbow_flexion']);
+      final [stored] = verify(local.storeExercises(captureAny, userId: 'u1')).captured.single as List<Exercise>;
+      expect(stored.movement.groups, ['elbow_flexion']);
+    });
+
+    test("the server's own movement on a custom wins over the device's", () async {
+      Exercise curl(String group) => Exercise.fromJson({
+        'id': 'id-curl',
+        'name': 'My Curl',
+        'category': 'Dumbbell',
+        'target': 'Arms',
+        'own': true,
+        'movement': {
+          'groups': [group],
+        },
+      });
+      when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [curl('elbow_flexion')]));
+      when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[curl('forearm')]);
+
+      await sut.init();
+
+      expect(sut.lookup('id-curl')?.movement.groups, ['forearm']);
+    });
+
     test('a unit preference on an own exercise is mirrored locally', () async {
       final curl = Exercise.fromJson({
         'id': 'id-curl',

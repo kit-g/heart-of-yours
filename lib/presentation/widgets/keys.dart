@@ -207,4 +207,9 @@ abstract final class AppKeys {
   /// The profile's weekly sets card (#341) and its fold.
   static const lensCard = ValueKey('lensCard');
   static const lensShowAll = ValueKey('lensShowAll');
+
+  /// The new-exercise dialog's movement pattern (#343), and each of its menu's
+  /// choices.
+  static const newExercisePattern = Key('NewExercise.pattern');
+  static Key newExercisePatternOption(String? pattern) => Key('NewExercise.pattern.${pattern ?? 'none'}');
 }
