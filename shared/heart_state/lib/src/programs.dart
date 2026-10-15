@@ -623,15 +623,28 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   ///
   /// Editing the workout later runs nothing again: what moved stays moved,
   /// and the program page's bases are where it is changed by hand.
-  Future<List<GrowthMove>> grow(Workout workout, {Template? session, Future<void>? after}) {
-    return _grown[workout.id] ??= _grow(workout, session: session, after: after);
+  ///
+  /// [slots] are [slotsOf] the workout as it stood before the finish dropped
+  /// the exercises nobody ticked.
+  Future<List<GrowthMove>> grow(
+    Workout workout, {
+    Template? session,
+    Map<String, String>? slots,
+    Future<void>? after,
+  }) {
+    return _grown[workout.id] ??= _grow(workout, session: session, slots: slots, after: after);
   }
 
   /// What [grow] answered for [workoutId], while it is remembered; null when
   /// it never ran on this launch.
   Future<List<GrowthMove>>? grownBy(String workoutId) => _grown[workoutId];
 
-  Future<List<GrowthMove>> _grow(Workout workout, {Template? session, Future<void>? after}) async {
+  Future<List<GrowthMove>> _grow(
+    Workout workout, {
+    Template? session,
+    Map<String, String>? slots,
+    Future<void>? after,
+  }) async {
     try {
       await after;
     } catch (_) {
@@ -679,11 +692,24 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         before: before,
         closesCycle: after.week > before.week,
         session: session,
+        slots: slots,
       );
 
-      return [for (final move in moves) await _write(move, programId: id, workoutId: workout.id)];
+      // each move on its own: one that fails is reported and left out, and
+      // the ones written before and after it still reach Done with their Keep
+      final written = <GrowthMove>[];
+      for (final move in moves) {
+        try {
+          written.add(await _write(move, programId: id, workoutId: workout.id));
+        } catch (e, s) {
+          onError?.call(e, stacktrace: s);
+        }
+      }
+      return written;
     } catch (e, s) {
       onError?.call(e, stacktrace: s);
+      // nothing was written: forget the answer, so asking again runs it again
+      _grown.remove(workout.id);
       return const [];
     }
   }
@@ -725,15 +751,22 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Moves [program]'s ladder rule from [from] to [to], and its sessions'
   /// [from] to [to] with it (heart-api#231): the rule is keyed by the rung the
   /// sessions hold.
+  ///
+  /// When [to] already has a rule of its own, the rules stay as they are: [to]
+  /// keeps its own, which its other sessions grow by, and the moved one stays
+  /// under [from], where moving back finds it again. Re-keying would put two
+  /// rules on one key and silently lose one of them.
   Future<void> _climb(Program program, {required String from, required String to}) async {
     final current = _programs[program.id] ?? program;
-    await update(
-      current.copyWith(
-        rules: {
-          for (final MapEntry(:key, :value) in current.rules.entries) key == from ? to : key: value,
-        },
-      ),
-    );
+    if (!current.rules.containsKey(to)) {
+      await update(
+        current.copyWith(
+          rules: {
+            for (final MapEntry(:key, :value) in current.rules.entries) key == from ? to : key: value,
+          },
+        ),
+      );
+    }
     await onAdvance?.call(current.sessions, from: from, to: to);
   }
 

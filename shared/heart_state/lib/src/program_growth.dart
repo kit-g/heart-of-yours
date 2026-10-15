@@ -72,7 +72,9 @@ typedef EarlierSession = ({Workout workout, bool lighter});
 /// the program's workouts before it, oldest first. [before] is the position
 /// the workout was done in, and [closesCycle] whether it completed that
 /// week's cycle. [session] is the template it was started from, which names
-/// the occurrences a slotted base is kept for.
+/// the occurrences a slotted base is kept for, and [slots] which of them each
+/// of [workout]'s exercises was ([slotsOf], read before the finish dropped
+/// any); without them, the nth occurrence is the nth.
 ///
 /// Pure: offline and signed out alike, what the device writes is what this
 /// returns.
@@ -84,8 +86,9 @@ List<GrowthMove> growthOf(
   required ProgramPosition before,
   required bool closesCycle,
   Template? session,
+  Map<String, String>? slots,
 }) {
-  final groups = _groups(workout, session: session, bases: bases);
+  final groups = _groups(workout, session: session, bases: bases, slots: slots);
 
   if (program.tests[workout.templateId] case final ProgramTest test) {
     return [
@@ -110,13 +113,16 @@ List<GrowthMove> growthOf(
 
     // the streak runs since the base last changed: a session before it was
     // judged against another base
+    // a session whose occurrences can't be told apart any more says nothing
     final since = [
       for (final each in earlier)
-        if (base == null || each.workout.start.isAfter(base.at)) each,
+        if (base == null || each.workout.start.isAfter(base.at))
+          if (_setsOf(each.workout, group, session: session) case final List<ExerciseSet> sets)
+            (sets: sets, lighter: each.lighter),
     ];
     final misses = Progression.streak(
       rule,
-      [for (final each in since) _setsOf(each.workout, group, session: session)],
+      [for (final each in since) each.sets],
       lighter: [for (final each in since) each.lighter],
     );
 
@@ -160,9 +166,14 @@ extension on _Group {
   String get key => slot ?? exerciseId;
 }
 
-List<_Group> _groups(Workout workout, {Template? session, required Map<String, ProgramBase> bases}) {
+List<_Group> _groups(
+  Workout workout, {
+  Template? session,
+  required Map<String, ProgramBase> bases,
+  Map<String, String>? slots,
+}) {
   final groups = <String, _Group>{};
-  for (final (exercise, slot) in _occurrences(workout, session)) {
+  for (final (exercise, slot) in _occurrences(workout, session, slots: slots)) {
     final id = exercise.exercise.id;
     final own = switch (slot) {
       final String slot when bases.containsKey(slot) => slot,
@@ -175,11 +186,33 @@ List<_Group> _groups(Workout workout, {Template? session, required Map<String, P
   return groups.values.toList();
 }
 
+/// Each of [workout]'s exercises by id, with the template exercise it was
+/// started from: the nth occurrence of a lift in the workout is the nth in
+/// [session]. Read while the workout still holds every exercise it started
+/// with — the finish drops the ones nobody ticked, and after that a skipped
+/// first occurrence would hand the second's sets to the first's slot.
+Map<String, String> slotsOf(Workout workout, Template? session) {
+  return {
+    for (final (exercise, slot) in _occurrences(workout, session)) exercise.id: ?slot,
+  };
+}
+
 /// Each of [workout]'s exercises with the template exercise it was started
-/// from: the nth occurrence of a lift in the workout is the nth in [session].
-/// A workout keeps no link to its template's exercises, and a lift used
-/// twice in one session is the only case a slot tells apart.
-Iterable<(WorkoutExercise, String?)> _occurrences(Workout workout, Template? session) sync* {
+/// from: [slots]' answer when given, else the nth occurrence of a lift in the
+/// workout is the nth in [session]. A workout keeps no link to its
+/// template's exercises, and a lift used twice in one session is the only
+/// case a slot tells apart.
+Iterable<(WorkoutExercise, String?)> _occurrences(
+  Workout workout,
+  Template? session, {
+  Map<String, String>? slots,
+}) sync* {
+  if (slots != null) {
+    for (final exercise in workout) {
+      yield (exercise, slots[exercise.id]);
+    }
+    return;
+  }
   final seen = <String, int>{};
   for (final exercise in workout) {
     final id = exercise.exercise.id;
@@ -193,8 +226,10 @@ Iterable<(WorkoutExercise, String?)> _occurrences(Workout workout, Template? ses
 }
 
 /// [group]'s exercise as an earlier [workout] did it: the same occurrence of
-/// the same session for a slotted base, else every occurrence.
-List<ExerciseSet> _setsOf(Workout workout, _Group group, {Template? session}) {
+/// the same session for a slotted base, else every occurrence. Null when the
+/// occurrences can't be told apart: the finish dropped one, and by position
+/// the rest would be read as the wrong slots.
+List<ExerciseSet>? _setsOf(Workout workout, _Group group, {Template? session}) {
   final slot = group.slot;
   if (slot == null) {
     return [
@@ -203,6 +238,9 @@ List<ExerciseSet> _setsOf(Workout workout, _Group group, {Template? session}) {
     ];
   }
   if (workout.templateId != session?.id) return const [];
+  bool sameLift(WorkoutExercise exercise) => exercise.exercise.id == group.exerciseId;
+  final planned = session?.where(sameLift).length ?? 0;
+  if (workout.where(sameLift).length < planned) return null;
   return [
     for (final (exercise, each) in _occurrences(workout, session))
       if (each == slot) ...exercise,
