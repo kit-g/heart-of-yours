@@ -271,11 +271,16 @@ RouteBase _activeWorkoutRoute() {
         builder: (context) {
           final workouts = Workouts.watch(context);
 
-          if (workouts.activeWorkout == null) {
+          final active = workouts.activeWorkout;
+          if (active == null) {
             return const SizedBox.shrink();
           }
 
           return ActiveWorkoutSheet(
+            // a workout replaced under the open sheet — a start link's, whose
+            // cancel and start land in one frame — gets a sheet of its own,
+            // not the old one's name field (#423)
+            key: ValueKey(active.id),
             workouts: workouts,
             onTapImage: context.goToGallery,
           );
