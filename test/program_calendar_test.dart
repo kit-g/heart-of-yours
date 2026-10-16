@@ -41,7 +41,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       calendar = _Calendar();
-      calendars = ProgramCalendars(calendar: calendar);
+      calendars = ProgramCalendars(calendar: calendar, now: () => today);
       await calendars.init();
       await calendars.set('p1', (calendarId: 'c1', calendar: 'Home', time: null));
     });
@@ -93,7 +93,7 @@ void main() {
         'p1': [('t1@1', event(today))],
       }, today: today);
 
-      final again = ProgramCalendars(calendar: calendar);
+      final again = ProgramCalendars(calendar: calendar, now: () => today);
       await again.init();
       await again.sync({
         'p1': [('t1@1', event(today))],
