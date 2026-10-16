@@ -8,6 +8,7 @@ import 'program_calendar.dart';
 import 'program_growth.dart';
 import 'program_plan.dart';
 import 'remote.dart';
+import 'skips.dart';
 import 'upsync.dart' show Replayed;
 import 'workouts.dart';
 
@@ -16,6 +17,10 @@ import 'workouts.dart';
 /// its own edit (#348). A skip is "Not today" (#312): it names its program,
 /// and outlives it.
 enum ProgramRow { program, action, base, session, skip }
+
+/// What a skip with no program is owed under: the ledger's program column is
+/// never null, and a skip's resend reads the mirror, never its program.
+const _noProgram = '';
 
 /// What was done to a row on this device.
 enum ProgramChange { created, edited, deleted, deletedKeepingTemplates }
@@ -181,7 +186,8 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   final _bases = <String, List<ProgramBase>>{};
   final _marks = <String, List<ProgramMark>>{};
   final _skips = <String, List<TrainingSkip>>{};
-  // the skips whose program was deleted: they outlive it, as on the server
+  // the skips with no program: a plain day set aside (#312), or one whose
+  // program was deleted, as they outlive it on the server
   final _orphanSkips = <TrainingSkip>[];
   final _owed = <(ProgramRow, String), ProgramOwed>{};
 
@@ -702,16 +708,61 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// as done in the open cycle and nothing grows
   /// (`docs/2026-10-11.programs.md`): the position moves on, and a growth
   /// rule never reads a skip. History, not state: taking it back is [unskip].
-  Future<TrainingSkip> skip(Program program, {required String session, DateTime? at}) {
+  Future<TrainingSkip> skip(Program program, {required String session, SkipReason? reason, DateTime? at}) {
+    return _skipOf(
+      TrainingSkip(
+        id: uuidV7(),
+        at: at ?? DateTime.timestamp(),
+        reason: reason?.value,
+        templateId: session,
+        programId: program.id,
+      ),
+    );
+  }
+
+  /// "Not today" (#312) on a day no program asked anything of: the day set
+  /// aside, and nothing else. Heart records it and prescribes nothing.
+  Future<TrainingSkip> skipDay({SkipReason? reason, DateTime? at}) {
+    return _skipOf(TrainingSkip(id: uuidV7(), at: at ?? DateTime.timestamp(), reason: reason?.value));
+  }
+
+  /// [skip] again with [reason], the one tap offered after it. The server keeps
+  /// a skip as it was first recorded, so the reason comes as the same moment
+  /// under a new id, and the first one goes.
+  Future<TrainingSkip> giveReason(TrainingSkip skip, SkipReason reason) async {
+    await unskip(skip);
+    return _skipOf(
+      TrainingSkip(
+        id: uuidV7(),
+        at: skip.at,
+        reason: reason.value,
+        weather: skip.weather,
+        templateId: skip.templateId,
+        programId: skip.programId,
+      ),
+    );
+  }
+
+  Future<TrainingSkip> _skipOf(TrainingSkip skip) async {
     final uid = userId;
     if (uid == null) throw StateError('a skip belongs to an account or a session');
-    final skip = TrainingSkip(
-      id: uuidV7(),
-      at: at ?? DateTime.timestamp(),
-      templateId: session,
-      programId: program.id,
-    );
-    if (program.id case final String id) _marks.putIfAbsent(id, () => []).add(ProgramMark.skip(skip));
+    final programId = skip.programId;
+    if (programId == null) {
+      _orphanSkips.add(skip);
+      notifyListeners();
+      await _service.storeSkip(skip, uid);
+      await _owe(.skip, skip.id!, .created, programId: _noProgram);
+      if (!_remote.allowed) return skip;
+      try {
+        final saved = await _confirmSkip(skip);
+        await _settle(.skip, skip.id!);
+        return saved;
+      } catch (e, s) {
+        onError?.call(e, stacktrace: s);
+        return skip;
+      }
+    }
+    _marks.putIfAbsent(programId, () => []).add(ProgramMark.skip(skip));
     return _record(
       skip,
       .skip,
@@ -719,24 +770,29 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
       idOf: (skip) => skip.id,
       store: (skip) => _service.storeSkip(skip, uid),
       confirm: _confirmSkip,
-      programId: skip.programId,
+      programId: programId,
     );
   }
 
-  /// Takes [skip] back: its session is due again.
+  /// Takes [skip] back: its session, if it had one, is due again.
   Future<void> unskip(TrainingSkip skip) async {
     final programId = skip.programId;
     final skipId = skip.id;
-    if (programId == null || skipId == null) return;
+    if (skipId == null) return;
 
-    _skips[programId]?.removeWhere((each) => each.id == skipId);
-    _marks[programId]?.removeWhere(
-      (mark) => !mark.isWorkout && mark.templateId == skip.templateId && mark.at.isAtSameMomentAs(skip.at),
-    );
+    switch (programId) {
+      case final String id:
+        _skips[id]?.removeWhere((each) => each.id == skipId);
+        _marks[id]?.removeWhere(
+          (mark) => !mark.isWorkout && mark.templateId == skip.templateId && mark.at.isAtSameMomentAs(skip.at),
+        );
+      case null:
+        _orphanSkips.removeWhere((each) => each.id == skipId);
+    }
     notifyListeners();
 
     await _service.deleteSkip(skipId);
-    await _unowe(.skip, skipId, programId: programId);
+    await _unowe(.skip, skipId, programId: programId ?? _noProgram);
     if (!_remote.allowed) return;
 
     try {

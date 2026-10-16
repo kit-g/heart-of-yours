@@ -1077,6 +1077,58 @@ void main() {
       expect((kept.id, kept.templateId, kept.programId), (skip.id, 's1', null));
     });
 
+    test('a plain day set aside is sent, listed, and owed when the network is down', () async {
+      await following();
+
+      final day = await programs.skipDay(at: DateTime.utc(2026, 10, 7, 8));
+      expect((day.programId, day.templateId, day.reason), (null, null, null));
+      expect(day.isDay, isTrue);
+      expect(programs.skips.map((each) => each.id), [day.id]);
+      expect(remote.calls, contains('replaySkip ${day.id}'));
+      expect(local.owed, isEmpty);
+
+      remote.failing = true;
+      final offline = await programs.skipDay();
+      expect(local.owed.map((each) => (each.row, each.id)), [(ProgramRow.skip, offline.id)]);
+
+      remote.failing = false;
+      final next = relaunch();
+      await next.init();
+      expect(remote.skips.map((each) => each.id), contains(offline.id));
+      expect(local.owed, isEmpty);
+      // the moment, a reason and a session go up; nothing else does — what
+      // Health says about the day is never part of a skip
+      for (final sent in remote.skips) {
+        expect(sent.toMap().keys, everyElement(isIn({'id', 'at', 'reason', 'weather', 'templateId', 'programId'})));
+      }
+    });
+
+    test('taking a plain day back deletes it there and here', () async {
+      await following();
+      final day = await programs.skipDay();
+
+      await programs.unskip(day);
+
+      expect(programs.skips, isEmpty);
+      expect(local.skips, isEmpty);
+      expect(remote.calls, contains('deleteSkip ${day.id}'));
+    });
+
+    test('a reason comes as the same moment under a new id, and the first goes', () async {
+      final followed = await following();
+      final skip = await programs.skip(followed, session: 's1', at: DateTime.utc(2026, 10, 7, 8));
+
+      final given = await programs.giveReason(skip, .justNo);
+
+      expect(given.id, isNot(skip.id));
+      expect((given.at, given.reason, given.templateId, given.programId), (skip.at, 'just_no', 's1', 'p1'));
+      expect(programs.skipsOf('p1').map((each) => each.id), [given.id]);
+      expect(remote.calls, containsAllInOrder(['deleteSkip ${skip.id}', 'replaySkip ${given.id}']));
+      // the session is still set aside: the reason changed nothing else
+      expect(programs.position(followed, now: now, firstWeekday: DateTime.monday).done, {'s1'});
+      expect(SkipReason.of(given.reason), SkipReason.justNo);
+    });
+
     test("a program-less skip, the mirror's and the server's, is listed", () async {
       final orphan = TrainingSkip(id: 'orphan', at: DateTime.utc(2026, 10, 2), templateId: 's2');
       local.skips.add(orphan);
