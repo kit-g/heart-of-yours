@@ -31,6 +31,8 @@ Future<LocalImage?> cropImage(BuildContext context, LocalFile file, String heade
           toolbarTitle: header,
           toolbarColor: colorScheme.surface,
           toolbarWidgetColor: colorScheme.onSurface,
+          // the status bar sits over the toolbar: dark icons only on a light one
+          statusBarLight: colorScheme.brightness == .light,
           backgroundColor: scaffoldBackgroundColor,
           cropFrameColor: colorScheme.tertiaryContainer,
           cropGridColor: colorScheme.tertiary,
