@@ -74,6 +74,13 @@ void main() {
       expect(parametersOf('program_created'), {'source': 'folder', 'sessions': 3});
     });
 
+    test('a program\'s constraint says it was set or cleared, never which (#355)', () {
+      sut.programConstraint(set: true);
+      expect(parametersOf('program_constraint'), {'action': 'set'});
+      sut.programConstraint(set: false);
+      expect(parametersOf('program_constraint'), {'action': 'cleared'});
+    });
+
     test('a set type goes as its wire word (#151)', () {
       sut.setTypeChanged(type: .warmup);
 

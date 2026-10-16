@@ -218,9 +218,18 @@ class GoEasy with ChangeNotifier {
   /// What the user listed, by key, as far as the map still knows it.
   Set<String> get keys => UnmodifiableSetView(_keys);
 
+  /// Every area and movement of the map, areas first, in the map's order:
+  /// what a program's constraint (#355) is chosen from.
+  List<GoEasyEntry> get entries => [...?content?.areas, ...?content?.movements];
+
+  /// The map's entry for [key], when the map is published and still has it.
+  /// A program's constraint is read through here, never through [keys]: the
+  /// user's list and a program's constraint are separate things.
+  GoEasyEntry? entryFor(String? key) => entries.where((entry) => entry.key == key).firstOrNull;
+
   /// The listed entries the map knows, areas first, in the map's order.
   List<GoEasyEntry> get listed => [
-    for (final entry in [...?content?.areas, ...?content?.movements])
+    for (final entry in entries)
       if (_keys.contains(entry.key)) entry,
   ];
 
