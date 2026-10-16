@@ -3,8 +3,10 @@
 // are private to the `workout.dart` library, so these drive the real app
 // through the router, as `templates_test.dart` does.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/utils/program_calendar.dart';
@@ -606,6 +608,92 @@ void main() {
 
         expect(location(router), '/workout/programs/p1');
       });
+    });
+  });
+
+  group('what the program goes easy on (#355)', () {
+    // the go-easy map (#396), cut to two areas
+    final map = jsonEncode({
+      'version': 1,
+      'areas': {
+        for (final (key, name) in [('lower_back', 'Lower back'), ('knee', 'Knee')])
+          key: {
+            'name': {'en': name},
+            'easierOn': {'en': 'Easier on your ${name.toLowerCase()}'},
+            'easier': [
+              {
+                'category': ['Barbell'],
+              },
+            ],
+          },
+      },
+    });
+
+    Future<void> openPage(WidgetTester tester, {Set<String> listed = const {}, bool published = true}) async {
+      answer(.on);
+      withProgram();
+      when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer(
+        (_) async => switch (published) {
+          true => (body: map, etag: null),
+          false => throw Exception('403'),
+        },
+      );
+      when(db.getContent(any)).thenAnswer((_) async => null);
+      when(db.storeContent(any, body: anyNamed('body'), etag: anyNamed('etag'))).thenAnswer((_) async {});
+      when(db.getGoEasy(any)).thenAnswer((_) async => listed);
+      await openWorkoutTab(tester);
+      await GoEasy.of(tester.element(find.byType(MaterialApp))).ensure();
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('the page names it, and a choice is the program\'s, synced with it', (tester) async {
+      await openPage(tester);
+      await scrollTo(tester, find.byKey(AppKeys.programConstraint));
+      expect(find.text('Nothing in particular'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.programConstraint);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programConstraintChoice('lower_back'));
+      await tester.pumpTimes();
+
+      final sent = verify(api.editProgram(captureAny)).captured.last as Program;
+      expect(sent.constraint, 'lower_back');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpTimes();
+      expect(find.text('Lower back'), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.programConstraint);
+      await tester.pumpTimes();
+      await tester.tapByKey(AppKeys.programConstraintChoice(null));
+      await tester.pumpTimes();
+      expect((verify(api.editProgram(captureAny)).captured.last as Program).constraint, isNull);
+    });
+
+    testWidgets("the user's own list never becomes the program's, nor moves with it", (tester) async {
+      await openPage(tester, listed: {'knee'});
+      await scrollTo(tester, find.byKey(AppKeys.programConstraint));
+      expect(
+        find.text('Nothing in particular'),
+        findsOneWidget,
+        reason: 'the list on this phone suggests nothing here',
+      );
+
+      await tester.tapByKey(AppKeys.programConstraint);
+      await tester.pumpTimes();
+      final knee = tester.widget<ChoiceChip>(find.byKey(AppKeys.programConstraintChoice('knee')));
+      expect(knee.selected, isFalse);
+      await tester.tapByKey(AppKeys.programConstraintChoice('lower_back'));
+      await tester.pumpTimes();
+
+      final sent = verify(api.editProgram(captureAny)).captured.last as Program;
+      expect(jsonEncode(sent.toMap()), isNot(contains('knee')));
+      verifyNever(db.storeGoEasy(any, any));
+    });
+
+    testWidgets('no map published, no row: there is nothing to name it by', (tester) async {
+      await openPage(tester, published: false);
+      expect(find.byKey(AppKeys.programConstraint), findsNothing);
     });
   });
 }

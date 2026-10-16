@@ -218,6 +218,7 @@ const _programDeleted = 'program_deleted';
 const _programSkipped = 'program_skipped';
 const _programUnskipped = 'program_unskipped';
 const _programCalendar = 'program_calendar';
+const _programConstraint = 'program_constraint';
 const _programLinkOpened = 'program_link_opened';
 const _historyBackfilled = 'history_backfilled';
 
@@ -517,6 +518,17 @@ class Analytics {
   /// A program put in the device calendar, moved to another calendar or time,
   /// or taken out (#391). Never which calendar, nor a time.
   void programCalendar({required ProgramCalendarChange change}) => _log(_programCalendar, {_action: change.name});
+
+  /// A program's constraint (#355) chosen or cleared. Never which: an area
+  /// or a movement to go easy on is health-shaped, even as a content key.
+  void programConstraint({required bool set}) {
+    _log(_programConstraint, {
+      _action: switch (set) {
+        true => 'set',
+        false => 'cleared',
+      },
+    });
+  }
 
   /// A calendar event's link opened (#391), and what it opened: the session
   /// started, the workout or skip that did it, or the program.

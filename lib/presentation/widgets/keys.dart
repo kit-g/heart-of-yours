@@ -217,6 +217,11 @@ abstract final class AppKeys {
   static Key goEasy(String key) => Key('Programs.goEasy.$key');
   static const goEasySessionMark = Key('Programs.goEasy.session');
 
+  /// A program's constraint (#355): its row on the program page, and each
+  /// choice in its sheet, `none` for nothing in particular.
+  static const programConstraint = Key('Programs.constraint');
+  static Key programConstraintChoice(String? key) => Key('Programs.constraint.${key ?? 'none'}');
+
   /// The profile's weekly sets card (#341) and its fold.
   static const lensCard = ValueKey('lensCard');
   static const lensShowAll = ValueKey('lensShowAll');

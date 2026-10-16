@@ -3,6 +3,8 @@
 // cannot take the sets, and in a program's workout the replace asks whether
 // it reaches the program. The pieces are private to `workout_detail.dart`, so
 // these drive the real app.
+import 'dart:convert';
+
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -33,6 +35,33 @@ void main() {
     movement: pattern('horizontal_press'),
   );
   final ride = Exercise(name: 'Ride', category: .cardio, target: .cardio);
+  final goblet = Exercise(
+    name: 'Goblet Squat',
+    category: .dumbbell,
+    target: .legs,
+    movement: pattern('squat_bilateral'),
+  );
+  // the go-easy map (#396), cut to one area: what a barbell loads, a
+  // dumbbell spares
+  final map = jsonEncode({
+    'version': 1,
+    'areas': {
+      'lower_back': {
+        'name': {'en': 'Lower back'},
+        'easierOn': {'en': 'Easier on your lower back'},
+        'easier': [
+          {
+            'category': ['Barbell'],
+          },
+        ],
+        'prefer': [
+          {
+            'category': ['Dumbbell'],
+          },
+        ],
+      },
+    },
+  });
   final session = Template.fromJson({
     'id': 's1',
     'name': 'Squat day',
@@ -78,7 +107,8 @@ void main() {
       'distanceUnit': 'metric',
       'feature-programs': FeatureAnswer.on.name,
     });
-    when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [squat, front, bench, ride]));
+    when(db.getExercises(userId: anyNamed('userId')))
+        .thenAnswer((_) async => (null, [squat, front, bench, ride, goblet]));
     when(db.startWorkout(any, any)).thenAnswer((_) async {});
     when(db.startExercise(any, any)).thenAnswer((_) async {});
     when(db.removeExercise(any)).thenAnswer((_) async {});
@@ -97,6 +127,10 @@ void main() {
     when(api.getProgramActions(any)).thenAnswer((_) async => []);
     when(api.getProgramBases(any)).thenAnswer((_) async => []);
     when(api.editProgram(any)).thenAnswer((invocation) async => invocation.positionalArguments.single as Program);
+    when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: map, etag: null));
+    when(db.getContent(any)).thenAnswer((_) async => null);
+    when(db.storeContent(any, body: anyNamed('body'), etag: anyNamed('etag'))).thenAnswer((_) async {});
+    when(db.getGoEasy(any)).thenAnswer((_) async => {});
   });
 
   /// Signs in, reads the program and its session, and opens [workout] as the
@@ -234,5 +268,59 @@ void main() {
     await tester.pumpTimes();
 
     expect(Programs.of(context).lookup('p1')!.rules.keys, [front.id]);
+  });
+
+  group("a program's constraint (#355)", () {
+    /// The suggested names, top to bottom: the section above the whole
+    /// library, so each suggestion's first appearance.
+    List<String> suggested(WidgetTester tester) {
+      final l = L.of(tester.element(find.byType(WorkoutDetail)));
+      final header = tester.getTopLeft(find.text(l.pickerSuggested.toUpperCase())).dy;
+      final rows = [
+        for (final name in ['Front Squat', 'Goblet Squat', 'Bench Press'])
+          if (find.text(name).evaluate().isNotEmpty) (name, tester.getTopLeft(find.text(name).first).dy),
+      ];
+      // a name shown once is only the library's row below the suggestions
+      return [
+        for (final (name, _) in rows..sort((a, b) => a.$2.compareTo(b.$2)))
+          if (find.text(name).evaluate().length > 1 && tester.getTopLeft(find.text(name).first).dy > header) name,
+      ];
+    }
+
+    Future<void> withConstraint(String? key) async {
+      final constrained = switch (key) {
+        final String key => program.copyWith(constraint: key),
+        null => program,
+      };
+      when(db.getPrograms(userId)).thenAnswer((_) async => [constrained]);
+      when(api.getPrograms()).thenAnswer((_) async => [constrained]);
+    }
+
+    testWidgets('inside the program, suggestions leave out what is harder on it', (tester) async {
+      await withConstraint('lower_back');
+      final context = await start(tester, squats(programId: 'p1'));
+      await GoEasy.of(context).ensure();
+      await openReplace(tester);
+
+      expect(suggested(tester), ['Goblet Squat']);
+    });
+
+    testWidgets('outside the program, the same constraint changes nothing', (tester) async {
+      await withConstraint('lower_back');
+      final context = await start(tester, squats());
+      await GoEasy.of(context).ensure();
+      await openReplace(tester);
+
+      expect(suggested(tester), containsAll(['Front Squat', 'Goblet Squat']));
+    });
+
+    testWidgets("what the user goes easy on leaves out the same, the program's or not (#396)", (tester) async {
+      when(db.getGoEasy(any)).thenAnswer((_) async => {'lower_back'});
+      final context = await start(tester, squats());
+      await GoEasy.of(context).ensure();
+      await openReplace(tester);
+
+      expect(suggested(tester), ['Goblet Squat']);
+    });
   });
 }

@@ -230,3 +230,128 @@ class GoEasyRow extends StatelessWidget {
     );
   }
 }
+
+/// What one program goes easy on (#355), on its page: an area or a movement
+/// of the map, which every replacement suggested inside the program leaves
+/// out. The program's own, chosen here, and never read from the user's list —
+/// that list stays on this phone, and this choice syncs with the program.
+/// Absent while the map isn't published: there is nothing to name it by.
+class ProgramConstraintRow extends StatelessWidget {
+  final Program program;
+
+  const new({super.key, required this.program});
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = L.of(context);
+    final easy = GoEasy.watch(context);
+    if (!easy.available) return const SizedBox.shrink();
+    final entry = easy.entryFor(program.constraint);
+
+    return ListTile(
+      key: AppKeys.programConstraint,
+      contentPadding: .zero,
+      leading: const Icon(Icons.filter_alt_outlined),
+      title: Text(copy.programConstraint),
+      subtitle: Text(switch (entry) {
+        final GoEasyEntry entry => entry.name.of(languageTag()),
+        null => copy.programConstraintNone,
+      }),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: () => _showProgramConstraintSheet(context, program.id!),
+    );
+  }
+}
+
+Future<void> _showProgramConstraintSheet(BuildContext context, String programId) {
+  final easy = GoEasy.of(context);
+  final programs = Programs.of(context);
+  final analytics = Analytics.of(context);
+  return showModalBottomSheet<void>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    constraints: const BoxConstraints(maxWidth: dialogWidth),
+    builder: (context) {
+      return _ProgramConstraintSheet(easy: easy, programs: programs, analytics: analytics, programId: programId);
+    },
+  );
+}
+
+/// One choice among the map's areas and movements, or none. A chip applies
+/// at once, as the user's own list does.
+class _ProgramConstraintSheet extends StatelessWidget with HasHaptic<_ProgramConstraintSheet> {
+  /// Passed in: the sheet is a route of its own.
+  final GoEasy easy;
+  final Programs programs;
+  final Analytics analytics;
+  final String programId;
+
+  const new({required this.easy, required this.programs, required this.analytics, required this.programId});
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = L.of(context);
+    final tag = languageTag();
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final muted = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
+
+    return ListenableBuilder(
+      listenable: Listenable.merge([easy, programs]),
+      builder: (context, _) {
+        final program = programs.lookup(programId);
+        final content = easy.content;
+        if (program == null || content == null) return const SizedBox.shrink();
+        final chosen = easy.entryFor(program.constraint)?.key;
+
+        Future<void> choose(String? key) async {
+          if (key == chosen) return;
+          buzz();
+          await programs.update(switch (key) {
+            final String key => program.copyWith(constraint: key),
+            null => program.without({.constraint}),
+          });
+          analytics.programConstraint(set: key != null);
+        }
+
+        Widget chip(String? key, String label) {
+          return ChoiceChip(
+            key: AppKeys.programConstraintChoice(key),
+            label: Text(label, style: textTheme.bodyMedium),
+            visualDensity: const VisualDensity(vertical: -2, horizontal: -2),
+            backgroundColor: colorScheme.surfaceContainerHigh,
+            selected: key == chosen,
+            onSelected: (_) => choose(key),
+          );
+        }
+
+        Widget chips(List<GoEasyEntry> entries) {
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final entry in entries) chip(entry.key, entry.name.of(tag)),
+            ],
+          );
+        }
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const .fromLTRB(16, 24, 16, 16),
+            child: Column(
+              crossAxisAlignment: .start,
+              spacing: 16,
+              children: [
+                Text(copy.programConstraint, style: textTheme.titleMedium),
+                Text(copy.programConstraintNote, style: muted),
+                chip(null, copy.programConstraintNone),
+                chips(content.areas),
+                chips(content.movements),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

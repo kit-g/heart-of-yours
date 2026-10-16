@@ -385,7 +385,7 @@ class _WorkoutExerciseItem extends StatelessWidget with HasHaptic<_WorkoutExerci
   Future<void> _replaceAny(BuildContext context, ReplaceExercise onReplace) async {
     final l = L.of(context);
     final source = exercise.exercise;
-    final suggested = replacementsFor(Exercises.of(context), source);
+    final suggested = replacementsInWorkout(context, source);
     final picked = await showSingleExercisePicker(
       context,
       except: source.id,

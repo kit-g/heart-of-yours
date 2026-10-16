@@ -140,6 +140,16 @@ void main() {
     expect(easy.harderOn(curl), isEmpty);
   });
 
+  test("a program's constraint (#355) reads from the whole map, never from the list", () async {
+    final easy = await ready(listed: {'knee'});
+    expect(easy.entries.map((each) => each.key), containsAll(['knee', 'lower_back']));
+    expect(easy.entryFor('lower_back')?.key, 'lower_back');
+    expect(easy.entryFor('knee')?.key, 'knee', reason: 'listed or not, the map names it the same');
+    expect(easy.entryFor('no_such_area'), isNull);
+    expect(easy.entryFor(null), isNull);
+    expect(easy.keys, {'knee'}, reason: 'reading the map leaves the list as it was');
+  });
+
   test('kinder swaps: the same pattern first, the kinder first, never one harder on the list', () async {
     final easy = await ready(listed: {'knee'});
     final swaps = easy.kinderSwaps(lunge, [lunge, jumpSquat, gobletSquat, legPress, bridge, curl]);
