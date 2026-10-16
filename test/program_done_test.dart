@@ -64,7 +64,7 @@ void main() {
   });
 
   /// A session of [program] with every bench set made, on its Done page.
-  Future<void> finishSession(WidgetTester tester, {required FeatureAnswer programs}) async {
+  Future<void> finishSession(WidgetTester tester, {required FeatureAnswer programs, int reps = 5}) async {
     SharedPreferences.setMockInitialValues({...pastOnboarding(), 'feature-programs': programs.name});
     await const TestAppHarness().pumpHeartApp(
       tester,
@@ -80,7 +80,13 @@ void main() {
     );
     final context = tester.element(find.byType(MaterialApp));
     await Programs.of(context).init();
-    final sets = WorkoutExercise(starter: ExerciseSet(bench, weight: 100, reps: 5)..isCompleted = true);
+    final sets = WorkoutExercise(
+      starter: ExerciseSet(bench, weight: 100, reps: reps)
+        ..target = SetTarget.fromJson({
+          'reps': {'min': 3},
+        })
+        ..isCompleted = true,
+    );
     await Workouts.of(context).startWorkout(
       source: .program,
       template: Workout.fromExercises([sets], name: 'Day A', programId: 'p1'),
@@ -107,6 +113,37 @@ void main() {
     verify(db.deleteProgramBase(written.id)).called(1);
     expect(find.textContaining('Keeping'), findsOneWidget);
     expect(find.textContaining('Keep '), findsNothing);
+  });
+
+  testWidgets("a stages rule's move says the next scheme, and Keep takes the stage back (#350)", (tester) async {
+    final tiers = program.copyWith(
+      rules: {
+        bench.id: const Stages(
+          stages: [Stage(sets: 5, reps: 3, amrap: true), Stage(sets: 6, reps: 2, amrap: true)],
+          step: 2.5,
+        ),
+      },
+    );
+    when(db.getPrograms(userId)).thenAnswer((_) async => [tiers]);
+    when(api.getPrograms()).thenAnswer((_) async => [tiers]);
+    when(db.storeProgramAction(any)).thenAnswer((_) async {});
+    when(db.deleteProgramAction(any)).thenAnswer((_) async {});
+    when(api.replayProgramAction(any)).thenAnswer(
+      (i) async => (row: i.positionalArguments.single as ProgramAction, created: true),
+    );
+    when(api.deleteProgramAction(any, any)).thenAnswer((_) async {});
+
+    await finishSession(tester, programs: .on, reps: 2);
+
+    expect(find.text('Bench Press: 6×2+ from next time'), findsOneWidget);
+    final action = verify(db.storeProgramAction(captureAny)).captured.first as ProgramAction;
+    expect((action.kind, action.exercise, action.stage), (ProgramActionKind.stage, bench.id, 1));
+
+    await tester.tap(find.text('Keep 5×3+'));
+    await tester.pumpTimes();
+
+    verify(db.deleteProgramAction(action.id)).called(1);
+    expect(find.text('Keeping 5×3+'), findsOneWidget);
   });
 
   testWidgets('with Programs off the page is as it always was', (tester) async {

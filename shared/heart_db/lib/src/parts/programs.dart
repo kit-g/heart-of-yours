@@ -250,6 +250,9 @@ mixin _Programs on _LocalDatabase {
         'from_exercise': action.from,
         'to_exercise': action.to,
         'workout_id': action.workoutId,
+        'exercise_id': action.exercise,
+        'slot': action.slot,
+        'stage': action.stage,
         'at': action.at.toUtc().toIso8601String(),
       },
       conflictAlgorithm: .replace,
@@ -365,6 +368,7 @@ mixin _Programs on _LocalDatabase {
         userId,
       ])
       ..rawUpdate('UPDATE $_programActions SET to_exercise = ? WHERE to_exercise = ? AND $ofUser', [to, from, userId])
+      ..rawUpdate('UPDATE $_programActions SET exercise_id = ? WHERE exercise_id = ? AND $ofUser', [to, from, userId])
       // a target is stored as `jsonEncode` writes it, without spaces, and an
       // exercise id is a quoted string nowhere else after `"of":`
       ..rawUpdate(

@@ -30,7 +30,8 @@ final class GrowthMove {
   /// The base written for a [Grow], a [Cut] or a test; deleting it is "Keep".
   final ProgramBase? base;
 
-  /// The advance written for an [Advance]; undoing it is "Keep".
+  /// The advance written for an [Advance], or the stage step for a
+  /// [ToStage]; undoing it is "Keep".
   final ProgramAction? action;
 
   const new({
@@ -68,7 +69,8 @@ typedef EarlierSession = ({Workout workout, bool lighter});
 /// of a lift whose program keeps a base per slot; a base per exercise of a
 /// test session instead.
 ///
-/// [bases] are the program's current ones, before [workout]. [earlier] are
+/// [bases] are the program's current ones, before [workout], and [actions]
+/// its steps so far, which say what stage a stages rule is on. [earlier] are
 /// the program's workouts before it, oldest first. [before] is the position
 /// the workout was done in, and [closesCycle] whether it completed that
 /// week's cycle. [session] is the template it was started from, which names
@@ -82,18 +84,25 @@ List<GrowthMove> growthOf(
   Program program,
   Workout workout, {
   required Map<String, ProgramBase> bases,
+  Iterable<ProgramAction> actions = const [],
   required List<EarlierSession> earlier,
   required ProgramPosition before,
   required bool closesCycle,
   Template? session,
   Map<String, String>? slots,
 }) {
-  final groups = _groups(workout, session: session, bases: bases, slots: slots);
+  final groups = _groups(program, workout, session: session, bases: bases, slots: slots);
+  final stages = currentStages(actions);
+  final moved = _stageMoves(actions);
 
   if (program.tests[workout.templateId] case final ProgramTest test) {
     return [
       for (final group in groups)
-        if (Progression.test(group.sets, share: test.share, step: _stepOf(program.rules[group.exerciseId]))
+        if (Progression.test(
+              group.sets,
+              share: test.share,
+              step: _stepOf(program.ruleFor(group.exerciseId, slot: group.slot)),
+            )
             case final num value)
           GrowthMove(
             exerciseId: group.exerciseId,
@@ -107,16 +116,21 @@ List<GrowthMove> growthOf(
 
   final moves = <GrowthMove>[];
   for (final group in groups) {
-    final rule = program.rules[group.exerciseId];
+    final rule = program.ruleFor(group.exerciseId, slot: group.slot);
     if (rule == null) continue;
-    final base = bases[group.key];
+    final base = program.atSlot(bases, group.exerciseId, slot: group.slot);
+    final stage = program.atSlot(stages, group.exerciseId, slot: group.slot) ?? 0;
 
-    // the streak runs since the base last changed: a session before it was
-    // judged against another base
+    // the streak runs since the base last changed, or a stages rule last
+    // moved: a session before either was judged against something else
     // a session whose occurrences can't be told apart any more says nothing
+    final from = [?base?.at, ?program.atSlot(moved, group.exerciseId, slot: group.slot)].fold<DateTime?>(
+      null,
+      (latest, at) => latest == null || at.isAfter(latest) ? at : latest,
+    );
     final since = [
       for (final each in earlier)
-        if (base == null || each.workout.start.isAfter(base.at))
+        if (from == null || each.workout.start.isAfter(from))
           if (_setsOf(each.workout, group, session: session) case final List<ExerciseSet> sets)
             (sets: sets, lighter: each.lighter),
     ];
@@ -134,6 +148,7 @@ List<GrowthMove> growthOf(
       lighter: before.lighter,
       week: before.week,
       closesCycle: closesCycle,
+      stage: stage,
     );
     if (step is Hold) continue;
     moves.add(
@@ -152,13 +167,27 @@ List<GrowthMove> growthOf(
 /// The step a test's training max is rounded down to: its rule's, or 2.5.
 num _stepOf(GrowthRule? rule) {
   return switch (rule) {
-    AddWeight(:final step) || RangeThenWeight(:final step) || ShareOfMax(:final step) => step,
+    AddWeight(:final step) || RangeThenWeight(:final step) || ShareOfMax(:final step) || Stages(:final step) => step,
     _ => 2.5,
   };
 }
 
+/// When each stages rule last moved, keyed like [currentStages].
+Map<String, DateTime> _stageMoves(Iterable<ProgramAction> actions) {
+  final moved = <String, DateTime>{};
+  for (final action in actions) {
+    if (action case ProgramAction(kind: .stage, :final exercise?, :final at)) {
+      final key = action.slot ?? exercise;
+      if (moved[key] case final DateTime held when held.isAfter(at)) continue;
+      moved[key] = at;
+    }
+  }
+  return moved;
+}
+
 /// One exercise of a workout as a rule judges it: every occurrence's sets
-/// together, or one occurrence's when the program keeps a base for it.
+/// together, or one occurrence's when the program keeps a base or a rule
+/// for it.
 typedef _Group = ({String exerciseId, String? slot, List<ExerciseSet> sets});
 
 extension on _Group {
@@ -167,6 +196,7 @@ extension on _Group {
 }
 
 List<_Group> _groups(
+  Program program,
   Workout workout, {
   Template? session,
   required Map<String, ProgramBase> bases,
@@ -175,8 +205,9 @@ List<_Group> _groups(
   final groups = <String, _Group>{};
   for (final (exercise, slot) in _occurrences(workout, session, slots: slots)) {
     final id = exercise.exercise.id;
+    // an occurrence with a base or a rule of its own is judged on its own
     final own = switch (slot) {
-      final String slot when bases.containsKey(slot) => slot,
+      final String slot when bases.containsKey(slot) || program.rules.containsKey(slot) => slot,
       _ => null,
     };
     final key = own ?? id;

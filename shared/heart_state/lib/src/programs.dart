@@ -272,6 +272,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// Each exercise's base in [programId] as it stands: the latest value.
   Map<String, ProgramBase> currentBasesOf(String programId) => currentBases(basesOf(programId));
 
+  /// The stage each stages rule of [programId] is on, keyed like
+  /// [currentBasesOf] (#350): the latest stage step for it.
+  Map<String, int> currentStagesOf(String programId) => currentStages(_actions[programId] ?? const []);
+
   /// Where the user stands in [program]: computed, never stored. [now] sets the
   /// calendar week the weekly count reads, in its zone; [firstWeekday] is ISO,
   /// the user's own first day of the week.
@@ -287,7 +291,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   }
 
   /// [session] as the workout to start (#349): [planSession] with its
-  /// program's bases and whether this cycle is a lighter one. A template no
+  /// program's position, bases and stages. A template no
   /// followed program holds starts as [Template.toWorkout] does.
   Workout plan(
     Template session, {
@@ -304,8 +308,9 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     return planSession(
       session,
       program: program,
+      position: position(program, now: now, firstWeekday: firstWeekday),
       bases: currentBasesOf(id),
-      lighter: position(program, now: now, firstWeekday: firstWeekday).lighter,
+      stages: currentStagesOf(id),
       round: round,
     );
   }
@@ -638,6 +643,39 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
     );
   }
 
+  /// Records that [program]'s stages rule moved [exerciseId] — or its
+  /// occurrence [slot], when the rule is that occurrence's own — to [stage],
+  /// caused by [workoutId] (heart-api#256): deleting that workout takes it
+  /// back, as [undo] does.
+  Future<ProgramAction> moveStage(
+    Program program, {
+    required String exerciseId,
+    String? slot,
+    required int stage,
+    required String workoutId,
+    DateTime? at,
+  }) {
+    final action = ProgramAction(
+      id: uuidV7(),
+      programId: program.id,
+      kind: .stage,
+      exercise: exerciseId,
+      slot: slot,
+      stage: stage,
+      workoutId: workoutId,
+      at: at ?? DateTime.timestamp(),
+    );
+    return _record(
+      action,
+      .action,
+      into: _actions,
+      idOf: (action) => action.id,
+      store: _service.storeProgramAction,
+      confirm: _confirmAction,
+      programId: action.programId,
+    );
+  }
+
   /// Undoes [action], and the bases it moved with it.
   Future<void> undo(ProgramAction action) async {
     final programId = action.programId;
@@ -848,6 +886,7 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         program,
         workout,
         bases: currentBasesOf(id),
+        actions: _actions[id] ?? const [],
         earlier: [
           for (final each in workouts)
             if (each.id != workout.id && each.start.isBefore(start)) (workout: each, lighter: at(each.start).lighter),
@@ -894,20 +933,41 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
         final action = await advance(program, from: move.exerciseId, to: to, workoutId: workoutId);
         await _climb(program, from: move.exerciseId, to: to);
         return move.written(action: action);
+      case ToStage(:final stage, :final base):
+        final action = await moveStage(
+          program,
+          exerciseId: move.exerciseId,
+          slot: move.slot,
+          stage: stage,
+          workoutId: workoutId,
+        );
+        // the last stage's miss starts over lighter: a base of its own
+        final cut = switch (base) {
+          final num value => await setBase(
+            program,
+            exerciseId: move.exerciseId,
+            value: value,
+            slot: move.slot,
+            workoutId: workoutId,
+          ),
+          null => null,
+        };
+        return move.written(base: cut, action: action);
       case Hold() || Missed():
         return move;
     }
   }
 
   /// "Keep" (#351): takes back what [move] wrote, and nothing else. A base
-  /// goes back to the one before it; an advance goes back down its ladder,
-  /// sessions and rule with it.
+  /// goes back to the one before it; a stage to the one before; an advance
+  /// goes back down its ladder, sessions and rule with it.
   Future<void> keep(GrowthMove move) async {
     if (move.base case final ProgramBase base) await deleteBase(base);
     if (move.action case final ProgramAction action) {
       await undo(action);
-      final (program, from, to) = (lookup(action.programId ?? ''), action.from, action.to);
-      if (program != null && from != null && to != null) await _climb(program, from: to, to: from);
+      if (action case ProgramAction(kind: .advance, :final programId?, :final from?, :final to?)) {
+        if (lookup(programId) case final Program program) await _climb(program, from: to, to: from);
+      }
     }
   }
 

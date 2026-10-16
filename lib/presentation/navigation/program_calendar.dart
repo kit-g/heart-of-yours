@@ -121,7 +121,7 @@ class _ProgramCalendarPresenterState extends State<ProgramCalendarPresenter> {
   /// body or Heart. The description says more — still visible to anyone the
   /// user shares details with, so names and set counts only: never a weight, a
   /// health value or anything to go easy on.
-  CalendarEventDraft _event(Program program, Template session, PlannedSession planned, ProgramCalendarSetting setting) {
+  CalendarEventDraft _event(Program program, Template session, SessionAhead planned, ProgramCalendarSetting setting) {
     final copy = L.of(context);
     final link = ProgramSessionLink(programId: program.id!, session: planned.session, week: planned.week);
     final url = link.uri(AppConfig.of(context).appDomain).toString();

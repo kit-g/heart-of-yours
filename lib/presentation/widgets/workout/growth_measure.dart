@@ -57,7 +57,19 @@ class GrowthMeasure {
         .repsOnly => GrowthMeasure(seconds),
       },
       // a ladder keeps no base: there is nothing of its to measure
-      null || NoGrowth() || AddWeight() || RangeThenWeight() || ShareOfMax() || Ladder() => GrowthMeasure(weight),
+      null ||
+      NoGrowth() ||
+      AddWeight() ||
+      RangeThenWeight() ||
+      ShareOfMax() ||
+      Stages() ||
+      Ladder() => GrowthMeasure(weight),
     };
   }
+}
+
+/// A stage of a stages rule as lifters write it (heart-api#256): sets × reps,
+/// a plus on a last set taken as far as it goes, "5×3+".
+extension StageScheme on Stage {
+  String get scheme => '$sets×$reps${amrap ? '+' : ''}';
 }

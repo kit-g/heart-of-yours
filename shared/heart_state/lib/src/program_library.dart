@@ -361,12 +361,14 @@ final class LibraryProgram {
   /// program can be started twice and never shares a row with anyone else's
   /// copy. Every library key becomes the id [resolve] finds for it: the rules,
   /// a ladder's rungs, a share's `of`. Phases and tests follow the sessions to
-  /// their new ids.
+  /// their new ids, and so do an occurrence's own rule and a share of one
+  /// occurrence's base (`ofSlot`, heart-api#256, #257) the template exercises.
   ///
   /// What [resolve] doesn't know — an older catalog against a newer file — is
   /// left out: the exercise, its rule, a rung (a ladder left with one is no
   /// ladder), and a share of it, which would otherwise read as a share of
-  /// the set's own exercise. A session left with nothing goes too, and null
+  /// the set's own exercise. An occurrence left out takes its own rule with
+  /// it, and a share of its base falls back to its exercise's. A session left with nothing goes too, and null
   /// is a program with no sessions left at all.
   ///
   /// The sessions are numbered from [order], and filed under [folder].
@@ -381,14 +383,30 @@ final class LibraryProgram {
       _ => null,
     };
 
+    // every occurrence the copy keeps, by its id in the file: a share of one
+    // may name an occurrence in a later session
+    final slots = <String, String>{
+      for (final session in sessions)
+        for (final exercise in session._exercises)
+          if ((exercise['id'], LibrarySession._keyOf(exercise)) case (final String id, final String key))
+            if (resolve(key) != null) id: uuidV7(),
+    };
+
     Map? target(Object? raw) {
-      return switch (raw) {
+      final mapped = switch (raw) {
         {'of': final Object of} => switch (idOf(of)) {
           final String id => {...raw, 'of': id},
-          null => {...raw}..removeWhere((key, _) => key == 'of' || key == 'share'),
+          null => {...raw}..removeWhere((key, _) => key == 'of' || key == 'share' || key == 'ofSlot'),
         },
         final Map raw => raw,
         _ => null,
+      };
+      return switch (mapped) {
+        {'ofSlot': final Object slot} => switch (slots[slot]) {
+          final String id => {...mapped, 'ofSlot': id},
+          null => {...mapped}..remove('ofSlot'),
+        },
+        _ => mapped,
       };
     }
 
@@ -401,7 +419,7 @@ final class LibraryProgram {
             if (resolve(key) case final Exercise resolved)
               {
                 ...exercise,
-                'id': uuidV7(),
+                'id': slots[exercise['id']] ?? uuidV7(),
                 'exercise': resolved.toMap(),
                 'sets': [
                   for (final set in _list(exercise['sets']))
@@ -426,7 +444,8 @@ final class LibraryProgram {
 
     final rules = <String, Map>{};
     for (final MapEntry(:key, value: rule) in _rules.entries) {
-      final id = idOf(key);
+      // an occurrence's own rule, else an exercise's
+      final id = slots[key] ?? idOf(key);
       if (id == null) continue;
       switch (rule) {
         case {'rungs': final List rungs}:

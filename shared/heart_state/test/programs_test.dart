@@ -505,6 +505,86 @@ void main() {
       );
     }
 
+    const tiers = Stages(
+      stages: [Stage(sets: 5, reps: 3, amrap: true), Stage(sets: 6, reps: 2, amrap: true), Stage(sets: 10, reps: 1)],
+      step: 2.5,
+      miss: MissRule(after: 1, cut: 0.15),
+    );
+    const threes = {
+      'reps': {'min': 3, 'max': 3},
+    };
+
+    test('a stages rule: a short session moves it on, and Keep takes the stage back', () async {
+      await follow(growing({'squat': tiers}), bases: [base(100)]);
+      final workout = done(
+        'w1',
+        start: DateTime.utc(2026, 10, 5),
+        exercises: [
+          {
+            'id': 'we-${ids++}',
+            'exercise': squat,
+            'sets': [
+              for (final reps in [3, 3, 2]) logged(reps: reps, weight: 100, target: threes),
+            ],
+          },
+        ],
+      );
+
+      final [move] = await programs.grow(workout);
+
+      expect(move.step, const ToStage(1));
+      expect((move.action?.kind, move.action?.exercise, move.action?.stage), (ProgramActionKind.stage, 'squat', 1));
+      expect(move.base, isNull, reason: 'a stage move keeps the weight');
+      expect(programs.currentStagesOf('p1'), {'squat': 1});
+
+      await programs.keep(move);
+      expect(programs.currentStagesOf('p1'), isEmpty);
+      expect(programs.currentBasesOf('p1')['squat']?.value, 100);
+    });
+
+    test("a stages rule's last stage starts over from the first, lighter by the cut", () async {
+      await follow(growing({'squat': tiers}), bases: [base(100)]);
+      await programs.moveStage(
+        programs.lookup('p1')!,
+        exerciseId: 'squat',
+        stage: 2,
+        workoutId: 'w0',
+        at: DateTime.utc(2026, 10, 3),
+      );
+
+      final [move] = await programs.grow(
+        done(
+          'w1',
+          start: DateTime.utc(2026, 10, 5),
+          exercises: [
+            {
+              'id': 'we-${ids++}',
+              'exercise': squat,
+              'sets': [
+                logged(
+                  reps: 0,
+                  weight: 100,
+                  target: const {
+                    'reps': {'min': 1, 'max': 1},
+                  },
+                ),
+              ],
+            },
+          ],
+        ),
+      );
+
+      // 85, on the step
+      expect(move.step, const ToStage(0, base: 85));
+      expect((move.base?.value, move.action?.stage), (85, 0));
+      expect(programs.currentStagesOf('p1'), {'squat': 0});
+      expect(programs.currentBasesOf('p1')['squat']?.value, 85);
+
+      await programs.keep(move);
+      expect(programs.currentStagesOf('p1'), {'squat': 2});
+      expect(programs.currentBasesOf('p1')['squat']?.value, 100);
+    });
+
     test('a session that makes every set grows the base, caused by the workout', () async {
       await follow(growing({'squat': const AddWeight(step: 2.5)}), bases: [base(100)]);
       final workout = done(

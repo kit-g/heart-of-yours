@@ -139,7 +139,7 @@ void main() {
           await LocalDatabase.init();
           final db = await raw();
 
-          expect(await userVersion(db), 26);
+          expect(await userVersion(db), 27);
           expect(
             await tables(db),
             {
@@ -519,7 +519,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 26);
+          expect(await userVersion(db), 27);
           // the v11 cache is kept, and says nothing the CDN could be shown —
           // the first launch on v12 downloads the library once
           final [sync] = await db.query('syncs');
@@ -719,7 +719,7 @@ void main() {
     });
     await db.close();
 
-    await LocalDatabase.init();
+    await LocalDatabase.init(version: 26);
     db = await raw();
     expect(await userVersion(db), 26);
     expect(await columns(db, 'goals'), allOf(containsPair('pattern', 'TEXT'), containsPair('muscle', 'TEXT')));
@@ -727,6 +727,34 @@ void main() {
     expect((goal['pattern'], goal['muscle']), (null, null));
     await db.close();
   });
+
+  test(
+    'v27 lets a program action name the stage a stages rule moved to, and actions from before name none (#350)',
+    () async {
+      await LocalDatabase.init(version: 26);
+      var db = await raw();
+      // a bare action: its program is beside the point here
+      await db.execute('PRAGMA foreign_keys = OFF');
+      await db.insert('program_actions', {
+        'id': 'a1',
+        'program_id': 'p1',
+        'kind': 'pause',
+        'at': '2026-10-14T08:00:00.000Z',
+      });
+      await db.close();
+
+      await LocalDatabase.init();
+      db = await raw();
+      expect(await userVersion(db), 27);
+      expect(
+        await columns(db, 'program_actions'),
+        allOf(containsPair('exercise_id', 'TEXT'), containsPair('slot', 'TEXT'), containsPair('stage', 'INTEGER')),
+      );
+      final [action] = await db.query('program_actions');
+      expect((action['exercise_id'], action['slot'], action['stage']), (null, null, null));
+      await db.close();
+    },
+  );
 
   test('v13 upgrades through production init without losing replay confirmations', () async {
     await LocalDatabase.init(version: 13);
@@ -738,7 +766,7 @@ void main() {
 
     await LocalDatabase.init();
     db = await raw();
-    expect(await userVersion(db), 26);
+    expect(await userVersion(db), 27);
     expect(await columns(db, 'workout_exercises'), containsPair('note', 'TEXT'));
     expect(await columns(db, 'exercise_details'), containsPair('note', 'TEXT'));
     expect(await db.query('upsync'), [confirmation]);
@@ -792,7 +820,7 @@ void main() {
           await LocalDatabase.init();
           db = await raw();
 
-          expect(await userVersion(db), 26);
+          expect(await userVersion(db), 27);
           expect(await db.query('exercises'), hasLength(1));
           // a second dedupe/backfill pass would have rewritten sort_order to id
           final [chart] = await db.query('charts');
