@@ -480,6 +480,118 @@ void main() {
     });
   });
 
+  group('not today on any day (#312)', () {
+    void features({bool programs = false, bool notToday = true}) {
+      SharedPreferences.setMockInitialValues({
+        ...pastOnboarding(),
+        'feature-programs': (programs ? FeatureAnswer.on : FeatureAnswer.off).name,
+        'feature-notToday': (notToday ? FeatureAnswer.on : FeatureAnswer.off).name,
+      });
+    }
+
+    testWidgets('one tap sets today aside; a reason is one more tap, and Undo takes it back', (tester) async {
+      features();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.notTodayDay);
+      await tester.pumpTimes();
+
+      final day = verify(db.storeSkip(captureAny, userId)).captured.first as TrainingSkip;
+      expect((day.programId, day.templateId, day.reason), (null, null, null));
+      verify(api.replaySkip(any)).called(1);
+      expect(find.byKey(AppKeys.skipSheet), findsOneWidget);
+
+      await tester.tapByKey(AppKeys.skipReason('busy'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.skipSheet), findsNothing);
+      verify(db.deleteSkip(day.id)).called(1);
+      final given = verify(db.storeSkip(captureAny, userId)).captured.last as TrainingSkip;
+      expect((given.at, given.reason, given.programId), (day.at, 'busy', null));
+
+      // today is set aside: the tab says so, and asks nothing more
+      expect(find.byKey(AppKeys.notTodayDay), findsNothing);
+      await tester.tapByKey(AppKeys.notTodayUndo);
+      await tester.pumpTimes();
+      verify(db.deleteSkip(given.id)).called(1);
+      expect(find.byKey(AppKeys.notTodayDay), findsOneWidget);
+    });
+
+    testWidgets('dismissing the sheet is no reason, and nothing else', (tester) async {
+      features();
+      await openWorkoutTab(tester);
+      await tester.tapByKey(AppKeys.notTodayDay);
+      await tester.pumpTimes();
+      clearInteractions(db);
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.skipSheet), findsNothing);
+      verifyNever(db.deleteSkip(any));
+      expect(find.byKey(AppKeys.notTodayUndo), findsOneWidget);
+    });
+
+    testWidgets('off, the tab is as it was', (tester) async {
+      features(notToday: false);
+      await openWorkoutTab(tester);
+
+      expect(find.byKey(AppKeys.notTodayDay), findsNothing);
+    });
+
+    testWidgets('a program skip offers its reason too while Not today is on', (tester) async {
+      features(programs: true);
+      withProgram();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.programNotToday('p1'));
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.skipSheet), findsOneWidget);
+      expect(find.text('Push sits this one out'), findsOneWidget);
+    });
+
+    testWidgets('History lists the day with its reason; its page says what the day looked like', (tester) async {
+      final at = DateTime.utc(2026, 10, 8, 18);
+      final day = TrainingSkip(id: 'd1', at: at, reason: 'tired');
+      when(db.getSkips(userId)).thenAnswer((_) async => [day]);
+      when(api.getSkips()).thenAnswer((_) async => [day]);
+      when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer(
+        (_) async => [
+          (
+            workoutId: 'w1',
+            exerciseId: 'bench',
+            start: DateTime.utc(2026, 10, 7, 8),
+            movement: Movement.empty(),
+            muscles: MuscleTagging.empty(),
+            target: Target.chest,
+            sets: 12,
+          ),
+        ],
+      );
+      features();
+      await openWorkoutTab(tester);
+
+      await tester.tapByKey(AppKeys.historyStack);
+      await tester.pumpTimes();
+      final row = find.byKey(AppKeys.historySkip('d1'));
+      expect(row, findsOneWidget);
+      expect(find.descendant(of: row, matching: find.textContaining('Tired')), findsOneWidget);
+
+      await tester.tap(row);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.skipPage), findsOneWidget);
+      expect(find.text('Tired'), findsOneWidget);
+      expect(find.text('1 day since the last workout'), findsOneWidget);
+      expect(find.text('12 sets in the week before'), findsOneWidget);
+      expect(find.textContaining('Still recovering'), findsOneWidget);
+
+      Preferences.of(tester.element(find.byType(MaterialApp))).setFeature(.notToday, on: false);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.skipThatDay), findsNothing);
+    });
+  });
+
   group("a program's goals (#353)", () {
     const benchId = 'bench-1';
     final start = DateTime.utc(2026, 10, 1);

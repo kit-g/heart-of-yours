@@ -412,6 +412,7 @@ void main() {
         'programs',
         'previousInTemplate',
         'programCalendar',
+        'notToday',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);
     });

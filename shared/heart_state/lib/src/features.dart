@@ -57,7 +57,15 @@ enum Feature {
   /// the OS calendar permission, which Programs alone never asks for. Device
   /// only — which calendar and which events stay on the phone — and with
   /// Programs off it is as off as Programs is.
-  programCalendar('programCalendar');
+  programCalendar('programCalendar'),
+
+  /// "Not today" (#312) on any day, not only a program's: one tap on the
+  /// Workout tab sets the day aside, with an optional reason. Settings-only,
+  /// like keep-awake: an offer on the Workout tab would be the very nag the
+  /// feature promises not to be. A program's own "Not today" is Programs',
+  /// and stays with it. Skips sync whatever the answer; off, the button and
+  /// the plain days in History go.
+  notToday('notToday');
 
   final String value;
 

@@ -51,8 +51,9 @@ class _SkipItem extends StatelessWidget {
       null => null,
     };
     final day = DateFormat.MMMEd(copy.localeName).format(skip.at.toLocal());
+    final reason = SkipReason.of(skip.reason)?.label(copy);
     // the words say what it was once: under the session, or in its place
-    final details = [if (session != null) copy.programNotToday, ?program, day].join(' · ');
+    final details = [if (session != null) copy.programNotToday, ?program, ?reason, day].join(' · ');
 
     return Padding(
       padding: const .symmetric(horizontal: 16, vertical: 2),

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'features.dart';
+import 'skips.dart';
 
 /// Where an [Analytics] writes.
 ///
@@ -217,6 +218,8 @@ const _programSteered = 'program_steered';
 const _programDeleted = 'program_deleted';
 const _programSkipped = 'program_skipped';
 const _programUnskipped = 'program_unskipped';
+const _daySkipped = 'day_skipped';
+const _skipReasonGiven = 'skip_reason_given';
 const _programGoalKept = 'program_goal_kept';
 const _programAgain = 'program_again';
 const _programCalendar = 'program_calendar';
@@ -516,6 +519,13 @@ class Analytics {
 
   /// A skip taken back with its Undo: how often "Not today" was a slip.
   void programUnskipped() => _log(_programUnskipped);
+
+  /// "Not today" (#312) on a day no program asked for, from the Workout tab.
+  void daySkipped() => _log(_daySkipped);
+
+  /// The one-tap reason after a skip, a program's or a plain day's: which
+  /// tag, never anything about the day.
+  void skipReasonGiven({required SkipReason reason}) => _log(_skipReasonGiven, {_reason: reason.value});
 
   /// A goal a finished program implied, kept as one of the user's own (#353).
   /// Never which goal, nor its target.
