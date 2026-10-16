@@ -114,6 +114,7 @@ class ProgramPage extends StatelessWidget {
                     const SizedBox(height: 4),
                     for (final session in sessions)
                       _SessionTile(
+                        program: program,
                         session: session,
                         state: switch (session.id) {
                           final id when skipped.contains(id) => .skipped,
@@ -131,6 +132,7 @@ class ProgramPage extends StatelessWidget {
                           onStart: () => _start(context, session),
                         ),
                       ),
+                    ProgramConstraintRow(program: program),
                     if (!program.archived) _ProgramCalendarSlot(program: program),
                     _Growth(program: program),
                     // a copy of one of Heart's programs keeps its way back to
@@ -410,11 +412,12 @@ class _SteersState extends State<_Steers> {
 /// A session in the program's order, marked done, next or ahead in the open
 /// cycle. Tapped, it opens the same sheet a template card does.
 class _SessionTile extends StatelessWidget {
+  final Program program;
   final Template session;
   final _SessionState state;
   final VoidCallback onTap;
 
-  const new({required this.session, required this.state, required this.onTap});
+  const new({required this.program, required this.session, required this.state, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -477,7 +480,7 @@ class _SessionTile extends StatelessWidget {
             key: AppKeys.goEasySessionMark,
             tooltip: copy.goEasySessionMarked(marked.length),
             icon: Icon(Icons.spa_outlined, color: colorScheme.onSurfaceVariant),
-            onPressed: () => showKinderSwaps(context, marked, candidates: Exercises.of(context)),
+            onPressed: () => showKinderSwaps(context, marked, candidates: _kinderCandidates(context, program)),
           ),
         ],
       ),
@@ -589,4 +592,14 @@ enum _Steer {
   final ProgramActionKind kind;
 
   new(this.kind);
+}
+
+/// What a kinder swap may be inside [program]: the library, less what its
+/// constraint (#355) is harder on.
+Iterable<Exercise> _kinderCandidates(BuildContext context, Program program) {
+  final exercises = Exercises.of(context);
+  return switch (GoEasy.of(context).entryFor(program.constraint)) {
+    final GoEasyEntry constraint => exercises.where((each) => !constraint.isHarderOn(each)),
+    null => exercises,
+  };
 }
