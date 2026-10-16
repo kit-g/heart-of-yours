@@ -4934,5 +4934,11 @@
   "programCalendarOpen": "Open it in Heart:",
   "@programCalendarOpen": {"description": "Line before the link in a program's calendar event description", "type": "text", "placeholders": {}},
   "programOpen": "Open the program",
-  "@programOpen": {"description": "Button on a skipped day's page in History: opens the program it belongs to", "type": "text", "placeholders": {}}
+  "@programOpen": {"description": "Button on a skipped day's page in History: opens the program it belongs to", "type": "text", "placeholders": {}},
+  "programConstraint": "In this program, go easy on",
+  "@programConstraint": {"description": "On a program's page: the heading of the row naming what suggestions inside this program leave out (a body area or a movement, such as 'Lower back')", "type": "text", "placeholders": {}},
+  "programConstraintNone": "Nothing in particular",
+  "@programConstraintNone": {"description": "Under 'In this program, go easy on' when the program has no such constraint", "type": "text", "placeholders": {}},
+  "programConstraintNote": "When you replace an exercise in this program, suggestions leave out what is harder on this. Only here, and nothing is ever blocked.",
+  "@programConstraintNote": {"description": "In the sheet for choosing what a program goes easy on: what the choice does", "type": "text", "placeholders": {}}
 }
