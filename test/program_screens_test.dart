@@ -336,6 +336,40 @@ void main() {
       expect(find.text('Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'), findsOneWidget);
     });
 
+    testWidgets('How it grows reads a stages rule, and an occurrence with its own as itself (#350)', (tester) async {
+      final push = template('t1', 0, 'Push', programId: 'p1');
+      final tiers = program.copyWith(
+        rules: {
+          bench.id: const AddWeight(step: 2.5),
+          // Push's bench, on a rule of its own
+          push.first.id: const Stages(
+            stages: [
+              Stage(sets: 5, reps: 3, amrap: true),
+              Stage(sets: 6, reps: 2, amrap: true),
+              Stage(sets: 10, reps: 1),
+            ],
+            step: 2.5,
+            miss: MissRule(after: 1, cut: 0.15),
+          ),
+        },
+      );
+      answer(.on);
+      withProgram();
+      when(db.getPrograms(userId)).thenAnswer((_) async => [tiers]);
+      when(api.getPrograms()).thenAnswer((_) async => [tiers]);
+      when(db.getTemplates(userId)).thenAnswer((_) async => [push, template('t2', 1, 'Pull', programId: 'p1')]);
+      await openWorkoutTab(tester);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+
+      await scrollTo(tester, find.text('How it grows'));
+      expect(find.text('Bench Press · Push'), findsOneWidget);
+      final stages = find.textContaining('5×3+ → 6×2+ → 10×1, up ');
+      expect(stages, findsOneWidget);
+      expect(tester.widget<Text>(stages).data, endsWith('when a session makes them; one short moves on to the next'));
+      expect(find.text('Short after the last, it starts over from the first, 15% lighter'), findsOneWidget);
+    });
+
     testWidgets('a lighter week is asked for like any steer, and then not offered again (#350)', (tester) async {
       await openPage(tester);
 

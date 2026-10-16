@@ -4,108 +4,91 @@ import 'package:heart_models/heart_models.dart';
 /// their unit counts in. The caller knows the unit; this library does not.
 typedef RoundWeight = num Function(Exercise exercise, num kilograms);
 
-/// [session] as the workout it starts (#349): its targets as the program has
-/// them this time. A share of a base becomes a weight, of the base this
-/// occurrence keeps (its slot: the template exercise's id), of the exercise's
-/// own, or of the one the target names (`of`); without a base it stays a
-/// share, and the cells take the rest of the target. In a [lighter] cycle the
-/// weights come down by [Program.deload]'s load and each exercise drops to
-/// its volume share of working sets, the supplemental ones first.
-///
-/// What it starts is the same as [Template.toWorkout]'s otherwise: the plan
-/// is the targets, never a logged value.
+/// [session] as the workout it starts (#349): [PlannedSession.of]'s reading
+/// of it, the one the developer API and MCP show too, laid onto the sets
+/// [Template.toWorkout] makes. A worked-out weight, duration or distance is a
+/// target the cells show and a tick takes, rounded to the user's plates; it
+/// is never a logged value. A stages rule lays out its stage's sets, and a
+/// lighter cycle keeps its share of the working sets.
 Workout planSession(
   Template session, {
   required Program program,
+  required ProgramPosition position,
   required Map<String, ProgramBase> bases,
-  required bool lighter,
+  Map<String, int> stages = const {},
   required RoundWeight round,
 }) {
   final workout = session.toWorkout();
-  final load = switch (lighter) {
-    true => program.deload?.load ?? Deload.defaultLoad,
-    false => 1,
-  };
-  final volume = switch (lighter) {
-    true => program.deload?.volume ?? Deload.defaultVolume,
-    false => 1,
-  };
+  final planned = PlannedSession.of(program, session, position: position, bases: bases, stages: stages);
+  final bySlot = {for (final exercise in planned.exercises) exercise.slot: exercise};
 
   // toWorkout skips an exercise without sets, so the two line up once the
   // template's empty ones are out of the way
   final slots = session.where((exercise) => exercise.isNotEmpty);
   for (final (slot, exercise) in _zip(slots, workout)) {
-    for (final set in exercise) {
-      _planSet(set, slot: slot.id, bases: bases, load: load, round: round);
-    }
-    if (lighter) _lighten(exercise, volume);
+    if (bySlot[slot.id] case final PlannedExercise plan) _lay(exercise, plan, round);
   }
   return workout;
 }
 
-void _planSet(
-  ExerciseSet set, {
-  required String slot,
-  required Map<String, ProgramBase> bases,
-  required num load,
-  required RoundWeight round,
-}) {
-  final target = set.target;
-  num scaled(num kilograms) => round(set.exercise, kilograms * load);
-
-  final base = switch (target) {
-    SetTarget(share: num _, of: final String of) => bases[of],
-    SetTarget(share: num _) => bases[slot] ?? bases[set.exercise.id],
-    _ => null,
-  };
-  switch ((target, base)) {
-    case (final SetTarget target, final ProgramBase base):
-      set.target = target.withRange(.weight, .exactly(scaled(target.share! * base.value)));
-    case (final SetTarget target, null) when load != 1:
-      if (target[.weight] case final TargetRange range) {
-        set.target = target.withRange(
-          .weight,
-          TargetRange(
-            min: scaled(range.min),
-            max: switch (range.max) {
-              final num max => scaled(max),
-              null => null,
-            },
-            amrap: range.amrap,
-          ),
-        );
-      }
-    default:
-  }
-  if ((set.weight, load != 1) case (final double weight, true)) {
-    set.setMeasurements(
-      weight: scaled(weight).toDouble(),
-      reps: set.reps,
-      duration: set.duration,
-      distance: set.distance,
-    );
-  }
-}
-
-/// Keeps [volume]'s share of [exercise]'s working sets, at least one: the
-/// supplemental ones go first, then the last of the rest. Warm-ups stay.
-void _lighten(WorkoutExercise exercise, num volume) {
+/// Replaces [exercise]'s sets with [plan]'s, in its order: warm-ups as they
+/// were, working sets from the ones written, and a stage's extra sets as
+/// copies of the first.
+void _lay(WorkoutExercise exercise, PlannedExercise plan, RoundWeight round) {
+  final warmups = exercise.where((set) => set.setType == .warmup).iterator;
   final working = exercise.where((set) => set.setType != .warmup).toList();
-  // warm-ups only: nothing to lighten
-  if (working.isEmpty) return;
-  // at least one, and never more than there are: a volume above 1 adds none
-  final keep = switch ((working.length * volume).round()) {
-    < 1 => 1,
-    final count when count > working.length => working.length,
-    final count => count,
-  };
-  final dropped = [
-    ...working.reversed.where((set) => set.target?.supplemental ?? false),
-    ...working.reversed.where((set) => !(set.target?.supplemental ?? false)),
-  ].take(working.length - keep);
-  for (final set in dropped.toList()) {
+  final sets = <ExerciseSet>[];
+  var next = 0;
+  for (final planned in plan.sets) {
+    final set = switch (planned.setType) {
+      .warmup when warmups.moveNext() => warmups.current,
+      _ when next < working.length => working[next++],
+      _ when working.isNotEmpty => working.first.copy(),
+      _ => null,
+    };
+    if (set == null) continue;
+    sets.add(_planned(set, planned, round));
+  }
+  for (final set in exercise.toList()) {
     exercise.remove(set);
   }
+  sets.forEach(exercise.add);
+}
+
+/// [set] with [planned]'s target, and what the plan worked out as targets of
+/// their own in place of what the template stored.
+ExerciseSet _planned(ExerciseSet set, PlannedSet planned, RoundWeight round) {
+  var target = planned.target;
+  if (planned.weight case final num weight when weight != set.weight) {
+    target = (target ?? SetTarget.none).withRange(.weight, .exactly(round(set.exercise, weight)));
+  }
+  if (planned.duration case final num duration when duration != set.duration) {
+    target = (target ?? SetTarget.none).withRange(.duration, .exactly(duration));
+  }
+  if (planned.distance case final num distance when distance != set.distance) {
+    target = (target ?? SetTarget.none).withRange(.distance, .exactly(distance));
+  }
+  set.target = target;
+  // a target the plan worked out replaces the value it stood in for
+  set.setMeasurements(
+    weight: switch (target?[.weight]) {
+      TargetRange() => null,
+      null => set.weight,
+    },
+    reps: switch (target?[.reps]) {
+      TargetRange() => null,
+      null => planned.reps?.toInt() ?? set.reps,
+    },
+    duration: switch (target?[.duration]) {
+      TargetRange() => null,
+      null => set.duration,
+    },
+    distance: switch (target?[.distance]) {
+      TargetRange() => null,
+      null => set.distance,
+    },
+  );
+  return set;
 }
 
 Iterable<(A, B)> _zip<A, B>(Iterable<A> a, Iterable<B> b) sync* {

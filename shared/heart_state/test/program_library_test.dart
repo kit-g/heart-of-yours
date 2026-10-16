@@ -8,12 +8,12 @@ import 'package:heart_state/heart_state.dart';
 /// Heart's ready-made programs (#352). The fixture is three programs of the
 /// real file, rendered by heart-api's `scripts/programs_content.py` and
 /// trimmed to `en` and `es`.
-File _fixture() {
+File _fixture([String name = 'programs.json']) {
   // `make test-heart_state` runs from the repo root, an IDE from the package
   for (final root in [Directory.current.path, '${Directory.current.path}/shared/heart_state']) {
-    if (File('$root/test/fixtures/programs.json') case File file when file.existsSync()) return file;
+    if (File('$root/test/fixtures/$name') case File file when file.existsSync()) return file;
   }
-  throw StateError('Cannot find the programs fixture');
+  throw StateError('Cannot find the programs fixture $name');
 }
 
 void main() {
@@ -300,10 +300,14 @@ void main() {
     late Map<String, ({String body, String? etag})> kept;
     late List<Object> errors;
 
-    ProgramLibrary library(Future<({String body, String? etag})?> Function(String? etag) fetch) {
+    ProgramLibrary library(
+      Future<({String body, String? etag})?> Function(String? etag) fetch, {
+      String version = '1.15.0',
+    }) {
       asked = [];
       errors = [];
       return ProgramLibrary(
+        appVersion: () => version,
         fetch: ({etag}) {
           asked.add(etag);
           return fetch(etag);
@@ -354,6 +358,45 @@ void main() {
       expect(kept['static/programs']?.etag, '"v2"');
     });
 
+    test(
+      'a program newer than this build is left out, and one it cannot read the version of too (heart-api#276)',
+      () async {
+        Map<String, Object> program(String key, [Object? minApp]) => {
+          'key': key,
+          'name': key,
+          'minApp': ?minApp,
+          'sessions': [
+            {'id': 's-$key', 'name': 'Day', 'exercises': []},
+          ],
+        };
+        final file = jsonEncode({
+          'programs': [
+            program('any'),
+            program('older', '1.14.2'),
+            program('same', '1.15.0'),
+            program('newer', '1.16.0'),
+            program('patch', '1.15.1'),
+            program('malformed', 'soon'),
+            program('not_a_string', 115),
+          ],
+        });
+        final programs = library((_) async => (body: file, etag: null), version: '1.15.0');
+        await programs.ensure();
+        expect(programs.programs.map((each) => each.key), ['any', 'older', 'same']);
+        expect(programs.lookup('newer'), isNull);
+
+        // a build suffix is no part of the comparison
+        final suffixed = library((_) async => (body: file, etag: null), version: '1.16.0+300');
+        await suffixed.ensure();
+        expect(suffixed.programs.map((each) => each.key), ['any', 'older', 'same', 'newer', 'patch']);
+
+        // before the version is known, only what any build can run
+        final unknown = library((_) async => (body: file, etag: null), version: '');
+        await unknown.ensure();
+        expect(unknown.programs.map((each) => each.key), ['any']);
+      },
+    );
+
     test('a file not published yet is no library, and no error', () async {
       final programs = library((_) async => throw Exception('403'));
       await programs.ensure();
@@ -381,6 +424,72 @@ void main() {
       await Future.wait([programs.ensure(), programs.ensure()]);
       await programs.ensure();
       expect(asked, hasLength(1));
+    });
+  });
+
+  // the three programs whose occurrences of a lift keep rules and bases of
+  // their own (heart-api#256, #257), from the dev file of 2026-10-16
+  group('occurrences', () {
+    final slotted = LibraryContent.read(jsonDecode(_fixture('programs_slots.json').readAsStringSync()))!;
+    LibraryProgram fromSlotted(String key) => slotted.programs.firstWhere((each) => each.key == key);
+
+    test("an occurrence's own rule follows it to its new template exercise", () {
+      final (:program, :sessions) = fromSlotted('three_tiers').copy(resolve: everything, tag: 'en')!;
+      final occurrences = {
+        for (final session in sessions)
+          for (final exercise in session) exercise.id: exercise.exercise.id,
+      };
+
+      final own = program.rules.keys.where(occurrences.containsKey).toList();
+      expect(own, hasLength(4), reason: 'each main lift on its tier-two day');
+      for (final slot in own) {
+        expect(program.rules[slot], isA<Stages>());
+        expect(program.ruleFor(occurrences[slot]!, slot: slot), program.rules[slot]);
+      }
+      // the rest stay the exercise's, by its id
+      expect(program.rules.keys.where((key) => !occurrences.containsKey(key)), everyElement(startsWith('id-')));
+    });
+
+    test("a share of one occurrence's base names that occurrence's new id", () {
+      for (final key in ['volume_light_heavy', 'ramp_to_top_set']) {
+        final (:program, :sessions) = fromSlotted(key).copy(resolve: everything, tag: 'en')!;
+        final occurrences = {
+          for (final session in sessions)
+            for (final exercise in session) exercise.id: exercise.exercise.id,
+        };
+        final shares = [
+          for (final session in sessions)
+            for (final exercise in session)
+              for (final set in exercise)
+                if (set.target case SetTarget(:final String ofSlot)) (of: set.target!.of, ofSlot: ofSlot),
+        ];
+
+        expect(shares, isNotEmpty, reason: key);
+        for (final (:of, :ofSlot) in shares) {
+          expect(occurrences[ofSlot], of, reason: '$key: the occurrence is of the lift the share names');
+          expect(program.rules, contains(ofSlot), reason: '$key: and keeps a rule of its own');
+        }
+      }
+    });
+
+    test('an occurrence the catalog lacks takes its own rule and the shares of it along', () {
+      final (:program, :sessions) = fromSlotted('volume_light_heavy').copy(
+        resolve: (key) => key == 'squat-barbell' ? null : exercise(key),
+        tag: 'en',
+      )!;
+
+      final occurrences = {
+        for (final session in sessions)
+          for (final exercise in session) exercise.id,
+      };
+      expect(program.rules.keys.where((key) => !key.startsWith('id-')), everyElement(isIn(occurrences)));
+      for (final session in sessions) {
+        for (final exercise in session) {
+          for (final set in exercise) {
+            if (set.target?.ofSlot case final String slot) expect(occurrences, contains(slot));
+          }
+        }
+      }
     });
   });
 }

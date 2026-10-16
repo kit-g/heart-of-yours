@@ -1,0 +1,2466 @@
+{
+ "version": 2,
+ "programs": [
+  {
+   "key": "three_tiers",
+   "audience": "getting_stronger",
+   "equipment": "gym",
+   "name": "Three tiers",
+   "i18n": {
+    "es": "Tres niveles"
+   },
+   "note": "Four workouts in turn. Each day has one heavy lift, one lift for more reps and lighter accessory work. When a lift stalls, its sets and reps change before the weight does.",
+   "noteI18n": {
+    "es": "Cuatro entrenamientos por turnos. Cada día tiene un ejercicio pesado, uno con más repeticiones y trabajo accesorio más ligero. Cuando un ejercicio se estanca, cambian sus series y repeticiones antes que el peso."
+   },
+   "who": {
+    "en": "For lifters a few months in, past the first easy gains, who want a plan that doesn't stall at the first missed rep.",
+    "es": "Para quien lleva unos meses entrenando, ya pasadas las primeras ganancias fáciles, y quiere un plan que no se atasque a la primera repetición fallada."
+   },
+   "week": {
+    "en": "Four sessions of about an hour, in turn. The squat, bench, press and deadlift are each heavy on one day and for sets of ten on another; pulldowns and rows fill out every day.",
+    "es": "Cuatro sesiones de una hora, por turnos. Sentadilla, banca, press militar y peso muerto son pesados un día y en series de diez otro; jalones y remos completan cada día."
+   },
+   "grows": {
+    "en": "Make every rep on a lift and it goes up next time: 2.5 kg, 5 on the heavy deadlift. Accessories go up 2.5 kg once the last set reaches 25.",
+    "es": "Completa todas las repeticiones de un ejercicio y sube la próxima vez: 2,5 kg, 5 en el peso muerto pesado. Los accesorios suben 2,5 kg cuando la última serie llega a 25."
+   },
+   "misses": {
+    "en": "Miss on a heavy lift and keep the weight, in more sets of fewer reps: five triples, then six doubles, then ten singles. Miss on those and the weight drops about 15% and starts over. The sets of ten go to eight, then six, the same way.",
+    "es": "Si fallas un ejercicio pesado, mantén el peso en más series de menos repeticiones: cinco de tres, luego seis de dos, luego diez de una. Si fallas ahí, el peso baja un 15% y vuelves a empezar. Las series de diez pasan a ocho y luego a seis, igual."
+   },
+   "why": [
+    {
+     "text": {
+      "en": "Heavy sets led the research for strength, and two to three sets of moderate reps build muscle. Few other details of a program mattered.",
+      "es": "Las series pesadas encabezaron la investigación sobre fuerza, y dos o tres series de repeticiones moderadas construyen músculo. Pocos otros detalles de un programa importaron."
+     },
+     "sources": [
+      "currier_2023",
+      "acsm_2026"
+     ],
+     "about": [
+      {
+       "on": "program"
+      },
+      {
+       "on": "grows"
+      }
+     ]
+    },
+    {
+     "text": {
+      "en": "Changing sets and reps at a stall is a way to keep the weights heavy enough, which the research found mattered. The exact schemes are convention, not findings.",
+      "es": "Cambiar series y repeticiones al estancarse es una forma de mantener los pesos lo bastante altos, lo que la investigación vio que importaba. Los esquemas exactos son costumbre, no hallazgos."
+     },
+     "sources": [
+      "acsm_2026"
+     ],
+     "about": [
+      {
+       "on": "misses"
+      }
+     ]
+    },
+    {
+     "text": {
+      "en": "Each big lift comes twice a week, once heavy and once lighter: training a muscle twice a week built more than once.",
+      "es": "Cada ejercicio grande va dos veces por semana, una pesada y otra más ligera: entrenar un músculo dos veces por semana construyó más que una."
+     },
+     "sources": [
+      "schoenfeld_2016"
+     ],
+     "about": [
+      {
+       "on": "week"
+      }
+     ]
+    },
+    {
+     "text": {
+      "en": "Three to four minutes after heavy sets, because a little longer rest does a little more on big lifts.",
+      "es": "De tres a cuatro minutos tras las series pesadas, porque descansar un poco más rinde un poco más en los ejercicios grandes."
+     },
+     "sources": [
+      "rest_singer_2024"
+     ],
+     "about": [
+      {
+       "on": "rest"
+      }
+     ]
+    }
+   ],
+   "sources": [
+    "acsm_2026",
+    "currier_2023",
+    "rest_singer_2024",
+    "schoenfeld_2016"
+   ],
+   "safety": [
+    "start",
+    "stop_if",
+    "discomfort"
+   ],
+   "next": [
+    "strength_waves",
+    "weekly_top_sets"
+   ],
+   "perWeek": 4,
+   "minutes": 60,
+   "weeks": 12,
+   "rules": {
+    "squat-barbell": {
+     "kind": "stages",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 5,
+       "reps": 3,
+       "amrap": true
+      },
+      {
+       "sets": 6,
+       "reps": 2,
+       "amrap": true
+      },
+      {
+       "sets": 10,
+       "reps": 1,
+       "amrap": true
+      }
+     ]
+    },
+    "bench-press-barbell": {
+     "kind": "stages",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 5,
+       "reps": 3,
+       "amrap": true
+      },
+      {
+       "sets": 6,
+       "reps": 2,
+       "amrap": true
+      },
+      {
+       "sets": 10,
+       "reps": 1,
+       "amrap": true
+      }
+     ]
+    },
+    "overhead-press-barbell": {
+     "kind": "stages",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 5,
+       "reps": 3,
+       "amrap": true
+      },
+      {
+       "sets": 6,
+       "reps": 2,
+       "amrap": true
+      },
+      {
+       "sets": 10,
+       "reps": 1,
+       "amrap": true
+      }
+     ]
+    },
+    "deadlift-barbell": {
+     "kind": "stages",
+     "step": 5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 5,
+       "reps": 3,
+       "amrap": true
+      },
+      {
+       "sets": 6,
+       "reps": 2,
+       "amrap": true
+      },
+      {
+       "sets": 10,
+       "reps": 1,
+       "amrap": true
+      }
+     ]
+    },
+    "lat-pulldown-cable": {
+     "kind": "rangeThenWeight",
+     "step": 2.5
+    },
+    "seated-row-cable": {
+     "kind": "rangeThenWeight",
+     "step": 2.5
+    },
+    "8912976a-f1b9-567f-a9e5-7bd1dada661b": {
+     "kind": "stages",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 3,
+       "reps": 10
+      },
+      {
+       "sets": 3,
+       "reps": 8
+      },
+      {
+       "sets": 3,
+       "reps": 6
+      }
+     ]
+    },
+    "133a4329-74b5-545d-a017-abfb2b79eb21": {
+     "kind": "stages",
+     "step": 5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 3,
+       "reps": 10
+      },
+      {
+       "sets": 3,
+       "reps": 8
+      },
+      {
+       "sets": 3,
+       "reps": 6
+      }
+     ]
+    },
+    "36f2de40-4f87-568c-9fd2-44bffc962f01": {
+     "kind": "stages",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 3,
+       "reps": 10
+      },
+      {
+       "sets": 3,
+       "reps": 8
+      },
+      {
+       "sets": 3,
+       "reps": 6
+      }
+     ]
+    },
+    "933bdce3-e751-5a95-8675-f5b44bcfeb5c": {
+     "kind": "stages",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 1,
+      "cut": 0.15
+     },
+     "stages": [
+      {
+       "sets": 3,
+       "reps": 10
+      },
+      {
+       "sets": 3,
+       "reps": 8
+      },
+      {
+       "sets": 3,
+       "reps": 6
+      }
+     ]
+    }
+   },
+   "sessions": [
+    {
+     "id": "9de3e856-aa51-502b-8879-3887a8ab5540",
+     "key": "a1",
+     "name": "Day A1",
+     "i18n": {
+      "es": "Día A1"
+     },
+     "order": 0,
+     "exercises": [
+      {
+       "id": "e11f807b-9a28-5927-a8bf-b98614f5f70d",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 240,
+       "sets": [
+        {
+         "id": "2dd2728d-360a-5f01-97ba-4d11aee1f272",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "fb854277-e45e-5d80-b293-18e7a68c86da",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "3ef1e8d0-189f-55e6-92d4-ed64f98ae122",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "f0d91abd-8653-5456-8cba-5f7ac1749570",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "766fc0c9-fc37-517d-8e9e-2273c00f8414",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "8912976a-f1b9-567f-a9e5-7bd1dada661b",
+       "exercise": {
+        "key": "bench-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "50c5b91a-18c8-561f-a535-b63c350f5124",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "9ae61e6b-a717-5377-80b5-fa22a80313cb",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "48426b0b-40af-5789-b43c-26578948f340",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "3b4d549f-b480-55da-8c09-97c941db58aa",
+       "exercise": {
+        "key": "lat-pulldown-cable"
+       },
+       "exercise_order": 2,
+       "rest": 75,
+       "sets": [
+        {
+         "id": "9829abf1-78b3-54e1-b550-a34c026df172",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "0e5bec8c-3f33-5c56-ac9d-a1fa555c4fef",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "0afd3545-cd0c-5e03-bf2a-8693c794aaa4",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 25
+          }
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "7e20d236-d38a-5b8e-8386-8376d69976b0",
+     "key": "b1",
+     "name": "Day B1",
+     "i18n": {
+      "es": "Día B1"
+     },
+     "order": 1,
+     "exercises": [
+      {
+       "id": "5af8a508-861a-5aed-a3bf-c537e67db227",
+       "exercise": {
+        "key": "overhead-press-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 240,
+       "sets": [
+        {
+         "id": "2298246d-5642-5f91-b942-c97534090e2e",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "46dd088d-d64a-507e-9b61-07e5efc193e6",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "5936b8f9-8531-55a9-bc38-20c3773aba8f",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "5a5be4ad-f9dd-5e46-8625-0ea1f119a3b0",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "a9969709-0ae8-568e-847d-77032e62aa1c",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "133a4329-74b5-545d-a017-abfb2b79eb21",
+       "exercise": {
+        "key": "deadlift-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "033d2a1c-a139-5756-b6f9-731dd917945a",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "ee020a7b-02b5-5afa-87d8-53977d37e65b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "a0c10dac-2945-5c8f-9af1-1fe08885d4f8",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "584320d4-d371-5a78-8867-d1e592dedcef",
+       "exercise": {
+        "key": "seated-row-cable"
+       },
+       "exercise_order": 2,
+       "rest": 75,
+       "sets": [
+        {
+         "id": "721bb549-de66-5f29-bc4f-5dc783b5f8ce",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "4ed82af8-0305-5ce0-a212-cccf31154d08",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "8b4008d9-adea-5901-94eb-bb1f4a9df138",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 25
+          }
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "897f8074-7994-5bc8-b198-86dd0f9ed496",
+     "key": "a2",
+     "name": "Day A2",
+     "i18n": {
+      "es": "Día A2"
+     },
+     "order": 2,
+     "exercises": [
+      {
+       "id": "61ffa8ef-ee32-5430-b057-e21e1443cb0f",
+       "exercise": {
+        "key": "bench-press-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 240,
+       "sets": [
+        {
+         "id": "ed5e2dbd-fdbe-5d4f-9ff9-f44b50c64394",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "1282d589-4b83-5a60-98c2-71db013cc6a1",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "d809b1b4-bab3-5b56-a94d-b5161f890175",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "54f82e95-3a8a-53e0-b316-35fc041773b3",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "5e4252f9-ae84-51ae-b6cf-c5945a02c00b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "36f2de40-4f87-568c-9fd2-44bffc962f01",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "8a81006e-21a1-5ebc-bcdb-01b1d7ae590b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "223203cb-f4d5-5034-8a30-cd3839a84027",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "71a725bb-d389-571e-954d-db364d554a31",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "ce2de57f-6622-58db-a176-e089ebf0efe1",
+       "exercise": {
+        "key": "lat-pulldown-cable"
+       },
+       "exercise_order": 2,
+       "rest": 75,
+       "sets": [
+        {
+         "id": "002a8ae4-80e1-540d-a724-29a9a6d2c3d7",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "5e275ab5-bd5e-5ac5-8dda-81b7fbb5437f",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "89f8c8db-6430-5af3-aaa4-29de0a28ab4e",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 25
+          }
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "499f1e00-e6d1-59b9-8543-57b096fc98a8",
+     "key": "b2",
+     "name": "Day B2",
+     "i18n": {
+      "es": "Día B2"
+     },
+     "order": 3,
+     "exercises": [
+      {
+       "id": "0e8729e1-6588-503f-a9c9-afb321656c33",
+       "exercise": {
+        "key": "deadlift-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 240,
+       "sets": [
+        {
+         "id": "c58d2042-be90-5005-8d8b-93ab7772a553",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "6353cec4-8b4f-595c-bc34-206e13e55912",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "dba87f6b-37e7-5d20-97f2-f5fa7f5c3c42",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "14e2a7d8-9cf5-54a1-bb75-ec34d0c45ff1",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          }
+         }
+        },
+        {
+         "id": "178bcc62-7543-5a55-8496-8a401e52c9a9",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "933bdce3-e751-5a95-8675-f5b44bcfeb5c",
+       "exercise": {
+        "key": "overhead-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "ff6c08c2-51c9-5099-a63b-477feba4654a",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "17548afd-c4bc-55bd-b974-e415e8ad1a0a",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        },
+        {
+         "id": "9a38ff6d-0ce6-52aa-9ba9-4ed0e29d0c63",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 10
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "d72aaa88-2255-534f-b79e-2d964d951fe0",
+       "exercise": {
+        "key": "seated-row-cable"
+       },
+       "exercise_order": 2,
+       "rest": 75,
+       "sets": [
+        {
+         "id": "75111c7f-34ec-5c32-ba80-2fdb85d85015",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "04e4422b-3295-56e8-b950-6d3a4622cfb9",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 15
+          }
+         }
+        },
+        {
+         "id": "43473bcf-965e-5b71-bbe2-1db648f8e294",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 15,
+           "max": 25
+          }
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "volume_light_heavy",
+   "audience": "getting_stronger",
+   "equipment": "gym",
+   "name": "Volume, light, heavy",
+   "i18n": {
+    "es": "Volumen, ligero, pesado"
+   },
+   "note": "Three days with three jobs: a day of many sets, a light day to recover, and a heavy day that sets the pace. Progress comes week to week, not session to session.",
+   "noteI18n": {
+    "es": "Tres días con tres tareas: un día de muchas series, un día ligero para recuperarse y un día pesado que marca el ritmo. Se progresa de semana en semana, no de sesión en sesión."
+   },
+   "who": {
+    "en": "For lifters whose every-session progress has run out, and who can train on three fixed days.",
+    "es": "Para quien ya no progresa en cada sesión y puede entrenar tres días fijos."
+   },
+   "week": {
+    "en": "Monday is volume: five sets of five. Wednesday is light, with the press and pull-ups. Friday is heavy: one hard set of five that decides the week's weights.",
+    "es": "El lunes es volumen: cinco series de cinco. El miércoles es ligero, con press militar y dominadas. El viernes es pesado: una serie dura de cinco que decide los pesos de la semana."
+   },
+   "grows": {
+    "en": "Make Friday's set of five and it goes up 2.5 kg next Friday. Monday works at 90% of it and Wednesday's squat at about 70%, so the whole week moves with Friday.",
+    "es": "Completa la serie de cinco del viernes y sube 2,5 kg el viernes siguiente. El lunes se trabaja al 90% de ese peso y la sentadilla del miércoles a un 70%, así que toda la semana avanza con el viernes."
+   },
+   "misses": {
+    "en": "Miss Friday's five and keep the weight. Two Fridays in a row and it drops a tenth, and the rest of the week with it.",
+    "es": "Si fallas las cinco del viernes, mantén el peso. Dos viernes seguidos y baja una décima parte, y el resto de la semana con él."
+   },
+   "why": [
+    {
+     "text": {
+      "en": "Heavy sets led the research for strength. Here one hard set a week carries the load, and the other days add practice and volume around it.",
+      "es": "Las series pesadas encabezaron la investigación sobre fuerza. Aquí una serie dura por semana lleva la carga, y los otros días suman práctica y volumen alrededor."
+     },
+     "sources": [
+      "currier_2023"
+     ],
+     "about": [
+      {
+       "on": "program"
+      },
+      {
+       "on": "grows"
+      }
+     ]
+    },
+    {
+     "text": {
+      "en": "The squat comes three times a week and the bench twice: training a muscle more than once a week built more than once.",
+      "es": "La sentadilla va tres veces por semana y la banca dos: entrenar un músculo más de una vez por semana construyó más que una."
+     },
+     "sources": [
+      "schoenfeld_2016"
+     ],
+     "about": [
+      {
+       "on": "week"
+      }
+     ]
+    },
+    {
+     "text": {
+      "en": "Three to five minutes before the heavy set, because a little longer rest does a little more on big lifts.",
+      "es": "De tres a cinco minutos antes de la serie pesada, porque descansar un poco más rinde un poco más en los ejercicios grandes."
+     },
+     "sources": [
+      "rest_singer_2024"
+     ],
+     "about": [
+      {
+       "on": "rest"
+      }
+     ]
+    }
+   ],
+   "sources": [
+    "currier_2023",
+    "rest_singer_2024",
+    "schoenfeld_2016"
+   ],
+   "safety": [
+    "start",
+    "stop_if",
+    "discomfort"
+   ],
+   "next": [
+    "strength_waves",
+    "waves_and_volume"
+   ],
+   "perWeek": 3,
+   "minutes": 75,
+   "weeks": 12,
+   "rules": {
+    "deadlift-barbell": {
+     "kind": "addWeight",
+     "step": 5
+    },
+    "overhead-press-barbell": {
+     "kind": "addWeight",
+     "step": 2.5
+    },
+    "bent-over-row-barbell": {
+     "kind": "addWeight",
+     "step": 2.5
+    },
+    "chin-up": {
+     "kind": "rangeThenWeight",
+     "step": 2.5
+    },
+    "back-extension": {
+     "kind": "rangeThenWeight",
+     "step": 2.5
+    },
+    "7b8fc3ae-e158-5055-8319-903ac958acc9": {
+     "kind": "addWeight",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 2,
+      "cut": 0.1
+     }
+    },
+    "d2b30272-10ed-51d3-a5c8-195dde7c99b6": {
+     "kind": "addWeight",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 2,
+      "cut": 0.1
+     }
+    }
+   },
+   "sessions": [
+    {
+     "id": "17b2b56b-927d-520a-b3d8-2fa5287576d9",
+     "key": "volume",
+     "name": "Volume day",
+     "i18n": {
+      "es": "Día de volumen"
+     },
+     "note": "Five sets of five at 90% of Friday's weight. Hard, but every rep should be clean.",
+     "noteI18n": {
+      "es": "Cinco series de cinco al 90% del peso del viernes. Duro, pero cada repetición debe salir limpia."
+     },
+     "order": 0,
+     "exercises": [
+      {
+       "id": "1dffb2f2-a663-52cb-80f7-4734f4416b14",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 180,
+       "sets": [
+        {
+         "id": "2a2c45d3-0fae-5f5f-aff6-be08e9084726",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "squat-barbell",
+          "ofSlot": "7b8fc3ae-e158-5055-8319-903ac958acc9"
+         }
+        },
+        {
+         "id": "5d7d0141-fa16-5ea0-8fbf-21a23a230112",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "squat-barbell",
+          "ofSlot": "7b8fc3ae-e158-5055-8319-903ac958acc9"
+         }
+        },
+        {
+         "id": "084a0b47-7ff3-5cef-9f41-97b9a71ba177",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "squat-barbell",
+          "ofSlot": "7b8fc3ae-e158-5055-8319-903ac958acc9"
+         }
+        },
+        {
+         "id": "58510945-1f9e-5f5a-9aaf-992946add98e",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "squat-barbell",
+          "ofSlot": "7b8fc3ae-e158-5055-8319-903ac958acc9"
+         }
+        },
+        {
+         "id": "1fcc580b-58cf-5790-9e1c-7c866cad790a",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "squat-barbell",
+          "ofSlot": "7b8fc3ae-e158-5055-8319-903ac958acc9"
+         }
+        }
+       ]
+      },
+      {
+       "id": "5fbbbfa6-1940-568d-9a8f-3a362709b920",
+       "exercise": {
+        "key": "bench-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "6486c236-d3ab-5b7e-907c-b937bdfbe016",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "bench-press-barbell",
+          "ofSlot": "d2b30272-10ed-51d3-a5c8-195dde7c99b6"
+         }
+        },
+        {
+         "id": "ee048c9e-5250-561f-9bd7-999c41be009e",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "bench-press-barbell",
+          "ofSlot": "d2b30272-10ed-51d3-a5c8-195dde7c99b6"
+         }
+        },
+        {
+         "id": "9c9c09fe-fab3-520d-9874-70eb7ca47e24",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "bench-press-barbell",
+          "ofSlot": "d2b30272-10ed-51d3-a5c8-195dde7c99b6"
+         }
+        },
+        {
+         "id": "64474d3d-1c6c-56b0-85d7-628bd5ccf01f",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "bench-press-barbell",
+          "ofSlot": "d2b30272-10ed-51d3-a5c8-195dde7c99b6"
+         }
+        },
+        {
+         "id": "5ef9c8eb-66bc-57ad-9156-88e457242f37",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.9,
+          "of": "bench-press-barbell",
+          "ofSlot": "d2b30272-10ed-51d3-a5c8-195dde7c99b6"
+         }
+        }
+       ]
+      },
+      {
+       "id": "caf60e14-8b71-5599-bb76-c11c9ff3111a",
+       "exercise": {
+        "key": "deadlift-barbell"
+       },
+       "exercise_order": 2,
+       "rest": 180,
+       "sets": [
+        {
+         "id": "3ce87183-6a9b-573d-a12e-6fd82d250e4d",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "b57c6546-e15e-5285-a3d4-b9a5a71e9d73",
+     "key": "light",
+     "name": "Light day",
+     "i18n": {
+      "es": "Día ligero"
+     },
+     "note": "Easy on purpose: you should leave fresher than you came.",
+     "noteI18n": {
+      "es": "Fácil a propósito: deberías salir más fresco de lo que llegaste."
+     },
+     "order": 1,
+     "exercises": [
+      {
+       "id": "3eb1c730-39a4-5ae3-b80b-29dfa0b42992",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 120,
+       "sets": [
+        {
+         "id": "b8d15e40-beb4-5807-a4e2-5f9337ce691e",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.72,
+          "of": "squat-barbell",
+          "ofSlot": "7b8fc3ae-e158-5055-8319-903ac958acc9"
+         }
+        },
+        {
+         "id": "d715566b-3c0f-516d-a6ef-ae26595d62ac",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.72,
+          "of": "squat-barbell",
+          "ofSlot": "7b8fc3ae-e158-5055-8319-903ac958acc9"
+         }
+        }
+       ]
+      },
+      {
+       "id": "72f6709b-6122-5a5c-ac27-eabea834b9f1",
+       "exercise": {
+        "key": "overhead-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "7535baa1-49d7-5881-ba72-32bc5d9f5f91",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        },
+        {
+         "id": "ef07d9be-6a6c-568b-a535-60a20a296704",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        },
+        {
+         "id": "73711bb6-30dc-573c-afeb-2a45376dbec0",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "8b4275fa-f375-5505-9d86-cf6c3b36513c",
+       "exercise": {
+        "key": "chin-up"
+       },
+       "exercise_order": 2,
+       "rest": 120,
+       "sets": [
+        {
+         "id": "8f6ba0f2-0607-53a4-98a8-d9f84fac0f37",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 10
+          },
+          "rir": 1
+         }
+        },
+        {
+         "id": "0921786f-210c-5ac7-8580-fb66ba867db0",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 10
+          },
+          "rir": 1
+         }
+        },
+        {
+         "id": "13e1e463-1d14-5b44-8c69-2c28389b144a",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 10
+          },
+          "rir": 1
+         }
+        }
+       ]
+      },
+      {
+       "id": "19213693-ad64-5016-ba9d-fc0f5c407f01",
+       "exercise": {
+        "key": "back-extension"
+       },
+       "exercise_order": 3,
+       "rest": 60,
+       "sets": [
+        {
+         "id": "eee4e26d-a34a-5017-956c-90c28df44da4",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 15
+          },
+          "rir": 2
+         }
+        },
+        {
+         "id": "7629b22d-a236-5204-b100-8d852276205b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 10,
+           "max": 15
+          },
+          "rir": 2
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "4b13d496-e099-5cf8-8f14-34be123b8f75",
+     "key": "heavy",
+     "name": "Heavy day",
+     "i18n": {
+      "es": "Día pesado"
+     },
+     "note": "Warm up well, then one set of five as heavy as the plan says. This set sets the week.",
+     "noteI18n": {
+      "es": "Calienta bien y haz una serie de cinco tan pesada como dice el plan. Esta serie marca la semana."
+     },
+     "order": 2,
+     "exercises": [
+      {
+       "id": "7b8fc3ae-e158-5055-8319-903ac958acc9",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 300,
+       "sets": [
+        {
+         "id": "d2ad14dd-181c-5778-97b0-4badb96b584d",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "d2b30272-10ed-51d3-a5c8-195dde7c99b6",
+       "exercise": {
+        "key": "bench-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 300,
+       "sets": [
+        {
+         "id": "b43fb019-298e-554e-9f37-ef4132076061",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        }
+       ]
+      },
+      {
+       "id": "d871a182-d408-527d-a503-14a706e7f3c8",
+       "exercise": {
+        "key": "bent-over-row-barbell"
+       },
+       "exercise_order": 2,
+       "rest": 120,
+       "sets": [
+        {
+         "id": "1c41e097-e9b2-58da-9b99-d08b9c8cb17c",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        },
+        {
+         "id": "669916db-1e59-5cd7-8ba8-2f6041ea4f9c",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        },
+        {
+         "id": "98625ccf-7c97-5f33-86d0-994cf3dbd0d2",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          }
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "ramp_to_top_set",
+   "audience": "getting_stronger",
+   "equipment": "gym",
+   "name": "Ramp to a top set",
+   "i18n": {
+    "es": "Rampa hasta la serie tope"
+   },
+   "note": "Five sets of five that climb to one top set. Monday aims for last week's best, Friday goes past it, and a light Wednesday sits between.",
+   "noteI18n": {
+    "es": "Cinco series de cinco que suben hasta una serie tope. El lunes apunta a lo mejor de la semana pasada, el viernes lo supera y un miércoles ligero va en medio."
+   },
+   "who": {
+    "en": "For lifters whose every-session progress has run out, who like warming up into their heaviest set.",
+    "es": "Para quien ya no progresa en cada sesión y prefiere llegar a su serie más pesada subiendo poco a poco."
+   },
+   "week": {
+    "en": "Three sessions of about 75 minutes. Monday and Friday: squat, bench and row, climbing to a top set. Wednesday: a lighter squat, the press and the deadlift.",
+    "es": "Tres sesiones de unos 75 minutos. Lunes y viernes: sentadilla, banca y remo, subiendo hasta una serie tope. Miércoles: sentadilla más ligera, press militar y peso muerto."
+   },
+   "grows": {
+    "en": "Make every set on Friday, the top set and the triple after it included, and Friday's top set goes up 2.5 kg next week. Monday's climb follows it.",
+    "es": "Completa todas las series del viernes, incluidas la serie tope y la de tres que la sigue, y la serie tope del viernes sube 2,5 kg la semana siguiente. La subida del lunes la sigue."
+   },
+   "misses": {
+    "en": "Miss on Friday and keep the weight. Two Fridays in a row and it drops a tenth, and Monday's climb with it.",
+    "es": "Si fallas el viernes, mantén el peso. Dos viernes seguidos y baja una décima parte, y la subida del lunes con él."
+   },
+   "why": [
+    {
+     "text": {
+      "en": "Heavy sets led the research for strength, and few other details of a program mattered. Climbing to a top set is one way to get there warm and ready.",
+      "es": "Las series pesadas encabezaron la investigación sobre fuerza, y pocos otros detalles de un programa importaron. Subir hasta una serie tope es una forma de llegar a ella caliente y a punto."
+     },
+     "sources": [
+      "currier_2023",
+      "acsm_2026"
+     ],
+     "about": [
+      {
+       "on": "program"
+      },
+      {
+       "on": "grows"
+      }
+     ]
+    },
+    {
+     "text": {
+      "en": "The squat comes three times a week and the bench and row twice: training a muscle more than once a week built more than once.",
+      "es": "La sentadilla va tres veces por semana, y la banca y el remo dos: entrenar un músculo más de una vez por semana construyó más que una."
+     },
+     "sources": [
+      "schoenfeld_2016"
+     ],
+     "about": [
+      {
+       "on": "week"
+      }
+     ]
+    },
+    {
+     "text": {
+      "en": "Longer rest before the top sets, because a little longer rest does a little more on big lifts.",
+      "es": "Más descanso antes de las series tope, porque descansar un poco más rinde un poco más en los ejercicios grandes."
+     },
+     "sources": [
+      "rest_singer_2024"
+     ],
+     "about": [
+      {
+       "on": "rest"
+      }
+     ]
+    }
+   ],
+   "sources": [
+    "acsm_2026",
+    "currier_2023",
+    "rest_singer_2024",
+    "schoenfeld_2016"
+   ],
+   "safety": [
+    "start",
+    "stop_if",
+    "discomfort"
+   ],
+   "next": [
+    "volume_light_heavy",
+    "strength_waves"
+   ],
+   "perWeek": 3,
+   "minutes": 75,
+   "weeks": 12,
+   "rules": {
+    "overhead-press-barbell": {
+     "kind": "addWeight",
+     "step": 2.5
+    },
+    "deadlift-barbell": {
+     "kind": "addWeight",
+     "step": 5
+    },
+    "20522e47-9acd-5146-afde-f8863fd288f2": {
+     "kind": "addWeight",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 2,
+      "cut": 0.1
+     }
+    },
+    "7b666449-45bf-5d64-8a5c-ac32f4c9250e": {
+     "kind": "addWeight",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 2,
+      "cut": 0.1
+     }
+    },
+    "81f2fd51-c14f-5130-8625-d398a695e570": {
+     "kind": "addWeight",
+     "step": 2.5,
+     "miss": {
+      "when": "anySet",
+      "after": 2,
+      "cut": 0.1
+     }
+    }
+   },
+   "sessions": [
+    {
+     "id": "5eded41d-b997-5c9d-9678-295f7aabae93",
+     "key": "monday",
+     "name": "Monday",
+     "i18n": {
+      "es": "Lunes"
+     },
+     "note": "Each set a little heavier, up to last Friday's top set.",
+     "noteI18n": {
+      "es": "Cada serie un poco más pesada, hasta la serie tope del viernes pasado."
+     },
+     "order": 0,
+     "exercises": [
+      {
+       "id": "81243ce8-cf57-518e-9ce6-8b1c3daf950f",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 180,
+       "sets": [
+        {
+         "id": "201259c1-8fe5-558a-99c1-5896f1dddce7",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.5,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        },
+        {
+         "id": "2c4ec6e2-2a11-5408-9cb4-be0839663326",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        },
+        {
+         "id": "7b207728-6d28-5457-8423-8e682e89525b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        },
+        {
+         "id": "c5e86965-d002-564b-a2e7-e650213344a8",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        },
+        {
+         "id": "8022d5b4-6006-5f2b-9cef-50c861803188",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.975,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        }
+       ]
+      },
+      {
+       "id": "e2139743-b088-573e-a370-f41e0982f8ef",
+       "exercise": {
+        "key": "bench-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "0c575a6e-3872-57a1-9405-21827b5978d0",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.5,
+          "of": "bench-press-barbell",
+          "ofSlot": "7b666449-45bf-5d64-8a5c-ac32f4c9250e"
+         }
+        },
+        {
+         "id": "99b16dcc-e921-5c4a-acca-6a0e0ea33462",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625,
+          "of": "bench-press-barbell",
+          "ofSlot": "7b666449-45bf-5d64-8a5c-ac32f4c9250e"
+         }
+        },
+        {
+         "id": "13caecfc-f4a8-52f1-9a1b-1131f6d2da36",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75,
+          "of": "bench-press-barbell",
+          "ofSlot": "7b666449-45bf-5d64-8a5c-ac32f4c9250e"
+         }
+        },
+        {
+         "id": "8a2e23ff-ed73-5024-8f82-8de780c71d21",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875,
+          "of": "bench-press-barbell",
+          "ofSlot": "7b666449-45bf-5d64-8a5c-ac32f4c9250e"
+         }
+        },
+        {
+         "id": "092da0d5-2be4-560d-9fa2-43dfa6568faa",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.975,
+          "of": "bench-press-barbell",
+          "ofSlot": "7b666449-45bf-5d64-8a5c-ac32f4c9250e"
+         }
+        }
+       ]
+      },
+      {
+       "id": "995bf3bc-c5f2-54f6-a637-2912b1474547",
+       "exercise": {
+        "key": "bent-over-row-barbell"
+       },
+       "exercise_order": 2,
+       "rest": 120,
+       "sets": [
+        {
+         "id": "b94f46b1-8382-56a5-82c4-deaac5f7f6d8",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.5,
+          "of": "bent-over-row-barbell",
+          "ofSlot": "81f2fd51-c14f-5130-8625-d398a695e570"
+         }
+        },
+        {
+         "id": "a5efcd04-24df-5566-a948-1eb735113531",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625,
+          "of": "bent-over-row-barbell",
+          "ofSlot": "81f2fd51-c14f-5130-8625-d398a695e570"
+         }
+        },
+        {
+         "id": "9b8bc7fc-6d58-544c-9edc-58a15f174c76",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75,
+          "of": "bent-over-row-barbell",
+          "ofSlot": "81f2fd51-c14f-5130-8625-d398a695e570"
+         }
+        },
+        {
+         "id": "7febea39-ff84-5eee-97ec-3718c840f3b8",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875,
+          "of": "bent-over-row-barbell",
+          "ofSlot": "81f2fd51-c14f-5130-8625-d398a695e570"
+         }
+        },
+        {
+         "id": "09fc4a76-5d7d-5554-9987-3ad4597828b3",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.975,
+          "of": "bent-over-row-barbell",
+          "ofSlot": "81f2fd51-c14f-5130-8625-d398a695e570"
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "f1b80782-353e-543f-8d36-776f9c8c523c",
+     "key": "wednesday",
+     "name": "Wednesday",
+     "i18n": {
+      "es": "Miércoles"
+     },
+     "order": 1,
+     "exercises": [
+      {
+       "id": "6d533f58-0c47-5aed-96e1-17e882727900",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 120,
+       "sets": [
+        {
+         "id": "565ea56d-9f01-5605-a671-34166368a2d4",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.5,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        },
+        {
+         "id": "0c9eae9d-2bc6-5dd9-9d37-2fdf837394c7",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        },
+        {
+         "id": "73685a46-5826-589b-b307-4930ebf1157c",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        },
+        {
+         "id": "cd625f2d-8cc3-5b36-a361-02a234d7b04d",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75,
+          "of": "squat-barbell",
+          "ofSlot": "20522e47-9acd-5146-afde-f8863fd288f2"
+         }
+        }
+       ]
+      },
+      {
+       "id": "f236b283-7d35-58e3-8e10-44a5a4baf41f",
+       "exercise": {
+        "key": "overhead-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "8c8b52da-5da1-5e43-a748-2beec22e3eba",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625
+         }
+        },
+        {
+         "id": "42057907-e338-5b29-97eb-2d2ef49b4d1b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75
+         }
+        },
+        {
+         "id": "349cf715-f178-51d6-a0a4-6a3065102d76",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875
+         }
+        },
+        {
+         "id": "212dd961-0679-5125-8aa5-f8f9374e27c4",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 1
+         }
+        }
+       ]
+      },
+      {
+       "id": "27062d97-22fb-5370-8530-a74c97f42d3d",
+       "exercise": {
+        "key": "deadlift-barbell"
+       },
+       "exercise_order": 2,
+       "rest": 180,
+       "sets": [
+        {
+         "id": "3215803c-269e-57fe-987e-f2ac5910a2cb",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625
+         }
+        },
+        {
+         "id": "95ae70e5-7cd5-51f3-bea3-2e83f91833d5",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75
+         }
+        },
+        {
+         "id": "94c810e5-0855-5a70-b7b6-8f283b97117f",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875
+         }
+        },
+        {
+         "id": "83ae9fe6-7981-5d4d-81c4-713bab64da83",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 1
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "d71ee416-292b-5668-8c98-c16539caa215",
+     "key": "friday",
+     "name": "Friday",
+     "i18n": {
+      "es": "Viernes"
+     },
+     "note": "Climb to a new top set of five, then one heavier triple, then one lighter set of eight.",
+     "noteI18n": {
+      "es": "Sube hasta una nueva serie tope de cinco, luego una de tres más pesada y una de ocho más ligera."
+     },
+     "order": 2,
+     "exercises": [
+      {
+       "id": "20522e47-9acd-5146-afde-f8863fd288f2",
+       "exercise": {
+        "key": "squat-barbell"
+       },
+       "exercise_order": 0,
+       "rest": 240,
+       "sets": [
+        {
+         "id": "00a0011c-c5be-5469-8200-2ded9509b319",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.5
+         }
+        },
+        {
+         "id": "51904a90-6c01-51e4-a92b-e3b357905255",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625
+         }
+        },
+        {
+         "id": "91305eb6-3f84-564d-ab23-404e0e7afc76",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75
+         }
+        },
+        {
+         "id": "b8785478-1f2b-51eb-b116-f727b0dfcaa3",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875
+         }
+        },
+        {
+         "id": "054a9eb5-aac9-5c5b-bb56-2eff890a9ff2",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 1
+         }
+        },
+        {
+         "id": "17c10058-5f27-5de1-b8d0-7ce4b4c4e3ca",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          },
+          "share": 1.025
+         }
+        },
+        {
+         "id": "d8f9bbc4-f258-542c-a947-bb2c285050cf",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 8,
+           "max": 8
+          },
+          "share": 0.8
+         }
+        }
+       ]
+      },
+      {
+       "id": "7b666449-45bf-5d64-8a5c-ac32f4c9250e",
+       "exercise": {
+        "key": "bench-press-barbell"
+       },
+       "exercise_order": 1,
+       "rest": 180,
+       "sets": [
+        {
+         "id": "64c4abfc-93ca-53d1-9ab7-11aa3ff7f3a6",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.5
+         }
+        },
+        {
+         "id": "8bfa1667-7e9e-5e5e-abd0-822910156af8",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625
+         }
+        },
+        {
+         "id": "da24d9e4-aaa1-5fbc-9e3c-5533a34c549c",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75
+         }
+        },
+        {
+         "id": "d5145c22-09d5-5991-b4f5-9aab5bb1ac73",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875
+         }
+        },
+        {
+         "id": "3e3674f4-2b29-5b94-9858-c5c65e47bb8b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 1
+         }
+        },
+        {
+         "id": "92b7a498-eed3-54c5-ba75-1e11b02d369a",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          },
+          "share": 1.025
+         }
+        },
+        {
+         "id": "0c65ecb3-b255-53f9-9c3a-e1047edf73bb",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 8,
+           "max": 8
+          },
+          "share": 0.8
+         }
+        }
+       ]
+      },
+      {
+       "id": "81f2fd51-c14f-5130-8625-d398a695e570",
+       "exercise": {
+        "key": "bent-over-row-barbell"
+       },
+       "exercise_order": 2,
+       "rest": 150,
+       "sets": [
+        {
+         "id": "71e5eeca-2323-578a-8cfc-ddce8e6036a4",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.5
+         }
+        },
+        {
+         "id": "23c93f3a-f9f1-50cd-86d7-34205b17575e",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.625
+         }
+        },
+        {
+         "id": "b00c72a0-22b9-57fe-802a-3272ce56fa97",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.75
+         }
+        },
+        {
+         "id": "aac75fbb-1e87-52e5-8150-d36b830b7cfb",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 0.875
+         }
+        },
+        {
+         "id": "7c433d11-d28a-5237-9b89-51af30123f6b",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 5,
+           "max": 5
+          },
+          "share": 1
+         }
+        },
+        {
+         "id": "0ddbbc6f-664d-5a79-a451-f5f546323660",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 3,
+           "max": 3
+          },
+          "share": 1.025
+         }
+        },
+        {
+         "id": "be915945-c444-5a34-a2a9-4bc77e487612",
+         "completed": false,
+         "target": {
+          "reps": {
+           "min": 8,
+           "max": 8
+          },
+          "share": 0.8
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "sources": {
+  "acsm_2026": {
+   "title": "Resistance training prescription for muscle function, hypertrophy and physical performance",
+   "who": "Currier et al., ACSM position stand, Medicine & Science in Sports & Exercise",
+   "year": 2026,
+   "url": "https://pubmed.ncbi.nlm.nih.gov/41843416/",
+   "finding": {
+    "en": "Across 137 reviews, few details of a program mattered. Heavy enough weights, two to three sets, and training each muscle twice a week did.",
+    "es": "En 137 revisiones, pocos detalles de un programa importaron. Sí lo hicieron pesos suficientes, dos o tres series y entrenar cada músculo dos veces por semana."
+   },
+   "usedBy": [
+    "first_steps",
+    "full_body_muscle",
+    "power_and_size",
+    "push_pull_legs",
+    "ramp_to_top_set",
+    "strength_waves",
+    "three_tiers",
+    "waves_and_volume",
+    "weekly_top_sets"
+   ]
+  },
+  "currier_2023": {
+   "title": "Resistance training prescription for muscle strength and hypertrophy in healthy adults",
+   "who": "Currier et al., British Journal of Sports Medicine (network meta-analysis)",
+   "year": 2023,
+   "url": "https://pubmed.ncbi.nlm.nih.gov/37414459/",
+   "finding": {
+    "en": "Every way of training beat not training. Heavy sets three times a week led for strength.",
+    "es": "Cualquier forma de entrenar fue mejor que no entrenar. Las series pesadas tres veces por semana fueron las mejores para la fuerza."
+   },
+   "usedBy": [
+    "five_by_five",
+    "full_body_three",
+    "power_and_size",
+    "ramp_to_top_set",
+    "three_by_five",
+    "three_tiers",
+    "volume_light_heavy",
+    "waves_and_volume",
+    "weekly_top_sets"
+   ]
+  },
+  "schoenfeld_2016": {
+   "title": "Effects of resistance training frequency on measures of muscle hypertrophy",
+   "who": "Schoenfeld, Ogborn & Krieger, Sports Medicine",
+   "year": 2016,
+   "url": "https://pubmed.ncbi.nlm.nih.gov/27102172/",
+   "finding": {
+    "en": "Training each muscle twice a week built more than once a week; whether that's three full-body days or four split days is your call.",
+    "es": "Entrenar cada músculo dos veces por semana construyó más que una; si eso son tres días de cuerpo completo o cuatro divididos, lo decides tú."
+   },
+   "usedBy": [
+    "full_body_muscle",
+    "one_muscle_a_day",
+    "power_and_size",
+    "push_pull_legs",
+    "ramp_to_top_set",
+    "three_tiers",
+    "upper_lower",
+    "volume_light_heavy"
+   ]
+  },
+  "rest_singer_2024": {
+   "title": "Give it a rest — a systematic review with Bayesian meta-analysis on the effect of inter-set rest interval duration",
+   "who": "Singer et al., Frontiers in Sports and Active Living",
+   "year": 2024,
+   "url": "https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2024.1429789/full",
+   "finding": {
+    "en": "Resting longer than a minute or so between sets did a little more, especially on big lifts.",
+    "es": "Descansar más de un minuto o así entre series dio algo más, sobre todo en los ejercicios grandes."
+   },
+   "usedBy": [
+    "five_by_five",
+    "full_body_three",
+    "ramp_to_top_set",
+    "three_by_five",
+    "three_tiers",
+    "volume_light_heavy"
+   ]
+  }
+ },
+ "safety": {
+  "start": {
+   "text": {
+    "en": "Most people can start light to moderate exercise without seeing a doctor first. If you have a heart condition, chest pain or fainting, or a doctor has told you to limit activity, check with them before you start.",
+    "es": "La mayoría de la gente puede empezar con ejercicio suave o moderado sin ir antes al médico. Si tienes una enfermedad del corazón, dolor en el pecho o desmayos, o un médico te ha dicho que limites la actividad, consúltale antes de empezar."
+   },
+   "sources": [
+    "acsm_screening_2015"
+   ]
+  },
+  "stop_if": {
+   "text": {
+    "en": "Stop and rest if you feel chest pain, dizziness, unusual breathlessness, an irregular heartbeat or sharp pain. Chest pain that doesn't ease with rest needs emergency help.",
+    "es": "Para y descansa si notas dolor en el pecho, mareo, una falta de aire inusual, latidos irregulares o un dolor agudo. Un dolor en el pecho que no cede con el reposo necesita ayuda urgente."
+   },
+   "sources": []
+  },
+  "discomfort": {
+   "text": {
+    "en": "Some discomfort is normal while you train. If pain is sharp, builds through the session, or is worse the next morning, ease off.",
+    "es": "Cierta molestia es normal al entrenar. Si el dolor es agudo, va a más durante la sesión o empeora a la mañana siguiente, baja el ritmo."
+   },
+   "sources": []
+  },
+  "not_treatment": {
+   "text": {
+    "en": "This plan is for getting your general fitness back. It isn't treatment for an injury or a condition; if you're recovering from one, your clinician or physio is the right guide.",
+    "es": "Este plan sirve para recuperar la forma en general. No es un tratamiento para una lesión o una enfermedad; si te estás recuperando de una, tu médico o fisioterapeuta es quien debe guiarte."
+   },
+   "sources": []
+  },
+  "mecfs": {
+   "text": {
+    "en": "If activity leaves you much worse a day or two later, or you have ME/CFS or long COVID, a plan that steps up week by week isn't right for you. Talk to a clinician instead.",
+    "es": "Si la actividad te deja mucho peor uno o dos días después, o tienes EM/SFC o COVID persistente, un plan que sube semana a semana no es para ti. Habla mejor con un profesional sanitario."
+   },
+   "sources": [
+    "nice_mecfs"
+   ]
+  },
+  "postpartum": {
+   "text": {
+    "en": "After having a baby, check in with your midwife or doctor before you start, usually at your postnatal check. Pelvic floor exercises come first, and every day.",
+    "es": "Después de dar a luz, consulta con tu matrona o tu médico antes de empezar, normalmente en la revisión posparto. Los ejercicios de suelo pélvico van primero, y a diario."
+   },
+   "sources": [
+    "uk_cmo_postpartum"
+   ]
+  }
+ }
+}

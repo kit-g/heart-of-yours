@@ -148,6 +148,10 @@ const _schema = [
   // v26 (#344)
   addGoalPattern,
   addGoalMuscle,
+  // v27 (#350)
+  addProgramActionExercise,
+  addProgramActionSlot,
+  addProgramActionStage,
 ];
 
 /// Opens a throwaway in-memory sqlite database carrying the full production
@@ -157,7 +161,7 @@ Future<Database> openTestDatabase() {
   return databaseFactoryFfi.openDatabase(
     inMemoryDatabasePath,
     options: OpenDatabaseOptions(
-      version: 26,
+      version: 27,
       onCreate: (db, _) async {
         for (final statement in _schema) {
           await db.execute(statement);

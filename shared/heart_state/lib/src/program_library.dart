@@ -259,6 +259,10 @@ final class LibraryProgram {
   final Map<String, ProgramTest> tests;
   final List<LibrarySession> sessions;
 
+  /// The oldest app version that can run this program (heart-api#276), as
+  /// `[major, minor, patch]`; null for any build that reads the library.
+  final List<int>? minApp;
+
   /// Growth rules as the file writes them: keyed by exercise key, a ladder's
   /// rungs and kinds this build doesn't know included.
   final Map<String, Map> _rules;
@@ -284,8 +288,22 @@ final class LibraryProgram {
     this.phases = const [],
     this.tests = const {},
     required this.sessions,
+    this.minApp,
     this._rules = const {},
   });
+
+  /// Whether a build at [version] (`1.15.0`, a build suffix ignored) can run
+  /// this program. An unknown version runs only what any build can.
+  bool runsOn(String version) {
+    final needed = minApp;
+    if (needed == null) return true;
+    final running = _version(version);
+    if (running == null) return false;
+    for (final (index, part) in needed.indexed) {
+      if (running[index] != part) return running[index] > part;
+    }
+    return true;
+  }
 
   /// Null for an entry that isn't a program at all. Anything else this build
   /// doesn't know — a key, a rule kind, a group — is passed over, never a
@@ -299,6 +317,14 @@ final class LibraryProgram {
         if (LibrarySession.read(session) case final LibrarySession session) session,
     ]..sort((a, b) => a.order.compareTo(b.order));
     if (key is! String || name == null || sessions.isEmpty) return null;
+    // a version this build can't read is one it can't promise to run: the
+    // program goes, as one too new would
+    final minApp = switch (raw['minApp']) {
+      null => const <int>[],
+      final String version => _version(version),
+      _ => null,
+    };
+    if (minApp == null) return null;
 
     return LibraryProgram._(
       key: key,
@@ -340,6 +366,10 @@ final class LibraryProgram {
               if (_tryRead(() => ProgramTest.fromJson(value)) case final ProgramTest test) '$key': test,
       },
       sessions: sessions,
+      minApp: switch (minApp) {
+        [] => null,
+        _ => minApp,
+      },
       rules: {
         if (raw['rules'] case final Map rules)
           for (final MapEntry(:key, :value) in rules.entries)
@@ -361,12 +391,14 @@ final class LibraryProgram {
   /// program can be started twice and never shares a row with anyone else's
   /// copy. Every library key becomes the id [resolve] finds for it: the rules,
   /// a ladder's rungs, a share's `of`. Phases and tests follow the sessions to
-  /// their new ids.
+  /// their new ids, and so do an occurrence's own rule and a share of one
+  /// occurrence's base (`ofSlot`, heart-api#256, #257) the template exercises.
   ///
   /// What [resolve] doesn't know — an older catalog against a newer file — is
   /// left out: the exercise, its rule, a rung (a ladder left with one is no
   /// ladder), and a share of it, which would otherwise read as a share of
-  /// the set's own exercise. A session left with nothing goes too, and null
+  /// the set's own exercise. An occurrence left out takes its own rule with
+  /// it, and a share of its base falls back to its exercise's. A session left with nothing goes too, and null
   /// is a program with no sessions left at all.
   ///
   /// The sessions are numbered from [order], and filed under [folder].
@@ -381,14 +413,30 @@ final class LibraryProgram {
       _ => null,
     };
 
+    // every occurrence the copy keeps, by its id in the file: a share of one
+    // may name an occurrence in a later session
+    final slots = <String, String>{
+      for (final session in sessions)
+        for (final exercise in session._exercises)
+          if ((exercise['id'], LibrarySession._keyOf(exercise)) case (final String id, final String key))
+            if (resolve(key) != null) id: uuidV7(),
+    };
+
     Map? target(Object? raw) {
-      return switch (raw) {
+      final mapped = switch (raw) {
         {'of': final Object of} => switch (idOf(of)) {
           final String id => {...raw, 'of': id},
-          null => {...raw}..removeWhere((key, _) => key == 'of' || key == 'share'),
+          null => {...raw}..removeWhere((key, _) => key == 'of' || key == 'share' || key == 'ofSlot'),
         },
         final Map raw => raw,
         _ => null,
+      };
+      return switch (mapped) {
+        {'ofSlot': final Object slot} => switch (slots[slot]) {
+          final String id => {...mapped, 'ofSlot': id},
+          null => {...mapped}..remove('ofSlot'),
+        },
+        _ => mapped,
       };
     }
 
@@ -401,7 +449,7 @@ final class LibraryProgram {
             if (resolve(key) case final Exercise resolved)
               {
                 ...exercise,
-                'id': uuidV7(),
+                'id': slots[exercise['id']] ?? uuidV7(),
                 'exercise': resolved.toMap(),
                 'sets': [
                   for (final set in _list(exercise['sets']))
@@ -426,7 +474,8 @@ final class LibraryProgram {
 
     final rules = <String, Map>{};
     for (final MapEntry(:key, value: rule) in _rules.entries) {
-      final id = idOf(key);
+      // an occurrence's own rule, else an exercise's
+      final id = slots[key] ?? idOf(key);
       if (id == null) continue;
       switch (rule) {
         case {'rungs': final List rungs}:
@@ -525,12 +574,16 @@ final class LibraryContent {
 class ProgramLibrary with ChangeNotifier {
   late final StaticContent<LibraryContent> _file;
 
+  /// The running build's version, read on use: it arrives after this is made.
+  final String Function() _appVersion;
+
   new({
     required Future<({String body, String? etag})?> Function({String? etag}) fetch,
     required Future<({String body, String? etag})?> Function(String key) read,
     required Future<void> Function(String key, {required String body, String? etag}) store,
     void Function(dynamic error, {dynamic stacktrace})? onError,
-  }) {
+    String Function()? appVersion,
+  }) : _appVersion = appVersion ?? (() => '') {
     _file = StaticContent(
       key: 'static/programs',
       fetch: fetch,
@@ -551,10 +604,18 @@ class ProgramLibrary with ChangeNotifier {
   /// Whether there is a library to show.
   bool get available => _content != null;
 
-  /// Every program, in the file's order.
-  List<LibraryProgram> get programs => UnmodifiableListView(_content?.programs ?? const []);
+  /// Every program this build can run, in the file's order. One newer than
+  /// the build is left out rather than offered as an update: an older build
+  /// has nothing to say about it but "update", which is noise until the user
+  /// updates anyway (heart-api#276).
+  List<LibraryProgram> get programs => UnmodifiableListView(_runnable);
 
-  LibraryProgram? lookup(String key) => _content?.programs.where((program) => program.key == key).firstOrNull;
+  LibraryProgram? lookup(String key) => _runnable.where((program) => program.key == key).firstOrNull;
+
+  Iterable<LibraryProgram> get _runnable {
+    final version = _appVersion();
+    return (_content?.programs ?? const <LibraryProgram>[]).where((program) => program.runsOn(version));
+  }
 
   LibrarySource? source(String key) => _content?.sources[key];
 
@@ -571,6 +632,16 @@ List<Object?> _list(Object? raw) => switch (raw) {
 };
 
 List<String> _strings(Object? raw) => [..._list(raw).whereType<String>()];
+
+/// `1.15.0` (and `1.15.0+212`) as `[1, 15, 0]`; null for anything else.
+List<int>? _version(String raw) {
+  return switch (RegExp(r'^(\d+)\.(\d+)\.(\d+)(\+.*)?$').firstMatch(raw)) {
+    final RegExpMatch match => [
+      for (final group in [1, 2, 3]) int.parse(match.group(group)!),
+    ],
+    null => null,
+  };
+}
 
 /// [read], or null where it throws: one entry this build can't read costs that
 /// entry alone.

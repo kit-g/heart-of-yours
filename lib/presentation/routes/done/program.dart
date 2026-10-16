@@ -85,7 +85,7 @@ class _ProgramBlockState extends State<_ProgramBlock> {
                           _MoveRow(
                             move: move,
                             workout: widget.workout,
-                            rule: program.rules[move.exerciseId],
+                            rule: program.ruleFor(move.exerciseId, slot: move.slot),
                             kept: kept.contains(move),
                             onKeep: () => _keep(programs, move),
                           ),
@@ -158,6 +158,15 @@ class _MoveRow extends StatelessWidget {
       Cut(:final value) => copy.doneProgramCut(exercise.name, measure.format(value)),
       Missed(:final streak) => copy.doneProgramMissed(exercise.name, streak, move.cutAfter ?? streak),
       Advance(:final to) => copy.doneProgramAdvanced(exercise.name, nameOf(to)),
+      ToStage(:final stage, :final base) => switch ((rule, base)) {
+        (final Stages rule, final num base) => copy.doneProgramStageCut(
+          exercise.name,
+          rule.stage(stage).scheme,
+          measure.format(base),
+        ),
+        (final Stages rule, null) => copy.doneProgramStage(exercise.name, rule.stage(stage).scheme),
+        _ => null,
+      },
       Hold() => null,
     };
     if (line == null) return const SizedBox.shrink();
@@ -166,6 +175,11 @@ class _MoveRow extends StatelessWidget {
     // had nothing before it, and taking it back is an undo
     final keeps = switch ((move.step, move.before)) {
       (Advance(), _) => exercise.name,
+      // the stage it moved from: the one before, or the last when it started over
+      (ToStage(:final stage), _) => switch (rule) {
+        final Stages rule => rule.stage(stage == 0 ? rule.stages.length - 1 : stage - 1).scheme,
+        _ => null,
+      },
       (_, final num before) => measure.format(before),
       (_, null) => null,
     };

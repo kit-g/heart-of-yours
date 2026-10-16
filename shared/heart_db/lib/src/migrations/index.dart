@@ -170,4 +170,9 @@ const _migrations = <int, List<String>>{
     addGoalPattern,
     addGoalMuscle,
   ],
+  27: [
+    addProgramActionExercise,
+    addProgramActionSlot,
+    addProgramActionStage,
+  ],
 };

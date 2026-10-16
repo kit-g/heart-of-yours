@@ -28,17 +28,33 @@ void main() {
   // to the nearest 2.5 kg, as a metric user's plates go
   num round(Exercise _, num kilograms) => (kilograms / 2.5).round() * 2.5;
 
-  Workout plan(Template session, {Map<String, ProgramBase> bases = const {}, bool lighter = false, Deload? deload}) {
+  Workout plan(
+    Template session, {
+    Map<String, ProgramBase> bases = const {},
+    bool lighter = false,
+    Deload? deload,
+    Map<String, GrowthRule> rules = const {},
+    Map<String, int> stages = const {},
+  }) {
+    final program = Program(id: 'p1', name: 'Waves', deload: deload, rules: rules);
+    final now = DateTime.utc(2026, 10, 14, 12);
     return planSession(
       session,
-      program: Program(id: 'p1', name: 'Waves', deload: deload),
+      program: program,
+      position: ProgramPosition.of(
+        program,
+        marks: const [],
+        actions: [if (lighter) ProgramAction(programId: 'p1', kind: .lighter, at: now)],
+        now: now,
+        firstWeekday: DateTime.monday,
+      ),
       bases: bases,
-      lighter: lighter,
+      stages: stages,
       round: round,
     );
   }
 
-  test('a share of a base is a weight to aim for, rounded to a plate', () {
+  test('a share of a base is a weight to aim for, rounded down to the step', () {
     final workout = plan(
       session([
         {
@@ -60,9 +76,9 @@ void main() {
     );
 
     final [first, second] = workout.first.toList();
-    // 78 and 102: 77.5 and 102.5 on the bar
+    // 78 and 102, down to the 2.5 step: what the API and MCP plan too
     expect(first.target![.weight], TargetRange.exactly(77.5));
-    expect(second.target![.weight], TargetRange.exactly(102.5));
+    expect(second.target![.weight], TargetRange.exactly(100));
     expect(first.target!.share, 0.65, reason: 'the line still says where it comes from');
     expect(first.weight, isNull, reason: 'a plan is never a logged value');
   });
@@ -119,7 +135,7 @@ void main() {
     expect(target[.reps], TargetRange.exactly(5));
   });
 
-  test('a lighter cycle takes the load off and the supplemental sets first', () {
+  test('a lighter cycle takes the load off worked-out weights and keeps the first of the working sets', () {
     final workout = plan(
       session([
         {
@@ -150,12 +166,13 @@ void main() {
 
     final [squatDay, frontDay] = workout.toList();
     expect(squatDay.map((set) => set.setType), [SetType.warmup, SetType.normal, SetType.normal]);
+    // 80 at 90%, down to the step
     expect(squatDay.skip(1).map((set) => set.target![.weight]), [
-      TargetRange.exactly(72.5),
-      TargetRange.exactly(72.5),
+      TargetRange.exactly(70),
+      TargetRange.exactly(70),
     ]);
-    // one set is one set, at 90%
-    expect(frontDay.single.weight, 55);
+    // a weight the template stores is not worked out, so it stays
+    expect(frontDay.single.weight, 60);
   });
 
   test('a lighter cycle leaves warm-ups alone and never adds sets', () {
@@ -185,5 +202,68 @@ void main() {
     final [warmups, frontDay] = workout.toList();
     expect(warmups.map((set) => set.setType), [SetType.warmup]);
     expect(frontDay, hasLength(2));
+  });
+
+  test("an occurrence's own rule and base, and a share of another occurrence's base", () {
+    final workout = plan(
+      session([
+        {
+          'id': 'te1',
+          'exercise': squat,
+          'sets': [set({})],
+        },
+        {
+          'id': 'te2',
+          'exercise': front,
+          'sets': [
+            set({'share': 0.9, 'of': 'squat', 'ofSlot': 'te1'}),
+          ],
+        },
+      ]),
+      rules: {'te1': const AddWeight(step: 2.5)},
+      bases: {
+        'squat': base('squat', 80),
+        'te1': base('squat', 100, slot: 'te1'),
+      },
+    );
+
+    final [heavy, front90] = workout.toList();
+    // its own base under its own rule: the occurrence, not the exercise
+    expect(heavy.first.target![.weight], TargetRange.exactly(100));
+    expect(front90.first.target![.weight], TargetRange.exactly(90));
+  });
+
+  test('a stages rule lays out the stage it is on', () {
+    final workout = plan(
+      session([
+        {
+          'id': 'te1',
+          'exercise': squat,
+          'sets': [
+            set({}, type: 'warmup'),
+            set({
+              'reps': {'min': 3},
+            }),
+          ],
+        },
+      ]),
+      rules: {
+        'squat': const Stages(
+          stages: [Stage(sets: 5, reps: 3, amrap: true), Stage(sets: 6, reps: 2, amrap: true)],
+          step: 2.5,
+        ),
+      },
+      stages: {'squat': 1},
+      bases: {'squat': base('squat', 100)},
+    );
+
+    final sets = workout.single.toList();
+    expect(sets.map((set) => set.setType), [SetType.warmup, ...List.filled(6, SetType.normal)]);
+    expect(sets.skip(1).map((set) => set.target![.reps]), [
+      ...List.filled(5, TargetRange.exactly(2)),
+      const TargetRange(min: 2),
+    ]);
+    expect(sets.skip(1).map((set) => set.target![.weight]), List.filled(6, TargetRange.exactly(100)));
+    expect(sets.map((set) => set.id).toSet(), hasLength(7), reason: 'each laid-out set is a set of its own');
   });
 }

@@ -180,16 +180,6 @@ class HeartApp extends StatelessWidget {
             onError: reportToSentry,
           ),
         ),
-        // Heart's ready-made programs (#352): content, read when a Programs
-        // surface first asks for it, and kept on the device between launches
-        ChangeNotifierProvider<ProgramLibrary>(
-          create: (_) => ProgramLibrary(
-            fetch: cdn.getProgramLibrary,
-            read: db.getContent,
-            store: db.storeContent,
-            onError: reportToSentry,
-          ),
-        ),
         // Things to go easy on (#396): the map is content, the list the
         // user's own and health-shaped — on this phone only, and its errors
         // go through the redacting reporter, as health's do
@@ -233,6 +223,19 @@ class HeartApp extends StatelessWidget {
         ChangeNotifierProvider<AppInfo>(
           create: (_) => AppInfo(
             onError: reportToSentry,
+          ),
+        ),
+        // Heart's ready-made programs (#352): content, read when a Programs
+        // surface first asks for it, and kept on the device between launches
+        ChangeNotifierProvider<ProgramLibrary>(
+          create: (context) => ProgramLibrary(
+            fetch: cdn.getProgramLibrary,
+            read: db.getContent,
+            store: db.storeContent,
+            onError: reportToSentry,
+            // read on use: `AppInfo` fills in after this is made, and a
+            // program newer than this build is left out (heart-api#276)
+            appVersion: () => AppInfo.of(context).version,
           ),
         ),
         ChangeNotifierProvider<WhatsNewBadge>(

@@ -4,14 +4,14 @@ import 'package:heart_models/heart_models.dart';
 /// calendar event stands for. [week] is the program week, the cycle the session
 /// was planned in, so an event keeps naming the same occurrence after the
 /// program has moved on.
-typedef PlannedSession = ({String session, int week, DateTime day});
+typedef SessionAhead = ({String session, int week, DateTime day});
 
 /// The sessions [program] has ahead of it, on its preferred days, from [from]'s
 /// day for [days] days: the open cycle's remaining ones first, then each week's
 /// in program order. Only a hint, as the days themselves are — nothing is
 /// planned for a program without days, paused, finished or archived. With
 /// [trainedToday] the plan starts tomorrow: today already had its session.
-List<PlannedSession> plannedSessions(
+List<SessionAhead> plannedSessions(
   Program program,
   ProgramPosition position, {
   required DateTime from,

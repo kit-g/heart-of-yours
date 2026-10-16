@@ -640,9 +640,15 @@ class _Growth extends StatelessWidget {
     final programs = Programs.watch(context);
     final exercises = Exercises.of(context);
     final bases = programs.basesOf(program.id!);
-    final ids = {...program.rules.keys, ...bases.map((base) => base.exerciseId)};
+    // an occurrence with a rule or a base of its own (heart-api#256) reads as
+    // itself: the exercise its session holds there, and which session
+    final occurrences = {
+      for (final session in Templates.watch(context).sessionsOf(program))
+        for (final exercise in session) exercise.id: (exercise: exercise.exercise, session: session.name),
+    };
+    final keys = {...program.rules.keys, for (final base in bases) base.slot ?? base.exerciseId};
     final deload = program.deload;
-    if (ids.isEmpty && deload == null) return const SizedBox.shrink();
+    if (keys.isEmpty && deload == null) return const SizedBox.shrink();
     final percent = NumberFormat.percentPattern(Localizations.localeOf(context).toString());
     final style = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
 
@@ -656,14 +662,18 @@ class _Growth extends StatelessWidget {
           // the program's own lighter weeks, scheduled whatever the exercise
           if (deload case Deload(:final every, :final load, :final volume))
             Text(copy.programDeload(every, percent.format(load), percent.format(volume)), style: style),
-          for (final id in ids)
-            if (exercises.lookup(id) case final Exercise exercise)
+          for (final key in keys)
+            if (occurrences[key] ?? (exercise: exercises.lookup(key), session: null) case (
+              exercise: final Exercise exercise,
+              :final session,
+            ))
               _GrowthRow(
                 exercise: exercise,
-                rule: program.rules[id],
+                session: session,
+                rule: program.rules[key] ?? program.rules[exercise.id],
                 history: [
                   for (final base in bases)
-                    if (base.exerciseId == id) base.value,
+                    if ((base.slot ?? base.exerciseId) == key) base.value,
                 ],
                 style: style,
               ),
@@ -675,11 +685,21 @@ class _Growth extends StatelessWidget {
 
 class _GrowthRow extends StatelessWidget {
   final Exercise exercise;
+
+  /// The session of an occurrence with a rule of its own; null for the
+  /// exercise's rule, wherever it comes.
+  final String? session;
   final GrowthRule? rule;
   final List<num> history;
   final TextStyle? style;
 
-  const new({required this.exercise, required this.rule, required this.history, required this.style});
+  const new({
+    required this.exercise,
+    this.session,
+    required this.rule,
+    required this.history,
+    required this.style,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -692,6 +712,10 @@ class _GrowthRow extends StatelessWidget {
       RangeThenWeight(:final step) => copy.ruleRangeThenWeight(measure.format(step)),
       Longer(:final step) => copy.ruleLonger(measure.format(step)),
       ShareOfMax(:final step) => copy.ruleShareOfMax(measure.format(step)),
+      Stages(:final stages, :final step) => copy.ruleStages(
+        stages.map((stage) => stage.scheme).join(' → '),
+        measure.format(step),
+      ),
     };
 
     final percent = NumberFormat.percentPattern(Localizations.localeOf(context).toString());
@@ -699,6 +723,7 @@ class _GrowthRow extends StatelessWidget {
       AddWeight(:final miss) ||
       RangeThenWeight(:final miss) ||
       ShareOfMax(:final miss) when miss.cut > 0 => copy.ruleMisses(miss.after, percent.format(miss.cut)),
+      Stages(:final miss) when miss.cut > 0 => copy.ruleStagesCut(percent.format(miss.cut)),
       _ => null,
     };
 
@@ -706,7 +731,10 @@ class _GrowthRow extends StatelessWidget {
       crossAxisAlignment: .start,
       spacing: 2,
       children: [
-        Text(exercise.name, style: Theme.of(context).textTheme.titleSmall),
+        Text(switch (session) {
+          final String session => copy.ruleOccurrence(exercise.name, session),
+          null => exercise.name,
+        }, style: Theme.of(context).textTheme.titleSmall),
         Text(line, style: style),
         if (rule?.amrap.isNotEmpty ?? false) Text(copy.ruleAmrap, style: style),
         if (misses != null) Text(misses, style: style),
