@@ -259,6 +259,10 @@ final class LibraryProgram {
   final Map<String, ProgramTest> tests;
   final List<LibrarySession> sessions;
 
+  /// The oldest app version that can run this program (heart-api#276), as
+  /// `[major, minor, patch]`; null for any build that reads the library.
+  final List<int>? minApp;
+
   /// Growth rules as the file writes them: keyed by exercise key, a ladder's
   /// rungs and kinds this build doesn't know included.
   final Map<String, Map> _rules;
@@ -284,8 +288,22 @@ final class LibraryProgram {
     this.phases = const [],
     this.tests = const {},
     required this.sessions,
+    this.minApp,
     this._rules = const {},
   });
+
+  /// Whether a build at [version] (`1.15.0`, a build suffix ignored) can run
+  /// this program. An unknown version runs only what any build can.
+  bool runsOn(String version) {
+    final needed = minApp;
+    if (needed == null) return true;
+    final running = _version(version);
+    if (running == null) return false;
+    for (final (index, part) in needed.indexed) {
+      if (running[index] != part) return running[index] > part;
+    }
+    return true;
+  }
 
   /// Null for an entry that isn't a program at all. Anything else this build
   /// doesn't know — a key, a rule kind, a group — is passed over, never a
@@ -299,6 +317,14 @@ final class LibraryProgram {
         if (LibrarySession.read(session) case final LibrarySession session) session,
     ]..sort((a, b) => a.order.compareTo(b.order));
     if (key is! String || name == null || sessions.isEmpty) return null;
+    // a version this build can't read is one it can't promise to run: the
+    // program goes, as one too new would
+    final minApp = switch (raw['minApp']) {
+      null => const <int>[],
+      final String version => _version(version),
+      _ => null,
+    };
+    if (minApp == null) return null;
 
     return LibraryProgram._(
       key: key,
@@ -340,6 +366,10 @@ final class LibraryProgram {
               if (_tryRead(() => ProgramTest.fromJson(value)) case final ProgramTest test) '$key': test,
       },
       sessions: sessions,
+      minApp: switch (minApp) {
+        [] => null,
+        _ => minApp,
+      },
       rules: {
         if (raw['rules'] case final Map rules)
           for (final MapEntry(:key, :value) in rules.entries)
@@ -544,12 +574,16 @@ final class LibraryContent {
 class ProgramLibrary with ChangeNotifier {
   late final StaticContent<LibraryContent> _file;
 
+  /// The running build's version, read on use: it arrives after this is made.
+  final String Function() _appVersion;
+
   new({
     required Future<({String body, String? etag})?> Function({String? etag}) fetch,
     required Future<({String body, String? etag})?> Function(String key) read,
     required Future<void> Function(String key, {required String body, String? etag}) store,
     void Function(dynamic error, {dynamic stacktrace})? onError,
-  }) {
+    String Function()? appVersion,
+  }) : _appVersion = appVersion ?? (() => '') {
     _file = StaticContent(
       key: 'static/programs',
       fetch: fetch,
@@ -570,10 +604,18 @@ class ProgramLibrary with ChangeNotifier {
   /// Whether there is a library to show.
   bool get available => _content != null;
 
-  /// Every program, in the file's order.
-  List<LibraryProgram> get programs => UnmodifiableListView(_content?.programs ?? const []);
+  /// Every program this build can run, in the file's order. One newer than
+  /// the build is left out rather than offered as an update: an older build
+  /// has nothing to say about it but "update", which is noise until the user
+  /// updates anyway (heart-api#276).
+  List<LibraryProgram> get programs => UnmodifiableListView(_runnable);
 
-  LibraryProgram? lookup(String key) => _content?.programs.where((program) => program.key == key).firstOrNull;
+  LibraryProgram? lookup(String key) => _runnable.where((program) => program.key == key).firstOrNull;
+
+  Iterable<LibraryProgram> get _runnable {
+    final version = _appVersion();
+    return (_content?.programs ?? const <LibraryProgram>[]).where((program) => program.runsOn(version));
+  }
 
   LibrarySource? source(String key) => _content?.sources[key];
 
@@ -590,6 +632,16 @@ List<Object?> _list(Object? raw) => switch (raw) {
 };
 
 List<String> _strings(Object? raw) => [..._list(raw).whereType<String>()];
+
+/// `1.15.0` (and `1.15.0+212`) as `[1, 15, 0]`; null for anything else.
+List<int>? _version(String raw) {
+  return switch (RegExp(r'^(\d+)\.(\d+)\.(\d+)(\+.*)?$').firstMatch(raw)) {
+    final RegExpMatch match => [
+      for (final group in [1, 2, 3]) int.parse(match.group(group)!),
+    ],
+    null => null,
+  };
+}
 
 /// [read], or null where it throws: one entry this build can't read costs that
 /// entry alone.

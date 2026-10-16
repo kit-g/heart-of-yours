@@ -300,10 +300,14 @@ void main() {
     late Map<String, ({String body, String? etag})> kept;
     late List<Object> errors;
 
-    ProgramLibrary library(Future<({String body, String? etag})?> Function(String? etag) fetch) {
+    ProgramLibrary library(
+      Future<({String body, String? etag})?> Function(String? etag) fetch, {
+      String version = '1.15.0',
+    }) {
       asked = [];
       errors = [];
       return ProgramLibrary(
+        appVersion: () => version,
         fetch: ({etag}) {
           asked.add(etag);
           return fetch(etag);
@@ -353,6 +357,45 @@ void main() {
       expect(programs.programs.map((each) => each.key), ['only']);
       expect(kept['static/programs']?.etag, '"v2"');
     });
+
+    test(
+      'a program newer than this build is left out, and one it cannot read the version of too (heart-api#276)',
+      () async {
+        Map<String, Object> program(String key, [Object? minApp]) => {
+          'key': key,
+          'name': key,
+          'minApp': ?minApp,
+          'sessions': [
+            {'id': 's-$key', 'name': 'Day', 'exercises': []},
+          ],
+        };
+        final file = jsonEncode({
+          'programs': [
+            program('any'),
+            program('older', '1.14.2'),
+            program('same', '1.15.0'),
+            program('newer', '1.16.0'),
+            program('patch', '1.15.1'),
+            program('malformed', 'soon'),
+            program('not_a_string', 115),
+          ],
+        });
+        final programs = library((_) async => (body: file, etag: null), version: '1.15.0');
+        await programs.ensure();
+        expect(programs.programs.map((each) => each.key), ['any', 'older', 'same']);
+        expect(programs.lookup('newer'), isNull);
+
+        // a build suffix is no part of the comparison
+        final suffixed = library((_) async => (body: file, etag: null), version: '1.16.0+300');
+        await suffixed.ensure();
+        expect(suffixed.programs.map((each) => each.key), ['any', 'older', 'same', 'newer', 'patch']);
+
+        // before the version is known, only what any build can run
+        final unknown = library((_) async => (body: file, etag: null), version: '');
+        await unknown.ensure();
+        expect(unknown.programs.map((each) => each.key), ['any']);
+      },
+    );
 
     test('a file not published yet is no library, and no error', () async {
       final programs = library((_) async => throw Exception('403'));
