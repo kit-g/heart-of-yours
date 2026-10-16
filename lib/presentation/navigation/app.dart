@@ -343,14 +343,15 @@ class HeartApp extends StatelessWidget {
         ),
         // Last of the state classes: its callbacks below reach every one of
         // them through this context, which only sees what is provided above.
-        // Auth owns its FeatureSync: built in the same breath and disposed with
-        // it, so opt-in answers follow the account (#138) from the moment
-        // there is a session. A provider of its own would have to be eager —
-        // nothing reads it — and building eagerly started Auth earlier than
-        // the app does, ahead of the state its callbacks reach into.
+        // Auth owns its SettingsSync: built in the same breath and disposed with
+        // it, so opt-in answers (#138) and the week's first day (#339) follow
+        // the account from the moment there is a session. A provider of its
+        // own would have to be eager — nothing reads it — and building eagerly
+        // started Auth earlier than the app does, ahead of the state its
+        // callbacks reach into.
         ListenableProvider<Auth>(
           dispose: (_, auth) {
-            _featureSyncs[auth]?.dispose();
+            _settingsSyncs[auth]?.dispose();
             auth.dispose();
           },
           create: (context) {
@@ -416,7 +417,7 @@ class HeartApp extends StatelessWidget {
               firebase: firebaseAuth,
               isWeb: kIsWeb,
             );
-            _featureSyncs[auth] = FeatureSync(
+            _settingsSyncs[auth] = SettingsSync(
               preferences: Preferences.of(context),
               auth: auth,
               onError: reportToSentry,
@@ -470,10 +471,10 @@ class HeartApp extends StatelessWidget {
   }
 }
 
-/// Each [Auth]'s [FeatureSync], keyed on the Auth itself: the provider's
+/// Each [Auth]'s [SettingsSync], keyed on the Auth itself: the provider's
 /// `create` and `dispose` are separate closures, and a local in `build` would
 /// be a different variable by the time a rebuilt tree disposes.
-final _featureSyncs = Expando<FeatureSync>('featureSync');
+final _settingsSyncs = Expando<SettingsSync>('settingsSync');
 
 class _App extends StatefulWidget {
   final AppTheme theme;

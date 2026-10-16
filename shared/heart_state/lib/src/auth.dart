@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'analytics.dart';
-import 'feature_sync.dart';
+import 'settings_sync.dart';
 import 'password.dart';
 import 'remote.dart';
 

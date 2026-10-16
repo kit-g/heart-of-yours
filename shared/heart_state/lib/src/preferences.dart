@@ -14,6 +14,7 @@ const _themeMode = 'themeMode';
 const _weightUnit = 'weightUnit';
 const _distanceUnit = 'distanceUnit';
 const _firstWeekday = 'firstWeekday';
+const _firstWeekdayOwed = 'firstWeekdayOwed';
 const _collapsedFolders = 'collapsedTemplateFolders';
 const _healthInviteDismissed = 'healthInviteDismissed';
 const _healthAsked = 'healthAsked';
@@ -58,16 +59,37 @@ class Preferences with ChangeNotifier {
   /// The day the user's week starts on, as a [DateTime] weekday (#339). Every
   /// weekly count reads it: goals, the Done page, charts, the calendar.
   ///
-  /// A device preference like the units, not a synced one. Unset, it is the
-  /// locale's first day, which is where the calendar started its weeks before
-  /// there was a choice.
+  /// Unset, it is the locale's first day, which is where the calendar started
+  /// its weeks before there was a choice. A choice follows the account, so the
+  /// API and MCP count the same weeks ([SettingsSync]); the locale's day never
+  /// leaves the device.
   int get firstWeekday => _prefs?.getInt(_firstWeekday) ?? _localeFirstWeekday;
+
+  /// The user's own choice of [firstWeekday], null while it is the locale's.
+  int? get chosenFirstWeekday => _prefs?.getInt(_firstWeekday);
+
+  /// Whether the choice here is newer than the account's: made on this device
+  /// and not yet written up. [SettingsSync] writes it and [settleFirstWeekday]s.
+  bool get firstWeekdayOwed => _prefs?.getBool(_firstWeekdayOwed) ?? false;
 
   Future<bool>? setFirstWeekday(int weekday) {
     final write = _prefs?.setInt(_firstWeekday, weekday);
+    _prefs?.setBool(_firstWeekdayOwed, true);
     notifyListeners();
     return write;
   }
+
+  /// Takes [weekday] as this device's choice: the account's, chosen elsewhere.
+  /// Nothing is owed for it.
+  void adoptFirstWeekday(int weekday) {
+    if (chosenFirstWeekday == weekday && !firstWeekdayOwed) return;
+    _prefs?.setInt(_firstWeekday, weekday);
+    _prefs?.remove(_firstWeekdayOwed);
+    notifyListeners();
+  }
+
+  /// The account holds this device's choice now.
+  void settleFirstWeekday() => _prefs?.remove(_firstWeekdayOwed);
 
   /// The first day of the week where [locale] lives, from the same CLDR data
   /// Flutter's calendars use: Sunday in the US and Canada, Monday in most of
@@ -356,7 +378,7 @@ class Preferences with ChangeNotifier {
   /// What the user said about [feature]: see [FeatureAnswer].
   ///
   /// Kept on the device, where it is read, and — for an account — mirrored to
-  /// the account's settings by [FeatureSync], so a second phone does not ask
+  /// the account's settings by [SettingsSync], so a second phone does not ask
   /// what the first one already heard. Only a real answer travels: an
   /// unanswered offer and the notice after a no are this device's business.
   FeatureAnswer featureAnswer(Feature feature) {
@@ -481,7 +503,7 @@ class Preferences with ChangeNotifier {
   }
 
   /// Every feature this device has a real answer for — on or off — and when it
-  /// was given. What [FeatureSync] compares with the account's.
+  /// was given. What [SettingsSync] compares with the account's.
   ///
   /// An answer from before answers carried a time reads as the oldest there
   /// is, so any answer from another device outranks it.
