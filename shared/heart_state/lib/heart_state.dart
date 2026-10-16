@@ -25,6 +25,7 @@ export 'src/password.dart';
 export 'src/preferences.dart';
 export 'src/previous.dart';
 export 'src/program_calendar.dart';
+export 'src/program_goals.dart';
 export 'src/program_growth.dart';
 export 'src/program_library.dart';
 export 'src/program_plan.dart';

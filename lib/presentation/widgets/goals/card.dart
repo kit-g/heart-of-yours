@@ -71,6 +71,9 @@ class _GoalsCardState extends State<GoalsCard> {
       context,
     );
     final state = Goals.watch(context);
+    // what a running program implies, beside what the user set (#353)
+    final feeds = programFeeds(context);
+    final implied = impliedBy(feeds, state.all);
 
     // Nothing to turn to, so nothing offers to: the button appears with the
     // first achieved goal and goes with the last.
@@ -88,7 +91,7 @@ class _GoalsCardState extends State<GoalsCard> {
         // vertical only: a swiping row's background runs the full width of this
         // block, so the inset it sits inside belongs to the row, not to here
         padding: const .symmetric(vertical: 8),
-        child: switch (state.isEmpty) {
+        child: switch (state.isEmpty && implied.isEmpty) {
           true => Align(
             alignment: .topLeft,
             child: Padding(
@@ -99,7 +102,7 @@ class _GoalsCardState extends State<GoalsCard> {
               ),
             ),
           ),
-          false => _rows(state.all),
+          false => _rows(state.all, feeds: feeds, implied: implied),
         },
       ),
     );
@@ -230,28 +233,42 @@ class _GoalsCardState extends State<GoalsCard> {
     );
   }
 
-  /// The same rows either way; only who owns the scrolling changes.
-  Widget _rows(List<Goal> goals) {
+  /// The same rows either way; only who owns the scrolling changes. The
+  /// goals running programs imply (#353) come after the user's own, labelled
+  /// with their program, and open it rather than a goal.
+  Widget _rows(List<Goal> goals, {List<ProgramFeed> feeds = const [], List<ImpliedGoal> implied = const []}) {
     final lensSets = _lensSets();
-    final rows = goals.map(
-      (goal) => GoalRow(
-        key: AppKeys.goalRow(goal.id),
-        goal: goal,
-        workouts: widget.workouts,
-        lensSets: lensSets,
-        onEdit: () => _openGoal(goal),
-        onDelete: () => Goals.of(context).remove(goal),
-      ),
-    );
+    final rows = [
+      for (final goal in goals)
+        GoalRow(
+          key: AppKeys.goalRow(goal.id),
+          goal: goal,
+          workouts: widget.workouts,
+          lensSets: lensSets,
+          feeds: feeds,
+          onEdit: () => _openGoal(goal),
+          onDelete: () => Goals.of(context).remove(goal),
+        ),
+      for (final ImpliedGoal(:goal, :program) in implied)
+        GoalRow(
+          key: AppKeys.goalRow(goal.id),
+          goal: goal,
+          workouts: widget.workouts,
+          lensSets: lensSets,
+          feeds: feeds,
+          from: program.name,
+          onEdit: () => HeartRouter.of(context).goToProgram(program.id!),
+        ),
+    ];
 
     return switch (widget.bounded) {
       true => ListView(
         padding: .zero,
-        children: rows.toList(),
+        children: rows,
       ),
       false => Column(
         crossAxisAlignment: .start,
-        children: rows.toList(),
+        children: rows,
       ),
     };
   }

@@ -5,6 +5,7 @@ import 'package:heart_language/heart_language.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mockito/mockito.dart';
 
 import 'mocks.mocks.dart';
 
@@ -287,6 +288,85 @@ void main() {
 
     expect(goals, isEmpty);
     expect(find.text('No goals yet'), findsOneWidget);
+  });
+
+  group('beside a running program (#353)', () {
+    late Programs programs;
+
+    Future<void> follow(Program program) async {
+      final local = MockLocalProgramService();
+      when(local.getPrograms(userId)).thenAnswer((_) async => [program]);
+      when(local.getProgramActions(userId)).thenAnswer((_) async => []);
+      when(local.getProgramBases(userId)).thenAnswer((_) async => []);
+      when(local.getProgramsOwed(userId)).thenAnswer((_) async => []);
+      when(local.getSkips(userId)).thenAnswer((_) async => []);
+      when(local.getProgramMarks(userId, any)).thenAnswer((_) async => []);
+      programs = Programs(
+        service: local,
+        remoteService: MockRemoteProgramService(),
+        templates: MockTemplateService(),
+        // the mirror is the whole story: no server to read over it
+        remote: RemoteAccess(hasToken: () => false),
+      )..userId = userId;
+      await programs.init();
+    }
+
+    Future<void> pumpWith(WidgetTester tester, {bool on = true}) async {
+      SharedPreferences.setMockInitialValues({'feature-programs': on ? 'on' : 'off'});
+      final settings = Preferences();
+      await settings.init();
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<Goals>.value(value: goals),
+            ChangeNotifierProvider<Exercises>.value(value: exercises),
+            ChangeNotifierProvider<Stats>.value(value: stats),
+            ChangeNotifierProvider<Preferences>.value(value: settings),
+            ChangeNotifierProvider<Programs>.value(value: programs),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: localizationsDelegates,
+            supportedLocales: L.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(child: GoalsCard(workouts: WorkoutAggregation.empty())),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    final split = Program(id: 'p1', name: 'Split', perWeek: 3, sessions: const ['t1']);
+
+    testWidgets('shows the goal it implies, labelled with it and never stored', (tester) async {
+      await follow(split);
+
+      await pumpWith(tester);
+
+      expect(find.text('No goals yet'), findsNothing);
+      expect(find.byKey(AppKeys.goalRow('program:p1:workouts')), findsOneWidget);
+      expect(find.text('from Split'), findsOneWidget);
+      expect(goals, isEmpty);
+    });
+
+    testWidgets('never a second copy of a target the user holds', (tester) async {
+      await seed([workoutsGoal()]);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      expect(find.byType(GoalRow), findsOneWidget);
+      expect(find.text('from Split'), findsNothing);
+    });
+
+    testWidgets('with Programs off, goals are as they were', (tester) async {
+      await follow(split);
+
+      await pumpWith(tester, on: false);
+
+      expect(find.text('No goals yet'), findsOneWidget);
+      expect(find.text('from Split'), findsNothing);
+    });
   });
 
   testWidgets('a half-hearted swipe puts the row back', (tester) async {

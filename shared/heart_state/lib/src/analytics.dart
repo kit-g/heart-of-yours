@@ -217,6 +217,8 @@ const _programSteered = 'program_steered';
 const _programDeleted = 'program_deleted';
 const _programSkipped = 'program_skipped';
 const _programUnskipped = 'program_unskipped';
+const _programGoalKept = 'program_goal_kept';
+const _programAgain = 'program_again';
 const _programCalendar = 'program_calendar';
 const _programConstraint = 'program_constraint';
 const _programLinkOpened = 'program_link_opened';
@@ -514,6 +516,13 @@ class Analytics {
 
   /// A skip taken back with its Undo: how often "Not today" was a slip.
   void programUnskipped() => _log(_programUnskipped);
+
+  /// A goal a finished program implied, kept as one of the user's own (#353).
+  /// Never which goal, nor its target.
+  void programGoalKept() => _log(_programGoalKept);
+
+  /// A finished program run again from week 1, heavier (#353).
+  void programAgain() => _log(_programAgain);
 
   /// A program put in the device calendar, moved to another calendar or time,
   /// or taken out (#391). Never which calendar, nor a time.

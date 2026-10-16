@@ -134,6 +134,7 @@ class ProgramPage extends StatelessWidget {
                       ),
                     ProgramConstraintRow(program: program),
                     if (!program.archived) _ProgramCalendarSlot(program: program),
+                    _ProgramGoals(program: program, position: position, sessions: sessions),
                     _Growth(program: program),
                     // a copy of one of Heart's programs keeps its way back to
                     // the research, which stays in the library, never the copy
@@ -492,6 +493,141 @@ class _SessionTile extends StatelessWidget {
 /// where its base has been, under the program's lighter weeks if it keeps
 /// any. Absent while it has none of these, which is a program made from a
 /// folder until the user gives it rules.
+/// What the program is heading for (#353): the goals it implies and the
+/// user's own it grows, each with where it lands at this pace. Derived goals
+/// are never stored: at the end, one not reached can be kept as a goal, and a
+/// program whose goals were reached runs again from week 1, heavier — from
+/// the maxes it grew. A goal on a movement pattern none of the sessions
+/// train says so, before the program asks anything of the user.
+class _ProgramGoals extends StatelessWidget {
+  final Program program;
+  final ProgramPosition position;
+  final List<Template> sessions;
+
+  const new({required this.program, required this.position, required this.sessions});
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = L.of(context);
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    final goals = Goals.watch(context);
+    final programs = Programs.watch(context);
+    final exercises = Exercises.watch(context);
+    final id = program.id!;
+    final bases = programs.basesOf(id);
+    final sessionsDone = programs.sessionsDone(id);
+    final feed = (program: program, position: position, bases: bases, sessionsDone: sessionsDone);
+
+    final implied = impliedGoals(program, bases: bases, held: goals.all);
+    final grown = [
+      for (final goal in goals.all)
+        if (goal.cadence == null && program.rules.containsKey(goal.exerciseId)) goal,
+    ];
+    final trained = {
+      for (final session in sessions)
+        for (final WorkoutExercise(:exercise) in session)
+          ...(exercises.lookup(exercise.id) ?? exercise).movement.groups,
+    };
+    final untrained = {
+      for (final goal in goals.all)
+        if (goal.subject case PatternSubject(:final key) when !trained.contains(key)) key,
+    };
+    if (implied.isEmpty && grown.isEmpty && untrained.isEmpty) return const SizedBox.shrink();
+
+    // the end judged by the bases, the way the forecast reads them
+    bool reached(Goal goal) {
+      final forecast = forecastOf(
+        goal,
+        current: null,
+        program: program,
+        position: position,
+        bases: bases,
+        sessionsDone: sessionsDone,
+      );
+      return forecast is ForecastReached;
+    }
+
+    final finished = position.finished;
+    final lensSets = sharedLensSets(Stats.of(context).getLensSets);
+    final workouts = context.select<Stats, WorkoutAggregation>((stats) => stats.workouts);
+    final muted = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant);
+
+    return Padding(
+      padding: const .only(top: 24),
+      child: Column(
+        key: AppKeys.programGoals,
+        crossAxisAlignment: .stretch,
+        spacing: 8,
+        children: [
+          Text(copy.goals, style: textTheme.titleSmall),
+          for (final key in untrained) Text(copy.programGoalNoPattern(patternLabel(key, copy)), style: muted),
+          for (final each in implied) ...[
+            GoalRow(
+              key: AppKeys.goalRow(each.goal.id),
+              goal: each.goal,
+              workouts: workouts,
+              lensSets: lensSets,
+              feeds: [feed],
+            ),
+            if (finished && !reached(each.goal))
+              Align(
+                alignment: .centerLeft,
+                child: PrimaryButton.shrunk(
+                  key: AppKeys.programGoalKeep(each.goal.id),
+                  onPressed: () => _keep(context, each),
+                  child: Text(copy.programGoalKeep),
+                ),
+              ),
+          ],
+          for (final goal in grown)
+            GoalRow(
+              key: AppKeys.goalRow(goal.id),
+              goal: goal,
+              workouts: workouts,
+              lensSets: lensSets,
+              feeds: [feed],
+            ),
+          if (finished && [...implied.map((each) => each.goal), ...grown].any(reached))
+            Align(
+              alignment: .centerLeft,
+              child: PrimaryButton.shrunk(
+                key: AppKeys.programAgain,
+                onPressed: () => _again(context),
+                child: Text(copy.programAgainHeavier),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _keep(BuildContext context, ImpliedGoal implied) async {
+    final copy = L.of(context);
+    final analytics = Analytics.of(context);
+    try {
+      await Goals.of(context).create(implied.kept);
+      analytics.programGoalKept();
+      if (context.mounted) snack(context, copy.programGoalKept);
+    } on GoalRejected catch (rejection) {
+      if (!context.mounted) return;
+      snack(
+        context,
+        switch (rejection.isAtCapacity) {
+          true => copy.goalsAtCapacity,
+          false => rejection.toString(),
+        },
+      );
+    }
+  }
+
+  /// Week 1 again, from the bases the program grew: the same plan, heavier.
+  Future<void> _again(BuildContext context) async {
+    final analytics = Analytics.of(context);
+    await Programs.of(context).act(program, .replay, week: 1);
+    analytics.programAgain();
+  }
+}
+
 class _Growth extends StatelessWidget {
   final Program program;
 

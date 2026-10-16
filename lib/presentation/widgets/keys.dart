@@ -213,6 +213,11 @@ abstract final class AppKeys {
   static const libraryStart = Key('Programs.library.start');
   static const libraryOpenYours = Key('Programs.library.openYours');
   static const programAbout = Key('Programs.about');
+
+  /// A program's goals on its page (#353): what it implies, and what it grows.
+  static const programGoals = Key('Programs.goals');
+  static Key programGoalKeep(String? goalId) => Key('Programs.goals.keep.$goalId');
+  static const programAgain = Key('Programs.again');
   static const goEasyRow = Key('Programs.goEasy');
   static Key goEasy(String key) => Key('Programs.goEasy.$key');
   static const goEasySessionMark = Key('Programs.goEasy.session');
