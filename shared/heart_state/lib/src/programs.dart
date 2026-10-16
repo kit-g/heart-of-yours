@@ -265,6 +265,10 @@ class Programs with ChangeNotifier implements SignOutStateSentry {
   /// the "100 → 102.5 → 105" view.
   List<ProgramBase> basesOf(String programId) => UnmodifiableListView(_bases[programId] ?? const []);
 
+  /// How many of [programId]'s sessions were trained, skips not counted: how
+  /// far a goal's forecast trusts the program's pace (#353).
+  int sessionsDone(String programId) => (_marks[programId] ?? const []).where((mark) => mark.isWorkout).length;
+
   /// Each exercise's base in [programId] as it stands: the latest value.
   Map<String, ProgramBase> currentBasesOf(String programId) => currentBases(basesOf(programId));
 
