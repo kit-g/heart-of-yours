@@ -408,6 +408,10 @@ Future<void> _notToday(BuildContext context, Program program, Template session, 
 
   analytics.programSkipped(fromBand: fromBand);
   final skip = await programs.skip(program, session: session.id);
+  // with "Not today" on, a program's skip offers its reason too
+  if (context.mounted && Preferences.of(context).isOn(.notToday)) {
+    return showSkipSheet(context, skip, title: copy.programSkipped(_sessionName(copy, session)));
+  }
   messenger
     ..clearSnackBars()
     ..showSnackBar(

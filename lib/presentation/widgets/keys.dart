@@ -189,6 +189,19 @@ abstract final class AppKeys {
   static const skipPage = Key('History.skipPage');
   static const skipOpenProgram = Key('History.skipOpenProgram');
 
+  /// "Not today" on the Workout tab (#312), and its Undo once the day is set
+  /// aside.
+  static const notTodayDay = Key('Workout.notToday');
+  static const notTodayUndo = Key('Workout.notToday.undo');
+
+  /// The sheet after a skip (#312): its reason chips, and its Undo.
+  static const skipSheet = Key('Skip.sheet');
+  static Key skipReason(String reason) => Key('Skip.reason.$reason');
+  static const skipUndo = Key('Skip.undo');
+
+  /// A skip's page: what the day looked like (#312).
+  static const skipThatDay = Key('Skip.thatDay');
+
   /// A program in the device calendar (#391): the ask, the row on a program's
   /// page, and its dialog.
   static const programCalendarOffer = Key('Programs.calendar.offer');

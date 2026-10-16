@@ -69,6 +69,7 @@ enum _Screen {
   history,
   historyNotToday,
   skipPage,
+  notTodaySheet,
   calendar,
   exercises,
   settings,
@@ -596,12 +597,28 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   (
     _Screen.skipPage,
     _Guideline.androidTapTarget,
-    'Open the program is PrimaryButton.shrunk (lib/presentation/routes/history/skip_page.dart:79) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    'Open the program is PrimaryButton.shrunk (lib/presentation/routes/history/skip_page.dart:90) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
   ),
   (
     _Screen.skipPage,
     _Guideline.iosTapTarget,
-    'Open the program is PrimaryButton.shrunk (lib/presentation/routes/history/skip_page.dart:79) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    'Open the program is PrimaryButton.shrunk (lib/presentation/routes/history/skip_page.dart:90) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+  ),
+
+  // The sheet after "Not today" (#312, lib/presentation/widgets/skip_sheet.dart):
+  // the reason chips and Undo.
+  (_Screen.notTodaySheet, _Guideline.labeledTapTarget, null),
+  (_Screen.notTodaySheet, _Guideline.textContrastLight, null),
+  (_Screen.notTodaySheet, _Guideline.textContrastDark, null),
+  (
+    _Screen.notTodaySheet,
+    _Guideline.androidTapTarget,
+    'bottom nav bar items are below 48x48 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
+  ),
+  (
+    _Screen.notTodaySheet,
+    _Guideline.iosTapTarget,
+    'bottom nav bar items are below 44x44 (tapTargetSize/VisualDensity) — visual-density change, out of scope',
   ),
 
   (_Screen.exercises, _Guideline.labeledTapTarget, null),
@@ -1134,7 +1151,8 @@ void main() {
           _Screen.programLibrary ||
           _Screen.libraryProgram ||
           _Screen.goEasy ||
-          _Screen.skipPage:
+          _Screen.skipPage ||
+          _Screen.notTodaySheet:
         final running = screen != _Screen.programsOffer;
         // things to go easy on (#396): the whole map, a knee listed
         when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
@@ -1146,7 +1164,13 @@ void main() {
         SharedPreferences.setMockInitialValues({
           ...pastOnboarding(),
           if (running) 'feature-programs': 'on',
+          if (screen == _Screen.notTodaySheet) 'feature-notToday': 'on',
         });
+        // the day before a skip (#312): what its page reads
+        when(db.getLensSets(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => []);
+        when(db.storeSkip(any, any)).thenAnswer((_) async {});
+        when(api.replaySkip(any))
+            .thenAnswer((i) async => (row: i.positionalArguments.single as TrainingSkip, created: true));
         when(cdn.getSampleTemplates()).thenAnswer((_) async => <Template>[]);
         when(db.getTemplates(any)).thenAnswer(
           (_) async => switch (screen) {
@@ -1477,7 +1501,8 @@ void main() {
           _Screen.programLibrary ||
           _Screen.libraryProgram ||
           _Screen.goEasy ||
-          _Screen.skipPage:
+          _Screen.skipPage ||
+          _Screen.notTodaySheet:
         await tester.tapByKey(AppKeys.workoutStack);
         await tester.pumpTimes();
         // read here for the reason the upsync run is started here: `_initApp`
@@ -1530,6 +1555,10 @@ void main() {
             await tester.tapByKey(AppKeys.historySkip('k1'));
             await tester.pumpTimes();
             expect(find.byKey(AppKeys.skipPage), findsOneWidget);
+          case _Screen.notTodaySheet:
+            await tester.tapByKey(AppKeys.notTodayDay);
+            await tester.pumpTimes();
+            expect(find.byKey(AppKeys.skipSheet), findsOneWidget);
           default:
             break;
         }

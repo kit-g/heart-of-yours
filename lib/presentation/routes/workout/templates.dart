@@ -72,6 +72,7 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
           ),
         ),
         NewWorkoutHeader(openWorkoutSheet: widget.onNewWorkout),
+        if (preferences.isOn(.notToday)) const _NotToday(),
         _ProgramsSection(
           onOpen: widget.goToProgram,
           onFromFolder: widget.goToNewProgram,
