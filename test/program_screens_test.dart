@@ -446,6 +446,107 @@ void main() {
     });
   });
 
+  group("a program's goals (#353)", () {
+    const benchId = 'bench-1';
+    final start = DateTime.utc(2026, 10, 1);
+
+    Future<void> openPage(WidgetTester tester, Program running, {List<ProgramBase> bases = const []}) async {
+      answer(.on);
+      withProgram();
+      when(db.getPrograms(userId)).thenAnswer((_) async => [running]);
+      when(api.getPrograms()).thenAnswer((_) async => [running]);
+      when(db.getProgramBases(userId, programId: anyNamed('programId'))).thenAnswer((_) async => bases);
+      when(api.getProgramBases(any)).thenAnswer((_) async => bases);
+      await openWorkoutTab(tester);
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+    }
+
+    testWidgets('it shows what it implies, with where each lands at this pace', (tester) async {
+      final running = program.copyWith(rules: {benchId: const AddWeight(step: 2.5)});
+      await openPage(
+        tester,
+        running,
+        bases: [ProgramBase(id: 'b1', programId: 'p1', exerciseId: benchId, value: 60, at: start)],
+      );
+
+      await scrollTo(tester, find.byKey(AppKeys.programGoals));
+      expect(find.byKey(AppKeys.goalRow('program:p1:workouts')), findsOneWidget);
+      // 60 + 2.5 a week over eight weeks, from week 1: on track for the last
+      expect(find.byKey(AppKeys.goalRow('program:p1:$benchId')), findsOneWidget);
+      expect(find.textContaining('On track for week 8'), findsOneWidget);
+      // nothing is written behind the user's back
+      verifyNever(db.createGoal(any, any));
+    });
+
+    testWidgets('a goal on a pattern none of its sessions train is told before anything is asked', (tester) async {
+      when(db.createGoal(any, any)).thenAnswer((i) async {
+        final goal = i.positionalArguments.first as Goal;
+        return Goal(id: 'g1', metric: goal.metric, pattern: goal.pattern, cadence: goal.cadence, stages: goal.stages);
+      });
+      when(db.reconcileGoalId(any, any, any)).thenAnswer((_) async {});
+      when(api.createGoal(any, any)).thenAnswer((i) async => i.positionalArguments.first as Goal);
+      await openPage(tester, program);
+      final goals = Goals.of(tester.element(find.byType(MaterialApp)))..userId = userId;
+      await goals.create(
+        Goal(metric: .sets, pattern: 'vertical_pull', cadence: .week, stages: [GoalStage(target: 10)]),
+      );
+      await tester.pumpTimes();
+
+      await scrollTo(tester, find.byKey(AppKeys.programGoals));
+      expect(find.textContaining('Nothing here trains'), findsOneWidget);
+    });
+
+    testWidgets('at the end, one not reached is kept as a goal, and reached ones run it again', (tester) async {
+      // one week, and both its sessions done: finished
+      final short = program.copyWith(weeks: 1, rules: {benchId: const AddWeight(step: 2.5)});
+      when(db.getProgramMarks(userId, any)).thenAnswer(
+        (_) async => [
+          ProgramMark(templateId: 't1', at: start.add(const Duration(days: 1)), isWorkout: true),
+          ProgramMark(templateId: 't2', at: start.add(const Duration(days: 2)), isWorkout: true),
+        ],
+      );
+      // the mirror mints the id, as the database does
+      when(db.createGoal(any, any)).thenAnswer((i) async {
+        final goal = i.positionalArguments.first as Goal;
+        return Goal(id: 'g1', metric: goal.metric, cadence: goal.cadence, stages: goal.stages);
+      });
+      when(db.reconcileGoalId(any, any, any)).thenAnswer((_) async {});
+      when(api.createGoal(any, any)).thenAnswer((i) async => i.positionalArguments.first as Goal);
+      await openPage(
+        tester,
+        short,
+        bases: [
+          ProgramBase(id: 'b1', programId: 'p1', exerciseId: benchId, value: 60, at: start),
+          ProgramBase(
+            id: 'b2',
+            programId: 'p1',
+            exerciseId: benchId,
+            value: 62.5,
+            at: start.add(const Duration(days: 2)),
+          ),
+        ],
+      );
+      Goals.of(tester.element(find.byType(MaterialApp))).userId = userId;
+
+      await scrollTo(tester, find.byKey(AppKeys.programAgain));
+      // the weight reached its 62.5; the three a week is no ratchet to reach
+      expect(find.byKey(AppKeys.programGoalKeep('program:p1:$benchId')), findsNothing);
+      await tester.tap(find.byKey(AppKeys.programGoalKeep('program:p1:workouts')));
+      await tester.pumpTimes();
+      final kept = verify(db.createGoal(captureAny, userId)).captured.single as Goal;
+      expect(kept.id, isNull);
+      expect(kept.metric, GoalMetric.workouts);
+      expect(find.text('Kept as a goal'), findsOneWidget);
+
+      await tester.tap(find.byKey(AppKeys.programAgain));
+      await tester.pumpTimes();
+      final again = verify(db.storeProgramAction(captureAny)).captured.last as ProgramAction;
+      expect(again.kind, ProgramActionKind.replay);
+      expect(again.week, 1);
+    });
+  });
+
   group('from a folder (#348)', () {
     testWidgets('one screen, and the folder\'s templates become the sessions in order', (tester) async {
       answer(.on);

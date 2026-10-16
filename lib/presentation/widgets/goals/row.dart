@@ -17,16 +17,30 @@ class GoalRow extends StatefulWidget {
   /// Where a pattern or muscle goal reads its sets: shared by the rows of one
   /// card, so a refresh reads each window once ([sharedLensSets]).
   final LensSetsReader lensSets;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+
+  /// Opens the goal, or its program; absent where there is nowhere to go.
+  final VoidCallback? onEdit;
+
+  /// Swiping the row away deletes the goal; absent for a goal a program
+  /// implies (#353), which is the program's to drop, not the user's.
+  final VoidCallback? onDelete;
+
+  /// The program a derived goal comes from, by name (#353).
+  final String? from;
+
+  /// The running programs, which forecast a goal whose weight one of them
+  /// grows (#353); empty while Programs is off.
+  final List<ProgramFeed> feeds;
 
   const new({
     super.key,
     required this.goal,
     required this.workouts,
     required this.lensSets,
-    required this.onEdit,
-    required this.onDelete,
+    this.onEdit,
+    this.onDelete,
+    this.from,
+    this.feeds = const [],
   });
 
   @override
@@ -68,73 +82,85 @@ class _GoalRowState extends State<GoalRow> {
     };
     final subdued = textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant);
 
-    return _SwipeToDelete(
-      dismissKey: ValueKey('GoalRow.${goal.id}'),
-      onDelete: widget.onDelete,
-      child: InkWell(
-        onTap: widget.onEdit,
-        borderRadius: const .all(.circular(8)),
-        child: Padding(
-          // the row's own inset, inside the full-width swipe background
-          padding: const .symmetric(horizontal: 12, vertical: 6),
-          child: Column(
-            crossAxisAlignment: .start,
-            spacing: 4,
-            children: [
-              Text(
-                goalTitle(context, widget.goal, exercise),
-                style: textTheme.bodyLarge,
-                maxLines: 1,
-                overflow: .ellipsis,
-              ),
-              if (converted)
-                FutureBuilder<num?>(
-                  future: _reading,
-                  builder: (_, snapshot) {
-                    // the bar plots against converted targets, so it needs the
-                    // converted reading; the status line converts its own now
-                    final reading = snapshot.data;
-                    final current = switch (reading) {
-                      final num value => goal.convert(settings, scale, value),
-                      _ => null,
-                    };
-                    final statusText = goalStatus(
-                      context,
-                      widget.goal,
-                      settings: settings,
-                      scale: scale,
-                      current: reading,
-                    );
-                    final achievedCount = goal.stages.where((stage) => stage.isAchieved).length;
+    final row = InkWell(
+      onTap: widget.onEdit,
+      borderRadius: const .all(.circular(8)),
+      child: Padding(
+        // the row's own inset, inside the full-width swipe background
+        padding: const .symmetric(horizontal: 12, vertical: 6),
+        child: Column(
+          crossAxisAlignment: .start,
+          spacing: 4,
+          children: [
+            Text(
+              goalTitle(context, widget.goal, exercise),
+              style: textTheme.bodyLarge,
+              maxLines: 1,
+              overflow: .ellipsis,
+            ),
+            if (widget.from case final String program)
+              Text(L.of(context).goalFromProgram(program), style: subdued, maxLines: 1, overflow: .ellipsis),
+            if (converted)
+              FutureBuilder<num?>(
+                future: _reading,
+                builder: (_, snapshot) {
+                  // the bar plots against converted targets, so it needs the
+                  // converted reading; the status line converts its own now
+                  final reading = snapshot.data;
+                  final current = switch (reading) {
+                    final num value => goal.convert(settings, scale, value),
+                    _ => null,
+                  };
+                  final status = goalStatus(
+                    context,
+                    widget.goal,
+                    settings: settings,
+                    scale: scale,
+                    current: reading,
+                  );
+                  // where a running program takes it, beside where it is
+                  final statusText = switch (forecastFrom(widget.feeds, goal, reading)) {
+                    final GoalForecast forecast => '$status · ${forecastLabel(L.of(context), forecast)}',
+                    null => status,
+                  };
+                  final achievedCount = goal.stages.where((stage) => stage.isAchieved).length;
 
-                    return Column(
-                      crossAxisAlignment: .start,
-                      spacing: 6,
-                      children: [
-                        Text(
-                          statusText,
-                          style: subdued,
-                        ),
-                        GoalLadderBar(
-                          targets: targets,
-                          current: current,
-                          lowerIsBetter: goal.metric.lowerIsBetter,
-                          track: colorScheme.surfaceContainerHighest,
-                          fill: colorScheme.primary,
-                          achieved: goal.stages.map((stage) => stage.isAchieved).toList(),
-                          semanticLabel: goal.stages.isEmpty
-                              ? null
-                              : L.of(context).goalLadderSummary(achievedCount, goal.stages.length, statusText),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-            ],
-          ),
+                  return Column(
+                    crossAxisAlignment: .start,
+                    spacing: 6,
+                    children: [
+                      Text(
+                        statusText,
+                        style: subdued,
+                      ),
+                      GoalLadderBar(
+                        targets: targets,
+                        current: current,
+                        lowerIsBetter: goal.metric.lowerIsBetter,
+                        track: colorScheme.surfaceContainerHighest,
+                        fill: colorScheme.primary,
+                        achieved: goal.stages.map((stage) => stage.isAchieved).toList(),
+                        semanticLabel: goal.stages.isEmpty
+                            ? null
+                            : L.of(context).goalLadderSummary(achievedCount, goal.stages.length, statusText),
+                      ),
+                    ],
+                  );
+                },
+              ),
+          ],
         ),
       ),
     );
+
+    return switch (widget.onDelete) {
+      final VoidCallback onDelete => _SwipeToDelete(
+        dismissKey: ValueKey('GoalRow.${goal.id}'),
+        onDelete: onDelete,
+        child: row,
+      ),
+      null => row,
+    };
   }
 
   Future<num?> _read(Exercises exercises, int firstWeekday) {
