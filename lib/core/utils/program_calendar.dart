@@ -69,7 +69,11 @@ class ProgramCalendars with ChangeNotifier {
   final DeviceCalendar? _calendar;
   final void Function(dynamic error, {dynamic stacktrace})? onError;
 
-  new({this._calendar, this.onError});
+  /// What "today" is when a program is taken out: the device's clock, or a
+  /// test's fixed day.
+  final DateTime Function() _now;
+
+  new({this._calendar, this.onError, DateTime Function()? now}) : _now = now ?? DateTime.now;
 
   static ProgramCalendars of(BuildContext context) => Provider.of<ProgramCalendars>(context, listen: false);
 
@@ -235,7 +239,7 @@ class ProgramCalendars with ChangeNotifier {
     final written = _events[programId];
     final calendar = _calendar;
     if (written == null || calendar == null) return;
-    final today = DateUtils.dateOnly(DateTime.now());
+    final today = DateUtils.dateOnly(_now());
     try {
       for (final MapEntry<String, _Written>(:key, value: event) in [...written.entries]) {
         if (all || !event.day.isBefore(today)) await calendar.delete(event.id);
