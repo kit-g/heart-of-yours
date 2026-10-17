@@ -149,8 +149,9 @@ RouteBase _workoutRoute() {
             builder: (context, state) {
               return LibraryProgramPage(
                 programKey: state.pathParameters['key']!,
-                onProgram: (program) => context.goToProgram(program.id!),
-                onLibraryProgram: context.goToLibraryProgram,
+                // drilling in from here stacks: Back is this page
+                onProgram: (program) => context.pushProgram(program.id!),
+                onLibraryProgram: context.pushLibraryProgram,
               );
             },
             name: _libraryProgramName,
@@ -175,7 +176,7 @@ RouteBase _workoutRoute() {
           return ProgramPage(
             programId: programId,
             onEdit: () => context.goToEditProgram(programId),
-            onAbout: context.goToLibraryProgram,
+            onAbout: context.pushLibraryProgram,
             onEditSession: context.pushTemplateEditor,
             onOpenActiveWorkout: () {
               HapticFeedback.mediumImpact();

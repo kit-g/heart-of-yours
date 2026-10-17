@@ -240,6 +240,18 @@ void main() {
       // on the program's own page, which leads back to the research
       await scrollTo(tester, find.byKey(AppKeys.programAbout));
       expect(find.byKey(AppKeys.programAbout), findsOneWidget);
+
+      // the research stacks over the program, so Back is the program again
+      await tester.tapByKey(AppKeys.programAbout);
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.libraryOpenYours), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.programAbout), findsOneWidget);
+      // and Back from the program is the library page it was started from
+      await tester.pageBack();
+      await tester.pumpTimes();
+      expect(find.byKey(AppKeys.libraryOpenYours), findsOneWidget);
     });
 
     testWidgets('a start that fails takes its folder back, so nothing changed is true', (tester) async {

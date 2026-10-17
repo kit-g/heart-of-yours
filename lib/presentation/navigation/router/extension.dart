@@ -61,6 +61,19 @@ extension on BuildContext {
     return goNamed(_libraryProgramName, pathParameters: {'key': key});
   }
 
+  /// A ready-made program over the page that named it — the program after
+  /// this one, or the one a program of the user's was copied from: pushed,
+  /// so Back returns there rather than to the library.
+  void pushLibraryProgram(String key) {
+    pushNamed(_libraryProgramName, pathParameters: {'key': key});
+  }
+
+  /// A program of the user's over the library page it was started or opened
+  /// from: pushed, so Back returns to that page rather than to the Workout tab.
+  void pushProgram(String programId) {
+    pushNamed(_programName, pathParameters: {'programId': programId});
+  }
+
   void goToAccountManagement() {
     return goNamed(_accountManagementName);
   }
