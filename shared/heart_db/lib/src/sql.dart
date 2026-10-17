@@ -613,6 +613,7 @@ const muscleSets = '''
 SELECT
     w.start AS start,
     e.muscles AS muscles,
+    e.target AS target,
     count(*) AS sets
 FROM workouts w
 INNER JOIN workout_exercises we ON we.workout_id = w.id

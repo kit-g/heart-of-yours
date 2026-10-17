@@ -151,7 +151,7 @@ void main() {
     test('getMuscleSets delegates with the user, and holds nothing or notifies', () async {
       final from = DateTime(2026, 9, 1);
       final to = DateTime(2026, 9, 8);
-      final rows = [(start: from, muscles: MuscleTagging.empty(), sets: 3)];
+      final rows = [(start: from, muscles: MuscleTagging.empty(), target: Target.other, sets: 3)];
       service.muscleSetsToReturn = rows;
       stats.userId = 'u1';
 

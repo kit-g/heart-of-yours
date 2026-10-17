@@ -104,27 +104,30 @@ void main() {
     final rows = await local.getMuscleSets(from, to, userId: userId);
 
     expect(rows.map((row) => (row.start, row.sets)), unorderedEquals([(monday.toLocal(), 3), (thursday.toLocal(), 2)]));
-    final (:muscles, start: _, sets: _) = rows.first;
+    final (:muscles, :target, start: _, sets: _) = rows.first;
     expect(muscles.primary.ids, ['pectoralis_major_l', 'pectoralis_major_r']);
     expect(muscles.secondary?.groups, ['arms']);
+    expect(target, Target.chest);
   });
 
   test('leaves out warm-ups, and counts drop and failure sets', () async {
     await seed(exercise: 'bench', start: DateTime.utc(2026, 9, 2, 10), completed: 4, warmups: 2);
     await db.update('sets', {'set_type': 'drop'}, where: 'id = ?', whereArgs: ['w${sequence - 1}-s3']);
 
-    final [(:sets, muscles: _, start: _)] = await local.getMuscleSets(from, to, userId: userId);
+    final [(:sets, muscles: _, target: _, start: _)] = await local.getMuscleSets(from, to, userId: userId);
 
     expect(sets, 2);
   });
 
-  test('an untagged custom exercise comes back with empty tagging, not dropped', () async {
+  test('an untagged custom exercise comes back with empty tagging and its target, not dropped', () async {
     await seed(exercise: 'mine', start: DateTime.utc(2026, 9, 2, 10), completed: 4);
 
-    final [(:muscles, :sets, start: _)] = await local.getMuscleSets(from, to, userId: userId);
+    final [(:muscles, :sets, :target, start: _)] = await local.getMuscleSets(from, to, userId: userId);
 
     expect(sets, 4);
     expect(muscles.isEmpty, isTrue);
+    // what the map places it by
+    expect(target, Target.other);
   });
 
   test('leaves out unfinished workouts, other users, and anything outside [from, to)', () async {

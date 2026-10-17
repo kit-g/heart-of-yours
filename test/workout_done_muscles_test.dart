@@ -23,12 +23,14 @@ void main() {
     target: .chest,
     tags: MuscleTagging.fromJson(jsonDecode('{"primary": {"groups": ["chest"]}}')),
   );
-  final custom = Exercise(name: 'Muffin Carry', category: .dumbbell, target: .core, isMine: true);
+  // the user's own, untagged: a body-part target places it, the whole body does not
+  final custom = Exercise(name: 'Muffin Curl', category: .dumbbell, target: .arms, isMine: true);
+  final carry = Exercise(name: 'Muffin Carry', category: .dumbbell, target: .fullBody, isMine: true);
 
   setUp(() async {
     final service = MockExerciseService();
     final remote = MockRemoteExerciseService();
-    when(service.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, custom]));
+    when(service.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench, custom, carry]));
     when(service.getExerciseUnits(any)).thenAnswer((_) async => <String, MeasurementUnit>{});
     when(service.storeExercises(any, userId: anyNamed('userId'))).thenAnswer((_) async {});
     when(remote.getOwnExercises()).thenAnswer((_) async => <Exercise>[]);
@@ -113,9 +115,15 @@ void main() {
     expect(button, findsNothing);
   });
 
-  testWidgets('is not offered when nothing in the session could be placed', (tester) async {
+  testWidgets('is offered for an exercise the user made, placed by its target', (tester) async {
     preferences.setFeature(Feature.muscleMap, on: true);
     await pump(tester, session(custom));
+    expect(button, findsOneWidget);
+  });
+
+  testWidgets('is not offered when nothing in the session could be placed', (tester) async {
+    preferences.setFeature(Feature.muscleMap, on: true);
+    await pump(tester, session(carry));
     expect(button, findsNothing);
   });
 }

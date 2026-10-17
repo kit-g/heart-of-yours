@@ -7,8 +7,8 @@ import 'weeks.dart';
 
 /// Completed sets of one exercise in one finished workout, with when the
 /// workout started and what the exercise trains — the muscle map's unit of
-/// data (#136).
-typedef MuscleSets = ({DateTime start, MuscleTagging muscles, int sets});
+/// data (#136). [target] is where an exercise nobody tagged still belongs.
+typedef MuscleSets = ({DateTime start, MuscleTagging muscles, Target target, int sets});
 
 /// [StatsService] plus the reads only the local mirror can answer.
 ///

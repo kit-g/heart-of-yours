@@ -10,30 +10,23 @@ import 'package:heart_state/heart_state.dart';
 /// have. Finer regions wait on finer tagging.
 typedef MuscleVolume = ({Map<MuscleGroup, double> sets, int unmapped});
 
-/// How much a set counts toward a secondary muscle group. Primary groups count
-/// in full.
-const secondaryShare = .5;
-
 /// Folds [rows] — completed sets per exercise, with the exercise's tagging —
-/// into [MuscleVolume].
+/// into [MuscleVolume], each row placed by [muscleSharesOf].
 ///
-/// A group named as both primary and secondary counts once, as primary. An
-/// exercise tagged with nothing (a custom one, so far — #176) adds to
-/// `unmapped` rather than vanishing, so the map can say what it left out.
+/// A row that places nothing — an untagged exercise whose target no group
+/// answers to (cardio, the whole body) — adds to `unmapped` rather than
+/// vanishing, so the map can say what it left out.
 MuscleVolume muscleVolume(Iterable<MuscleSets> rows) {
   return rows.fold(
     (sets: <MuscleGroup, double>{}, unmapped: 0),
     (volume, row) {
-      final primary = _groupsOf(row.muscles.primary);
-      final secondary = _groupsOf(row.muscles.secondary).difference(primary);
-      if (primary.isEmpty && secondary.isEmpty) {
+      final shares = muscleSharesOf(row.muscles, row.target);
+      if (shares.isEmpty) {
         return (sets: volume.sets, unmapped: volume.unmapped + row.sets);
       }
 
-      for (final (groups, share) in [(primary, 1.0), (secondary, secondaryShare)]) {
-        for (final group in groups) {
-          volume.sets.update(group, (count) => count + row.sets * share, ifAbsent: () => row.sets * share);
-        }
+      for (final MapEntry(key: group, value: share) in shares.entries) {
+        volume.sets.update(group, (count) => count + row.sets * share, ifAbsent: () => row.sets * share);
       }
       return volume;
     },
@@ -60,6 +53,7 @@ Iterable<MuscleSets> workoutMuscleSets(Workout workout, {required Exercise? Func
         (each) => (
           start: workout.start,
           muscles: tagging(each.exercise),
+          target: each.exercise.target,
           sets: each.where((set) => set.isCompleted && set.setType != .warmup).length,
         ),
       )
@@ -122,41 +116,30 @@ Map<DateTime, MuscleVolume> _bucketed(
   return grouped.map((bucket, rows) => MapEntry(bucket, muscleVolume(rows)));
 }
 
-/// What [row]'s sets count toward under the muscle key (#341): the atlas
-/// groups its tagging reaches, primary ones at the content's primary share
-/// and the others at its secondary share (`docs/2026-10-11.pattern-lens.md`,
-/// rule 8). An exercise nobody tagged — one the user made — falls to the group
-/// its target names (rule 7); a target no group answers to (cardio, the whole
-/// body) places nothing.
-Map<MuscleGroup, double> muscleGroupsOf(LensSets row) {
-  final primary = _groupsOf(row.muscles.primary);
-  final secondary = _groupsOf(row.muscles.secondary).difference(primary);
-  if (primary.isEmpty && secondary.isEmpty) {
-    return {?_groupOfTarget(row.target): 1.0};
-  }
-  return {
-    for (final group in primary) group: row.muscles.primaryShare,
-    for (final group in secondary) group: row.muscles.secondaryShare,
+/// What [row]'s sets count toward under the muscle key (#341):
+/// [muscleSharesOf] its tagging and target.
+Map<MuscleGroup, double> muscleGroupsOf(LensSets row) => muscleSharesOf(row.muscles, row.target);
+
+/// The share of one set each atlas group receives, by the rule the server
+/// counts with (`MuscleTagging.groupShares`, `docs/2026-10-11.pattern-lens.md`
+/// rules 7 and 8), so the map, the weekly card and the coach over MCP agree:
+/// the groups [muscles] reaches, primary ones at the content's primary share
+/// and the others at its secondary share. An exercise nobody tagged — one the
+/// user made — falls to the group its [target] names, in full; a target no
+/// group answers to places nothing.
+Map<MuscleGroup, double> muscleSharesOf(MuscleTagging muscles, Target target) {
+  return switch (muscles.groupShares) {
+    final shares when shares.isNotEmpty => {
+      for (final MapEntry(:key, value: share) in shares.entries) ?_atlasGroup(key): share,
+    },
+    _ => {?_atlasGroup(target.muscleGroup): 1.0},
   };
 }
 
-MuscleGroup? _groupOfTarget(Target target) {
-  return switch (target) {
-    .core => .core,
-    .arms => .arms,
-    .back => .back,
-    .chest => .chest,
-    .legs => .legs,
-    .shoulder => .shoulders,
-    .other || .olympic || .fullBody || .cardio => null,
-  };
-}
-
-/// The atlas groups a tag reaches: the ones it names, and the groups of the
-/// muscles it names. Ids and names the atlas does not know are dropped.
-Set<MuscleGroup> _groupsOf(MuscleTag? tag) {
-  return {
-    ...?tag?.groups?.map(MuscleGroup.tryFromString).nonNulls,
-    ...?tag?.ids?.map(MuscleCatalog.tryById).nonNulls.map((muscle) => muscle.group),
+/// The atlas's own group for a heart_models one: the same ten, by id.
+MuscleGroup? _atlasGroup(MuscleGroupKey? key) {
+  return switch (key) {
+    MuscleGroupKey(:final value) => MuscleGroup.tryFromString(value),
+    null => null,
   };
 }
