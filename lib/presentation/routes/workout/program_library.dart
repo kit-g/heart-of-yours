@@ -702,11 +702,34 @@ class _Claims extends StatelessWidget {
 
   const new({required this.claims, required this.tag});
 
+  /// A claim as a quote: its words, and its sources under them.
+  Widget _quote(BuildContext context, LibraryClaim claim, List<LibrarySource> sources, {required bool inert}) {
+    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: colorScheme.outlineVariant, width: 2)),
+      ),
+      child: Padding(
+        padding: const .only(left: 10),
+        child: Column(
+          crossAxisAlignment: .start,
+          spacing: 2,
+          children: [
+            Text(claim.text.of(tag), style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+            Wrap(
+              spacing: 12,
+              children: [for (final source in sources) _SourceLink(source: source, inert: inert)],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (claims.isEmpty) return const SizedBox.shrink();
     final library = ProgramLibrary.of(context);
-    final ThemeData(:textTheme, :colorScheme) = Theme.of(context);
 
     return Padding(
       padding: const .only(top: 6),
@@ -715,42 +738,54 @@ class _Claims extends StatelessWidget {
         spacing: 6,
         children: [
           for (final claim in claims)
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: colorScheme.outlineVariant, width: 2)),
+            switch ([for (final key in claim.sources) ?library.source(key)]) {
+              // one source to open: the whole quote is its link, one control
+              final sources when sources.where((source) => source.url != null).length == 1 => _Linked(
+                url: sources.firstWhere((source) => source.url != null).url!,
+                child: _quote(context, claim, sources, inert: true),
               ),
-              child: Padding(
-                padding: const .only(left: 10),
-                child: Column(
-                  crossAxisAlignment: .start,
-                  spacing: 2,
-                  children: [
-                    Text(
-                      claim.text.of(tag),
-                      style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                    Wrap(
-                      spacing: 12,
-                      children: [
-                        for (final key in claim.sources)
-                          if (library.source(key) case final LibrarySource source) _SourceLink(source: source),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+              // several: one tap cannot open them all, so each is its own
+              final sources => _quote(context, claim, sources, inert: false),
+            },
         ],
       ),
     );
   }
 }
 
-/// A source as a short link beside a claim: who, and when.
+/// The whole of something as one link to [url]: a single control, read as a
+/// link, with ink inset to its shape.
+class _Linked extends StatelessWidget {
+  final Uri url;
+  final Widget child;
+  final Key? linkKey;
+
+  const new({required this.url, required this.child, this.linkKey});
+
+  @override
+  Widget build(BuildContext context) {
+    return MergeSemantics(
+      child: Semantics(
+        link: true,
+        child: InkWell(
+          key: linkKey,
+          borderRadius: const .all(.circular(6)),
+          onTap: () => _open(url),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// A source as a short link beside a claim: who, and when. [inert] when the
+/// claim around it is the link: it still looks like one, and is not a second
+/// control.
 class _SourceLink extends StatelessWidget {
   final LibrarySource source;
+  final bool inert;
 
-  const new({required this.source});
+  const new({required this.source, this.inert = false});
 
   @override
   Widget build(BuildContext context) {
@@ -763,6 +798,10 @@ class _SourceLink extends StatelessWidget {
     );
     return switch (source.url) {
       null => Text(short.isEmpty ? source.title : short, style: textTheme.labelSmall),
+      Uri() when inert => Padding(
+        padding: const .symmetric(vertical: 4),
+        child: Text(short.isEmpty ? source.title : short, style: style),
+      ),
       final Uri url => Tooltip(
         message: source.title,
         child: InkWell(
@@ -800,25 +839,23 @@ class _SourceEntry extends StatelessWidget {
         ),
       },
     );
+    final entry = Column(
+      crossAxisAlignment: .start,
+      spacing: 2,
+      children: [
+        title,
+        if ([?source.who, ?source.year?.toString()] case final byline when byline.isNotEmpty)
+          Text(byline.join(', '), style: muted),
+        if (source.finding case final ContentText finding) Text(finding.of(tag), style: muted),
+      ],
+    );
     return Padding(
       padding: const .only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: .start,
-        spacing: 2,
-        children: [
-          switch (source.url) {
-            null => title,
-            final Uri url => InkWell(
-              key: AppKeys.librarySource(source.key),
-              onTap: () => _open(url),
-              child: Semantics(link: true, child: title),
-            ),
-          },
-          if ([?source.who, ?source.year?.toString()] case final byline when byline.isNotEmpty)
-            Text(byline.join(', '), style: muted),
-          if (source.finding case final ContentText finding) Text(finding.of(tag), style: muted),
-        ],
-      ),
+      // the whole entry opens the source, not just its title
+      child: switch (source.url) {
+        null => entry,
+        final Uri url => _Linked(url: url, linkKey: AppKeys.librarySource(source.key), child: entry),
+      },
     );
   }
 }

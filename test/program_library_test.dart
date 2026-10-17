@@ -202,6 +202,23 @@ void main() {
       verifyNever(db.storeProgram(any, any));
     });
 
+    testWidgets('a quote with one source is one link, the whole of it', (tester) async {
+      answer(.on);
+      await openFirstSteps(tester);
+      final semantics = tester.ensureSemantics();
+      final quote = find.textContaining('Climbing to harder versions of an exercise');
+      await scrollTo(tester, quote);
+
+      // the quote's words and its source are one node: a link that taps
+      final node = tester.getSemantics(quote);
+      expect(node.flagsCollection.isLink, isTrue);
+      expect(node.getSemanticsData().hasAction(.tap), isTrue);
+      expect(node.label, contains('Kotarsky et al., 2018'));
+      // and the source beside it is not a second control
+      expect(find.ancestor(of: find.text('Kotarsky et al., 2018').first, matching: find.byType(Tooltip)), findsNothing);
+      semantics.dispose();
+    });
+
     testWidgets('starting it makes the program and its sessions the user\'s own, filed in a folder of its name', (
       tester,
     ) async {
