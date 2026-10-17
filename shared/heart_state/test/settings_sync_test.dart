@@ -397,16 +397,12 @@ void _weekSync() {
 
     Future<void> settle() => Future<void>.delayed(Duration.zero);
 
-    test('the codec reads what it wrote, keeps every other key, and reads a day out of range as none', () {
+    test('the account carries the first day on the wire key heart-api reads, and one out of range reads as none', () {
       const settings = Settings(themeMode: 'dark', extra: {'kept': 1});
-      final written = withAccountFirstWeekday(settings, DateTime.sunday);
-      expect(accountFirstWeekday(written), DateTime.sunday);
-      expect(written.themeMode, 'dark');
-      expect(written.extra['kept'], 1);
-      // the wire key heart-api's /me and MCP read, through heart_models 2.36
-      expect(written.toMap()['firstWeekday'], 7);
+      final written = settings.copyWith(firstWeekday: DateTime.sunday);
+      expect(written.toMap(), {'kept': 1, 'themeMode': 'dark', 'firstWeekday': 7});
       for (final odd in [0, 8, '7', null]) {
-        expect(accountFirstWeekday(Settings(extra: {'firstWeekday': odd})), isNull, reason: '$odd');
+        expect(Settings.fromJson({'firstWeekday': odd}).firstWeekday, isNull, reason: '$odd');
       }
     });
 
@@ -420,7 +416,7 @@ void _weekSync() {
       await settle();
 
       final [saved] = account.saved;
-      expect(accountFirstWeekday(saved), DateTime.sunday);
+      expect(saved.firstWeekday, DateTime.sunday);
       expect(saved.themeMode, 'dark');
       expect(saved.extra['kept'], isTrue);
       expect(preferences.firstWeekdayOwed, isFalse);
@@ -430,7 +426,7 @@ void _weekSync() {
       await boot();
       expect(preferences.firstWeekday, DateTime.monday);
 
-      account.arrive(const Settings(extra: {'firstWeekday': 6}));
+      account.arrive(const Settings(firstWeekday: 6));
       await settle();
 
       expect(preferences.firstWeekday, DateTime.saturday);
@@ -440,18 +436,18 @@ void _weekSync() {
     test('a choice here the account doesn\'t hold yet is written up at sign-in', () async {
       await boot(stored: {'firstWeekday': 7, 'firstWeekdayOwed': true});
 
-      account.arrive(const Settings(extra: {'firstWeekday': 1}));
+      account.arrive(const Settings(firstWeekday: 1));
       await settle();
 
       expect(preferences.firstWeekday, DateTime.sunday);
-      expect(accountFirstWeekday(account.saved.single), DateTime.sunday);
+      expect(account.saved.single.firstWeekday, DateTime.sunday);
       expect(preferences.firstWeekdayOwed, isFalse);
     });
 
     test('a choice already written up follows a change made on another phone', () async {
       await boot(stored: {'firstWeekday': 7});
 
-      account.arrive(const Settings(extra: {'firstWeekday': 1}));
+      account.arrive(const Settings(firstWeekday: 1));
       await settle();
 
       expect(preferences.firstWeekday, DateTime.monday);
@@ -481,7 +477,7 @@ void _weekSync() {
       account.isAnonymous = false;
       account.arrive(const Settings());
       await settle();
-      expect(accountFirstWeekday(account.saved.single), DateTime.sunday);
+      expect(account.saved.single.firstWeekday, DateTime.sunday);
     });
   });
 }

@@ -91,7 +91,7 @@ class SettingsSync {
       };
 
       final mine = _preferences.chosenFirstWeekday;
-      final theirs = accountFirstWeekday(user.settings);
+      final theirs = user.settings.firstWeekday;
       final owed = _preferences.firstWeekdayOwed && mine != null;
 
       // adopting notifies, which lands back here — as a no-op, since the two
@@ -105,7 +105,7 @@ class SettingsSync {
       if (newerHere.isNotEmpty || writesDay) {
         var settings = user.settings;
         if (newerHere.isNotEmpty) settings = withFeatureRecords(settings, newerHere);
-        if (writesDay) settings = withAccountFirstWeekday(settings, mine);
+        if (writesDay) settings = settings.copyWith(firstWeekday: mine);
         final saved = await _auth.saveSettings(settings);
         if (saved != null && owed) _preferences.settleFirstWeekday();
       } else if (owed) {
@@ -122,23 +122,4 @@ class SettingsSync {
       }
     }
   }
-}
-
-/// Where the week's first day lives in the account's [Settings] (#339): ISO, 1
-/// Monday to 7 Sunday, the same numbers as a [DateTime] weekday. heart_models
-/// 2.36 reads it as `Settings.firstWeekday`; until the app is on 2.36 it rides
-/// in [Settings.extra] under the same key, which is the same wire.
-const _firstWeekdayKey = 'firstWeekday';
-
-/// The first day [settings] carries, or null for none or one out of range.
-int? accountFirstWeekday(Settings settings) {
-  return switch (settings.extra[_firstWeekdayKey]) {
-    final int day when day >= DateTime.monday && day <= DateTime.sunday => day,
-    _ => null,
-  };
-}
-
-/// [settings] with [weekday] as its first day, everything else as it was.
-Settings withAccountFirstWeekday(Settings settings, int weekday) {
-  return settings.copyWith(extra: {...settings.extra, _firstWeekdayKey: weekday});
 }
