@@ -16,7 +16,6 @@ extension FeatureCopy on Feature {
       .shortcuts => l.shortcuts,
       .programs => l.programs,
       .previousInTemplate => l.previousInTemplate,
-      .programCalendar => l.programCalendar,
       .notToday => l.programNotToday,
     };
   }
@@ -37,7 +36,6 @@ extension FeatureCopy on Feature {
       },
       .programs => l.programsSubtitle,
       .previousInTemplate => l.previousInTemplateSubtitle,
-      .programCalendar => l.programCalendarSubtitle,
       .notToday => l.notTodaySubtitle,
     };
   }
@@ -53,7 +51,6 @@ extension FeatureCopy on Feature {
       .shortcuts => Icons.bolt_rounded,
       .programs => Icons.event_repeat_rounded,
       .previousInTemplate => Icons.history_rounded,
-      .programCalendar => Icons.edit_calendar_rounded,
       .notToday => Icons.redo_rounded,
     };
   }
@@ -70,7 +67,6 @@ extension FeatureCopy on Feature {
       .shortcuts ||
       .programs ||
       .previousInTemplate => const [],
-      .programCalendar => const [],
       // what syncs and what doesn't: the line health data never crosses
       .notToday => [l.notTodayNote],
       // where Apple keeps Always On: Heart has no switch of its own for it
@@ -87,6 +83,7 @@ extension FeatureOptionCopy on FeatureOption {
       .muscleMapBreakdown => l.muscleMapBreakdown,
       .muscleMapHeatmap => l.muscleMapWeekly,
       .muscleMapWorkout => l.muscleMapOptionWorkout,
+      .programsCalendar => l.programCalendar,
     };
   }
 }

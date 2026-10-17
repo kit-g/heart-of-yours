@@ -151,6 +151,11 @@ feature's switch in Settings › Features, unfolded only while it is on.
   does not restore an earlier choice.
 - **Leaving out the last one turns the feature off.** Choosing none is not a
   state; it is the switch.
+- **An add-on is not a part.** Some options are something the feature adds,
+  not a piece of it: Programs' calendar (#391) is one. It is selected with the
+  feature like any option, but leaving it out leaves the feature on. An
+  add-on that needs an OS permission asks for it when the user first uses it,
+  never when the feature turns on.
 - **Live, both ways,** like the switch. A part left out is not built, and the
   screen closes up around the rest: every combination has its *without*.
 - **The data layer's rule holds.** Off, the choice is kept, stored and unused.

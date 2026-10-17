@@ -510,7 +510,8 @@ class Preferences with ChangeNotifier {
     } else {
       without.add(option);
     }
-    if (feature.options.every(without.contains)) return setFeature(feature, on: false);
+    final parts = feature.options.where((option) => !option.addOn);
+    if (parts.isNotEmpty && parts.every(without.contains)) return setFeature(feature, on: false);
     _store(feature, FeatureRecord(on: true, at: DateTime.timestamp(), without: without));
     notifyListeners();
   }

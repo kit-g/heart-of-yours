@@ -689,34 +689,29 @@ void main() {
   });
 
   group('in the calendar (#391)', () {
-    Future<void> openPage(
-      WidgetTester tester, {
-      required DeviceCalendar calendar,
-      String calendarAnswer = 'unasked',
-    }) async {
-      SharedPreferences.setMockInitialValues({
-        ...pastOnboarding(),
-        'feature-programs': 'on',
-        'feature-programCalendar': calendarAnswer,
-      });
+    Future<void> openPage(WidgetTester tester, {required DeviceCalendar calendar}) async {
+      // Programs never answered: on by default, the calendar with it
+      SharedPreferences.setMockInitialValues(pastOnboarding());
       withProgram();
       await openWorkoutTab(tester, calendar: calendar);
       await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
       await tester.pumpTimes();
     }
 
-    testWidgets('asked on the page; yes, a calendar and days put the sessions in it, titled one plain word', (
+    testWidgets('a row on the page; a calendar and days put the sessions in it, titled one plain word', (
       tester,
     ) async {
       final calendar = _Calendar();
       await openPage(tester, calendar: calendar);
-      await scrollTo(tester, find.byKey(AppKeys.programCalendarAccept));
-      // nothing asks the OS before the yes in the app
+      await scrollTo(tester, find.byKey(AppKeys.programCalendarRow));
+      // nothing asks the OS until the user opens the setup
       expect(calendar.listed, 0);
 
-      await tester.tapByKey(AppKeys.programCalendarAccept);
+      await tester.tapByKey(AppKeys.programCalendarRow);
       await tester.pumpTimes();
       expect(calendar.listed, 1);
+      // what an event will say, before anything is saved
+      expect(find.textContaining('Every event is called just “Training”'), findsOneWidget);
 
       // every day, so the next session falls today
       for (final day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
@@ -747,9 +742,9 @@ void main() {
       expect(find.byKey(AppKeys.programCalendarRow), findsOneWidget);
     });
 
-    testWidgets('turned off, its events go and the setting stays', (tester) async {
+    testWidgets('left out of Programs, its events go and the setting stays', (tester) async {
       final calendar = _Calendar();
-      await openPage(tester, calendar: calendar, calendarAnswer: 'on');
+      await openPage(tester, calendar: calendar);
       final context = tester.element(find.byType(Scaffold).last);
       final programs = Programs.of(context);
       await programs.update(programs.lookup('p1')!.copyWith(days: {1, 2, 3, 4, 5, 6, 7}));
@@ -759,13 +754,15 @@ void main() {
       expect(calendar.events, isNotEmpty);
       expect(calendar.events.values.first.$2.time, 18 * 60);
 
-      Preferences.of(context).setFeature(.programCalendar, on: false);
+      final preferences = Preferences.of(context)..setOption(.programsCalendar, on: false);
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpTimes();
 
       expect(calendar.events, isEmpty);
       expect(ProgramCalendars.of(context).settingOf('p1'), isNotNull);
       expect(find.byKey(AppKeys.programCalendarRow), findsNothing);
+      // an add-on, not a part: leaving it out leaves Programs on
+      expect(preferences.isOn(.programs), isTrue);
     });
 
     group('its links', () {

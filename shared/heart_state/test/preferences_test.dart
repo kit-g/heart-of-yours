@@ -327,6 +327,18 @@ void main() {
       expect(revived.isOn(feature), isFalse);
     });
 
+    test('its calendar is an add-on: selected with it, and leaving it out leaves Programs on', () async {
+      await sut.init();
+      expect(sut.isOptionOn(FeatureOption.programsCalendar), isTrue);
+
+      sut.setOption(FeatureOption.programsCalendar, on: false);
+      expect(sut.isOptionOn(FeatureOption.programsCalendar), isFalse);
+      expect(sut.isOn(feature), isTrue);
+
+      sut.setFeature(feature, on: false);
+      expect(sut.isOptionOn(FeatureOption.programsCalendar), isFalse);
+    });
+
     test('the default is not an answer: nothing travels until the user says so', () async {
       await sut.init();
       expect(sut.featureRecords.containsKey(feature), isFalse);
@@ -445,7 +457,7 @@ void main() {
         'shortcuts',
         'programs',
         'previousInTemplate',
-        'programCalendar',
+        // programCalendar became Programs' calendar option before it shipped
         'notToday',
       ]);
       expect(FeatureAnswer.values.map((each) => each.name), ['unasked', 'pending', 'on', 'off']);

@@ -54,13 +54,6 @@ enum Feature {
   /// choice. Reads only what the workouts already carry.
   previousInTemplate('previousInTemplate'),
 
-  /// A program's sessions in the device's own calendar, Google's included
-  /// (#391). Part of Programs, with its own ask on a program's page: it needs
-  /// the OS calendar permission, which Programs alone never asks for. Device
-  /// only — which calendar and which events stay on the phone — and with
-  /// Programs off it is as off as Programs is.
-  programCalendar('programCalendar'),
-
   /// "Not today" (#312) on any day, not only a program's: one tap on the
   /// Workout tab sets the day aside, with an optional reason. Settings-only,
   /// like keep-awake: an offer on the Workout tab would be the very nag the
@@ -102,12 +95,24 @@ enum FeatureOption {
 
   /// The body figures for a single finished workout, on its page in History
   /// and on the done screen (#223).
-  muscleMapWorkout(.muscleMap, 'workout');
+  muscleMapWorkout(.muscleMap, 'workout'),
+
+  /// A program's sessions in the device's own calendar, Google's included
+  /// (#391): the way in, on a program's page. Selected with the rest of
+  /// Programs, and nothing happens until the user sets a program up there —
+  /// which is when the OS asks for the calendar, never when Programs turns
+  /// on. Device only: which calendar and which events stay on the phone.
+  programsCalendar(.programs, 'calendar', addOn: true);
 
   final Feature feature;
   final String value;
 
-  new(this.feature, this.value);
+  /// Something the feature adds rather than a part of it: leaving every
+  /// add-on out leaves the feature itself on. Leaving every *part* out is
+  /// turning the feature off.
+  final bool addOn;
+
+  new(this.feature, this.value, {this.addOn = false});
 }
 
 /// What the user said about a [Feature].

@@ -17,7 +17,6 @@ import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/exercises/movement_copy.dart';
 import 'package:heart/presentation/widgets/goals/goals.dart' show GoalRow;
-import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart/presentation/widgets/appbar_textfield.dart';
 import 'package:heart/presentation/widgets/buttons.dart';

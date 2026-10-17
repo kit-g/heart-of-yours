@@ -1,46 +1,22 @@
 part of 'workout.dart';
 
-/// A program in the device calendar (#391), on its page: the one ask, the one
-/// notice after a no, the row that says where its sessions go — or nothing.
-/// Asked here and not when the program starts: here is where a schedule is
-/// looked at.
+/// A program in the device calendar (#391), on its page: the row that says
+/// where its sessions go or offers to put them there, while Programs' calendar
+/// is selected in Settings, and nothing otherwise. Nothing is asked here: the
+/// OS asks for the calendar once the user opens the setup.
 class _ProgramCalendarSlot extends StatelessWidget {
-  static const _feature = Feature.programCalendar;
-
   final Program program;
 
   const new({required this.program});
 
   @override
   Widget build(BuildContext context) {
-    final preferences = Preferences.watch(context);
-    final copy = L.of(context);
-
-    final Widget? child = switch (preferences) {
-      _ when preferences.isOn(_feature) => _ProgramCalendarRow(program: program),
-      _ when preferences.owesDeclineNotice(_feature) => FeatureDeclinedNotice(
-        onDismiss: () => preferences.acknowledgeDeclineNotice(_feature),
+    return switch (Preferences.watch(context).isOptionOn(.programsCalendar)) {
+      true => Padding(
+        padding: const .only(top: 16),
+        child: _ProgramCalendarRow(program: program),
       ),
-      _ when preferences.shouldOffer(_feature) && program.sessions.isNotEmpty => FeatureOffer(
-        key: AppKeys.programCalendarOffer,
-        acceptKey: AppKeys.programCalendarAccept,
-        declineKey: AppKeys.programCalendarDecline,
-        icon: Icons.edit_calendar_rounded,
-        title: copy.programCalendarOfferTitle,
-        body: copy.programCalendarOfferBody(copy.programCalendarEventTitle),
-        onAnswer: (yes) {
-          preferences.answerOffer(_feature, yes: yes);
-          // the yes is the way in: the OS asks next, then where and when
-          if (yes) _showCalendarSetup(context, program);
-        },
-        onShown: () => preferences.markOffered(_feature),
-      ),
-      _ => null,
-    };
-
-    return switch (child) {
-      final Widget child => Padding(padding: const .only(top: 16), child: child),
-      null => const SizedBox.shrink(),
+      false => const SizedBox.shrink(),
     };
   }
 }
@@ -189,6 +165,15 @@ class _CalendarSetupState extends State<_CalendarSetup> {
                     Padding(
                       padding: const .fromLTRB(24, 24, 24, 8),
                       child: Text(copy.programCalendarSetup, style: textTheme.titleMedium),
+                    ),
+                    // what an event will say, before anything is saved: a
+                    // shared calendar shows no more than this
+                    Padding(
+                      padding: const .fromLTRB(24, 0, 24, 8),
+                      child: Text(
+                        copy.programCalendarSetupNote(copy.programCalendarEventTitle),
+                        style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
                     ),
                     Flexible(child: body),
                     Padding(

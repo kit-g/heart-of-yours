@@ -85,7 +85,7 @@ class _ProgramCalendarPresenterState extends State<ProgramCalendarPresenter> {
 
     final now = DateTime.now();
     final today = DateUtils.dateOnly(now);
-    final on = preferences.isOn(.programs) && preferences.isOn(.programCalendar);
+    final on = preferences.isOptionOn(.programsCalendar);
     final wanted = <String, List<(String, CalendarEventDraft)>>{};
     final trained = <String>{};
 

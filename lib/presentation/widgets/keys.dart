@@ -201,9 +201,6 @@ abstract final class AppKeys {
 
   /// A program in the device calendar (#391): the ask, the row on a program's
   /// page, and its dialog.
-  static const programCalendarOffer = Key('Programs.calendar.offer');
-  static const programCalendarAccept = Key('Programs.calendar.accept');
-  static const programCalendarDecline = Key('Programs.calendar.decline');
   static const programCalendarRow = Key('Programs.calendar.row');
   static const programCalendarAllDay = Key('Programs.calendar.allDay');
   static const programCalendarSave = Key('Programs.calendar.save');
