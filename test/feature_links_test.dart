@@ -143,6 +143,26 @@ void main() {
     ]);
   });
 
+  testWidgets('a row below the fold is scrolled into view', (tester) async {
+    await pumpApp(tester);
+    // short, as a phone's page is against a dozen features; tablet-wide only
+    // because the settings logo stripe overflows a phone's width under the
+    // test font
+    tester.view.physicalSize = const Size(1194, 420);
+    await tester.pumpTimes();
+    // the last feature on the page: far below the fold
+    final last = Feature.values.last;
+    router.config.go('/profile/settings/features?feature=${last.value}');
+    await tester.pumpTimes(25);
+
+    final target = find.byKey(ValueKey('feature-${last.value}'));
+    expect(target, findsOneWidget);
+    final rect = tester.getRect(target);
+    final page = tester.getRect(find.descendant(of: find.byType(FeaturesPage), matching: find.byType(Scrollable)));
+    expect(rect.top, greaterThanOrEqualTo(page.top));
+    expect(rect.bottom, lessThanOrEqualTo(page.bottom));
+  });
+
   testWidgets('a feature this build does not know opens the page at the top, uncounted', (tester) async {
     await pumpApp(tester);
     router.config.go('/profile/settings/features?feature=notBuiltYet');
