@@ -107,6 +107,14 @@ void main() {
     final written = verify(db.storeProgramBase(captureAny)).captured.first as ProgramBase;
     expect(written.value, 102.5);
 
+    // on the change's own line, saying what it takes back
+    final keep = find.ancestor(of: find.textContaining('Keep'), matching: find.byType(TextButton));
+    expect(tester.getCenter(keep).dy, closeTo(tester.getCenter(find.textContaining('next time')).dy, 16));
+    expect(
+      tester.widgetList<Tooltip>(find.byType(Tooltip)).map((tip) => tip.message),
+      contains('Take back this change to Bench Press'),
+    );
+
     await tester.tap(find.textContaining('Keep'));
     await tester.pumpTimes();
 

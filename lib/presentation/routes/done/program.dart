@@ -185,44 +185,66 @@ class _MoveRow extends StatelessWidget {
     };
     final undoable = move.base != null || move.action != null;
 
+    final statement = Text(
+      line,
+      style: textTheme.bodyMedium?.copyWith(
+        color: switch (kept) {
+          true => colorScheme.outline,
+          false => colorScheme.onSurface,
+        },
+        decoration: switch (kept) {
+          true => TextDecoration.lineThrough,
+          false => null,
+        },
+      ),
+    );
+
     return Padding(
       padding: const .only(top: 8),
-      child: Column(
-        children: [
-          Text(
-            line,
-            style: textTheme.bodyMedium?.copyWith(
-              color: switch (kept) {
-                true => colorScheme.outline,
-                false => colorScheme.onSurface,
-              },
-              decoration: switch (kept) {
-                true => TextDecoration.lineThrough,
-                false => null,
-              },
+      child: switch ((undoable, kept)) {
+        (false, _) => SizedBox(width: double.infinity, child: statement),
+        // taken back: the change struck through, and what stays under it
+        (true, true) => Column(
+          crossAxisAlignment: .start,
+          children: [
+            statement,
+            Text(
+              copy.doneProgramKept(keeps ?? exercise.name),
+              style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
-            textAlign: .center,
-          ),
-          if (undoable)
-            switch (kept) {
-              true => Text(
-                copy.doneProgramKept(keeps ?? exercise.name),
-                style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-              ),
-              false => TextButton(
-                // a quiet button, but a whole finger's worth of one
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                onPressed: onKeep,
-                child: Text(
-                  switch (keeps) {
-                    final String keeps => copy.doneProgramKeep(keeps),
-                    null => copy.undo,
-                  },
+          ],
+        ),
+        // the change and the way to take it back, on one line: the button
+        // says what it keeps, and its label what it undoes
+        (true, false) => Row(
+          spacing: 8,
+          children: [
+            Expanded(child: statement),
+            Tooltip(
+              message: copy.doneProgramUndoMove(exercise.name),
+              excludeFromSemantics: true,
+              // read after what it keeps: "Keep 100 kg … take back this change"
+              child: Semantics(
+                hint: copy.doneProgramUndoMove(exercise.name),
+                child: TextButton(
+                  // compact, but a whole finger's worth of a button
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                    padding: const .symmetric(horizontal: 8),
+                  ),
+                  onPressed: onKeep,
+                  child: Text(
+                    switch (keeps) {
+                      final String keeps => copy.doneProgramKeep(keeps),
+                      null => copy.undo,
+                    },
+                  ),
                 ),
               ),
-            },
-        ],
-      ),
+            ),
+          ],
+        ),
+      },
     );
   }
 }
