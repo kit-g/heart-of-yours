@@ -112,7 +112,7 @@ ticket doesn't say:
 
 A signed-in account's answers sync. Each device keeps its own copy, which is
 what the app reads, and the account's settings carry one too, under
-`extra.features`: `{"muscleMap": {"on": true, "at": "…"}}`. `FeatureSync`
+`extra.features`: `{"muscleMap": {"on": true, "at": "…"}}`. `SettingsSync`
 (heart_state) reconciles the two when the account arrives at sign-in and
 whenever an answer is given, and the later answer wins on both sides. So a
 second phone never asks a question the first one already heard.

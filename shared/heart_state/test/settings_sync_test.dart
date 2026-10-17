@@ -1,10 +1,12 @@
+import 'dart:ui' show Locale;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 
-/// Opt-in answers following the account (#138): the settings codec, the
-/// device's timestamps, and the reconciling between the two.
+/// Opt-in answers (#138) and the week's first day (#339) following the
+/// account: the settings codec, the device's side, and the reconciling.
 class _Account with ChangeNotifier implements SettingsAccount {
   @override
   User? user;
@@ -249,17 +251,17 @@ void main() {
     });
   });
 
-  group('FeatureSync', () {
+  group('SettingsSync', () {
     late Preferences preferences;
     late _Account account;
-    late FeatureSync sync;
+    late SettingsSync sync;
 
     Future<void> boot({Map<String, Object> stored = const {}}) async {
       SharedPreferences.setMockInitialValues(stored);
       preferences = Preferences();
       await preferences.init();
       account = _Account();
-      sync = FeatureSync(preferences: preferences, auth: account);
+      sync = SettingsSync(preferences: preferences, auth: account);
       addTearDown(sync.dispose);
     }
 
@@ -360,7 +362,7 @@ void main() {
       await preferences.init();
       final failing = _FailingAccount();
       final errors = <Object?>[];
-      final sync = FeatureSync(
+      final sync = SettingsSync(
         preferences: preferences,
         auth: failing,
         onError: (error, {stacktrace}) => errors.add(error),
@@ -373,6 +375,113 @@ void main() {
 
       expect(preferences.isOn(feature), isTrue);
       expect(errors, isNotEmpty);
+    });
+  });
+
+  _weekSync();
+}
+
+void _weekSync() {
+  group('the week\'s first day (#339)', () {
+    late Preferences preferences;
+    late _Account account;
+
+    Future<void> boot({Map<String, Object> stored = const {}}) async {
+      SharedPreferences.setMockInitialValues(stored);
+      preferences = Preferences();
+      await preferences.init(locale: const Locale('en', 'GB'));
+      account = _Account();
+      final sync = SettingsSync(preferences: preferences, auth: account);
+      addTearDown(sync.dispose);
+    }
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    test('the codec reads what it wrote, keeps every other key, and reads a day out of range as none', () {
+      const settings = Settings(themeMode: 'dark', extra: {'kept': 1});
+      final written = withAccountFirstWeekday(settings, DateTime.sunday);
+      expect(accountFirstWeekday(written), DateTime.sunday);
+      expect(written.themeMode, 'dark');
+      expect(written.extra['kept'], 1);
+      // the wire key heart-api's /me and MCP read, through heart_models 2.36
+      expect(written.toMap()['firstWeekday'], 7);
+      for (final odd in [0, 8, '7', null]) {
+        expect(accountFirstWeekday(Settings(extra: {'firstWeekday': odd})), isNull, reason: '$odd');
+      }
+    });
+
+    test('a day picked here goes up at once, with the account\'s other settings intact', () async {
+      await boot();
+      account.arrive(const Settings(themeMode: 'dark', extra: {'kept': true}));
+      await settle();
+      expect(account.saved, isEmpty);
+
+      preferences.setFirstWeekday(DateTime.sunday);
+      await settle();
+
+      final [saved] = account.saved;
+      expect(accountFirstWeekday(saved), DateTime.sunday);
+      expect(saved.themeMode, 'dark');
+      expect(saved.extra['kept'], isTrue);
+      expect(preferences.firstWeekdayOwed, isFalse);
+    });
+
+    test('a device that never chose takes the account\'s day, and writes nothing', () async {
+      await boot();
+      expect(preferences.firstWeekday, DateTime.monday);
+
+      account.arrive(const Settings(extra: {'firstWeekday': 6}));
+      await settle();
+
+      expect(preferences.firstWeekday, DateTime.saturday);
+      expect(account.saved, isEmpty);
+    });
+
+    test('a choice here the account doesn\'t hold yet is written up at sign-in', () async {
+      await boot(stored: {'firstWeekday': 7, 'firstWeekdayOwed': true});
+
+      account.arrive(const Settings(extra: {'firstWeekday': 1}));
+      await settle();
+
+      expect(preferences.firstWeekday, DateTime.sunday);
+      expect(accountFirstWeekday(account.saved.single), DateTime.sunday);
+      expect(preferences.firstWeekdayOwed, isFalse);
+    });
+
+    test('a choice already written up follows a change made on another phone', () async {
+      await boot(stored: {'firstWeekday': 7});
+
+      account.arrive(const Settings(extra: {'firstWeekday': 1}));
+      await settle();
+
+      expect(preferences.firstWeekday, DateTime.monday);
+      expect(account.saved, isEmpty);
+    });
+
+    test('the locale\'s day never leaves the device, and an account with no day changes nothing here', () async {
+      await boot(stored: {'firstWeekday': 6});
+      account.arrive(const Settings());
+      await settle();
+
+      expect(preferences.firstWeekday, DateTime.saturday);
+      expect(account.saved, isEmpty);
+    });
+
+    test('an anonymous session keeps its day on the device, and it goes up once there is an account', () async {
+      await boot();
+      account.isAnonymous = true;
+      account.arrive(const Settings());
+      await settle();
+
+      preferences.setFirstWeekday(DateTime.sunday);
+      await settle();
+      expect(account.saved, isEmpty);
+      expect(preferences.firstWeekdayOwed, isTrue);
+
+      account.isAnonymous = false;
+      account.arrive(const Settings());
+      await settle();
+      expect(accountFirstWeekday(account.saved.single), DateTime.sunday);
     });
   });
 }

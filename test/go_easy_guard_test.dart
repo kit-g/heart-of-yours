@@ -27,7 +27,7 @@ void main() {
       'shared/heart_state/lib/src/import.dart',
       'shared/heart_state/lib/src/upsync.dart',
       'shared/heart_state/lib/src/analytics.dart',
-      'shared/heart_state/lib/src/feature_sync.dart',
+      'shared/heart_state/lib/src/settings_sync.dart',
       'lib/presentation/questions/answers.dart',
     ]) {
       final file = File(path);
