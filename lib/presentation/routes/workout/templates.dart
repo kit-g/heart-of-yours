@@ -212,7 +212,6 @@ class _TemplatesLayoutState extends State<_TemplatesLayout> {
             );
           },
         ),
-        const _ProgramsOfferSlot(),
       ],
     );
   }

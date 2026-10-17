@@ -381,7 +381,20 @@ class Preferences with ChangeNotifier {
   /// the account's settings by [SettingsSync], so a second phone does not ask
   /// what the first one already heard. Only a real answer travels: an
   /// unanswered offer and the notice after a no are this device's business.
+  ///
+  /// A [Feature.defaultOn] feature nobody has answered for reads as on: it is
+  /// never offered, and the Settings switch is the only answer it takes. Not
+  /// before the answers are read, though: a user who switched it off never
+  /// sees it flash in while they load.
   FeatureAnswer featureAnswer(Feature feature) {
+    return switch (_stored(feature)) {
+      .unasked || .pending when feature.defaultOn && _prefs != null => .on,
+      final answer => answer,
+    };
+  }
+
+  /// What the user actually said about [feature], defaults aside.
+  FeatureAnswer _stored(Feature feature) {
     return FeatureAnswer.fromString(_prefs?.getString('$_feature-${feature.value}'));
   }
 
@@ -521,9 +534,10 @@ class Preferences with ChangeNotifier {
     };
   }
 
-  /// On or off, or null while there is no real answer yet.
+  /// On or off, or null while there is no real answer yet — a default is not
+  /// one, and does not travel.
   bool? _answered(Feature feature) {
-    return switch (featureAnswer(feature)) {
+    return switch (_stored(feature)) {
       .on => true,
       .off => false,
       .unasked || .pending => null,

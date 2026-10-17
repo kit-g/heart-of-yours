@@ -524,68 +524,6 @@ class _StoppedProgram extends StatelessWidget {
   }
 }
 
-/// The Programs offer's slot, under the example templates (#345): the one ask,
-/// the one notice after a no, or nothing.
-///
-/// Offered only where saying yes leads somewhere: a folder of templates a
-/// program can be made from, or Heart's ready-made programs (#352). A yes with
-/// nothing to make a program of would be a switch with nothing behind it.
-class _ProgramsOfferSlot extends StatelessWidget {
-  static const _feature = Feature.programs;
-
-  const new();
-
-  @override
-  Widget build(BuildContext context) {
-    final preferences = Preferences.watch(context);
-
-    return SliverToBoxAdapter(
-      child: switch (preferences) {
-        _ when preferences.isOn(_feature) => const SizedBox.shrink(),
-        _ when preferences.owesDeclineNotice(_feature) => _OfferPadding(
-          child: FeatureDeclinedNotice(onDismiss: () => preferences.acknowledgeDeclineNotice(_feature)),
-        ),
-        // the library is part of what there is to offer, so it is read for it
-        _ when preferences.shouldOffer(_feature) => _LibraryReader(child: Builder(builder: _offer)),
-        _ => const SizedBox.shrink(),
-      },
-    );
-  }
-
-  Widget _offer(BuildContext context) {
-    final preferences = Preferences.of(context);
-    final copy = L.of(context);
-    final folders = Templates.watch(context).programFolders.isNotEmpty;
-    final library = ProgramLibrary.watch(context).available;
-    if (!folders && !library) return const SizedBox.shrink();
-
-    return _OfferPadding(
-      child: FeatureOffer(
-        key: AppKeys.programsOffer,
-        acceptKey: AppKeys.programsAccept,
-        declineKey: AppKeys.programsDecline,
-        icon: Icons.event_repeat_rounded,
-        title: copy.programs,
-        body: switch (library) {
-          true => copy.programsOfferBodyLibrary,
-          false => copy.programsOfferBody,
-        },
-        onAnswer: (yes) => preferences.answerOffer(_feature, yes: yes),
-        onShown: () => preferences.markOffered(_feature),
-      ),
-    );
-  }
-}
-
-class _OfferPadding extends StatelessWidget {
-  final Widget child;
-
-  const new({required this.child});
-
-  @override
-  Widget build(BuildContext context) => Padding(padding: const .fromLTRB(8, 8, 8, 16), child: child);
-}
-
 /// A Programs page with the switch turned off under it (#345). Off is the app
 /// as if Programs had never been built, which has no such page, so it leaves
 /// for the tab it was opened from rather than stay on a page that should not

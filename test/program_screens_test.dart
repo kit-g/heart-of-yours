@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:heart/core/env/calendar.dart';
 import 'package:heart/core/utils/program_calendar.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
+import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
@@ -140,52 +141,18 @@ void main() {
     await tester.pumpTimes();
   }
 
-  group('the ask (#345)', () {
-    testWidgets('a folder to make one from earns the offer, under the examples', (tester) async {
+  group('on by default (#345)', () {
+    testWidgets('never answered, Programs is on: the header and the way in, and no ask', (tester) async {
       answer(.unasked);
       await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsOffer));
-
-      expect(find.byKey(AppKeys.programsOffer), findsOneWidget);
-      // the tab above it is the 1.13 tab: no Programs header yet
-      expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
-    });
-
-    testWidgets('yes brings the whole feature: the header and the way in', (tester) async {
-      answer(.unasked);
-      await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsAccept));
-      await tester.tapByKey(AppKeys.programsAccept);
-      await tester.pumpTimes();
-
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
       await tester.scrollUntilVisible(
         find.byKey(AppKeys.programsFromFolder),
-        -200,
+        200,
         scrollable: find.byType(Scrollable).first,
       );
+
       expect(find.byKey(AppKeys.programsFromFolder), findsOneWidget);
-    });
-
-    testWidgets('no earns one notice, and nothing else', (tester) async {
-      answer(.unasked);
-      await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsDecline));
-      await tester.tapByKey(AppKeys.programsDecline);
-      await tester.pumpTimes();
-
-      expect(find.byKey(AppKeys.featureDeclinedNotice), findsOneWidget);
-      expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
-    });
-
-    testWidgets('nothing to make a program of: no offer', (tester) async {
-      answer(.unasked);
-      when(db.getTemplateFolders(userId)).thenAnswer((_) async => <TemplateFolder>[]);
-      when(api.getFolders(userId: anyNamed('userId'))).thenAnswer((_) async => <TemplateFolder>[]);
-      when(db.getTemplates(userId)).thenAnswer((_) async => <Template>[]);
-      await openWorkoutTab(tester);
-
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
+      expect(find.byType(FeatureOffer), findsNothing);
     });
 
     testWidgets('off, the tab and the folder menu are as before programs', (tester) async {
@@ -195,7 +162,6 @@ void main() {
 
       expect(find.byKey(AppKeys.programBand('p1')), findsNothing);
       expect(find.byKey(AppKeys.programsFromFolder), findsNothing);
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
 
       await tester.tap(find.byTooltip('More options').first);
       await tester.pumpTimes();

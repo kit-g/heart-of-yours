@@ -144,13 +144,12 @@ void main() {
       expect(find.text('Programs'), findsNothing);
     });
 
-    testWidgets('unasked, the library alone earns the offer, which says so', (tester) async {
+    testWidgets('never answered, the library is there: Programs is on by default', (tester) async {
       answer(.unasked);
       await openWorkoutTab(tester);
-      await scrollTo(tester, find.byKey(AppKeys.programsOffer));
+      await scrollTo(tester, find.byKey(AppKeys.libraryEntry));
 
-      expect(find.byKey(AppKeys.programsOffer), findsOneWidget);
-      expect(find.textContaining("Start one of Heart's ready-made plans"), findsOneWidget);
+      expect(find.byKey(AppKeys.libraryEntry), findsOneWidget);
     });
 
     testWidgets('off, there is no way in and no offer', (tester) async {
@@ -158,7 +157,6 @@ void main() {
       await openWorkoutTab(tester);
 
       expect(find.byKey(AppKeys.libraryEntry), findsNothing);
-      expect(find.byKey(AppKeys.programsOffer), findsNothing);
     });
   });
 

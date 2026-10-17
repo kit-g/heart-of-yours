@@ -49,7 +49,6 @@ enum _Screen {
   weeklyBalance,
   noAccountDialog,
   workout,
-  programsOffer,
   programs,
   programPage,
   newProgram,
@@ -344,11 +343,10 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   ),
 
   (_Screen.workout, _Guideline.labeledTapTarget, null),
-  // Programs on the Workout tab (#345, #347, #348): the offer under the
-  // examples, the band, the program page and the new-program screen
+  // Programs on the Workout tab (#345, #347, #348): the band, the program
+  // page and the new-program screen
   // (lib/presentation/routes/workout/{programs,program_page,program_form}.dart).
   for (final screen in [
-    _Screen.programsOffer,
     _Screen.programs,
     _Screen.programPage,
     _Screen.newProgram,
@@ -367,11 +365,6 @@ final _matrix = <(_Screen, _Guideline, String?)>[
       _Screen.libraryProgram,
       guideline,
       'Start program is PrimaryButton.wide (lib/presentation/routes/workout/program_library.dart:484) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight), and a claim\'s source links (program_library.dart:756) are a line of small text — visual-density change, out of scope',
-    ),
-    (
-      _Screen.programsOffer,
-      guideline,
-      'the Workout tab\'s own header buttons (36pt, lib/presentation/routes/workout/templates.dart:99) and folder header (templates.dart:696), and the offer\'s two buttons (lib/presentation/widgets/feature_offer.dart:74, :79) at the house 32pt (lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
     ),
     (
       _Screen.programs,
@@ -1144,8 +1137,7 @@ void main() {
             seconds: anyNamed('seconds'),
           ),
         ).thenAnswer((_) async {});
-      case _Screen.programsOffer ||
-          _Screen.programs ||
+      case _Screen.programs ||
           _Screen.programPage ||
           _Screen.newProgram ||
           _Screen.historyNotToday ||
@@ -1154,7 +1146,6 @@ void main() {
           _Screen.goEasy ||
           _Screen.skipPage ||
           _Screen.notTodaySheet:
-        final running = screen != _Screen.programsOffer;
         // things to go easy on (#396): the whole map, a knee listed
         when(cdn.getGoEasy(etag: anyNamed('etag'))).thenAnswer((_) async => (body: _goEasy, etag: null));
         when(db.getGoEasy(any)).thenAnswer((_) async => {'knee'});
@@ -1164,7 +1155,7 @@ void main() {
         when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, _libraryCatalog()));
         SharedPreferences.setMockInitialValues({
           ...pastOnboarding(),
-          if (running) 'feature-programs': 'on',
+          'feature-programs': 'on',
           if (screen == _Screen.notTodaySheet) 'feature-notToday': 'on',
         });
         // the day before a skip (#312): what its page reads
@@ -1494,8 +1485,7 @@ void main() {
         await tester.tap(find.byTooltip('About RPE'));
       case _Screen.workout:
         await tester.tapByKey(AppKeys.workoutStack);
-      case _Screen.programsOffer ||
-          _Screen.programs ||
+      case _Screen.programs ||
           _Screen.programPage ||
           _Screen.newProgram ||
           _Screen.historyNotToday ||
@@ -1518,12 +1508,6 @@ void main() {
         await GoEasy.of(context).ensure();
         await tester.pumpTimes();
         switch (screen) {
-          case _Screen.programsOffer:
-            await tester.scrollUntilVisible(
-              find.byKey(AppKeys.programsOffer),
-              200,
-              scrollable: find.byType(Scrollable).first,
-            );
           case _Screen.programPage:
             await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
           case _Screen.newProgram:

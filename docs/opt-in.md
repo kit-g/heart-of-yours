@@ -108,6 +108,17 @@ ticket doesn't say:
   command link is treated like any link the app has no screen for, and the
   app's own UI shows nothing of the feature but its switch.
 
+### Default on
+
+Programs (`Feature.programs`, #340) is the one feature that is **on until the
+user turns it off**, rather than off until they say yes: it is too large a part
+of the app to hide behind an ask. `Feature.defaultOn` marks it. Never answered,
+it reads as on, so its in-context offer (#345) was retired and nothing ever
+asks. Everything else in the contract holds: the switch in Settings › Features
+is live both ways, an explicit off stays off and the app looks as if Programs
+had never been built, and the data stays whole either way. The default is not
+an answer: only a switch the user actually flipped syncs to the account.
+
 ## Answers follow the account
 
 A signed-in account's answers sync. Each device keeps its own copy, which is

@@ -170,9 +170,6 @@ abstract final class AppKeys {
   static Key disconnectSignIn(String provider) => Key('SignIns.disconnect.$provider');
 
   /// The Programs offer on the Workout tab (#345), and its two answers.
-  static const programsOffer = Key('Programs.offer');
-  static const programsAccept = Key('Programs.offer.accept');
-  static const programsDecline = Key('Programs.offer.decline');
 
   /// "From a folder" on the Workout tab's Programs header (#348).
   static const programsFromFolder = Key('Programs.fromFolder');

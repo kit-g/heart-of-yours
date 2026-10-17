@@ -41,10 +41,12 @@ enum Feature {
   /// one the app has no screen for.
   shortcuts('shortcuts'),
 
-  /// Templates on a schedule, with targets that grow as you do (#340). The
-  /// ask in context and the surfaces are #345 and #347; the programs the
-  /// account holds sync and stay whole whatever the answer (#346).
-  programs('programs'),
+  /// Templates on a schedule, with targets that grow as you do (#340). On by
+  /// default ([defaultOn]): too large a feature to hide behind an ask, so the
+  /// in-context offer (#345) never shows and the switch in Settings is the
+  /// only answer. The programs the account holds sync and stay whole whatever
+  /// the answer (#346).
+  programs('programs', defaultOn: true),
 
   /// The Previous column of a workout started from a template, or a program's
   /// session, reads the last time that template was run rather than the last
@@ -69,7 +71,12 @@ enum Feature {
 
   final String value;
 
-  new(this.value);
+  /// On until the user turns it off in Settings, rather than off until they
+  /// say yes: the one exception to the ask-once rule (`docs/opt-in.md`,
+  /// *Default on*). Never asked about; an explicit off stays off.
+  final bool defaultOn;
+
+  new(this.value, {this.defaultOn = false});
 
   /// The parts of this feature the user can leave out ([FeatureOption]); none
   /// for most.
