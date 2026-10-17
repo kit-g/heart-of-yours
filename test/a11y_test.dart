@@ -1532,6 +1532,13 @@ void main() {
             }
             if (screen == _Screen.goEasy) {
               await tester.pumpTimes();
+              // below the sessions: the program first, then what to go easy on
+              await tester.scrollUntilVisible(
+                find.byKey(AppKeys.goEasyRow),
+                200,
+                scrollable: find.byType(Scrollable).last,
+              );
+              await tester.pumpTimes();
               await tester.tapByKey(AppKeys.goEasyRow);
             }
           case _Screen.skipPage:

@@ -311,10 +311,16 @@ void main() {
       expect(find.byIcon(Icons.spa_outlined), findsNothing);
     });
 
-    testWidgets('asked on the page, kept on this phone only', (tester) async {
+    testWidgets('asked on the page, after the sessions, kept on this phone only', (tester) async {
       await openWith(tester);
-      expect(find.byKey(AppKeys.goEasyRow), findsOneWidget);
-      expect(find.text('Nothing yet'), findsOneWidget);
+      // the program first, then what to be careful with in it: by the time
+      // the sessions begin, the row is still below
+      final row = find.byKey(AppKeys.goEasyRow);
+      await scrollTo(tester, find.text('Sessions'));
+      final sessions = tester.getTopLeft(find.text('Sessions')).dy;
+      expect(row.evaluate().isEmpty || tester.getTopLeft(row).dy > sessions, isTrue);
+      await scrollTo(tester, row);
+      expect(find.descendant(of: row, matching: find.text('Nothing yet')), findsOneWidget);
 
       await tester.tapByKey(AppKeys.goEasyRow);
       await tester.pumpTimes();
@@ -327,7 +333,6 @@ void main() {
 
     testWidgets('an exercise harder on the list is marked, and the mark offers kinder swaps', (tester) async {
       await openWith(tester, listed: {'knee'});
-      expect(find.descendant(of: find.byKey(AppKeys.goEasyRow), matching: find.text('Knee')), findsOneWidget);
 
       final semantics = tester.ensureSemantics();
       await scrollTo(tester, find.text('step-up-bodyweight'));

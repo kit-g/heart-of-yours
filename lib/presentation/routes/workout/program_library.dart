@@ -307,10 +307,6 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                       const SizedBox(height: 8),
                       Text(note.of(tag), style: textTheme.bodyLarge),
                     ],
-                    // asked before the program is started: what it marks
-                    // below is what is harder on the list (#396)
-                    const SizedBox(height: 8),
-                    const GoEasyRow(),
                     if (program.claimsAbout('program') case final about when about.isNotEmpty) ...[
                       heading(copy.libraryWhy),
                       claims(about),
@@ -356,6 +352,10 @@ class _LibraryProgramPageState extends State<LibraryProgramPage> {
                         ),
                         tag: tag,
                       ),
+                    // after the sessions, once the program is known: what the
+                    // list marks in them is what is harder (#396)
+                    const SizedBox(height: 16),
+                    const GoEasyRow(),
                     if (next.isNotEmpty) ...[
                       heading(copy.libraryNext),
                       for (final each in next)
