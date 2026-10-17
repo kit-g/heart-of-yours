@@ -26,7 +26,13 @@ void main() {
   /// [instructions] is not decoration: `Exercise.hasInfo` gates whether the
   /// About tab exists at all, and it looks only at asset, thumbnail and
   /// instructions — never at movement.
-  Exercise ex(String name, {Map<String, dynamic>? movement, bool? validated, String? instructions}) {
+  Exercise ex(
+    String name, {
+    Map<String, dynamic>? movement,
+    Map<String, dynamic>? muscles,
+    bool? validated,
+    String? instructions,
+  }) {
     return Exercise.fromJson({
       'id': 'id-${name.toLowerCase().replaceAll(' ', '-')}',
       'name': name,
@@ -35,6 +41,7 @@ void main() {
       'archived': false,
       'instructions': instructions ?? 'Pull the bar down.',
       'movement': ?movement,
+      'muscles': ?muscles,
       'validated': ?validated,
     });
   }
@@ -231,6 +238,27 @@ void main() {
   // a freshly started one often holds a thin copy — a sample template names its
   // exercises by key alone. About is gated on Exercise.hasInfo, so with that
   // copy the tab was simply not there.
+  testWidgets('the muscle figures are one labelled image, not a node per muscle', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpAbout(
+      tester,
+      ex(
+        'Bench Press',
+        muscles: {
+          'primary': {
+            'groups': ['chest'],
+          },
+        },
+      ),
+    );
+
+    // the atlas would otherwise expose every painted muscle under its English
+    // name, whatever the app's language; the chips above already name them
+    expect(find.bySemanticsLabel('Body map of the muscles this exercise works'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('pectoralis', caseSensitive: false)), findsNothing);
+    semantics.dispose();
+  });
+
   testWidgets('the workout dialog shows About from the library, even for a thin copy', (tester) async {
     final full = ex('Lat Pulldown (Machine)');
     when(local.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [full]));

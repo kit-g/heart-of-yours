@@ -29,7 +29,7 @@ dependencies:
   firebase_core: 4.15.0
   fl_chart: 1.2.0
   flutter: { sdk: flutter }
-  flutter_body_atlas: ^0.2.1
+  flutter_body_atlas: ^0.2.3
   flutter_driver: { sdk: flutter }
   # 23.x is a pre-release, and its Android side needs compileSdk 37: it
   # failed v1.12.0's Play builds. Stay on the stable major.

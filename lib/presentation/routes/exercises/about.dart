@@ -116,18 +116,26 @@ class _About extends StatelessWidget {
                   );
                 }
 
+                // one image to assistive tech: the target chips above already
+                // name the muscles, and the atlas's own per-muscle nodes are
+                // its English names
                 return Padding(
                   padding: const .symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: panel(.musclesFront),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: panel(.musclesBack),
-                      ),
-                    ],
+                  child: Semantics(
+                    image: true,
+                    label: L.of(context).exerciseMusclesFigure,
+                    excludeSemantics: true,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: panel(.musclesFront),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: panel(.musclesBack),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

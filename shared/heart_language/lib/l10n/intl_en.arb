@@ -4998,5 +4998,7 @@
   "skipRecovering": "Still recovering: {groups}",
   "@skipRecovering": {"description": "A skip's page (#312): muscle groups trained in the two days before", "type": "text", "placeholders": {"groups": {"type": "String"}}},
   "skipFromHealth": "From Health, on this phone only",
-  "@skipFromHealth": {"description": "A skip's page (#312): note under the readings from Apple Health / Health Connect", "type": "text", "placeholders": {}}
+  "@skipFromHealth": {"description": "A skip's page (#312): note under the readings from Apple Health / Health Connect", "type": "text", "placeholders": {}},
+  "exerciseMusclesFigure": "Body map of the muscles this exercise works",
+  "@exerciseMusclesFigure": {"description": "Screen-reader label for the body figures on an exercise's About page; the target chips above them name the muscles", "type": "text", "placeholders": {}}
 }
