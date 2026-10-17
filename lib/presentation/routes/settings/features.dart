@@ -192,6 +192,8 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
       activeThumbColor: onTertiaryContainer,
       inactiveTrackColor: outlineVariant,
       onChanged: (on) {
+        // the row as well as the thumb flips it, and neither clicks by itself
+        HapticFeedback.selectionClick();
         preferences.setFeature(feature, on: on);
         onSwitched?.call();
       },
@@ -221,7 +223,10 @@ class const _FeatureSwitch(final Feature feature, {final VoidCallback? onSwitche
                       key: ValueKey('feature-${feature.value}-${option.value}'),
                       value: preferences.isOptionOn(option),
                       // leaving out the last one turns the feature off
-                      onChanged: (checked) => preferences.setOption(option, on: checked ?? false),
+                      onChanged: (checked) {
+                        HapticFeedback.selectionClick();
+                        preferences.setOption(option, on: checked ?? false);
+                      },
                       title: Text(option.title(l)),
                       controlAffinity: ListTileControlAffinity.trailing,
                       dense: true,

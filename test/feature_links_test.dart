@@ -163,6 +163,23 @@ void main() {
     expect(rect.bottom, lessThanOrEqualTo(page.bottom));
   });
 
+  testWidgets('a feature switch clicks once as it flips', (tester) async {
+    final haptics = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments);
+      return null;
+    });
+    await pumpApp(tester);
+    router.config.go('/profile/settings/features?feature=muscleMap');
+    await tester.pumpTimes(25);
+
+    await tester.tap(find.byKey(row));
+    await tester.pumpTimes();
+
+    expect(preferences(tester).isOn(Feature.muscleMap), isTrue);
+    expect(haptics, ['HapticFeedbackType.selectionClick']);
+  });
+
   testWidgets('a feature this build does not know opens the page at the top, uncounted', (tester) async {
     await pumpApp(tester);
     router.config.go('/profile/settings/features?feature=notBuiltYet');
