@@ -4026,7 +4026,7 @@
     "type": "text",
     "placeholders": {}
   },
-  "muscleMapBreakdownHelp": "Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms.",
+  "muscleMapBreakdownHelp": "Completed sets per muscle group in the chosen period. A set counts in full for the muscles an exercise mainly works and as half for the ones it also works: one set of bench press adds 1 to Chest and ½ to Arms. An exercise you made counts in full toward its body part.",
   "@muscleMapBreakdownHelp": {
     "description": "Help tooltip on the muscle map's list: how sets are counted per muscle group",
     "type": "text",

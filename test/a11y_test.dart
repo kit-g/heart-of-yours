@@ -1019,9 +1019,10 @@ void main() {
                   'groups': ['arms', 'shoulders'],
                 },
               }),
+              target: Target.chest,
               sets: 12,
             ),
-            (start: DateTime.now(), muscles: MuscleTagging.empty(), sets: 3),
+            (start: DateTime.now(), muscles: MuscleTagging.empty(), target: Target.cardio, sets: 3),
           ],
         );
         if (screen == _Screen.muscleMap) {

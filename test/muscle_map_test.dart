@@ -36,17 +36,20 @@ void main() {
     muscles: MuscleTagging.fromJson(
       jsonDecode('{"primary": {"groups": ["chest"]}, "secondary": {"groups": ["arms"]}}'),
     ),
+    target: Target.other,
     sets: 4,
   );
-  final untagged = (start: today, muscles: MuscleTagging.empty(), sets: 3);
+  final untagged = (start: today, muscles: MuscleTagging.empty(), target: Target.cardio, sets: 3);
   final raise = (
     start: today,
     muscles: MuscleTagging.fromJson(jsonDecode('{"primary": {"groups": []}, "secondary": {"groups": ["shoulders"]}}')),
+    target: Target.other,
     sets: 3,
   );
   final deadlift = (
     start: threeWeeksAgo,
     muscles: MuscleTagging.fromJson(jsonDecode('{"primary": {"groups": ["back"]}}')),
+    target: Target.other,
     sets: 5,
   );
 

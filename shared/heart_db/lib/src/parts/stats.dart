@@ -117,7 +117,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
   /// An exercise missing from `exercises` (a dangling id) comes back with
   /// empty tagging, as does a custom one nobody tagged: both are sets the map
   /// can only report as unmapped.
-  Future<List<({DateTime start, MuscleTagging muscles, int sets})>> getMuscleSets(
+  Future<List<({DateTime start, MuscleTagging muscles, Target target, int sets})>> getMuscleSets(
     DateTime from,
     DateTime to, {
     String? userId,
@@ -131,16 +131,13 @@ mixin _Stats on _LocalDatabase implements StatsService {
         .then(
           (rows) => rows.map(
             (row) {
-              final muscles = switch (row['muscles']) {
-                String s when s.isNotEmpty => switch (jsonDecode(s)) {
-                  Map<String, dynamic> m when m.isNotEmpty => MuscleTagging.fromJson(m),
-                  _ => MuscleTagging.empty(),
-                },
-                _ => MuscleTagging.empty(),
-              };
               return (
                 start: DateTime.parse(row['start'] as String).toLocal(),
-                muscles: muscles,
+                muscles: switch (_blob(row['muscles'])) {
+                  Map<String, dynamic> m => MuscleTagging.fromJson(m),
+                  null => MuscleTagging.empty(),
+                },
+                target: _target(row['target']),
                 sets: (row['sets'] as num).toInt(),
               );
             },
@@ -193,8 +190,7 @@ mixin _Stats on _LocalDatabase implements StatsService {
                   Map<String, dynamic> m => MuscleTagging.fromJson(m),
                   null => MuscleTagging.empty(),
                 },
-                // a word this build predates reads as nothing to place by
-                target: Target.values.firstWhere((each) => each.value == row['target'], orElse: () => .other),
+                target: _target(row['target']),
                 sets: (row['sets'] as num).toInt(),
               );
             },
@@ -212,4 +208,9 @@ Map<String, dynamic>? _blob(Object? value) {
     },
     _ => null,
   };
+}
+
+/// A stored target; a word this build predates reads as nothing to place by.
+Target _target(Object? value) {
+  return Target.values.firstWhere((each) => each.value == value, orElse: () => .other);
 }

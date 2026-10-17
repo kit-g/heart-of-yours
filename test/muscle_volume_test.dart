@@ -13,6 +13,9 @@ MuscleSets row(
   List<String> primaryGroups = const [],
   List<String> secondaryIds = const [],
   List<String> secondaryGroups = const [],
+  // a target no group answers to: an untagged row places nothing unless a
+  // test says otherwise
+  Target target = .other,
 }) {
   return (
     start: start ?? DateTime(2026, 9, 23),
@@ -20,6 +23,7 @@ MuscleSets row(
       'primary': {'ids': primaryIds, 'groups': primaryGroups},
       'secondary': {'ids': secondaryIds, 'groups': secondaryGroups},
     }),
+    target: target,
     sets: sets,
   );
 }
@@ -63,15 +67,34 @@ void main() {
     expect(sets, {MuscleGroup.chest: 5.5, MuscleGroup.back: 5});
   });
 
-  test('untagged exercises are unmapped, not dropped', () {
+  test('an untagged exercise falls to the group its target names, in full', () {
     final (:sets, :unmapped) = muscleVolume([
-      row(4),
+      row(4, target: .arms),
+      row(2, primaryGroups: ['arms'], secondaryGroups: ['chest']),
+      (start: DateTime(2026, 9, 23), muscles: MuscleTagging.empty(), target: .shoulder, sets: 3),
+    ]);
+
+    // the coach over MCP counts the same way (heart-api's lens): 4 + 2, not 2
+    expect(sets, {MuscleGroup.arms: 6, MuscleGroup.chest: 1, MuscleGroup.shoulders: 3});
+    expect(unmapped, 0);
+  });
+
+  test('an untagged exercise whose target no group answers to is unmapped, not dropped', () {
+    final (:sets, :unmapped) = muscleVolume([
+      row(4, target: .cardio),
       row(2, primaryGroups: ['core']),
-      (start: DateTime(2026, 9, 23), muscles: MuscleTagging.empty(), sets: 3),
+      (start: DateTime(2026, 9, 23), muscles: MuscleTagging.empty(), target: .fullBody, sets: 3),
     ]);
 
     expect(sets, {MuscleGroup.core: 2});
     expect(unmapped, 7);
+  });
+
+  test('tagging wins over the target', () {
+    final (:sets, unmapped: _) = muscleVolume([
+      row(3, primaryGroups: ['back'], target: .chest),
+    ]);
+    expect(sets, {MuscleGroup.back: 3});
   });
 
   test('ids and groups the atlas does not know are dropped; nothing left is unmapped', () {
@@ -202,7 +225,8 @@ void main() {
     });
 
     test("takes the library's tagging over the workout's own copy", () {
-      final untagged = Exercise(name: 'Row', category: .barbell, target: .back);
+      // a copy synced without tagging falls to its target; the library's says otherwise
+      final untagged = Exercise(name: 'Row', category: .barbell, target: .chest);
       final tagged = Exercise(
         name: 'Row',
         category: .barbell,
@@ -212,7 +236,7 @@ void main() {
       final workout = Workout(name: 'Tuesday');
       workout.add(untagged).first.isCompleted = true;
 
-      expect(muscleVolume(workoutMuscleSets(workout, lookup: (_) => null)).unmapped, 1);
+      expect(muscleVolume(workoutMuscleSets(workout, lookup: (_) => null)).sets, {MuscleGroup.chest: 1});
       expect(muscleVolume(workoutMuscleSets(workout, lookup: (_) => tagged)).sets, {MuscleGroup.back: 1});
     });
   });
