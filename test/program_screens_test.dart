@@ -271,6 +271,17 @@ void main() {
       await tester.pumpTimes();
     }
 
+    testWidgets('the sessions are joined by a rail through their icons, one sequence', (tester) async {
+      await openPage(tester);
+      await scrollTo(tester, find.text('Pull'));
+
+      final rails = find.byWidgetPredicate(
+        (widget) => widget is CustomPaint && widget.painter.runtimeType.toString() == '_Rail',
+      );
+      // Push and Pull: one runs down from the first, the other up into it
+      expect(rails, findsNWidgets(2));
+    });
+
     testWidgets('a steer lands at once, with an Undo', (tester) async {
       await openPage(tester);
 
@@ -296,7 +307,7 @@ void main() {
       await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
       await tester.pumpTimes();
 
-      // under the sessions and the calendar's ask (#391)
+      // under the sessions and the calendar's row (#391)
       await scrollTo(tester, find.text('How it grows'));
       expect(find.text('How it grows'), findsOneWidget);
       expect(find.text('Every 4 weeks, a lighter one: 90% of the weight, 50% of the sets'), findsOneWidget);
