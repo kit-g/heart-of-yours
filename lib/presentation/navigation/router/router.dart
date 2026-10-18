@@ -391,6 +391,15 @@ final class HeartRouter {
     return config.goNamed(_programName, pathParameters: {'programId': programId});
   }
 
+  /// The library showing only [filter] — from a count on the profile, the
+  /// exercises behind it — the previous filters cleared, as a chip's tap does.
+  void goToFilteredExercises(Exercises exercises, ExerciseFilter filter) {
+    exercises
+      ..clearFilters()
+      ..addFilter(filter);
+    config.goNamed(_exercisesName);
+  }
+
   /// A program's page over the Workout tab's page that named it — a folder
   /// its sessions live in: pushed, so Back returns there.
   void pushProgram(String programId) {

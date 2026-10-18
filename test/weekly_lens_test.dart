@@ -189,13 +189,48 @@ void main() {
       ],
     );
 
+    // the words, which open the pattern's exercises, and the chart, which
+    // says what it is and reads its weeks
+    expect(find.bySemanticsLabel('Horizontal Press. 4 sets in 1 session this week'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
-        RegExp(r'^Horizontal Press\. 4 sets in 1 session this week\. Week by week: 0, 0, 0, 0, 0, 0, 0, 4$'),
+        RegExp(
+          r'^Horizontal Press: sets per week, the last 8 weeks — 4 sets this week\. '
+          r'Week by week: 0, 0, 0, 0, 0, 0, 0, 4$',
+        ),
       ),
       findsOneWidget,
     );
     handle.dispose();
+  });
+
+  testWidgets('a tap on the little chart says what it is', (tester) async {
+    await pumpProfile(
+      tester,
+      rows: [
+        row('w1', today, patterns: ['horizontal_press'], sets: 4),
+      ],
+    );
+    await tester.ensureVisible(find.byKey(AppKeys.lensChart('Horizontal Press')));
+    await tester.tap(find.byKey(AppKeys.lensChart('Horizontal Press')));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.textContaining('Horizontal Press: sets per week, the last 8 weeks'), findsOneWidget);
+  });
+
+  testWidgets("a pattern's line opens the library on that pattern", (tester) async {
+    await pumpProfile(
+      tester,
+      rows: [
+        row('w1', today, patterns: ['horizontal_press'], sets: 4),
+      ],
+    );
+    await tester.ensureVisible(find.byKey(AppKeys.lensLine('Horizontal Press')));
+    await tester.tap(find.byKey(AppKeys.lensLine('Horizontal Press')));
+    await tester.pumpTimes();
+
+    final exercises = Exercises.of(tester.element(find.byType(MaterialApp)));
+    expect(exercises.filters.whereType<PatternFilter>().map((filter) => filter.pattern), ['horizontal_press']);
   });
 
   group('balance (#342)', () {
