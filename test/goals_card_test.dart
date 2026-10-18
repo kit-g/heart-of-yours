@@ -23,6 +23,7 @@ void main() {
   late Exercises exercises;
   late Preferences preferences;
   late Stats stats;
+  late MockLocalStatsService statsService;
 
   const userId = 'user-1';
 
@@ -66,7 +67,8 @@ void main() {
       preferenceService: MockRemoteExercisePreferenceService(),
     );
 
-    stats = Stats(onError: null, service: MockLocalStatsService());
+    statsService = MockLocalStatsService();
+    stats = Stats(onError: null, service: statsService);
 
     // Programs is on by default and would read its own providers, which this
     // test of a widget without them does not build
@@ -393,6 +395,18 @@ void main() {
       expect(find.byKey(AppKeys.goalRow('goal-1')), findsNothing);
       expect(find.text('Your 2 a week is paused while you follow Split'), findsOneWidget);
       expect(goals.all.single.stages.single.target, 2);
+    });
+
+    testWidgets("the program's weekly goal counts the program's own sessions", (tester) async {
+      // eight workouts this week, none of them the program's
+      when(statsService.getWorkoutCountBetween(any, any, userId: anyNamed('userId'))).thenAnswer((_) async => 8);
+      when(statsService.getWeeklyWorkoutCount(any, userId: anyNamed('userId'))).thenAnswer((_) async => 8);
+      await follow(split);
+
+      await pumpWith(tester);
+
+      final row = find.byKey(AppKeys.goalRow('program:p1:workouts'));
+      expect(find.descendant(of: row, matching: find.textContaining('0 / 3')), findsOneWidget);
     });
 
     testWidgets("with Programs off, the user's own weekly goal is back as it was", (tester) async {
