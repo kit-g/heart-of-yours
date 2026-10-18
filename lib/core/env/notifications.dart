@@ -10,6 +10,7 @@ import 'package:heart_state/heart_state.dart';
 import 'package:heart/core/env/ongoing_workout.dart';
 import 'package:heart/core/env/watch.dart';
 import 'package:heart/core/utils/ongoing_workout.dart';
+import 'package:heart/core/utils/visual.dart';
 import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -317,13 +318,13 @@ void remindNotificationsOff(
   required String message,
   required String settingsLabel,
 }) {
-  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-    SnackBar(
-      content: Text(message),
-      action: SnackBarAction(
-        label: settingsLabel,
-        onPressed: openNotificationSettings,
-      ),
+  // `snack`, never a bare SnackBar: with an action it would persist, and a
+  // nudge has to be one the user can walk past
+  ScaffoldMessenger.maybeOf(context)?.snack(
+    message,
+    action: SnackBarAction(
+      label: settingsLabel,
+      onPressed: openNotificationSettings,
     ),
   );
 }

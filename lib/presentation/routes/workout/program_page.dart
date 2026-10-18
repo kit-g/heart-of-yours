@@ -417,17 +417,15 @@ class _SteersState extends State<_Steers> {
     try {
       final action = await programs.act(widget.program, kind, week: week);
       messenger.clearSnackBars();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(switch (steer) {
-            .repeat => copy.programRepeated,
-            .pause => copy.programPausedNotice,
-            .resume => copy.programResumed,
-            .replay => copy.programReplayed(week ?? 1),
-            .lighter => copy.programLighterNotice,
-          }),
-          action: SnackBarAction(label: copy.undo, onPressed: () => programs.undo(action)),
-        ),
+      messenger.snack(
+        switch (steer) {
+          .repeat => copy.programRepeated,
+          .pause => copy.programPausedNotice,
+          .resume => copy.programResumed,
+          .replay => copy.programReplayed(week ?? 1),
+          .lighter => copy.programLighterNotice,
+        },
+        action: SnackBarAction(label: copy.undo, onPressed: () => programs.undo(action)),
       );
     } finally {
       if (mounted) _busy.value = false;

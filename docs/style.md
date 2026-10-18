@@ -159,6 +159,9 @@ row at a time. A literal in a widget is a finding.
   the native-ish sliding control Settings uses for Imperial/Metric, Cupertino
   on Apple platforms. Not Material's rounded `SegmentedButton`, which reads as
   a different app.
+- **A snackbar is `snack`** (`core/utils/visual.dart`), never a bare
+  `SnackBar`: with an action, Flutter's `persist` defaults to true and the bar
+  stays until tapped — an Undo that followed the user through a workout.
 - **Absent, not dead.** A control that cannot work in the current state (no
   account, no server) is left out, not rendered disabled or made to fail on
   tap — a row that apologises when tapped is a reminder in disguise. The
