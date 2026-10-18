@@ -5004,5 +5004,7 @@
   "libraryStartDays": "Which days suit you?",
   "@libraryStartDays": {"description": "Title of the step that starts a ready-made program: the weekdays it would rather fall on", "type": "text", "placeholders": {}},
   "libraryStartDaysHint": "Heart puts the next session on these days. A hint, never a rule: train when you can.",
-  "@libraryStartDaysHint": {"description": "Under the title of the step that starts a ready-made program: what the preferred days do", "type": "text", "placeholders": {}}
+  "@libraryStartDaysHint": {"description": "Under the title of the step that starts a ready-made program: what the preferred days do", "type": "text", "placeholders": {}},
+  "supplementalSetExplained": "A supplemental set: extra work after the main sets. It's never judged and doesn't move your training max.",
+  "@supplementalSetExplained": {"description": "At the top of the menu a program's supplemental set opens (its '+' badge in place of a set number): what such a set is", "type": "text", "placeholders": {}}
 }

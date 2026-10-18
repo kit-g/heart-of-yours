@@ -131,6 +131,15 @@ void main() {
     expect(find.bySemanticsLabel(RegExp('Supplemental set')), findsOneWidget);
   });
 
+  testWidgets('the + says what a supplemental set is, where it is tapped', (tester) async {
+    await start(tester, squatDay());
+    await tester.tap(find.text('+'));
+    await tester.pumpTimes();
+
+    expect(find.byKey(WorkoutDetailKeys.supplementalExplained), findsOneWidget);
+    expect(find.textContaining("doesn't move your training max"), findsOneWidget);
+  });
+
   testWidgets('with Programs off the sheet is as it was', (tester) async {
     programs(on: false);
     await start(tester, squatDay(rest: 90, pattern: 'squat'));
