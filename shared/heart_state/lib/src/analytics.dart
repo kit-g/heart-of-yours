@@ -127,10 +127,27 @@ enum ReplaceScope {
 }
 
 /// What became of a program's calendar export (#391).
-enum ProgramCalendarChange { added, changed, removed }
+enum ProgramCalendarChange {
+  added('added'),
+  changed('changed'),
+  removed('removed');
+
+  final String id;
+
+  new(this.id);
+}
 
 /// What a calendar event's link opened (#391).
-enum ProgramLinkOutcome { started, workout, skip, program }
+enum ProgramLinkOutcome {
+  started('started'),
+  workout('workout'),
+  skip('skip'),
+  program('program');
+
+  final String id;
+
+  new(this.id);
+}
 
 /// Which part of a logged workout was changed after the fact.
 enum WorkoutEditField {
@@ -536,7 +553,7 @@ class Analytics {
 
   /// A program put in the device calendar, moved to another calendar or time,
   /// or taken out (#391). Never which calendar, nor a time.
-  void programCalendar({required ProgramCalendarChange change}) => _log(_programCalendar, {_action: change.name});
+  void programCalendar({required ProgramCalendarChange change}) => _log(_programCalendar, {_action: change.id});
 
   /// A program's constraint (#355) chosen or cleared. Never which: an area
   /// or a movement to go easy on is health-shaped, even as a content key.
@@ -551,7 +568,7 @@ class Analytics {
 
   /// A calendar event's link opened (#391), and what it opened: the session
   /// started, the workout or skip that did it, or the program.
-  void programLinkOpened({required ProgramLinkOutcome outcome}) => _log(_programLinkOpened, {_action: outcome.name});
+  void programLinkOpened({required ProgramLinkOutcome outcome}) => _log(_programLinkOpened, {_action: outcome.id});
 
   /// A program deleted, and whether its sessions stayed as templates.
   void programDeleted({required bool keptTemplates}) {
