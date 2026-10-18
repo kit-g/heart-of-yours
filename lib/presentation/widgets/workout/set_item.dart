@@ -81,6 +81,27 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     _repsController.addListener(_repsListener);
     _distanceController.addListener(_distanceListener);
     _durationController.addListener(_durationListener);
+    _weightFocus.addListener(_onWeightFocus);
+  }
+
+  /// The active workout's plate calculator strip (#132); null elsewhere.
+  ValueNotifier<_PlateTarget?>? _plates;
+
+  /// Tells the plate calculator's strip which weight is being typed, on a set
+  /// that is loaded with plates.
+  void _onWeightFocus() {
+    final plates = _plates;
+    if (plates == null || !_takesPlates(set.category)) return;
+    if (_weightFocus.hasFocus) {
+      plates.value = _PlateTarget(
+        exercise: exercise.exercise,
+        field: _weightController,
+        unit: _unitOverride ?? Preferences.of(context).weightUnit,
+        row: context,
+      );
+    } else if (plates.value?.field == _weightController) {
+      plates.value = null;
+    }
   }
 
   /// The set's rating, as its last value cell shows it; null while it has
@@ -103,6 +124,7 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
     super.didChangeDependencies();
 
     l = L.of(context);
+    _plates = _PlatesScope.of(context);
     final current = Workouts.of(context);
     if (!identical(current, _listened)) {
       _listened?.removeListener(_syncFromSet);
@@ -152,7 +174,9 @@ class _ExerciseSetItemState extends State<_ExerciseSetItem>
   @override
   void dispose() {
     _listened?.removeListener(_syncFromSet);
-    _weightFocus.dispose();
+    _weightFocus
+      ..removeListener(_onWeightFocus)
+      ..dispose();
     _repsFocus.dispose();
     _distanceFocus.dispose();
     _durationFocus.dispose();

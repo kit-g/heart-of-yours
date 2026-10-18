@@ -15,6 +15,17 @@ class WorkoutDetailKeys {
   static const programBaseSave = Key('WorkoutDetail.programBase.save');
   static Key programBaseEdit(String key) => Key('WorkoutDetail.programBase.edit.$key');
   static const addExercises = Key('WorkoutDetail.addExercises');
+  static const platesOffer = Key('WorkoutDetail.platesOffer');
+  static const platesAccept = Key('WorkoutDetail.platesAccept');
+  static const platesDecline = Key('WorkoutDetail.platesDecline');
+  static const platesButton = Key('WorkoutDetail.platesButton');
+  static const plateCalculator = Key('WorkoutDetail.plateCalculator');
+  static const plateBar = Key('WorkoutDetail.plateBar');
+  static const customBarField = Key('WorkoutDetail.customBarField');
+  static const customBarSave = Key('WorkoutDetail.customBarSave');
+  static Key plateChip(String plate) => Key('WorkoutDetail.plateChip.$plate');
+  static Key plateNearest(String total) => Key('WorkoutDetail.plateNearest.$total');
+  static Key barOption(String bar) => Key('WorkoutDetail.barOption.$bar');
   static const startNewWorkout = Key('WorkoutDetail.startNewWorkout');
   static const finishWorkout = Key('WorkoutDetail.finishWorkout');
   static const timer = Key('WorkoutDetail.timer');
