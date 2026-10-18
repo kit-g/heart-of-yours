@@ -81,7 +81,7 @@ void main() {
         },
       );
       final answer = await answers(locale: 'ru').record(user, bench.id);
-      expect(answer, startsWith('Ваш рекорд в Bench Press — 100 кг x 5'));
+      expect(answer, startsWith('Ваш рекорд: Bench Press — 100 кг × 5'));
       expect(answer, contains('окт. 2026'));
     });
   });

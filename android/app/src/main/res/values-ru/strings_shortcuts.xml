@@ -10,10 +10,10 @@
     <string name="function_rest_skipped">Отдых пропущен</string>
     <string name="function_logged">Записано: %1$s</string>
     <string name="function_nothing_left">Записывать больше нечего</string>
-    <string name="function_say_values">Назовите вес и повторы</string>
+    <string name="function_say_values">Назовите вес и число повторений</string>
     <string name="function_could_not_answer">Heart сейчас не может ответить</string>
     <string name="function_unknown_exercise">Я не знаю такого упражнения</string>
     <string name="function_unknown_template">Я не знаю такого шаблона</string>
     <string name="function_opening">Открываю Heart</string>
-    <string name="function_app_closed">Heart не запущен; это применится, когда вы его откроете</string>
+    <string name="function_app_closed">Heart не запущен. Команда выполнится, когда вы откроете приложение.</string>
 </resources>
