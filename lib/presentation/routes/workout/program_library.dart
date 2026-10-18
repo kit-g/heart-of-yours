@@ -649,11 +649,25 @@ class _StartBar extends StatelessWidget {
       );
     }
 
+    // the one place Start stays, disabled: its absence would leave the user
+    // guessing, and the reason under it says what to do (docs/style.md)
     if (!templates.allowsNewTemplates(sessions)) {
-      return Text(
-        copy.libraryNoRoom(sessions - templates.templateRoom),
-        textAlign: .center,
-        style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+      return Column(
+        mainAxisSize: .min,
+        spacing: 8,
+        children: [
+          PrimaryButton.wide(
+            key: AppKeys.libraryStart,
+            onPressed: null,
+            child: Center(heightFactor: 1, child: Text(copy.programStartIt)),
+          ),
+          Text(
+            key: AppKeys.libraryNoRoom,
+            copy.libraryNoRoom(sessions - templates.templateRoom),
+            textAlign: .center,
+            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+        ],
       );
     }
 

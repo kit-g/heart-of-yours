@@ -233,6 +233,7 @@ abstract final class AppKeys {
   static Key librarySource(String key) => Key('Programs.library.source.$key');
   static const libraryStart = Key('Programs.library.start');
   static const libraryOpenYours = Key('Programs.library.openYours');
+  static const libraryNoRoom = Key('Programs.library.noRoom');
   static const programAbout = Key('Programs.about');
 
   /// A program's goals on its page (#353): what it implies, and what it grows.

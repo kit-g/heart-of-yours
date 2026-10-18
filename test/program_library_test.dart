@@ -320,7 +320,7 @@ void main() {
       expect(Templates.of(tester.element(find.byType(MaterialApp))).folders, isEmpty);
     });
 
-    testWidgets('a program whose sessions do not fit says why, in place of the button', (tester) async {
+    testWidgets('a program whose sessions do not fit keeps Start, disabled, and says why', (tester) async {
       answer(.on);
       when(db.getTemplates(userId)).thenAnswer(
         (_) async => [
@@ -331,8 +331,13 @@ void main() {
       await tester.tapByKey(AppKeys.libraryProgram('strength_waves'));
       await tester.pumpTimes();
 
-      expect(find.byKey(AppKeys.libraryStart), findsNothing);
-      expect(find.text('It needs room for 3 more templates.'), findsOneWidget);
+      // there but dead: without it the user would never guess the templates
+      final start = tester.widget<PrimaryButton>(find.byKey(AppKeys.libraryStart));
+      expect(start.onPressed, isNull);
+      expect(
+        find.text('Each of its sessions becomes a template. Remove 3 of yours to make room.'),
+        findsOneWidget,
+      );
     });
   });
 

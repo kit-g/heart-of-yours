@@ -161,7 +161,10 @@ row at a time. A literal in a widget is a finding.
   a different app.
 - **Absent, not dead.** A control that cannot work in the current state (no
   account, no server) is left out, not rendered disabled or made to fail on
-  tap — a row that apologises when tapped is a reminder in disguise.
+  tap — a row that apologises when tapped is a reminder in disguise. The
+  exception is a primary action whose absence would leave the user guessing
+  why (a library program's Start when its sessions don't fit the template
+  allowance): it stays, disabled, with the reason and the way out beside it.
 
 ## UX
 
