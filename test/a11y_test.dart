@@ -56,6 +56,7 @@ enum _Screen {
   replaceScopeDialog,
   programLibrary,
   libraryProgram,
+  libraryStartDays,
   goEasy,
   exerciseNoteEditor,
   workoutNote,
@@ -352,6 +353,7 @@ final _matrix = <(_Screen, _Guideline, String?)>[
     _Screen.newProgram,
     _Screen.programLibrary,
     _Screen.libraryProgram,
+    _Screen.libraryStartDays,
     _Screen.goEasy,
   ]) ...[
     (screen, _Guideline.labeledTapTarget, null),
@@ -361,6 +363,13 @@ final _matrix = <(_Screen, _Guideline, String?)>[
   for (final guideline in [_Guideline.androidTapTarget, _Guideline.iosTapTarget]) ...[
     (_Screen.programLibrary, guideline, null),
     (_Screen.goEasy, guideline, null),
+    // the days to start a library program on (F16): seven 44pt day toggles
+    // and its two actions
+    (
+      _Screen.libraryStartDays,
+      guideline,
+      'Skip is a dialog TextButton (lib/presentation/routes/workout/program_library.dart:591) and Start a PrimaryButton.shrunk at the house 32pt (program_library.dart:599, lib/presentation/widgets/buttons.dart:98 primaryButtonMinHeight) — visual-density change, out of scope',
+    ),
     (
       _Screen.libraryProgram,
       guideline,
@@ -1143,6 +1152,7 @@ void main() {
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
           _Screen.libraryProgram ||
+          _Screen.libraryStartDays ||
           _Screen.goEasy ||
           _Screen.skipPage ||
           _Screen.notTodaySheet:
@@ -1491,6 +1501,7 @@ void main() {
           _Screen.historyNotToday ||
           _Screen.programLibrary ||
           _Screen.libraryProgram ||
+          _Screen.libraryStartDays ||
           _Screen.goEasy ||
           _Screen.skipPage ||
           _Screen.notTodaySheet:
@@ -1519,7 +1530,7 @@ void main() {
             await tester.pumpTimes();
             // the screen is only honest if the day set aside is on it
             expect(find.byKey(AppKeys.historySkip('k1')), findsOneWidget);
-          case _Screen.programLibrary || _Screen.libraryProgram || _Screen.goEasy:
+          case _Screen.programLibrary || _Screen.libraryProgram || _Screen.libraryStartDays || _Screen.goEasy:
             await tester.scrollUntilVisible(
               find.byKey(AppKeys.libraryEntry),
               200,
@@ -1529,6 +1540,14 @@ void main() {
             if (screen != _Screen.programLibrary) {
               await tester.pumpTimes();
               await tester.tapByKey(AppKeys.libraryProgram('first_steps'));
+            }
+            if (screen == _Screen.libraryStartDays) {
+              await tester.pumpTimes();
+              await tester.tapByKey(AppKeys.libraryStart);
+              await tester.pumpTimes();
+              // a day picked: Start is disabled until then, and a disabled
+              // control is exempt from contrast (WCAG 1.4.3)
+              await tester.tap(find.bySemanticsLabel('Monday'));
             }
             if (screen == _Screen.goEasy) {
               await tester.pumpTimes();
