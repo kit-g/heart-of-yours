@@ -278,18 +278,49 @@ void main() {
     });
   });
 
-  testWidgets('swiping a row away removes the goal', (tester) async {
-    // the same gesture an exercise set uses, and like it, no confirmation
+  testWidgets('a swipe uncovers Delete, and only its tap deletes', (tester) async {
     await seed([workoutsGoal(id: 'goal-1')]);
 
     await pump(tester);
     await tester.pumpAndSettle();
 
+    // even a full swipe only uncovers the button
     await tester.fling(find.byType(GoalRow), const Offset(-500, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(goals, hasLength(1));
+
+    final delete = find.byKey(const ValueKey('GoalRow.goal-1.delete'));
+    await tester.tap(delete);
     await tester.pumpAndSettle();
 
     expect(goals, isEmpty);
     expect(find.text('No goals yet'), findsOneWidget);
+  });
+
+  testWidgets('an uncovered Delete closes on a tap of the row, and deletes nothing', (tester) async {
+    await seed([workoutsGoal(id: 'goal-1')]);
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(GoalRow), const Offset(-200, 0));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(GoalRow), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(goals, hasLength(1));
+    expect(tester.getTopLeft(find.byType(GoalRow)).dx, 0);
+  });
+
+  testWidgets('a screen reader deletes through the row action', (tester) async {
+    await seed([workoutsGoal(id: 'goal-1')]);
+    final semantics = tester.ensureSemantics();
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    final node = tester.getSemantics(find.byType(GoalRow));
+    expect(node.getSemanticsData().customSemanticsActionIds, isNotEmpty);
+    semantics.dispose();
   });
 
   group('beside a running program (#353)', () {
