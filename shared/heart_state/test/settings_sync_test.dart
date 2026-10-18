@@ -177,9 +177,10 @@ void main() {
       preferences.setOption(.muscleMapFigures, on: false);
       preferences.setOption(.muscleMapBreakdown, on: false);
       preferences.setOption(.muscleMapHeatmap, on: false);
+      preferences.setOption(.muscleMapWorkout, on: false);
       expect(preferences.isOn(feature), isTrue, reason: 'one is still selected');
 
-      preferences.setOption(.muscleMapWorkout, on: false);
+      preferences.setOption(.muscleMapTemplate, on: false);
       expect(preferences.isOn(feature), isFalse);
 
       preferences.setFeature(feature, on: true);
@@ -191,6 +192,7 @@ void main() {
       preferences.setOption(.muscleMapHeatmap, on: false);
 
       expect(shown(.muscleMapWorkout), isTrue, reason: 'a choice made before it existed did not leave it out');
+      expect(shown(.muscleMapTemplate), isTrue, reason: 'nor one made before #263');
     });
 
     test('off, the choice is kept and unused', () {
