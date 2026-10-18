@@ -880,9 +880,6 @@ class _FolderSection extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // the program the folder's sessions belong to, and the way to it
-            if ((programId, onOpenProgram) case (final String id, final open?))
-              PartOfProgram(programId: id, onOpen: open, size: 18),
             // The name is [Expanded] and this is not, so the summary states an
             // intrinsic width and the name takes what is left — they cannot
             // overlap. The cap is what keeps a folder of long names from
@@ -900,52 +897,61 @@ class _FolderSection extends StatelessWidget {
               ),
           ],
         ),
-        trailing: PopupMenuButton<VoidCallback>(
-          tooltip: L.of(context).moreOptions,
-          style: const ButtonStyle(
-            visualDensity: VisualDensity(vertical: -3, horizontal: -3),
-          ),
-          padding: EdgeInsets.zero,
-          icon: const Icon(Icons.more_horiz),
-          onSelected: (action) => action(),
-          itemBuilder: (_) {
-            return [
-              if (onMakeProgram case final VoidCallback make)
-                PopupMenuItem<VoidCallback>(
-                  value: make,
-                  child: Row(
-                    spacing: 4,
-                    children: [
-                      const Icon(Icons.event_repeat_rounded, size: 16),
-                      Text(L.of(context).makeProgram, style: textTheme.titleSmall),
-                    ],
-                  ),
-                ),
-              PopupMenuItem<VoidCallback>(
-                value: onRename,
-                child: Row(
-                  spacing: 4,
-                  children: [
-                    const Icon(Icons.edit_rounded, size: 16),
-                    Text(renameFolder, style: textTheme.titleSmall),
-                  ],
-                ),
+        // the program the folder's sessions belong to, beside the menu: the
+        // folder's two actions as one trailing pair
+        trailing: Row(
+          mainAxisSize: .min,
+          children: [
+            if ((programId, onOpenProgram) case (final String id, final open?))
+              PartOfProgram(programId: id, onOpen: open, size: 18),
+            PopupMenuButton<VoidCallback>(
+              tooltip: L.of(context).moreOptions,
+              style: const ButtonStyle(
+                visualDensity: VisualDensity(vertical: -3, horizontal: -3),
               ),
-              PopupMenuItem<VoidCallback>(
-                value: onDelete,
-                child: Row(
-                  spacing: 4,
-                  children: [
-                    Icon(Icons.delete, size: 16, color: colorScheme.error),
-                    Text(
-                      deleteFolder,
-                      style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.more_horiz),
+              onSelected: (action) => action(),
+              itemBuilder: (_) {
+                return [
+                  if (onMakeProgram case final VoidCallback make)
+                    PopupMenuItem<VoidCallback>(
+                      value: make,
+                      child: Row(
+                        spacing: 4,
+                        children: [
+                          const Icon(Icons.event_repeat_rounded, size: 16),
+                          Text(L.of(context).makeProgram, style: textTheme.titleSmall),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ];
-          },
+                  PopupMenuItem<VoidCallback>(
+                    value: onRename,
+                    child: Row(
+                      spacing: 4,
+                      children: [
+                        const Icon(Icons.edit_rounded, size: 16),
+                        Text(renameFolder, style: textTheme.titleSmall),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<VoidCallback>(
+                    value: onDelete,
+                    child: Row(
+                      spacing: 4,
+                      children: [
+                        Icon(Icons.delete, size: 16, color: colorScheme.error),
+                        Text(
+                          deleteFolder,
+                          style: textTheme.titleSmall?.copyWith(color: colorScheme.error),
+                        ),
+                      ],
+                    ),
+                  ),
+                ];
+              },
+            ),
+          ],
         ),
         children: [
           _TemplateGridBox(templates: templates, card: card),

@@ -293,6 +293,13 @@ void main() {
       final mark = find.byKey(AppKeys.partOfProgram('p1'));
       await scrollTo(tester, mark);
       expect(mark, findsOneWidget);
+      // beside the folder's ⋯, as one trailing pair, a full finger's size
+      final menu = tester.getRect(
+        find.ancestor(of: find.byIcon(Icons.more_horiz), matching: find.byType(PopupMenuButton<VoidCallback>)).first,
+      );
+      final markRect = tester.getRect(mark);
+      expect(menu.left - markRect.right, lessThan(4));
+      expect(markRect.height, greaterThanOrEqualTo(44));
 
       await tester.tap(mark);
       await tester.pumpTimes();
