@@ -1,41 +1,31 @@
-Heart on your Home Screen
-Three new widgets in the widget gallery:
-- Training: your volume, workouts, time, sets or reps over the last week
-  or months, or a reading from Apple Health instead. It fits the Lock
-  Screen too.
-- Start: one tap starts a workout or one of your templates.
-- Goals: how far along your goals are.
+Programs: train to a plan, not just a log.
 
-Start from the icon
-With Shortcuts on, touch and hold Heart's icon to start a blank workout
-or one of your templates.
+Pick one of 19 ready-made programs, each with the research behind it, or
+turn a folder of your templates into one. Heart schedules the sessions,
+fills in the targets and adds weight when you earn it. Starting weights
+come from your own history, and you can set any lift's by hand.
 
-Move an exercise's history
-Logged under the wrong exercise, or made your own before finding it in
-the library? Move history to... on the exercise's menu puts everything
-onto another exercise. Needs an account.
-
-Bring your Heart history back
-Import now reads Heart's own exports. The JSON file brings back
-everything: workouts, templates and folders, custom exercises and goals.
-The CSV brings workouts and their sets.
-
-Plus fixes, including a weight of 0 that now sticks, on the watch too.
+- Not today: set a session, or any day, aside with one tap. Say why if you like.
+- Things to go easy on: a knee, your spine, overhead pressing. Heart marks
+  what is harder on them and suggests kinder swaps.
+- Your program's sessions in your calendar.
+- Supersets and circuits.
+- Rep ranges and targets in templates.
+- Sets a week, by muscle or movement pattern, and how push and pull,
+  hinge and squat balance.
+- Goals on a movement pattern or a muscle.
+- Records show on the set that set them, in History too.
+- Choose the day your week starts.
+- Previous can show the last time you ran that template.
 
 What to test
-- Add each widget (Home Screen, small and medium, and the Lock Screen).
-  Edit the Training widget: switch between volume, workouts, time, sets
-  and reps, then try an Apple Health reading. Empty or stale numbers
-  are the failure.
-- Tap the Start widget from a cold start and with the app in the
-  background: the workout or template it names should open, started.
-- Touch and hold the app icon: start a blank workout and a template.
-  With Shortcuts off in Settings > Features, Heart's items are gone.
-- Move an exercise's history: the preview counts match, the move lands,
-  and the page becomes the target's. Not offered during a workout that
-  holds the exercise.
-- Export as JSON, erase or use another phone, import it: workouts,
-  templates, folders, custom exercises and goals all come back.
-- During a workout, set a weight to 0 (typed and from Previous). The
-  watch and the lock screen show 0, and Done on the watch keeps it.
-- Sign in with Apple: one sheet, straight in.
+- Start a ready-made program: the days it asks for, and the starting
+  weights it takes from your history.
+- A program session: targets on every set, the note at the top, finishing
+  it, and the Done page's training max line with Undo.
+- Not today on a program day, then Undo.
+- Update over 1.14 with a workout left open: it should resume and finish.
+- Calendar: the permission prompt, and the events in Calendar.
+- Back from a program reached from History, a chart or Profile returns
+  where you were.
+- iPad: the program page and the library in both orientations.

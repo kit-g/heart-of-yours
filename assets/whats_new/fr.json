@@ -1,5 +1,65 @@
 [
   {
+    "version": "1.15.0",
+    "items": [
+      {
+        "id": "programs",
+        "title": "Programmes",
+        "body": "Entraînez-vous selon un plan, pas seulement un journal. Choisissez l’un des 19 **programmes tout prêts**, chacun avec les études qui le fondent, ou faites-en un à partir d’un dossier de modèles. Heart planifie les séances, fixe l’objectif de chaque série et ajoute du poids quand vous le méritez. Les charges de départ viennent de votre propre historique."
+      },
+      {
+        "id": "not-today",
+        "title": "Pas aujourd’hui",
+        "body": "Mettez de côté une séance du programme, ou n’importe quel jour, d’un geste, et dites pourquoi si vous le souhaitez. Le programme attend, et Annuler revient en arrière."
+      },
+      {
+        "id": "go-easy",
+        "title": "Ce qu’il faut ménager",
+        "body": "Indiquez un genou, votre dos ou les poussées au-dessus de la tête : Heart signale les exercices qui le sollicitent davantage et propose des remplacements plus doux. La liste reste sur votre téléphone."
+      },
+      {
+        "id": "program-calendar",
+        "title": "Votre programme dans votre agenda",
+        "body": "Ajoutez les séances d’un programme à un calendrier de votre téléphone, Google compris, à une heure fixe ou sur la journée."
+      },
+      {
+        "id": "supersets",
+        "title": "Supersets et circuits",
+        "body": "Regroupez des exercices dans une séance ou un modèle et enchaînez-les à tour de rôle."
+      },
+      {
+        "id": "rep-ranges",
+        "title": "Fourchettes de répétitions et objectifs",
+        "body": "Les séries d’un modèle peuvent viser une fourchette, un nombre exact, une charge ou des répétitions en réserve. Touchez une série vide pour la remplir avec l’objectif."
+      },
+      {
+        "id": "sets-a-week",
+        "title": "Séries par semaine",
+        "body": "Sur votre profil : séries et séances par semaine, par schéma de mouvement ou par muscle, et l’équilibre entre poussée et tirage, charnière et squat."
+      },
+      {
+        "id": "pattern-goals",
+        "title": "Objectifs par mouvement ou par muscle",
+        "body": "Fixez-vous un objectif de poussées par semaine, ou de pectoraux, pas seulement sur un exercice."
+      },
+      {
+        "id": "records-on-sets",
+        "title": "Les records sur la série",
+        "body": "Chaque série qui a battu un record porte désormais un badge qui le nomme, sur l’écran de fin et dans l’historique."
+      },
+      {
+        "id": "week-start",
+        "title": "Votre semaine, votre début",
+        "body": "Choisissez le jour où commence votre semaine. Tous les comptes hebdomadaires le suivent."
+      },
+      {
+        "id": "previous-in-template",
+        "title": "Dernière fois dans ce modèle",
+        "body": "Dans une séance issue d’un modèle, Précédent peut afficher la dernière fois que vous avez suivi ce modèle."
+      }
+    ]
+  },
+  {
     "version": "1.14.0",
     "items": [
       {

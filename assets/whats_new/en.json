@@ -1,7 +1,71 @@
 [
   {
-    "version": "1.14.0",
+    "version": "1.15.0",
     "date": null,
+    "items": [
+      {
+        "id": "programs",
+        "title": "Programs",
+        "body": "Train to a plan, not just a log. Pick one of 19 **ready-made programs**, each with the research behind it, or turn a folder of your templates into one. Heart schedules the sessions, fills in each set's target and adds weight when you earn it. Starting weights come from your own history.",
+        "feature": "programs"
+      },
+      {
+        "id": "not-today",
+        "title": "Not today",
+        "body": "Set a program session, or any day, aside with one tap, and say why if you like. The program waits, and Undo takes it back.",
+        "feature": "notToday"
+      },
+      {
+        "id": "go-easy",
+        "title": "Things to go easy on",
+        "body": "Name a knee, your spine or pressing overhead, and Heart marks the exercises that are harder on it and suggests kinder swaps. The list stays on your phone."
+      },
+      {
+        "id": "program-calendar",
+        "title": "Your program in your calendar",
+        "body": "Add a program's sessions to a calendar on your phone, Google's included, at a time or all day."
+      },
+      {
+        "id": "supersets",
+        "title": "Supersets and circuits",
+        "body": "Group exercises in a workout or a template and move through them in turn."
+      },
+      {
+        "id": "rep-ranges",
+        "title": "Rep ranges and targets",
+        "body": "A template's sets can aim at a range, an exact count, a weight or reps in reserve. Tap an empty set and it fills the target in."
+      },
+      {
+        "id": "sets-a-week",
+        "title": "Sets a week",
+        "body": "On your profile: sets and sessions per week by movement pattern or by muscle, and how push and pull, hinge and squat balance."
+      },
+      {
+        "id": "pattern-goals",
+        "title": "Goals on a pattern or a muscle",
+        "body": "Set a goal on presses per week, or on chest, not just on one exercise."
+      },
+      {
+        "id": "records-on-sets",
+        "title": "Records on the set",
+        "body": "Each set that set a record now carries a badge naming it, on the Done page and in History."
+      },
+      {
+        "id": "week-start",
+        "title": "Your week, your start",
+        "body": "Choose the day your week starts. Every weekly count follows it."
+      },
+      {
+        "id": "previous-in-template",
+        "title": "Last time in this template",
+        "body": "In a workout from a template, Previous can show the last time you ran that template.",
+        "feature": "previousInTemplate"
+      }
+    ]
+  },
+  {
+    "version": "1.14.0",
+    "date": "2026-10-14",
     "items": [
       {
         "id": "home-screen-widgets",

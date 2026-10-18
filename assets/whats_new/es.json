@@ -1,5 +1,65 @@
 [
   {
+    "version": "1.15.0",
+    "items": [
+      {
+        "id": "programs",
+        "title": "Programas",
+        "body": "Entrena con un plan, no solo con un registro. Elige uno de 19 **programas listos**, cada uno con la investigación que lo respalda, o convierte una carpeta de plantillas en uno. Heart programa las sesiones, fija el objetivo de cada serie y sube el peso cuando te lo ganas. Los pesos iniciales salen de tu propio historial."
+      },
+      {
+        "id": "not-today",
+        "title": "Hoy no",
+        "body": "Aparta una sesión del programa, o cualquier día, con un toque, y di por qué si quieres. El programa espera, y Deshacer lo revierte."
+      },
+      {
+        "id": "go-easy",
+        "title": "Con qué ir con cuidado",
+        "body": "Indica una rodilla, la columna o empujar por encima de la cabeza, y Heart marca los ejercicios más exigentes con eso y sugiere cambios más suaves. La lista se queda en tu teléfono."
+      },
+      {
+        "id": "program-calendar",
+        "title": "Tu programa en tu calendario",
+        "body": "Añade las sesiones de un programa a un calendario de tu teléfono, incluido el de Google, a una hora o todo el día."
+      },
+      {
+        "id": "supersets",
+        "title": "Superseries y circuitos",
+        "body": "Agrupa ejercicios en un entrenamiento o una plantilla y hazlos por turnos."
+      },
+      {
+        "id": "rep-ranges",
+        "title": "Rangos de repeticiones y objetivos",
+        "body": "Las series de una plantilla pueden apuntar a un rango, un número exacto, un peso o repeticiones en reserva. Toca una serie vacía y se rellena con el objetivo."
+      },
+      {
+        "id": "sets-a-week",
+        "title": "Series por semana",
+        "body": "En tu perfil: series y sesiones por semana según el patrón de movimiento o el músculo, y el equilibrio entre empuje y tirón, bisagra y sentadilla."
+      },
+      {
+        "id": "pattern-goals",
+        "title": "Objetivos por patrón o músculo",
+        "body": "Ponte un objetivo de empujes por semana, o de pecho, no solo de un ejercicio."
+      },
+      {
+        "id": "records-on-sets",
+        "title": "Récords en la serie",
+        "body": "Cada serie que marcó un récord lleva ahora una insignia que lo nombra, en la pantalla final y en el historial."
+      },
+      {
+        "id": "week-start",
+        "title": "Tu semana, tu comienzo",
+        "body": "Elige el día en que empieza tu semana. Todos los recuentos semanales lo siguen."
+      },
+      {
+        "id": "previous-in-template",
+        "title": "Última vez en esta plantilla",
+        "body": "En un entrenamiento de una plantilla, Anterior puede mostrar la última vez que hiciste esa plantilla."
+      }
+    ]
+  },
+  {
     "version": "1.14.0",
     "items": [
       {

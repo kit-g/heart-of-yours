@@ -190,6 +190,84 @@
       "highlight": false
     },
     {
+      "id": "programs",
+      "category": "train",
+      "title": "Programs",
+      "pitch": "19 ready-made programs with the research behind them, or one from your own templates. Heart schedules the sessions, sets each set's target and adds weight when you earn it.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": true
+    },
+    {
+      "id": "not-today",
+      "category": "train",
+      "title": "Not today",
+      "pitch": "Set a program session, or any day, aside with one tap, and say why if you like. Heart records it and asks nothing more.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "go-easy",
+      "category": "train",
+      "title": "Things to go easy on",
+      "pitch": "Name a knee, your spine or pressing overhead, and Heart marks what is harder on it and suggests kinder swaps. The list never leaves your phone.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "program-calendar",
+      "category": "train",
+      "title": "Your program in your calendar",
+      "pitch": "Your program's sessions in a calendar on your phone, Google's included, at a time or all day, each with a link that starts it.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "supersets",
+      "category": "train",
+      "title": "Supersets and circuits",
+      "pitch": "Group exercises in a workout or a template and move through them in turn.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "rep-ranges",
+      "category": "train",
+      "title": "Rep ranges and targets",
+      "pitch": "Sets that aim at a range, an exact count, a weight or reps in reserve. Tap an empty set and the target fills in.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "exercise-library",
       "category": "train",
       "title": "Exercise library",
@@ -258,7 +336,7 @@
       "id": "records",
       "category": "progress",
       "title": "Personal records",
-      "pitch": "Your best set, most reps, best pace, a rep-max table and lifetime totals for every exercise. The workout summary shows each new record as a badge, with the number it beat.",
+      "pitch": "Your best set, most reps, best pace, a rep-max table and lifetime totals. A set that sets a record carries a badge naming it, on the summary and in History.",
       "since": "1.6.0",
       "tier": "free",
       "platforms": [
@@ -307,10 +385,36 @@
       "highlight": false
     },
     {
+      "id": "sets-a-week",
+      "category": "progress",
+      "title": "Sets a week",
+      "pitch": "Sets and sessions per week by movement pattern or by muscle, and how push and pull, hinge and squat balance.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
+      "id": "week-start",
+      "category": "progress",
+      "title": "Your week starts when you say",
+      "pitch": "Choose the day your week starts. Every weekly count, goal and program follows it.",
+      "since": "1.15.0",
+      "tier": "free",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "highlight": false
+    },
+    {
       "id": "goals",
       "category": "progress",
       "title": "Goals",
-      "pitch": "A weekly or monthly workout target, or a ladder of milestones with an optional deadline. Goals show up on your charts, and every one you reach links back to the workout that did it.",
+      "pitch": "A weekly or monthly workout target, a ladder of milestones with an optional deadline, or sets a week on a movement pattern or a muscle. Programs suggest their own.",
       "since": "1.1.0",
       "tier": "free",
       "platforms": [
@@ -486,7 +590,7 @@
         "ios",
         "android"
       ],
-      "highlight": true
+      "highlight": false
     }
   ]
 }
