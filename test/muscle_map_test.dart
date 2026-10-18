@@ -399,7 +399,7 @@ void main() {
           .expanded;
       expect(expanded(), isTrue, reason: 'a switch that unfolds says it is expanded');
 
-      for (final value in ['figures', 'breakdown', 'workout']) {
+      for (final value in ['figures', 'breakdown', 'workout', 'template']) {
         await tester.tap(byKey(ValueKey('feature-muscleMap-$value')));
         await tester.pumpTimes();
       }
