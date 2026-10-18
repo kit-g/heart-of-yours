@@ -528,6 +528,8 @@ void main() {
     }
 
     setUp(() async {
+      // the write is allowed; the tests that need it otherwise say so
+      device.writeAccess = HealthAccess.granted;
       await sut.init();
       device.log.clear();
     });
@@ -561,14 +563,14 @@ void main() {
       device.storeStatus = HealthStoreStatus.unavailable;
       await sut.init();
 
-      expect(await sut.recordWorkout(done(end: DateTime.utc(2026, 8, 17, 19))), isFalse);
+      expect(await sut.recordWorkout(done()), isFalse);
       expect(device.written, isEmpty);
     });
 
     test('reports the store refusing it', () async {
       device.writeAccepted = false;
 
-      expect(await sut.recordWorkout(done(end: DateTime.utc(2026, 8, 17, 19))), isFalse);
+      expect(await sut.recordWorkout(done()), isFalse);
     });
 
     // Finishing a workout is the caller. Nothing here may take that path down.
@@ -657,11 +659,15 @@ void main() {
 
     // Someone who never accepted the invitation should not meet a Health sheet
     // because they finished a workout.
-    test('never asks a user who has not engaged with health', () async {
-      expect(await sut.recordWorkout(done()), isTrue);
+    test('never asks a user who has not engaged with health, and writes nothing unallowed', () async {
+      device.writeAccess = HealthAccess.denied;
 
+      expect(await sut.recordWorkout(done()), isFalse);
+
+      // no sheet, and no write attempted: Health Connect throws for one it
+      // never allowed (#F40)
       expect(device.writeAccessRequests, 0);
-      expect(device.log, isNot(contains('workoutWriteAccess')));
+      expect(device.written, isEmpty);
     });
 
     test('the settings row can ask outright', () async {
@@ -782,6 +788,7 @@ void main() {
     });
 
     test('the written session carries the activity', () async {
+      device.writeAccess = HealthAccess.granted;
       await sut.init();
       final workout = sessionOf([annotated('Swimming', .swimming)]);
       workout.finish(DateTime.utc(2026, 8, 17, 19));

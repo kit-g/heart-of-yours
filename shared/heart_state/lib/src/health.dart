@@ -238,7 +238,16 @@ class Health with ChangeNotifier implements SignOutStateSentry {
       if (!workout.isStarted) return false;
 
       try {
-        if (mayAsk && !await _ensureWorkoutWriteAccess()) return false;
+        // asked where asking is allowed; elsewhere no attempt at all without
+        // the write granted — Health Connect throws for a write it never
+        // allowed, and nothing is to be gained by provoking it
+        switch (mayAsk) {
+          case true when !await _ensureWorkoutWriteAccess():
+            return false;
+          case false when await _device.workoutWriteAccess() != .granted:
+            return false;
+          default:
+        }
 
         return await _device.writeWorkout(
           // What the user actually did, not what Heart mostly logs. See
