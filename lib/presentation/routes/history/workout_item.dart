@@ -83,6 +83,12 @@ class WorkoutItem extends StatelessWidget {
                   ),
                   Row(
                     children: [
+                      // a program's session: the program, in the Workout tab
+                      PartOfProgram(
+                        programId: workout.programId,
+                        size: 18,
+                        onOpen: (program) => HeartRouter.of(context).goToProgram(program.id!),
+                      ),
                       if (workout case Workout(:Map images) when images.isNotEmpty)
                         FeedbackButton(
                           tooltip: l.viewProgressPhotos,

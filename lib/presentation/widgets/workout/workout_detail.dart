@@ -19,6 +19,7 @@ import 'package:heart/core/utils/weeks.dart';
 import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/exercises/exercises.dart';
 import 'package:heart/presentation/widgets/buttons.dart';
+import 'package:heart/presentation/widgets/part_of_program.dart';
 import 'package:heart/presentation/widgets/responsive/metrics.dart';
 import 'package:heart/presentation/widgets/countdown.dart';
 import 'package:heart/presentation/widgets/duration_picker.dart';
@@ -826,11 +827,16 @@ class ActiveWorkoutSheet extends StatefulWidget {
   final double closingThreshold;
   final Future<void> Function(Iterable<Media>, {required int startingIndex, String? workoutId})? onTapImage;
 
+  /// Opens the program a program session's workout belongs to, from the mark
+  /// in its header; the sheet's route decides how.
+  final void Function(Program)? onOpenProgram;
+
   const new({
     super.key,
     required this.workouts,
     this.closingThreshold = .25,
     this.onTapImage,
+    this.onOpenProgram,
   });
 
   @override
@@ -1159,6 +1165,9 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
                               ),
                             ),
                           ),
+                          // a program's session: the program it is from
+                          if (widget.onOpenProgram case final open?)
+                            PartOfProgram(programId: active.programId, onOpen: open, size: 18),
                           if (workouts.hasActiveWorkout)
                             PrimaryButton.shrunk(
                               key: WorkoutDetailKeys.finishWorkout,

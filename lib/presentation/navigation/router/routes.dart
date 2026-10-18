@@ -284,6 +284,12 @@ RouteBase _activeWorkoutRoute() {
             key: ValueKey(active.id),
             workouts: workouts,
             onTapImage: context.goToGallery,
+            // the sheet steps aside for the program, which is in the
+            // Workout tab whichever tab is under it
+            onOpenProgram: (program) {
+              context.pop();
+              context.goToProgram(program.id!);
+            },
           );
         },
       );

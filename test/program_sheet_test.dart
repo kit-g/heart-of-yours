@@ -182,6 +182,24 @@ void main() {
     expect(find.text('Work up to one heavy set of three to five reps'), findsOneWidget);
   });
 
+  testWidgets("a session's workout is marked, and the mark opens its program", (tester) async {
+    await start(tester, squatDay());
+    final mark = find.byKey(AppKeys.partOfProgram('p1'));
+    expect(mark, findsOneWidget);
+    expect(find.byTooltip('Open Waves'), findsOneWidget);
+
+    await tester.tap(mark);
+    await tester.pumpTimes();
+    expect(find.byType(WorkoutDetail), findsNothing, reason: 'the sheet stepped aside');
+    expect(find.text('Waves'), findsWidgets);
+  });
+
+  testWidgets('a workout of no program has no mark', (tester) async {
+    programs(on: true);
+    await start(tester, Workout.fromExercises(squatDay(), name: 'Mine'));
+    expect(find.byKey(AppKeys.partOfProgram('p1')), findsNothing);
+  });
+
   testWidgets('a session with no note says nothing', (tester) async {
     await start(tester, squatDay());
     expect(find.byKey(WorkoutDetailKeys.sessionNote), findsNothing);
