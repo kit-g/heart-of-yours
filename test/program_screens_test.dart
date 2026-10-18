@@ -14,6 +14,7 @@ import 'package:heart/presentation/navigation/router/router.dart';
 import 'package:heart/presentation/routes/workout/workout.dart' show ProgramPage;
 import 'package:heart/presentation/widgets/feature_offer.dart';
 import 'package:heart/presentation/widgets/keys.dart';
+import 'package:heart/presentation/widgets/workout/workout_detail.dart' show WorkoutDetailKeys;
 import 'package:heart_models/heart_models.dart';
 import 'package:heart_state/heart_state.dart';
 import 'package:material_ui/material_ui.dart';
@@ -344,6 +345,38 @@ void main() {
       await tester.tap(find.text('Undo'));
       await tester.pumpTimes();
       verify(db.deleteProgramAction(action.id)).called(1);
+    });
+
+    testWidgets("a lift's working weight shows under its rule, and the user can set it", (tester) async {
+      final growing = program.copyWith(rules: {bench.id: const AddWeight(step: 2.5)});
+      answer(.on);
+      withProgram();
+      when(db.getPrograms(userId)).thenAnswer((_) async => [growing]);
+      when(api.getPrograms()).thenAnswer((_) async => [growing]);
+      when(db.getExercises(userId: anyNamed('userId'))).thenAnswer((_) async => (null, [bench]));
+      when(db.storeProgramBase(any)).thenAnswer((_) async {});
+      await openWorkoutTab(tester);
+      await Exercises.of(tester.element(find.byType(MaterialApp))).init();
+      await tester.tap(find.descendant(of: find.byKey(AppKeys.programBand('p1')), matching: find.text('Split')));
+      await tester.pumpTimes();
+
+      final edit = find.byKey(WorkoutDetailKeys.programBaseEdit(bench.id));
+      await scrollTo(tester, edit);
+      expect(find.text('No weight yet: its first session sets one'), findsOneWidget);
+
+      await tester.tap(edit);
+      await tester.pumpTimes();
+      await tester.enterText(find.byKey(WorkoutDetailKeys.programBaseField), '70');
+      await tester.pumpTimes();
+      await tester.tapByKey(WorkoutDetailKeys.programBaseSave);
+      await tester.pumpTimes();
+
+      final base = verify(db.storeProgramBase(captureAny)).captured.last as ProgramBase;
+      // the user's own word: no workout, no action behind it
+      expect((base.exerciseId, base.workoutId, base.actionId), (bench.id, null, null));
+      // typed in the unit shown, here pounds, and stored in kilograms
+      expect(base.value, closeTo(31.75, .01));
+      expect(find.text('Working weight: 70 lbs'), findsOneWidget);
     });
 
     testWidgets('How it grows says when the program goes lighter', (tester) async {

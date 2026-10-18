@@ -62,7 +62,9 @@ void main() {
       },
     },
   });
-  final session = Template.fromJson({
+  // a fresh one each time: a replace in the program rewrites the session it
+  // reads in place
+  Template session() => Template.fromJson({
     'id': 's1',
     'name': 'Squat day',
     'order': 0,
@@ -240,7 +242,7 @@ void main() {
   });
 
   testWidgets("in a program's workout the replace asks, and just today leaves the program alone", (tester) async {
-    when(db.getTemplates(userId)).thenAnswer((_) async => [session]);
+    when(db.getTemplates(userId)).thenAnswer((_) async => [session()]);
     final context = await start(tester, squats(programId: 'p1'));
     await Templates.of(context).init();
     final l = L.of(tester.element(find.byType(WorkoutDetail)));
@@ -257,7 +259,7 @@ void main() {
   });
 
   testWidgets('in the program, the growth rule moves to the replacement', (tester) async {
-    when(db.getTemplates(userId)).thenAnswer((_) async => [session]);
+    when(db.getTemplates(userId)).thenAnswer((_) async => [session()]);
     final context = await start(tester, squats(programId: 'p1'));
     await Templates.of(context).init();
     await openReplace(tester);
@@ -268,6 +270,37 @@ void main() {
     await tester.pumpTimes();
 
     expect(Programs.of(context).lookup('p1')!.rules.keys, [front.id]);
+  });
+
+  testWidgets('in the program, a replacement with no weight of its own is asked where it starts', (tester) async {
+    when(db.getTemplates(userId)).thenAnswer((_) async => [session()]);
+    // squat grew from 100 kg; the front squat has never been done
+    when(db.getProgramBases(userId, programId: anyNamed('programId'))).thenAnswer(
+      (_) async => [
+        ProgramBase(id: 'b1', programId: 'p1', exerciseId: squat.id, value: 100, at: DateTime.utc(2026, 10, 2)),
+      ],
+    );
+    when(db.getExerciseHistory(any, any, pageSize: anyNamed('pageSize'), anchor: anyNamed('anchor')))
+        .thenAnswer((_) async => <ExerciseAct>[]);
+    when(db.storeProgramBase(any)).thenAnswer((_) async {});
+    final context = await start(tester, squats(programId: 'p1'));
+    await Templates.of(context).init();
+    await openReplace(tester);
+    // the picker's row: the last of the name on screen
+    await tester.tap(find.text('Front Squat').last);
+    await tester.pumpTimes();
+    await tester.tapByKey(WorkoutDetailKeys.replaceInProgram);
+    await tester.pumpTimes();
+
+    expect(find.byKey(WorkoutDetailKeys.programBaseEditor), findsOneWidget);
+    expect(find.textContaining('No sets of it yet'), findsOneWidget);
+    await tester.enterText(find.byKey(WorkoutDetailKeys.programBaseField), '80');
+    await tester.pumpTimes();
+    await tester.tapByKey(WorkoutDetailKeys.programBaseSave);
+    await tester.pumpTimes();
+
+    final base = verify(db.storeProgramBase(captureAny)).captured.last as ProgramBase;
+    expect((base.exerciseId, base.value, base.workoutId, base.actionId), (front.id, 80, null, null));
   });
 
   group("a program's constraint (#355)", () {

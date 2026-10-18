@@ -47,6 +47,7 @@ import 'timer.dart';
 part 'empty_state.dart';
 part 'exercise_item.dart';
 part 'exercise_note.dart';
+part 'program_base.dart';
 part 'feedback.dart';
 part 'keys.dart';
 part 'plan.dart';
@@ -913,7 +914,10 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       ),
       _ => false,
     };
-    if (inProgram && program != null) await programs.replaceExercise(program, from: from.id, to: picked.id);
+    if (inProgram && program != null) {
+      await programs.replaceExercise(program, from: from.id, to: picked.id);
+      if (mounted) await _seedBase(program, from: from, to: picked);
+    }
     analytics.exerciseReplaced(
       scope: switch (inProgram) {
         true => .program,
@@ -921,6 +925,35 @@ class _ActiveWorkoutSheetState extends State<ActiveWorkoutSheet> {
       },
       suggested: suggested,
     );
+  }
+
+  /// The rule moved to [to] with the replace, but the base stayed with [from]
+  /// (#354): when [from] had one and [to] has none, asks where [to] starts —
+  /// suggesting from the user's own recent sets of it, as a test session
+  /// would (a share-of-max rule takes 90% of the best estimated max; a working
+  /// weight, the heaviest working set). Skipped, the program's first session
+  /// of it sets the base, as it would have.
+  Future<void> _seedBase(Program program, {required Exercise from, required Exercise to}) async {
+    final programs = Programs.of(context);
+    final exercises = Exercises.of(context);
+    final rule = programs.lookup(program.id!)?.rules[to.id];
+    if (!hasWeightBase(rule)) return;
+    final bases = programs.currentBasesOf(program.id!);
+    if (!bases.containsKey(from.id) || bases.containsKey(to.id)) return;
+
+    final history = await exercises.getExerciseHistory(to, pageSize: 10);
+    final sets = [for (final act in history) ...act];
+    final suggested = switch (rule) {
+      ShareOfMax() => Progression.test(sets, share: .9),
+      _ =>
+        sets
+            .where((set) => set.isCompleted && set.setType != .warmup && (set.weight ?? 0) > 0)
+            .map((set) => set.weight!)
+            .fold<num?>(null, (best, weight) => best == null || weight > best ? weight : best),
+    };
+    if (!mounted) return;
+    final value = await showProgramBaseEditor(context, exercise: to, rule: rule, value: suggested, seeding: true);
+    if (value != null) await programs.setBase(program, exerciseId: to.id, value: value);
   }
 
   void _onSheetChanged() {

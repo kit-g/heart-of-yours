@@ -722,6 +722,7 @@ class _Growth extends StatelessWidget {
     final programs = Programs.watch(context);
     final exercises = Exercises.of(context);
     final bases = programs.basesOf(program.id!);
+    final current = programs.currentBasesOf(program.id!);
     // an occurrence with a rule or a base of its own (heart-api#256) reads as
     // itself: the exercise its session holds there, and which session
     final occurrences = {
@@ -752,6 +753,18 @@ class _Growth extends StatelessWidget {
               _GrowthRow(
                 exercise: exercise,
                 session: session,
+                // the weight it grows from, and the user's say over it
+                base: current[key]?.value,
+                onEditBase: switch (hasWeightBase(program.rules[key] ?? program.rules[exercise.id])) {
+                  true => (value) => programs.setBase(
+                    program,
+                    exerciseId: exercise.id,
+                    slot: key == exercise.id ? null : key,
+                    value: value,
+                  ),
+                  false => null,
+                },
+                editKey: key,
                 rule: program.rules[key] ?? program.rules[exercise.id],
                 history: [
                   for (final base in bases)
@@ -775,12 +788,24 @@ class _GrowthRow extends StatelessWidget {
   final List<num> history;
   final TextStyle? style;
 
+  /// The weight the rule grows from now; null until a session or the user
+  /// sets one.
+  final num? base;
+
+  /// Sets [base] by hand, as a weight in kilograms; null where the rule grows
+  /// no weight.
+  final void Function(num)? onEditBase;
+  final String editKey;
+
   const new({
     required this.exercise,
     this.session,
     required this.rule,
     required this.history,
     required this.style,
+    this.base,
+    this.onEditBase,
+    required this.editKey,
   });
 
   @override
@@ -821,6 +846,26 @@ class _GrowthRow extends StatelessWidget {
         if (rule?.amrap.isNotEmpty ?? false) Text(copy.ruleAmrap, style: style),
         if (misses != null) Text(misses, style: style),
         if (history.isNotEmpty) Text(history.map(measure.format).join(' → '), style: style),
+        if (onEditBase case final edit?)
+          Row(
+            children: [
+              Expanded(
+                child: Text(switch (base) {
+                  final num base => baseLine(context, exercise, rule, base),
+                  null => copy.programBaseUnset,
+                }, style: Theme.of(context).textTheme.bodyMedium),
+              ),
+              IconButton(
+                key: WorkoutDetailKeys.programBaseEdit(editKey),
+                tooltip: copy.programBaseChange(exercise.name),
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: () async {
+                  final value = await showProgramBaseEditor(context, exercise: exercise, rule: rule, value: base);
+                  if (value != null) edit(value);
+                },
+              ),
+            ],
+          ),
       ],
     );
   }
