@@ -4996,5 +4996,7 @@
   "doneProgramUndoMove": "Take back this change to {exercise}",
   "@doneProgramUndoMove": {"description": "Workout Done page, tooltip and screen-reader label of the button beside one of a program's changes to an exercise (its training max, its rung, its stage): undoes that one change", "type": "text", "placeholders": {"exercise": {}}},
   "programMarkOpen": "Open {program}",
-  "@programMarkOpen": {"description": "Tooltip and screen-reader label of the program icon beside a folder, a workout or an exercise that belongs to a program: opens that program; {program} is its name", "type": "text", "placeholders": {"program": {}}}
+  "@programMarkOpen": {"description": "Tooltip and screen-reader label of the program icon beside a folder, a workout or an exercise that belongs to a program: opens that program; {program} is its name", "type": "text", "placeholders": {"program": {}}},
+  "programInProgress": "In progress: {session}",
+  "@programInProgress": {"description": "A program's page, at the top while one of its sessions is the workout under way: returns to that workout; {session} is the workout's name", "type": "text", "placeholders": {"session": {}}}
 }

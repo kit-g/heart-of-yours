@@ -290,6 +290,22 @@ void main() {
       expect(mark, findsOneWidget);
     });
 
+    testWidgets('a session under way is said at the top, and returns to its workout', (tester) async {
+      when(db.startWorkout(any, any)).thenAnswer((_) async {});
+      await openPage(tester);
+      expect(find.byKey(AppKeys.programInProgress), findsNothing);
+
+      final context = tester.element(find.byType(ProgramPage));
+      await Workouts.of(context).startWorkout(
+        source: .program,
+        template: Workout.fromExercises([], name: 'Push', programId: 'p1'),
+      );
+      await tester.pumpTimes();
+
+      expect(find.byKey(AppKeys.programInProgress), findsOneWidget);
+      expect(find.text('In progress: Push'), findsOneWidget);
+    });
+
     testWidgets('the sessions are joined by a rail through their icons, one sequence', (tester) async {
       await openPage(tester);
       await scrollTo(tester, find.text('Pull'));

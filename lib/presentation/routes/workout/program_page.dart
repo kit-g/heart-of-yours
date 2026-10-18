@@ -96,6 +96,29 @@ class ProgramPage extends StatelessWidget {
                 child: ListView(
                   padding: const .all(16),
                   children: [
+                    // a session of this program under way: the way back to it
+                    if (Workouts.watch(context).activeWorkout
+                        case Workout(
+                          :final programId,
+                          :final name,
+                        )
+                        when programId == program.id) ...[
+                      Card(
+                        key: AppKeys.programInProgress,
+                        margin: const .only(bottom: 12),
+                        color: colorScheme.secondaryContainer,
+                        child: ListTile(
+                          leading: Icon(Icons.play_circle_outline_rounded, color: colorScheme.onSecondaryContainer),
+                          title: Text(
+                            copy.programInProgress(name ?? copy.defaultWorkoutName()),
+                            style: textTheme.titleSmall?.copyWith(color: colorScheme.onSecondaryContainer),
+                          ),
+                          trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSecondaryContainer),
+                          shape: const RoundedRectangleBorder(borderRadius: .all(.circular(12))),
+                          onTap: onOpenActiveWorkout,
+                        ),
+                      ),
+                    ],
                     Text(_status(copy, program, position), style: textTheme.titleLarge),
                     if (_standing(context, program, position) case final String line) ...[
                       const SizedBox(height: 4),
