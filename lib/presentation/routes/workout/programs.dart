@@ -327,7 +327,16 @@ class _ProgramBand extends StatelessWidget {
                   Expanded(
                     child: Text(program.name, style: textTheme.titleMedium, maxLines: 1, overflow: .ellipsis),
                   ),
-                  Text(_status(copy, program, position), style: muted),
+                  // the week and its projected end give way to a long name
+                  Flexible(
+                    child: Text(
+                      _status(context, program, position),
+                      style: muted,
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                      textAlign: .end,
+                    ),
+                  ),
                 ],
               ),
               if (!finished && sessions.isNotEmpty)
@@ -401,13 +410,20 @@ class _ProgramBand extends StatelessWidget {
   }
 }
 
-/// Where [program] stands, in a word or two: finished, paused, or its week.
-String _status(L copy, Program program, ProgramPosition position) {
-  return switch ((position, program.weeks)) {
+/// Where [program] stands, in a word or two: finished, paused, or its week —
+/// and, for one with a length, when it would end at this pace (#F33).
+String _status(BuildContext context, Program program, ProgramPosition position) {
+  final copy = L.of(context);
+  final status = switch ((position, program.weeks)) {
     (ProgramPosition(finished: true), _) => copy.programFinished,
     (ProgramPosition(paused: true), _) => copy.programPaused,
     (ProgramPosition(:final week), final int weeks) => copy.programWeekOf(week, weeks),
     (ProgramPosition(:final week), null) => copy.programWeek(week),
+  };
+  final end = projectedEnd(program, position, now: DateTime.now(), firstWeekday: firstWeekdayOf(context));
+  return switch (end) {
+    final DateTime end => '$status · ${copy.programEnds(DateFormat.MMMd(copy.localeName).format(end))}',
+    null => status,
   };
 }
 

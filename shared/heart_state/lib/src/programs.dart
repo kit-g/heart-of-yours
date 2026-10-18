@@ -10,6 +10,7 @@ import 'program_plan.dart';
 import 'remote.dart';
 import 'skips.dart';
 import 'upsync.dart' show Replayed;
+import 'weeks.dart';
 import 'workouts.dart';
 
 /// A program's rows, as what [Programs] owes the server names them. A
@@ -1514,4 +1515,17 @@ num? suggestedBase(GrowthRule? rule, Iterable<ExerciseSet> sets) {
           .map((set) => set.weight!)
           .fold<num?>(null, (best, weight) => best == null || weight > best ? weight : best),
   };
+}
+
+/// When [program] would end at this pace (#F33): the last day of its last
+/// program week, counted from the calendar week holding [now] — the open
+/// program week runs through it, and each one left takes a week after. A
+/// week only moves when its sessions are done or skipped, and a paused one
+/// not at all, so a pause or a slow week pushes the end out on its own.
+/// Null for an open-ended program, or one already finished.
+DateTime? projectedEnd(Program program, ProgramPosition position, {required DateTime now, required int firstWeekday}) {
+  final weeks = program.weeks;
+  if (weeks == null || position.finished) return null;
+  final start = weekOf(now, firstWeekday: firstWeekday);
+  return DateTime(start.year, start.month, start.day + 7 * (weeks - position.week + 1) - 1);
 }

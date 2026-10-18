@@ -179,7 +179,8 @@ void main() {
 
       final band = find.byKey(AppKeys.programBand('p1'));
       expect(band, findsOneWidget);
-      expect(find.descendant(of: band, matching: find.text('Week 1 of 8')), findsOneWidget);
+      // the week, and when the program would end at this pace (#F33)
+      expect(find.descendant(of: band, matching: find.textContaining(RegExp(r'^Week 1 of 8 · ends '))), findsOneWidget);
       expect(find.descendant(of: band, matching: find.text('0 of 3 this week')), findsOneWidget);
 
       await tester.tapByKey(AppKeys.programStart('p1'));

@@ -119,7 +119,7 @@ class ProgramPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                    Text(_status(copy, program, position), style: textTheme.titleLarge),
+                    Text(_status(context, program, position), style: textTheme.titleLarge),
                     if (_standing(context, program, position) case final String line) ...[
                       const SizedBox(height: 4),
                       Text(line, style: muted),

@@ -177,6 +177,66 @@ void main() {
     });
   });
 
+  group('projected end (#F33)', () {
+    final program = Program(id: 'p1', name: 'Waves', perWeek: 1, weeks: 12, sessions: const ['s1']);
+    // a Wednesday, in a Monday week that started on the 26th
+    final now = DateTime(2026, 10, 28);
+
+    ProgramPosition at({required List<ProgramMark> marks, List<ProgramAction> actions = const []}) {
+      return ProgramPosition.of(program, marks: marks, actions: actions, now: now);
+    }
+
+    ProgramMark done(DateTime at) => ProgramMark(templateId: 's1', at: at, isWorkout: true);
+
+    test('week 1: this week and eleven more, ending the Sunday of the twelfth', () {
+      final end = projectedEnd(
+        program,
+        at(marks: const []),
+        now: now,
+        firstWeekday: DateTime.monday,
+      );
+      expect(end, DateTime(2027, 1, 17));
+    });
+
+    test('three weeks done: the end is three weeks nearer, counted from this week', () {
+      final position = at(
+        marks: [done(DateTime(2026, 10, 6)), done(DateTime(2026, 10, 13)), done(DateTime(2026, 10, 20))],
+      );
+      expect(position.week, 4);
+      expect(projectedEnd(program, position, now: now, firstWeekday: DateTime.monday), DateTime(2026, 12, 27));
+    });
+
+    test('a pause holds the week, so a month later the end is a month later', () {
+      final paused = at(
+        marks: [done(DateTime(2026, 10, 6))],
+        actions: [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime(2026, 10, 7))],
+      );
+      final later = DateTime(2026, 11, 25);
+      final then = ProgramPosition.of(
+        program,
+        marks: [done(DateTime(2026, 10, 6))],
+        actions: [ProgramAction(id: 'a1', programId: 'p1', kind: .pause, at: DateTime(2026, 10, 7))],
+        now: later,
+      );
+      final before = projectedEnd(program, paused, now: now, firstWeekday: DateTime.monday)!;
+      final after = projectedEnd(program, then, now: later, firstWeekday: DateTime.monday)!;
+      expect(after.difference(before).inDays, 28);
+    });
+
+    test('an open-ended program has no end', () {
+      final open = Program(id: 'p2', name: 'Ongoing', sessions: const ['s1']);
+      expect(
+        projectedEnd(
+          open,
+          ProgramPosition.of(open, marks: const [], actions: const [], now: now),
+          now: now,
+          firstWeekday: 1,
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('init', () {
     test('reads the mirror, then the server replaces it, history and all', () async {
       local.programs[uid] = [program(id: 'gone')];
