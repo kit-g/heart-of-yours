@@ -72,6 +72,23 @@ The one place an index loop earns its keep is index *arithmetic* — bucketing a
 series into `n` slices — and even then it lives in a small helper, not in a
 `children:` list.
 
+**No sacrificial accumulator.** A collection declared empty only so a loop can
+fill it is a `map`/`where`/`expand`/`fold` with extra steps. Comprehensions are
+welcome — a collection-`for` inside a literal is the expression itself — until
+they need a throwaway variable to build into.
+
+```dart
+// no
+final names = <String>[];
+for (final each in exercises) {
+  names.add(each.name);
+}
+
+// yes
+final names = exercises.map((each) => each.name).toList();
+final names = [for (final each in exercises) each.name];
+```
+
 **Name every value of our own enums.** A `_ =>` or `default:` arm over
 `Category`, `Target`, `SetType` and the like gives up the analyzer's
 exhaustiveness check. That check is what lists every place a new value has to
